@@ -6,7 +6,7 @@ Prerequisites: Node 22, pnpm 10 (`corepack enable`), Docker (or a local PostgreS
 
 ```bash
 cp .env.example .env                    # then set JWT_SECRET: openssl rand -base64 48
-docker compose up -d postgres           # also creates talk2tax_test
+docker compose up -d postgres           # creates the talk2tax role and both databases
 pnpm install
 pnpm build
 pnpm db:migrate                         # applies migrations to DATABASE_URL
@@ -19,10 +19,12 @@ pnpm test
 Without Docker, create the role and databases yourself:
 
 ```sql
-CREATE USER talk2tax WITH PASSWORD 'talk2tax' CREATEDB;
+CREATE USER talk2tax WITH PASSWORD 'talk2tax' CREATEDB NOSUPERUSER NOBYPASSRLS;
 CREATE DATABASE talk2tax OWNER talk2tax;
 CREATE DATABASE talk2tax_test OWNER talk2tax;
 ```
+
+The app role must not be a superuser or have `BYPASSRLS`, or row-level security does not apply (the API refuses to start that way in production). If you used an earlier `docker compose` volume, where `talk2tax` was the container superuser, recreate it with `docker compose down -v`.
 
 The migration enables the `btree_gist` extension (trusted in PostgreSQL 13+, so the database owner can create it).
 

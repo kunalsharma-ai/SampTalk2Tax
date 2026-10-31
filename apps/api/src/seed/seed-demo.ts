@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { randomBytes } from 'node:crypto';
 import { AppModule } from '../app.module';
 import { SessionsService } from '../auth/sessions.service';
+import { allowSystemAccessOutsideRequests } from '../common/tenant-context';
 import { AuthService } from '../auth/auth.service';
 import { ApprovalsService } from '../approvals/approvals.service';
 import { AttachmentsService } from '../attachments/attachments.service';
@@ -34,6 +35,8 @@ function rng(seed: number) {
 async function main() {
   const config = loadConfig();
   if (config.NODE_ENV === 'production') throw new Error('Refusing to seed demo data in production');
+  // The seed is not an HTTP request; it writes several tenants' data as the system.
+  allowSystemAccessOutsideRequests();
   const app = await NestFactory.createApplicationContext(AppModule.forRoot(config), { logger: ['error', 'warn'] });
   const prisma = app.get(PrismaService);
   const existing = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });

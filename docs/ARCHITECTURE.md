@@ -123,6 +123,9 @@ A reconciliation checks three things: the imported lines from the opening balanc
 ### ADR-014 Server-side sessions behind short access tokens
 *Decision:* every sign-in creates a row in `auth_sessions`; the 15-minute JWT carries its id, and the auth guard checks the row on every request. Refresh tokens rotate on each use, with reuse detection and a 30-second grace window for the previous token. *Why:* signing out, "sign out everywhere" and password changes have to take effect immediately, which a stateless JWT cannot do. The check is one primary-key lookup that replaces the user lookup the guard already made. *Cost:* one database read per request (cacheable later); refresh races between tabs are handled by the grace window and by the web proxy sharing one refresh call per token.
 
+### ADR-015 Row-level security from transaction-local settings
+*Decision:* tenant tables have forced PostgreSQL policies keyed on `t2t.org_id` / `t2t.user_id`, which the API sets with `set_config(..., true)` at the start of every transaction (statements outside one get their own short transaction). The request's tenant lives in `AsyncLocalStorage`. Outside requests the default is no access; the seed and tests opt in to system access. *Why:* a forgotten `WHERE org_id = …` is the most likely way one customer could see another's books; the database now refuses it independently of the code. Transaction-local settings are safe with a connection pool, unlike session `SET`. *Cost:* one extra statement per transaction; data migrations must enable system access explicitly; a separate non-owner database role for the API would be stronger still and is a deployment follow-up.
+
 ## Planned components (not built yet)
 
 * `packages/ai-orchestration` — model-agnostic gateway (Anthropic, OpenAI, Gemini, self-hosted), deterministic mock adapter for local use, tool permissioning, prompt versioning, cost tracking.

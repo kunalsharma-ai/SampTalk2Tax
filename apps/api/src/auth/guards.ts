@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { z } from 'zod';
 import { PrismaService } from '../common/prisma.service';
+import { enterOrg, enterUser } from '../common/tenant-context';
 import { IS_PUBLIC, PERMISSION } from './decorators';
 import { SessionsService } from './sessions.service';
 import { TokensService } from './tokens.service';
@@ -32,6 +33,7 @@ export class AuthGuard implements CanActivate {
     if (!session.ok) throw new UnauthorizedException({ error: session.code, message: session.message });
     const user = session.user;
     req.user = user;
+    enterUser(user.id);
     req.sessionId = claims.sessionId;
 
     const permission = this.reflector.getAllAndOverride<Permission | undefined>(PERMISSION, targets);
@@ -49,6 +51,7 @@ export class AuthGuard implements CanActivate {
       if (!hasPermission(role, permission)) {
         throw new ForbiddenException({ error: 'FORBIDDEN', message: `Your role (${role}) does not have ${permission}` });
       }
+      enterOrg(orgId);
       req.org = {
         id: orgId,
         role,

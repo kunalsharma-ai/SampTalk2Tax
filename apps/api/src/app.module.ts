@@ -27,7 +27,7 @@ import { PurchasesController, SalesController } from './ledgers/ledger.controlle
 import { SubledgerService } from './ledgers/subledger.service';
 import { TaxRatesController } from './tax-rates/tax-rates.controller';
 import { TaxRatesService } from './tax-rates/tax-rates.service';
-import { PrismaService } from './common/prisma.service';
+import { prismaProvider } from './common/prisma.service';
 import { AppConfig, CONFIG } from './config';
 import { HealthController } from './health/health.controller';
 import { JournalsController } from './journals/journals.controller';
@@ -68,7 +68,7 @@ export class AppModule {
       ],
       providers: [
         { provide: CONFIG, useValue: config },
-        PrismaService,
+        prismaProvider,
         TokensService,
         AuditService,
         AuthService,

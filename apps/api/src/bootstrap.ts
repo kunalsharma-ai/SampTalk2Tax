@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { tenantContextMiddleware } from './common/tenant-context';
 import { AppConfig } from './config';
 
 export async function createApp(config: AppConfig, opts: { logger?: boolean } = {}): Promise<INestApplication> {
@@ -17,6 +18,8 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
   // Client IPs (rate limits, session list) come from X-Forwarded-For only across trusted hops.
   app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.use(helmet());
+  // Each request gets its own tenant context for row-level security (filled in by the auth guard).
+  app.use(tenantContextMiddleware);
   app.enableCors({ origin: config.CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: false });
   app.enableShutdownHooks();
   const doc = new DocumentBuilder()
