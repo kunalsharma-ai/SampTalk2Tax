@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: talk2tax
+          POSTGRES_PASSWORD: talk2tax
+          POSTGRES_DB: talk2tax_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U talk2tax"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://talk2tax:talk2tax@localhost:5432/talk2tax_test?schema=public
+      TEST_DATABASE_URL: postgresql://talk2tax:talk2tax@localhost:5432/talk2tax_test?schema=public
+      JWT_SECRET: ci-only-secret-that-is-at-least-32-characters-long
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Feature registry is up to date
+        run: node scripts/generate-feature-registry.mjs --check

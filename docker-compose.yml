@@ -1,0 +1,37 @@
+# Local development dependencies. Redis and object storage are added when the
+# first feature that needs them lands (see docs/ARCHITECTURE.md).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: talk2tax
+      POSTGRES_PASSWORD: talk2tax
+      POSTGRES_DB: talk2tax
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talk2tax"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    profiles: ["app"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://talk2tax:talk2tax@postgres:5432/talk2tax?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      PORT: 4000
+    ports:
+      - "4000:4000"
+
+volumes:
+  pgdata:
