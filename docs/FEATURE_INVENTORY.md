@@ -69,27 +69,27 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | GL-001 |  | rule | Create a full enterprise-grade accounting foundation | Implementing |
-| GL-002 | 5.1 General Ledger | capability | Double-entry bookkeeping | Implementing |
-| GL-003 | 5.1 General Ledger | capability | Configurable chart of accounts | Implementing |
-| GL-004 | 5.1 General Ledger | capability | Hierarchical account structures | Implementing |
-| GL-005 | 5.1 General Ledger | capability | Account types and subtypes | Implementing |
-| GL-006 | 5.1 General Ledger | capability | Journal entries | Implementing |
+| GL-002 | 5.1 General Ledger | capability | Double-entry bookkeeping | Tested |
+| GL-003 | 5.1 General Ledger | capability | Configurable chart of accounts | Tested |
+| GL-004 | 5.1 General Ledger | capability | Hierarchical account structures | Tested |
+| GL-005 | 5.1 General Ledger | capability | Account types and subtypes | Tested |
+| GL-006 | 5.1 General Ledger | capability | Journal entries | Tested |
 | GL-007 | 5.1 General Ledger | capability | Recurring journals | Not started |
-| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Implementing |
-| GL-009 | 5.1 General Ledger | capability | Reversing journals | Implementing |
-| GL-010 | 5.1 General Ledger | capability | Opening balances | Implementing |
+| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Implemented |
+| GL-009 | 5.1 General Ledger | capability | Reversing journals | Tested |
+| GL-010 | 5.1 General Ledger | capability | Opening balances | Implemented |
 | GL-011 | 5.1 General Ledger | capability | Closing balances | Not started |
 | GL-012 | 5.1 General Ledger | capability | Journal templates | Not started |
 | GL-013 | 5.1 General Ledger | capability | Accrual accounting | Implementing |
 | GL-014 | 5.1 General Ledger | capability | Cash accounting | Not started |
-| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implementing |
-| GL-016 | 5.1 General Ledger | capability | Financial periods | Implementing |
-| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Implementing |
-| GL-018 | 5.1 General Ledger | capability | Period locks | Implementing |
-| GL-019 | 5.1 General Ledger | capability | Posting controls | Implementing |
-| GL-020 | 5.1 General Ledger | capability | Audit history | Implementing |
-| GL-021 | 5.1 General Ledger | capability | Trial balance | Implementing |
-| GL-022 | 5.1 General Ledger | capability | General ledger reports | Implementing |
+| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implemented |
+| GL-016 | 5.1 General Ledger | capability | Financial periods | Tested |
+| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Implemented |
+| GL-018 | 5.1 General Ledger | capability | Period locks | Tested |
+| GL-019 | 5.1 General Ledger | capability | Posting controls | Implemented |
+| GL-020 | 5.1 General Ledger | capability | Audit history | Tested |
+| GL-021 | 5.1 General Ledger | capability | Trial balance | Tested |
+| GL-022 | 5.1 General Ledger | capability | General ledger reports | Implemented |
 | GL-023 | 5.1 General Ledger | capability | Subsidiary ledgers | Not started |
 | GL-024 | 5.1 General Ledger | capability | Cost centers | Not started |
 | GL-025 | 5.1 General Ledger | capability | Profit centers | Not started |
@@ -819,8 +819,8 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-001 |  | capability | Internal audit workspace | Not started |
 | AUDIT-002 |  | capability | External auditor portal | Not started |
 | AUDIT-003 |  | capability | Audit evidence management | Not started |
-| AUDIT-004 |  | capability | Audit trails | Implementing |
-| AUDIT-005 |  | capability | Transaction history | Implementing |
+| AUDIT-004 |  | capability | Audit trails | Tested |
+| AUDIT-005 |  | capability | Transaction history | Implemented |
 | AUDIT-006 |  | capability | Approval history | Not started |
 | AUDIT-007 |  | capability | Document versioning | Not started |
 | AUDIT-008 |  | capability | Financial control testing | Not started |
@@ -947,14 +947,14 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-010 |  | capability | Interactive | Not started |
 | DASH-011 |  | capability | Highly intuitive | Not started |
 | DASH-012 |  | capability | Data-rich without becoming cluttered | Not started |
-| DASH-013 | Design Direction | rule | Create an original visual identity for Sampledge Talk2Tax | Not started |
-| DASH-014 | Design Direction | capability | Deep midnight navy | Not started |
-| DASH-015 | Design Direction | capability | Electric cyan | Not started |
-| DASH-016 | Design Direction | capability | Rich indigo | Not started |
-| DASH-017 | Design Direction | capability | Emerald green | Not started |
-| DASH-018 | Design Direction | capability | Soft violet | Not started |
-| DASH-019 | Design Direction | capability | Warm amber for warnings | Not started |
-| DASH-020 | Design Direction | capability | Neutral white and graphite | Not started |
+| DASH-013 | Design Direction | rule | Create an original visual identity for Sampledge Talk2Tax | Implementing |
+| DASH-014 | Design Direction | capability | Deep midnight navy | Tested |
+| DASH-015 | Design Direction | capability | Electric cyan | Tested |
+| DASH-016 | Design Direction | capability | Rich indigo | Tested |
+| DASH-017 | Design Direction | capability | Emerald green | Tested |
+| DASH-018 | Design Direction | capability | Soft violet | Tested |
+| DASH-019 | Design Direction | capability | Warm amber for warnings | Tested |
+| DASH-020 | Design Direction | capability | Neutral white and graphite | Tested |
 | DASH-021 | Design Direction | rule | Use refined gradients, glass-like surfaces where appropriate, precise typography and subtle depth | Not started |
 | DASH-022 | Design Direction | rule | Avoid excessive visual noise | Not started |
 | DASH-023 | Advanced Visualization | capability | Interactive 3D financial landscapes | Not started |
@@ -974,8 +974,8 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-037 | Advanced Visualization | capability | Financial dependency graphs | Not started |
 | DASH-038 | Advanced Visualization | rule | Support animated transitions and motion-responsive interactions | Not started |
 | DASH-039 | Advanced Visualization | rule | Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering | Not started |
-| DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Not started |
-| DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Not started |
+| DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Implementing |
+| DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Implemented |
 | DASH-042 | Required Dashboards | capability | Global Super Admin | Not started |
 | DASH-043 | Required Dashboards | capability | Tenant Organization Admin | Not started |
 | DASH-044 | Required Dashboards | capability | CEO | Not started |
@@ -1149,14 +1149,14 @@ Part 33 · M8 · priority P2 · depends on: none
 |---|---|---|---|---|
 | I18N-001 |  | capability | Multi-language UI | Not started |
 | I18N-002 |  | capability | Multi-currency accounting | Implementing |
-| I18N-003 |  | capability | Regional number formats | Not started |
+| I18N-003 |  | capability | Regional number formats | Implementing |
 | I18N-004 |  | capability | Regional date formats | Not started |
 | I18N-005 |  | capability | Country-specific tax configurations | Not started |
 | I18N-006 |  | capability | Country-specific invoice formats | Not started |
 | I18N-007 |  | capability | Local financial reporting | Not started |
 | I18N-008 |  | capability | Time-zone awareness | Not started |
 | I18N-009 |  | capability | Regional document templates | Not started |
-| I18N-010 |  | capability | Configurable fiscal years | Implementing |
+| I18N-010 |  | capability | Configurable fiscal years | Implemented |
 | I18N-011 |  | capability | Localization framework | Not started |
 | I18N-012 |  | capability | Right-to-left layout support where needed | Not started |
 | I18N-013 |  | capability | English | Not started |
@@ -1240,7 +1240,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-011 |  | capability | Encryption at rest | Not started |
 | SEC-012 |  | capability | Secrets management | Implementing |
 | SEC-013 |  | capability | Key rotation | Not started |
-| SEC-014 |  | capability | Audit logging | Implementing |
+| SEC-014 |  | capability | Audit logging | Tested |
 | SEC-015 |  | capability | API authentication | Tested |
 | SEC-016 |  | capability | Rate limiting | Not started |
 | SEC-017 |  | capability | Input validation | Tested |
@@ -1273,20 +1273,20 @@ Part 36 · M1 · priority P1 · depends on: DS
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | UX-001 |  | rule | Create an exceptionally smooth onboarding experience | Not started |
-| UX-002 | Onboarding Wizard | capability | Create organization | Implementing |
+| UX-002 | Onboarding Wizard | capability | Create organization | Tested |
 | UX-003 | Onboarding Wizard | capability | Select country | Not started |
 | UX-004 | Onboarding Wizard | capability | Select industry | Not started |
 | UX-005 | Onboarding Wizard | capability | Select business size | Not started |
 | UX-006 | Onboarding Wizard | capability | Select accounting framework | Not started |
-| UX-007 | Onboarding Wizard | capability | Configure fiscal year | Implementing |
-| UX-008 | Onboarding Wizard | capability | Configure currency | Implementing |
+| UX-007 | Onboarding Wizard | capability | Configure fiscal year | Tested |
+| UX-008 | Onboarding Wizard | capability | Configure currency | Tested |
 | UX-009 | Onboarding Wizard | capability | Import chart of accounts | Not started |
 | UX-010 | Onboarding Wizard | capability | Import customers | Not started |
 | UX-011 | Onboarding Wizard | capability | Import vendors | Not started |
 | UX-012 | Onboarding Wizard | capability | Import opening balances | Not started |
 | UX-013 | Onboarding Wizard | capability | Connect banking providers | Not started |
 | UX-014 | Onboarding Wizard | capability | Configure tax settings | Not started |
-| UX-015 | Onboarding Wizard | capability | Configure team roles | Implementing |
+| UX-015 | Onboarding Wizard | capability | Configure team roles | Implemented |
 | UX-016 | Onboarding Wizard | capability | Configure approval policies | Not started |
 | UX-017 | Onboarding Wizard | capability | Select AI automation preferences | Not started |
 | UX-018 | Onboarding Wizard | capability | Review setup validation | Not started |
@@ -1396,7 +1396,7 @@ Part 40 · M8 · priority P3 · depends on: DS
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| MOB-001 |  | rule | Create a responsive web application first | Not started |
+| MOB-001 |  | rule | Create a responsive web application first | Implementing |
 | MOB-002 |  | rule | Then provide an architecture for dedicated mobile applications | Not started |
 | MOB-003 |  | capability | Dashboard viewing | Not started |
 | MOB-004 |  | capability | Invoice creation | Not started |
@@ -1451,7 +1451,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-002 | Required Tests | capability | Unit tests | Tested |
 | QA-003 | Required Tests | capability | Integration tests | Tested |
 | QA-004 | Required Tests | capability | API tests | Tested |
-| QA-005 | Required Tests | capability | End-to-end tests | Not started |
+| QA-005 | Required Tests | capability | End-to-end tests | Tested |
 | QA-006 | Required Tests | capability | Accounting invariant tests | Tested |
 | QA-007 | Required Tests | capability | Tax calculation tests | Not started |
 | QA-008 | Required Tests | capability | Multi-currency tests | Tested |
@@ -1459,7 +1459,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-010 | Required Tests | capability | Payroll calculation tests | Not started |
 | QA-011 | Required Tests | capability | Financial reporting tests | Tested |
 | QA-012 | Required Tests | capability | Permission tests | Tested |
-| QA-013 | Required Tests | capability | Tenant isolation tests | Not started |
+| QA-013 | Required Tests | capability | Tenant isolation tests | Tested |
 | QA-014 | Required Tests | capability | AI agent evaluation tests | Not started |
 | QA-015 | Required Tests | capability | Prompt injection tests | Not started |
 | QA-016 | Required Tests | capability | Workflow recovery tests | Not started |
@@ -1477,7 +1477,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-028 | Financial Test Scenarios | capability | Concurrent operations preserve accounting consistency | Tested |
 | QA-029 | Financial Test Scenarios | capability | Tax calculations use the correct effective-dated rules | Not started |
 | QA-030 | Financial Test Scenarios | capability | Unauthorized AI agents cannot post entries or initiate payments | Not started |
-| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Not started |
+| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Implementing |
 
 ## Demonstration data
 
@@ -1538,12 +1538,12 @@ Part 45 · M1 · priority P1 · depends on: DS
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| NAV-001 |  | rule | Create a premium sidebar and global navigation system | Not started |
-| NAV-002 |  | capability | Overview | Not started |
+| NAV-001 |  | rule | Create a premium sidebar and global navigation system | Implementing |
+| NAV-002 |  | capability | Overview | Implemented |
 | NAV-003 |  | capability | Executive Command Center | Not started |
 | NAV-004 |  | capability | AI Finance Copilot | Not started |
-| NAV-005 |  | capability | Accounting | Not started |
-| NAV-006 |  | capability | General Ledger | Not started |
+| NAV-005 |  | capability | Accounting | Implemented |
+| NAV-006 |  | capability | General Ledger | Implemented |
 | NAV-007 |  | capability | Accounts Receivable | Not started |
 | NAV-008 |  | capability | Accounts Payable | Not started |
 | NAV-009 |  | capability | Banking | Not started |
@@ -1566,11 +1566,11 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-026 |  | capability | Fixed Assets | Not started |
 | NAV-027 |  | capability | Multi-Entity Finance | Not started |
 | NAV-028 |  | capability | Financial Consolidation | Not started |
-| NAV-029 |  | capability | Reports | Not started |
+| NAV-029 |  | capability | Reports | Implemented |
 | NAV-030 |  | capability | Business Intelligence | Not started |
 | NAV-031 |  | capability | Fraud and Risk | Not started |
 | NAV-032 |  | capability | Compliance | Not started |
-| NAV-033 |  | capability | Audit | Not started |
+| NAV-033 |  | capability | Audit | Implemented |
 | NAV-034 |  | capability | Documents | Not started |
 | NAV-035 |  | capability | AI Agent Workforce | Not started |
 | NAV-036 |  | capability | Automation Studio | Not started |
@@ -1579,12 +1579,12 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-039 |  | capability | Integrations | Not started |
 | NAV-040 |  | capability | Subscription Management | Not started |
 | NAV-041 |  | capability | Organization Settings | Not started |
-| NAV-042 |  | capability | User Management | Not started |
+| NAV-042 |  | capability | User Management | Implemented |
 | NAV-043 |  | capability | Security Center | Not started |
 | NAV-044 |  | capability | Support | Not started |
 | NAV-045 |  | capability | Super Admin | Not started |
-| NAV-046 |  | rule | Use nested navigation and progressive disclosure | Not started |
-| NAV-047 |  | rule | Do not overwhelm users by showing all modules simultaneously | Not started |
+| NAV-046 |  | rule | Use nested navigation and progressive disclosure | Implemented |
+| NAV-047 |  | rule | Do not overwhelm users by showing all modules simultaneously | Implemented |
 | NAV-048 |  | rule | Allow organizations to enable only the modules relevant to them | Not started |
 
 ## Design system
@@ -1636,9 +1636,9 @@ Part 50 · All · priority P0 · depends on: none
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| RULE-001 |  | rule | Do not create fake functional buttons | Not started |
-| RULE-002 |  | rule | Do not create disconnected dashboards | Not started |
-| RULE-003 |  | rule | Do not substitute static cards for implemented business logic | Not started |
+| RULE-001 |  | rule | Do not create fake functional buttons | Implemented |
+| RULE-002 |  | rule | Do not create disconnected dashboards | Implemented |
+| RULE-003 |  | rule | Do not substitute static cards for implemented business logic | Implemented |
 | RULE-004 |  | rule | Do not invent financial data in production | Not started |
 | RULE-005 |  | rule | Do not claim AI functionality when only a static response exists | Not started |
 | RULE-006 |  | rule | Do not claim live banking integration without credentials and provider validation | Not started |

@@ -7,3 +7,6 @@ coverage/
 *.log
 .turbo/
 .next/
+.next/
+next-env.d.ts
+*.tsbuildinfo

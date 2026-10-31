@@ -5,8 +5,9 @@
 Talk2Tax starts as one deployable API (`apps/api`, NestJS) over one PostgreSQL database, organised into domain modules with clear boundaries. Services can be extracted later when load or team structure justifies it (Directive Part 2: "Prefer a modular monolith initially").
 
 ```
-                ┌───────────── apps/web (Next.js, next milestone) ─────────────┐
-                                         │ HTTPS, bearer JWT
+        Browser ── same-origin, httpOnly session cookie, x-t2t-csrf header ──┐
+                ┌──────── apps/web (Next.js: pages + /api/t2t proxy) ────────┐
+                                         │ HTTPS, bearer JWT (server side only)
 ┌──────────────────────────────── apps/api (NestJS) ───────────────────────────────┐
 │ AuthGuard (JWT → user → membership → permission)   ErrorFilter   zod validation │
 │                                                                                   │
@@ -24,7 +25,10 @@ Talk2Tax starts as one deployable API (`apps/api`, NestJS) over one PostgreSQL d
 ```
 apps/
   api/                     NestJS REST API, seed script, integration tests
+  web/                     Next.js 15 App Router web app, Playwright browser tests
 packages/
+  ui/                      Accessible React components (Radix dialog, forms, tables)
+  design-system/           Colour/type tokens (TS + CSS variables), WCAG contrast test
   accounting-engine/       Pure double-entry rules: money, journals, periods, reports, CoA template
   database/                Prisma schema + SQL migrations (incl. integrity triggers)
   security/                Roles → permissions, scrypt password hashing
@@ -32,7 +36,7 @@ features/                  Feature registry inputs (modules.json, status.json) a
 scripts/                   generate-feature-registry.mjs
 docs/                      This documentation set
 infrastructure/            Docker init scripts
-.github/workflows/ci.yml   Build, typecheck, unit + integration tests, registry freshness
+.github/workflows/ci.yml   Build, typecheck, unit + integration + browser tests, registry freshness
 ```
 
 The directive's full target layout (`apps/web|admin|mobile|documentation`, `packages/ui|design-system|tax-engine|ai-orchestration|…`, `services/*`) is the destination. Folders are created **when they contain working code**, not as empty placeholders (Part 50, rule 3: no static stand-ins).
@@ -80,8 +84,16 @@ The directive's full target layout (`apps/web|admin|mobile|documentation`, `pack
 ### ADR-008 Fiscal year labelled by end year
 *Decision:* an April 2026–March 2027 year is FY2027. *Why:* matches Indian and UK convention; January-start years equal the calendar year.
 
+## Web app (`apps/web`)
+
+* Next.js 15 App Router, React 19, Tailwind 4 on design-system CSS variables, TanStack Query for server state, React Hook Form + zod for forms, Recharts for the dashboard chart (with a data table beside it).
+* **Backend-for-frontend session.** `POST /api/session` calls the API's login or register endpoint and stores the returned token in an httpOnly, SameSite=Lax cookie. Browser code never sees the token.
+* **Same-origin proxy.** The browser calls `/api/t2t/v1/...`; the route handler adds the bearer token and forwards to `T2T_API_URL`. Only `v1/*` paths are forwarded, and writes need an `x-t2t-csrf: 1` header that cross-site forms cannot send.
+* The journal form runs `validateJournal` from `packages/accounting-engine` in the browser for live feedback. The API and database still enforce every rule; the browser check is only a hint.
+* Money stays a decimal string end to end; `Intl.NumberFormat` formats the string directly, without converting through floating point.
+* Permission checks in the UI (hiding buttons a role cannot use) are hints. The API decides.
+
 ## Planned components (not built yet)
 
-* `apps/web` — Next.js App Router, TanStack Query/Table, React Hook Form + zod (shared schemas), Tailwind + shadcn/ui, ECharts/Recharts/D3 with table fallbacks.
 * `packages/ai-orchestration` — model-agnostic gateway (Anthropic, OpenAI, Gemini, self-hosted), deterministic mock adapter for local use, tool permissioning, prompt versioning, cost tracking.
 * Redis + BullMQ for background jobs; Temporal (or equivalent) for durable approval workflows; S3-compatible storage for documents; pgvector for retrieval; OpenSearch when search volume justifies it.

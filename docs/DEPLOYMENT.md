@@ -12,6 +12,7 @@ pnpm build
 pnpm db:migrate                         # applies migrations to DATABASE_URL
 pnpm db:seed                            # optional: synthetic demo company, prints a one-time password
 pnpm dev:api                            # http://localhost:4000, OpenAPI at /docs
+pnpm dev:web                            # http://localhost:3000 (Next.js dev server)
 pnpm test
 ```
 
@@ -24,6 +25,16 @@ CREATE DATABASE talk2tax_test OWNER talk2tax;
 ```
 
 The migration enables the `btree_gist` extension (trusted in PostgreSQL 13+, so the database owner can create it).
+
+## Web app in production mode
+
+```bash
+pnpm build                              # includes next build for apps/web
+cd apps/web && T2T_API_URL=http://localhost:4000 npx next start -p 3000
+pnpm e2e                                # from the repo root, with both servers running
+```
+
+The web app has no database access of its own; it talks only to the API. There is no web container image yet.
 
 ## Container
 
@@ -44,6 +55,8 @@ docker compose --profile app up --build   # API + Postgres
 | `CORS_ORIGINS` | no | Comma-separated allow-list |
 | `TEST_DATABASE_URL` | tests | Must contain "test" |
 | `DEMO_PASSWORD` | no | Fixed password for the seeded demo user |
+| `T2T_API_URL` | web | API base URL used by the web app's server-side proxy. Default `http://localhost:4000` |
+| `WEB_URL` | e2e | Web app address for browser tests. Default `http://localhost:3000` |
 
 ## Production (not done yet)
 
