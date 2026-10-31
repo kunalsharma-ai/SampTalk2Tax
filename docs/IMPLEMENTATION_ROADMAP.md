@@ -6,7 +6,7 @@ The directive (Part 47) defines milestones M0–M9. This file tracks what each o
 |---|---|---|
 | **M0 Discovery & architecture** | PRD, competitive matrix, domain model, ADRs, DB design, API contracts, security, AI architecture, design system spec, roadmap, dependency map | **Partly done.** Done: PRD, feature registry (1,343 entries), architecture + ADRs, database schema, accounting engine spec, security, API docs, test strategy, deployment, roadmap. Not done: competitive matrix research (framework only), AI architecture, design system spec, tax engine, workflow engine, integration architecture, dashboard specs, pricing |
 | **M1 Functional foundation** | Monorepo, auth, tenants, onboarding, RBAC, database, accounting engine, GL, CoA, journal posting, basic reports, initial dashboard | **Built.** Backend and web app are built and tested (unit, integration and browser tests). Remaining hardening: refresh tokens, rate limiting, row-level security, member invitations |
-| **M2 Core finance** | AR, AP, banking, reconciliation, expenses, customers, vendors, documents, approval workflows | **In progress.** Slice 1 built and tested: customers, vendors, tax rates, invoices, credit notes, bills, vendor credits, receipts, payments, allocation, statements, ageing (see [`MILESTONE_REPORT_M2.md`](MILESTONE_REPORT_M2.md)). Next: bank accounts, statement import, reconciliation; then expenses and approval workflows |
+| **M2 Core finance** | AR, AP, banking, reconciliation, expenses, customers, vendors, documents, approval workflows | **In progress.** Slice 1 built and tested: customers, vendors, tax rates, invoices, credit notes, bills, vendor credits, receipts, payments, allocation, statements, ageing and slice 2 built and tested: bank accounts, CSV statement import, matching, bank entries and receipts from statement lines, reconciliation with history and undo (see [`MILESTONE_REPORT_M2.md`](MILESTONE_REPORT_M2.md)). Next: expenses and approval workflows |
 | M3 Tax & payroll | Validated India GST/TDS workflows, payroll finance, compliance calendars | Not started |
 | M4 Financial intelligence | Forecasting, budgeting, analytics, AI copilot, alerts, leakage | Not started |
 | M5 Autonomous finance | Agent framework, control center, workflow automation, AI reconciliation/collections/close, explainable AI log | Not started |
@@ -19,7 +19,7 @@ The directive (Part 47) defines milestones M0–M9. This file tracks what each o
 
 1. **M1 hardening:** refresh tokens + logout, rate limiting on auth, PostgreSQL row-level security as a second tenant-isolation layer, financial dimension masters, recurring journal templates, year-end close to retained earnings.
 2. **M0 remainder:** competitive matrix with sourced, dated research; AI architecture (gateway with mock adapters); design system spec.
-3. **M2 slice 2:** bank accounts, statement import (CSV), matching and reconciliation against receipts, payments and journals.
+3. **M2 slice 3:** expense claims and receipts, multi-step approval workflows for bills and payments, OFX import, transfers between own accounts.
 
 ## Dependency map (top level)
 

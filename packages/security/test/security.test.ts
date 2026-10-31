@@ -20,6 +20,13 @@ describe('permissions', () => {
     expect(hasPermission('VIEWER', 'sales.read')).toBe(true);
     expect(hasPermission('VIEWER', 'contacts.manage')).toBe(false);
   });
+  it('lets accountants match and reconcile bank lines, everyone else only read them', () => {
+    expect(hasPermission('ACCOUNTANT', 'banking.manage')).toBe(true);
+    expect(hasPermission('ACCOUNTANT', 'banking.reconcile')).toBe(true);
+    expect(hasPermission('APPROVER', 'banking.manage')).toBe(false);
+    expect(hasPermission('VIEWER', 'banking.read')).toBe(true);
+    expect(hasPermission('VIEWER', 'banking.reconcile')).toBe(false);
+  });
   it('restricts role assignment', () => {
     expect(canAssignRole('ADMIN', 'OWNER')).toBe(false);
     expect(canAssignRole('ADMIN', 'ACCOUNTANT')).toBe(true);

@@ -329,54 +329,9 @@ export class DocumentsService {
       const replay = await this.findIdempotentPayment(org, idempotencyKey, hash!);
       if (replay) return { replayed: true, payment: replay };
     }
-    const kind = ledgerKinds(ledger).payment;
     try {
       const payment = await this.prisma.$transaction(async (tx) => {
-        await this.checkContact(tx, org.id, ledger, input.contactId);
-        const bank = await tx.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
-        if (!bank || !bank.isPostable || !bank.isActive || !['BANK', 'CASH'].includes(bank.subtype ?? '')) {
-          throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
-        }
-        const amount = dec(input.amount);
-        const control = await this.controlAccount(tx, org.id, ledger);
-        const lines = buildPaymentJournal(kind, amount, bank.id, control, org.functionalCurrency);
-        const n = await this.nextNumber(tx, org.id, kind);
-        const number = documentNumber(kind, n);
-        const contact = await tx.contact.findUniqueOrThrow({ where: { id: input.contactId } });
-        const je = await this.journals.postSystemEntry(tx, org, actor, {
-          date: input.date,
-          source: 'PAYMENT',
-          memo: `${number} · ${contact.name}${input.memo ? ` · ${input.memo}` : ''}`,
-          reference: number,
-          lines,
-        });
-        const p = await tx.payment.create({
-          data: {
-            orgId: org.id,
-            kind,
-            number,
-            contactId: input.contactId,
-            date: toDbDate(input.date),
-            bankAccountId: bank.id,
-            currency: org.functionalCurrency,
-            amount: amount.toFixed(),
-            reference: input.reference || null,
-            memo: input.memo || null,
-            journalEntryId: je.id,
-            idempotencyKey,
-            idempotencyHash: hash,
-            createdById: actor.id,
-          },
-        });
-        await this.audit.append(tx, {
-          orgId: org.id,
-          actorId: actor.id,
-          action: 'payment.recorded',
-          entityType: 'payment',
-          entityId: p.id,
-          data: { kind, number, amount: amount.toFixed(), contactId: input.contactId, journalEntryId: je.id },
-        });
-        await this.allocateInTx(tx, org, actor, ledger, p.id, input.allocations);
+        const p = await this.recordPaymentInTx(tx, org, actor, ledger, input, { idempotencyKey, hash });
         return this.serializePayment(org, await tx.payment.findUniqueOrThrow({ where: { id: p.id }, include: PAY_INCLUDE }));
       });
       return { replayed: false, payment };
@@ -391,6 +346,58 @@ export class DocumentsService {
       }
       throw e;
     }
+  }
+
+  /** Records a receipt or payment and its allocations inside the caller's transaction. */
+  async recordPaymentInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, input: PaymentInput, opts: { idempotencyKey?: string; hash?: string } = {}) {
+    const kind = ledgerKinds(ledger).payment;
+    const { idempotencyKey, hash } = opts;
+    await this.checkContact(tx, org.id, ledger, input.contactId);
+    const bank = await tx.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
+    if (!bank || !bank.isPostable || !bank.isActive || !['BANK', 'CASH'].includes(bank.subtype ?? '')) {
+      throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
+    }
+    const amount = dec(input.amount);
+    const control = await this.controlAccount(tx, org.id, ledger);
+    const lines = buildPaymentJournal(kind, amount, bank.id, control, org.functionalCurrency);
+    const n = await this.nextNumber(tx, org.id, kind);
+    const number = documentNumber(kind, n);
+    const contact = await tx.contact.findUniqueOrThrow({ where: { id: input.contactId } });
+    const je = await this.journals.postSystemEntry(tx, org, actor, {
+      date: input.date,
+      source: 'PAYMENT',
+      memo: `${number} · ${contact.name}${input.memo ? ` · ${input.memo}` : ''}`,
+      reference: number,
+      lines,
+    });
+    const p = await tx.payment.create({
+      data: {
+        orgId: org.id,
+        kind,
+        number,
+        contactId: input.contactId,
+        date: toDbDate(input.date),
+        bankAccountId: bank.id,
+        currency: org.functionalCurrency,
+        amount: amount.toFixed(),
+        reference: input.reference || null,
+        memo: input.memo || null,
+        journalEntryId: je.id,
+        idempotencyKey,
+        idempotencyHash: hash,
+        createdById: actor.id,
+      },
+    });
+    await this.audit.append(tx, {
+      orgId: org.id,
+      actorId: actor.id,
+      action: 'payment.recorded',
+      entityType: 'payment',
+      entityId: p.id,
+      data: { kind, number, amount: amount.toFixed(), contactId: input.contactId, journalEntryId: je.id },
+    });
+    await this.allocateInTx(tx, org, actor, ledger, p.id, input.allocations);
+    return { id: p.id, number: p.number, journalEntryId: je.id };
   }
 
   async allocatePayment(org: LedgerOrg, actor: Actor, ledger: Ledger, paymentId: string, allocations: { documentId: string; amount: string }[]) {

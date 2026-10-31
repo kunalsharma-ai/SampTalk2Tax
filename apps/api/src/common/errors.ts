@@ -1,5 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { DocumentValidationError, JournalValidationError, MoneyError } from '@talk2tax/accounting-engine';
+import { DocumentValidationError, JournalValidationError, MoneyError, StatementImportError } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import type { Response } from 'express';
 
@@ -40,6 +40,9 @@ export class ErrorFilter implements ExceptionFilter {
     if (e instanceof DocumentValidationError) {
       return { status: 422, body: { error: 'DOCUMENT_INVALID', message: 'Document is invalid', details: { issues: e.issues } } };
     }
+    if (e instanceof StatementImportError) {
+      return { status: 422, body: { error: 'STATEMENT_INVALID', message: 'The statement file could not be read', details: { issues: e.issues } } };
+    }
     if (e instanceof MoneyError) {
       return { status: 422, body: { error: 'INVALID_AMOUNT', message: e.message } };
     }
@@ -57,6 +60,6 @@ export class ErrorFilter implements ExceptionFilter {
 /** Messages raised by the database integrity triggers (SQLSTATE P0001). */
 export function extractDbIntegrityMessage(e: unknown): string | null {
   const msg = e instanceof Error ? e.message : '';
-  const m = /(?:ERROR: |message: ")([^"\n]*(?:immutable|does not balance|cannot be deleted|Cannot post|outside its fiscal period|append-only|not postable|at least two lines|header totals|Allocation|settle|Cannot void|different contacts)[^"\n]*)/.exec(msg);
+  const m = /(?:ERROR: |message: ")([^"\n]*(?:immutable|does not balance|cannot be deleted|Cannot post|outside its fiscal period|append-only|not postable|at least two lines|header totals|Allocation|settle|Cannot void|different contacts|Bank statement line|Bank match|Reconciliation)[^"\n]*)/.exec(msg);
   return m ? m[1] : null;
 }

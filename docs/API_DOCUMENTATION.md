@@ -50,6 +50,21 @@ All org routes need `Authorization: Bearer <token>` and membership in the organi
 | `POST …/payments/:id/allocate`, `…/payments/:id/void` | …manage | Allocate unapplied money; void a payment |
 | `POST …/allocations/:id/remove` | …manage | Remove an allocation (kept as history) |
 | `GET …/ageing?asOf=` | …read | Ageing buckets per contact, reconciled to the control-account balance |
+| `GET /v1/orgs/:orgId/banking/accounts` | banking.read | Bank and cash accounts with ledger balance, lines to review, last reconciliation |
+| `POST /v1/orgs/:orgId/banking/accounts/:id/imports` | banking.manage | CSV statement (`csv` text + column `mapping`). `dryRun: true` previews and flags lines imported before; otherwise stores new lines |
+| `GET …/banking/accounts/:id/imports` | banking.read | Import history |
+| `GET …/banking/accounts/:id/lines?status=&from=&to=` | banking.read | Statement lines with their matches and a rule-based suggestion |
+| `POST …/banking/accounts/:id/auto-match` | banking.manage | Applies only suggestions where line and ledger line are each other's single same-amount candidate within 14 days |
+| `GET …/banking/lines/:id/candidates?search=` | banking.read | Unmatched posted ledger lines on the account within 90 days, closest amount first |
+| `POST …/banking/lines/:id/match` | banking.manage | Match to one or more ledger lines whose net equals the statement amount |
+| `POST …/banking/lines/:id/unmatch` | banking.manage | Remove the match; an entry created from the line is reversed |
+| `POST …/banking/lines/:id/create-entry` | banking.manage + journals.post | Post a bank entry to another (non-control) account and match it |
+| `POST …/banking/lines/:id/record-payment` | banking.manage + sales/purchases.manage | Money in → customer receipt, money out → vendor payment, with allocations; matched to the line |
+| `POST …/banking/lines/:id/exclude` / `include` | banking.manage | Exclude a line that is not a real movement (reason required) / include it again |
+| `POST …/banking/accounts/:id/reconciliations/preview` | banking.read | Figures, uncleared items, unmatched lines and the reasons it does not reconcile |
+| `POST …/banking/accounts/:id/reconciliations` | banking.reconcile | Complete; locks the lines it covers |
+| `GET …/banking/accounts/:id/reconciliations` | banking.read | History, including undone ones |
+| `POST …/banking/reconciliations/:id/undo` | banking.reconcile + periods.lock | Undo the latest reconciliation of an account (reason required) |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 
@@ -84,5 +99,5 @@ Content-Type: application/json
 | 401 | `UNAUTHENTICATED`, `INVALID_CREDENTIALS` |
 | 403 | `FORBIDDEN` |
 | 404 | `NOT_FOUND`, `USER_NOT_FOUND` |
-| 409 | `PERIOD_NOT_OPEN`, `ALREADY_POSTED`, `ENTRY_POSTED`, `ALREADY_REVERSED`, `IS_REVERSAL`, `NOT_POSTED`, `SYSTEM_ENTRY`, `DOCUMENT_POSTED`, `ALREADY_VOID`, `HAS_ALLOCATIONS`, `CREDIT_LIMIT_EXCEEDED`, `DUPLICATE_BILL`, `TOTAL_CHANGED`, `CONTACT_IN_USE`, `ALREADY_REMOVED`, `ACCOUNT_IN_USE`, `NON_ZERO_BALANCE`, `HAS_CHILDREN`, `CONFLICT`, `FISCAL_YEAR_EXISTS`, `LEDGER_INTEGRITY` |
-| 422 | `JOURNAL_INVALID` / `DOCUMENT_INVALID` (with `issues[]`), `CONTROL_ACCOUNT`, `INVALID_ALLOCATION`, `INVALID_BANK_ACCOUNT`, `TAX_ACCOUNT_REQUIRED`, `NOT_A_CUSTOMER`, `NOT_A_VENDOR`, `CONTACT_INACTIVE`, `NO_FISCAL_PERIOD`, `IDEMPOTENCY_KEY_REUSED`, `INVALID_PARENT`, `INVALID_SUBTYPE`, `WEAK_PASSWORD`, `INVALID_DATE` |
+| 409 | `PERIOD_NOT_OPEN`, `ALREADY_POSTED`, `ENTRY_POSTED`, `ALREADY_REVERSED`, `IS_REVERSAL`, `NOT_POSTED`, `SYSTEM_ENTRY`, `DOCUMENT_POSTED`, `ALREADY_VOID`, `HAS_ALLOCATIONS`, `CREDIT_LIMIT_EXCEEDED`, `DUPLICATE_BILL`, `TOTAL_CHANGED`, `CONTACT_IN_USE`, `ALREADY_REMOVED`, `BANK_MATCHED`, `ALREADY_MATCHED`, `NOT_MATCHED`, `LINE_RECONCILED`, `LINE_EXCLUDED`, `NOTHING_NEW`, `PERIOD_RECONCILED`, `NOT_LATEST`, `ALREADY_UNDONE`, `ACCOUNT_IN_USE`, `NON_ZERO_BALANCE`, `HAS_CHILDREN`, `CONFLICT`, `FISCAL_YEAR_EXISTS`, `LEDGER_INTEGRITY` |
+| 422 | `JOURNAL_INVALID` / `DOCUMENT_INVALID` / `STATEMENT_INVALID` / `RECONCILIATION_FAILED` (with `issues[]`), `INVALID_MATCH`, `OPENING_REQUIRED`, `OPENING_MISMATCH`, `CONTROL_ACCOUNT`, `INVALID_ALLOCATION`, `INVALID_BANK_ACCOUNT`, `TAX_ACCOUNT_REQUIRED`, `NOT_A_CUSTOMER`, `NOT_A_VENDOR`, `CONTACT_INACTIVE`, `NO_FISCAL_PERIOD`, `IDEMPOTENCY_KEY_REUSED`, `INVALID_PARENT`, `INVALID_SUBTYPE`, `WEAK_PASSWORD`, `INVALID_DATE` |
