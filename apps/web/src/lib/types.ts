@@ -75,7 +75,7 @@ export const PERMS: Record<Role, Set<string>> = {
   OWNER: new Set(['*']),
   ADMIN: new Set(['*']),
   ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile']),
-  APPROVER: new Set(['journals.post', 'audit.read']),
+  APPROVER: new Set(['journals.post', 'audit.read', 'approvals.decide']),
   VIEWER: new Set([]),
 };
 
@@ -329,4 +329,58 @@ export interface Reconciliation {
   undoneAt: string | null;
   undoReason: string | null;
   lines: number;
+}
+
+export type AttachmentEntity = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE';
+export interface Attachment {
+  id: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  uploadedBy: string | null;
+  createdAt: string;
+  removedAt: string | null;
+  removedReason: string | null;
+}
+
+export type DocumentKindName = 'INVOICE' | 'CREDIT_NOTE' | 'BILL' | 'VENDOR_CREDIT';
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export interface ApprovalPolicy {
+  documentKind: DocumentKindName;
+  configured: boolean;
+  isActive: boolean;
+  minAmount: string | null;
+  requireDifferentApprover: boolean;
+  updatedAt: string | null;
+}
+export interface ApprovalRequest {
+  id: string;
+  status: ApprovalStatus;
+  documentId: string | null;
+  documentKind: DocumentKindName;
+  documentNumber: string | null;
+  documentStatus: 'DRAFT' | 'POSTED' | 'VOID' | null;
+  contactName: string;
+  total: string;
+  note: string | null;
+  requestedBy: string | null;
+  requestedById: string;
+  requestedAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  canApprove: boolean;
+  ownWork: boolean;
+}
+export interface ApprovalState {
+  required: boolean;
+  policy: { minAmount: string; requireDifferentApprover: boolean } | null;
+  readyToPost: boolean;
+  requests: ApprovalRequest[];
+}
+export interface ApproveResult {
+  approval: ApprovalRequest;
+  posted: boolean;
+  postError: { error: string; message: string } | null;
 }

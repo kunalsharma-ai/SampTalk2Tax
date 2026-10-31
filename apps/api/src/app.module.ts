@@ -2,6 +2,10 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AccountsController } from './accounts/accounts.controller';
 import { AccountsService } from './accounts/accounts.service';
+import { ApprovalsController } from './approvals/approvals.controller';
+import { ApprovalsService } from './approvals/approvals.service';
+import { AttachmentsController } from './attachments/attachments.controller';
+import { AttachmentsService } from './attachments/attachments.service';
 import { AuditController } from './audit/audit.controller';
 import { AuditService } from './audit/audit.service';
 import { AuthController } from './auth/auth.controller';
@@ -53,6 +57,8 @@ export class AppModule {
         SalesController,
         PurchasesController,
         BankingController,
+        AttachmentsController,
+        ApprovalsController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -70,6 +76,8 @@ export class AppModule {
         TaxRatesService,
         DocumentsService,
         BankingService,
+        AttachmentsService,
+        ApprovalsService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: ErrorFilter },
       ],

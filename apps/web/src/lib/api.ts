@@ -32,6 +32,17 @@ export async function api<T>(path: string, init: { method?: string; body?: Json;
   return body as T;
 }
 
+/** Sends a file's bytes as the request body (attachments). The server decides the type from the bytes. */
+export async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const res = await fetch(`/api/t2t${path}`, { method: 'POST', headers: { 'x-t2t-csrf': '1', 'content-type': 'application/octet-stream' }, body: file });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = res.status === 413 && !body.message ? 'Files can be at most 5 MB' : (body.message ?? `Upload failed (${res.status})`);
+    throw new ApiError(res.status, body.error ?? 'ERROR', message, []);
+  }
+  return body as T;
+}
+
 export async function session(mode: 'login' | 'register', payload: { email: string; password: string; name?: string }) {
   const res = await fetch('/api/session', { method: 'POST', headers: { 'content-type': 'application/json', 'x-t2t-csrf': '1' }, body: JSON.stringify({ mode, ...payload }) });
   const body = await res.json().catch(() => ({}));
