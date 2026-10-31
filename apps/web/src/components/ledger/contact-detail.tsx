@@ -1,0 +1,97 @@
+'use client';
+import { useQuery } from '@tanstack/react-query';
+import { Alert, Button, Card, CardHeader, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import { Money } from '@/components/money';
+import { DateInput } from '@/components/report-bits';
+import { PageHeader } from '@/components/shell';
+import { api } from '@/lib/api';
+import { date, money, today } from '@/lib/format';
+import { fyStartFor } from '@/components/report-bits';
+import type { LedgerConfig } from '@/lib/ledgers';
+import { useOrg } from '@/lib/org';
+import { can, type Contact, type DocumentSummary, type Statement } from '@/lib/types';
+import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
+import { DocumentsTable } from './documents-table';
+
+export function ContactDetail({ l }: { l: LedgerConfig }) {
+  const { org, orgId } = useOrg();
+  const { contactId } = useParams<{ contactId: string }>();
+  const [from, setFrom] = useState(() => fyStartFor(today(), org?.fiscalYearStartMonth ?? 1));
+  const [to, setTo] = useState(today());
+  const [draft, setDraft] = useState<ContactDraft | null>(null);
+  const contact = useQuery({ queryKey: ['contact', orgId, contactId], queryFn: () => api<Contact>(`/v1/orgs/${orgId}/contacts/${contactId}`) });
+  const statement = useQuery({
+    queryKey: ['contact', orgId, contactId, 'statement', l.ledger, from, to],
+    queryFn: () => api<Statement>(`/v1/orgs/${orgId}/contacts/${contactId}/statement?ledger=${l.ledger}&from=${from}&to=${to}`),
+  });
+  const docs = useQuery({
+    queryKey: ['documents', orgId, l.api, 'contact', contactId],
+    queryFn: () => api<{ items: DocumentSummary[] }>(`/v1/orgs/${orgId}/${l.api}/documents?contactId=${contactId}&limit=50`),
+  });
+  if (!org) return null;
+  if (contact.error) return <Alert title="Not found">{(contact.error as Error).message}</Alert>;
+  const x = contact.data;
+  if (!x) return <p className="text-sm text-fg-muted">Loading…</p>;
+  const c = org.functionalCurrency;
+  const bal = x[l.balanceKey];
+  const canManage = can(org.role, l.managePermission);
+  return (
+    <>
+      <PageHeader
+        title={x.name}
+        description={[x.email, x.phone, x.taxId ? `Tax ID ${x.taxId}` : null, `${x.paymentTermsDays} day terms`, x.creditLimit ? `credit limit ${money(x.creditLimit, org.functionalCurrency)}` : null].filter(Boolean).join(' · ')}
+        actions={
+          <>
+            {can(org.role, 'contacts.manage') ? <Button variant="ghost" onClick={() => setDraft(draftFrom(x, l))}>Edit</Button> : null}
+            {canManage ? (
+              <>
+                <Link href={`/orgs/${orgId}/${l.paymentsPath}/new?contactId=${x.id}`}><Button variant="secondary">{l.payment.verb}</Button></Link>
+                <Link href={`/orgs/${orgId}/${l.docsPath}/new?contactId=${x.id}`}><Button>New {l.charge.label.toLowerCase()}</Button></Link>
+              </>
+            ) : null}
+          </>
+        }
+      />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Open" value={<Money value={bal.outstanding} currency={c} />} tone="accent" />
+        <Stat label="Overdue" value={<Money value={bal.overdue} currency={c} />} tone="negative" />
+        <Stat label="Unapplied credits" value={<Money value={bal.unapplied} currency={c} />} tone="violet" />
+        <Stat label="Balance" value={<Money value={bal.balance} currency={c} signed />} tone="positive" />
+      </div>
+      <Card className="mt-6">
+        <CardHeader
+          title="Statement"
+          description="Every posted document and payment, with a running balance."
+          actions={<div className="flex flex-wrap gap-3"><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /></div>}
+        />
+        {statement.data ? (
+          <Table>
+            <thead><tr><Th>Date</Th><Th>Number</Th><Th>Details</Th><Th numeric>{l.ledger === 'SALES' ? 'Charged' : 'Billed'}</Th><Th numeric>{l.ledger === 'SALES' ? 'Paid / credited' : 'Paid / credited'}</Th><Th numeric>Balance</Th></tr></thead>
+            <tbody>
+              <Tr><Td colSpan={5} className="text-fg-muted">Opening balance</Td><Td numeric><Money value={statement.data.openingBalance} currency={c} signed /></Td></Tr>
+              {statement.data.lines.map((s, i) => (
+                <Tr key={`${s.id}-${s.kind}-${i}`}>
+                  <Td className="whitespace-nowrap">{date(s.date)}</Td>
+                  <Td className="num"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/${s.kind.startsWith('RECEIPT') || s.kind.startsWith('PAYMENT') ? l.paymentsPath : l.docsPath}/${s.id}`}>{s.number}</Link></Td>
+                  <Td className="text-fg-muted">{s.description}</Td>
+                  <Td numeric>{s.charge ? <Money value={s.charge} currency={c} /> : ''}</Td>
+                  <Td numeric>{s.credit ? <Money value={s.credit} currency={c} /> : ''}</Td>
+                  <Td numeric><Money value={s.balance} currency={c} signed /></Td>
+                </Tr>
+              ))}
+            </tbody>
+            <tfoot><tr><Td colSpan={5} className="font-semibold">Closing balance</Td><Td numeric className="font-semibold"><Money value={statement.data.closingBalance} currency={c} signed /></Td></tr></tfoot>
+          </Table>
+        ) : <p className="px-5 py-4 text-sm text-fg-muted">Loading…</p>}
+      </Card>
+      <Card className="mt-6">
+        <CardHeader title={`Recent ${l.charge.plural.toLowerCase()} and ${l.credit.plural.toLowerCase()}`} />
+        {docs.data && docs.data.items.length === 0 ? <p className="px-5 py-4 text-sm text-fg-muted">None yet.</p> : <DocumentsTable l={l} orgId={orgId} items={docs.data?.items ?? []} currency={c} showContact={false} />}
+      </Card>
+      <ContactDialog l={l} draft={draft} setDraft={setDraft} />
+    </>
+  );
+}

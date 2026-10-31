@@ -50,7 +50,11 @@ export function JournalForm({ existing }: { existing?: Journal }) {
       : [blank(1), blank(2)],
   );
 
-  const postable = useMemo(() => (accounts.data ?? []).filter((a) => a.isPostable && a.isActive), [accounts.data]);
+  // Receivables and payables control accounts only take postings from invoices, bills and payments.
+  const postable = useMemo(
+    () => (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && a.id !== org?.arAccountId && a.id !== org?.apAccountId),
+    [accounts.data, org?.arAccountId, org?.apAccountId],
+  );
   const accountMap = useMemo(
     () => new Map<string, PostingAccount>((accounts.data ?? []).map((a) => [a.id, { id: a.id, code: a.code, type: a.type, isPostable: a.isPostable, isActive: a.isActive }])),
     [accounts.data],

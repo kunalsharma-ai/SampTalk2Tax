@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1246 |
+| Not started | 1226 |
 | Designed | 0 |
-| Implementing | 13 |
-| Implemented | 21 |
-| Tested | 63 |
+| Implementing | 14 |
+| Implemented | 25 |
+| Tested | 78 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,10 +25,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 17 | 27 |
-| Accounts receivable | M2 | 43 | 43 | 0 |
-| Accounts payable | M2 | 36 | 36 | 0 |
+| Accounts receivable | M2 | 43 | 33 | 10 |
+| Accounts payable | M2 | 36 | 27 | 9 |
 | Banking and reconciliation | M2 | 24 | 24 | 0 |
-| Global taxation engine | M3 | 54 | 54 | 0 |
+| Global taxation engine | M3 | 54 | 53 | 1 |
 | Payroll and workforce finance | M3 | 34 | 34 | 0 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 27 | 0 |
@@ -305,6 +305,178 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)
   - apps/api/test/ledger.e2e.test.ts › immutability and reversal
+
+### AR-001 — Build a comprehensive AR module
+
+- Module: Accounts receivable
+- Status: **Implementing**
+- Notes: Slice 1 of AR: customers, invoices, credit notes, receipts, allocation, statements, ageing. Quotes, orders, recurring billing, reminders, write-offs and the AI items are not started.
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts
+  - apps/web/e2e/sales-flow.test.mjs
+
+### AR-002 — Customer management
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › roles and tenants
+  - apps/web/e2e/sales-flow.test.mjs
+  - /v1/orgs/:orgId/contacts
+  - apps/web/src/app/orgs/[orgId]/sales/customers
+
+### AR-004 — Customer credit limits
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Override is audited.
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › credit limits
+  - apps/web/src/components/ledger/document-form.tsx
+
+### AR-009 — Tax invoices
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Invoices with tenant-configured tax rates. Not a statutory e-invoice format; no PDF or emailing yet.
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › invoices
+  - packages/accounting-engine/test/documents.test.ts
+  - apps/web/e2e/sales-flow.test.mjs
+
+### AR-016 — Credit notes
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › applies a credit note and settles the invoice
+  - packages/accounting-engine/test/documents.test.ts
+
+### AR-019 — Payment allocation
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › receipts, credits and ageing
+  - apps/web/e2e/sales-flow.test.mjs
+
+### AR-020 — Partial payments
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › records a partial receipt against an invoice
+  - apps/web/e2e/sales-flow.test.mjs
+
+### AR-021 — Advance payments
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › keeps an unallocated receipt as a customer credit
+
+### AR-022 — Customer statements
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › produces a customer statement
+  - apps/web/src/components/ledger/contact-detail.tsx
+
+### AR-023 — Receivable aging
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › ageing ties to the receivables control account
+  - apps/web/e2e/sales-flow.test.mjs
+
+### AP-001 — Supplier management
+
+- Module: Accounts payable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › bills and payments
+  - apps/web/src/app/orgs/[orgId]/purchases/vendors
+
+### AP-003 — Purchase invoices
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Same document model as supplier bills.
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › bills and payments
+  - apps/web/e2e/sales-flow.test.mjs
+
+### AP-004 — Supplier bills
+
+- Module: Accounts payable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › posts a bill to payables with recoverable input tax and pays it
+  - apps/web/e2e/sales-flow.test.mjs
+
+### AP-008 — Partial payments
+
+- Module: Accounts payable
+- Status: **Implemented**
+- Notes: Shares the receipts code path, which is tested for partial allocation; no purchases-specific partial test yet.
+- Evidence:
+  - apps/api/src/ledgers/documents.service.ts
+  - packages/accounting-engine/test/documents.test.ts
+
+### AP-009 — Advance payments
+
+- Module: Accounts payable
+- Status: **Implemented**
+- Notes: Unallocated vendor payment stays as a vendor credit; shares the tested receipts code path.
+- Evidence:
+  - apps/api/src/ledgers/documents.service.ts
+
+### AP-010 — Credit notes
+
+- Module: Accounts payable
+- Status: **Implemented**
+- Notes: Vendor credits share the tested credit-note path; journal covered by engine tests.
+- Evidence:
+  - apps/api/src/ledgers/documents.service.ts
+  - packages/accounting-engine/test/documents.test.ts
+
+### AP-011 — Supplier statements
+
+- Module: Accounts payable
+- Status: **Implemented**
+- Evidence:
+  - GET /v1/orgs/:orgId/contacts/:id/statement?ledger=PURCHASES
+  - apps/web/src/components/ledger/contact-detail.tsx
+
+### AP-012 — Payables aging
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Same ageing service as receivables; purchases ageing reconciliation is checked by the demo seed.
+- Evidence:
+  - apps/api/src/ledgers/subledger.service.ts
+  - apps/api/test/sales-purchases.e2e.test.ts
+  - apps/api/src/seed/seed-demo.ts
+
+### AP-018 — Duplicate invoice detection
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Per vendor, case-insensitive; enforced by a partial unique index as well as the service.
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice
+  - apps/web/e2e/sales-flow.test.mjs
+
+### TAX-002 — Do not hard-code global tax rates
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Rates are tenant-configured; no statutory rates are hard-coded.
+- Evidence:
+  - apps/api/src/tax-rates
+  - apps/web/e2e/sales-flow.test.mjs
 
 ### AUDIT-004 — Audit trails
 

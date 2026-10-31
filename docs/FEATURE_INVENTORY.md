@@ -119,29 +119,29 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| AR-001 |  | rule | Build a comprehensive AR module | Not started |
-| AR-002 |  | capability | Customer management | Not started |
+| AR-001 |  | rule | Build a comprehensive AR module | Implementing |
+| AR-002 |  | capability | Customer management | Tested |
 | AR-003 |  | capability | Customer onboarding | Not started |
-| AR-004 |  | capability | Customer credit limits | Not started |
+| AR-004 |  | capability | Customer credit limits | Tested |
 | AR-005 |  | capability | Quotations | Not started |
 | AR-006 |  | capability | Estimates | Not started |
 | AR-007 |  | capability | Sales orders | Not started |
 | AR-008 |  | capability | Pro forma invoices | Not started |
-| AR-009 |  | capability | Tax invoices | Not started |
+| AR-009 |  | capability | Tax invoices | Tested |
 | AR-010 |  | capability | Recurring invoices | Not started |
 | AR-011 |  | capability | Subscription billing | Not started |
 | AR-012 |  | capability | Usage-based billing | Not started |
 | AR-013 |  | capability | Milestone billing | Not started |
 | AR-014 |  | capability | Progress billing | Not started |
 | AR-015 |  | capability | Retainer billing | Not started |
-| AR-016 |  | capability | Credit notes | Not started |
+| AR-016 |  | capability | Credit notes | Tested |
 | AR-017 |  | capability | Debit notes | Not started |
 | AR-018 |  | capability | Payment links | Not started |
-| AR-019 |  | capability | Payment allocation | Not started |
-| AR-020 |  | capability | Partial payments | Not started |
-| AR-021 |  | capability | Advance payments | Not started |
-| AR-022 |  | capability | Customer statements | Not started |
-| AR-023 |  | capability | Receivable aging | Not started |
+| AR-019 |  | capability | Payment allocation | Tested |
+| AR-020 |  | capability | Partial payments | Tested |
+| AR-021 |  | capability | Advance payments | Tested |
+| AR-022 |  | capability | Customer statements | Tested |
+| AR-023 |  | capability | Receivable aging | Tested |
 | AR-024 |  | capability | Collection reminders | Not started |
 | AR-025 |  | capability | Dispute management | Not started |
 | AR-026 |  | capability | Bad debt provisions | Not started |
@@ -169,24 +169,24 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| AP-001 |  | capability | Supplier management | Not started |
+| AP-001 |  | capability | Supplier management | Tested |
 | AP-002 |  | capability | Vendor onboarding | Not started |
-| AP-003 |  | capability | Purchase invoices | Not started |
-| AP-004 |  | capability | Supplier bills | Not started |
+| AP-003 |  | capability | Purchase invoices | Tested |
+| AP-004 |  | capability | Supplier bills | Tested |
 | AP-005 |  | capability | Recurring bills | Not started |
 | AP-006 |  | capability | Bill approval workflows | Not started |
 | AP-007 |  | capability | Payment scheduling | Not started |
-| AP-008 |  | capability | Partial payments | Not started |
-| AP-009 |  | capability | Advance payments | Not started |
-| AP-010 |  | capability | Credit notes | Not started |
-| AP-011 |  | capability | Supplier statements | Not started |
-| AP-012 |  | capability | Payables aging | Not started |
+| AP-008 |  | capability | Partial payments | Implemented |
+| AP-009 |  | capability | Advance payments | Implemented |
+| AP-010 |  | capability | Credit notes | Implemented |
+| AP-011 |  | capability | Supplier statements | Implemented |
+| AP-012 |  | capability | Payables aging | Tested |
 | AP-013 |  | capability | Vendor portals | Not started |
 | AP-014 |  | capability | Payment batches | Not started |
 | AP-015 |  | capability | Purchase order matching | Not started |
 | AP-016 |  | capability | Goods receipt matching | Not started |
 | AP-017 |  | capability | Three-way matching | Not started |
-| AP-018 |  | capability | Duplicate invoice detection | Not started |
+| AP-018 |  | capability | Duplicate invoice detection | Tested |
 | AP-019 |  | capability | Supplier tax validation | Not started |
 | AP-020 |  | capability | Expense classification | Not started |
 | AP-021 |  | capability | Vendor performance tracking | Not started |
@@ -244,7 +244,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | TAX-001 |  | rule | Create a modular, jurisdiction-aware taxation architecture | Not started |
-| TAX-002 |  | rule | Do not hard-code global tax rates | Not started |
+| TAX-002 |  | rule | Do not hard-code global tax rates | Tested |
 | TAX-003 |  | rule | Use effective-dated, version-controlled rules | Not started |
 | TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Not started |
 | TAX-005 | India Module | capability | GST | Not started |

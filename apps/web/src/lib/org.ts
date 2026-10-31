@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { api } from './api';
-import type { Account, Org, Period } from './types';
+import type { Account, Contact, Org, Period, TaxRate } from './types';
 
 export function useOrgId(): string {
   return useParams<{ orgId: string }>().orgId;
@@ -29,4 +29,17 @@ export function useAccounts(includeInactive = false) {
 export function usePeriods() {
   const orgId = useOrgId();
   return useQuery({ queryKey: ['periods', orgId], queryFn: () => api<Period[]>(`/v1/orgs/${orgId}/periods`) });
+}
+
+export function useContacts(role?: 'customer' | 'vendor', includeInactive = false) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: ['contacts', orgId, role ?? 'all', includeInactive],
+    queryFn: () => api<Contact[]>(`/v1/orgs/${orgId}/contacts?${role ? `role=${role}&` : ''}includeInactive=${includeInactive}`),
+  });
+}
+
+export function useTaxRates(includeInactive = false) {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['tax-rates', orgId, includeInactive], queryFn: () => api<TaxRate[]>(`/v1/orgs/${orgId}/tax-rates?includeInactive=${includeInactive}`) });
 }
