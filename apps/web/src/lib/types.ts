@@ -57,7 +57,7 @@ export interface Journal {
   displayNumber: string | null;
   date: string;
   type: string;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK';
   status: 'DRAFT' | 'POSTED';
   memo: string | null;
   reference: string | null;
@@ -74,7 +74,7 @@ export interface Journal {
 export const PERMS: Record<Role, Set<string>> = {
   OWNER: new Set(['*']),
   ADMIN: new Set(['*']),
-  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage']),
+  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile']),
   APPROVER: new Set(['journals.post', 'audit.read']),
   VIEWER: new Set([]),
 };
@@ -232,4 +232,101 @@ export interface Statement {
   openingBalance: string;
   closingBalance: string;
   lines: { date: string; kind: string; id: string; number: string; description: string; charge: string | null; credit: string | null; balance: string }[];
+}
+
+// ------------------------------------------------------------------ banking
+
+export interface BankAccountSummary {
+  id: string;
+  code: string;
+  name: string;
+  subtype: 'BANK' | 'CASH';
+  isActive: boolean;
+  ledgerBalance: string;
+  statementLines: number;
+  unmatchedLines: number;
+  lastStatementDate: string | null;
+  lastReconciled: { date: string; statementBalance: string } | null;
+}
+
+export interface LedgerLink {
+  journalLineId: string;
+  entryId: string;
+  entryNumber: string | null;
+  date: string;
+  memo: string | null;
+  reference: string | null;
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK';
+  amount: string;
+  payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
+}
+
+export interface StatementLine {
+  id: string;
+  accountId: string;
+  date: string;
+  description: string;
+  reference: string | null;
+  amount: string;
+  status: 'UNMATCHED' | 'MATCHED' | 'EXCLUDED';
+  excludedReason: string | null;
+  reconciled: boolean;
+  matches: (LedgerLink & { id: string; origin: 'EXISTING' | 'CREATED_ENTRY' | 'CREATED_PAYMENT' })[];
+  suggestion: (LedgerLink & { score: number; reasons: string[]; unique: boolean }) | null;
+}
+
+export interface LedgerCandidate {
+  journalLineId: string;
+  entryId: string;
+  entryNumber: string | null;
+  date: string;
+  memo: string | null;
+  reference: string | null;
+  description: string | null;
+  source: string;
+  amount: string;
+}
+
+export interface ImportPreview {
+  imported: boolean;
+  lines: { row: number; date: string; description: string; reference: string | null; amount: string; duplicate: boolean }[];
+  newCount: number;
+  duplicateCount: number;
+  moneyIn: string;
+  moneyOut: string;
+  reconciledUntil: string | null;
+  blockedRows: number[];
+}
+
+export interface ReconciliationPreview {
+  startDate: string;
+  statementDate: string;
+  openingBalance: string;
+  statementBalance: string;
+  computedStatementBalance: string;
+  ledgerBalance: string;
+  uncleared: string;
+  difference: string;
+  linesInRange: number;
+  unmatchedLines: { id: string; date: string; description: string; amount: string }[];
+  unclearedLines: LedgerCandidate[];
+  firstReconciliation: boolean;
+  issues: string[];
+  canComplete: boolean;
+}
+
+export interface Reconciliation {
+  id: string;
+  accountId: string;
+  startDate: string;
+  statementDate: string;
+  openingBalance: string;
+  statementBalance: string;
+  ledgerBalance: string;
+  uncleared: string;
+  status: 'COMPLETED' | 'UNDONE';
+  completedAt: string;
+  undoneAt: string | null;
+  undoReason: string | null;
+  lines: number;
 }

@@ -9,10 +9,11 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | Authentication | Email + password; scrypt (N=2^15, r=8, p=1, 16-byte salt, 64-byte key); timing-equalised failed logins; min length 12 | `packages/security`, `auth-tenancy.e2e.test.ts` |
 | Tokens | HS256 JWT via `jose`, issuer/audience/expiry checked, default 1 h; secret ≥ 32 chars validated at boot | `apps/api/src/auth/tokens.service.ts` |
 | Tenant isolation | Org-scoped routes `/v1/orgs/:orgId/...`; membership required; non-members get 404; every query filters by `org_id`; composite FKs make cross-tenant references impossible in the database | `auth-tenancy.e2e.test.ts › tenant isolation` |
-| Authorisation | Role → permission map (OWNER, ADMIN, ACCOUNTANT, APPROVER, VIEWER × 21 permissions); every org route declares a permission or is refused; admins cannot grant OWNER | `packages/security/src/permissions.ts` |
+| Authorisation | Role → permission map (OWNER, ADMIN, ACCOUNTANT, APPROVER, VIEWER × 24 permissions); every org route declares a permission or is refused; admins cannot grant OWNER | `packages/security/src/permissions.ts` |
 | Input validation | zod on all bodies/queries; amounts as decimal strings only; UUID checks | controllers |
 | Ledger integrity | DB triggers (immutability, balance, period status, account state) | `DATABASE_SCHEMA.md` |
 | Subledger integrity | Receivables/payables control accounts only reachable through documents and payments (API + trigger); posted documents, payments and allocations immutable; over-allocation refused at commit by a deferred trigger; allocations kept as history when removed | `sales-purchases.e2e.test.ts` |
+| Bank reconciliation | Statement lines are immutable and never deleted; a ledger line matches at most one statement line (unique index); matched amounts must net to the statement amount (deferred trigger); matched entries cannot be reversed or voided until unmatched; reconciled lines are frozen; undoing a reconciliation needs `periods.lock` and a reason, and keeps the record; CSV import is parsed server-side with exact decimals and capped at 5,000 lines / ~2.5 MB | `banking.e2e.test.ts` |
 | Money controls | Credit limit enforced on posting (override is permission-checked and audited); duplicate vendor invoice numbers refused by service and unique index; idempotent payments keyed by `Idempotency-Key` + body hash | same |
 | Audit trail | Append-only, SHA-256 hash-chained per org; verify endpoint; triggers block edits | `ledger.e2e.test.ts › audit trail` |
 | HTTP hardening | `helmet` headers; CORS allow-list from config | `bootstrap.ts` |
@@ -28,9 +29,9 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 
 | Permission | OWNER | ADMIN | ACCOUNTANT | APPROVER | VIEWER |
 |---|---|---|---|---|---|
-| org/members/accounts/periods/journals/reports/contacts/sales/purchases read | ✓ | ✓ | ✓ | ✓ | ✓ |
+| org/members/accounts/periods/journals/reports/contacts/sales/purchases/banking read | ✓ | ✓ | ✓ | ✓ | ✓ |
 | org.manage, members.manage, periods.lock | ✓ | ✓ | | | |
-| accounts.manage, periods.manage, journals.create, journals.reverse, contacts.manage, sales.manage, purchases.manage | ✓ | ✓ | ✓ | | |
+| accounts.manage, periods.manage, journals.create, journals.reverse, contacts.manage, sales.manage, purchases.manage, banking.manage, banking.reconcile | ✓ | ✓ | ✓ | | |
 | journals.post | ✓ | ✓ | ✓ | ✓ | |
 | audit.read | ✓ | ✓ | ✓ | ✓ | |
 

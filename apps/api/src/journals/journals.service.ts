@@ -199,6 +199,7 @@ export class JournalsService {
         const already = await tx.journalEntry.findFirst({ where: { reversesEntryId: id }, select: { id: true } });
         if (already) throw new DomainError('ALREADY_REVERSED', 'Entry has already been reversed', HttpStatus.CONFLICT, { reversalId: already.id });
         if (input.date < fromDbDate(original.date)) throw new DomainError('INVALID_DATE', 'Reversal date cannot be before the original entry date');
+        await this.assertNotBankMatched(tx, id);
         const period = await this.lockPeriodForDate(tx, org.id, input.date);
         if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
 
@@ -260,7 +261,7 @@ export class JournalsService {
     tx: Tx,
     org: OrgInfo,
     actor: Actor,
-    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT'; lines: JournalLineInput[] },
+    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK'; lines: JournalLineInput[] },
   ): Promise<{ id: string; entryNumber: number }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
@@ -298,6 +299,7 @@ export class JournalsService {
     const original = await this.lockEntry(tx, org.id, entryId);
     if (original.source === 'MANUAL' || original.status !== 'POSTED') throw new DomainError('NOT_SYSTEM_ENTRY', 'Only posted system entries can be reversed here');
     if (input.date < fromDbDate(original.date)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the original date');
+    await this.assertNotBankMatched(tx, entryId);
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
     const originalLines = await tx.journalLine.findMany({ where: { entryId }, orderBy: { lineNo: 'asc' } });
@@ -350,6 +352,14 @@ export class JournalsService {
       throw new DomainError('IDEMPOTENCY_KEY_REUSED', 'This Idempotency-Key was already used with a different request', HttpStatus.UNPROCESSABLE_ENTITY);
     }
     return serialize(e);
+  }
+
+  /** An entry matched to a bank statement line must be unmatched before it is reversed or voided. */
+  private async assertNotBankMatched(tx: Tx, entryId: string) {
+    const matched = await tx.bankMatch.count({ where: { removedAt: null, journalLine: { entryId } } });
+    if (matched > 0) {
+      throw new DomainError('BANK_MATCHED', 'This entry is matched to a bank statement line; unmatch it on the bank reconciliation screen first', HttpStatus.CONFLICT);
+    }
   }
 
   private async lockEntry(tx: Tx, orgId: string, id: string) {
@@ -449,6 +459,7 @@ function serialize(e: EntryWithLines) {
     postedAt: e.postedAt?.toISOString() ?? null,
     createdAt: e.createdAt.toISOString(),
     lines: e.lines.map((l) => ({
+      id: l.id,
       lineNo: l.lineNo,
       accountId: l.accountId,
       accountCode: l.account.code,

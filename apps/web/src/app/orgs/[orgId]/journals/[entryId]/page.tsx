@@ -101,8 +101,10 @@ export default function JournalDetailPage() {
       </div>
       {j.source !== 'MANUAL' ? (
         <div className="mt-4">
-          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
-            This entry stays in step with its {j.source === 'DOCUMENT' ? 'document' : 'payment'}. To correct it, void the {j.source === 'DOCUMENT' ? 'document' : 'payment'} instead of reversing this journal.
+          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
+            {j.source === 'BANK'
+              ? 'This entry was posted from a bank statement line. To correct it, unmatch that line on the bank account screen, which reverses this entry.'
+              : `This entry stays in step with its ${j.source === 'DOCUMENT' ? 'document' : 'payment'}. To correct it, void the ${j.source === 'DOCUMENT' ? 'document' : 'payment'} instead of reversing this journal.`}
           </Alert>
         </div>
       ) : null}

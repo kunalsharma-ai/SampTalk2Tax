@@ -1961,9 +1961,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts"
+      ],
+      "notes": "Bank and cash accounts can be reconciled. Other balance-sheet account reconciliations are not built."
     },
     {
       "id": "GL-033",
@@ -4055,8 +4057,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › records a customer receipt from money in",
+        "apps/api/test/banking.e2e.test.ts › matching"
+      ],
       "notes": null
     },
     {
@@ -4458,9 +4463,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › lists bank and cash accounts",
+        "apps/web/src/components/banking/accounts-page.tsx"
+      ],
+      "notes": "Bank and cash accounts are ledger accounts (subtype BANK/CASH)."
     },
     {
       "id": "BANK-002",
@@ -4483,8 +4491,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › statement import",
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -4508,9 +4520,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/src/components/banking/import-page.tsx"
+      ],
+      "notes": "CSV only (comma, semicolon or tab; five date formats; single or split amount columns). OFX, QIF, MT940 and PDF are not supported yet."
     },
     {
       "id": "BANK-004",
@@ -4558,8 +4573,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › reconciliation",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -4583,8 +4601,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › matching",
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -4633,8 +4655,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › suggests and auto-matches only unambiguous pairs",
+        "apps/api/test/banking.e2e.test.ts › records a customer receipt from money in"
+      ],
       "notes": null
     },
     {
@@ -4658,9 +4683,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › matches a ledger line to only one statement line",
+        "apps/api/test/banking.e2e.test.ts › records a customer receipt from money in"
+      ],
+      "notes": "Vendor payments from money-out lines share the tested receipt path."
     },
     {
       "id": "BANK-010",
@@ -4683,8 +4711,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › books bank charges",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -4758,9 +4789,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › previews the figures and explains why it does not reconcile yet",
+        "apps/web/src/components/banking/reconcile-page.tsx"
+      ],
+      "notes": "Uncleared ledger items and unmatched statement lines are listed on the reconciliation screen."
     },
     {
       "id": "BANK-014",
@@ -4783,9 +4817,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/components/banking/accounts-page.tsx"
+      ],
+      "notes": "Ledger balance, lines to review and last reconciled date per account. No live bank balances, thresholds or alerts."
     },
     {
       "id": "BANK-015",
@@ -4808,9 +4844,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › only owners and admins undo a reconciliation, which keeps its record"
+      ],
+      "notes": "Reconciliations are never deleted; undo keeps the record and reason; every step is in the audit trail."
     },
     {
       "id": "BANK-016",
@@ -4858,9 +4896,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/bank.ts",
+        "packages/accounting-engine/test/bank.test.ts"
+      ],
+      "notes": "Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI."
     },
     {
       "id": "BANK-018",
@@ -4883,9 +4924,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts › previews without storing, then imports, and skips lines already imported",
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ],
+      "notes": "Detects lines imported before (fingerprint per account). Does not yet flag duplicate transactions inside the books."
     },
     {
       "id": "BANK-019",
@@ -4958,9 +5003,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/bank.ts › reconciliationIssues",
+        "apps/api/test/banking.e2e.test.ts"
+      ],
+      "notes": "Reconciliation flags when imported lines do not add up to the statement balance (missing or doubled lines). No line-level detection."
     },
     {
       "id": "BANK-022",
@@ -5033,8 +5081,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/components/banking",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -29246,8 +29297,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts",
+        "packages/accounting-engine/test/bank.test.ts"
+      ],
       "notes": null
     },
     {
@@ -30909,8 +30963,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src/components/shell.tsx",
+        "apps/web/src/components/banking"
+      ],
       "notes": null
     },
     {

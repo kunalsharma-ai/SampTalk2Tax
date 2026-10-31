@@ -27,6 +27,7 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
       { href: '/purchases/ageing', label: 'Payables ageing' },
     ],
   },
+  { group: 'Banking', items: [{ href: '/banking', label: 'Bank accounts' }] },
   {
     group: 'Accounting',
     items: [

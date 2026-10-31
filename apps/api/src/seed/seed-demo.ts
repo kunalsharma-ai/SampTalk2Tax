@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { randomBytes } from 'node:crypto';
 import { AppModule } from '../app.module';
 import { AuthService } from '../auth/auth.service';
+import { BankingService } from '../banking/banking.service';
 import { todayIso } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
 import { loadConfig } from '../config';
@@ -177,6 +178,32 @@ async function main() {
     await post(day(28), `Operating expenses ${ym}`, [...lines.map(([accountId, x]) => ({ accountId, debit: x.toFixed(2) })), { accountId: a['1120'], credit: total.toFixed(2) }]);
     count += 1;
   }
+
+  // A SYNTHETIC bank statement for the current month, built from the bank lines in the books,
+  // with the latest one left off (not yet cleared) and two lines the books do not have yet.
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const bankLines = await prisma.journalLine.findMany({
+    where: { orgId: org.id, accountId: a['1120'], entry: { status: 'POSTED', date: { gte: new Date(`${monthStart}T00:00:00Z`) } } },
+    include: { entry: true },
+    orderBy: [{ entry: { date: 'asc' } }, { entry: { entryNumber: 'asc' } }],
+  });
+  const onStatement = bankLines.slice(0, Math.max(0, bankLines.length - 1));
+  const csvDate = (d: Date) => d.toISOString().slice(0, 10);
+  const statement = [
+    'Date,Narration,Ref,Amount',
+    ...onStatement.map((l) => `${csvDate(l.entry.date)},"${(l.entry.memo ?? 'Transfer').replace(/"/g, '')} (synthetic)",${l.entry.reference ?? ''},${new D(l.functionalDebit.toString()).minus(l.functionalCredit.toString()).toFixed(2)}`),
+    `${today},Savings interest credited (synthetic),,412.37`,
+    `${today},SMS alert charges (synthetic),,-59.00`,
+  ].join('\n');
+  const banking = app.get(BankingService);
+  const imported = await banking.importStatement(ledgerOrg, actor, a['1120'], {
+    fileName: 'synthetic-statement.csv',
+    csv: statement,
+    mapping: { date: 0, description: 1, reference: 2, amount: 3, dateFormat: 'YYYY-MM-DD', hasHeader: true },
+    dryRun: false,
+  });
+  const matched = await banking.autoMatch(ledgerOrg, actor, a['1120']);
+  console.log(`  Synthetic bank statement: ${imported.newCount} lines, ${matched.matched} matched automatically`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

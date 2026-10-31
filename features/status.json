@@ -853,6 +853,149 @@
         "apps/web/e2e/sales-flow.test.mjs"
       ],
       "notes": "Rates are tenant-configured; no statutory rates are hard-coded."
+    },
+    "BANK-001": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a lists bank and cash accounts",
+        "apps/web/src/components/banking/accounts-page.tsx"
+      ],
+      "notes": "Bank and cash accounts are ledger accounts (subtype BANK/CASH)."
+    },
+    "BANK-002": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a statement import",
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ]
+    },
+    "BANK-003": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/src/components/banking/import-page.tsx"
+      ],
+      "notes": "CSV only (comma, semicolon or tab; five date formats; single or split amount columns). OFX, QIF, MT940 and PDF are not supported yet."
+    },
+    "BANK-005": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a reconciliation",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ]
+    },
+    "BANK-006": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a matching",
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ]
+    },
+    "BANK-008": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a suggests and auto-matches only unambiguous pairs",
+        "apps/api/test/banking.e2e.test.ts \u203a records a customer receipt from money in"
+      ]
+    },
+    "BANK-009": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a matches a ledger line to only one statement line",
+        "apps/api/test/banking.e2e.test.ts \u203a records a customer receipt from money in"
+      ],
+      "notes": "Vendor payments from money-out lines share the tested receipt path."
+    },
+    "BANK-010": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a books bank charges",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ]
+    },
+    "BANK-013": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a previews the figures and explains why it does not reconcile yet",
+        "apps/web/src/components/banking/reconcile-page.tsx"
+      ],
+      "notes": "Uncleared ledger items and unmatched statement lines are listed on the reconciliation screen."
+    },
+    "BANK-014": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/components/banking/accounts-page.tsx"
+      ],
+      "notes": "Ledger balance, lines to review and last reconciled date per account. No live bank balances, thresholds or alerts."
+    },
+    "BANK-015": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a only owners and admins undo a reconciliation, which keeps its record"
+      ],
+      "notes": "Reconciliations are never deleted; undo keeps the record and reason; every step is in the audit trail."
+    },
+    "BANK-017": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/bank.ts",
+        "packages/accounting-engine/test/bank.test.ts"
+      ],
+      "notes": "Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI."
+    },
+    "BANK-018": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a previews without storing, then imports, and skips lines already imported",
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ],
+      "notes": "Detects lines imported before (fingerprint per account). Does not yet flag duplicate transactions inside the books."
+    },
+    "BANK-021": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/bank.ts \u203a reconciliationIssues",
+        "apps/api/test/banking.e2e.test.ts"
+      ],
+      "notes": "Reconciliation flags when imported lines do not add up to the statement balance (missing or doubled lines). No line-level detection."
+    },
+    "BANK-024": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/components/banking",
+        "apps/web/e2e/banking-flow.test.mjs"
+      ]
+    },
+    "GL-032": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts"
+      ],
+      "notes": "Bank and cash accounts can be reconciled. Other balance-sheet account reconciliations are not built."
+    },
+    "AP-022": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts \u203a records a customer receipt from money in",
+        "apps/api/test/banking.e2e.test.ts \u203a matching"
+      ]
+    },
+    "QA-009": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/banking.e2e.test.ts",
+        "packages/accounting-engine/test/bank.test.ts"
+      ]
+    },
+    "NAV-010": {
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src/components/shell.tsx",
+        "apps/web/src/components/banking"
+      ]
     }
   }
 }

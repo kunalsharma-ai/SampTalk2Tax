@@ -25,7 +25,8 @@ export async function api<T>(path: string, init: { method?: string; body?: Json;
   if (res.status === 204) return undefined as T;
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const issues: string[] = Array.isArray(body.issues) ? body.issues.map((i: unknown) => (typeof i === 'string' ? i : `${(i as { path: string }).path}: ${(i as { message: string }).message}`)) : [];
+    const rawIssues = Array.isArray(body.issues) ? body.issues : Array.isArray(body.details?.issues) ? body.details.issues : null;
+    const issues: string[] = rawIssues ? rawIssues.map((i: unknown) => (typeof i === 'string' ? i : `${(i as { path: string }).path}: ${(i as { message: string }).message}`)) : [];
     throw new ApiError(res.status, body.error ?? 'ERROR', body.message ?? `Request failed (${res.status})`, issues);
   }
   return body as T;

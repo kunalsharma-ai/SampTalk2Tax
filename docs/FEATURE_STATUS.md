@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1226 |
+| Not started | 1207 |
 | Designed | 0 |
-| Implementing | 14 |
-| Implemented | 25 |
-| Tested | 78 |
+| Implementing | 19 |
+| Implemented | 26 |
+| Tested | 91 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,10 +24,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 17 | 27 |
+| General ledger and accounting engine | M1 | 44 | 16 | 28 |
 | Accounts receivable | M2 | 43 | 33 | 10 |
-| Accounts payable | M2 | 36 | 27 | 9 |
-| Banking and reconciliation | M2 | 24 | 24 | 0 |
+| Accounts payable | M2 | 36 | 26 | 10 |
+| Banking and reconciliation | M2 | 24 | 9 | 15 |
 | Global taxation engine | M3 | 54 | 53 | 1 |
 | Payroll and workforce finance | M3 | 34 | 34 | 0 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -61,10 +61,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 22 | 0 |
 | Mobile experience | M8 | 16 | 15 | 1 |
 | Performance and scalability | M9 | 21 | 19 | 2 |
-| Testing and quality assurance | M1 | 31 | 12 | 19 |
+| Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 18 | 0 |
-| Navigation structure | M1 | 48 | 39 | 9 |
+| Navigation structure | M1 | 48 | 38 | 10 |
 | Design system | M1 | 36 | 36 | 0 |
 | Absolute quality rules | All | 20 | 10 | 10 |
 
@@ -242,6 +242,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Journal lines accept free-form dimension key/values (stored as JSON). Dimension masters (cost centers, departments, etc.), validation and reporting by dimension are not done.
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
+
+### GL-032 — Account reconciliation
+
+- Module: General ledger and accounting engine
+- Status: **Implementing**
+- Notes: Bank and cash accounts can be reconciled. Other balance-sheet account reconciliations are not built.
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts
 
 ### GL-037 — Every posted journal must balance
 
@@ -468,6 +476,144 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice
   - apps/web/e2e/sales-flow.test.mjs
+
+### AP-022 — Payment reconciliation
+
+- Module: Accounts payable
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › records a customer receipt from money in
+  - apps/api/test/banking.e2e.test.ts › matching
+
+### BANK-001 — Multiple bank account management
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Bank and cash accounts are ledger accounts (subtype BANK/CASH).
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › lists bank and cash accounts
+  - apps/web/src/components/banking/accounts-page.tsx
+
+### BANK-002 — Bank statement import
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › statement import
+  - packages/accounting-engine/test/bank.test.ts
+  - apps/web/e2e/banking-flow.test.mjs
+
+### BANK-003 — CSV, OFX, QIF and applicable banking formats
+
+- Module: Banking and reconciliation
+- Status: **Implementing**
+- Notes: CSV only (comma, semicolon or tab; five date formats; single or split amount columns). OFX, QIF, MT940 and PDF are not supported yet.
+- Evidence:
+  - packages/accounting-engine/test/bank.test.ts
+  - apps/web/src/components/banking/import-page.tsx
+
+### BANK-005 — Bank reconciliation
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › reconciliation
+  - apps/web/e2e/banking-flow.test.mjs
+
+### BANK-006 — Transaction matching
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › matching
+  - packages/accounting-engine/test/bank.test.ts
+  - apps/web/e2e/banking-flow.test.mjs
+
+### BANK-008 — Deposit matching
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › suggests and auto-matches only unambiguous pairs
+  - apps/api/test/banking.e2e.test.ts › records a customer receipt from money in
+
+### BANK-009 — Payment matching
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Vendor payments from money-out lines share the tested receipt path.
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › matches a ledger line to only one statement line
+  - apps/api/test/banking.e2e.test.ts › records a customer receipt from money in
+
+### BANK-010 — Bank charges
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › books bank charges
+  - apps/web/e2e/banking-flow.test.mjs
+
+### BANK-013 — Unreconciled transaction reporting
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Uncleared ledger items and unmatched statement lines are listed on the reconciliation screen.
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › previews the figures and explains why it does not reconcile yet
+  - apps/web/src/components/banking/reconcile-page.tsx
+
+### BANK-014 — Bank balance monitoring
+
+- Module: Banking and reconciliation
+- Status: **Implementing**
+- Notes: Ledger balance, lines to review and last reconciled date per account. No live bank balances, thresholds or alerts.
+- Evidence:
+  - apps/web/src/components/banking/accounts-page.tsx
+
+### BANK-015 — Reconciliation audit history
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Reconciliations are never deleted; undo keeps the record and reason; every step is in the audit trail.
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › only owners and admins undo a reconciliation, which keeps its record
+
+### BANK-017 — Adaptive matching suggestions
+
+- Module: Banking and reconciliation
+- Status: **Implementing**
+- Notes: Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI.
+- Evidence:
+  - packages/accounting-engine/src/bank.ts
+  - packages/accounting-engine/test/bank.test.ts
+
+### BANK-018 — Duplicate transaction detection
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Detects lines imported before (fingerprint per account). Does not yet flag duplicate transactions inside the books.
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts › previews without storing, then imports, and skips lines already imported
+  - packages/accounting-engine/test/bank.test.ts
+  - apps/web/e2e/banking-flow.test.mjs
+
+### BANK-021 — Missing transaction identification
+
+- Module: Banking and reconciliation
+- Status: **Implementing**
+- Notes: Reconciliation flags when imported lines do not add up to the statement balance (missing or doubled lines). No line-level detection.
+- Evidence:
+  - packages/accounting-engine/src/bank.ts › reconciliationIssues
+  - apps/api/test/banking.e2e.test.ts
+
+### BANK-024 — Provide a dedicated banking reconciliation workspace
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Evidence:
+  - apps/web/src/components/banking
+  - apps/web/e2e/banking-flow.test.mjs
 
 ### TAX-002 — Do not hard-code global tax rates
 
@@ -795,6 +941,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/journal.test.ts
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
 
+### QA-009 — Reconciliation tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/banking.e2e.test.ts
+  - packages/accounting-engine/test/bank.test.ts
+
 ### QA-011 — Financial reporting tests
 
 - Module: Testing and quality assurance
@@ -927,6 +1081,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Implemented**
 - Evidence:
   - apps/web/src
+
+### NAV-010 — Reconciliation
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src/components/shell.tsx
+  - apps/web/src/components/banking
 
 ### NAV-029 — Reports
 
