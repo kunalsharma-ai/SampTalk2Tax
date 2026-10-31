@@ -1,0 +1,498 @@
+{
+  "_comment": "Status and verification evidence per feature ID. Anything not listed is 'Not started'. Regenerate docs with: pnpm features:generate",
+  "features": {
+    "AUDIT-004": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a audit trail",
+        "GET /v1/orgs/:orgId/audit-events, /verify"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Append-only, SHA-256 hash-chained per organization."
+    },
+    "AUDIT-005": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "DEMO-013": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/seed/seed-demo.ts"
+      ],
+      "notes": "One synthetic Indian trading company with ~7 months of journals. The other demo companies and record types are not done."
+    },
+    "DEMO-021": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/seed/seed-demo.ts"
+      ],
+      "notes": "Demo org is named \"(SYNTHETIC DATA)\", flagged is_demo, and the seed refuses to run when NODE_ENV=production."
+    },
+    "GL-001": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts"
+      ],
+      "notes": "Foundation in place (ledger, journals, periods, reports). Most GL capabilities below are still to do."
+    },
+    "GL-002": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/test/journal.test.ts",
+        "apps/api/test/ledger.e2e.test.ts \u203a journal posting"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-003": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a chart of accounts rules",
+        "POST/PATCH /v1/orgs/:orgId/accounts"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. A generic SMB template is applied on onboarding; statutory charts per country are not done."
+    },
+    "GL-004": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a validates hierarchy, subtype and uniqueness"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-005": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a validates hierarchy, subtype and uniqueness"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-006": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a journal posting",
+        "POST /v1/orgs/:orgId/journals (draft, edit, delete, post)"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-008": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. ADJUSTING is a journal type; dedicated adjustment workflow (e.g. auto-reverse next period) not done."
+    },
+    "GL-009": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a reverses a posted entry exactly once and nets it to zero",
+        "packages/accounting-engine/test/journal.test.ts \u203a builds a reversal that nets the original to zero"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-010": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. OPENING is a journal type; an opening-balance import wizard is not done."
+    },
+    "GL-013": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/test/reports.test.ts"
+      ],
+      "notes": "The ledger records accruals (AR/AP based entries). Accrual vs cash reporting basis switch is not done."
+    },
+    "GL-015": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a creates further fiscal years",
+        "packages/accounting-engine/test/periods.test.ts"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-016": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/test/periods.test.ts",
+        "apps/api/test/ledger.e2e.test.ts \u203a period locks"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-017": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/test/periods.test.ts \u203a generates an April-March fiscal year"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Monthly calendars with any start month; 4-4-5 and custom calendars not done."
+    },
+    "GL-018": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a blocks posting into a locked period and allows it again after unlock",
+        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-019": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions",
+        "apps/api/test/ledger.e2e.test.ts \u203a journal posting"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Draft \u2192 post with separate permissions; configurable approval policies not done."
+    },
+    "GL-020": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a audit trail"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-021": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a financial reports",
+        "packages/accounting-engine/test/reports.test.ts"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-022": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a builds an account ledger with opening and running balances"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "GL-030": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts"
+      ],
+      "notes": "Journal lines accept free-form dimension key/values (stored as JSON). Dimension masters (cost centers, departments, etc.), validation and reporting by dimension are not done."
+    },
+    "GL-037": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/journal.test.ts \u203a rejects an unbalanced entry",
+        "apps/api/test/ledger.e2e.test.ts \u203a refuses an unbalanced posted entry even if inserted directly in SQL",
+        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers) (deferred constraint trigger)"
+      ]
+    },
+    "GL-038": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/money.test.ts",
+        "decimal.js with 40-digit precision; NUMERIC(24,6) columns"
+      ]
+    },
+    "GL-039": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/money.test.ts \u203a refuses JS numbers",
+        "apps/api/test/ledger.e2e.test.ts \u203a JSON numbers are refused"
+      ]
+    },
+    "GL-040": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a converts foreign-currency lines to the functional currency",
+        "packages/accounting-engine/test/journal.test.ts \u203a converts foreign-currency lines"
+      ]
+    },
+    "GL-041": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a blocks any direct change to posted entries at the database level",
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+      ]
+    },
+    "GL-042": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a reverses a posted entry exactly once"
+      ]
+    },
+    "GL-043": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a idempotency and concurrency (retries, concurrent retries, 25 concurrent posts)"
+      ]
+    },
+    "GL-044": {
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)",
+        "apps/api/test/ledger.e2e.test.ts \u203a immutability and reversal"
+      ]
+    },
+    "I18N-002": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a converts foreign-currency lines"
+      ],
+      "notes": "Transaction currency + rate per line, functional currency per org. Rate tables, revaluation and multi-currency reporting are not done."
+    },
+    "I18N-010": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/test/periods.test.ts"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "PERF-017": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a idempotency and concurrency"
+      ],
+      "notes": "Correctness under concurrency is tested; throughput has not been benchmarked."
+    },
+    "PERF-018": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a tenant isolation"
+      ]
+    },
+    "QA-001": {
+      "status": "Tested",
+      "evidence": [
+        "pnpm test runs unit + integration suites",
+        ".github/workflows/ci.yml"
+      ]
+    },
+    "QA-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/journal.test.ts",
+        "packages/accounting-engine/test/reports.test.ts",
+        "packages/accounting-engine/test/money.test.ts",
+        "packages/accounting-engine/test/periods.test.ts",
+        "packages/security/test/security.test.ts"
+      ]
+    },
+    "QA-003": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts",
+        "apps/api/test/auth-tenancy.e2e.test.ts"
+      ],
+      "notes": "Run against a real PostgreSQL database."
+    },
+    "QA-004": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts",
+        "apps/api/test/auth-tenancy.e2e.test.ts"
+      ]
+    },
+    "QA-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/reports.test.ts",
+        "apps/api/test/ledger.e2e.test.ts"
+      ]
+    },
+    "QA-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/journal.test.ts",
+        "apps/api/test/ledger.e2e.test.ts \u203a converts foreign-currency lines"
+      ],
+      "notes": "Conversion and precision only; revaluation not built."
+    },
+    "QA-011": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+      ]
+    },
+    "QA-012": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a tenant isolation"
+      ]
+    },
+    "QA-021": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/journal.test.ts",
+        "apps/api/test/ledger.e2e.test.ts"
+      ]
+    },
+    "QA-022": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a reverses a posted entry exactly once"
+      ]
+    },
+    "QA-023": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a period locks"
+      ]
+    },
+    "QA-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/journal.test.ts",
+        "packages/accounting-engine/test/money.test.ts"
+      ]
+    },
+    "QA-025": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a financial reports"
+      ]
+    },
+    "QA-026": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a produce a balanced trial balance and statements that tie out"
+      ]
+    },
+    "QA-027": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a idempotency and concurrency"
+      ]
+    },
+    "QA-028": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a assigns gap-free unique numbers under concurrent posting; allows only one of many concurrent reversals"
+      ]
+    },
+    "RULE-009": {
+      "status": "Tested",
+      "evidence": [
+        ".env.example",
+        ".gitignore"
+      ]
+    },
+    "RULE-010": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts"
+      ]
+    },
+    "RULE-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/money.test.ts"
+      ]
+    },
+    "RULE-013": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts"
+      ]
+    },
+    "RULE-014": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts"
+      ]
+    },
+    "RULE-015": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts",
+        "packages/accounting-engine/test/journal.test.ts"
+      ]
+    },
+    "RULE-016": {
+      "status": "Tested",
+      "evidence": [
+        "docs/FEATURE_STATUS.md",
+        "docs/KNOWN_LIMITATIONS.md"
+      ]
+    },
+    "SEC-001": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a tenant isolation",
+        "Composite (id, org_id) foreign keys in schema"
+      ],
+      "notes": "Application-level scoping plus database foreign keys. PostgreSQL row-level security is not enabled yet (see KNOWN_LIMITATIONS)."
+    },
+    "SEC-002": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+      ]
+    },
+    "SEC-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/security/test/security.test.ts",
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+      ],
+      "notes": "Fixed roles: OWNER, ADMIN, ACCOUNTANT, APPROVER, VIEWER. Custom roles not done."
+    },
+    "SEC-008": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/auth/tokens.service.ts"
+      ],
+      "notes": "Short-lived JWT access tokens only. Refresh tokens, revocation and session listing are not done."
+    },
+    "SEC-012": {
+      "status": "Implementing",
+      "evidence": [
+        ".env.example",
+        "apps/api/src/config.ts"
+      ],
+      "notes": "Secrets come from environment variables and are validated at startup; no secrets in code. A secrets manager integration is not done."
+    },
+    "SEC-014": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a audit trail"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "SEC-015": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a authentication"
+      ],
+      "notes": "Email + password (scrypt) and HS256 JWT bearer tokens."
+    },
+    "SEC-017": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts \u203a rejects unbalanced, malformed and header-account entries",
+        "zod schemas on every endpoint"
+      ]
+    },
+    "UX-002": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a organization onboarding"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "UX-007": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a organization onboarding"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "UX-008": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a organization onboarding"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+    },
+    "UX-015": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+      ],
+      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Existing users can be added with a role; email invitations are not done."
+    }
+  }
+}
