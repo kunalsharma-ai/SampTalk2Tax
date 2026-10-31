@@ -90,8 +90,9 @@ describe('policies on tenant tables', () => {
       WHERE n.nspname = 'public' AND c.relkind = 'r' AND EXISTS (SELECT 1 FROM information_schema.columns i WHERE i.table_name = c.relname AND i.column_name = 'org_id')`;
     expect(rows.length).toBeGreaterThanOrEqual(22);
     for (const r of rows) expect([r.relname, r.relrowsecurity, r.relforcerowsecurity]).toEqual([r.relname, true, true]);
-    const owner = await ctx.prisma.$queryRaw<{ bypass: boolean }[]>`SELECT rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user`;
-    expect(owner[0].bypass).toBe(false);
+    // A superuser or BYPASSRLS role would skip every policy (the API warns, and refuses in production).
+    const owner = await ctx.prisma.$queryRaw<{ superuser: boolean; bypass: boolean }[]>`SELECT rolsuper AS superuser, rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user`;
+    expect(owner[0]).toEqual({ superuser: false, bypass: false });
   });
 });
 

@@ -61,6 +61,7 @@ The EMPLOYEE role has only `org.read` and `expenses.submit`.
 * A statement sent on the root client from inside a transaction callback (instead of on `tx`) gets no settings and sees no tenant rows, so that mistake fails closed.
 * Prisma queries are lazy: one created inside a request but first awaited outside it would run without the request's tenant. In the server that sees nothing (fail closed); code outside requests must opt in to system access explicitly.
 * Creating an organisation points its transaction at the new id before inserting it.
+* The API must connect as an ordinary role: a superuser or a role with `BYPASSRLS` skips every policy. The API checks its role at start-up, refuses to start in production with such a role, and warns otherwise. CI creates a non-superuser `talk2tax` role for the same reason.
 * Data migrations that update tenant rows must run `SELECT set_config('t2t.bypass', 'on', true)` first; schema changes are not affected.
 * Cost: each statement outside a transaction becomes a short transaction with one extra statement.
 

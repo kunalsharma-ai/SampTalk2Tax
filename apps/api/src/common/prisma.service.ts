@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
 import { currentTenantContext, TenantContext, tenantStorage } from './tenant-context';
 
@@ -65,7 +65,7 @@ export function createTenantAwarePrisma(base: PrismaService): PrismaService {
   return new Proxy(extended as object, {
     get(target, prop, receiver) {
       if (prop === '$transaction') return transaction;
-      if (prop === 'onModuleInit') return () => base.$connect();
+      if (prop === 'onModuleInit') return () => connectAndCheckRole(base);
       if (prop === 'onModuleDestroy') return () => base.$disconnect();
       return Reflect.get(target, prop, receiver);
     },
@@ -91,6 +91,21 @@ export async function withSystemAccess<T>(tx: Tx, fn: () => Promise<T>): Promise
   } finally {
     const ctx = currentTenantContext();
     await tx.$executeRaw`SELECT set_config('t2t.bypass', ${ctx.bypass ? 'on' : ''}, true)`;
+  }
+}
+
+/**
+ * A superuser or BYPASSRLS role ignores row-level security entirely. Refuse to start in
+ * production with such a role; warn elsewhere.
+ */
+async function connectAndCheckRole(base: PrismaService): Promise<void> {
+  await base.$connect();
+  const [role] = await base.$queryRaw<{ name: string; superuser: boolean; bypass: boolean }[]>`
+    SELECT rolname AS name, rolsuper AS superuser, rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user`;
+  if (role && (role.superuser || role.bypass)) {
+    const message = `Database role "${role.name}" is a superuser or has BYPASSRLS, so row-level security does not apply. Connect as an ordinary role.`;
+    if (process.env.NODE_ENV === 'production') throw new Error(message);
+    new Logger('Database').warn(message);
   }
 }
 
