@@ -117,6 +117,9 @@ A reconciliation checks three things: the imported lines from the opening balanc
 ### ADR-012 Approvals are enforced at posting, in the database
 *Decision:* an approval rule is checked by a trigger when a document becomes POSTED, and an approval is valid only for the exact total approved; any edit cancels it. *Why:* the control has to hold for every code path, including future automation and AI agents, not only for the screen that shows the button. *Cost:* single-step rules only for now; multi-level chains will extend the same request table.
 
+### ADR-013 Expense claims are their own record, not bills
+*Decision:* an expense claim is a separate table with its claimant (a user, not a contact) and posts to its own control account, Employee Reimbursements Payable, which manual and bank journals cannot touch. *Why:* employees are not vendors; keeping them out of payables keeps vendor ageing and statements clean, lets an EMPLOYEE role see only its own claims, and makes "owed to staff" a single balance that reconciles to approved, unpaid claims. *Cost:* some logic parallels bills (lines, tax, posting); shared calculations live in the accounting engine.
+
 ## Planned components (not built yet)
 
 * `packages/ai-orchestration` — model-agnostic gateway (Anthropic, OpenAI, Gemini, self-hosted), deterministic mock adapter for local use, tool permissioning, prompt versioning, cost tracking.

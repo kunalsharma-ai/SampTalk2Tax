@@ -17,6 +17,8 @@ enum Role {
   ACCOUNTANT
   APPROVER
   VIEWER
+  /// Submits and tracks their own expense claims; sees nothing else.
+  EMPLOYEE
 }
 
 enum AccountType {
@@ -43,6 +45,7 @@ enum JournalSource {
   DOCUMENT
   PAYMENT
   BANK
+  EXPENSE
 }
 
 enum StatementLineStatus {
@@ -62,6 +65,7 @@ enum AttachmentEntity {
   PAYMENT
   JOURNAL_ENTRY
   BANK_STATEMENT_LINE
+  EXPENSE_CLAIM
 }
 
 enum ApprovalStatus {
@@ -132,6 +136,8 @@ model Organization {
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
   arAccountId          String?               @map("ar_account_id") @db.Uuid
   apAccountId          String?               @map("ap_account_id") @db.Uuid
+  /// Employee reimbursements payable. Only expense claims post to it (DB trigger).
+  claimsAccountId      String?               @map("claims_account_id") @db.Uuid
   createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships          Membership[]
@@ -151,6 +157,7 @@ model Organization {
   attachments          Attachment[]
   approvalPolicies     ApprovalPolicy[]
   approvalRequests     ApprovalRequest[]
+  expenseClaims        ExpenseClaim[]
 
   @@map("organizations")
 }
@@ -187,6 +194,7 @@ model Account {
   children         Account[]             @relation("AccountHierarchy")
   lines            JournalLine[]
   documentLines    DocumentLine[]
+  expenseLines     ExpenseClaimLine[]
   paymentsViaBank  Payment[]
   statementImports BankStatementImport[]
   statementLines   BankStatementLine[]
@@ -344,6 +352,8 @@ model TaxRate {
   createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   org               Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
   lines             DocumentLine[]
+
+  expenseLines ExpenseClaimLine[]
 
   @@unique([orgId, name])
   @@unique([id, orgId])
@@ -626,4 +636,73 @@ model ApprovalRequest {
   @@index([orgId, status])
   @@index([documentId])
   @@map("approval_requests")
+}
+
+enum ExpenseClaimStatus {
+  DRAFT
+  SUBMITTED
+  REJECTED
+  APPROVED
+  REIMBURSED
+  VOID
+}
+
+/// An employee's request to be paid back for money they spent. Approving posts it; reimbursing pays it.
+model ExpenseClaim {
+  id                          String             @id @default(uuid()) @db.Uuid
+  orgId                       String             @map("org_id") @db.Uuid
+  number                      String
+  claimantId                  String             @map("claimant_id") @db.Uuid
+  title                       String
+  currency                    String             @db.Char(3)
+  status                      ExpenseClaimStatus @default(DRAFT)
+  netTotal                    Decimal            @map("net_total") @db.Decimal(24, 6)
+  taxTotal                    Decimal            @map("tax_total") @db.Decimal(24, 6)
+  total                       Decimal            @db.Decimal(24, 6)
+  submittedAt                 DateTime?          @map("submitted_at") @db.Timestamptz(6)
+  decidedById                 String?            @map("decided_by_id") @db.Uuid
+  decidedAt                   DateTime?          @map("decided_at") @db.Timestamptz(6)
+  decisionNote                String?            @map("decision_note")
+  journalEntryId              String?            @unique @map("journal_entry_id") @db.Uuid
+  postingDate                 DateTime?          @map("posting_date") @db.Date
+  reimbursementJournalEntryId String?            @unique @map("reimbursement_journal_entry_id") @db.Uuid
+  reimbursedOn                DateTime?          @map("reimbursed_on") @db.Date
+  reimbursedById              String?            @map("reimbursed_by_id") @db.Uuid
+  bankAccountId               String?            @map("bank_account_id") @db.Uuid
+  reimbursementReference      String?            @map("reimbursement_reference")
+  voidJournalEntryId          String?            @unique @map("void_journal_entry_id") @db.Uuid
+  voidDate                    DateTime?          @map("void_date") @db.Date
+  voidReason                  String?            @map("void_reason")
+  createdAt                   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                         Organization       @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines                       ExpenseClaimLine[]
+
+  @@unique([id, orgId])
+  @@unique([orgId, number])
+  @@index([orgId, status])
+  @@index([orgId, claimantId])
+  @@map("expense_claims")
+}
+
+model ExpenseClaimLine {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  claimId     String       @map("claim_id") @db.Uuid
+  lineNo      Int          @map("line_no")
+  date        DateTime     @db.Date
+  accountId   String       @map("account_id") @db.Uuid
+  merchant    String?
+  description String?
+  amount      Decimal      @db.Decimal(24, 6)
+  taxRateId   String?      @map("tax_rate_id") @db.Uuid
+  taxRate     Decimal      @default(0) @map("tax_rate") @db.Decimal(9, 6)
+  netAmount   Decimal      @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal      @map("tax_amount") @db.Decimal(24, 6)
+  claim       ExpenseClaim @relation(fields: [claimId, orgId], references: [id, orgId], onDelete: Cascade)
+  account     Account      @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+  tax         TaxRate?     @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([claimId, lineNo])
+  @@map("expense_claim_lines")
 }

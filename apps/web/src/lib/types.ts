@@ -1,4 +1,4 @@
-export type Role = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'APPROVER' | 'VIEWER';
+export type Role = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'APPROVER' | 'VIEWER' | 'EMPLOYEE';
 export type AccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
 
 export interface Org {
@@ -11,6 +11,7 @@ export interface Org {
   isDemo: boolean;
   arAccountId: string | null;
   apAccountId: string | null;
+  claimsAccountId: string | null;
   role: Role;
 }
 
@@ -57,7 +58,7 @@ export interface Journal {
   displayNumber: string | null;
   date: string;
   type: string;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE';
   status: 'DRAFT' | 'POSTED';
   memo: string | null;
   reference: string | null;
@@ -74,9 +75,10 @@ export interface Journal {
 export const PERMS: Record<Role, Set<string>> = {
   OWNER: new Set(['*']),
   ADMIN: new Set(['*']),
-  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile']),
-  APPROVER: new Set(['journals.post', 'audit.read', 'approvals.decide']),
+  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse']),
+  APPROVER: new Set(['journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set([]),
+  EMPLOYEE: new Set(['expenses.submit']),
 };
 
 /** UI hint only: hides actions the role cannot perform. The API enforces the real check. */
@@ -256,7 +258,7 @@ export interface LedgerLink {
   date: string;
   memo: string | null;
   reference: string | null;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE';
   amount: string;
   payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
 }
@@ -331,7 +333,7 @@ export interface Reconciliation {
   lines: number;
 }
 
-export type AttachmentEntity = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE';
+export type AttachmentEntity = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM';
 export interface Attachment {
   id: string;
   fileName: string;
@@ -383,4 +385,70 @@ export interface ApproveResult {
   approval: ApprovalRequest;
   posted: boolean;
   postError: { error: string; message: string } | null;
+}
+
+export type ExpenseClaimStatus = 'DRAFT' | 'SUBMITTED' | 'REJECTED' | 'APPROVED' | 'REIMBURSED' | 'VOID';
+export interface ExpenseOptions {
+  currency: string;
+  accounts: { id: string; code: string; name: string }[];
+  taxRates: { id: string; name: string; rate: string }[];
+}
+export interface ExpenseClaimSummary {
+  id: string;
+  number: string;
+  title: string;
+  status: ExpenseClaimStatus;
+  claimant: string | null;
+  claimantId: string;
+  total: string;
+  lineCount: number;
+  submittedAt: string | null;
+  reimbursedOn: string | null;
+  canApprove: boolean;
+}
+export interface ExpenseClaimLine {
+  lineNo: number;
+  date: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  merchant: string | null;
+  description: string | null;
+  amount: string;
+  taxRateId: string | null;
+  taxName: string | null;
+  taxRate: string;
+  netAmount: string;
+  taxAmount: string;
+  possibleDuplicateOf: string[];
+}
+export interface ExpenseClaim {
+  id: string;
+  number: string;
+  title: string;
+  status: ExpenseClaimStatus;
+  currency: string;
+  claimantId: string;
+  claimant: string | null;
+  netTotal: string;
+  taxTotal: string;
+  total: string;
+  submittedAt: string | null;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  journalEntryId: string | null;
+  postingDate: string | null;
+  reimbursementJournalEntryId: string | null;
+  reimbursedOn: string | null;
+  reimbursedBy: string | null;
+  reimbursementReference: string | null;
+  bankAccount: string | null;
+  voidJournalEntryId: string | null;
+  voidDate: string | null;
+  voidReason: string | null;
+  createdAt: string;
+  receiptCount: number;
+  lines: ExpenseClaimLine[];
+  actions: { edit: boolean; submit: boolean; withdraw: boolean; delete: boolean; decide: boolean; reimburse: boolean; void: boolean; attach: boolean };
 }

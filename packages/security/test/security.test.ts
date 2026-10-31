@@ -33,6 +33,15 @@ describe('permissions', () => {
     expect(hasPermission('ACCOUNTANT', 'approvals.decide')).toBe(false);
     expect(hasPermission('VIEWER', 'approvals.decide')).toBe(false);
   });
+  it('lets employees claim expenses and nothing else', () => {
+    expect(hasPermission('EMPLOYEE', 'expenses.submit')).toBe(true);
+    expect(hasPermission('EMPLOYEE', 'expenses.read')).toBe(false);
+    expect(hasPermission('EMPLOYEE', 'reports.read')).toBe(false);
+    expect(hasPermission('EMPLOYEE', 'accounts.read')).toBe(false);
+    expect(hasPermission('ACCOUNTANT', 'expenses.reimburse')).toBe(true);
+    expect(hasPermission('APPROVER', 'expenses.reimburse')).toBe(false);
+    expect(hasPermission('VIEWER', 'expenses.submit')).toBe(false);
+  });
   it('restricts role assignment', () => {
     expect(canAssignRole('ADMIN', 'OWNER')).toBe(false);
     expect(canAssignRole('ADMIN', 'ACCOUNTANT')).toBe(true);

@@ -40,6 +40,14 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Approvals are single-step: one approver per document, one rule per document type with a minimum total. No multi-level chains, approval by department or vendor, escalations, delegation or notifications. Payments and manual journals have no approval rules yet.
 * An approval is tied to the exact total; any edit to the draft cancels it. A changed tax rate that alters the total also needs a new approval.
 
+## Expense claims (M2, slice 4)
+* Claims are in the organisation's currency only; no foreign-currency receipts, mileage, per diem or travel bookings.
+* No expense policies (limits per category, receipt required above an amount); missing receipts and possible duplicates are warnings, not blocks. Duplicate detection compares date and amount only.
+* Categories are the organisation's expense accounts. Approval is single-step by anyone with approvals.decide other than the claimant; there is no manager hierarchy or department routing.
+* Reimbursement is one claim at a time; no batch payouts, bank payment files or payroll integration. A reimbursed claim cannot be voided.
+* No OCR: amounts are typed in, the receipt is attached as evidence. No corporate card feeds.
+* Employees are added as members of an organisation with the EMPLOYEE role; there are no email invitations yet.
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

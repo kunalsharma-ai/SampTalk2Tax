@@ -27,6 +27,7 @@ export const GENERIC_SMB_COA: readonly CoaTemplateAccount[] = Object.freeze([
   { code: '1520', name: 'Accumulated Depreciation', type: 'ASSET', subtype: 'ACCUMULATED_DEPRECIATION', parentCode: '1500', isPostable: true },
   { code: '2000', name: 'Liabilities', type: 'LIABILITY', isPostable: false },
   { code: '2100', name: 'Accounts Payable', type: 'LIABILITY', subtype: 'ACCOUNTS_PAYABLE', parentCode: '2000', isPostable: true },
+  { code: '2250', name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentCode: '2000', isPostable: true },
   { code: '2150', name: 'Credit Card Payable', type: 'LIABILITY', subtype: 'CREDIT_CARD', parentCode: '2000', isPostable: true },
   { code: '2200', name: 'Accrued Liabilities', type: 'LIABILITY', subtype: 'ACCRUED_LIABILITY', parentCode: '2000', isPostable: true },
   { code: '2300', name: 'Output Tax Payable', type: 'LIABILITY', subtype: 'TAX_PAYABLE', parentCode: '2000', isPostable: true },

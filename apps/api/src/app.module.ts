@@ -14,6 +14,8 @@ import { AuthGuard } from './auth/guards';
 import { TokensService } from './auth/tokens.service';
 import { BankingController } from './banking/banking.controller';
 import { BankingService } from './banking/banking.service';
+import { ExpensesController } from './expenses/expenses.controller';
+import { ExpensesService } from './expenses/expenses.service';
 import { ErrorFilter } from './common/errors';
 import { ContactsController } from './contacts/contacts.controller';
 import { ContactsService } from './contacts/contacts.service';
@@ -59,6 +61,7 @@ export class AppModule {
         BankingController,
         AttachmentsController,
         ApprovalsController,
+        ExpensesController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -78,6 +81,7 @@ export class AppModule {
         BankingService,
         AttachmentsService,
         ApprovalsService,
+        ExpensesService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: ErrorFilter },
       ],

@@ -51,7 +51,7 @@ export class TaxRatesService {
     const found = await tx.account.findMany({ where: { orgId, id: { in: ids }, isPostable: true, isActive: true } });
     if (found.length !== new Set(ids).size) throw new DomainError('INVALID_ACCOUNT', 'Tax accounts must be active, postable accounts of this organisation');
     const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
-    if (ids.some((x) => x === org.arAccountId || x === org.apAccountId)) throw new DomainError('INVALID_ACCOUNT', 'A control account cannot hold tax');
+    if (ids.some((x) => x === org.arAccountId || x === org.apAccountId || x === org.claimsAccountId)) throw new DomainError('INVALID_ACCOUNT', 'A control account cannot hold tax');
   }
 }
 

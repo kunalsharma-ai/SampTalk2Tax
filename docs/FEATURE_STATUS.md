@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1193 |
+| Not started | 1183 |
 | Designed | 0 |
-| Implementing | 25 |
-| Implemented | 27 |
-| Tested | 98 |
+| Implementing | 29 |
+| Implemented | 30 |
+| Tested | 101 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -29,9 +29,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
 | Global taxation engine | M3 | 54 | 53 | 1 |
-| Payroll and workforce finance | M3 | 34 | 34 | 0 |
+| Payroll and workforce finance | M3 | 34 | 33 | 1 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 27 | 0 |
+| Expense management | M2 | 27 | 19 | 8 |
 | Treasury management | M6 | 28 | 28 | 0 |
 | Financial planning and analysis | M4 | 35 | 35 | 0 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
@@ -59,7 +59,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
 | Platform super admin | M9 | 22 | 22 | 0 |
-| Mobile experience | M8 | 16 | 15 | 1 |
+| Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
@@ -634,6 +634,83 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/tax-rates
   - apps/web/e2e/sales-flow.test.mjs
 
+### PAY-009 — Reimbursements
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: Expense reimbursements only; no payroll.
+- Evidence:
+  - apps/api/test/expenses.e2e.test.ts
+
+### EXP-002 — Employee expense submissions
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Employees (new EMPLOYEE role) and other staff create, edit, submit and withdraw their own claims; tax-inclusive amounts with tax split out.
+- Evidence:
+  - apps/api/test/expenses.e2e.test.ts
+  - apps/web/e2e/expenses-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/expenses
+
+### EXP-003 — Mobile receipt capture
+
+- Module: Expense management
+- Status: **Implementing**
+- Notes: Receipts (photo or PDF) upload from the browser, including on a phone; there is no native mobile app or camera capture flow.
+- Evidence:
+  - apps/web/e2e/expenses-flow.test.mjs
+
+### EXP-005 — Expense categories
+
+- Module: Expense management
+- Status: **Implemented**
+- Notes: Categories are the organisation's active expense accounts; no separate category list or per-category limits.
+- Evidence:
+  - apps/api/src/expenses/expenses.service.ts › options
+
+### EXP-009 — Reimbursements
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: One claim at a time, recorded from a bank or cash account (Dr employee reimbursements payable / Cr bank). No batch payouts or bank file generation.
+- Evidence:
+  - apps/api/test/expenses.e2e.test.ts › is reimbursed from a bank account, which clears what is owed
+  - apps/web/e2e/expenses-flow.test.mjs
+
+### EXP-010 — Expense approval workflows
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Single-step approval by anyone with approvals.decide other than the claimant (service and database trigger); approval posts the expense.
+- Evidence:
+  - apps/api/test/expenses.e2e.test.ts
+  - apps/web/e2e/expenses-flow.test.mjs
+
+### EXP-017 — Expense reporting
+
+- Module: Expense management
+- Status: **Implementing**
+- Notes: Totals by status for a person or the organisation; no expense reports by category or period yet beyond the general ledger.
+- Evidence:
+  - GET /v1/orgs/:orgId/expense-claims (summary by status)
+
+### EXP-018 — Duplicate expense detection
+
+- Module: Expense management
+- Status: **Implemented**
+- Notes: Warns when another live claim by the same person has a line with the same date and amount. Does not block; no receipt-image comparison.
+- Evidence:
+  - packages/accounting-engine/test/expenses.test.ts
+  - apps/api/test/expenses.e2e.test.ts › flags a receipt that looks claimed twice
+
+### EXP-021 — Missing receipt detection
+
+- Module: Expense management
+- Status: **Implemented**
+- Notes: Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy.
+- Evidence:
+  - apps/web/src/components/expenses/claim-detail.tsx
+
 ### WFLOW-006 — Approval workflows
 
 - Module: Autonomous financial workflows
@@ -980,6 +1057,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Layouts are responsive and checked at phone width; no dedicated mobile navigation pattern yet.
 - Evidence:
   - apps/web/src
+
+### MOB-007 — Approval management
+
+- Module: Mobile experience
+- Status: **Implementing**
+- Notes: Approvals work in the responsive web app at phone width; no mobile app.
+- Evidence:
+  - apps/web/src/components/expenses/claims-list.tsx
 
 ### PERF-017 — Financial posting with transactional consistency
 

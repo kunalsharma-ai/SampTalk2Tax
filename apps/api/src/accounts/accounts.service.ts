@@ -78,8 +78,8 @@ export class AccountsService {
       const before = await tx.account.findFirst({ where: { id, orgId } });
       if (!before) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Account not found' });
       const lineCount = await tx.journalLine.count({ where: { orgId, accountId: id } });
-      const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { arAccountId: true, apAccountId: true } });
-      if ((id === org.arAccountId || id === org.apAccountId) && (input.isActive === false || input.isPostable === false)) {
+      const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
+      if ((id === org.arAccountId || id === org.apAccountId || id === org.claimsAccountId) && (input.isActive === false || input.isPostable === false)) {
         throw new ConflictException({ error: 'CONTROL_ACCOUNT', message: 'The receivables and payables control accounts must stay active and postable' });
       }
 

@@ -12,8 +12,9 @@ const ROLE_HELP: Record<Role, string> = {
   OWNER: 'Everything, including granting owner',
   ADMIN: 'Everything except granting owner',
   ACCOUNTANT: 'Accounts, journals, reversals, reports, audit',
-  APPROVER: 'Post drafts, read reports and audit',
+  APPROVER: 'Approve and post drafts and expense claims, read reports and audit',
   VIEWER: 'Read-only',
+  EMPLOYEE: 'Only their own expense claims; sees nothing of the books',
 };
 
 export default function MembersPage() {

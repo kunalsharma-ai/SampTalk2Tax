@@ -13,6 +13,7 @@ import { D } from '@talk2tax/accounting-engine';
 import { ContactsService } from '../contacts/contacts.service';
 import { JournalsService } from '../journals/journals.service';
 import { DocumentsService } from '../ledgers/documents.service';
+import { ExpensesService } from '../expenses/expenses.service';
 import { TaxRatesService } from '../tax-rates/tax-rates.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 
@@ -81,7 +82,7 @@ async function main() {
   // receivables and payables ledgers tie to their control accounts.
   const contacts = app.get(ContactsService);
   const docs = app.get(DocumentsService);
-  const ledgerOrg = { id: org.id, role: 'OWNER' as const, functionalCurrency: 'INR' };
+  const ledgerOrg = { id: org.id, role: 'OWNER' as const, functionalCurrency: 'INR', fiscalYearStartMonth: 4 };
   const taxRate = await app.get(TaxRatesService).create(org.id, actor, { name: 'Sample tax 18% (synthetic)', rate: '18', salesAccountId: a['2300'], purchaseAccountId: a['1450'] });
   const customers = await Promise.all(
     [
@@ -226,6 +227,42 @@ async function main() {
   });
   await approvals.submit({ ...ledgerOrg, fiscalYearStartMonth: 4 }, actor, { documentId: bigBill.id, note: 'Synthetic demo: large stock order' });
   console.log('  Approval rule: bills from 250000 need a second person; one synthetic draft bill is waiting');
+
+  // A SYNTHETIC field employee with three expense claims: one paid back, one waiting for the
+  // owner's approval (with a receipt), one still a draft. The employee never signs in; the
+  // password is random and not shown.
+  const employeeUser = (await app.get(AuthService).register({ email: 'field.employee@talk2tax.local', name: 'Field Employee (synthetic)', password: randomBytes(24).toString('base64url') })).user;
+  await prisma.membership.create({ data: { orgId: org.id, userId: employeeUser.id, role: 'EMPLOYEE' } });
+  const emp = { ...ledgerOrg, role: 'EMPLOYEE' as const };
+  const empActor = { id: employeeUser.id };
+  const expenses = app.get(ExpensesService);
+  const ago = (n: number) => new Date(Date.parse(`${today}T00:00:00Z`) - n * 86_400_000).toISOString().slice(0, 10);
+  const paid = await expenses.create(emp, empActor, {
+    title: 'Customer visits, Nashik (synthetic)',
+    lines: [
+      { date: ago(12), accountId: a['6700'], merchant: 'Synthetic Rail', description: 'Return ticket', amount: '1840.00', taxRateId: null },
+      { date: ago(12), accountId: a['6700'], merchant: 'Synthetic Cabs', amount: '1180.00', taxRateId: taxRate.id },
+    ],
+  });
+  await expenses.submit(emp, empActor, paid.id);
+  await expenses.approve(ledgerOrg, actor, paid.id, { note: 'Synthetic demo approval', date: ago(10) });
+  await expenses.reimburse(ledgerOrg, actor, paid.id, { bankAccountId: a['1120'], date: ago(8), reference: 'NEFT SYN-EXP-1' });
+  const waiting = await expenses.create(emp, empActor, {
+    title: 'Trade fair, Mumbai (synthetic)',
+    lines: [
+      { date: ago(4), accountId: a['6700'], merchant: 'Synthetic Hotel', description: 'Two nights', amount: '9440.00', taxRateId: taxRate.id },
+      { date: ago(3), accountId: a['6500'], merchant: 'Synthetic Print Shop', description: 'Stand banners', amount: '2360.00', taxRateId: taxRate.id },
+    ],
+  });
+  await app.get(AttachmentsService).upload(emp, empActor, {
+    entityType: 'EXPENSE_CLAIM',
+    entityId: waiting.id,
+    fileName: 'synthetic-hotel-invoice.pdf',
+    content: Buffer.from('%PDF-1.4\n% SYNTHETIC DEMO FILE - not a real receipt\n%%EOF\n'),
+  });
+  await expenses.submit(emp, empActor, waiting.id);
+  await expenses.create(emp, empActor, { title: 'Team lunch (synthetic)', lines: [{ date: ago(1), accountId: a['6700'], merchant: 'Synthetic Diner', amount: '1250.00', taxRateId: null }] });
+  console.log('  Expense claims: one paid back, one waiting for approval, one draft (synthetic employee)');
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);
