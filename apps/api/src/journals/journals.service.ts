@@ -261,7 +261,7 @@ export class JournalsService {
     tx: Tx,
     org: OrgInfo,
     actor: Actor,
-    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK'; lines: JournalLineInput[] },
+    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE'; lines: JournalLineInput[] },
   ): Promise<{ id: string; entryNumber: number }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
@@ -383,8 +383,8 @@ export class JournalsService {
   private async validate(tx: Tx, org: OrgInfo, lines: JournalLineInput[], opts: { allowInactive?: boolean; manual?: boolean } = {}): Promise<NormalizedJournal> {
     const ids = [...new Set(lines.map((l) => l.accountId))];
     if (opts.manual) {
-      const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true } });
-      if (ids.some((id) => id === o.arAccountId || id === o.apAccountId)) {
+      const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
+      if (ids.some((id) => id === o.arAccountId || id === o.apAccountId || id === o.claimsAccountId)) {
         throw new DomainError(
           'CONTROL_ACCOUNT',
           'Receivables and payables control accounts only take postings from invoices, bills and payments. Use those, or another account.',

@@ -68,3 +68,23 @@ Live bank feeds, OFX/QIF import, foreign-currency bank accounts, many-to-one mat
 
 ### Not in slice 3
 OCR and extraction, a document vault, malware scanning, object storage, multi-level approval chains, approvals for payments and journals, notifications, and a screen for files on bank lines. See [`KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md).
+
+## Slice 4: employee expense claims
+
+### Completed and tested
+* New EMPLOYEE role: sees only "My expense claims"; every ledger, report, banking and audit endpoint refuses it. Other roles can also claim their own expenses.
+* Claims with lines of date, category (an expense account), merchant, description, the amount paid with tax included, and an optional tax rate; the recoverable tax is split out half-even in the accounting engine, the same calculation in the browser and on the server.
+* Draft, edit, submit, withdraw, reject with a reason, fix and resubmit; delete drafts.
+* Approval by someone other than the claimant (service and database) posts Dr expenses and input tax / Cr Employee Reimbursements Payable (2250, a new control account closed to manual and bank journals; created on first use for older organisations).
+* Pay back from a bank or cash account with a reference (Dr Employee Reimbursements Payable / Cr bank); the bank line can then be matched on the banking screen. Void an approved, unpaid claim (reverses the posting).
+* Receipts via attachments: claimants add them until approval, finance can add evidence any time, nobody else can see them. Warnings for claims without receipts and for lines with the same date and amount as another claim by the same person.
+* Lists: my claims with totals waiting / to be paid / paid, to approve, to pay back, all claims.
+* Demo seed: a synthetic employee with one paid, one waiting (with a receipt) and one draft claim.
+
+### Tests
+* Engine: `packages/accounting-engine/test/expenses.test.ts` (5).
+* API integration: `apps/api/test/expenses.e2e.test.ts` (12), including role isolation, receipts privacy, SQL tampering, self-approval in SQL, void, and lazy creation of the reimbursements account.
+* Browser: `apps/web/e2e/expenses-flow.test.mjs` (6 steps, employee and owner).
+
+### Not in slice 4
+Expense policies and limits, mileage and per diem, foreign-currency receipts, OCR, card feeds, batch reimbursements, manager hierarchies. See [`KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md).

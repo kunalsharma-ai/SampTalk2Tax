@@ -52,8 +52,8 @@ export function JournalForm({ existing }: { existing?: Journal }) {
 
   // Receivables and payables control accounts only take postings from invoices, bills and payments.
   const postable = useMemo(
-    () => (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && a.id !== org?.arAccountId && a.id !== org?.apAccountId),
-    [accounts.data, org?.arAccountId, org?.apAccountId],
+    () => (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && a.id !== org?.arAccountId && a.id !== org?.apAccountId && a.id !== org?.claimsAccountId),
+    [accounts.data, org?.arAccountId, org?.apAccountId, org?.claimsAccountId],
   );
   const accountMap = useMemo(
     () => new Map<string, PostingAccount>((accounts.data ?? []).map((a) => [a.id, { id: a.id, code: a.code, type: a.type, isPostable: a.isPostable, isActive: a.isActive }])),

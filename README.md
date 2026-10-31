@@ -14,7 +14,8 @@ Talk2Tax is planned as an AI-native accounting, tax and finance platform. This r
 * **Receivables & payables (M2, first slice):** customers and vendors, tenant tax rates, invoices, credit notes, bills and vendor credits (draft → post → void), receipts and payments with allocation and idempotency, credit limits, duplicate vendor-invoice detection, customer/vendor statements, and ageing that reconciles to the control accounts.
 * **Banking (M2, second slice):** bank and cash accounts, CSV statement import with column detection and duplicate skipping, rule-based match suggestions, receipts, payments or entries created straight from statement lines, and bank reconciliation with locked periods, history and undo. No live bank feeds.
 * **Attachments and approvals (M2, third slice):** PDF and image files attached to invoices, bills, payments and journals (type checked from the bytes, kept unchanged, removal leaves a record), and approval rules by document type and amount that the database enforces: a covered draft posts only after someone other than its preparer approves exactly that total. Editing a draft cancels its approval.
-* **Web app:** sign up and sign in, an onboarding wizard, an owner dashboard computed from posted journals, journal entry with a live balance check, chart of accounts, periods with lock/unlock, the four reports, the audit trail with an integrity check, members, the sales, purchases, banking and tax-rate screens, an approvals inbox and approval rules.
+* **Expense claims (M2, fourth slice):** a new Employee role that only sees its own claims; claims with tax-inclusive receipt amounts, receipts attached, submit, approve (by someone other than the claimant, which posts Dr expenses and input tax / Cr employee reimbursements payable) and pay back from a bank account. Duplicate and missing-receipt warnings.
+* **Web app:** sign up and sign in, an onboarding wizard, an owner dashboard computed from posted journals, journal entry with a live balance check, chart of accounts, periods with lock/unlock, the four reports, the audit trail with an integrity check, members, the sales, purchases, banking and tax-rate screens, an approvals inbox, approval rules, and expense claims.
 * **Demo data:** a clearly labelled synthetic Indian trading company.
 
 ## Quick start
@@ -52,9 +53,9 @@ docs/                       PRD, architecture, schema, engine, security, API, te
 
 | | |
 |---|---|
-| Milestone | M1 built; M2 slices 1 (receivables and payables), 2 (banking and reconciliation) and 3 (attachments and approvals) built; expense claims next |
-| Feature registry | 1,343 requirements from the master directive; 98 Tested, 27 Implemented, 25 Implementing, 1,193 Not started — [FEATURE_STATUS.md](docs/FEATURE_STATUS.md) |
-| Tests | 63 unit + 76 integration + 32 browser end-to-end, all passing |
+| Milestone | M1 built; M2 slices 1 (receivables and payables), 2 (banking and reconciliation) 3 (attachments and approvals) and 4 (expense claims) built; M2 core scope complete, hardening next |
+| Feature registry | 1,343 requirements from the master directive; 101 Tested, 30 Implemented, 29 Implementing, 1,183 Not started — [FEATURE_STATUS.md](docs/FEATURE_STATUS.md) |
+| Tests | 69 unit + 88 integration + 38 browser end-to-end, all passing |
 | Known gaps | [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
 
 ## Documentation

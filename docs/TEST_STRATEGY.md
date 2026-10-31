@@ -40,6 +40,10 @@ Integration tests never drop or reset data. Each test registers its own users an
 | Only approved documents post | `blocks posting a covered bill until someone else approves it`; direct SQL status change refused |
 | Approver ≠ preparer | `refuses an approval from the person who prepared the bill`, in the API and in SQL |
 | Approval matches what posts | `cancels an approval when the draft changes, so only what was approved can post` |
+| Expense approver ≠ claimant | `never lets someone approve their own claim, even in SQL` |
+| Employee sees nothing of the books | `the Employee role › sees what it needs to claim expenses and nothing of the books` |
+| Expense claims post and clear | `is approved and posted to expenses, input tax and the amount owed to the employee`; `is reimbursed from a bank account, which clears what is owed` |
+| Tax-inclusive split | engine `splits the tax out of tax-inclusive amounts, half-even` |
 | Void preserves history | `voids only after allocations are removed, and posts an exact reversal` |
 
 ## Browser end-to-end tests
@@ -51,6 +55,8 @@ Integration tests never drop or reset data. Each test registers its own users an
 `apps/web/e2e/banking-flow.test.mjs` imports a bank-style CSV (columns detected from the header), shows that re-importing adds nothing, records a customer receipt from a money-in line, posts bank charges from a money-out line, excludes a duplicate, and reconciles the account (first with a wrong closing balance, then the right one), after which the lines are locked.
 
 `apps/web/e2e/approvals-flow.test.mjs` sets a rule for bills, attaches a PDF to a draft bill (and sees a fake PDF refused), checks the download is byte-identical and sandboxed, submits the bill, shows that its preparer cannot approve it, then signs in as a second person with the Approver role who approves and posts it.
+
+`apps/web/e2e/expenses-flow.test.mjs` signs in an employee who sees only "My expense claims", writes a two-line claim with a tax-inclusive amount and live totals, attaches a receipt and submits it; the owner approves it (posting it) and pays it back from the bank; the employee then sees it paid, without links into the books.
 
 Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, workflow recovery, automated accessibility audits (axe), visual regression, load.
 

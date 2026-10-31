@@ -49,7 +49,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const [newContact, setNewContact] = useState<ContactDraft | null>(null);
   const [override, setOverride] = useState(false);
 
-  const control = new Set([org?.arAccountId, org?.apAccountId].filter(Boolean));
+  const control = new Set([org?.arAccountId, org?.apAccountId, org?.claimsAccountId].filter(Boolean));
   const choices = useMemo(() => {
     const usable = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && !control.has(a.id));
     const order = [...l.lineTypes, ...TYPE_ORDER.filter((t) => !l.lineTypes.includes(t))];

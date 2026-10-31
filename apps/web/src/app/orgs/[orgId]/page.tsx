@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, EmptyState, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { PageHeader } from '@/components/shell';
 import { Money } from '@/components/money';
 import { PeriodChart, type PeriodPoint } from '@/components/period-chart';
@@ -23,10 +25,15 @@ interface Dashboard {
 
 export default function DashboardPage() {
   const { org, orgId } = useOrg();
+  const router = useRouter();
+  const employee = org?.role === 'EMPLOYEE';
+  useEffect(() => {
+    if (employee) router.replace(`/orgs/${orgId}/expenses`);
+  }, [employee, orgId, router]);
   const asOf = today();
-  const dash = useQuery({ queryKey: ['dashboard', orgId, asOf], queryFn: () => api<Dashboard>(`/v1/orgs/${orgId}/reports/dashboard?asOf=${asOf}`) });
-  const recent = useQuery({ queryKey: ['journals', orgId, 'recent'], queryFn: () => api<{ items: Journal[] }>(`/v1/orgs/${orgId}/journals?limit=6`) });
-  if (!org) return null;
+  const dash = useQuery({ enabled: !!org && !employee, queryKey: ['dashboard', orgId, asOf], queryFn: () => api<Dashboard>(`/v1/orgs/${orgId}/reports/dashboard?asOf=${asOf}`) });
+  const recent = useQuery({ enabled: !!org && !employee, queryKey: ['journals', orgId, 'recent'], queryFn: () => api<{ items: Journal[] }>(`/v1/orgs/${orgId}/journals?limit=6`) });
+  if (!org || employee) return null;
   const d = dash.data;
   const c = org.functionalCurrency;
   const hasActivity = d && d.periods.some((p) => p.revenue !== '0.00' || p.expenses !== '0.00' || p.closingCash !== '0.00');

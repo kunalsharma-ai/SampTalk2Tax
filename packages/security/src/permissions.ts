@@ -1,4 +1,4 @@
-export const ROLES = ['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER', 'VIEWER'] as const;
+export const ROLES = ['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER', 'VIEWER', 'EMPLOYEE'] as const;
 export type RoleName = (typeof ROLES)[number];
 
 export const PERMISSIONS = [
@@ -27,6 +27,12 @@ export const PERMISSIONS = [
   'banking.manage',
   'banking.reconcile',
   'approvals.decide',
+  /** Create and submit one's own expense claims. */
+  'expenses.submit',
+  /** See everyone's expense claims. Claimants always see their own. */
+  'expenses.read',
+  /** Pay approved claims back from a bank account. */
+  'expenses.reimburse',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -41,6 +47,7 @@ const READ_ONLY: Permission[] = [
   'sales.read',
   'purchases.read',
   'banking.read',
+  'expenses.read',
 ];
 
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>>> = Object.freeze({
@@ -59,9 +66,13 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'purchases.manage',
     'banking.manage',
     'banking.reconcile',
+    'expenses.submit',
+    'expenses.reimburse',
   ]),
-  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide']),
+  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set<Permission>(READ_ONLY),
+  /** Staff who only claim expenses: their own claims and the organisation's name, nothing else. */
+  EMPLOYEE: new Set<Permission>(['org.read', 'expenses.submit']),
 });
 
 export function hasPermission(role: RoleName, permission: Permission): boolean {

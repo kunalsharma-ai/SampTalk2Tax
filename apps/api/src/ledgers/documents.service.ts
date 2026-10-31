@@ -517,13 +517,13 @@ export class DocumentsService {
     const contact = await this.checkContact(tx, org.id, ledger, input.contactId);
     const accountIds = [...new Set(input.lines.map((l) => l.accountId))];
     const accounts = await tx.account.findMany({ where: { orgId: org.id, id: { in: accountIds } } });
-    const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true } });
+    const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
     const issues: string[] = [];
     input.lines.forEach((l, i) => {
       const a = accounts.find((x) => x.id === l.accountId);
       if (!a) issues.push(`Line ${i + 1}: account not found`);
       else if (!a.isPostable || !a.isActive) issues.push(`Line ${i + 1}: account ${a.code} is a header or inactive account`);
-      else if (a.id === o.arAccountId || a.id === o.apAccountId) issues.push(`Line ${i + 1}: ${a.code} is a control account and cannot be used on a document line`);
+      else if (a.id === o.arAccountId || a.id === o.apAccountId || a.id === o.claimsAccountId) issues.push(`Line ${i + 1}: ${a.code} is a control account and cannot be used on a document line`);
     });
     if (issues.length) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
     const taxIds = [...new Set(input.lines.map((l) => l.taxRateId).filter((x): x is string => !!x))];
