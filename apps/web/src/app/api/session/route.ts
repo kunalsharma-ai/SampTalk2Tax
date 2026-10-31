@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { apiBaseUrl, SESSION_COOKIE } from '@/lib/server-config';
+import { apiBaseUrl, REFRESH_COOKIE } from '@/lib/server-config';
+import { clearSessionCookies, clientHeaders, setSessionCookies } from '@/lib/session-cookies';
 
 /**
- * Backend-for-frontend session endpoint. The API's access token is kept in an
- * httpOnly, SameSite=Lax cookie so browser JavaScript never sees it.
- *   POST   { mode: 'login' | 'register', email, password, name? }  → sets cookie
- *   DELETE                                                          → clears cookie
+ * Backend-for-frontend session endpoint. The API's access and refresh tokens are kept in
+ * httpOnly, SameSite=Lax cookies so browser JavaScript never sees them.
+ *   POST   { mode: 'login' | 'register', email, password, name? }  → sets cookies
+ *   DELETE                                                          → ends the session in the API, clears cookies
  */
 const Body = z.object({
   mode: z.enum(['login', 'register']),
@@ -15,33 +16,44 @@ const Body = z.object({
   name: z.string().max(120).optional(),
 });
 
+const csrf = () => NextResponse.json({ error: 'CSRF', message: 'Missing CSRF header' }, { status: 403 });
+
 export async function POST(req: NextRequest) {
-  if (req.headers.get('x-t2t-csrf') !== '1') return NextResponse.json({ error: 'CSRF', message: 'Missing CSRF header' }, { status: 403 });
+  if (req.headers.get('x-t2t-csrf') !== '1') return csrf();
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'VALIDATION_FAILED', message: 'Invalid request' }, { status: 400 });
   const { mode, ...payload } = parsed.data;
   const upstream = await fetch(`${apiBaseUrl()}/v1/auth/${mode}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { ...clientHeaders(req), 'content-type': 'application/json' },
     body: JSON.stringify(payload),
     cache: 'no-store',
   });
   const body = await upstream.json().catch(() => ({}));
-  if (!upstream.ok) return NextResponse.json(body, { status: upstream.status });
+  if (!upstream.ok) {
+    const res = NextResponse.json(body, { status: upstream.status });
+    const retry = upstream.headers.get('retry-after');
+    if (retry) res.headers.set('retry-after', retry);
+    return res;
+  }
   const res = NextResponse.json({ user: body.user });
-  res.cookies.set(SESSION_COOKIE, body.accessToken, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: body.expiresIn,
-  });
+  setSessionCookies(res, body);
   return res;
 }
 
 export async function DELETE(req: NextRequest) {
-  if (req.headers.get('x-t2t-csrf') !== '1') return NextResponse.json({ error: 'CSRF', message: 'Missing CSRF header' }, { status: 403 });
+  if (req.headers.get('x-t2t-csrf') !== '1') return csrf();
+  const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;
+  if (refreshToken) {
+    // Ending the session in the API makes the access token stop working too, not just the cookie.
+    await fetch(`${apiBaseUrl()}/v1/auth/logout`, {
+      method: 'POST',
+      headers: { ...clientHeaders(req), 'content-type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+      cache: 'no-store',
+    }).catch(() => undefined);
+  }
   const res = new NextResponse(null, { status: 204 });
-  res.cookies.set(SESSION_COOKIE, '', { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 });
+  clearSessionCookies(res);
   return res;
 }

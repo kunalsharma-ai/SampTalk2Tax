@@ -120,6 +120,9 @@ A reconciliation checks three things: the imported lines from the opening balanc
 ### ADR-013 Expense claims are their own record, not bills
 *Decision:* an expense claim is a separate table with its claimant (a user, not a contact) and posts to its own control account, Employee Reimbursements Payable, which manual and bank journals cannot touch. *Why:* employees are not vendors; keeping them out of payables keeps vendor ageing and statements clean, lets an EMPLOYEE role see only its own claims, and makes "owed to staff" a single balance that reconciles to approved, unpaid claims. *Cost:* some logic parallels bills (lines, tax, posting); shared calculations live in the accounting engine.
 
+### ADR-014 Server-side sessions behind short access tokens
+*Decision:* every sign-in creates a row in `auth_sessions`; the 15-minute JWT carries its id, and the auth guard checks the row on every request. Refresh tokens rotate on each use, with reuse detection and a 30-second grace window for the previous token. *Why:* signing out, "sign out everywhere" and password changes have to take effect immediately, which a stateless JWT cannot do. The check is one primary-key lookup that replaces the user lookup the guard already made. *Cost:* one database read per request (cacheable later); refresh races between tabs are handled by the grace window and by the web proxy sharing one refresh call per token.
+
 ## Planned components (not built yet)
 
 * `packages/ai-orchestration` — model-agnostic gateway (Anthropic, OpenAI, Gemini, self-hosted), deterministic mock adapter for local use, tool permissioning, prompt versioning, cost tracking.

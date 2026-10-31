@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { randomBytes } from 'node:crypto';
 import { AppModule } from '../app.module';
+import { SessionsService } from '../auth/sessions.service';
 import { AuthService } from '../auth/auth.service';
 import { ApprovalsService } from '../approvals/approvals.service';
 import { AttachmentsService } from '../attachments/attachments.service';
@@ -42,7 +43,9 @@ async function main() {
     return;
   }
   const password = process.env.DEMO_PASSWORD ?? randomBytes(12).toString('base64url');
-  const { user } = await app.get(AuthService).register({ email: DEMO_EMAIL, name: 'Demo Owner', password });
+  const { user } = await app.get(AuthService).register({ email: DEMO_EMAIL, name: 'Demo Owner', password }, { userAgent: 'demo seed' });
+  // Registering signs in; the seed throws that session away, so end it.
+  await app.get(SessionsService).revokeOthers(null, user.id, null, 'signed_out');
   const orgs = app.get(OrganizationsService);
   const org = await orgs.create(user.id, {
     name: 'Northwind Demo Traders (SYNTHETIC DATA)',
@@ -231,7 +234,8 @@ async function main() {
   // A SYNTHETIC field employee with three expense claims: one paid back, one waiting for the
   // owner's approval (with a receipt), one still a draft. The employee never signs in; the
   // password is random and not shown.
-  const employeeUser = (await app.get(AuthService).register({ email: 'field.employee@talk2tax.local', name: 'Field Employee (synthetic)', password: randomBytes(24).toString('base64url') })).user;
+  const employeeUser = (await app.get(AuthService).register({ email: 'field.employee@talk2tax.local', name: 'Field Employee (synthetic)', password: randomBytes(24).toString('base64url') }, { userAgent: 'demo seed' })).user;
+  await app.get(SessionsService).revokeOthers(null, employeeUser.id, null, 'signed_out');
   await prisma.membership.create({ data: { orgId: org.id, userId: employeeUser.id, role: 'EMPLOYEE' } });
   const emp = { ...ledgerOrg, role: 'EMPLOYEE' as const };
   const empActor = { id: employeeUser.id };

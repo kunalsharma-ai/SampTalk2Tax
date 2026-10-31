@@ -25,3 +25,5 @@ export interface OrgContext {
 
 export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionContext): AuthUser => ctx.switchToHttp().getRequest().user);
 export const CurrentOrg = createParamDecorator((_: unknown, ctx: ExecutionContext): OrgContext => ctx.switchToHttp().getRequest().org);
+/** The id of the signed-in session (from the access token). */
+export const CurrentSession = createParamDecorator((_: unknown, ctx: ExecutionContext): string => ctx.switchToHttp().getRequest().sessionId);

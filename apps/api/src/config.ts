@@ -5,7 +5,24 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-  JWT_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
+  /** Access token lifetime. Short, because a refresh token renews it. */
+  JWT_TTL_SECONDS: z.coerce.number().int().positive().max(86400).default(900),
+  /** Hard lifetime of a signed-in session (refresh token), in days. */
+  SESSION_TTL_DAYS: z.coerce.number().int().positive().max(365).default(30),
+  /** A session not refreshed for this many days ends. */
+  SESSION_IDLE_DAYS: z.coerce.number().int().positive().max(365).default(7),
+  /** Failed sign-ins for one email before it is locked, and for how long. */
+  LOGIN_MAX_FAILURES: z.coerce.number().int().positive().default(5),
+  LOGIN_LOCK_MINUTES: z.coerce.number().int().positive().default(15),
+  /** Requests per minute per client IP on sign-in, register and refresh. */
+  RATE_LIMIT_AUTH_PER_MINUTE: z.coerce.number().int().positive().default(20),
+  /** Requests per minute per signed-in user (or per IP when signed out) on everything else. */
+  RATE_LIMIT_API_PER_MINUTE: z.coerce.number().int().positive().default(600),
+  /**
+   * Express "trust proxy" setting: how many proxy hops to trust for X-Forwarded-For.
+   * 0 means use the socket address. Set it to the real number of proxies in front of the API.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
 });
 

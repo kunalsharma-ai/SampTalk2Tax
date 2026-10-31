@@ -2,12 +2,15 @@
 
 What is built today, and what is planned. Nothing here is a compliance claim.
 
-## Implemented (M1)
+## Implemented (M1, M2 and M1 hardening)
 
 | Control | How | Evidence |
 |---|---|---|
 | Authentication | Email + password; scrypt (N=2^15, r=8, p=1, 16-byte salt, 64-byte key); timing-equalised failed logins; min length 12 | `packages/security`, `auth-tenancy.e2e.test.ts` |
-| Tokens | HS256 JWT via `jose`, issuer/audience/expiry checked, default 1 h; secret ≥ 32 chars validated at boot | `apps/api/src/auth/tokens.service.ts` |
+| Tokens | HS256 JWT via `jose`, issuer/audience/expiry checked, 15 min by default; each token names a server-side session that is checked on every request, so a revoked session stops working at once; secret ≥ 32 chars validated at boot | `apps/api/src/auth/tokens.service.ts`, `sessions.service.ts` |
+| Sessions and refresh | Refresh token = session id + 256-bit secret; only its SHA-256 is stored. It rotates on every refresh. The token replaced last is accepted for 30 s (racing tabs); after that, using it again is treated as theft and ends the session (audited `session.refresh_reuse_detected`). Sessions end after 30 days, or 7 days without use. Users can list their sessions (browser, address, last activity), sign one out, or sign out all others; changing the password signs out all others. A trigger stops revoked sessions being revived, moved to another user, or extended | `sessions-security.e2e.test.ts › refresh tokens`, `› sessions and sign-out`, `› password change` |
+| Sign-in lockout | Failed sign-ins are counted per email in PostgreSQL, whether or not the account exists (same answer either way). 5 failures within 15 minutes lock that email for 15 minutes (429 `TOO_MANY_ATTEMPTS` with `Retry-After`), even for the right password; a successful sign-in clears the count | `sessions-security.e2e.test.ts › sign-in lockout` |
+| Rate limiting | Per client IP on sign-in, register, refresh and sign-out (20/min); per signed-in user, or per IP without a valid token, on every other route (600/min); 429 `RATE_LIMITED` with `Retry-After` and `RateLimit-*` headers. The client IP is read from `X-Forwarded-For` only across `TRUST_PROXY_HOPS` trusted proxies | `sessions-security.e2e.test.ts › rate limiting` |
 | Tenant isolation | Org-scoped routes `/v1/orgs/:orgId/...`; membership required; non-members get 404; every query filters by `org_id`; composite FKs make cross-tenant references impossible in the database | `auth-tenancy.e2e.test.ts › tenant isolation` |
 | Authorisation | Role → permission map (OWNER, ADMIN, ACCOUNTANT, APPROVER, VIEWER × 28 permissions, plus EMPLOYEE); every org route declares a permission or is refused; admins cannot grant OWNER | `packages/security/src/permissions.ts` |
 | Input validation | zod on all bodies/queries; amounts as decimal strings only; UUID checks | controllers |
@@ -22,11 +25,11 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | HTTP hardening | `helmet` headers; CORS allow-list from config | `bootstrap.ts` |
 | Secrets | Environment only; `.env` git-ignored; `.env.example` has placeholders | |
 | Errors | Stable error codes; no stack traces or SQL in responses | `common/errors.ts` |
-| Web session | Token kept in an httpOnly, SameSite=Lax cookie (`Secure` in production); browser JavaScript cannot read it | `apps/web/src/app/api/session/route.ts` |
+| Web session | Access and refresh tokens kept in httpOnly, SameSite=Lax cookies (`Secure` in production); browser JavaScript cannot read them. The proxy renews an expired access token once per request (one refresh call per token at a time), and signing out ends the session in the API | `apps/web/src/app/api/session/route.ts`, `apps/web/src/lib/session-cookies.ts`, `security-flow.test.mjs` |
 | CSRF | Non-GET calls through the web proxy must carry `x-t2t-csrf: 1`, which a cross-site form cannot set; SameSite=Lax as a second layer | `apps/web/src/app/api/t2t/[...path]/route.ts`, browser test |
 | Proxy allow-list | The web proxy forwards only `v1/*` API paths | same |
 | Web headers | Baseline (no Content-Security-Policy yet): `X-Frame-Options: DENY`, `nosniff`, strict referrer policy, permissions policy | `apps/web/next.config.ts` |
-| Signed-out access | Middleware redirects to `/login` when the session cookie is missing; the API still checks every request | `apps/web/src/middleware.ts` |
+| Signed-out access | Middleware redirects to `/login` when both session cookies are missing; the API still checks every request | `apps/web/src/middleware.ts` |
 
 ## Role permissions
 
@@ -40,13 +43,19 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | expenses.submit (own claims) | ✓ | ✓ | ✓ | ✓ | |
 | expenses.read (all claims) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | expenses.reimburse | ✓ | ✓ | ✓ | | |
+| audit.read | ✓ | ✓ | ✓ | ✓ | |
 
 The EMPLOYEE role has only `org.read` and `expenses.submit`.
-| audit.read | ✓ | ✓ | ✓ | ✓ | |
+
+## Deployment notes for these controls
+
+* Set `TRUST_PROXY_HOPS` on the API to the number of proxies in front of it (the web app's proxy counts as one). With 0, `X-Forwarded-For` is ignored.
+* The web app reads the browser's address from `X-Forwarded-For`, counting `T2T_CLIENT_IP_HOPS` entries from the right (default 1). Next.js only fills that header when it is missing, so run the web app behind a reverse proxy that appends the client address. Exposed directly, a client can send a made-up address and dodge the per-IP limits; per-email lockout and per-user limits still apply.
+* Rate-limit counters are kept in memory by each API process. With several instances the effective limit is multiplied by the instance count until a shared store (Redis) is added.
 
 ## Planned (tracked as SEC-* in the registry)
 
-Refresh tokens and revocation, MFA (TOTP/WebAuthn), SSO (OIDC/SAML), rate limiting and lockout, PostgreSQL row-level security as a second isolation layer, segregation-of-duties beyond document approvals (e.g. poster ≠ creator for journals and payments), malware scanning of uploaded files, field-level encryption for sensitive data, secrets manager, dependency and container scanning in CI, security event monitoring, backup/DR runbooks, AI security controls (prompt-injection defences, tool permissions, redaction, approval gates, kill switch).
+MFA (TOTP/WebAuthn), SSO (OIDC/SAML), a shared rate-limit store, PostgreSQL row-level security as a second isolation layer, segregation-of-duties beyond document approvals (e.g. poster ≠ creator for journals and payments), malware scanning of uploaded files, field-level encryption for sensitive data, secrets manager, dependency and container scanning in CI, security event monitoring, backup/DR runbooks, AI security controls (prompt-injection defences, tool permissions, redaction, approval gates, kill switch).
 
 ## Reporting a vulnerability
 
