@@ -4,6 +4,7 @@ import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { z } from 'zod';
 import { PrismaService } from '../common/prisma.service';
 import { IS_PUBLIC, PERMISSION } from './decorators';
+import { SessionsService } from './sessions.service';
 import { TokensService } from './tokens.service';
 
 /** Global guard: authenticates the bearer token, then enforces tenant membership and permission. */
@@ -13,6 +14,7 @@ export class AuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly tokens: TokensService,
     private readonly prisma: PrismaService,
+    private readonly sessions: SessionsService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -23,11 +25,14 @@ export class AuthGuard implements CanActivate {
     const header: string | undefined = req.headers['authorization'];
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
     if (!token) throw new UnauthorizedException({ error: 'UNAUTHENTICATED', message: 'Missing bearer token' });
-    const userId = await this.tokens.verify(token);
-    if (!userId) throw new UnauthorizedException({ error: 'UNAUTHENTICATED', message: 'Invalid or expired token' });
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true, isActive: true } });
-    if (!user || !user.isActive) throw new UnauthorizedException({ error: 'UNAUTHENTICATED', message: 'User is not active' });
-    req.user = { id: user.id, email: user.email, name: user.name };
+    const claims = await this.tokens.verifyAccess(token);
+    // TOKEN_EXPIRED tells a client to refresh; the other codes mean "sign in again".
+    if (!claims) throw new UnauthorizedException({ error: 'TOKEN_EXPIRED', message: 'Invalid or expired access token' });
+    const session = await this.sessions.validate(claims);
+    if (!session.ok) throw new UnauthorizedException({ error: session.code, message: session.message });
+    const user = session.user;
+    req.user = user;
+    req.sessionId = claims.sessionId;
 
     const permission = this.reflector.getAllAndOverride<Permission | undefined>(PERMISSION, targets);
     const orgId: string | undefined = req.params?.orgId;

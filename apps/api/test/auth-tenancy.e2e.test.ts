@@ -23,7 +23,7 @@ describe('authentication', () => {
     const u = await registerUser(ctx);
     await ctx.http().post('/v1/auth/register').send({ email: u.email, name: 'Dup', password: 'a-very-long-test-password' }).expect(409);
     await ctx.http().post('/v1/auth/login').send({ email: u.email, password: 'wrong-password-123' }).expect(401);
-    await ctx.http().post('/v1/auth/login').send({ email: 'nobody@example.test', password: 'wrong-password-123' }).expect(401);
+    await ctx.http().post('/v1/auth/login').send({ email: `nobody-${Date.now()}@example.test`, password: 'wrong-password-123' }).expect(401);
     await ctx.http().get('/v1/orgs').expect(401);
     await ctx.http().get('/v1/orgs').set({ Authorization: 'Bearer not-a-token' }).expect(401);
   });

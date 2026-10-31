@@ -11,6 +11,9 @@ import { AuditService } from './audit/audit.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { AuthGuard } from './auth/guards';
+import { LoginThrottleService } from './auth/login-throttle.service';
+import { RateLimitGuard } from './auth/rate-limit';
+import { SessionsService } from './auth/sessions.service';
 import { TokensService } from './auth/tokens.service';
 import { BankingController } from './banking/banking.controller';
 import { BankingService } from './banking/banking.service';
@@ -69,6 +72,8 @@ export class AppModule {
         TokensService,
         AuditService,
         AuthService,
+        SessionsService,
+        LoginThrottleService,
         OrganizationsService,
         AccountsService,
         PeriodsService,
@@ -82,6 +87,8 @@ export class AppModule {
         AttachmentsService,
         ApprovalsService,
         ExpensesService,
+        // Order matters: rate limiting runs before authentication.
+        { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: ErrorFilter },
       ],

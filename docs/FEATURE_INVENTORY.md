@@ -1234,15 +1234,15 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-005 |  | capability | MFA | Not started |
 | SEC-006 |  | capability | SSO | Not started |
 | SEC-007 |  | capability | SAML/OIDC architecture | Not started |
-| SEC-008 |  | capability | Session management | Implementing |
-| SEC-009 |  | capability | Device management | Not started |
+| SEC-008 |  | capability | Session management | Tested |
+| SEC-009 |  | capability | Device management | Implementing |
 | SEC-010 |  | capability | Encryption in transit | Not started |
 | SEC-011 |  | capability | Encryption at rest | Not started |
 | SEC-012 |  | capability | Secrets management | Implementing |
 | SEC-013 |  | capability | Key rotation | Not started |
 | SEC-014 |  | capability | Audit logging | Tested |
 | SEC-015 |  | capability | API authentication | Tested |
-| SEC-016 |  | capability | Rate limiting | Not started |
+| SEC-016 |  | capability | Rate limiting | Tested |
 | SEC-017 |  | capability | Input validation | Tested |
 | SEC-018 |  | capability | Secure file uploads | Not started |
 | SEC-019 |  | capability | Malware scanning | Not started |

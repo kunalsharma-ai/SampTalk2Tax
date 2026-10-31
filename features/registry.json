@@ -25287,12 +25287,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/src/auth/tokens.service.ts",
-        "apps/web/src"
+        "apps/api/src/auth/sessions.service.ts",
+        "apps/api/test/sessions-security.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/account",
+        "apps/web/e2e/security-flow.test.mjs"
       ],
-      "notes": "Short-lived JWT held in an httpOnly SameSite=Lax cookie by the web app. Refresh tokens, revocation and session listing are not done."
+      "notes": "Server-side sessions: 15-minute access token naming the session, rotating refresh token (hash stored), reuse detection with a 30 s grace window, 30-day hard and 7-day idle expiry, revoke one / all others, password change signs out other devices. Both tokens are httpOnly cookies in the web app."
     },
     {
       "id": "SEC-009",
@@ -25312,9 +25314,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/app/orgs/[orgId]/account",
+        "apps/web/e2e/security-flow.test.mjs"
+      ],
+      "notes": "A device is a signed-in session: listed with browser, address and last activity, and can be signed out. No trusted-device registration, device binding or new-device alerts."
     },
     {
       "id": "SEC-010",
@@ -25453,9 +25458,10 @@
       },
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › authentication"
+        "apps/api/test/auth-tenancy.e2e.test.ts › authentication",
+        "apps/api/test/sessions-security.e2e.test.ts › refresh tokens"
       ],
-      "notes": "Email + password (scrypt) and HS256 JWT bearer tokens."
+      "notes": "Email + password (scrypt), HS256 JWT access tokens bound to a server-side session, rotating refresh tokens. Sign-in lockout per email after 5 failures for 15 minutes."
     },
     {
       "id": "SEC-016",
@@ -25475,9 +25481,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/auth/rate-limit.ts",
+        "apps/api/src/auth/login-throttle.service.ts",
+        "apps/api/test/sessions-security.e2e.test.ts › rate limiting",
+        "apps/api/test/sessions-security.e2e.test.ts › sign-in lockout"
+      ],
+      "notes": "Per-IP limit on sign-in/register/refresh and per-user limit on the API (429 with Retry-After). Counters are in memory per API process (not shared across instances); lockout counters are in PostgreSQL."
     },
     {
       "id": "SEC-017",
