@@ -7,7 +7,9 @@
 | Unit | vitest | `packages/*/test` | Pure functions |
 | Property | vitest + seeded PRNG | `accounting-engine/test/reports.test.ts` | 300 random balanced journals |
 | API integration | vitest + supertest + Nest app | `apps/api/test/*.e2e.test.ts` | Real PostgreSQL (`TEST_DATABASE_URL`) |
-| End-to-end UI | Playwright | planned with `apps/web` | |
+| Web unit | vitest | `apps/web/test` | Money formatting |
+| Design tokens | node:test | `packages/design-system/test` | WCAG AA contrast of every text/background pair |
+| End-to-end UI | Playwright + node:test | `apps/web/e2e` | Real browser → web app → API → PostgreSQL |
 | Load | k6 | planned (PERF targets) | |
 
 Integration tests never drop or reset data. Each test registers its own users and creates its own organisations, so runs are isolated by tenant and can repeat against the same database. Global setup only runs `prisma migrate deploy`, and refuses a database URL that does not contain "test".
@@ -28,13 +30,20 @@ Integration tests never drop or reset data. Each test registers its own users an
 | Permissions | `enforces role permissions per organization` |
 | Tampering | direct SQL UPDATE/DELETE on posted lines, entries and audit events all fail |
 
-Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, workflow recovery, accessibility, visual regression, load.
+## Browser end-to-end tests
+
+`apps/web/e2e/ledger-flow.test.mjs` signs up a new user and walks the M1 flow in Chromium: signed-out redirect, registration and onboarding, an unbalanced journal that the form refuses, posting once it balances, the trial balance and dashboard reflecting the posting, reversing it, adding an account (and the server refusing a duplicate code), locking a period so posting fails and unlocking it, verifying the audit chain, the proxy refusing writes without the CSRF header, and no unexpected console errors. Responses the test provokes on purpose (409, 403, 404) are removed from the console check only for those steps.
+
+Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, workflow recovery, automated accessibility audits (axe), visual regression, load.
 
 ## Running
 
 ```bash
 pnpm test                               # everything (needs Postgres + TEST_DATABASE_URL)
 pnpm --filter @talk2tax/accounting-engine test   # engine only, no database
+pnpm e2e                                # browser tests; needs the API on :4000 and the web app on :3000
 ```
 
-CI (`.github/workflows/ci.yml`) runs build, typecheck, all tests against a Postgres service, and checks the feature registry is regenerated.
+Set `WEB_URL` to test another address, and `E2E_SCREENSHOTS=<dir>` to save screenshots.
+
+CI (`.github/workflows/ci.yml`) runs build, typecheck, all tests against a Postgres service, starts the API and web app and runs the browser tests, and checks the feature registry is regenerated.

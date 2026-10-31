@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import "@talk2tax/design-system/tokens.css";
+
+@source "../../../../packages/ui/src";
+
+@theme inline {
+  --color-bg: var(--t2t-bg);
+  --color-surface: var(--t2t-surface);
+  --color-surface-raised: var(--t2t-surface-raised);
+  --color-surface-hover: var(--t2t-surface-hover);
+  --color-line: var(--t2t-border);
+  --color-line-strong: var(--t2t-border-strong);
+  --color-fg: var(--t2t-text);
+  --color-fg-muted: var(--t2t-text-muted);
+  --color-fg-faint: var(--t2t-text-faint);
+  --color-accent: var(--t2t-accent);
+  --color-accent-strong: var(--t2t-accent-strong);
+  --color-violet: var(--t2t-violet);
+  --color-positive: var(--t2t-positive);
+  --color-warning: var(--t2t-warning);
+  --color-negative: var(--t2t-negative);
+  --font-sans: var(--t2t-font-sans);
+  --font-mono: var(--t2t-font-mono);
+}
+
+html, body { background: var(--t2t-bg); color: var(--t2t-text); }
+body {
+  font-family: var(--t2t-font-sans);
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, rgba(99, 102, 241, 0.16), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(18, 194, 233, 0.10), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+::selection { background: rgba(56, 217, 245, 0.35); }
+:focus-visible { outline: 2px solid var(--t2t-focus); outline-offset: 2px; }
+.num { font-family: var(--t2t-font-mono); font-variant-numeric: tabular-nums; }

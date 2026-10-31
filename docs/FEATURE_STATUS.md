@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1273 |
+| Not started | 1246 |
 | Designed | 0 |
-| Implementing | 31 |
-| Implemented | 0 |
-| Tested | 39 |
+| Implementing | 13 |
+| Implemented | 21 |
+| Tested | 63 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,27 +46,27 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 28 | 2 |
 | Document intelligence | M2 | 27 | 27 | 0 |
 | Advanced financial reporting | M6 | 41 | 41 | 0 |
-| Dashboard design | M1 | 68 | 68 | 0 |
+| Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 17 | 0 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 11 | 0 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
-| Internationalization | M8 | 16 | 14 | 2 |
+| Internationalization | M8 | 16 | 13 | 3 |
 | Integration marketplace | M6 | 50 | 50 | 0 |
 | Security and enterprise governance | M1 | 38 | 30 | 8 |
 | User experience and onboarding | M1 | 22 | 18 | 4 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
 | Platform super admin | M9 | 22 | 22 | 0 |
-| Mobile experience | M8 | 16 | 16 | 0 |
+| Mobile experience | M8 | 16 | 15 | 1 |
 | Performance and scalability | M9 | 21 | 19 | 2 |
-| Testing and quality assurance | M1 | 31 | 15 | 16 |
+| Testing and quality assurance | M1 | 31 | 12 | 19 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 18 | 0 |
-| Navigation structure | M1 | 48 | 48 | 0 |
+| Navigation structure | M1 | 48 | 39 | 9 |
 | Design system | M1 | 36 | 36 | 0 |
-| Absolute quality rules | All | 20 | 13 | 7 |
+| Absolute quality rules | All | 20 | 10 | 10 |
 
 ## Features with progress and evidence
 
@@ -81,70 +81,78 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-002 — Double-entry bookkeeping
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - packages/accounting-engine/test/journal.test.ts
   - apps/api/test/ledger.e2e.test.ts › journal posting
+  - apps/web/src/app/orgs/[orgId]/journals
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-003 — Configurable chart of accounts
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. A generic SMB template is applied on onboarding; statutory charts per country are not done.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › chart of accounts rules
   - POST/PATCH /v1/orgs/:orgId/accounts
+  - apps/web/src/app/orgs/[orgId]/accounts
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-004 — Hierarchical account structures
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness
+  - apps/web/src/app/orgs/[orgId]/accounts
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-005 — Account types and subtypes
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness
+  - apps/web/src/app/orgs/[orgId]/accounts
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-006 — Journal entries
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › journal posting
   - POST /v1/orgs/:orgId/journals (draft, edit, delete, post)
+  - apps/web/src/app/orgs/[orgId]/journals
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-008 — Adjusting journals
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. ADJUSTING is a journal type; dedicated adjustment workflow (e.g. auto-reverse next period) not done.
+- Status: **Implemented**
+- Notes: Adjusting journals are ordinary posted journals with a memo; there is no separate adjusting-entry type or period-end workflow yet.
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
+  - apps/web/src
 
 ### GL-009 — Reversing journals
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › reverses a posted entry exactly once and nets it to zero
   - packages/accounting-engine/test/journal.test.ts › builds a reversal that nets the original to zero
+  - apps/web/src/app/orgs/[orgId]/journals
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-010 — Opening balances
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. OPENING is a journal type; an opening-balance import wizard is not done.
+- Status: **Implemented**
+- Notes: Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet.
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
+  - apps/web/src
 
 ### GL-013 — Accrual accounting
 
@@ -157,71 +165,75 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-015 — Multi-period accounting
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Implemented**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › creates further fiscal years
   - packages/accounting-engine/test/periods.test.ts
+  - apps/web/src
 
 ### GL-016 — Financial periods
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - packages/accounting-engine/test/periods.test.ts
   - apps/api/test/ledger.e2e.test.ts › period locks
+  - apps/web/src/app/orgs/[orgId]/periods
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-017 — Fiscal calendars
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Monthly calendars with any start month; 4-4-5 and custom calendars not done.
+- Status: **Implemented**
 - Evidence:
   - packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year
+  - apps/web/src
 
 ### GL-018 — Period locks
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › blocks posting into a locked period and allows it again after unlock
   - packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)
+  - apps/web/src/app/orgs/[orgId]/periods
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-019 — Posting controls
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Draft → post with separate permissions; configurable approval policies not done.
+- Status: **Implemented**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
   - apps/api/test/ledger.e2e.test.ts › journal posting
+  - apps/web/src
 
 ### GL-020 — Audit history
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › audit trail
+  - apps/web/src/app/orgs/[orgId]/audit
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-021 — Trial balance
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › financial reports
   - packages/accounting-engine/test/reports.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/trial-balance
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### GL-022 — General ledger reports
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Implemented**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances
+  - apps/web/src
 
 ### GL-030 — Financial dimensions
 
@@ -297,19 +309,107 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### AUDIT-004 — Audit trails
 
 - Module: Continuous audit and governance
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Append-only, SHA-256 hash-chained per organization.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › audit trail
   - GET /v1/orgs/:orgId/audit-events, /verify
+  - apps/web/src/app/orgs/[orgId]/audit
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### AUDIT-005 — Transaction history
 
 - Module: Continuous audit and governance
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Implemented**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
+  - apps/web/src
+
+### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
+
+- Module: Dashboard design
+- Status: **Implementing**
+- Notes: Original palette and wordmark in packages/design-system; full brand system and illustration set not done.
+- Evidence:
+  - apps/web/src
+
+### DASH-014 — Deep midnight navy
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Colour token defined and checked for WCAG AA contrast.
+- Evidence:
+  - packages/design-system/src/tokens.ts
+  - packages/design-system/test/contrast.test.mjs
+
+### DASH-015 — Electric cyan
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Colour token defined and checked for WCAG AA contrast.
+- Evidence:
+  - packages/design-system/src/tokens.ts
+  - packages/design-system/test/contrast.test.mjs
+
+### DASH-016 — Rich indigo
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Colour token defined and checked for WCAG AA contrast.
+- Evidence:
+  - packages/design-system/src/tokens.ts
+  - packages/design-system/test/contrast.test.mjs
+
+### DASH-017 — Emerald green
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Colour token defined and checked for WCAG AA contrast.
+- Evidence:
+  - packages/design-system/src/tokens.ts
+  - packages/design-system/test/contrast.test.mjs
+
+### DASH-018 — Soft violet
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Colour token defined and checked for WCAG AA contrast.
+- Evidence:
+  - packages/design-system/src/tokens.ts
+  - packages/design-system/test/contrast.test.mjs
+
+### DASH-019 — Warm amber for warnings
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Colour token defined and checked for WCAG AA contrast.
+- Evidence:
+  - packages/design-system/src/tokens.ts
+  - packages/design-system/test/contrast.test.mjs
+
+### DASH-020 — Neutral white and graphite
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Colour token defined and checked for WCAG AA contrast.
+- Evidence:
+  - packages/design-system/src/tokens.ts
+  - packages/design-system/test/contrast.test.mjs
+
+### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
+
+- Module: Dashboard design
+- Status: **Implementing**
+- Notes: Dashboard chart has a matching data table; other charts are not built yet.
+- Evidence:
+  - apps/web/src
+
+### DASH-041 — Respect reduced-motion preferences
+
+- Module: Dashboard design
+- Status: **Implemented**
+- Notes: Chart animation and CSS transitions are disabled under prefers-reduced-motion.
+- Evidence:
+  - apps/web/src
 
 ### I18N-002 — Multi-currency accounting
 
@@ -319,13 +419,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
 
-### I18N-010 — Configurable fiscal years
+### I18N-003 — Regional number formats
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Notes: Amounts use Intl.NumberFormat on exact decimal strings (en-IN style grouping for INR). A per-user locale setting is not built.
+- Evidence:
+  - apps/web/src
+
+### I18N-010 — Configurable fiscal years
+
+- Module: Internationalization
+- Status: **Implemented**
 - Evidence:
   - packages/accounting-engine/test/periods.test.ts
+  - apps/web/src
 
 ### SEC-001 — Multi-tenant isolation
 
@@ -356,9 +464,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Implementing**
-- Notes: Short-lived JWT access tokens only. Refresh tokens, revocation and session listing are not done.
+- Notes: Short-lived JWT held in an httpOnly SameSite=Lax cookie by the web app. Refresh tokens, revocation and session listing are not done.
 - Evidence:
   - apps/api/src/auth/tokens.service.ts
+  - apps/web/src
 
 ### SEC-012 — Secrets management
 
@@ -372,10 +481,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SEC-014 — Audit logging
 
 - Module: Security and enterprise governance
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › audit trail
+  - apps/web/src/app/orgs/[orgId]/audit
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### SEC-015 — API authentication
 
@@ -396,34 +506,46 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### UX-002 — Create organization
 
 - Module: User experience and onboarding
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding
+  - apps/web/src/app/onboarding
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### UX-007 — Configure fiscal year
 
 - Module: User experience and onboarding
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding
+  - apps/web/src/app/onboarding
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### UX-008 — Configure currency
 
 - Module: User experience and onboarding
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented.
+- Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding
+  - apps/web/src/app/onboarding
+  - apps/web/e2e/ledger-flow.test.mjs
 
 ### UX-015 — Configure team roles
 
 - Module: User experience and onboarding
-- Status: **Implementing**
-- Notes: Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Existing users can be added with a role; email invitations are not done.
+- Status: **Implemented**
+- Notes: Members screen lists members and adds an existing user by email with a role. Invitation emails and role changes are not built.
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
+  - apps/web/src
+
+### MOB-001 — Create a responsive web application first
+
+- Module: Mobile experience
+- Status: **Implementing**
+- Notes: Layouts are responsive and checked at phone width; no dedicated mobile navigation pattern yet.
+- Evidence:
+  - apps/web/src
 
 ### PERF-017 — Financial posting with transactional consistency
 
@@ -476,6 +598,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ledger.e2e.test.ts
   - apps/api/test/auth-tenancy.e2e.test.ts
 
+### QA-005 — End-to-end tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Playwright browser tests drive the real web app against the real API and PostgreSQL in CI.
+- Evidence:
+  - apps/web/e2e/ledger-flow.test.mjs
+
 ### QA-006 — Accounting invariant tests
 
 - Module: Testing and quality assurance
@@ -498,9 +628,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Module: Testing and quality assurance
 - Status: **Tested**
 - Evidence:
-  - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
+  - packages/accounting-engine/test/reports.test.ts
+  - apps/api/test/ledger.e2e.test.ts › reports
 
 ### QA-012 — Permission tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
+
+### QA-013 — Tenant isolation tests
 
 - Module: Testing and quality assurance
 - Status: **Tested**
@@ -565,6 +703,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › assigns gap-free unique numbers under concurrent posting; allows only one of many concurrent reversals
 
+### QA-031 — Use deterministic test fixtures
+
+- Module: Testing and quality assurance
+- Status: **Implementing**
+- Notes: The demo seed and test fixtures are deterministic; a shared fixture library for all scenarios is not done.
+- Evidence:
+  - apps/web/src
+
 ### DEMO-013 — Journal entries
 
 - Module: Demonstration data
@@ -580,6 +726,95 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Demo org is named "(SYNTHETIC DATA)", flagged is_demo, and the seed refuses to run when NODE_ENV=production.
 - Evidence:
   - apps/api/src/seed/seed-demo.ts
+
+### NAV-001 — Create a premium sidebar and global navigation system
+
+- Module: Navigation structure
+- Status: **Implementing**
+- Notes: Sidebar and org switcher exist for the M1 modules; global search and command palette are not built.
+- Evidence:
+  - apps/web/src
+
+### NAV-002 — Overview
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src
+
+### NAV-005 — Accounting
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src
+
+### NAV-006 — General Ledger
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src
+
+### NAV-029 — Reports
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src
+
+### NAV-033 — Audit
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src
+
+### NAV-042 — User Management
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Notes: Member list and add-by-email with a role; invitation emails and role changes are not built.
+- Evidence:
+  - apps/web/src
+
+### NAV-046 — Use nested navigation and progressive disclosure
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src
+
+### NAV-047 — Do not overwhelm users by showing all modules simultaneously
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Notes: Sidebar only shows modules that exist today.
+- Evidence:
+  - apps/web/src
+
+### RULE-001 — Do not create fake functional buttons
+
+- Module: Absolute quality rules
+- Status: **Implemented**
+- Notes: Every button in the web app calls a working API; screens for unbuilt modules are not shown.
+- Evidence:
+  - apps/web/src
+
+### RULE-002 — Do not create disconnected dashboards
+
+- Module: Absolute quality rules
+- Status: **Implemented**
+- Notes: The dashboard reads GET /reports/dashboard, computed from posted journals.
+- Evidence:
+  - apps/web/src
+
+### RULE-003 — Do not substitute static cards for implemented business logic
+
+- Module: Absolute quality rules
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src
 
 ### RULE-009 — Do not store secrets in source code
 

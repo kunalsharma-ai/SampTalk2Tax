@@ -1,0 +1,43 @@
+/**
+ * Formatting for display only. Amounts arrive from the API as exact decimal strings and
+ * Intl.NumberFormat formats strings without converting through binary floating point.
+ */
+const cache = new Map<string, Intl.NumberFormat>();
+
+function formatter(currency: string, locale: string): Intl.NumberFormat {
+  const key = `${locale}|${currency}`;
+  let f = cache.get(key);
+  if (!f) {
+    f = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' });
+    cache.set(key, f);
+  }
+  return f;
+}
+
+export function localeFor(currency: string): string {
+  return currency === 'INR' ? 'en-IN' : 'en-US';
+}
+
+export function money(amount: string | null | undefined, currency: string): string {
+  if (amount === null || amount === undefined || amount === '') return '—';
+  // Intl accepts decimal strings (ES2023 Intl.NumberFormat v3); the cast keeps older TS lib typings happy.
+  return formatter(currency, localeFor(currency)).format(amount as unknown as number);
+}
+
+export function plain(amount: string, currency: string): string {
+  return new Intl.NumberFormat(localeFor(currency), { minimumFractionDigits: 2, maximumFractionDigits: 6 }).format(amount as unknown as number);
+}
+
+export function isNegative(amount: string): boolean {
+  return amount.trim().startsWith('-');
+}
+
+export function date(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+export function today(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

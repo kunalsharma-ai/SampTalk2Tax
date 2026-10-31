@@ -163,4 +163,89 @@ export class ReportsService {
       rows: rows.map((r) => ({ ...r, debit: f(r.debit), credit: f(r.credit), runningBalance: f(r.runningBalance) })),
     };
   }
+
+  /**
+   * Owner dashboard figures for the fiscal year containing `asOf`, all derived from posted entries:
+   * cash, receivables and payables balances (by account subtype), year-to-date P&L, and a
+   * per-period series of revenue, expenses, net income and closing cash.
+   */
+  async dashboard(orgId: string, q: { asOf: string }) {
+    const ccy = await this.currency(orgId);
+    const f = (d: Dec) => d.toFixed(minorUnits(ccy));
+    const asOf = toDbDate(q.asOf);
+    const period = await this.prisma.fiscalPeriod.findFirst({ where: { orgId, startDate: { lte: asOf }, endDate: { gte: asOf } } });
+    if (!period) throw new NotFoundException({ error: 'NO_FISCAL_PERIOD', message: `No fiscal period covers ${q.asOf}` });
+    const periods = await this.prisma.fiscalPeriod.findMany({ where: { orgId, fiscalYear: period.fiscalYear }, orderBy: { periodNo: 'asc' } });
+
+    const rows = await this.prisma.$queryRaw<{ period_id: string | null; bucket: string; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
+      SELECT CASE WHEN e.date >= ${periods[0].startDate}::date THEN e.period_id ELSE NULL END AS period_id,
+             CASE
+               WHEN a.type = 'REVENUE' THEN 'REVENUE'
+               WHEN a.type = 'EXPENSE' THEN 'EXPENSE'
+               WHEN a.subtype IN ('CASH', 'BANK') THEN 'CASH'
+               WHEN a.subtype = 'ACCOUNTS_RECEIVABLE' THEN 'AR'
+               WHEN a.subtype = 'ACCOUNTS_PAYABLE' THEN 'AP'
+               ELSE 'OTHER'
+             END AS bucket,
+             SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
+      FROM journal_lines l
+      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
+      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
+      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.date <= ${asOf}::date
+      GROUP BY 1, 2`;
+
+    const zero = () => new D(0);
+    const net = (r: { debit: Prisma.Decimal; credit: Prisma.Decimal }) => new D(r.debit.toFixed()).minus(r.credit.toFixed());
+    let cash = zero(), ar = zero(), ap = zero();
+    let openingCash = zero();
+    const perPeriod = new Map<string, { revenue: Dec; expenses: Dec; cash: Dec }>();
+    for (const p of periods) perPeriod.set(p.id, { revenue: zero(), expenses: zero(), cash: zero() });
+    for (const r of rows) {
+      const n = net(r);
+      if (r.bucket === 'CASH') {
+        cash = cash.plus(n);
+        if (r.period_id && perPeriod.has(r.period_id)) perPeriod.get(r.period_id)!.cash = perPeriod.get(r.period_id)!.cash.plus(n);
+        else openingCash = openingCash.plus(n);
+      }
+      if (r.bucket === 'AR') ar = ar.plus(n);
+      if (r.bucket === 'AP') ap = ap.minus(n);
+      if (r.period_id && perPeriod.has(r.period_id)) {
+        const b = perPeriod.get(r.period_id)!;
+        if (r.bucket === 'REVENUE') b.revenue = b.revenue.minus(n);
+        if (r.bucket === 'EXPENSE') b.expenses = b.expenses.plus(n);
+      }
+    }
+    let running = openingCash;
+    let ytdRevenue = zero(), ytdExpenses = zero();
+    const months = periods
+      .filter((p) => p.startDate <= asOf)
+      .map((p) => {
+        const b = perPeriod.get(p.id)!;
+        running = running.plus(b.cash);
+        ytdRevenue = ytdRevenue.plus(b.revenue);
+        ytdExpenses = ytdExpenses.plus(b.expenses);
+        return {
+          periodId: p.id,
+          name: p.name,
+          startDate: fromDbDate(p.startDate),
+          endDate: fromDbDate(p.endDate),
+          status: p.status,
+          revenue: f(b.revenue),
+          expenses: f(b.expenses),
+          netIncome: f(b.revenue.minus(b.expenses)),
+          closingCash: f(running),
+        };
+      });
+    const draftCount = await this.prisma.journalEntry.count({ where: { orgId, status: 'DRAFT' } });
+    return {
+      currency: ccy,
+      asOf: q.asOf,
+      fiscalYear: period.fiscalYear,
+      fiscalYearStart: fromDbDate(periods[0].startDate),
+      balances: { cash: f(cash), receivables: f(ar), payables: f(ap) },
+      yearToDate: { revenue: f(ytdRevenue), expenses: f(ytdExpenses), netIncome: f(ytdRevenue.minus(ytdExpenses)) },
+      periods: months,
+      draftJournals: draftCount,
+    };
+  }
 }
