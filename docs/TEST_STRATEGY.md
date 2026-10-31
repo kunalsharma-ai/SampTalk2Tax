@@ -36,6 +36,10 @@ Integration tests never drop or reset data. Each test registers its own users an
 | Bank statement = books | `completes when the ledger less uncleared items equals the statement, and freezes the lines`; engine `reconciliation` tests |
 | One ledger line, one bank line | partial unique index; two concurrent matches of the same ledger line → exactly one succeeds |
 | Statement import is exact and idempotent | engine amount/date parsing (no floats); re-importing an overlapping file adds only new lines |
+| Evidence files are kept unchanged | `removes a file with a reason but keeps the record, and the bytes cannot be changed` (direct SQL UPDATE/DELETE refused) |
+| Only approved documents post | `blocks posting a covered bill until someone else approves it`; direct SQL status change refused |
+| Approver ≠ preparer | `refuses an approval from the person who prepared the bill`, in the API and in SQL |
+| Approval matches what posts | `cancels an approval when the draft changes, so only what was approved can post` |
 | Void preserves history | `voids only after allocations are removed, and posts an exact reversal` |
 
 ## Browser end-to-end tests
@@ -45,6 +49,8 @@ Integration tests never drop or reset data. Each test registers its own users an
 `apps/web/e2e/sales-flow.test.mjs` walks the M2 flow: adding a tax rate (defaults to the template tax accounts), writing an invoice with a customer created from the form and a live total, posting it, recording a part receipt from the invoice with "allocate oldest first", the ageing tying to the ledger, manual journals not offering the control accounts, a duplicate vendor invoice number being refused, and voiding the invoice only after its receipt is removed.
 
 `apps/web/e2e/banking-flow.test.mjs` imports a bank-style CSV (columns detected from the header), shows that re-importing adds nothing, records a customer receipt from a money-in line, posts bank charges from a money-out line, excludes a duplicate, and reconciles the account (first with a wrong closing balance, then the right one), after which the lines are locked.
+
+`apps/web/e2e/approvals-flow.test.mjs` sets a rule for bills, attaches a PDF to a draft bill (and sees a fake PDF refused), checks the download is byte-identical and sandboxed, submits the bill, shows that its preparer cannot approve it, then signs in as a second person with the Approver role who approves and posts it.
 
 Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, workflow recovery, automated accessibility audits (axe), visual regression, load.
 

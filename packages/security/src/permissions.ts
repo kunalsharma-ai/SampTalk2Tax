@@ -26,6 +26,7 @@ export const PERMISSIONS = [
   'banking.read',
   'banking.manage',
   'banking.reconcile',
+  'approvals.decide',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -59,7 +60,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'banking.manage',
     'banking.reconcile',
   ]),
-  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read']),
+  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide']),
   VIEWER: new Set<Permission>(READ_ONLY),
 });
 

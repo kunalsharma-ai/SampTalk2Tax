@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1207 |
+| Not started | 1193 |
 | Designed | 0 |
-| Implementing | 19 |
-| Implemented | 26 |
-| Tested | 91 |
+| Implementing | 25 |
+| Implemented | 27 |
+| Tested | 98 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 16 | 28 |
 | Accounts receivable | M2 | 43 | 33 | 10 |
-| Accounts payable | M2 | 36 | 26 | 10 |
+| Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
 | Global taxation engine | M3 | 54 | 53 | 1 |
 | Payroll and workforce finance | M3 | 34 | 34 | 0 |
@@ -37,14 +37,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 60 | 0 |
-| Autonomous financial workflows | M5 | 22 | 22 | 0 |
+| Autonomous financial workflows | M5 | 22 | 21 | 1 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
 | Financial fraud and risk intelligence | M4 | 19 | 19 | 0 |
-| Continuous audit and governance | M6 | 30 | 28 | 2 |
-| Document intelligence | M2 | 27 | 27 | 0 |
+| Continuous audit and governance | M6 | 30 | 24 | 6 |
+| Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 41 | 0 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
@@ -54,8 +54,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
 | Internationalization | M8 | 16 | 13 | 3 |
 | Integration marketplace | M6 | 50 | 50 | 0 |
-| Security and enterprise governance | M1 | 38 | 30 | 8 |
-| User experience and onboarding | M1 | 22 | 18 | 4 |
+| Security and enterprise governance | M1 | 38 | 29 | 9 |
+| User experience and onboarding | M1 | 22 | 17 | 5 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
 | Platform super admin | M9 | 22 | 22 | 0 |
@@ -65,7 +65,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 18 | 0 |
 | Navigation structure | M1 | 48 | 38 | 10 |
-| Design system | M1 | 36 | 36 | 0 |
+| Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 10 | 10 |
 
 ## Features with progress and evidence
@@ -424,6 +424,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/sales-purchases.e2e.test.ts › posts a bill to payables with recoverable input tax and pays it
   - apps/web/e2e/sales-flow.test.mjs
 
+### AP-006 — Bill approval workflows
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Bills (and invoices, credit notes, vendor credits) can require an approval above an amount; enforced by a database trigger.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts › approvals
+  - apps/web/e2e/approvals-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/approvals
+
 ### AP-008 — Partial payments
 
 - Module: Accounts payable
@@ -624,6 +634,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/tax-rates
   - apps/web/e2e/sales-flow.test.mjs
 
+### WFLOW-006 — Approval workflows
+
+- Module: Autonomous financial workflows
+- Status: **Implementing**
+- Notes: Single-step approval of sales and purchase drafts by amount. No multi-level chains, escalations or approvals for other record types yet.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts › approvals
+  - apps/web/e2e/approvals-flow.test.mjs
+
 ### AUDIT-004 — Audit trails
 
 - Module: Continuous audit and governance
@@ -641,6 +660,86 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
   - apps/web/src
+
+### AUDIT-006 — Approval history
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Every request, decision, withdrawal and cancellation is kept (never deleted, trigger-enforced) and audited.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts
+  - apps/web/src/components/approvals/approval-card.tsx
+
+### AUDIT-024 — Approval status
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts
+  - apps/web/e2e/approvals-flow.test.mjs
+
+### AUDIT-025 — Approving user
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Approver name, time and note are stored on the request; the approver must differ from the preparer when the rule says so (database-enforced).
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts
+  - apps/web/e2e/approvals-flow.test.mjs
+
+### AUDIT-028 — Relevant evidence references
+
+- Module: Continuous audit and governance
+- Status: **Implementing**
+- Notes: Evidence files are linked to the records they support with a SHA-256 checksum. Audit-event-level evidence references are not modelled yet.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts
+
+### DOC-001 — Create a secure financial document management system
+
+- Module: Document intelligence
+- Status: **Implementing**
+- Notes: Files attach to invoices, bills, payments, journals and bank lines; stored in PostgreSQL with checksum, type detected from bytes, immutable, soft removal with reason. No standalone document vault, folders or search yet.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts
+  - apps/api/src/attachments
+  - apps/web/src/components/attachments.tsx
+
+### DOC-002 — Invoices
+
+- Module: Document intelligence
+- Status: **Tested**
+- Notes: Invoice and bill files attached to the document record.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts › attachments
+  - apps/web/e2e/approvals-flow.test.mjs
+  - POST /v1/orgs/:orgId/attachments
+
+### DOC-003 — Receipts
+
+- Module: Document intelligence
+- Status: **Tested**
+- Notes: Receipts attach to documents, payments and journal entries.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts › attachments
+  - apps/web/e2e/approvals-flow.test.mjs
+
+### DOC-006 — Bank statements
+
+- Module: Document intelligence
+- Status: **Implementing**
+- Notes: Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts
+  - POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)
+
+### DOC-018 — Duplicate detection
+
+- Module: Document intelligence
+- Status: **Implementing**
+- Notes: Exact duplicate files (same SHA-256) on the same record are refused. No cross-record or fuzzy duplicate detection.
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files
 
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 
@@ -821,6 +920,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries
   - zod schemas on every endpoint
 
+### SEC-036 — Human approval gates
+
+- Module: Security and enterprise governance
+- Status: **Implementing**
+- Notes: Human approval gate for posting covered sales and purchase documents. Not yet applied to journals, payments or AI actions (no AI actions exist).
+- Evidence:
+  - apps/api/test/attachments-approvals.e2e.test.ts
+
 ### UX-002 — Create organization
 
 - Module: User experience and onboarding
@@ -856,6 +963,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
   - apps/web/src
+
+### UX-016 — Configure approval policies
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: One rule per document type: on/off, minimum total, separate approver.
+- Evidence:
+  - apps/web/src/app/orgs/[orgId]/settings/approvals
+  - apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule
 
 ### MOB-001 — Create a responsive web application first
 
@@ -1126,6 +1242,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Sidebar only shows modules that exist today.
 - Evidence:
   - apps/web/src
+
+### DS-014 — Approval dialogs
+
+- Module: Design system
+- Status: **Implemented**
+- Evidence:
+  - apps/web/src/components/approvals/approval-card.tsx
 
 ### RULE-001 — Do not create fake functional buttons
 

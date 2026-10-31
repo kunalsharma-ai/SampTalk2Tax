@@ -5,6 +5,8 @@ import { Alert, Button, Card, CardHeader, Dialog, Field, Input, Select, Table, T
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ApprovalCard, useApprovalState } from '@/components/approvals/approval-card';
+import { AttachmentsPanel } from '@/components/attachments';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
@@ -31,6 +33,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
   const base = `/v1/orgs/${orgId}/${l.api}`;
   const q = useQuery({ queryKey: ['document', orgId, documentId], queryFn: () => api<FinancialDocument>(`${base}/documents/${documentId}`) });
   const d = q.data;
+  const approval = useApprovalState(documentId, d?.status === 'DRAFT');
   const isCharge = d?.kind === l.charge.kind;
   // Counterparts this document can be settled with: open credits for a charge, open charges for a credit.
   const counterparts = useQuery({
@@ -39,7 +42,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
     queryFn: () => api<{ items: DocumentSummary[] }>(`${base}/documents?view=open&contactId=${d!.contact.id}&kind=${isCharge ? l.credit.kind : l.charge.kind}&limit=200`),
   });
   const refresh = async () => {
-    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing']) await qc.invalidateQueries({ queryKey: [k, orgId] });
+    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
   const post = useMutation({ mutationFn: () => api<FinancialDocument>(`${base}/documents/${documentId}/post`, { method: 'POST', body: { overrideCreditLimit: override } }), onSuccess: refresh });
   const remove = useMutation({
@@ -76,6 +79,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
   const label = kindLabel(l, d.kind);
   const err = post.error ?? remove.error ?? unallocate.error;
   const creditLimitHit = post.error instanceof ApiError && post.error.code === 'CREDIT_LIMIT_EXCEEDED';
+  const needsApproval = d.status === 'DRAFT' && approval.data ? !approval.data.readyToPost : false;
 
   if (editing && d.status === 'DRAFT') {
     return (
@@ -99,7 +103,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                 <Button variant="secondary" onClick={() => setEditing(true)}>Edit</Button>
               </>
             ) : null}
-            {d.status === 'DRAFT' && can(org.role, 'journals.post') ? <Button loading={post.isPending} disabled={creditLimitHit && !override} onClick={() => post.mutate()}>Post</Button> : null}
+            {d.status === 'DRAFT' && can(org.role, 'journals.post') ? <Button loading={post.isPending} disabled={(creditLimitHit && !override) || needsApproval || (d.status === 'DRAFT' && !approval.data)} title={needsApproval ? 'Needs an approval first' : undefined} onClick={() => post.mutate()}>Post</Button> : null}
             {d.status === 'POSTED' && canManage && d.amountDue !== '0.00' ? (
               <>
                 <Button variant="secondary" onClick={() => { apply.reset(); setApplyId(''); setApplyAmount(''); setApplyOpen(true); }}>{isCharge ? `Apply ${l.credit.label.toLowerCase()}…` : `Apply to ${l.charge.label.toLowerCase()}…`}</Button>
@@ -153,6 +157,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           {d.journalEntryId ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}/journals/${d.journalEntryId}`}>View the journal entry</Link> : null}
         </p>
       ) : null}
+
+      <ApprovalCard documentId={d.id} isDraft={d.status === 'DRAFT'} canManage={canManage} currency={c} onChange={refresh} />
 
       <Card className="mt-6">
         <CardHeader title="Lines" />
@@ -230,6 +236,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           </Table>
         )}
       </Card>
+
+      <AttachmentsPanel entityType="DOCUMENT" entityId={d.id} canManage={canManage} description={`The ${label.toLowerCase()} itself, receipts, delivery notes. PDF, PNG, JPEG or WebP up to 5 MB each; kept exactly as uploaded.`} />
 
       <Dialog open={voidOpen} onOpenChange={setVoidOpen} title={`Void ${label.toLowerCase()} ${d.number}`} description="Voiding posts an exact reversing journal. The document stays on record, marked void.">
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); voidDoc.mutate(); }}>
