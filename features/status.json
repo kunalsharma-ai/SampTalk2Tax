@@ -614,9 +614,11 @@
       "status": "Tested",
       "evidence": [
         "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation",
-        "Composite (id, org_id) foreign keys in schema"
+        "Composite (id, org_id) foreign keys in schema",
+        "packages/database/prisma/migrations/20261031220000_row_level_security",
+        "apps/api/test/row-level-security.e2e.test.ts"
       ],
-      "notes": "Application-level scoping plus database foreign keys. PostgreSQL row-level security is not enabled yet (see KNOWN_LIMITATIONS)."
+      "notes": "Application-level scoping, composite foreign keys, and PostgreSQL row-level security (forced, transaction-local tenant settings) on every tenant table."
     },
     "SEC-002": {
       "status": "Tested",
@@ -1201,6 +1203,14 @@
         "apps/api/test/sessions-security.e2e.test.ts › sign-in lockout"
       ],
       "notes": "Per-IP limit on sign-in/register/refresh and per-user limit on the API (429 with Retry-After). Counters are in memory per API process (not shared across instances); lockout counters are in PostgreSQL."
+    },
+    "SEC-035": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/row-level-security.e2e.test.ts",
+        "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation"
+      ],
+      "notes": "Covers API probes (404) and database-level checks that bypass application filters. No AI features exist yet, so AI-specific leakage tests are not applicable."
     }
   }
 }

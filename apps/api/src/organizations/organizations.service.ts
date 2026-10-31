@@ -1,10 +1,11 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { fiscalYearForDate, GENERIC_SMB_COA, generateFiscalYear } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
 import { canAssignRole, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { toDbDate, todayIso } from '../common/dates';
-import { PrismaService, Tx } from '../common/prisma.service';
+import { PrismaService, Tx, useOrgInTx } from '../common/prisma.service';
 
 export interface CreateOrgInput {
   name: string;
@@ -24,9 +25,13 @@ export class OrganizationsService {
   ) {}
 
   async create(userId: string, input: CreateOrgInput, today = todayIso()) {
+    const id = randomUUID();
     return this.prisma.$transaction(async (tx) => {
+      // The new organisation is the tenant for the rest of this transaction (row-level security).
+      await useOrgInTx(tx, id);
       const org = await tx.organization.create({
         data: {
+          id,
           name: input.name,
           legalName: input.legalName,
           countryCode: input.countryCode,
