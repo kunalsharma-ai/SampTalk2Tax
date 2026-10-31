@@ -2310,9 +2310,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
+      "notes": "Slice 1 of AR: customers, invoices, credit notes, receipts, allocation, statements, ageing. Quotes, orders, recurring billing, reminders, write-offs and the AI items are not started."
     },
     {
       "id": "AR-002",
@@ -2336,8 +2339,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › roles and tenants",
+        "apps/web/e2e/sales-flow.test.mjs",
+        "/v1/orgs/:orgId/contacts",
+        "apps/web/src/app/orgs/[orgId]/sales/customers"
+      ],
       "notes": null
     },
     {
@@ -2388,9 +2396,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › credit limits",
+        "apps/web/src/components/ledger/document-form.tsx"
+      ],
+      "notes": "Override is audited."
     },
     {
       "id": "AR-005",
@@ -2518,9 +2529,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › invoices",
+        "packages/accounting-engine/test/documents.test.ts",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
+      "notes": "Invoices with tenant-configured tax rates. Not a statutory e-invoice format; no PDF or emailing yet."
     },
     {
       "id": "AR-010",
@@ -2700,8 +2715,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › applies a credit note and settles the invoice",
+        "packages/accounting-engine/test/documents.test.ts"
+      ],
       "notes": null
     },
     {
@@ -2778,8 +2796,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › receipts, credits and ageing",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -2804,8 +2825,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › records a partial receipt against an invoice",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -2830,8 +2854,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › keeps an unallocated receipt as a customer credit"
+      ],
       "notes": null
     },
     {
@@ -2856,8 +2882,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › produces a customer statement",
+        "apps/web/src/components/ledger/contact-detail.tsx"
+      ],
       "notes": null
     },
     {
@@ -2882,8 +2911,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › ageing ties to the receivables control account",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -3429,8 +3461,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › bills and payments",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendors"
+      ],
       "notes": null
     },
     {
@@ -3483,9 +3518,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › bills and payments",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
+      "notes": "Same document model as supplier bills."
     },
     {
       "id": "AP-004",
@@ -3510,8 +3548,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › posts a bill to payables with recoverable input tax and pays it",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -3618,9 +3659,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/api/src/ledgers/documents.service.ts",
+        "packages/accounting-engine/test/documents.test.ts"
+      ],
+      "notes": "Shares the receipts code path, which is tested for partial allocation; no purchases-specific partial test yet."
     },
     {
       "id": "AP-009",
@@ -3645,9 +3689,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/api/src/ledgers/documents.service.ts"
+      ],
+      "notes": "Unallocated vendor payment stays as a vendor credit; shares the tested receipts code path."
     },
     {
       "id": "AP-010",
@@ -3672,9 +3718,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/api/src/ledgers/documents.service.ts",
+        "packages/accounting-engine/test/documents.test.ts"
+      ],
+      "notes": "Vendor credits share the tested credit-note path; journal covered by engine tests."
     },
     {
       "id": "AP-011",
@@ -3699,8 +3748,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "GET /v1/orgs/:orgId/contacts/:id/statement?ledger=PURCHASES",
+        "apps/web/src/components/ledger/contact-detail.tsx"
+      ],
       "notes": null
     },
     {
@@ -3726,9 +3778,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ledgers/subledger.service.ts",
+        "apps/api/test/sales-purchases.e2e.test.ts",
+        "apps/api/src/seed/seed-demo.ts"
+      ],
+      "notes": "Same ageing service as receivables; purchases ageing reconciliation is checked by the demo seed."
     },
     {
       "id": "AP-013",
@@ -3888,9 +3944,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
+      "notes": "Per vendor, case-insensitive; enforced by a partial unique index as well as the service."
     },
     {
       "id": "AP-019",
@@ -5026,9 +5085,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/tax-rates",
+        "apps/web/e2e/sales-flow.test.mjs"
+      ],
+      "notes": "Rates are tenant-configured; no statutory rates are hard-coded."
     },
     {
       "id": "TAX-003",

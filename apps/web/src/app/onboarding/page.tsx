@@ -118,7 +118,7 @@ export default function OnboardingPage() {
               </Select>
             )}
           </Field>
-          <p className="text-xs text-fg-faint sm:col-span-2">Tax settings, bank connections and data imports come in later releases. Nothing here files anything with any authority.</p>
+          <p className="text-xs text-fg-faint sm:col-span-2">You can add tax rates afterwards under Tax rates. Bank connections and data imports come in later releases. Nothing here files anything with any authority.</p>
           <div className="flex justify-end sm:col-span-2">
             <Button type="submit" loading={create.isPending}>
               Create organisation

@@ -4,3 +4,4 @@ export * from './journal';
 export * from './periods';
 export * from './reports';
 export * from './coa-templates';
+export * from './documents';

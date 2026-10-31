@@ -49,8 +49,8 @@ export default function DashboardPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Stat label="Cash and bank" value={<Money value={d.balances.cash} currency={c} signed />} tone="accent" sub="Balance of cash and bank accounts" />
-            <Stat label="Receivables" value={<Money value={d.balances.receivables} currency={c} />} tone="violet" sub="Owed to you" />
-            <Stat label="Payables" value={<Money value={d.balances.payables} currency={c} />} tone="warning" sub="You owe suppliers" />
+            <Stat label="Receivables" value={<Money value={d.balances.receivables} currency={c} />} tone="violet" sub={<Link className="text-accent hover:underline" href={`/orgs/${orgId}/sales/ageing`}>Owed to you · ageing</Link>} />
+            <Stat label="Payables" value={<Money value={d.balances.payables} currency={c} />} tone="warning" sub={<Link className="text-accent hover:underline" href={`/orgs/${orgId}/purchases/ageing`}>You owe suppliers · ageing</Link>} />
             <Stat
               label="Net income YTD"
               value={<Money value={d.yearToDate.netIncome} currency={c} signed />}

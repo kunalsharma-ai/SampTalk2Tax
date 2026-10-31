@@ -3,9 +3,9 @@
 Honest list of what does not exist or is incomplete. Kept current with each milestone.
 
 ## Product scope
-* The web app covers M1 only: sign-in, onboarding, dashboard, journals, chart of accounts, periods, four reports, audit trail and members. Every other module in the directive has no screen, and the sidebar does not show them.
-* Of 1,343 registry entries, 97 have progress (63 Tested, 21 Implemented, 13 Implementing). The rest are Not started.
-* No AR, AP, banking, tax, payroll, procurement, expenses, treasury, FP&A, AI, agents, workflows, documents, integrations, subscriptions or admin modules yet.
+* The web app covers M1 plus the first M2 slice: customers, invoices, credit notes, receipts, receivables ageing, vendors, bills, vendor credits, payments, payables ageing and tax rates. Every other module in the directive has no screen, and the sidebar does not show them.
+* Of 1,343 registry entries, the generated [`FEATURE_STATUS.md`](FEATURE_STATUS.md) lists the current counts; everything else is Not started.
+* No banking, bank reconciliation, statutory tax, payroll, procurement, expenses, treasury, FP&A, AI, agents, workflows, documents, integrations, subscriptions or admin modules yet.
 * No AI functionality of any kind exists yet, and none is claimed.
 
 ## Accounting
@@ -14,6 +14,16 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Dimensions are free-form key/values on lines; there are no dimension masters or dimension reports.
 * The chart template is a generic SMB chart, not a statutory chart (e.g. Schedule III presentation is not implemented).
 * Period CLOSED status exists but there is no close workflow; LOCKED/OPEN toggling is available to OWNER/ADMIN.
+
+## Receivables and payables (M2, slice 1)
+* Documents are in the organisation's functional currency only; multi-currency invoices and bills are not supported yet.
+* Tax rates are percentages the tenant configures. There is no statutory tax engine, no place-of-supply or GST/TDS logic, no tax return and no e-invoicing.
+* No quotes, sales orders, purchase orders, recurring invoices, debit notes, write-offs, bad-debt provisions, collection reminders, payment links or portals.
+* No PDF generation or emailing of invoices and statements.
+* Approval is role-based only (an APPROVER can post drafts); there is no multi-step approval workflow or amount thresholds.
+* Payments are recorded against a bank or cash account in the ledger; there is no bank feed, statement import or reconciliation yet (next M2 slice).
+* Removing an allocation is dated today; there is no back-dated removal.
+* Ageing buckets are fixed (current, 1–30, 31–60, 61–90, over 90).
 
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
