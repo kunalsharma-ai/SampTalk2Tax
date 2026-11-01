@@ -70,7 +70,7 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
       { href: '/settings/tax-rates', label: 'Tax rates' },
     ],
   },
-  { group: 'Planning', items: [{ href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }] },
+  { group: 'Planning', items: [{ href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }] },
   { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/approvals', label: 'Approval rules' }] },
 ];
 

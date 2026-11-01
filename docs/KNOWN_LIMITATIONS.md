@@ -69,6 +69,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Monthly budgets for revenue and expense accounts only: no departments or projects (no dimensions yet), balance sheet or cash budgets, driver-based lines, spreadsheet import or approval chains. Budget vs actual reads posted journals with no drill-down or export. See [`BUDGETS.md`](BUDGETS.md).
 
+## Cash-flow forecast (M4, slice 2)
+
+* Rule-based, not machine learning: open invoices and bills at each contact's usual payment delay, plus planned items typed in by hand. No seasonality, no sales pipeline, no recurring invoices or payroll runs projected automatically, single currency (the functional currency), cash and bank accounts together only. The range is the 25th–75th percentile of payment delays, not a statistical confidence interval. Backtests use today's planned items. Unapplied receipts and payments are reported, not netted. No scenarios, alerts or export. See [`CASH_FLOW_FORECAST.md`](CASH_FLOW_FORECAST.md).
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

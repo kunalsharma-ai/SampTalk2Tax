@@ -216,6 +216,9 @@ model Organization {
   payRuns              PayRun[]
   budgets              Budget[]
   budgetLines          BudgetLine[]
+  cashFlowSettings     CashFlowSettings?
+  cashFlowItems        CashFlowItem[]
+  cashForecasts        CashForecast[]
 
   @@map("organizations")
 }
@@ -1455,4 +1458,76 @@ model BudgetLine {
   @@unique([budgetId, accountId, periodNo])
   @@index([accountId])
   @@map("budget_lines")
+}
+
+// ---------------------------------------------------------------- cash-flow forecast (M4)
+
+/// The cash balance below which the forecast warns.
+model CashFlowSettings {
+  orgId          String       @id @map("org_id") @db.Uuid
+  minimumBalance Decimal      @default(0) @map("minimum_balance") @db.Decimal(18, 2)
+  updatedById    String       @map("updated_by_id") @db.Uuid
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("cash_flow_settings")
+}
+
+enum CashFlowDirection {
+  IN
+  OUT
+}
+
+enum PlannedFrequency {
+  ONCE
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+/// A receipt or payment the books do not hold yet: rent, a loan instalment, tax, a planned sale.
+model CashFlowItem {
+  id          String            @id @default(uuid()) @db.Uuid
+  orgId       String            @map("org_id") @db.Uuid
+  name        String
+  direction   CashFlowDirection
+  amount      Decimal           @db.Decimal(18, 2)
+  frequency   PlannedFrequency
+  startDate   DateTime          @map("start_date") @db.Date
+  endDate     DateTime?         @map("end_date") @db.Date
+  note        String?
+  isActive    Boolean           @default(true) @map("is_active")
+  createdById String            @map("created_by_id") @db.Uuid
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("cash_flow_items")
+}
+
+/// A forecast as it was worked out on a day, kept unchanged so it can be compared with what
+/// happened. A backtest is worked out as of an earlier date from the records dated up to it.
+model CashForecast {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  asOf           DateTime     @map("as_of") @db.Date
+  horizonDays    Int          @map("horizon_days")
+  isBacktest     Boolean      @map("is_backtest")
+  opening        Decimal      @db.Decimal(18, 2)
+  closingBase    Decimal      @map("closing_base") @db.Decimal(18, 2)
+  minimumBalance Decimal?     @map("minimum_balance") @db.Decimal(18, 2)
+  /// [{ date, base, low, high }] for every day of the horizon.
+  days           Json
+  /// What went in: totals by kind, item counts and the payment delays used.
+  inputs         Json
+  note           String?
+  createdById    String       @map("created_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, createdAt])
+  @@map("cash_forecasts")
 }
