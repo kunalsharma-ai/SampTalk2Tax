@@ -176,8 +176,13 @@ export class GstService {
     const output = { igst: net(reg.outputIgstAccountId, true), cgst: net(reg.outputCgstAccountId, true), sgst: net(reg.outputSgstAccountId, true) };
     const input = { igst: net(reg.inputIgstAccountId, false), cgst: net(reg.inputCgstAccountId, false), sgst: net(reg.inputSgstAccountId, false) };
     const heads = ['igst', 'cgst', 'sgst'] as const;
-    const outward = { igst: new D(s.outwardTaxable.igst).plus(s.outwardZeroRated.igst), cgst: new D(s.outwardTaxable.cgst), sgst: new D(s.outwardTaxable.sgst) };
-    const agrees = heads.every((h) => new D(output[h]).eq(outward[h]) && new D(input[h]).eq(s.itc[h]));
+    // Output accounts carry outward tax and reverse-charge tax; input accounts all input tax credit.
+    const outward = {
+      igst: new D(s.outwardTaxable.igst).plus(s.outwardZeroRated.igst).plus(s.inwardReverseCharge.igst),
+      cgst: new D(s.outwardTaxable.cgst).plus(s.inwardReverseCharge.cgst),
+      sgst: new D(s.outwardTaxable.sgst).plus(s.inwardReverseCharge.sgst),
+    };
+    const agrees = heads.every((h) => new D(output[h]).eq(outward[h]) && new D(input[h]).eq(s.itcTotal[h]));
     return { output, input, agrees };
   }
 
@@ -203,7 +208,9 @@ export class GstService {
       gstin: d.counterpartyGstin,
       placeOfSupply: d.placeOfSupply!,
       nature: d.supplyNature!,
-      total: d.total.toFixed(2),
+      total: d.subtotal.plus(d.taxTotal).toFixed(2),
+      reverseCharge: d.reverseCharge,
+      supplierState: d.supplierState ?? undefined,
       lines: d.lines.map((l) => ({
         hsnCode: l.hsnCode,
         quantity: l.quantity.toFixed(),

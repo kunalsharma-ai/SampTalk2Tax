@@ -35,7 +35,12 @@ export interface GstReturnDocument {
   gstin: string | null;
   placeOfSupply: string;
   nature: SupplyNature;
+  /** Invoice value: taxable value plus GST charged (income-tax TCS is not part of it). */
   total: string;
+  /** Purchases only: the buyer pays the GST (reverse charge). */
+  reverseCharge?: boolean;
+  /** The supplier's state; 96 for a supplier outside India (import of services). */
+  supplierState?: string;
   lines: GstReturnLine[];
 }
 
@@ -284,8 +289,18 @@ export interface Gstr3bSummary {
   outwardNonGst: string;
   /** 3.2 inter-state supplies to unregistered persons, by place of supply. */
   interStateUnregistered: { placeOfSupply: string; taxable: string; igst: string }[];
-  /** 4(A)(5) all other ITC, net of vendor credit notes (4(C) net ITC available; no reversals are modelled). */
+  /** 3.1(d) inward supplies liable to reverse charge: taxable value and the tax the organisation owes on them. */
+  inwardReverseCharge: TaxHeads;
+  /** 4(A)(2) ITC on import of services (reverse charge on a supplier outside India). */
+  itcImportServices: Heads;
+  /** 4(A)(3) ITC on inward supplies liable to reverse charge (other than imports). */
+  itcReverseCharge: Heads;
+  /** 4(A)(5) all other ITC, net of vendor credit notes. */
   itc: Heads;
+  /** 4(C) net ITC available: the three lines above (no reversals are modelled). */
+  itcTotal: Heads;
+  /** Reverse-charge tax is paid in cash (CGST Act s.49(4)); credit cannot pay it. */
+  reverseChargeCash: Heads;
   /** 5: inward exempt, nil-rated and non-GST supplies. */
   inwardExempt: { inter: string; intra: string };
   inwardNonGst: { inter: string; intra: string };
@@ -303,6 +318,9 @@ export function gstr3bSummary(documents: readonly GstReturnDocument[]): Gstr3bSu
   let nonGst = new D(0);
   const interUnreg = new Map<string, { taxable: Dec; igst: Dec }>();
   const itc = zero();
+  const rcm = zero();
+  const itcImport = zero();
+  const itcRcm = zero();
   const inward = { exempt: { INTER: new D(0), INTRA: new D(0) }, nonGst: { INTER: new D(0), INTRA: new D(0) } };
 
   for (const d of posted) {
@@ -324,7 +342,10 @@ export function gstr3bSummary(documents: readonly GstReturnDocument[]): Gstr3bSu
         } else if (l.category === 'NON_GST') nonGst = nonGst.plus(v);
         else nilExempt = nilExempt.plus(v);
       } else {
-        if (l.category === 'TAXABLE') add(itc, l, sign);
+        if (l.category === 'TAXABLE' && d.reverseCharge) {
+          add(rcm, l, sign);
+          add(d.supplierState === FOREIGN_PLACE_OF_SUPPLY ? itcImport : itcRcm, l, sign);
+        } else if (l.category === 'TAXABLE') add(itc, l, sign);
         else if (l.category === 'NON_GST') inward.nonGst[d.nature] = inward.nonGst[d.nature].plus(v);
         else inward.exempt[d.nature] = inward.exempt[d.nature].plus(v);
       }
@@ -335,17 +356,26 @@ export function gstr3bSummary(documents: readonly GstReturnDocument[]): Gstr3bSu
   for (const head of ['igst', 'cgst', 'sgst'] as const) {
     if (payable[head].isNegative()) warnings.push(`Credit notes exceed invoices for ${head.toUpperCase()} this period; the payable is shown as zero.`);
     if (itc[head].isNegative()) warnings.push(`Vendor credits exceed bills for ${head.toUpperCase()} this period; this is a reversal of input tax credit, shown here as zero credit.`);
+    if (rcm[head].isNegative()) warnings.push(`Vendor credits exceed reverse-charge bills for ${head.toUpperCase()} this period; the reverse-charge tax is shown as zero.`);
   }
+  const heads = (a: Acc): Heads => ({ igst: a.igst.toFixed(2), cgst: a.cgst.toFixed(2), sgst: a.sgst.toFixed(2) });
+  const posHeads = (a: Acc): Heads => ({ igst: D.max(a.igst, 0).toFixed(2), cgst: D.max(a.cgst, 0).toFixed(2), sgst: D.max(a.sgst, 0).toFixed(2) });
+  const itcAll = { taxable: new D(0), igst: itc.igst.plus(itcImport.igst).plus(itcRcm.igst), cgst: itc.cgst.plus(itcImport.cgst).plus(itcRcm.cgst), sgst: itc.sgst.plus(itcImport.sgst).plus(itcRcm.sgst) };
   return {
     outwardTaxable: out(outward),
     outwardZeroRated: { taxable: zeroRated.taxable.toFixed(2), igst: zeroRated.igst.toFixed(2) },
     outwardNilExempt: nilExempt.toFixed(2),
     outwardNonGst: nonGst.toFixed(2),
     interStateUnregistered: [...interUnreg.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([placeOfSupply, x]) => ({ placeOfSupply, taxable: x.taxable.toFixed(2), igst: x.igst.toFixed(2) })),
-    itc: { igst: itc.igst.toFixed(2), cgst: itc.cgst.toFixed(2), sgst: itc.sgst.toFixed(2) },
+    inwardReverseCharge: out(rcm),
+    itcImportServices: heads(itcImport),
+    itcReverseCharge: heads(itcRcm),
+    itc: heads(itc),
+    itcTotal: heads(itcAll),
+    reverseChargeCash: posHeads(rcm),
     inwardExempt: { inter: inward.exempt.INTER.toFixed(2), intra: inward.exempt.INTRA.toFixed(2) },
     inwardNonGst: { inter: inward.nonGst.INTER.toFixed(2), intra: inward.nonGst.INTRA.toFixed(2) },
-    setOff: setOffItc({ igst: payable.igst.toFixed(), cgst: payable.cgst.toFixed(), sgst: payable.sgst.toFixed() }, { igst: itc.igst.toFixed(), cgst: itc.cgst.toFixed(), sgst: itc.sgst.toFixed() }),
+    setOff: setOffItc({ igst: payable.igst.toFixed(), cgst: payable.cgst.toFixed(), sgst: payable.sgst.toFixed() }, { igst: itcAll.igst.toFixed(), cgst: itcAll.cgst.toFixed(), sgst: itcAll.sgst.toFixed() }),
     warnings,
   };
 }

@@ -5381,9 +5381,10 @@
       "evidence": [
         "apps/api/test/gst.e2e.test.ts",
         "apps/web/e2e/tax-flow.test.mjs",
-        "apps/web/src/components/ledger/document-form.tsx"
+        "apps/web/src/components/ledger/document-form.tsx",
+        "apps/web/e2e/withholding-flow.test.mjs"
       ],
-      "notes": "Invoices, credit notes, bills and vendor credits carry place of supply, supplier state, buyer/supplier GSTIN and tax by head; posted GST facts are immutable (DB trigger). No PDF tax invoice layout or e-invoice IRN yet."
+      "notes": "Invoices, credit notes, bills and vendor credits carry place of supply, supplier state, buyer/supplier GSTIN and tax by head; posted GST facts are immutable (DB trigger). Bills and vendor credits can be under reverse charge (the vendor is owed the amount without GST; the tax posts as output liability and input credit), including import of services from a vendor outside India (IGST). No PDF tax invoice layout or e-invoice IRN yet."
     },
     {
       "id": "TAX-011",
@@ -5441,7 +5442,7 @@
         "packages/tax-engine/test/returns.test.ts",
         "apps/api/test/gst.e2e.test.ts"
       ],
-      "notes": "ITC from bills less vendor credits, set off per CGST Act s.49/49A and rule 88A. Blocked credits (s.17(5)), reversals, ITC brought forward and GSTR-2B matching are not modelled."
+      "notes": "ITC from bills less vendor credits, including reverse-charge tax and import of services (GSTR-3B 4(A)(2), 4(A)(3), 4(A)(5)), set off per CGST Act s.49/49A and rule 88A; reverse-charge tax is paid in cash (s.49(4)). Blocked credits (s.17(5)), reversals, ITC brought forward and GSTR-2B matching are not modelled."
     },
     {
       "id": "TAX-013",
@@ -5576,9 +5577,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/withholding.ts",
+        "packages/tax-engine/test/withholding.test.ts",
+        "apps/api/test/withholding.e2e.test.ts",
+        "apps/web/e2e/withholding-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/tax/tds-tcs",
+        "apps/web/src/app/orgs/[orgId]/settings/tds-tcs"
+      ],
+      "notes": "Income-tax Act 2025 s.393(1) templates (contractors, technical and professional fees, commission, rent, purchase of goods) or tenant-defined sections; single-document and aggregate thresholds per tax year or month, whole-amount catch-up or excess-only; PAN-based rates (individual/HUF, no-PAN). TDS on bills is worked out on the amount before GST, previewed in the form, posted to TDS payable and cuts what the vendor is owed. Register by quarter, challans (Dr TDS payable, Cr bank, optional interest) with void, and a ledger check. No lower-deduction certificates, no TDS on vendor credits or advances, no Form 26Q/140 file and nothing is filed."
     },
     {
       "id": "TAX-018",
@@ -5602,9 +5610,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/withholding.test.ts",
+        "apps/api/test/withholding.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/tds-tcs"
+      ],
+      "notes": "Tenant-defined TCS sections on invoices, worked out on the invoice value including GST and added to what the customer pays (TCS payable). Same register, challans and ledger check as TDS. No built-in TCS templates, no TCS on receipts, no Form 27EQ file."
     },
     {
       "id": "TAX-019",
@@ -5706,9 +5718,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/withholding/withholding.service.ts",
+        "apps/api/test/withholding.e2e.test.ts",
+        "apps/web/e2e/withholding-flow.test.mjs"
+      ],
+      "notes": "TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet."
     },
     {
       "id": "TAX-023",
@@ -6096,9 +6112,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/tax-engine/src/india/withholding.ts",
+        "packages/accounting-engine/src/documents.ts"
+      ],
+      "notes": "The engine supports one withholding (deduct or collect) per document with its own payable account; India TDS/TCS is the only jurisdiction configured."
     },
     {
       "id": "TAX-038",

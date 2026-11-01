@@ -46,6 +46,7 @@ enum JournalSource {
   PAYMENT
   BANK
   EXPENSE
+  TAX
 }
 
 enum StatementLineStatus {
@@ -199,6 +200,9 @@ model Organization {
   expenseClaims        ExpenseClaim[]
   invitations          Invitation[]
   gstRegistration      GstRegistration?
+  withholdingSettings  WithholdingSettings?
+  withholdingSections  WithholdingSection[]
+  withholdingDeposits  WithholdingDeposit[]
 
   @@map("organizations")
 }
@@ -380,27 +384,31 @@ model AuditEvent {
 
 /// Customers and vendors. One contact can be both.
 model Contact {
-  id               String       @id @default(uuid()) @db.Uuid
-  orgId            String       @map("org_id") @db.Uuid
-  name             String
-  email            String?
-  phone            String?
-  taxId            String?      @map("tax_id")
+  id                   String       @id @default(uuid()) @db.Uuid
+  orgId                String       @map("org_id") @db.Uuid
+  name                 String
+  email                String?
+  phone                String?
+  taxId                String?      @map("tax_id")
   /// India GST: the contact's GSTIN (upper case, check character verified). Null = unregistered.
-  gstin            String?
+  gstin                String?
   /// India GST state code: from the GSTIN when registered; otherwise where the contact is (default place of supply).
-  stateCode        String?      @map("state_code") @db.Char(2)
-  address          String?
-  isCustomer       Boolean      @default(false) @map("is_customer")
-  isVendor         Boolean      @default(false) @map("is_vendor")
-  paymentTermsDays Int          @default(30) @map("payment_terms_days")
-  creditLimit      Decimal?     @map("credit_limit") @db.Decimal(24, 6)
-  isActive         Boolean      @default(true) @map("is_active")
-  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org              Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  documents        Document[]
-  payments         Payment[]
+  stateCode            String?      @map("state_code") @db.Char(2)
+  /// India: the contact's PAN (from the GSTIN when registered). Decides TDS/TCS rates (no PAN, individual or HUF).
+  pan                  String?      @db.Char(10)
+  /// Default TDS (vendors) or TCS (customers) section for new documents.
+  withholdingSectionId String?      @map("withholding_section_id") @db.Uuid
+  address              String?
+  isCustomer           Boolean      @default(false) @map("is_customer")
+  isVendor             Boolean      @default(false) @map("is_vendor")
+  paymentTermsDays     Int          @default(30) @map("payment_terms_days")
+  creditLimit          Decimal?     @map("credit_limit") @db.Decimal(24, 6)
+  isActive             Boolean      @default(true) @map("is_active")
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                  Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  documents            Document[]
+  payments             Payment[]
 
   @@unique([id, orgId])
   @@index([orgId, name])
@@ -451,42 +459,59 @@ model TaxRate {
 
 /// Invoices, customer credit notes, bills and vendor credits.
 model Document {
-  id                 String            @id @default(uuid()) @db.Uuid
-  orgId              String            @map("org_id") @db.Uuid
-  kind               DocumentKind
-  status             DocumentStatus    @default(DRAFT)
-  number             String?
-  contactId          String            @map("contact_id") @db.Uuid
-  issueDate          DateTime          @map("issue_date") @db.Date
-  dueDate            DateTime          @map("due_date") @db.Date
-  reference          String?
-  memo               String?
-  currency           String            @db.Char(3)
+  id                   String                   @id @default(uuid()) @db.Uuid
+  orgId                String                   @map("org_id") @db.Uuid
+  kind                 DocumentKind
+  status               DocumentStatus           @default(DRAFT)
+  number               String?
+  contactId            String                   @map("contact_id") @db.Uuid
+  issueDate            DateTime                 @map("issue_date") @db.Date
+  dueDate              DateTime                 @map("due_date") @db.Date
+  reference            String?
+  memo                 String?
+  currency             String                   @db.Char(3)
   /// India GST, set on documents that use GST rates: place of supply (state code, 96 = outside India).
-  placeOfSupply      String?           @map("place_of_supply") @db.Char(2)
+  placeOfSupply        String?                  @map("place_of_supply") @db.Char(2)
   /// India GST: the supplier's state (the organisation's on sales, the vendor's on purchases).
-  supplierState      String?           @map("supplier_state") @db.Char(2)
-  supplyNature       SupplyNature?     @map("supply_nature")
+  supplierState        String?                  @map("supplier_state") @db.Char(2)
+  supplyNature         SupplyNature?            @map("supply_nature")
   /// India GST: the contact's GSTIN when the document was saved. Null = unregistered.
-  counterpartyGstin  String?           @map("counterparty_gstin")
-  subtotal           Decimal           @db.Decimal(24, 6)
-  taxTotal           Decimal           @map("tax_total") @db.Decimal(24, 6)
-  total              Decimal           @db.Decimal(24, 6)
-  journalEntryId     String?           @unique @map("journal_entry_id") @db.Uuid
-  voidJournalEntryId String?           @unique @map("void_journal_entry_id") @db.Uuid
-  voidDate           DateTime?         @map("void_date") @db.Date
-  voidReason         String?           @map("void_reason")
-  createdById        String            @map("created_by_id") @db.Uuid
-  postedById         String?           @map("posted_by_id") @db.Uuid
-  postedAt           DateTime?         @map("posted_at") @db.Timestamptz(6)
-  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org                Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  contact            Contact           @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict)
-  lines              DocumentLine[]
-  allocationsIn      Allocation[]      @relation("AllocationTarget")
-  allocationsOut     Allocation[]      @relation("AllocationCreditSource")
-  approvalRequests   ApprovalRequest[]
+  counterpartyGstin    String?                  @map("counterparty_gstin")
+  /// India GST reverse charge (bills and vendor credits): the organisation pays the GST, not the supplier.
+  reverseCharge        Boolean                  @default(false) @map("reverse_charge")
+  /// GST on a reverse-charge document: on the lines, but neither in tax_total nor owed to the supplier.
+  reverseChargeTax     Decimal                  @default(0) @map("reverse_charge_tax") @db.Decimal(24, 6)
+  /// Income tax withheld: TDS on bills (lowers total), TCS on invoices (raises total).
+  withholdingSectionId String?                  @map("withholding_section_id") @db.Uuid
+  withholdingKind      WithholdingKind?         @map("withholding_kind")
+  /// This document's amount counted toward the section's threshold.
+  withholdingSubject   Decimal                  @default(0) @map("withholding_subject") @db.Decimal(24, 6)
+  /// The amount the tax was worked out on (can include earlier documents once a threshold is crossed).
+  withholdingBase      Decimal                  @default(0) @map("withholding_base") @db.Decimal(24, 6)
+  withholdingRate      Decimal                  @default(0) @map("withholding_rate") @db.Decimal(9, 6)
+  withholdingAmount    Decimal                  @default(0) @map("withholding_amount") @db.Decimal(24, 6)
+  /// The contact's PAN when the document was saved; null = no PAN (higher rate).
+  counterpartyPan      String?                  @map("counterparty_pan") @db.Char(10)
+  subtotal             Decimal                  @db.Decimal(24, 6)
+  taxTotal             Decimal                  @map("tax_total") @db.Decimal(24, 6)
+  total                Decimal                  @db.Decimal(24, 6)
+  journalEntryId       String?                  @unique @map("journal_entry_id") @db.Uuid
+  voidJournalEntryId   String?                  @unique @map("void_journal_entry_id") @db.Uuid
+  voidDate             DateTime?                @map("void_date") @db.Date
+  voidReason           String?                  @map("void_reason")
+  createdById          String                   @map("created_by_id") @db.Uuid
+  postedById           String?                  @map("posted_by_id") @db.Uuid
+  postedAt             DateTime?                @map("posted_at") @db.Timestamptz(6)
+  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                  Organization             @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  contact              Contact                  @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict)
+  lines                DocumentLine[]
+  allocationsIn        Allocation[]             @relation("AllocationTarget")
+  allocationsOut       Allocation[]             @relation("AllocationCreditSource")
+  approvalRequests     ApprovalRequest[]
+  withholdingSection   WithholdingSection?      @relation(fields: [withholdingSectionId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_withholding_section_fk")
+  depositItems         WithholdingDepositItem[]
 
   @@unique([orgId, kind, number])
   @@unique([id, orgId])
@@ -829,4 +854,103 @@ model GstRegistration {
   org                 Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
 
   @@map("gst_registrations")
+}
+
+enum WithholdingKind {
+  TDS
+  TCS
+}
+
+enum ThresholdWindow {
+  TAX_YEAR
+  MONTH
+}
+
+enum ThresholdBasis {
+  WHOLE
+  EXCESS
+}
+
+/// India income-tax withholding: the organisation's TAN and where TDS and TCS post.
+model WithholdingSettings {
+  orgId               String       @id @map("org_id") @db.Uuid
+  tan                 String       @db.Char(10)
+  tdsPayableAccountId String       @map("tds_payable_account_id") @db.Uuid
+  tcsPayableAccountId String       @map("tcs_payable_account_id") @db.Uuid
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                 Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("withholding_settings")
+}
+
+/// A TDS or TCS provision as the organisation applies it. Rates and thresholds cannot change; create a new section.
+model WithholdingSection {
+  id                 String          @id @default(uuid()) @db.Uuid
+  orgId              String          @map("org_id") @db.Uuid
+  kind               WithholdingKind
+  code               String
+  name               String
+  rate               Decimal         @db.Decimal(9, 6)
+  rateIndividualHuf  Decimal?        @map("rate_individual_huf") @db.Decimal(9, 6)
+  rateNoPan          Decimal         @map("rate_no_pan") @db.Decimal(9, 6)
+  singleThreshold    Decimal?        @map("single_threshold") @db.Decimal(24, 6)
+  aggregateThreshold Decimal?        @map("aggregate_threshold") @db.Decimal(24, 6)
+  thresholdWindow    ThresholdWindow @map("threshold_window")
+  thresholdBasis     ThresholdBasis  @map("threshold_basis")
+  /// Documents dated before this cannot use the section.
+  validFrom          DateTime        @map("valid_from") @db.Date
+  source             String?
+  isActive           Boolean         @default(true) @map("is_active")
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  org                Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  documents          Document[]
+
+  @@unique([orgId, kind, code])
+  @@unique([id, orgId])
+  @@map("withholding_sections")
+}
+
+/// A payment of TDS or TCS to the government (a challan), covering the deductions on the documents listed.
+model WithholdingDeposit {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  orgId              String                   @map("org_id") @db.Uuid
+  kind               WithholdingKind
+  number             String
+  depositDate        DateTime                 @map("deposit_date") @db.Date
+  bankAccountId      String                   @map("bank_account_id") @db.Uuid
+  /// Challan identification (for example the CIN or BSR code and serial number).
+  challanReference   String                   @map("challan_reference")
+  taxAmount          Decimal                  @map("tax_amount") @db.Decimal(24, 6)
+  interestAmount     Decimal                  @default(0) @map("interest_amount") @db.Decimal(24, 6)
+  interestAccountId  String?                  @map("interest_account_id") @db.Uuid
+  memo               String?
+  status             PaymentStatus            @default(POSTED)
+  journalEntryId     String                   @unique @map("journal_entry_id") @db.Uuid
+  voidJournalEntryId String?                  @unique @map("void_journal_entry_id") @db.Uuid
+  voidDate           DateTime?                @map("void_date") @db.Date
+  voidReason         String?                  @map("void_reason")
+  createdById        String                   @map("created_by_id") @db.Uuid
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  org                Organization             @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  items              WithholdingDepositItem[]
+
+  @@unique([orgId, kind, number])
+  @@unique([id, orgId])
+  @@map("withholding_deposits")
+}
+
+model WithholdingDepositItem {
+  id         String             @id @default(uuid()) @db.Uuid
+  orgId      String             @map("org_id") @db.Uuid
+  depositId  String             @map("deposit_id") @db.Uuid
+  documentId String             @map("document_id") @db.Uuid
+  amount     Decimal            @db.Decimal(24, 6)
+  /// False once the deposit is voided; a document is in at most one active deposit.
+  active     Boolean            @default(true)
+  deposit    WithholdingDeposit @relation(fields: [depositId, orgId], references: [id, orgId], onDelete: Restrict)
+  document   Document           @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, documentId])
+  @@map("withholding_deposit_items")
 }

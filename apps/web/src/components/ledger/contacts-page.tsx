@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { checkGstin, placeOfSupplyName } from '@talk2tax/tax-engine';
+import { checkGstin, checkPan, placeOfSupplyName } from '@talk2tax/tax-engine';
 import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -8,7 +8,7 @@ import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
 import type { LedgerConfig } from '@/lib/ledgers';
-import { useContacts, useGstStates, useOrg } from '@/lib/org';
+import { useContacts, useGstStates, useOrg, useWithholdingSections } from '@/lib/org';
 import { can, type Contact } from '@/lib/types';
 
 export interface ContactDraft {
@@ -19,6 +19,8 @@ export interface ContactDraft {
   taxId: string;
   gstin: string;
   stateCode: string;
+  pan: string;
+  withholdingSectionId: string;
   address: string;
   isCustomer: boolean;
   isVendor: boolean;
@@ -29,8 +31,8 @@ export interface ContactDraft {
 
 export function draftFrom(c: Contact | null, l: LedgerConfig): ContactDraft {
   return c
-    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', gstin: c.gstin ?? '', stateCode: c.stateCode ?? '', address: c.address ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
-    : { name: '', email: '', phone: '', taxId: '', gstin: '', stateCode: '', address: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
+    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', gstin: c.gstin ?? '', stateCode: c.stateCode ?? '', pan: c.pan ?? '', withholdingSectionId: c.withholdingSectionId ?? '', address: c.address ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
+    : { name: '', email: '', phone: '', taxId: '', gstin: '', stateCode: '', pan: '', withholdingSectionId: '', address: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
 }
 
 export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig; draft: ContactDraft | null; setDraft: (d: ContactDraft | null) => void; onSaved?: (c: Contact) => void }) {
@@ -39,6 +41,11 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
   const states = useGstStates();
   const qc = useQueryClient();
   const gstin = draft?.gstin.trim() ? checkGstin(draft.gstin) : null;
+  const sections = useWithholdingSections();
+  const panFromGstin = gstin?.valid ? gstin.pan! : null;
+  const pan = panFromGstin ? null : draft?.pan.trim() ? checkPan(draft.pan) : null;
+  const wKind = draft?.isVendor && !draft?.isCustomer ? 'TDS' : draft?.isCustomer && !draft?.isVendor ? 'TCS' : null;
+  const wOptions = (sections.data ?? []).filter((x) => (wKind ? x.kind === wKind : true));
   const save = useMutation({
     mutationFn: (d: ContactDraft) => {
       const body = {
@@ -46,7 +53,9 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
         email: d.email || null,
         phone: d.phone || null,
         taxId: d.taxId || null,
-        ...(india ? { gstin: d.gstin.trim() || null, stateCode: d.gstin.trim() ? undefined : d.stateCode || null } : {}),
+        ...(india
+          ? { gstin: d.gstin.trim() || null, stateCode: d.gstin.trim() ? undefined : d.stateCode || null, pan: d.gstin.trim() ? undefined : d.pan.trim() || null, withholdingSectionId: d.withholdingSectionId || null }
+          : {}),
         address: d.address || null,
         isCustomer: d.isCustomer,
         isVendor: d.isVendor,
@@ -83,10 +92,23 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
                 {(p) => (
                   <Select {...p} disabled={!!gstin?.valid} value={gstin?.valid ? gstin.stateCode : draft.stateCode} onChange={(e) => setDraft({ ...draft, stateCode: e.target.value })}>
                     <option value="">Not set</option>
-                    {(states.data ?? []).filter((s) => s.code !== '96').map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}
+                    {(states.data ?? []).map((s) => <option key={s.code} value={s.code}>{s.code === '96' ? '96 · Outside India' : `${s.code} · ${s.name}`}</option>)}
                   </Select>
                 )}
               </Field>
+              <Field label="PAN" error={pan && !pan.valid ? pan.issues[0] : undefined} hint={panFromGstin ? `${panFromGstin}, from the GSTIN.` : pan?.valid ? `${pan.holderType}. Decides TDS and TCS rates; not looked up on the income-tax portal.` : 'Without a PAN, TDS and TCS use the higher no-PAN rate.'}>
+                {(p) => <Input {...p} className="num uppercase" maxLength={10} disabled={!!panFromGstin} value={panFromGstin ?? draft.pan} onChange={(e) => setDraft({ ...draft, pan: e.target.value.toUpperCase() })} />}
+              </Field>
+              {wOptions.length ? (
+                <Field label={wKind === 'TCS' ? 'Default TCS section' : wKind === 'TDS' ? 'Default TDS section' : 'Default TDS/TCS section'} hint="Pre-selected on new bills or invoices.">
+                  {(p) => (
+                    <Select {...p} value={draft.withholdingSectionId} onChange={(e) => setDraft({ ...draft, withholdingSectionId: e.target.value })}>
+                      <option value="">None</option>
+                      {wOptions.map((x) => <option key={x.id} value={x.id}>{x.kind} {x.code} · {x.name}</option>)}
+                    </Select>
+                  )}
+                </Field>
+              ) : null}
             </>
           ) : null}
           <Field label="Tax ID" hint="Stored as entered. Not validated against any tax authority.">{(p) => <Input {...p} value={draft.taxId} onChange={(e) => setDraft({ ...draft, taxId: e.target.value })} />}</Field>
@@ -107,7 +129,7 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
           </fieldset>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <Button type="button" variant="ghost" onClick={() => setDraft(null)}>Cancel</Button>
-            <Button type="submit" loading={save.isPending} disabled={(!draft.isCustomer && !draft.isVendor) || (!!gstin && !gstin.valid)}>Save {l.contact.toLowerCase()}</Button>
+            <Button type="submit" loading={save.isPending} disabled={(!draft.isCustomer && !draft.isVendor) || (!!gstin && !gstin.valid) || (!!pan && !pan.valid)}>Save {l.contact.toLowerCase()}</Button>
           </div>
         </form>
       ) : null}
@@ -162,7 +184,7 @@ export function ContactsPage({ l }: { l: LedgerConfig }) {
                     <Link className="text-accent hover:underline" href={`/orgs/${orgId}/${l.contactsPath}/${x.id}`}>{x.name}</Link>
                     {!x.isActive ? <Badge className="ml-2">Inactive</Badge> : null}
                     {x.isCustomer && x.isVendor ? <Badge className="ml-2" tone="violet">Customer and vendor</Badge> : null}
-                    {x.gstin ? <p className="num text-xs text-fg-muted">GSTIN {x.gstin}</p> : null}
+                    {x.gstin ? <p className="num text-xs text-fg-muted">GSTIN {x.gstin}</p> : x.pan ? <p className="num text-xs text-fg-muted">PAN {x.pan}</p> : null}
                   </Td>
                   <Td className="text-fg-muted">{x.email}</Td>
                   <Td numeric className="text-fg-muted">{x.paymentTermsDays} days</Td>

@@ -15,6 +15,10 @@ const Fields = {
   gstin: z.string().trim().max(20).nullable().optional(),
   /** India GST state code for an unregistered contact (default place of supply). */
   stateCode: z.string().regex(/^\d{2}$/).nullable().optional(),
+  /** India: PAN. Taken from the GSTIN when there is one; decides TDS/TCS rates. */
+  pan: z.string().trim().max(10).nullable().optional(),
+  /** Default TDS section (vendors) or TCS section (customers) for new documents. */
+  withholdingSectionId: z.uuid().nullable().optional(),
   address: optionalText(1000),
   isCustomer: z.boolean().optional(),
   isVendor: z.boolean().optional(),
