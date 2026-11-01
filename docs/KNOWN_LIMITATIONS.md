@@ -73,6 +73,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Rule-based, not machine learning: open invoices and bills at each contact's usual payment delay, plus planned items typed in by hand. No seasonality, no sales pipeline, no recurring invoices or payroll runs projected automatically, single currency (the functional currency), cash and bank accounts together only. The range is the 25th–75th percentile of payment delays, not a statistical confidence interval. Backtests use today's planned items. Unapplied receipts and payments are reported, not netted. No scenarios, alerts or export. See [`CASH_FLOW_FORECAST.md`](CASH_FLOW_FORECAST.md).
 
+## KPIs and management reports (M4, slice 3)
+
+* A fixed set of 13 KPIs for the whole organisation, computed by calendar month from posted journals by account subtype: no custom formulas or dashboards, dimensions, peer benchmarks, alerts, drill-down to journals, scheduled or emailed reports, or PDF/Excel export (browser print only). DSO and DPO compare GST-inclusive balances with tax-exclusive revenue and expenses. The management report compares only the approved budget. See [`KPIS_AND_MANAGEMENT_REPORTS.md`](KPIS_AND_MANAGEMENT_REPORTS.md).
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

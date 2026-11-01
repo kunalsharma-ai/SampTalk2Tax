@@ -53,6 +53,8 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
       { href: '/reports/income-statement', label: 'Profit and loss' },
       { href: '/reports/balance-sheet', label: 'Balance sheet' },
       { href: '/reports/general-ledger', label: 'General ledger' },
+      { href: '/reports/kpis', label: 'KPIs' },
+      { href: '/reports/management', label: 'Management reports' },
     ],
   },
   {
