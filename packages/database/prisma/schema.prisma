@@ -219,6 +219,8 @@ model Organization {
   cashFlowSettings     CashFlowSettings?
   cashFlowItems        CashFlowItem[]
   cashForecasts        CashForecast[]
+  kpiTargets           KpiTarget[]
+  managementReports    ManagementReport[]
 
   @@map("organizations")
 }
@@ -1530,4 +1532,52 @@ model CashForecast {
 
   @@index([orgId, createdAt])
   @@map("cash_forecasts")
+}
+
+enum KpiComparator {
+  AT_LEAST
+  AT_MOST
+}
+
+/// A target for one KPI: the value it should be at least or at most.
+model KpiTarget {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  kpi         String        @db.VarChar(40)
+  comparator  KpiComparator
+  target      Decimal       @db.Decimal(20, 4)
+  note        String?       @db.VarChar(500)
+  updatedById String        @map("updated_by_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, kpi])
+  @@map("kpi_targets")
+}
+
+enum ManagementReportStatus {
+  DRAFT
+  FINAL
+}
+
+/// The monthly management report: commentary while a draft; once final, a frozen copy of
+/// its figures that later postings cannot change.
+model ManagementReport {
+  id            String                 @id @default(uuid()) @db.Uuid
+  orgId         String                 @map("org_id") @db.Uuid
+  /// The first day of the month reported on.
+  month         DateTime               @db.Date
+  commentary    String                 @default("")
+  status        ManagementReportStatus @default(DRAFT)
+  snapshot      Json?
+  finalisedById String?                @map("finalised_by_id") @db.Uuid
+  finalisedAt   DateTime?              @map("finalised_at") @db.Timestamptz(6)
+  updatedById   String                 @map("updated_by_id") @db.Uuid
+  createdAt     DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org           Organization           @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, month])
+  @@map("management_reports")
 }

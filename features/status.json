@@ -1687,6 +1687,67 @@
         "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
       ],
       "notes": "Backtesting: a forecast rebuilt from the books as they stood on an earlier day (up to 2 years back), saved and measured against actual cash. The range is the 25th to 75th percentile of payment delays, not a statistical confidence interval; backtests use today's planned items. Kept below Tested until a real interval model exists."
+    },
+    "FPA-021": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/kpis.ts",
+        "packages/accounting-engine/test/kpis.test.ts",
+        "apps/api/src/kpis",
+        "apps/api/test/kpis.e2e.test.ts",
+        "apps/web/e2e/kpis-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/kpis"
+      ],
+      "notes": "13 KPIs computed monthly from posted journals (revenue, gross/operating/net margin, opex ratio, current and quick ratio, working capital, liabilities to equity, DSO, DPO, net cash flow, runway), each with its formula, components, previous month, same month last year, 13-month history, and a target (at least / at most) that is met or missed. Fixed catalogue: no custom KPI formulas. See docs/KPIS_AND_MANAGEMENT_REPORTS.md."
+    },
+    "RPT-019": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/kpis.ts",
+        "packages/accounting-engine/test/kpis.test.ts",
+        "apps/api/src/kpis",
+        "apps/api/test/kpis.e2e.test.ts",
+        "apps/web/e2e/kpis-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/kpis"
+      ],
+      "notes": "Financial ratios: margins, operating expense ratio, current and quick ratio, liabilities to equity, DSO and DPO, from posted journals by account subtype, with the figures behind each. DSO/DPO compare GST-inclusive balances with tax-exclusive revenue/expenses (documented)."
+    },
+    "RPT-018": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/kpis.ts",
+        "packages/accounting-engine/test/kpis.test.ts",
+        "apps/api/src/kpis",
+        "apps/api/test/kpis.e2e.test.ts",
+        "apps/web/e2e/kpis-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/kpis"
+      ],
+      "notes": "Working capital (current assets − current liabilities at month end), with current and quick ratio, DSO and DPO and their history. Classification by account subtype; an unclassified liability counts as current."
+    },
+    "RISK-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/kpis.ts",
+        "packages/accounting-engine/test/kpis.test.ts",
+        "apps/api/src/kpis",
+        "apps/api/test/kpis.e2e.test.ts",
+        "apps/web/e2e/kpis-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/kpis"
+      ],
+      "notes": "Revenue by customer from posted invoices less credit notes (tax excluded) over the last 12 months and per month: top 5 with shares, the rest grouped, and a warning when one customer is 40% or more. No alerts or scoring."
+    },
+    "RPT-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/kpis.ts",
+        "packages/accounting-engine/test/kpis.test.ts",
+        "apps/api/src/kpis",
+        "apps/api/test/kpis.e2e.test.ts",
+        "apps/web/e2e/kpis-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/management",
+        "packages/database/prisma/migrations/20261101300000_kpis_management_reports"
+      ],
+      "notes": "Monthly management report: grouped P&L for the month vs previous month, same month last year and the approved budget, year to date, cash, KPIs and top customers, with commentary. Finalising freezes figures and commentary (trigger); later postings are listed against it. Printable from the browser; no PDF export, scheduling or distribution yet."
     }
   }
 }

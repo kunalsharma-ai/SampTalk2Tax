@@ -471,7 +471,7 @@ Part 14 · M4 · priority P2 · depends on: GL, RPT
 | FPA-018 |  | capability | Break-even analysis | Not started |
 | FPA-019 |  | capability | Profitability modeling | Not started |
 | FPA-020 |  | capability | Unit economics | Not started |
-| FPA-021 |  | capability | Financial KPI management | Not started |
+| FPA-021 |  | capability | Financial KPI management | Tested |
 | FPA-022 |  | capability | Forecast version control | Not started |
 | FPA-023 |  | capability | Budget approvals | Tested |
 | FPA-024 |  | capability | Forecast accuracy monitoring | Tested |
@@ -801,7 +801,7 @@ Part 23 · M4 · priority P2 · depends on: GL, AP, BANK
 | RISK-009 |  | capability | Transaction pattern analysis | Not started |
 | RISK-010 |  | capability | Payment approval anomalies | Not started |
 | RISK-011 |  | capability | Supplier concentration risk | Not started |
-| RISK-012 |  | capability | Customer concentration risk | Not started |
+| RISK-012 |  | capability | Customer concentration risk | Tested |
 | RISK-013 |  | capability | Liquidity risk | Not started |
 | RISK-014 |  | capability | Currency exposure risk | Not started |
 | RISK-015 |  | capability | Credit risk | Not started |
@@ -904,13 +904,13 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-015 |  | capability | Customer profitability | Not started |
 | RPT-016 |  | capability | Vendor spending | Not started |
 | RPT-017 |  | capability | Cash forecasts | Not started |
-| RPT-018 |  | capability | Working capital | Not started |
-| RPT-019 |  | capability | Financial ratios | Not started |
+| RPT-018 |  | capability | Working capital | Tested |
+| RPT-019 |  | capability | Financial ratios | Tested |
 | RPT-020 |  | capability | Consolidated statements | Not started |
 | RPT-021 |  | capability | Audit reports | Not started |
 | RPT-022 |  | capability | Executive reports | Not started |
 | RPT-023 |  | capability | Investor reports | Not started |
-| RPT-024 |  | capability | Board reports | Not started |
+| RPT-024 |  | capability | Board reports | Tested |
 | RPT-025 | Reporting Features | capability | Custom report builder | Not started |
 | RPT-026 | Reporting Features | capability | Drag-and-drop metrics | Not started |
 | RPT-027 | Reporting Features | capability | Financial dimensions | Not started |
