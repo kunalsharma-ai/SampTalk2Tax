@@ -315,6 +315,8 @@ export class DocumentsService {
       if (deposited) throw new DomainError('TAX_DEPOSITED', `The ${doc.withholdingKind} on this document was deposited in ${deposited.deposit.number}; void that deposit first`, HttpStatus.CONFLICT);
       const irn = await tx.eInvoice.findFirst({ where: { orgId: org.id, documentId: id, status: 'ACTIVE' }, select: { irn: true } });
       if (irn) throw new DomainError('HAS_IRN', `${doc.number} has an IRN on the e-invoice portal; record the IRN's cancellation first, or issue a credit note`, HttpStatus.CONFLICT);
+      const ewb = await tx.eWayBill.findFirst({ where: { orgId: org.id, documentId: id, status: 'ACTIVE' }, select: { number: true } });
+      if (ewb) throw new DomainError('HAS_EWAY_BILL', `${doc.number} has live e-way bill ${ewb.number}; record its cancellation on the portal first`, HttpStatus.CONFLICT);
       if (input.date < fromDbDate(doc.issueDate)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the document date');
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, doc.journalEntryId!, { date: input.date, memo: `Void ${doc.number}: ${input.reason}` });
       await tx.document.update({ where: { id }, data: { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date), voidReason: input.reason } });

@@ -167,20 +167,20 @@ model LoginThrottle {
 }
 
 model Organization {
-  id                   String                @id @default(uuid()) @db.Uuid
+  id                   String                  @id @default(uuid()) @db.Uuid
   name                 String
-  legalName            String?               @map("legal_name")
-  countryCode          String                @map("country_code") @db.Char(2)
-  functionalCurrency   String                @map("functional_currency") @db.Char(3)
-  fiscalYearStartMonth Int                   @map("fiscal_year_start_month") @db.SmallInt
-  isDemo               Boolean               @default(false) @map("is_demo")
+  legalName            String?                 @map("legal_name")
+  countryCode          String                  @map("country_code") @db.Char(2)
+  functionalCurrency   String                  @map("functional_currency") @db.Char(3)
+  fiscalYearStartMonth Int                     @map("fiscal_year_start_month") @db.SmallInt
+  isDemo               Boolean                 @default(false) @map("is_demo")
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
-  arAccountId          String?               @map("ar_account_id") @db.Uuid
-  apAccountId          String?               @map("ap_account_id") @db.Uuid
+  arAccountId          String?                 @map("ar_account_id") @db.Uuid
+  apAccountId          String?                 @map("ap_account_id") @db.Uuid
   /// Employee reimbursements payable. Only expense claims post to it (DB trigger).
-  claimsAccountId      String?               @map("claims_account_id") @db.Uuid
-  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  claimsAccountId      String?                 @map("claims_account_id") @db.Uuid
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships          Membership[]
   accounts             Account[]
   periods              FiscalPeriod[]
@@ -209,6 +209,9 @@ model Organization {
   complianceFilings    ComplianceFiling[]
   eInvoiceSettings     EInvoiceSettings?
   eInvoices            EInvoice[]
+  eWayBillSettings     EWayBillSettings?
+  eWayBills            EWayBill[]
+  eWayBillVehicles     EWayBillVehicleUpdate[]
   employees            Employee[]
   payRuns              PayRun[]
 
@@ -525,6 +528,7 @@ model Document {
   withholdingSection   WithholdingSection?      @relation(fields: [withholdingSectionId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_withholding_section_fk")
   depositItems         WithholdingDepositItem[]
   eInvoices            EInvoice[]
+  eWayBills            EWayBill[]
 
   @@unique([orgId, kind, number])
   @@unique([id, orgId])
@@ -1289,4 +1293,101 @@ model EInvoice {
   @@unique([orgId, irn])
   @@index([documentId])
   @@map("e_invoices")
+}
+
+/// E-way bill set-up (India, CGST Rule 138): thresholds and the place goods are dispatched from.
+model EWayBillSettings {
+  orgId               String       @id @map("org_id") @db.Uuid
+  /// Consignment value above which an e-way bill is needed (Rs 50,000 under Rule 138(1)).
+  threshold           Decimal      @default(50000) @db.Decimal(18, 2)
+  /// The organisation's state's own threshold for movement within the state, when it has one.
+  intraStateThreshold Decimal?     @map("intra_state_threshold") @db.Decimal(18, 2)
+  address1            String
+  address2            String?
+  city                String
+  pincode             String       @db.Char(6)
+  /// UQC for goods lines, for example NOS.
+  goodsUnit           String       @default("NOS") @map("goods_unit")
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                 Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("e_way_bill_settings")
+}
+
+enum EWayBillStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum TransportMode {
+  ROAD
+  RAIL
+  AIR
+  SHIP
+}
+
+/// An e-way bill generated on the portal for an invoice, as recorded by the user. Never edited:
+/// Part B changes are separate rows, and the only change is a single move to CANCELLED.
+model EWayBill {
+  id              String                  @id @default(uuid()) @db.Uuid
+  orgId           String                  @map("org_id") @db.Uuid
+  documentId      String                  @map("document_id") @db.Uuid
+  /// The 12-digit e-way bill number.
+  number          String                  @db.Char(12)
+  generatedAt     DateTime                @map("generated_at") @db.Timestamptz(6)
+  /// As the portal shows it; null while there is no Part B.
+  validUntil      DateTime?               @map("valid_until") @db.Timestamptz(6)
+  distanceKm      Int                     @map("distance_km")
+  /// R regular, O over-dimensional cargo.
+  vehicleType     String                  @default("R") @map("vehicle_type") @db.Char(1)
+  /// null: Part A only.
+  transportMode   TransportMode?          @map("transport_mode")
+  vehicleNo       String?                 @map("vehicle_no")
+  transporterId   String?                 @map("transporter_id") @db.Char(15)
+  transporterName String?                 @map("transporter_name")
+  transDocNo      String?                 @map("trans_doc_no")
+  transDocDate    DateTime?               @map("trans_doc_date") @db.Date
+  /// SHA-256 of the JSON Talk2Tax generated with these details.
+  payloadHash     String                  @map("payload_hash") @db.Char(64)
+  status          EWayBillStatus          @default(ACTIVE)
+  cancelledAt     DateTime?               @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason    String?                 @map("cancel_reason") @db.Char(1)
+  cancelRemark    String?                 @map("cancel_remark")
+  createdById     String                  @map("created_by_id") @db.Uuid
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  cancelledById   String?                 @map("cancelled_by_id") @db.Uuid
+  org             Organization            @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  document        Document                @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Restrict)
+  vehicleUpdates  EWayBillVehicleUpdate[]
+
+  @@unique([id, orgId])
+  @@unique([orgId, number])
+  @@index([documentId])
+  @@map("e_way_bills")
+}
+
+/// A Part B update made on the portal (first vehicle, breakdown, transhipment). Append-only.
+model EWayBillVehicleUpdate {
+  id            String        @id @default(uuid()) @db.Uuid
+  orgId         String        @map("org_id") @db.Uuid
+  eWayBillId    String        @map("e_way_bill_id") @db.Uuid
+  updatedAt     DateTime      @map("updated_at") @db.Timestamptz(6)
+  transportMode TransportMode @map("transport_mode")
+  vehicleNo     String?       @map("vehicle_no")
+  transDocNo    String?       @map("trans_doc_no")
+  transDocDate  DateTime?     @map("trans_doc_date") @db.Date
+  fromPlace     String        @map("from_place")
+  fromStateCode String        @map("from_state_code") @db.Char(2)
+  reason        String        @db.Char(1)
+  remark        String
+  /// Validity the portal shows after the update (set on the first Part B).
+  validUntil    DateTime?     @map("valid_until") @db.Timestamptz(6)
+  createdById   String        @map("created_by_id") @db.Uuid
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  org           Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  eWayBill      EWayBill      @relation(fields: [eWayBillId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([eWayBillId])
+  @@map("e_way_bill_vehicle_updates")
 }
