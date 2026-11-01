@@ -65,7 +65,7 @@ export class ErrorFilter implements ExceptionFilter {
 /** Messages raised by the database integrity triggers (SQLSTATE P0001). */
 export function extractDbIntegrityMessage(e: unknown): string | null {
   const msg = e instanceof Error ? e.message : '';
-  const m = /(?:ERROR: |message: ")([^"\n]*(?:immutable|does not balance|cannot be deleted|Cannot post|outside its fiscal period|append-only|not postable|at least two lines|header totals|Allocation|settle|Cannot void|different contacts|Bank statement line|Bank match|Reconciliation|needs an approval|Approval|Attachment|Invitation|at least one owner|[Bb]udget)[^"\n]*)/.exec(msg);
+  const m = /(?:ERROR: |message: ")([^"\n]*(?:immutable|does not balance|cannot be deleted|Cannot post|outside its fiscal period|append-only|not postable|at least two lines|header totals|Allocation|settle|Cannot void|different contacts|Bank statement line|Bank match|Reconciliation|needs an approval|Approval|Attachment|Invitation|at least one owner|[Bb]udget|[Mm]anagement report)[^"\n]*)/.exec(msg);
   return m ? m[1] : null;
 }
 

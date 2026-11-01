@@ -9,3 +9,4 @@ export * from './bank';
 export * from './expenses';
 export * from './budgets';
 export * from './cashflow';
+export * from './kpis';

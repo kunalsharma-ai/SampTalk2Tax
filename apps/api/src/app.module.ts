@@ -47,6 +47,8 @@ import { BudgetsController } from './budgets/budgets.controller';
 import { BudgetsService } from './budgets/budgets.service';
 import { CashFlowController } from './cash-flow/cash-flow.controller';
 import { CashFlowService } from './cash-flow/cash-flow.service';
+import { KpisController } from './kpis/kpis.controller';
+import { KpisService } from './kpis/kpis.service';
 import { ComplianceController } from './compliance/compliance.controller';
 import { ComplianceService } from './compliance/compliance.service';
 import { EInvoicingController } from './e-invoicing/e-invoicing.controller';
@@ -89,6 +91,7 @@ export class AppModule {
         ComplianceController,
         BudgetsController,
         CashFlowController,
+        KpisController,
         EInvoicingController,
         EWayBillsController,
       ],
@@ -120,6 +123,7 @@ export class AppModule {
         ComplianceService,
         BudgetsService,
         CashFlowService,
+        KpisService,
         EInvoicingService,
         EWayBillsService,
         // Order matters: rate limiting runs before authentication.
