@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1147 |
+| Not started | 1145 |
 | Designed | 0 |
-| Implementing | 41 |
+| Implementing | 42 |
 | Implemented | 28 |
-| Tested | 127 |
+| Tested | 128 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 33 | 10 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
-| Global taxation engine | M3 | 54 | 34 | 20 |
+| Global taxation engine | M3 | 54 | 32 | 22 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
@@ -750,6 +750,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/gst.e2e.test.ts
   - apps/web/e2e/tax-flow.test.mjs
 
+### TAX-015 — E-invoicing
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: India e-invoicing for B2B invoices and credit notes: INV-01 (schema 1.1) JSON for the IRP, single and bulk; import of the IRP response checked against the document (IRN, seller, buyer, number, type, date, total) with optional RS256 signature check against a user-supplied IRP key; signed QR code drawn; 30-day reporting limit for AATO of Rs 10 crore and above; IRN cancellation recorded within 24 hours; a document with a live IRN cannot be voided (API and trigger). No direct IRP/GSP connection, exports, SEZ, debit notes, B2C QR or e-way bills; see docs/E_INVOICING_INDIA.md.
+- Evidence:
+  - packages/tax-engine/src/india/einvoice.ts
+  - packages/tax-engine/test/einvoice.test.ts
+  - apps/api/src/e-invoicing
+  - apps/api/test/e-invoicing.e2e.test.ts
+  - apps/web/e2e/e-invoicing-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/tax/e-invoices
+  - apps/web/src/components/e-invoice.tsx
+
 ### TAX-017 — TDS
 
 - Module: Global taxation engine
@@ -804,6 +818,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/compliance.e2e.test.ts
   - apps/web/e2e/compliance-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/tax/compliance
+
+### TAX-027 — External government submission must be implemented only through approved and authorized integrations
+
+- Module: Global taxation engine
+- Status: **Implementing**
+- Notes: Followed by design: Talk2Tax submits nothing to a government system. E-invoice JSON is uploaded by the user to the IRP and the IRP's response is imported; GST returns and TDS statements are marked filed by hand. An approved GSP/ASP integration is not built.
+- Evidence:
+  - docs/E_INVOICING_INDIA.md
+  - docs/COMPLIANCE_CALENDAR_INDIA.md
+  - apps/api/src/e-invoicing/e-invoicing.service.ts
 
 ### TAX-037 — Withholding taxes
 

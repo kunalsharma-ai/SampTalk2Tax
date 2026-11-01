@@ -132,6 +132,13 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/orgs/:orgId/compliance/calendar?from=&to=` | reports.read | Obligations due in the window (at most 400 days) with status, amount, paid, outstanding, evidence and filing, plus `overdueBefore` (open items from up to two years earlier) and a summary |
 | `GET` / `POST /v1/orgs/:orgId/compliance/filings` | reports.read / accounts.manage | List filing records; mark a return filed or advance tax paid (`key` such as `GSTR3B:2026-10`, `filedOn`, `reference`, optional `note`). Payments are refused (`SETTLED_BY_RECORDS`) |
 | `POST /v1/orgs/:orgId/compliance/filings/:id/void` | accounts.manage | Void a filing record (`reason`) |
+| `GET` / `PUT /v1/orgs/:orgId/e-invoicing/settings` | accounts.read / accounts.manage | E-invoicing: `applicableFrom`, `aatoTenCroreOrMore` (turns on the 30-day limit), seller `tradeName`, `address1`, `address2`, `city`, `pincode`, `goodsUnit`, and an optional `irpPublicKey` (RSA PEM) for signature checks. Needs the GST registration (`GST_NOT_REGISTERED`); a bad key is `INVALID_KEY` |
+| `GET /v1/orgs/:orgId/e-invoicing/documents?from=&to=` | sales.read | Invoices and credit notes in the window (at most 400 days) with their state (`READY`, `NEEDS_DATA`, `TOO_LATE`, `GENERATED`, `CANCELLED`, `NOT_REQUIRED`, `UNSUPPORTED`), reason, reporting deadline and IRN, plus a summary |
+| `GET /v1/orgs/:orgId/e-invoicing/documents/:id` | sales.read | One document's state and its IRN history |
+| `GET /v1/orgs/:orgId/e-invoicing/documents/:id/json` | sales.read | The INV-01 (schema 1.1) JSON for the IRP. `EINVOICE_DATA_MISSING` (with `details.issues`), `REPORTING_WINDOW_CLOSED` or `EINVOICE_NOT_APPLICABLE` when it is not ready |
+| `POST /v1/orgs/:orgId/e-invoicing/bulk-json` | sales.read | `documentIds` (up to 100): `payloads` (a JSON array for the IRP's bulk upload) and `skipped` with reasons |
+| `POST /v1/orgs/:orgId/e-invoicing/documents/:id/irn` | sales.manage | Record the IRP's response (`response`: Irn, AckNo, AckDt, SignedInvoice, SignedQRCode, bare or wrapped in `data`). Checked against the document (`IRP_RESPONSE_MISMATCH` with `details.issues`) and, with a saved key, the signature (`SIGNATURE_INVALID`). `IRN_EXISTS` while a live IRN stands |
+| `POST /v1/orgs/:orgId/e-invoicing/documents/:id/irn/cancel` | sales.manage | Record that the IRN was cancelled on the IRP (`reason` `1`–`4`, `remark`, optional `cancelledAt`); only within 24 hours of the acknowledgement (`CANCEL_WINDOW_CLOSED`). Voiding a document with a live IRN is refused with `HAS_IRN` |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 
