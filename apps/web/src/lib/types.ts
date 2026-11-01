@@ -462,3 +462,33 @@ export interface AuthSessionInfo {
   expiresAt: string;
   current: boolean;
 }
+
+export type InvitationStatus = 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'REVOKED';
+export interface Invitation {
+  id: string;
+  email: string;
+  role: Role;
+  status: InvitationStatus;
+  invitedBy: string | null;
+  createdAt: string;
+  expiresAt: string;
+  acceptedAt: string | null;
+  revokedAt: string | null;
+}
+export interface Member {
+  userId: string;
+  email: string;
+  name: string;
+  role: Role;
+  since: string;
+}
+export interface InvitationPreview {
+  organization: { id: string; name: string; isDemo: boolean };
+  email: string;
+  role: Role;
+  invitedBy: string | null;
+  status: InvitationStatus;
+  expiresAt: string;
+  forYou: boolean;
+  alreadyMember: boolean;
+}

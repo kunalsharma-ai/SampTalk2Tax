@@ -32,7 +32,8 @@ import { AppConfig, CONFIG } from './config';
 import { HealthController } from './health/health.controller';
 import { JournalsController } from './journals/journals.controller';
 import { JournalsService } from './journals/journals.service';
-import { OrganizationsController } from './organizations/organizations.controller';
+import { InvitationLinksController, OrganizationsController } from './organizations/organizations.controller';
+import { InvitationsService } from './organizations/invitations.service';
 import { OrganizationsService } from './organizations/organizations.service';
 import { PeriodsController } from './periods/periods.controller';
 import { PeriodsService } from './periods/periods.service';
@@ -52,6 +53,7 @@ export class AppModule {
         HealthController,
         AuthController,
         OrganizationsController,
+        InvitationLinksController,
         AccountsController,
         PeriodsController,
         JournalsController,
@@ -75,6 +77,7 @@ export class AppModule {
         SessionsService,
         LoginThrottleService,
         OrganizationsService,
+        InvitationsService,
         AccountsService,
         PeriodsService,
         JournalsService,

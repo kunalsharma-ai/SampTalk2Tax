@@ -13,6 +13,7 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | Table | Purpose | Key constraints |
 |---|---|---|
 | `users` | Login identities | unique `email` (stored lower-case) |
+| `invitations` | Invitation to join an org with a role: lower-case email, SHA-256 of the link token, inviter, expiry, accepted / revoked by and when | one open invitation per org and email (partial unique index); accepted and revoked exclusive; never deleted |
 | `auth_sessions` | Signed-in sessions: SHA-256 of the current and previous refresh secret, rotation time and count, browser and address, created / last used / hard expiry, revocation time and reason | revoked ⇔ reason; expiry after creation |
 | `login_throttles` | Failed sign-ins per email (with or without an account): count, first failure, locked until | failures ≥ 0 |
 | `organizations` | Tenants. Functional currency, country, fiscal-year start month, `is_demo` | FY month 1–12 |
@@ -59,6 +60,8 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `bank_matches_checked`, `bank_statement_lines_checked` (DEFERRED constraint triggers) | At commit: a MATCHED line's active matches are posted lines on the same bank account whose net equals the statement amount; other lines have no active matches |
 | `bank_reconciliations_guard` (BEFORE) | Reconciliations are never deleted; figures never change; a completed one can be undone once |
 | `expense_claims_guard` (BEFORE) | Only drafts can be deleted; claimant, number and org never change; content changes only while draft or rejected; allowed status moves only; a submitted claim must add up to its lines; the approver is never the claimant |
+| `invitations_guard` (BEFORE) | Invitations are never deleted; accepted or revoked ones are frozen; email, role and organisation never change |
+| `memberships_last_owner` (BEFORE) | An organisation always keeps at least one owner (owner changes serialised per org) |
 | `auth_sessions_guard` (BEFORE) | A session never changes user; once revoked it stays revoked and its secret is frozen; its hard expiry can only move earlier |
 | `expense_claim_lines_guard` (BEFORE) | Lines change only while the claim is a draft or rejected |
 | `attachments_guard` (BEFORE) | Attachments are never deleted; the bytes, name, type and record never change; removal happens once |
@@ -76,7 +79,7 @@ Migration `20261031220000_row_level_security` enables and forces row-level secur
 
 | Table | Visible / writable when |
 |---|---|
-| tables with `org_id` (22) | `org_id` is the current organisation |
+| tables with `org_id` (23, including `invitations`) | `org_id` is the current organisation |
 | `audit_events` | `org_id` is the current organisation; the global chain (`org_id` NULL) only with system access |
 | `memberships` | read: current organisation or the current user's own; write: current organisation |
 | `organizations` | read: current organisation or one the user belongs to; write: current organisation |
