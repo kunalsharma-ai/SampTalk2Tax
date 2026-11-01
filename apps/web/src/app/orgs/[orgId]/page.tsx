@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import { date, isNegative, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can, type ComplianceCalendar, type Journal } from '@/lib/types';
+import { SEVERITY, type AlertList } from '@/lib/alerts';
 
 interface Dashboard {
   currency: string;
@@ -79,6 +80,7 @@ export default function DashboardPage() {
               </Alert>
             </div>
           ) : null}
+          {can(org.role, 'reports.read') ? <AlertsStrip orgId={orgId} currency={c} /> : null}
           {org.countryCode === 'IN' && can(org.role, 'reports.read') ? <ComplianceStrip orgId={orgId} /> : null}
           <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
             <Card>
@@ -144,6 +146,40 @@ export default function DashboardPage() {
         </>
       ) : null}
     </>
+  );
+}
+
+/** The most pressing alerts, from the same checks as the Alerts page. */
+function AlertsStrip({ orgId, currency }: { orgId: string; currency: string }) {
+  const q = useQuery({ queryKey: ['alerts', orgId, 'ACTIVE'], queryFn: () => api<AlertList>(`/v1/orgs/${orgId}/alerts?status=ACTIVE`) });
+  const d = q.data;
+  if (!d) return null;
+  const n = d.summary.open + d.summary.acknowledged;
+  return (
+    <Card className="mt-4">
+      <CardHeader
+        title="Alerts"
+        description={n ? `${d.summary.critical} critical · ${d.summary.warning} warnings · ${d.summary.info} for information` : 'Nothing needs attention'}
+        actions={<Link className="text-xs text-accent hover:underline" href={`/orgs/${orgId}/alerts`}>Open alerts</Link>}
+      />
+      {n ? (
+        <ul className="divide-y divide-line/60">
+          {d.alerts.slice(0, 5).map((a) => (
+            <li key={a.id}>
+              <Link href={`/orgs/${orgId}/alerts?alert=${a.id}`} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm hover:bg-surface-hover">
+                <span className="flex min-w-0 items-center gap-2">
+                  <Badge tone={SEVERITY[a.severity].tone}>{SEVERITY[a.severity].label}</Badge>
+                  <span className="min-w-0 truncate">{a.title}</span>
+                </span>
+                {a.amount ? <span className="num shrink-0 text-fg-muted"><Money value={a.amount} currency={currency} /></span> : null}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="px-5 py-4 text-sm text-fg-muted">Every check that is on found nothing.</p>
+      )}
+    </Card>
   );
 }
 
