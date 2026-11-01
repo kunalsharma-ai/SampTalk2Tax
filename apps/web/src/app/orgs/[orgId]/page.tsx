@@ -10,7 +10,7 @@ import { PeriodChart, type PeriodPoint } from '@/components/period-chart';
 import { api } from '@/lib/api';
 import { date, isNegative, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
-import { can, type Journal } from '@/lib/types';
+import { can, type ComplianceCalendar, type Journal } from '@/lib/types';
 
 interface Dashboard {
   currency: string;
@@ -79,6 +79,7 @@ export default function DashboardPage() {
               </Alert>
             </div>
           ) : null}
+          {org.countryCode === 'IN' && can(org.role, 'reports.read') ? <ComplianceStrip orgId={orgId} /> : null}
           <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
             <Card>
               <CardHeader title="Revenue, expenses and cash by month" description={`Fiscal year ${d.fiscalYear}, from ${date(d.fiscalYearStart)}`} />
@@ -143,5 +144,39 @@ export default function DashboardPage() {
         </>
       ) : null}
     </>
+  );
+}
+
+/** What falls due in the next two weeks, and anything overdue, from the compliance calendar. */
+function ComplianceStrip({ orgId }: { orgId: string }) {
+  const from = today();
+  const to = new Date(Date.parse(`${from}T00:00:00Z`) + 14 * 86_400_000).toISOString().slice(0, 10);
+  const q = useQuery({ queryKey: ['compliance', orgId, from, to], queryFn: () => api<ComplianceCalendar>(`/v1/orgs/${orgId}/compliance/calendar?from=${from}&to=${to}`) });
+  const c = q.data;
+  if (!c || !c.configured) return null;
+  const open = [...c.overdueBefore, ...c.items].filter((i) => i.status === 'OVERDUE' || i.status === 'DUE_SOON' || i.status === 'UPCOMING');
+  return (
+    <Card className="mt-4">
+      <CardHeader
+        title="Compliance"
+        description={c.summary.overdue ? `${c.summary.overdue} overdue · ${c.summary.dueSoon} due within 7 days` : c.summary.dueSoon ? `${c.summary.dueSoon} due within 7 days` : 'Nothing overdue'}
+        actions={<Link className="text-xs text-accent hover:underline" href={`/orgs/${orgId}/tax/compliance`}>Open calendar</Link>}
+      />
+      {open.length ? (
+        <ul className="divide-y divide-line/60">
+          {open.slice(0, 5).map((i) => (
+            <li key={i.key} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
+              <span className="min-w-0 truncate">{i.name} · <span className="text-fg-muted">{i.periodLabel}</span></span>
+              <span className="flex shrink-0 items-center gap-2">
+                <span className="num text-fg-muted">{date(i.dueDate)}</span>
+                <Badge tone={i.status === 'OVERDUE' ? 'negative' : i.status === 'DUE_SOON' ? 'warning' : 'neutral'}>{i.status === 'OVERDUE' ? 'Overdue' : i.status === 'DUE_SOON' ? 'Due soon' : 'Upcoming'}</Badge>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="px-5 py-4 text-sm text-fg-muted">Everything due in the next two weeks is done.</p>
+      )}
+    </Card>
   );
 }

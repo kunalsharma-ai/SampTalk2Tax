@@ -22,6 +22,7 @@ import { WithholdingService } from '../withholding/withholding.service';
 import { depositDueDate, gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayrollService } from '../payroll/payroll.service';
+import { ComplianceService } from '../compliance/compliance.service';
 
 /**
  * Creates a clearly-labelled SYNTHETIC demo organization with a few months of
@@ -424,6 +425,22 @@ async function main() {
     }
   }
   console.log(`  Payroll: ${staff.length} synthetic employees, ${runs} posted pay runs`);
+
+  // SYNTHETIC compliance records: monthly GST returns and the TDS statements marked filed with
+  // made-up acknowledgements up to last month, advance tax tracked from the start of the year.
+  const compliance = app.get(ComplianceService);
+  await compliance.saveSettings(org.id, actor, { gstReturnFrequency: 'MONTHLY', advanceTaxFrom: first });
+  const past = await compliance.calendar(org.id, first, today);
+  let filed = 0;
+  for (const i of [...past.overdueBefore, ...past.items]) {
+    if (i.nature !== 'RETURN' || i.status === 'DONE') continue;
+    // Leave the latest GSTR-3B open so the calendar shows something overdue.
+    if (i.kind === 'GSTR3B' && i.dueDate >= addDays(today, -15)) continue;
+    const filedOn = i.dueDate < today ? addDays(i.dueDate, i.kind === 'GSTR1' ? -1 : 0) : today;
+    await compliance.markFiled(org.id, actor, { key: i.key, filedOn, reference: `SYN-${i.kind}-${i.period.replace(/\W/g, '')}` });
+    filed++;
+  }
+  console.log(`  Compliance: ${filed} synthetic filing records`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

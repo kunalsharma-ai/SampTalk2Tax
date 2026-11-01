@@ -842,3 +842,45 @@ export interface Payslip extends PayslipData {
   employee: EmployeeSummary;
   yearToDate: { taxYear: string; postedOnly: boolean; gross: string; tds: string; pfEmployee: string; pt: string };
 }
+
+// ---------------------------------------------------------------- compliance calendar
+
+export type ObligationStatus = 'DONE' | 'NOTHING_DUE' | 'OVERDUE' | 'DUE_SOON' | 'UPCOMING';
+export interface ComplianceItem {
+  key: string;
+  kind: string;
+  name: string;
+  area: 'GST' | 'TDS_TCS' | 'PAYROLL' | 'INCOME_TAX';
+  nature: 'RETURN' | 'PAYMENT';
+  period: string;
+  periodLabel: string;
+  periodFrom: string;
+  periodTo: string;
+  dueDate: string;
+  note?: string;
+  status: ObligationStatus;
+  daysLeft: number;
+  amount: string | null;
+  paid: string | null;
+  outstanding: string | null;
+  detail: string;
+  evidence: { type: 'WITHHOLDING_DEPOSIT' | 'PAY_RUN' | 'PAYROLL_PAYMENT'; id: string; label: string }[];
+  filing: { id: string; filedOn: string; reference: string; note: string | null; createdAt: string } | null;
+  source: string;
+}
+export interface ComplianceCalendar {
+  today: string;
+  from: string;
+  to: string;
+  configured: boolean;
+  areas: { gst: boolean; withholding: boolean; payroll: boolean; advanceTax: boolean };
+  gstReturnFrequency: 'MONTHLY' | 'QUARTERLY' | null;
+  summary: { overdue: number; dueSoon: number; upcoming: number; done: number; nothingDue: number };
+  overdueBefore: ComplianceItem[];
+  items: ComplianceItem[];
+}
+export interface ComplianceSettings {
+  gstReturnFrequency: 'MONTHLY' | 'QUARTERLY';
+  advanceTaxFrom: string | null;
+  areas: { gst: { stateCode: string; from: string } | null; withholding: { from: string } | null; payroll: { from: string; ptStates: string[] } | null };
+}

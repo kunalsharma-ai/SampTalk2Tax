@@ -5692,9 +5692,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/tax-engine/src/india/calendar.ts",
+        "apps/api/test/compliance.e2e.test.ts"
+      ],
+      "notes": "Advance tax instalment dates (15/45/75/100%) are tracked and can be marked paid with the challan. The tax itself is not calculated."
     },
     {
       "id": "TAX-022",
@@ -5721,10 +5724,11 @@
       "status": "Implementing",
       "evidence": [
         "apps/api/src/withholding/withholding.service.ts",
+        "apps/api/test/compliance.e2e.test.ts",
         "apps/api/test/withholding.e2e.test.ts",
         "apps/web/e2e/withholding-flow.test.mjs"
       ],
-      "notes": "TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet."
+      "notes": "TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet. The compliance calendar shows each monthly TDS/TCS, PF, ESI and PT payment as done when its challan or payroll payment is recorded; advance tax and GST payments are marked paid/filed by hand."
     },
     {
       "id": "TAX-023",
@@ -5748,9 +5752,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/calendar.ts",
+        "packages/tax-engine/test/calendar.test.ts",
+        "apps/api/test/compliance.e2e.test.ts",
+        "apps/web/e2e/compliance-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/tax/compliance"
+      ],
+      "notes": "India compliance calendar: GST (monthly or QRMP, GSTR-9), TDS/TCS deposits and quarterly statements (Forms 138/140/143), PF, ESI, Maharashtra PT and advance tax, from the organisation set-up. Payments are settled by records in the books; returns are marked filed with the acknowledgement (void-only records). No holiday shifts or notified extensions; see docs/COMPLIANCE_CALENDAR_INDIA.md."
     },
     {
       "id": "TAX-024",
@@ -6675,9 +6685,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/compliance.e2e.test.ts"
+      ],
+      "notes": "Payroll statutory due dates (PF, ESI, PT, TDS on salary, Form 138) are on the compliance calendar. No pay calendars or pay frequencies other than monthly."
     },
     {
       "id": "PAY-005",

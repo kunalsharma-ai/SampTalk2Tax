@@ -58,6 +58,7 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
   {
     group: 'Tax',
     items: [
+      { href: '/tax/compliance', label: 'Compliance calendar' },
       { href: '/tax/gst-returns', label: 'GST returns' },
       { href: '/tax/tds-tcs', label: 'TDS and TCS' },
       { href: '/settings/gst', label: 'GST settings' },
