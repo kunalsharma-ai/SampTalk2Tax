@@ -58,7 +58,7 @@ export class ExpensesService {
     const control = [o.arAccountId, o.apAccountId, o.claimsAccountId].filter((x): x is string => !!x);
     const [accounts, taxRates] = await Promise.all([
       this.prisma.account.findMany({ where: { orgId: org.id, type: 'EXPENSE', isPostable: true, isActive: true, id: { notIn: control } }, select: { id: true, code: true, name: true }, orderBy: { code: 'asc' } }),
-      this.prisma.taxRate.findMany({ where: { orgId: org.id, isActive: true, purchaseAccountId: { not: null } }, select: { id: true, name: true, rate: true }, orderBy: [{ rate: 'asc' }, { name: 'asc' }] }),
+      this.prisma.taxRate.findMany({ where: { orgId: org.id, isActive: true, kind: 'SIMPLE', purchaseAccountId: { not: null } }, select: { id: true, name: true, rate: true }, orderBy: [{ rate: 'asc' }, { name: 'asc' }] }),
     ]);
     return { currency: org.functionalCurrency, accounts, taxRates: taxRates.map((t) => ({ ...t, rate: t.rate.toFixed() })) };
   }
@@ -316,6 +316,8 @@ export class ExpensesService {
       else if (!a.isPostable || !a.isActive) issues.push(`Line ${i + 1}: ${a.code} ${a.name} cannot be posted to`);
       const t = l.taxRateId ? taxes.find((x) => x.id === l.taxRateId) : null;
       if (l.taxRateId && t && !t.isActive) issues.push(`Line ${i + 1}: tax rate ${t.name} is inactive`);
+      // A claim has no supplier GSTIN, so GST input credit cannot be claimed through it; enter a bill instead.
+      if (t && t.kind === 'GST') issues.push(`Line ${i + 1}: GST rates cannot be used on expense claims; enter the supplier's tax invoice as a bill to claim input tax credit`);
       if (l.date > today) issues.push(`Line ${i + 1}: the date is in the future`);
     });
     if (issues.length) throw new DomainError('CLAIM_INVALID', 'The claim is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });

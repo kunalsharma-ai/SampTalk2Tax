@@ -16,6 +16,8 @@ const Line = z.object({
   quantity: decimalString,
   unitPrice: decimalString,
   taxRateId: z.uuid().nullable().optional(),
+  /** India GST: HSN or SAC code (4, 6 or 8 digits). */
+  hsnCode: z.string().trim().max(8).nullable().optional(),
 });
 const kinds = { SALES: ['INVOICE', 'CREDIT_NOTE'], PURCHASES: ['BILL', 'VENDOR_CREDIT'] } as const;
 
@@ -27,6 +29,8 @@ function schemas(ledger: Ledger) {
     dueDate: isoDate.optional(),
     reference: z.string().trim().max(100).nullable().optional(),
     memo: z.string().max(1000).nullable().optional(),
+    /** India GST: state code of the place of supply (96 = outside India). Defaults from the contact (sales) or the registration (purchases). */
+    placeOfSupply: z.string().regex(/^\d{2}$/).nullable().optional(),
     lines: z.array(Line).min(1).max(500),
   });
   return {

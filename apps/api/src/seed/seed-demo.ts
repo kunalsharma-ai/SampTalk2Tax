@@ -17,6 +17,8 @@ import { JournalsService } from '../journals/journals.service';
 import { DocumentsService } from '../ledgers/documents.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { TaxRatesService } from '../tax-rates/tax-rates.service';
+import { GstService } from '../gst/gst.service';
+import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { OrganizationsService } from '../organizations/organizations.service';
 
 /**
@@ -89,20 +91,36 @@ async function main() {
   const contacts = app.get(ContactsService);
   const docs = app.get(DocumentsService);
   const ledgerOrg = { id: org.id, role: 'OWNER' as const, functionalCurrency: 'INR', fiscalYearStartMonth: 4 };
+  // A simple (non-GST) rate is kept for expense claims, which cannot carry GST input credit.
   const taxRate = await app.get(TaxRatesService).create(org.id, actor, { name: 'Sample tax 18% (synthetic)', rate: '18', salesAccountId: a['2300'], purchaseAccountId: a['1450'] });
+  // SYNTHETIC GST registration in Maharashtra from the first day of the books. GSTINs below are
+  // built from made-up PANs (ZZZ...) with a computed check character; they belong to no one.
+  const synthGstin = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
+  await app.get(GstService).register(org.id, actor, { gstin: synthGstin('27', 'ZZZCN0001Z'), legalName: 'Northwind Demo Traders (synthetic)', effectiveFrom: first });
+  const taxRates = app.get(TaxRatesService);
+  const gst18 = await taxRates.create(org.id, actor, { name: 'GST 18%', rate: '18', kind: 'GST', gstCategory: 'TAXABLE' });
+  const gst5 = await taxRates.create(org.id, actor, { name: 'GST 5%', rate: '5', kind: 'GST', gstCategory: 'TAXABLE' });
+  await taxRates.create(org.id, actor, { name: 'GST 40%', rate: '40', kind: 'GST', gstCategory: 'TAXABLE' });
+  const nilRated = await taxRates.create(org.id, actor, { name: 'Nil rated', rate: '0', kind: 'GST', gstCategory: 'NIL_RATED' });
+  await taxRates.create(org.id, actor, { name: 'Exempt', rate: '0', kind: 'GST', gstCategory: 'EXEMPT' });
+  await taxRates.create(org.id, actor, { name: 'Non-GST supply', rate: '0', kind: 'GST', gstCategory: 'NON_GST' });
   const customers = await Promise.all(
     [
-      ['Asterix Retail Stores (synthetic)', 30, '1500000.00'],
-      ['Brightline Distributors (synthetic)', 45, null],
-      ['Coastal Hospitality Group (synthetic)', 15, null],
-      ['Overseas Services Client (synthetic)', 30, null],
-    ].map(([name, terms, limit]) => contacts.create(ctx, actor, { name: name as string, isCustomer: true, paymentTermsDays: terms as number, creditLimit: limit as string | null })),
+      ['Asterix Retail Stores (synthetic)', 30, '1500000.00', synthGstin('27', 'ZZZCA0002Z'), null],
+      ['Brightline Distributors (synthetic)', 45, null, synthGstin('29', 'ZZZCB0003Z'), null],
+      ['Coastal Hospitality Group (synthetic)', 15, null, null, '30'],
+      ['Overseas Services Client (synthetic)', 30, null, null, null],
+    ].map(([name, terms, limit, gstin, stateCode]) =>
+      contacts.create(ctx, actor, { name: name as string, isCustomer: true, paymentTermsDays: terms as number, creditLimit: limit as string | null, gstin: gstin as string | null, stateCode: stateCode as string | null }),
+    ),
   );
+  // Where each customer's supplies are made: their own state, except the overseas client (export).
+  const posFor = (i: number) => (i === 3 ? '96' : undefined);
   const vendors = await Promise.all(
     [
-      ['Delta Wholesale Supplies (synthetic)', 30],
-      ['Evergreen Logistics (synthetic)', 15],
-    ].map(([name, terms]) => contacts.create(ctx, actor, { name: name as string, isVendor: true, paymentTermsDays: terms as number })),
+      ['Delta Wholesale Supplies (synthetic)', 30, synthGstin('27', 'ZZZCD0004Z')],
+      ['Evergreen Logistics (synthetic)', 15, synthGstin('24', 'ZZZFE0005Z')],
+    ].map(([name, terms, gstin]) => contacts.create(ctx, actor, { name: name as string, isVendor: true, paymentTermsDays: terms as number, gstin: gstin as string })),
   );
   const money = (min: number, max: number) => new D(amt(min, max));
 
@@ -123,7 +141,7 @@ async function main() {
         ledgerOrg,
         actor,
         'SALES',
-        { kind: 'INVOICE', contactId: c.id, issueDate: day(5 + i), reference: `PO-${ym}-${i + 1}`, lines: [{ accountId: a['4100'], description: 'Trade goods', quantity: qty, unitPrice: price, taxRateId: taxRate.id }] },
+        { kind: 'INVOICE', contactId: c.id, issueDate: day(5 + i), reference: `PO-${ym}-${i + 1}`, placeOfSupply: posFor(i), lines: [{ accountId: a['4100'], description: 'Trade goods', quantity: qty, unitPrice: price, taxRateId: gst18.id, hsnCode: '3926' }] },
         { post: true, overrideCreditLimit: true },
       );
       invoices.push(inv);
@@ -133,7 +151,7 @@ async function main() {
       ledgerOrg,
       actor,
       'SALES',
-      { kind: 'INVOICE', contactId: customers[3].id, issueDate: day(12), lines: [{ accountId: a['4200'], description: 'Consulting services (billed in INR)', quantity: '1', unitPrice: money(160000, 480000).toFixed(2) }] },
+      { kind: 'INVOICE', contactId: customers[3].id, issueDate: day(12), placeOfSupply: posFor(3), lines: [{ accountId: a['4200'], description: 'Consulting services, export with IGST paid (billed in INR)', quantity: '1', unitPrice: money(160000, 480000).toFixed(2), taxRateId: gst18.id, hsnCode: '998311' }] },
       { post: true },
     );
     invoices.push(svc);
@@ -165,7 +183,7 @@ async function main() {
           contactId: v.id,
           issueDate: day(3 + i),
           reference: `${i === 0 ? 'DWS' : 'EVL'}/${ym}/${100 + i}`,
-          lines: [{ accountId: i === 0 ? a['1300'] : a['5000'], description: i === 0 ? 'Stock purchase' : 'Freight inward', quantity: '1', unitPrice: (i === 0 ? money(220000, 340000) : money(15000, 30000)).toFixed(2), taxRateId: taxRate.id }],
+          lines: [{ accountId: i === 0 ? a['1300'] : a['5000'], description: i === 0 ? 'Stock purchase' : 'Freight inward', quantity: '1', unitPrice: (i === 0 ? money(220000, 340000) : money(15000, 30000)).toFixed(2), taxRateId: gst18.id, hsnCode: i === 0 ? '3926' : '996511' }],
         },
         { post: true },
       );
@@ -187,6 +205,32 @@ async function main() {
     await post(day(28), `Operating expenses ${ym}`, [...lines.map(([accountId, x]) => ({ accountId, debit: x.toFixed(2) })), { accountId: a['1120'], credit: total.toFixed(2) }]);
     count += 1;
   }
+
+  // This month also has a walk-in sale to an unregistered buyer (B2C, with a nil-rated line) and a credit note.
+  const walkIn = await contacts.create(ctx, actor, { name: 'Walk-in customer (synthetic)', isCustomer: true, paymentTermsDays: 0, stateCode: '27' });
+  await docs.create(
+    ledgerOrg,
+    actor,
+    'SALES',
+    {
+      kind: 'INVOICE',
+      contactId: walkIn.id,
+      issueDate: today,
+      lines: [
+        { accountId: a['4100'], description: 'Packaged goods', quantity: '12', unitPrice: '450.00', taxRateId: gst5.id, hsnCode: '1905' },
+        { accountId: a['4100'], description: 'Fresh produce', quantity: '20', unitPrice: '60.00', taxRateId: nilRated.id, hsnCode: '0702' },
+      ],
+    },
+    { post: true },
+  );
+  await docs.create(
+    ledgerOrg,
+    actor,
+    'SALES',
+    { kind: 'CREDIT_NOTE', contactId: customers[0].id, issueDate: today, reference: 'Damaged units returned', lines: [{ accountId: a['4100'], description: 'Trade goods returned', quantity: '2', unitPrice: '1800.00', taxRateId: gst18.id, hsnCode: '3926' }] },
+    { post: true },
+  );
+  count += 3;
 
   // A SYNTHETIC bank statement for the current month, built from the bank lines in the books,
   // with the latest one left off (not yet cleared) and two lines the books do not have yet.
@@ -222,7 +266,7 @@ async function main() {
     ledgerOrg,
     actor,
     'PURCHASES',
-    { kind: 'BILL', contactId: vendors[0].id, issueDate: today, reference: 'DWS/PENDING/900', lines: [{ accountId: a['1300'], description: 'Stock purchase (synthetic)', quantity: '1', unitPrice: '310000.00', taxRateId: taxRate.id }] },
+    { kind: 'BILL', contactId: vendors[0].id, issueDate: today, reference: 'DWS/PENDING/900', lines: [{ accountId: a['1300'], description: 'Stock purchase (synthetic)', quantity: '1', unitPrice: '310000.00', taxRateId: gst18.id, hsnCode: '3926' }] },
     { post: false },
   );
   await app.get(AttachmentsService).upload(ledgerOrg, actor, {

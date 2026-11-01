@@ -31,6 +31,9 @@ importers:
       '@talk2tax/security':
         specifier: workspace:*
         version: link:../../packages/security
+      '@talk2tax/tax-engine':
+        specifier: workspace:*
+        version: link:../../packages/tax-engine
       helmet:
         specifier: 8.3.0
         version: 8.3.0
@@ -86,6 +89,9 @@ importers:
       '@talk2tax/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@talk2tax/tax-engine':
+        specifier: workspace:*
+        version: link:../../packages/tax-engine
       '@talk2tax/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -176,6 +182,19 @@ importers:
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 3.2.7
+        version: 3.2.7(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.32.0)
+
+  packages/tax-engine:
+    dependencies:
+      '@talk2tax/accounting-engine':
+        specifier: workspace:*
+        version: link:../accounting-engine
+    devDependencies:
       typescript:
         specifier: 5.9.3
         version: 5.9.3

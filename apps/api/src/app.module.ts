@@ -29,6 +29,8 @@ import { TaxRatesController } from './tax-rates/tax-rates.controller';
 import { TaxRatesService } from './tax-rates/tax-rates.service';
 import { prismaProvider } from './common/prisma.service';
 import { AppConfig, CONFIG } from './config';
+import { GstController } from './gst/gst.controller';
+import { GstService } from './gst/gst.service';
 import { HealthController } from './health/health.controller';
 import { JournalsController } from './journals/journals.controller';
 import { JournalsService } from './journals/journals.service';
@@ -67,6 +69,7 @@ export class AppModule {
         AttachmentsController,
         ApprovalsController,
         ExpensesController,
+        GstController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -90,6 +93,7 @@ export class AppModule {
         AttachmentsService,
         ApprovalsService,
         ExpensesService,
+        GstService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
