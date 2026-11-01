@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { api } from './api';
-import type { Account, Contact, Org, Period, TaxRate } from './types';
+import type { Account, Contact, GstRegistration, GstState, Org, Period, TaxRate } from './types';
 
 export function useOrgId(): string {
   return useParams<{ orgId: string }>().orgId;
@@ -42,4 +42,14 @@ export function useContacts(role?: 'customer' | 'vendor', includeInactive = fals
 export function useTaxRates(includeInactive = false) {
   const orgId = useOrgId();
   return useQuery({ queryKey: ['tax-rates', orgId, includeInactive], queryFn: () => api<TaxRate[]>(`/v1/orgs/${orgId}/tax-rates?includeInactive=${includeInactive}`) });
+}
+
+export function useGstRegistration() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['gst-registration', orgId], queryFn: () => api<GstRegistration>(`/v1/orgs/${orgId}/gst/registration`) });
+}
+
+export function useGstStates() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['gst-states'], queryFn: () => api<GstState[]>(`/v1/orgs/${orgId}/gst/states`), staleTime: Infinity });
 }

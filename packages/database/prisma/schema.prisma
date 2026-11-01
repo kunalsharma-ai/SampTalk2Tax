@@ -113,13 +113,13 @@ enum JournalType {
 }
 
 model User {
-  id           String       @id @default(uuid()) @db.Uuid
-  email        String       @unique
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
   name         String
-  passwordHash String       @map("password_hash")
-  isActive     Boolean      @default(true) @map("is_active")
-  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  passwordHash String        @map("password_hash")
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships  Membership[]
   sessions     AuthSession[]
 
@@ -198,6 +198,7 @@ model Organization {
   approvalRequests     ApprovalRequest[]
   expenseClaims        ExpenseClaim[]
   invitations          Invitation[]
+  gstRegistration      GstRegistration?
 
   @@map("organizations")
 }
@@ -385,6 +386,10 @@ model Contact {
   email            String?
   phone            String?
   taxId            String?      @map("tax_id")
+  /// India GST: the contact's GSTIN (upper case, check character verified). Null = unregistered.
+  gstin            String?
+  /// India GST state code: from the GSTIN when registered; otherwise where the contact is (default place of supply).
+  stateCode        String?      @map("state_code") @db.Char(2)
   address          String?
   isCustomer       Boolean      @default(false) @map("is_customer")
   isVendor         Boolean      @default(false) @map("is_vendor")
@@ -402,12 +407,34 @@ model Contact {
   @@map("contacts")
 }
 
-/// A tenant-configured percentage tax. Not a statutory tax engine.
+enum TaxRateKind {
+  /// A plain percentage posted to one account per ledger.
+  SIMPLE
+  /// India GST: split into CGST + SGST/UTGST or IGST by place of supply, posted to the GST registration's accounts.
+  GST
+}
+
+/// How a GST rate treats the supply (GSTR-1 table 8, GSTR-3B 3.1 and 5).
+enum GstCategory {
+  TAXABLE
+  NIL_RATED
+  EXEMPT
+  NON_GST
+}
+
+enum SupplyNature {
+  INTRA
+  INTER
+}
+
+/// A tenant-configured tax rate. SIMPLE rates are a calculation aid; GST rates follow India GST rules (packages/tax-engine).
 model TaxRate {
   id                String         @id @default(uuid()) @db.Uuid
   orgId             String         @map("org_id") @db.Uuid
   name              String
   rate              Decimal        @db.Decimal(9, 6)
+  kind              TaxRateKind    @default(SIMPLE)
+  gstCategory       GstCategory?   @map("gst_category")
   salesAccountId    String?        @map("sales_account_id") @db.Uuid
   purchaseAccountId String?        @map("purchase_account_id") @db.Uuid
   isActive          Boolean        @default(true) @map("is_active")
@@ -435,6 +462,13 @@ model Document {
   reference          String?
   memo               String?
   currency           String            @db.Char(3)
+  /// India GST, set on documents that use GST rates: place of supply (state code, 96 = outside India).
+  placeOfSupply      String?           @map("place_of_supply") @db.Char(2)
+  /// India GST: the supplier's state (the organisation's on sales, the vendor's on purchases).
+  supplierState      String?           @map("supplier_state") @db.Char(2)
+  supplyNature       SupplyNature?     @map("supply_nature")
+  /// India GST: the contact's GSTIN when the document was saved. Null = unregistered.
+  counterpartyGstin  String?           @map("counterparty_gstin")
   subtotal           Decimal           @db.Decimal(24, 6)
   taxTotal           Decimal           @map("tax_total") @db.Decimal(24, 6)
   total              Decimal           @db.Decimal(24, 6)
@@ -474,6 +508,11 @@ model DocumentLine {
   taxRate     Decimal  @default(0) @map("tax_rate") @db.Decimal(9, 6)
   netAmount   Decimal  @map("net_amount") @db.Decimal(24, 6)
   taxAmount   Decimal  @map("tax_amount") @db.Decimal(24, 6)
+  /// India GST: HSN (goods) or SAC (services) code, and the tax by head. Their sum equals taxAmount on GST lines.
+  hsnCode     String?  @map("hsn_code")
+  cgstAmount  Decimal  @default(0) @map("cgst_amount") @db.Decimal(24, 6)
+  sgstAmount  Decimal  @default(0) @map("sgst_amount") @db.Decimal(24, 6)
+  igstAmount  Decimal  @default(0) @map("igst_amount") @db.Decimal(24, 6)
   document    Document @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Cascade)
   account     Account  @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
   tax         TaxRate? @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
@@ -767,4 +806,27 @@ model ExpenseClaimLine {
 
   @@unique([claimId, lineNo])
   @@map("expense_claim_lines")
+}
+
+/// India GST registration of an organisation (one per organisation for now) and the
+/// accounts its tax posts to. Account foreign keys are enforced in SQL.
+model GstRegistration {
+  orgId               String       @id @map("org_id") @db.Uuid
+  gstin               String
+  legalName           String?      @map("legal_name")
+  /// First two characters of the GSTIN.
+  stateCode           String       @map("state_code") @db.Char(2)
+  /// GST rates may be used on documents dated on or after this date.
+  effectiveFrom       DateTime     @map("effective_from") @db.Date
+  outputCgstAccountId String       @map("output_cgst_account_id") @db.Uuid
+  outputSgstAccountId String       @map("output_sgst_account_id") @db.Uuid
+  outputIgstAccountId String       @map("output_igst_account_id") @db.Uuid
+  inputCgstAccountId  String       @map("input_cgst_account_id") @db.Uuid
+  inputSgstAccountId  String       @map("input_sgst_account_id") @db.Uuid
+  inputIgstAccountId  String       @map("input_igst_account_id") @db.Uuid
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                 Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("gst_registrations")
 }

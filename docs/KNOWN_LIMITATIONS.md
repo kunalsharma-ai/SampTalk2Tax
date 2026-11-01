@@ -5,7 +5,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Product scope
 * The web app covers M1 plus the first M2 slice: customers, invoices, credit notes, receipts, receivables ageing, vendors, bills, vendor credits, payments, payables ageing, tax rates, and bank accounts with statement import, matching and reconciliation. Every other module in the directive has no screen, and the sidebar does not show them.
 * Of 1,343 registry entries, the generated [`FEATURE_STATUS.md`](FEATURE_STATUS.md) lists the current counts; everything else is Not started.
-* No statutory tax, payroll, procurement, expenses, treasury, FP&A, AI, agents, workflows, documents, integrations, subscriptions or admin modules yet.
+* No payroll, procurement, expenses, treasury, FP&A, AI, agents, workflows, documents, integrations, subscriptions or admin modules yet.
 * No AI functionality of any kind exists yet, and none is claimed.
 
 ## Accounting
@@ -17,7 +17,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Receivables and payables (M2, slice 1)
 * Documents are in the organisation's functional currency only; multi-currency invoices and bills are not supported yet.
-* Tax rates are percentages the tenant configures. There is no statutory tax engine, no place-of-supply or GST/TDS logic, no tax return and no e-invoicing.
+* Simple tax rates are percentages the tenant configures. India GST (M3, slice 1) is the only statutory tax module; what it does not cover yet is listed in [`TAX_ENGINE_INDIA_GST.md`](TAX_ENGINE_INDIA_GST.md). There is no TDS/TCS, no other country's tax, no e-invoicing and no filing.
 * No quotes, sales orders, purchase orders, recurring invoices, debit notes, write-offs, bad-debt provisions, collection reminders, payment links or portals.
 * No PDF generation or emailing of invoices and statements.
 * Approval is role-based only (an APPROVER can post drafts); there is no multi-step approval workflow or amount thresholds.

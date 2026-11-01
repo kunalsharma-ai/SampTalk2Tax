@@ -243,20 +243,20 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| TAX-001 |  | rule | Create a modular, jurisdiction-aware taxation architecture | Not started |
+| TAX-001 |  | rule | Create a modular, jurisdiction-aware taxation architecture | Implementing |
 | TAX-002 |  | rule | Do not hard-code global tax rates | Tested |
 | TAX-003 |  | rule | Use effective-dated, version-controlled rules | Not started |
-| TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Not started |
-| TAX-005 | India Module | capability | GST | Not started |
-| TAX-006 | India Module | capability | CGST | Not started |
-| TAX-007 | India Module | capability | SGST | Not started |
-| TAX-008 | India Module | capability | IGST | Not started |
-| TAX-009 | India Module | capability | UTGST | Not started |
-| TAX-010 | India Module | capability | GST invoicing | Not started |
-| TAX-011 | India Module | capability | HSN/SAC | Not started |
-| TAX-012 | India Module | capability | Input tax credit | Not started |
-| TAX-013 | India Module | capability | GST reconciliation | Not started |
-| TAX-014 | India Module | capability | GSTR-related reporting | Not started |
+| TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Implementing |
+| TAX-005 | India Module | capability | GST | Tested |
+| TAX-006 | India Module | capability | CGST | Tested |
+| TAX-007 | India Module | capability | SGST | Tested |
+| TAX-008 | India Module | capability | IGST | Tested |
+| TAX-009 | India Module | capability | UTGST | Tested |
+| TAX-010 | India Module | capability | GST invoicing | Tested |
+| TAX-011 | India Module | capability | HSN/SAC | Tested |
+| TAX-012 | India Module | capability | Input tax credit | Tested |
+| TAX-013 | India Module | capability | GST reconciliation | Tested |
+| TAX-014 | India Module | capability | GSTR-related reporting | Tested |
 | TAX-015 | India Module | capability | E-invoicing | Not started |
 | TAX-016 | India Module | capability | E-way bill workflows | Not started |
 | TAX-017 | India Module | capability | TDS | Not started |
@@ -295,7 +295,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-050 | AI Tax Intelligence | capability | Tax notice analysis | Not started |
 | TAX-051 | AI Tax Intelligence | capability | Audit preparation assistance | Not started |
 | TAX-052 | AI Tax Intelligence | capability | Source-backed tax explanations | Not started |
-| TAX-053 | AI Tax Intelligence | rule | Tax calculations must be performed by deterministic, tested rules | Not started |
+| TAX-053 | AI Tax Intelligence | rule | Tax calculations must be performed by deterministic, tested rules | Tested |
 | TAX-054 | AI Tax Intelligence | rule | AI should explain and assist, not invent tax rates or legal requirements | Not started |
 
 ## Payroll and workforce finance

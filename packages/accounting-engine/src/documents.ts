@@ -65,6 +65,8 @@ export interface DocumentLineInput {
   /** Decimal string, >= 0, in the document currency, up to 6 decimal places. */
   unitPrice: string;
   taxRateId?: string | null;
+  /** HSN (goods) or SAC (services) code; used by tax regimes that report it, such as India GST. */
+  hsnCode?: string | null;
 }
 
 export interface TaxRateInfo {
@@ -74,7 +76,30 @@ export interface TaxRateInfo {
   rate: string;
   /** Account that receives the tax for this ledger (output tax for sales, input tax for purchases). */
   accountId: string | null;
+  /**
+   * SIMPLE rates post the whole tax to accountId. Any other kind (for example
+   * India GST, which splits into central and state components by place of
+   * supply) is split by the TaxSplitter passed to computeDocument.
+   */
+  kind?: 'SIMPLE' | 'GST';
 }
+
+/** One part of a line's tax, posted to its own account. */
+export interface TaxComponent {
+  /** Short label, e.g. "TAX", "CGST", "SGST", "UTGST", "IGST". */
+  code: string;
+  accountId: string;
+  /** Percentage applied for this component. */
+  rate: Dec;
+  amount: Dec;
+}
+
+/**
+ * Splits a line's tax into components for rates whose kind is not SIMPLE.
+ * Returns the components (already rounded to the currency), or a string
+ * explaining why this line cannot be taxed with that rate.
+ */
+export type TaxSplitter = (netAmount: Dec, rate: TaxRateInfo, currency: string) => TaxComponent[] | string;
 
 export interface ComputedDocumentLine {
   lineNo: number;
@@ -87,6 +112,9 @@ export interface ComputedDocumentLine {
   taxAccountId: string | null;
   netAmount: Dec;
   taxAmount: Dec;
+  hsnCode: string | null;
+  /** The tax amount by account. Their sum always equals taxAmount. */
+  taxComponents: TaxComponent[];
 }
 
 export interface ComputedDocument {
@@ -104,7 +132,7 @@ const MAX_QTY_SCALE = 6;
  * totals are the sums of the rounded line amounts, so the document always
  * equals the sum of its lines.
  */
-export function computeDocument(lines: DocumentLineInput[], currency: string, taxRates: ReadonlyMap<string, TaxRateInfo>): ComputedDocument {
+export function computeDocument(lines: DocumentLineInput[], currency: string, taxRates: ReadonlyMap<string, TaxRateInfo>, splitter?: TaxSplitter): ComputedDocument {
   const issues: string[] = [];
   if (lines.length === 0) issues.push('A document needs at least one line');
   const computed: ComputedDocumentLine[] = [];
@@ -125,18 +153,26 @@ export function computeDocument(lines: DocumentLineInput[], currency: string, ta
     if (unitPrice.decimalPlaces() > MAX_QTY_SCALE) issues.push(`Line ${n}: unit price allows at most ${MAX_QTY_SCALE} decimal places`);
     let taxRate = new D(0);
     let taxAccountId: string | null = null;
+    const netAmount = roundToCurrency(quantity.times(unitPrice), currency);
+    let taxComponents: TaxComponent[] = [];
     if (l.taxRateId) {
       const t = taxRates.get(l.taxRateId);
       if (!t) {
         issues.push(`Line ${n}: tax rate not found or inactive`);
+      } else if ((t.kind ?? 'SIMPLE') !== 'SIMPLE') {
+        taxRate = dec(t.rate);
+        const split = splitter ? splitter(netAmount, t, currency) : `tax rate "${t.name}" needs ${t.kind} details that this document does not have`;
+        if (typeof split === 'string') issues.push(`Line ${n}: ${split}`);
+        else taxComponents = split.filter((c) => !c.amount.isZero());
       } else {
         taxRate = dec(t.rate);
         taxAccountId = t.accountId;
         if (taxRate.gt(0) && !taxAccountId) issues.push(`Line ${n}: tax rate "${t.name}" has no account for this ledger`);
+        const amount = roundToCurrency(netAmount.times(taxRate).dividedBy(100), currency);
+        if (amount.gt(0) && taxAccountId) taxComponents = [{ code: 'TAX', accountId: taxAccountId, rate: taxRate, amount }];
       }
     }
-    const netAmount = roundToCurrency(quantity.times(unitPrice), currency);
-    const taxAmount = roundToCurrency(netAmount.times(taxRate).dividedBy(100), currency);
+    const taxAmount = sum(taxComponents.map((c) => c.amount));
     computed.push({
       lineNo: n,
       accountId: l.accountId,
@@ -148,6 +184,8 @@ export function computeDocument(lines: DocumentLineInput[], currency: string, ta
       taxAccountId,
       netAmount,
       taxAmount,
+      hsnCode: l.hsnCode?.trim() || null,
+      taxComponents,
     });
   });
   if (issues.length) throw new DocumentValidationError(issues);
@@ -177,10 +215,15 @@ export function buildDocumentJournal(kind: DocumentKind, doc: ComputedDocument, 
     if (l.netAmount.gt(0)) out.push({ accountId: l.accountId, currency, ...side(l.netAmount, !controlOnDebit), description: l.description });
   }
   const taxByAccount = new Map<string, Dec>();
+  const labelByAccount = new Map<string, string>();
   for (const l of doc.lines) {
-    if (l.taxAmount.gt(0) && l.taxAccountId) taxByAccount.set(l.taxAccountId, (taxByAccount.get(l.taxAccountId) ?? new D(0)).plus(l.taxAmount));
+    for (const c of l.taxComponents) {
+      if (c.amount.lte(0)) continue;
+      taxByAccount.set(c.accountId, (taxByAccount.get(c.accountId) ?? new D(0)).plus(c.amount));
+      labelByAccount.set(c.accountId, c.code === 'TAX' ? 'Tax' : c.code);
+    }
   }
-  for (const [accountId, amount] of taxByAccount) out.push({ accountId, currency, ...side(amount, !controlOnDebit), description: 'Tax' });
+  for (const [accountId, amount] of taxByAccount) out.push({ accountId, currency, ...side(amount, !controlOnDebit), description: labelByAccount.get(accountId) });
   return out;
 }
 

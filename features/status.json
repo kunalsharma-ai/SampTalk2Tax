@@ -1229,6 +1229,117 @@
         "apps/web/e2e/members-flow.test.mjs"
       ],
       "notes": "Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link."
+    },
+    "TAX-001": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/tax-engine (pure rules, no framework)",
+        "TaxRate.kind SIMPLE | GST; TaxSplitter hook in packages/accounting-engine computeDocument"
+      ],
+      "notes": "India GST is the first jurisdiction module. Other countries are not started."
+    },
+    "TAX-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test",
+        "apps/api/test/gst.e2e.test.ts",
+        "apps/web/e2e/tax-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/settings/gst"
+      ],
+      "notes": "Registration (GSTIN format + check character), GST rates with categories (taxable, nil-rated, exempt, non-GST), place of supply on every GST document. GSTINs are not verified against the GST portal."
+    },
+    "TAX-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/gst.test.ts",
+        "apps/api/test/gst.e2e.test.ts",
+        "packages/tax-engine/src/india"
+      ],
+      "notes": "Intra-state supplies: half the rate, rounded on its own, posted to Output/Input CGST."
+    },
+    "TAX-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/gst.test.ts",
+        "apps/api/test/gst.e2e.test.ts",
+        "packages/tax-engine/src/india"
+      ],
+      "notes": "Intra-state supplies in states: posted to Output/Input SGST/UTGST."
+    },
+    "TAX-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/gst.test.ts",
+        "apps/api/test/gst.e2e.test.ts",
+        "packages/tax-engine/src/india"
+      ],
+      "notes": "Inter-state supplies and exports (with payment of IGST): full rate to Output/Input IGST."
+    },
+    "TAX-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/gst.test.ts",
+        "apps/api/test/gst.e2e.test.ts",
+        "packages/tax-engine/src/india"
+      ],
+      "notes": "Charged instead of SGST in union territories without a legislature (04, 26, 31, 35, 38, 97); shares the SGST/UTGST account."
+    },
+    "TAX-010": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/gst.e2e.test.ts",
+        "apps/web/e2e/tax-flow.test.mjs",
+        "apps/web/src/components/ledger/document-form.tsx"
+      ],
+      "notes": "Invoices, credit notes, bills and vendor credits carry place of supply, supplier state, buyer/supplier GSTIN and tax by head; posted GST facts are immutable (DB trigger). No PDF tax invoice layout or e-invoice IRN yet."
+    },
+    "TAX-011": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/gst.e2e.test.ts",
+        "apps/web/e2e/tax-flow.test.mjs"
+      ],
+      "notes": "4, 6 or 8 digits, required on every GST line except non-GST. No HSN master or rate lookup; units of measure (UQC) are not tracked."
+    },
+    "TAX-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/returns.test.ts",
+        "apps/api/test/gst.e2e.test.ts"
+      ],
+      "notes": "ITC from bills less vendor credits, set off per CGST Act s.49/49A and rule 88A. Blocked credits (s.17(5)), reversals, ITC brought forward and GSTR-2B matching are not modelled."
+    },
+    "TAX-013": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/gst.e2e.test.ts › flags a manual journal on a GST account as a ledger difference",
+        "apps/web/src/app/orgs/[orgId]/tax/gst-returns"
+      ],
+      "notes": "GSTR-3B compares document totals with the movement on the six GST ledger accounts. Reconciliation with GSTR-2B is not built."
+    },
+    "TAX-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/returns.test.ts",
+        "apps/api/test/gst.e2e.test.ts",
+        "apps/web/e2e/tax-flow.test.mjs"
+      ],
+      "notes": "GSTR-1 (B2B, B2CL, exports, B2CS, CDNR/CDNUR, nil/exempt, HSN B2B/B2C, documents issued) and GSTR-3B (3.1, 3.2, 4, 5, 6.1) working papers. Not the GSTN JSON format; nothing is filed."
+    },
+    "TAX-053": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test",
+        "packages/accounting-engine/test"
+      ],
+      "notes": "Decimal-only arithmetic; the web form runs the same engine as the API."
+    },
+    "TAX-004": {
+      "status": "Implementing",
+      "evidence": [
+        "docs/TAX_ENGINE_INDIA_GST.md"
+      ],
+      "notes": "India GST documents its rules, limitations, sources, tests and maintenance. No other country module exists yet."
     }
   }
 }
