@@ -53,6 +53,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * India only, new tax regime only, professional tax for Maharashtra only. No old regime or declarations, perquisites, LWF, gratuity, statutory bonus, overtime, loans, ECR/24Q/Form 16 or bank files, payroll approvals or payslip PDFs. The full list and the sources are in [`PAYROLL_INDIA.md`](PAYROLL_INDIA.md).
 * The statutory rules have not been reviewed by a payroll professional; the Maharashtra PT slabs come from a secondary source.
 
+## Compliance calendar (M3, slice 4)
+
+* Statutory dates only: no holiday shifts or notified extensions, one GST frequency for all periods, no composition/ISD/GSTR-7/8, no Form 144, certificates, ITR or ROC dates, no reminders. Returns are marked filed by hand; nothing is filed. Some 2026-27 form and TCS-statement dates come from secondary sources. See [`COMPLIANCE_CALENDAR_INDIA.md`](COMPLIANCE_CALENDAR_INDIA.md).
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

@@ -263,9 +263,9 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-018 | India Module | capability | TCS | Tested |
 | TAX-019 | India Module | capability | Income tax preparation support | Not started |
 | TAX-020 | India Module | capability | Corporate tax support | Not started |
-| TAX-021 | India Module | capability | Advance tax calculations | Not started |
+| TAX-021 | India Module | capability | Advance tax calculations | Implementing |
 | TAX-022 | India Module | capability | Tax payment tracking | Implementing |
-| TAX-023 | India Module | capability | Statutory deadline calendars | Not started |
+| TAX-023 | India Module | capability | Statutory deadline calendars | Tested |
 | TAX-024 | India Module | capability | Tax notices | Not started |
 | TAX-025 | India Module | capability | Compliance document management | Not started |
 | TAX-026 | India Module | capability | Tax audit support | Not started |
@@ -307,7 +307,7 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 | PAY-001 |  | rule | Build a complete payroll financial management domain | Implementing |
 | PAY-002 |  | capability | Employee master records | Tested |
 | PAY-003 |  | capability | Salary structures | Tested |
-| PAY-004 |  | capability | Payroll calendars | Not started |
+| PAY-004 |  | capability | Payroll calendars | Implementing |
 | PAY-005 |  | capability | Earnings | Tested |
 | PAY-006 |  | capability | Deductions | Tested |
 | PAY-007 |  | capability | Bonuses | Implementing |
