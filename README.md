@@ -53,9 +53,9 @@ docs/                       PRD, architecture, schema, engine, security, API, te
 
 | | |
 |---|---|
-| Milestone | M1 built; M2 slices 1 (receivables and payables), 2 (banking and reconciliation) 3 (attachments and approvals) and 4 (expense claims) built; M2 core scope complete; M1 security hardening built (sessions and refresh tokens, lockout, rate limiting, row-level security) |
+| Milestone | M1 built; M2 slices 1 (receivables and payables), 2 (banking and reconciliation) 3 (attachments and approvals) and 4 (expense claims) built; M2 core scope complete; M1 hardening built (sessions and refresh tokens, lockout, rate limiting, row-level security, member invitations) |
 | Feature registry | 1,343 requirements from the master directive; 101 Tested, 30 Implemented, 29 Implementing, 1,183 Not started — [FEATURE_STATUS.md](docs/FEATURE_STATUS.md) |
-| Tests | 69 unit + 116 integration + 45 browser end-to-end, all passing |
+| Tests | 69 unit + 125 integration + 50 browser end-to-end, all passing |
 | Known gaps | [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
 
 ## Documentation

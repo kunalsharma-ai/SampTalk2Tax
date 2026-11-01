@@ -197,6 +197,7 @@ model Organization {
   approvalPolicies     ApprovalPolicy[]
   approvalRequests     ApprovalRequest[]
   expenseClaims        ExpenseClaim[]
+  invitations          Invitation[]
 
   @@map("organizations")
 }
@@ -213,6 +214,28 @@ model Membership {
   @@unique([orgId, userId])
   @@index([userId])
   @@map("memberships")
+}
+
+/// An invitation to join an organisation with a role. The link carries a random token;
+/// only its SHA-256 is stored. Only the invited email can accept it, once, before it expires.
+model Invitation {
+  id           String       @id @default(uuid()) @db.Uuid
+  orgId        String       @map("org_id") @db.Uuid
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  /// Lower-case.
+  email        String
+  role         Role
+  tokenHash    String       @unique @map("token_hash")
+  invitedById  String       @map("invited_by_id") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt    DateTime     @map("expires_at") @db.Timestamptz(6)
+  acceptedAt   DateTime?    @map("accepted_at") @db.Timestamptz(6)
+  acceptedById String?      @map("accepted_by_id") @db.Uuid
+  revokedAt    DateTime?    @map("revoked_at") @db.Timestamptz(6)
+  revokedById  String?      @map("revoked_by_id") @db.Uuid
+
+  @@index([orgId, createdAt])
+  @@map("invitations")
 }
 
 model Account {

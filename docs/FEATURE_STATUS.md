@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1180 |
+| Not started | 1179 |
 | Designed | 0 |
 | Implementing | 29 |
-| Implemented | 30 |
-| Tested | 104 |
+| Implemented | 28 |
+| Tested | 107 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -58,7 +58,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | User experience and onboarding | M1 | 22 | 17 | 5 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
-| Platform super admin | M9 | 22 | 22 | 0 |
+| Platform super admin | M9 | 22 | 21 | 1 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
@@ -1069,11 +1069,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### UX-015 — Configure team roles
 
 - Module: User experience and onboarding
-- Status: **Implemented**
-- Notes: Members screen lists members and adds an existing user by email with a role. Invitation emails and role changes are not built.
+- Status: **Tested**
+- Notes: Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link.
 - Evidence:
-  - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
-  - apps/web/src
+  - apps/api/src/organizations/invitations.service.ts
+  - apps/api/test/invitations.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/members
+  - apps/web/src/app/invite
+  - apps/web/e2e/members-flow.test.mjs
 
 ### UX-016 — Configure approval policies
 
@@ -1083,6 +1086,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src/app/orgs/[orgId]/settings/approvals
   - apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule
+
+### ADMIN-004 — User management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link.
+- Evidence:
+  - apps/api/src/organizations/invitations.service.ts
+  - apps/api/test/invitations.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/members
+  - apps/web/src/app/invite
+  - apps/web/e2e/members-flow.test.mjs
 
 ### MOB-001 — Create a responsive web application first
 
@@ -1342,10 +1357,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### NAV-042 — User Management
 
 - Module: Navigation structure
-- Status: **Implemented**
-- Notes: Member list and add-by-email with a role; invitation emails and role changes are not built.
+- Status: **Tested**
+- Notes: Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link.
 - Evidence:
-  - apps/web/src
+  - apps/api/src/organizations/invitations.service.ts
+  - apps/api/test/invitations.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/members
+  - apps/web/src/app/invite
+  - apps/web/e2e/members-flow.test.mjs
 
 ### NAV-046 — Use nested navigation and progressive disclosure
 

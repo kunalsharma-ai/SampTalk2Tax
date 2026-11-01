@@ -53,7 +53,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.
 * No global search, command palette, notifications, light theme (the app has one dark theme) or per-user locale setting.
 * Layouts are responsive, but there is no automated accessibility audit (axe) or visual regression test yet.
-* Member screen adds existing users by email; there are no invitation emails or role changes in the UI.
+* Invitations are links the inviter copies and sends; Talk2Tax does not send email yet. A member cannot leave an organisation by themself; an owner or admin removes them.
 
 ## Security
 * No MFA or SSO. No email verification or password reset by email (a signed-in user can change their password).
@@ -62,7 +62,6 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * A session's "last active" time moves when its access token is renewed (every 15 minutes of use), not on every request.
 * Lockout is per email, so someone can keep an account locked by failing on purpose; there is no CAPTCHA or per-IP backoff on top yet.
 * Tenant isolation is enforced in the application, by composite foreign keys and by PostgreSQL row-level security. `users`, `auth_sessions` and `login_throttles` are not tenant data and have no policies. Every statement outside a transaction costs one extra round trip for the tenant settings.
-* Members are added by existing email only; no invitation emails.
 * Segregation of duties (creator ≠ poster) is possible through roles but not enforced as a policy.
 
 ## Engineering

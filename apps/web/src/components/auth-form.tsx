@@ -17,10 +17,12 @@ const registerSchema = z.object({
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
-  const next = useSearchParams().get('next');
+  const params = useSearchParams();
+  const next = params.get('next');
+  const carry = next ? `?next=${encodeURIComponent(next)}` : '';
   const [error, setError] = useState<string | null>(null);
   const schema = mode === 'login' ? loginSchema : registerSchema;
-  const form = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(schema as typeof registerSchema) });
+  const form = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(schema as typeof registerSchema), defaultValues: { email: params.get('email') ?? '' } });
   const { errors, isSubmitting } = form.formState;
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -28,7 +30,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     try {
       await session(mode, values);
       const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
-      router.replace(mode === 'register' ? '/onboarding' : safeNext);
+      // A new account goes to onboarding unless it came from an invitation link.
+      router.replace(mode === 'register' && !safeNext.startsWith('/invite/') ? '/onboarding' : safeNext);
       router.refresh();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong. Try again.');
@@ -60,14 +63,14 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         {mode === 'login' ? (
           <>
             New to Talk2Tax?{' '}
-            <Link className="text-accent hover:underline" href="/register">
+            <Link className="text-accent hover:underline" href={`/register${carry}`}>
               Create an account
             </Link>
           </>
         ) : (
           <>
             Already have an account?{' '}
-            <Link className="text-accent hover:underline" href="/login">
+            <Link className="text-accent hover:underline" href={`/login${carry}`}>
               Sign in
             </Link>
           </>
