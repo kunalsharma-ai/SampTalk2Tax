@@ -17,7 +17,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Receivables and payables (M2, slice 1)
 * Documents are in the organisation's functional currency only; multi-currency invoices and bills are not supported yet.
-* Simple tax rates are percentages the tenant configures. India GST (M3, slice 1) is the only statutory tax module; what it does not cover yet is listed in [`TAX_ENGINE_INDIA_GST.md`](TAX_ENGINE_INDIA_GST.md). There is no TDS/TCS, no other country's tax, no e-invoicing and no filing.
+* Simple tax rates are percentages the tenant configures. India GST (M3, slice 1) and India TDS/TCS with GST reverse charge (M3, slice 2) are the only statutory tax modules; what they do not cover yet is listed in [`TAX_ENGINE_INDIA_GST.md`](TAX_ENGINE_INDIA_GST.md) and [`TAX_ENGINE_INDIA_TDS_TCS.md`](TAX_ENGINE_INDIA_TDS_TCS.md). There is no other country's tax, no e-invoicing, no TDS/TCS statements and no filing.
 * No quotes, sales orders, purchase orders, recurring invoices, debit notes, write-offs, bad-debt provisions, collection reminders, payment links or portals.
 * No PDF generation or emailing of invoices and statements.
 * Approval is role-based only (an APPROVER can post drafts); there is no multi-step approval workflow or amount thresholds.

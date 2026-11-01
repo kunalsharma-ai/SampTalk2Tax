@@ -81,13 +81,14 @@ function GstReturns() {
 function Gstr3bView({ r, c }: { r: Gstr3b; c: string }) {
   const sum = (h: Heads) => new D(h.igst).plus(h.cgst).plus(h.sgst).toFixed(2);
   const output = { igst: new D(r.outwardTaxable.igst).plus(r.outwardZeroRated.igst).toFixed(2), cgst: r.outwardTaxable.cgst, sgst: r.outwardTaxable.sgst };
-  const cash = sum(r.setOff.cash);
+  const rcmCash = sum(r.reverseChargeCash);
+  const cash = new D(sum(r.setOff.cash)).plus(rcmCash).toFixed(2);
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Output tax" value={money(sum(output), c)} sub="On invoices less credit notes" />
-        <Stat label="Input tax credit" value={money(sum(r.itc), c)} sub="On bills less vendor credits" tone="accent" />
-        <Stat label="Payable in cash" value={money(cash, c)} sub="After set-off of credit" tone={new D(cash).gt(0) ? 'warning' : 'positive'} />
+        <Stat label="Output tax" value={money(sum(output), c)} sub={new D(rcmCash).gt(0) ? `On invoices less credit notes, plus ${money(rcmCash, c)} reverse charge` : 'On invoices less credit notes'} />
+        <Stat label="Input tax credit" value={money(sum(r.itcTotal), c)} sub="On bills less vendor credits" tone="accent" />
+        <Stat label="Payable in cash" value={money(cash, c)} sub={new D(rcmCash).gt(0) ? 'After set-off, including reverse charge' : 'After set-off of credit'} tone={new D(cash).gt(0) ? 'warning' : 'positive'} />
         <Stat label="Credit carried forward" value={money(sum(r.setOff.carryForward), c)} sub="Left after set-off" tone="violet" />
       </div>
 
@@ -109,6 +110,7 @@ function Gstr3bView({ r, c }: { r: Gstr3b; c: string }) {
             { label: '(a) Taxable supplies (other than zero-rated, nil-rated and exempt)', ...r.outwardTaxable },
             { label: '(b) Zero-rated supplies (exports with IGST paid)', taxable: r.outwardZeroRated.taxable, igst: r.outwardZeroRated.igst, cgst: null, sgst: null },
             { label: '(c) Nil-rated and exempt supplies', taxable: r.outwardNilExempt, igst: null, cgst: null, sgst: null },
+            { label: '(d) Inward supplies liable to reverse charge', ...r.inwardReverseCharge },
             { label: '(e) Non-GST supplies', taxable: r.outwardNonGst, igst: null, cgst: null, sgst: null },
           ]}
         />
@@ -129,15 +131,24 @@ function Gstr3bView({ r, c }: { r: Gstr3b; c: string }) {
           )}
         </Card>
         <Card>
-          <CardHeader title="4 Eligible input tax credit" description="All other ITC from bills, less vendor credits. Blocked credits and reversals are not modelled yet." />
-          <Table>
-            <thead><tr><Th>Head</Th><Th numeric>Credit</Th></tr></thead>
-            <tbody>
-              <Tr><Td>Integrated tax (IGST)</Td><Td numeric><Money value={r.itc.igst} currency={c} /></Td></Tr>
-              <Tr><Td>Central tax (CGST)</Td><Td numeric><Money value={r.itc.cgst} currency={c} /></Td></Tr>
-              <Tr><Td>State/UT tax (SGST/UTGST)</Td><Td numeric><Money value={r.itc.sgst} currency={c} /></Td></Tr>
-            </tbody>
-          </Table>
+          <CardHeader title="4 Eligible input tax credit" description="From bills, less vendor credits. Blocked credits and reversals are not modelled yet." />
+          <div className="overflow-x-auto">
+            <Table className="min-w-[460px]">
+              <thead><tr><Th>Details</Th><Th numeric>IGST</Th><Th numeric>CGST</Th><Th numeric>SGST/UTGST</Th></tr></thead>
+              <tbody>
+                {[
+                  ['(A)(2) Import of services', r.itcImportServices],
+                  ['(A)(3) Inward supplies liable to reverse charge', r.itcReverseCharge],
+                  ['(A)(5) All other ITC', r.itc],
+                ].map(([label, h]) => (
+                  <Tr key={label as string}><Td>{label as string}</Td><Td numeric><Dim v={(h as Heads).igst} c={c} /></Td><Td numeric><Dim v={(h as Heads).cgst} c={c} /></Td><Td numeric><Dim v={(h as Heads).sgst} c={c} /></Td></Tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr><Td className="font-semibold">(C) Net ITC available</Td><Td numeric className="font-semibold"><Money value={r.itcTotal.igst} currency={c} /></Td><Td numeric className="font-semibold"><Money value={r.itcTotal.cgst} currency={c} /></Td><Td numeric className="font-semibold"><Money value={r.itcTotal.sgst} currency={c} /></Td></tr>
+              </tfoot>
+            </Table>
+          </div>
           <p className="border-t border-line px-5 py-3 text-xs text-fg-muted">
             Exempt, nil-rated and non-GST purchases (table 5): inter-state {money(new D(r.inwardExempt.inter).plus(r.inwardNonGst.inter).toFixed(2), c)}, intra-state {money(new D(r.inwardExempt.intra).plus(r.inwardNonGst.intra).toFixed(2), c)}.
           </p>
@@ -146,7 +157,8 @@ function Gstr3bView({ r, c }: { r: Gstr3b; c: string }) {
 
       <Card>
         <CardHeader title="6.1 Payment of tax" description="Credit is used in the order the CGST Act requires: IGST credit first (against IGST, then CGST and SGST/UTGST), then CGST and SGST/UTGST credit against their own head and then IGST. CGST and SGST/UTGST never pay each other." />
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[760px]">
           <thead>
             <tr>
               <Th>Tax</Th>
@@ -155,6 +167,7 @@ function Gstr3bView({ r, c }: { r: Gstr3b; c: string }) {
               <Th numeric className="min-w-28">Paid by CGST credit</Th>
               <Th numeric className="min-w-32">Paid by SGST/UTGST credit</Th>
               <Th numeric>Paid in cash</Th>
+              <Th numeric className="min-w-28">Reverse charge (cash)</Th>
             </tr>
           </thead>
           <tbody>
@@ -166,6 +179,7 @@ function Gstr3bView({ r, c }: { r: Gstr3b; c: string }) {
                 <Td numeric>{h === 'sgst' ? <span className="text-fg-faint">n/a</span> : <Dim v={r.setOff.used.cgst[h]} c={c} />}</Td>
                 <Td numeric>{h === 'cgst' ? <span className="text-fg-faint">n/a</span> : <Dim v={r.setOff.used.sgst[h]} c={c} />}</Td>
                 <Td numeric className="font-semibold"><Money value={r.setOff.cash[h]} currency={c} /></Td>
+                <Td numeric><Dim v={r.reverseChargeCash[h]} c={c} /></Td>
               </Tr>
             ))}
           </tbody>
@@ -176,12 +190,14 @@ function Gstr3bView({ r, c }: { r: Gstr3b; c: string }) {
               <Td numeric><Money value={sum(r.setOff.used.igst)} currency={c} /></Td>
               <Td numeric><Money value={sum(r.setOff.used.cgst)} currency={c} /></Td>
               <Td numeric><Money value={sum(r.setOff.used.sgst)} currency={c} /></Td>
-              <Td numeric className="font-semibold"><Money value={cash} currency={c} /></Td>
+              <Td numeric className="font-semibold"><Money value={sum(r.setOff.cash)} currency={c} /></Td>
+              <Td numeric><Money value={rcmCash} currency={c} /></Td>
             </tr>
           </tfoot>
         </Table>
+        </div>
         <p className="border-t border-line px-5 py-3 text-xs text-fg-muted">
-          Credit carried forward: IGST {money(r.setOff.carryForward.igst, c)}, CGST {money(r.setOff.carryForward.cgst, c)}, SGST/UTGST {money(r.setOff.carryForward.sgst, c)}. Credit brought forward from earlier months, interest and late fees are not included.
+          Credit carried forward: IGST {money(r.setOff.carryForward.igst, c)}, CGST {money(r.setOff.carryForward.cgst, c)}, SGST/UTGST {money(r.setOff.carryForward.sgst, c)}. Reverse-charge tax is always paid in cash (CGST Act s.49(4)); its credit is in table 4 and can be used against the forward-charge tax above. Credit brought forward from earlier months, interest and late fees are not included.
         </p>
       </Card>
     </div>

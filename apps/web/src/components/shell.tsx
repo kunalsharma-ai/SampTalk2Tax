@@ -50,7 +50,9 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
     group: 'Tax',
     items: [
       { href: '/tax/gst-returns', label: 'GST returns' },
+      { href: '/tax/tds-tcs', label: 'TDS and TCS' },
       { href: '/settings/gst', label: 'GST settings' },
+      { href: '/settings/tds-tcs', label: 'TDS/TCS settings' },
       { href: '/settings/tax-rates', label: 'Tax rates' },
     ],
   },

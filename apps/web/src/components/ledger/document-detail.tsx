@@ -159,7 +159,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
         </p>
       ) : null}
 
-      {d.gst ? <GstSummary gst={d.gst} currency={c} isSales={l.ledger === 'SALES'} contactName={d.contact.name} /> : null}
+      {d.gst ? <GstSummary gst={d.gst} currency={c} isSales={l.ledger === 'SALES'} contactName={d.contact.name} reverseCharge={d.reverseCharge} /> : null}
+      {d.withholding ? <WithholdingSummary w={d.withholding} currency={c} orgId={orgId} /> : null}
 
       <ApprovalCard documentId={d.id} isDraft={d.status === 'DRAFT'} canManage={canManage} currency={c} onChange={refresh} />
 
@@ -204,8 +205,20 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
               <Td numeric><Money value={d.subtotal} currency={c} /></Td>
               <Td numeric><Money value={d.taxTotal} currency={c} /></Td>
             </tr>
+            {d.reverseCharge ? (
+              <tr>
+                <Td colSpan={d.gst ? 8 : 7} className="text-right text-fg-muted">GST under reverse charge (you pay it; not owed to {d.contact.name})</Td>
+                <Td numeric className="text-fg-muted"><Money value={d.reverseChargeTax} currency={c} /></Td>
+              </tr>
+            ) : null}
+            {d.withholding && d.withholding.amount !== '0.00' ? (
+              <tr>
+                <Td colSpan={d.gst ? 8 : 7} className="text-right text-fg-muted">{d.withholding.kind === 'TDS' ? 'Less TDS' : 'Add TCS'} {d.withholding.section.code}</Td>
+                <Td numeric>{d.withholding.kind === 'TDS' ? '−' : '+'} <Money value={d.withholding.amount} currency={c} /></Td>
+              </tr>
+            ) : null}
             <tr>
-              <Td colSpan={d.gst ? 8 : 7} className="text-right font-semibold">Total</Td>
+              <Td colSpan={d.gst ? 8 : 7} className="text-right font-semibold">{d.withholding && d.withholding.amount !== '0.00' ? (d.withholding.kind === 'TDS' ? 'Payable to vendor' : 'Customer pays') : 'Total'}</Td>
               <Td numeric className="font-semibold"><Money value={d.total} currency={c} /></Td>
             </tr>
           </tfoot>
@@ -292,7 +305,30 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
   );
 }
 
-function GstSummary({ gst, currency, isSales, contactName }: { gst: NonNullable<FinancialDocument['gst']>; currency: string; isSales: boolean; contactName: string }) {
+function WithholdingSummary({ w, currency, orgId }: { w: NonNullable<FinancialDocument['withholding']>; currency: string; orgId: string }) {
+  return (
+    <Card className="mt-4 grid gap-4 p-4 sm:grid-cols-4" aria-label={`${w.kind} details`}>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">{w.kind} section</p>
+        <p className="mt-1 text-sm"><span className="num">{w.section.code}</span> <span className="text-fg-muted">· {w.section.name}</span></p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">{w.kind === 'TDS' ? 'Deducted' : 'Collected'}</p>
+        <p className="mt-1 text-sm">{w.amount === '0.00' ? <span className="text-fg-muted">Nothing: below the threshold (counts toward it)</span> : <>{w.rate}% on {money(w.base, currency)} = {money(w.amount, currency)}</>}</p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">PAN</p>
+        <p className="num mt-1 text-sm">{w.pan ?? <span className="font-sans text-warning">None on file (higher rate)</span>}</p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">Deposit</p>
+        <p className="mt-1 text-sm">{w.deposit ? <>{w.deposit.number} · {date(w.deposit.date)}<span className="block text-xs text-fg-muted">Challan {w.deposit.challanReference}</span></> : w.amount === '0.00' ? '—' : <Link className="text-accent hover:underline" href={`/orgs/${orgId}/tax/tds-tcs?kind=${w.kind}`}>Not deposited yet</Link>}</p>
+      </div>
+    </Card>
+  );
+}
+
+function GstSummary({ gst, currency, isSales, contactName, reverseCharge }: { gst: NonNullable<FinancialDocument['gst']>; currency: string; isSales: boolean; contactName: string; reverseCharge: boolean }) {
   const intra = gst.supplyNature === 'INTRA';
   return (
     <Card className="mt-4 grid gap-4 p-4 sm:grid-cols-4" aria-label="GST details">
@@ -302,14 +338,15 @@ function GstSummary({ gst, currency, isSales, contactName }: { gst: NonNullable<
       </div>
       <div>
         <p className="text-xs uppercase tracking-wide text-fg-muted">Supply</p>
-        <p className="mt-1 text-sm">{gst.placeOfSupply === '96' ? 'Export (IGST paid)' : intra ? 'Intra-state' : 'Inter-state'} <span className="text-fg-muted">· supplier in {placeOfSupplyName(gst.supplierState)}</span></p>
+        <p className="mt-1 text-sm">{gst.placeOfSupply === '96' ? 'Export (IGST paid)' : gst.supplierState === '96' ? 'Import of services' : intra ? 'Intra-state' : 'Inter-state'} <span className="text-fg-muted">· supplier in {gst.supplierState === '96' ? 'outside India' : placeOfSupplyName(gst.supplierState)}</span></p>
+        {reverseCharge ? <p className="mt-1 text-xs font-medium text-warning">Reverse charge: you pay this GST</p> : null}
       </div>
       <div>
         <p className="text-xs uppercase tracking-wide text-fg-muted">{isSales ? 'Buyer' : 'Supplier'} GSTIN</p>
         <p className="num mt-1 text-sm">{gst.counterpartyGstin ?? <span className="font-sans text-fg-muted">{contactName} is unregistered</span>}</p>
       </div>
       <div>
-        <p className="text-xs uppercase tracking-wide text-fg-muted">{isSales ? 'Output' : 'Input'} tax</p>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">{isSales ? 'Output tax' : reverseCharge ? 'GST payable and credit' : 'Input tax'}</p>
         <p className="mt-1 text-sm">
           {intra ? <>CGST {money(gst.cgst, currency)} · SGST/UTGST {money(gst.sgst, currency)}</> : <>IGST {money(gst.igst, currency)}</>}
         </p>

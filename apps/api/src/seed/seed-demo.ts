@@ -11,14 +11,15 @@ import { BankingService } from '../banking/banking.service';
 import { todayIso } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
 import { loadConfig } from '../config';
-import { D } from '@talk2tax/accounting-engine';
+import { addDays, D } from '@talk2tax/accounting-engine';
 import { ContactsService } from '../contacts/contacts.service';
 import { JournalsService } from '../journals/journals.service';
 import { DocumentsService } from '../ledgers/documents.service';
 import { ExpensesService } from '../expenses/expenses.service';
 import { TaxRatesService } from '../tax-rates/tax-rates.service';
 import { GstService } from '../gst/gst.service';
-import { gstinCheckCharacter } from '@talk2tax/tax-engine';
+import { WithholdingService } from '../withholding/withholding.service';
+import { depositDueDate, gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { OrganizationsService } from '../organizations/organizations.service';
 
 /**
@@ -124,6 +125,17 @@ async function main() {
   );
   const money = (min: number, max: number) => new D(amt(min, max));
 
+  // SYNTHETIC TDS setup (made-up TAN): sections from the Income-tax Act 2025 templates, which apply from 1 April 2026.
+  const withholding = app.get(WithholdingService);
+  await withholding.saveSettings(org.id, actor, { tan: 'PNEZ00001Z' });
+  const professional = await withholding.createSection(org.id, actor, { template: '393(1)-6(iii)(b)' });
+  await withholding.createSection(org.id, actor, { template: '393(1)-6(i)' });
+  await withholding.createSection(org.id, actor, { template: '393(1)-2(ii)(b)' });
+  const consultant = await contacts.create(ctx, actor, { name: 'Sahyadri Advisory LLP (synthetic)', isVendor: true, paymentTermsDays: 15, gstin: synthGstin('27', 'ZZZFS0006Z'), withholdingSectionId: professional.id });
+  const advocate = await contacts.create(ctx, actor, { name: 'Adv. Meera Joshi (synthetic)', isVendor: true, paymentTermsDays: 30, stateCode: '27', pan: 'ZZZPJ0007Z', withholdingSectionId: professional.id });
+  const cloud = await contacts.create(ctx, actor, { name: 'CloudStack Inc., USA (synthetic)', isVendor: true, paymentTermsDays: 0, stateCode: '96' });
+  const tdsFrom = '2026-04-01';
+
   for (const p of periods) {
     const start = p.startDate.toISOString().slice(0, 10);
     if (start > today) break;
@@ -193,6 +205,29 @@ async function main() {
         count += 1;
       }
     }
+    if (start >= tdsFrom) {
+      // A monthly retainer with TDS on professional fees (the first month counts toward the threshold, the second catches it up),
+      // and a software subscription from abroad: import of services, IGST under reverse charge.
+      const fee = await docs.create(
+        ledgerOrg,
+        actor,
+        'PURCHASES',
+        { kind: 'BILL', contactId: consultant.id, issueDate: day(10), reference: `SA/${ym}`, withholdingSectionId: professional.id, lines: [{ accountId: a['6600'], description: 'Tax and accounting advisory retainer', quantity: '1', unitPrice: money(30000, 42000).toFixed(2), taxRateId: gst18.id, hsnCode: '998221' }] },
+        { post: true },
+      );
+      await docs.create(
+        ledgerOrg,
+        actor,
+        'PURCHASES',
+        { kind: 'BILL', contactId: cloud.id, issueDate: day(2), reference: `CS-INV-${ym}`, reverseCharge: true, lines: [{ accountId: a['6400'], description: 'Cloud platform subscription', quantity: '1', unitPrice: '12000.00', taxRateId: gst18.id, hsnCode: '997331' }] },
+        { post: true },
+      );
+      count += 2;
+      if (!isRecent) {
+        await docs.createPayment(ledgerOrg, actor, 'PURCHASES', { contactId: consultant.id, date: day(25), bankAccountId: a['1120'], amount: fee.total, allocations: [{ documentId: fee.id, amount: fee.total }] });
+        count += 1;
+      }
+    }
     const lines = [
       [a['6100'], money(140000, 160000)],
       [a['6200'], new D('45000.00')],
@@ -231,6 +266,30 @@ async function main() {
     { post: true },
   );
   count += 3;
+
+  // Legal services from an advocate this month: reverse charge, with TDS on professional fees.
+  await docs.create(
+    ledgerOrg,
+    actor,
+    'PURCHASES',
+    { kind: 'BILL', contactId: advocate.id, issueDate: today, reference: 'MJ/LEGAL/31', reverseCharge: true, withholdingSectionId: professional.id, lines: [{ accountId: a['6600'], description: 'Legal opinion on vendor contracts', quantity: '1', unitPrice: '65000.00', taxRateId: gst18.id, hsnCode: '998211' }] },
+    { post: true },
+  );
+  count += 1;
+  // TDS deducted in each month is deposited the day before it is due (the 6th of the next month), where that date has passed.
+  const tdsDocs = await prisma.document.findMany({ where: { orgId: org.id, withholdingKind: 'TDS', status: 'POSTED', withholdingAmount: { gt: 0 } }, orderBy: { issueDate: 'asc' } });
+  const byMonth = new Map<string, string[]>();
+  for (const d of tdsDocs) {
+    const m = d.issueDate.toISOString().slice(0, 7);
+    byMonth.set(m, [...(byMonth.get(m) ?? []), d.id]);
+  }
+  let challan = 1;
+  for (const [m, ids] of byMonth) {
+    const paid = addDays(depositDueDate(`${m}-01`), -1);
+    if (paid > today) continue;
+    await withholding.createDeposit(ledgerOrg, actor, { kind: 'TDS', depositDate: paid, bankAccountId: a['1120'], challanReference: `CIN 0510308${paid.replace(/-/g, '')}${String(challan++).padStart(5, '0')} (synthetic)`, documentIds: ids });
+    count += 1;
+  }
 
   // A SYNTHETIC bank statement for the current month, built from the bank lines in the books,
   // with the latest one left off (not yet cleared) and two lines the books do not have yet.

@@ -9,6 +9,8 @@ import {
   TaxRateInfo,
   addDays,
   allocationIssues,
+  applyReverseCharge,
+  applyWithholding,
   buildDocumentJournal,
   buildPaymentJournal,
   computeDocument,
@@ -27,6 +29,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
 import { JournalsService } from '../journals/journals.service';
+import { WithholdingFacts, WithholdingService } from '../withholding/withholding.service';
 import { ledgerKinds, SubledgerService } from './subledger.service';
 
 export interface LedgerOrg {
@@ -48,6 +51,10 @@ export interface DocumentInput {
   memo?: string | null;
   /** India GST place of supply; see GstService.supplyFacts for the defaults. */
   placeOfSupply?: string | null;
+  /** India GST reverse charge (bills and vendor credits): the organisation pays the GST instead of the supplier. */
+  reverseCharge?: boolean;
+  /** TDS section on a bill, or TCS section on an invoice. */
+  withholdingSectionId?: string | null;
   lines: DocumentLineInput[];
 }
 
@@ -70,6 +77,8 @@ const DOC_INCLUDE = {
     include: { payment: { select: { id: true, number: true, date: true, kind: true } }, creditDocument: { select: { id: true, number: true, issueDate: true, kind: true } } },
   },
   allocationsOut: { where: { removedOn: null }, orderBy: { createdAt: 'asc' }, include: { target: { select: { id: true, number: true, kind: true } } } },
+  withholdingSection: { select: { id: true, code: true, name: true } },
+  depositItems: { where: { active: true }, include: { deposit: { select: { id: true, number: true, depositDate: true, challanReference: true } } } },
 } satisfies Prisma.DocumentInclude;
 type DocWithAll = Prisma.DocumentGetPayload<{ include: typeof DOC_INCLUDE }>;
 
@@ -102,6 +111,7 @@ export class DocumentsService {
     private readonly journals: JournalsService,
     private readonly subledger: SubledgerService,
     private readonly gst: GstService,
+    private readonly withholding: WithholdingService,
   ) {}
 
   // ------------------------------------------------------------------ reads
@@ -223,6 +233,7 @@ export class DocumentsService {
             memo: input.memo || null,
             currency: org.functionalCurrency,
             ...gstColumns(prepared.gst),
+            ...taxColumns(prepared.computed, prepared.withholding),
             subtotal: prepared.computed.subtotal.toFixed(),
             taxTotal: prepared.computed.taxTotal.toFixed(),
             total: prepared.computed.total.toFixed(),
@@ -260,6 +271,7 @@ export class DocumentsService {
           reference: input.reference || null,
           memo: input.memo || null,
           ...gstColumns(prepared.gst),
+          ...taxColumns(prepared.computed, prepared.withholding),
           subtotal: prepared.computed.subtotal.toFixed(),
           taxTotal: prepared.computed.taxTotal.toFixed(),
           total: prepared.computed.total.toFixed(),
@@ -299,6 +311,8 @@ export class DocumentsService {
       if (doc.status !== 'POSTED') throw new DomainError('NOT_POSTED', doc.status === 'VOID' ? 'Document is already void' : 'Drafts are deleted, not voided', HttpStatus.CONFLICT);
       const active = await tx.allocation.count({ where: { orgId: org.id, removedOn: null, OR: [{ targetId: id }, { creditDocumentId: id }] } });
       if (active > 0) throw new DomainError('HAS_ALLOCATIONS', 'Remove the payments and credits applied to this document before voiding it', HttpStatus.CONFLICT);
+      const deposited = await tx.withholdingDepositItem.findFirst({ where: { documentId: id, active: true }, include: { deposit: { select: { number: true } } } });
+      if (deposited) throw new DomainError('TAX_DEPOSITED', `The ${doc.withholdingKind} on this document was deposited in ${deposited.deposit.number}; void that deposit first`, HttpStatus.CONFLICT);
       if (input.date < fromDbDate(doc.issueDate)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the document date');
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, doc.journalEntryId!, { date: input.date, memo: `Void ${doc.number}: ${input.reason}` });
       await tx.document.update({ where: { id }, data: { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date), voidReason: input.reason } });
@@ -453,6 +467,8 @@ export class DocumentsService {
     if (doc.status !== 'DRAFT') throw new DomainError('ALREADY_POSTED', 'Document is already posted', HttpStatus.CONFLICT);
     const ledger = ledgerOf(doc.kind);
     if (!doc.contact.isActive) throw new DomainError('CONTACT_INACTIVE', `${doc.contact.name} is inactive`);
+    // Thresholds depend on the contact's earlier posted documents; one posting at a time per contact.
+    if (doc.withholdingSectionId) await this.withholding.lockContact(tx, org.id, doc.contactId);
     // Recompute with the current tax rates and accounts, so what posts is exactly what is valid now.
     const input: DocumentInput = {
       kind: doc.kind,
@@ -460,9 +476,14 @@ export class DocumentsService {
       issueDate: fromDbDate(doc.issueDate),
       dueDate: fromDbDate(doc.dueDate),
       placeOfSupply: doc.placeOfSupply,
+      reverseCharge: doc.reverseCharge,
+      withholdingSectionId: doc.withholdingSectionId,
       lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
     };
-    const { computed, gst } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
+    const { computed, gst, withholding } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
+    if (withholding && !new D(withholding.result.amount).eq(doc.withholdingAmount.toFixed())) {
+      throw new DomainError('TOTAL_CHANGED', `The ${withholding.kind} on this draft is now ${withholding.result.amount} (${withholding.result.reason}), not ${doc.withholdingAmount.toFixed(2)}. Open and save the draft again to review it.`, HttpStatus.CONFLICT);
+    }
     if (!computed.total.eq(doc.total.toFixed()) || !sameGstTax(computed.lines, doc.lines)) {
       throw new DomainError('TOTAL_CHANGED', 'A tax rate on this draft changed since it was saved. Open and save the draft again to review the new total.', HttpStatus.CONFLICT);
     }
@@ -494,7 +515,7 @@ export class DocumentsService {
       lines: buildDocumentJournal(doc.kind, computed, control, org.functionalCurrency),
     });
     // The GST facts are taken again as they stand now (for example the customer's GSTIN), so the posted document records what was charged.
-    await tx.document.update({ where: { id }, data: { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date(), ...gstColumns(gst) } });
+    await tx.document.update({ where: { id }, data: { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date(), ...gstColumns(gst), ...taxColumns(computed, withholding) } });
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.posted', entityType: 'document', entityId: id, data: { number, total: computed.total.toFixed(), journalEntryId: je.id } });
   }
 
@@ -540,8 +561,25 @@ export class DocumentsService {
     const taxMap = new Map<string, TaxRateInfo>(
       taxes.map((t) => [t.id, { id: t.id, name: t.name, rate: t.rate.toFixed(), accountId: ledger === 'SALES' ? t.salesAccountId : t.purchaseAccountId, kind: t.kind }]),
     );
-    const { gst, splitter } = await this.prepareGst(tx, org, ledger, contact, input, taxes);
-    const computed = computeDocument(input.lines, org.functionalCurrency, taxMap, splitter);
+    const { gst, splitter, reg } = await this.prepareGst(tx, org, ledger, contact, input, taxes);
+    let computed = computeDocument(input.lines, org.functionalCurrency, taxMap, splitter);
+    if (input.reverseCharge) {
+      // Validated in prepareGst: a GST purchase. The input-tax accounts pair with the output-tax accounts.
+      const i = this.gst.accountsFor(reg!, 'PURCHASES');
+      const o = this.gst.accountsFor(reg!, 'SALES');
+      computed = applyReverseCharge(computed, new Map([[i.cgst, o.cgst], [i.sgst, o.sgst], [i.igst, o.igst]]));
+    }
+    let withholding: WithholdingFacts | null = null;
+    if (input.withholdingSectionId) {
+      // TDS is worked out on the value excluding GST shown separately; TCS on the invoice value including GST.
+      const amount = input.kind === 'BILL' ? computed.subtotal : computed.subtotal.plus(computed.taxTotal);
+      withholding = await this.withholding.compute(tx, org.id, { documentKind: input.kind, contact, sectionId: input.withholdingSectionId, issueDate: input.issueDate, amount: amount.toFixed(), excludeDocumentId: excludeId });
+      computed = applyWithholding(
+        computed,
+        { label: `${withholding.kind} ${withholding.section.code}`, accountId: withholding.accountId, amount: dec(withholding.result.amount), effect: withholding.kind === 'TDS' ? 'DEDUCT' : 'COLLECT' },
+        org.functionalCurrency,
+      );
+    }
     const isCharge = input.kind === 'INVOICE' || input.kind === 'BILL';
     const dueDate = !isCharge ? input.issueDate : (input.dueDate ?? addDays(input.issueDate, contact.paymentTermsDays));
     if (dueDate < input.issueDate) throw new DomainError('INVALID_DATE', 'The due date cannot be before the issue date');
@@ -554,7 +592,7 @@ export class DocumentsService {
         throw new DomainError('DUPLICATE_BILL', `This vendor's invoice "${input.reference}" is already entered${dup[0].number ? ` as ${dup[0].number}` : ' as a draft'}`, HttpStatus.CONFLICT);
       }
     }
-    return { computed, dueDate, gst };
+    return { computed, dueDate, gst, withholding };
   }
 
   /**
@@ -572,9 +610,11 @@ export class DocumentsService {
     const issues: string[] = [];
     if (usesGst && !reg) issues.push('GST rates need a GST registration (Settings → GST)');
     else if (usesGst && !inForce) issues.push(`GST rates apply from ${fromDbDate(reg!.effectiveFrom)}, the registration's effective date`);
+    if (input.reverseCharge && ledger !== 'PURCHASES') issues.push('Reverse charge applies to bills and vendor credits');
+    else if (input.reverseCharge && (!reg || !inForce)) issues.push('Reverse charge needs a GST registration in force on the document date');
     if (!inForce || !reg) {
       if (issues.length) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
-      return { gst: null, splitter: undefined };
+      return { gst: null, splitter: undefined, reg };
     }
     const categories = new Map(taxes.filter((t) => t.kind === 'GST').map((t) => [t.id, t.gstCategory as GstCategory]));
     input.lines.forEach((l, i) => {
@@ -587,10 +627,12 @@ export class DocumentsService {
         if (h) issues.push(`Line ${i + 1}: ${h}`);
       }
     });
-    if (ledger === 'PURCHASES' && !contact.gstin) {
-      const charged = input.lines.some((l) => l.taxRateId && categories.get(l.taxRateId) === 'TAXABLE' && !taxes.find((t) => t.id === l.taxRateId)!.rate.isZero());
-      if (charged) issues.push(`${contact.name} has no GSTIN, so their bill cannot carry GST. Add their GSTIN, or record the purchase as nil-rated, exempt or non-GST (reverse charge is not supported yet).`);
+    const charged = input.lines.some((l) => l.taxRateId && categories.get(l.taxRateId) === 'TAXABLE' && !taxes.find((t) => t.id === l.taxRateId)!.rate.isZero());
+    if (ledger === 'PURCHASES' && !input.reverseCharge && charged) {
+      if (contact.stateCode === '96') issues.push(`${contact.name} is outside India. Services from abroad are taxed under reverse charge (tick Reverse charge); IGST on imported goods is paid at customs, which is not recorded on bills yet.`);
+      else if (!contact.gstin) issues.push(`${contact.name} has no GSTIN, so their bill cannot carry GST. Tick Reverse charge if you pay the GST on this purchase, or record it as nil-rated, exempt or non-GST.`);
     }
+    if (input.reverseCharge && !charged) issues.push('A reverse-charge document needs at least one line with a GST rate above 0%');
     if (issues.length) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
     const facts = this.gst.supplyFacts(reg, ledger, contact, input.placeOfSupply);
     const splitter = gstSplitter({
@@ -599,7 +641,7 @@ export class DocumentsService {
       accounts: this.gst.accountsFor(reg, ledger),
       categories,
     });
-    return { gst: facts, splitter };
+    return { gst: facts, splitter, reg };
   }
 
   private async checkContact(tx: Tx, orgId: string, ledger: Ledger, contactId: string) {
@@ -710,6 +752,20 @@ export class DocumentsService {
       reference: d.reference,
       memo: d.memo,
       currency: d.currency,
+      reverseCharge: d.reverseCharge,
+      reverseChargeTax: d.reverseChargeTax.toFixed(scale),
+      withholding: d.withholdingKind
+        ? {
+            kind: d.withholdingKind,
+            section: d.withholdingSection!,
+            subject: d.withholdingSubject.toFixed(scale),
+            base: d.withholdingBase.toFixed(scale),
+            rate: d.withholdingRate.toFixed(),
+            amount: d.withholdingAmount.toFixed(scale),
+            pan: d.counterpartyPan,
+            deposit: d.depositItems[0] ? { id: d.depositItems[0].deposit.id, number: d.depositItems[0].deposit.number, date: fromDbDate(d.depositItems[0].deposit.depositDate), challanReference: d.depositItems[0].deposit.challanReference } : null,
+          }
+        : null,
       gst: d.placeOfSupply
         ? {
             placeOfSupply: d.placeOfSupply,
@@ -822,6 +878,20 @@ function lineRows(lines: ReturnType<typeof computeDocument>['lines']) {
 function gstLineColumns(l: ReturnType<typeof computeDocument>['lines'][number]) {
   const h = gstHeads(l.taxComponents);
   return { hsnCode: l.hsnCode, cgstAmount: h.cgst.toFixed(), sgstAmount: h.sgst.toFixed(), igstAmount: h.igst.toFixed() };
+}
+
+function taxColumns(c: ReturnType<typeof computeDocument>, w: WithholdingFacts | null) {
+  return {
+    reverseCharge: !!c.reverseCharge,
+    reverseChargeTax: (c.reverseCharge?.tax ?? new D(0)).toFixed(),
+    withholdingSectionId: w?.section.id ?? null,
+    withholdingKind: w?.kind ?? null,
+    withholdingSubject: w?.result.subject ?? '0',
+    withholdingBase: w?.result.base ?? '0',
+    withholdingRate: w?.result.rate ?? '0',
+    withholdingAmount: w?.result.amount ?? '0',
+    counterpartyPan: w?.pan ?? null,
+  };
 }
 
 function gstColumns(f: SupplyFacts | null) {
