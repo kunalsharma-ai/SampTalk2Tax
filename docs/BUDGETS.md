@@ -65,7 +65,7 @@ The person who submitted a version cannot approve it or send it back. The API re
 * **Budget shapes.** No budgets by department, project, location or other dimension, because Talk2Tax has no dimensions yet. No balance sheet or cash budgets, and no capital expenditure plan.
 * **Entry.** Budgets are entered by month only: no entry by quarter, no driver-based lines (headcount × salary, price × volume), no seasonal spread from last year's pattern, and no import or export from a spreadsheet.
 * **Approval.** One approval step. No approval chains, comments per line or notifications.
-* **Forecasts.** No rolling forecasts and no forecast accuracy; budget versions are not forecasts. Cash-flow forecasting is the next M4 slice.
+* **Forecasts.** No rolling forecasts and no forecast accuracy; budget versions are not forecasts. For cash, see [`CASH_FLOW_FORECAST.md`](CASH_FLOW_FORECAST.md).
 * **Reports.** No drill-down from a variance to the journals behind it, no export, and no budget figures on the dashboard yet.
 * **Accounting.** The report reads posted journals as they are. If a year-end closing entry to retained earnings is ever posted inside the year, it will show as revenue and expense movements (there is no year-end close yet).
 

@@ -26,6 +26,7 @@ import { ComplianceService } from '../compliance/compliance.service';
 import { EInvoicingService } from '../e-invoicing/e-invoicing.service';
 import { BudgetsService } from '../budgets/budgets.service';
 import { EWayBillsService } from '../e-way-bills/e-way-bills.service';
+import { CashFlowService, todayIst } from '../cash-flow/cash-flow.service';
 
 /**
  * Creates a clearly-labelled SYNTHETIC demo organization with a few months of
@@ -501,6 +502,25 @@ async function main() {
   const salaries = spreadEvenly('6600000').map((m, i) => (i >= 8 ? new D(m).plus('120000').toFixed(2) : m));
   await budgets.saveLines(org.id, actor, v2.budget.id, { lines: [{ accountId: acc['6100'], amounts: salaries }] });
   console.log(`  Budgets: FY${budgetYear} v1 approved by a synthetic approver, v2 draft`);
+
+  // SYNTHETIC cash-flow plan: regular payments the books do not hold yet, a minimum balance,
+  // and a backtest from 30 days ago so forecast accuracy has something to show.
+  const cash = app.get(CashFlowService);
+  await post(addDays(todayIst(), -60), 'Term loan disbursed (synthetic)', [{ accountId: acc['1120'], debit: '1500000.00' }, { accountId: acc['2700'], credit: '1500000.00' }]);
+  const fyStart = `${budgetYear - 1}-04`;
+  const planned: [string, 'IN' | 'OUT', string, 'MONTHLY' | 'QUARTERLY' | 'ONCE', string, string | null][] = [
+    ['Office rent', 'OUT', '45000', 'MONTHLY', `${fyStart}-05`, 'Synthetic: Pune office lease'],
+    ['Salaries', 'OUT', '240000', 'MONTHLY', `${fyStart}-30`, 'Synthetic: net pay, last working day'],
+    ['Term loan EMI', 'OUT', '38500', 'MONTHLY', `${fyStart}-10`, 'Synthetic: HDFC term loan'],
+    ['GST payment (estimate)', 'OUT', '60000', 'MONTHLY', `${fyStart}-20`, 'Synthetic estimate until the return is filed'],
+    ['Advance tax', 'OUT', '75000', 'QUARTERLY', `${budgetYear - 1}-06-15`, 'Synthetic: 15 Jun, Sep, Dec, Mar'],
+    ['Retainer: Sahyadri Foods', 'IN', '90000', 'MONTHLY', `${fyStart}-07`, 'Synthetic: signed, not yet invoiced'],
+  ];
+  for (const [name, direction, amount, frequency, startDate, note] of planned) await cash.createItem(org.id, actor, { name, direction, amount, frequency, startDate, note });
+  await cash.saveSettings(org.id, actor, { minimumBalance: '1200000' });
+  await cash.save(org.id, actor, { asOf: addDays(todayIst(), -30), horizonDays: 90, note: 'Synthetic backtest: the books 30 days ago' });
+  await cash.save(org.id, actor, { horizonDays: 90, note: 'Synthetic: month-start forecast' });
+  console.log(`  Cash flow: ${planned.length} planned items, a minimum balance, a backtest and a saved forecast`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

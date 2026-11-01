@@ -458,7 +458,7 @@ Part 14 · M4 · priority P2 · depends on: GL, RPT
 | FPA-005 |  | capability | Rolling forecasts | Not started |
 | FPA-006 |  | capability | Revenue forecasting | Not started |
 | FPA-007 |  | capability | Expense forecasting | Not started |
-| FPA-008 |  | capability | Cash-flow forecasting | Not started |
+| FPA-008 |  | capability | Cash-flow forecasting | Tested |
 | FPA-009 |  | capability | Headcount planning | Not started |
 | FPA-010 |  | capability | Department budgets | Not started |
 | FPA-011 |  | capability | Project budgets | Not started |
@@ -474,18 +474,18 @@ Part 14 · M4 · priority P2 · depends on: GL, RPT
 | FPA-021 |  | capability | Financial KPI management | Not started |
 | FPA-022 |  | capability | Forecast version control | Not started |
 | FPA-023 |  | capability | Budget approvals | Tested |
-| FPA-024 |  | capability | Forecast accuracy monitoring | Not started |
+| FPA-024 |  | capability | Forecast accuracy monitoring | Tested |
 | FPA-025 | Three-Statement Financial Modeling | capability | Income statement | Not started |
 | FPA-026 | Three-Statement Financial Modeling | capability | Balance sheet | Not started |
 | FPA-027 | Three-Statement Financial Modeling | capability | Cash-flow statement | Not started |
 | FPA-028 | Three-Statement Financial Modeling | rule | Changes to financial assumptions must propagate consistently through all three statements | Not started |
-| FPA-029 | Advanced Forecasting | capability | 30-day forecasts | Not started |
-| FPA-030 | Advanced Forecasting | capability | 60-day forecasts | Not started |
-| FPA-031 | Advanced Forecasting | capability | 90-day forecasts | Not started |
-| FPA-032 | Advanced Forecasting | capability | 180-day forecasts | Not started |
-| FPA-033 | Advanced Forecasting | capability | 365-day forecasts | Not started |
+| FPA-029 | Advanced Forecasting | capability | 30-day forecasts | Tested |
+| FPA-030 | Advanced Forecasting | capability | 60-day forecasts | Tested |
+| FPA-031 | Advanced Forecasting | capability | 90-day forecasts | Tested |
+| FPA-032 | Advanced Forecasting | capability | 180-day forecasts | Tested |
+| FPA-033 | Advanced Forecasting | capability | 365-day forecasts | Tested |
 | FPA-034 | Advanced Forecasting | capability | Multi-year strategic forecasts | Not started |
-| FPA-035 | Advanced Forecasting | rule | Provide confidence intervals and model backtesting | Not started |
+| FPA-035 | Advanced Forecasting | rule | Provide confidence intervals and model backtesting | Implemented |
 
 ## Financial digital twin
 
