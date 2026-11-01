@@ -60,8 +60,10 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
     items: [
       { href: '/tax/compliance', label: 'Compliance calendar' },
       { href: '/tax/gst-returns', label: 'GST returns' },
+      { href: '/tax/e-invoices', label: 'E-invoices' },
       { href: '/tax/tds-tcs', label: 'TDS and TCS' },
       { href: '/settings/gst', label: 'GST settings' },
+      { href: '/settings/e-invoicing', label: 'E-invoicing settings' },
       { href: '/settings/tds-tcs', label: 'TDS/TCS settings' },
       { href: '/settings/tax-rates', label: 'Tax rates' },
     ],

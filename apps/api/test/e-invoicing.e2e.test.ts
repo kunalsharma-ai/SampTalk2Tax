@@ -162,7 +162,7 @@ describe('recording the IRP response', () => {
     expect((await importIrn(doc.id, { hello: 'world' }).expect(422)).body.error).toBe('INVALID_IRP_RESPONSE');
     const wrong = await importIrn(doc.id, response(doc, { qr: { DocNo: 'INV-999999', TotInvVal: 100 } })).expect(422);
     expect(wrong.body.error).toBe('IRP_RESPONSE_MISMATCH');
-    expect(wrong.body.details.join(' ')).toMatch(/INV-999999.*does not match/);
+    expect(wrong.body.details.issues.join(' ')).toMatch(/INV-999999.*does not match/);
     expect((await importIrn(doc.id, response(doc, { qr: { BuyerGstin: OWN } })).expect(422)).body.error).toBe('IRP_RESPONSE_MISMATCH');
   });
 
@@ -225,7 +225,7 @@ describe('signature verification with the IRP public key', () => {
     const other = await generateKeyPair('RS256', { extractable: true });
     await settings({ irpPublicKey: await exportSPKI(irp.publicKey) }).expect(200);
     expect((await ctx.http().get(`${org.base}/e-invoicing/settings`).set(owner.auth).expect(200)).body.irpPublicKeySet).toBe(true);
-    const sign = async (doc: Doc, irn: string, key: CryptoKey) =>
+    const sign = async (doc: Doc, irn: string, key: Parameters<CompactSign['sign']>[0]) =>
       new CompactSign(new TextEncoder().encode(JSON.stringify({ data: JSON.stringify(qrData(doc, irn)), iss: 'NIC' }))).setProtectedHeader({ alg: 'RS256', typ: 'JWT' }).sign(key);
 
     const a = await invoice();

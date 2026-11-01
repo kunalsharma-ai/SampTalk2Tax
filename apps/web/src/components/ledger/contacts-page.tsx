@@ -1,7 +1,7 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { checkGstin, checkPan, placeOfSupplyName } from '@talk2tax/tax-engine';
-import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Textarea, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
@@ -22,6 +22,8 @@ export interface ContactDraft {
   pan: string;
   withholdingSectionId: string;
   address: string;
+  city: string;
+  pincode: string;
   isCustomer: boolean;
   isVendor: boolean;
   paymentTermsDays: string;
@@ -31,8 +33,8 @@ export interface ContactDraft {
 
 export function draftFrom(c: Contact | null, l: LedgerConfig): ContactDraft {
   return c
-    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', gstin: c.gstin ?? '', stateCode: c.stateCode ?? '', pan: c.pan ?? '', withholdingSectionId: c.withholdingSectionId ?? '', address: c.address ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
-    : { name: '', email: '', phone: '', taxId: '', gstin: '', stateCode: '', pan: '', withholdingSectionId: '', address: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
+    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', gstin: c.gstin ?? '', stateCode: c.stateCode ?? '', pan: c.pan ?? '', withholdingSectionId: c.withholdingSectionId ?? '', address: c.address ?? '', city: c.city ?? '', pincode: c.pincode ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
+    : { name: '', email: '', phone: '', taxId: '', gstin: '', stateCode: '', pan: '', withholdingSectionId: '', address: '', city: '', pincode: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
 }
 
 export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig; draft: ContactDraft | null; setDraft: (d: ContactDraft | null) => void; onSaved?: (c: Contact) => void }) {
@@ -56,7 +58,9 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
         ...(india
           ? { gstin: d.gstin.trim() || null, stateCode: d.gstin.trim() ? undefined : d.stateCode || null, pan: d.gstin.trim() ? undefined : d.pan.trim() || null, withholdingSectionId: d.withholdingSectionId || null }
           : {}),
-        address: d.address || null,
+        address: d.address.trim() || null,
+        city: d.city.trim() || null,
+        pincode: d.pincode || null,
         isCustomer: d.isCustomer,
         isVendor: d.isVendor,
         paymentTermsDays: Number(d.paymentTermsDays || '0'),
@@ -119,8 +123,16 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
             </Field>
           ) : null}
           <div className="sm:col-span-2">
-            <Field label="Address">{(p) => <Input {...p} value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} />}</Field>
+            <Field label="Address" hint={india ? 'Building and street on the first line. E-invoices use the first line as address line 1 and the rest as line 2.' : undefined}>
+              {(p) => <Textarea {...p} rows={2} maxLength={1000} value={draft.address} onChange={(e) => setDraft({ ...draft, address: e.target.value })} />}
+            </Field>
           </div>
+          <Field label="City">{(p) => <Input {...p} maxLength={50} value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} />}</Field>
+          {india ? (
+            <Field label="PIN code" error={draft.pincode && !/^[1-9][0-9]{5}$/.test(draft.pincode) ? 'A PIN code is six digits and does not start with 0' : undefined}>
+              {(p) => <Input {...p} className="num" inputMode="numeric" maxLength={6} value={draft.pincode} onChange={(e) => /^\d{0,6}$/.test(e.target.value) && setDraft({ ...draft, pincode: e.target.value })} />}
+            </Field>
+          ) : null}
           <fieldset className="flex flex-wrap gap-4 text-sm text-fg-muted sm:col-span-2">
             <legend className="sr-only">Roles</legend>
             <label className="flex items-center gap-2"><input type="checkbox" className="accent-[var(--t2t-accent)]" checked={draft.isCustomer} onChange={(e) => setDraft({ ...draft, isCustomer: e.target.checked })} /> Customer</label>
@@ -129,7 +141,7 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
           </fieldset>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <Button type="button" variant="ghost" onClick={() => setDraft(null)}>Cancel</Button>
-            <Button type="submit" loading={save.isPending} disabled={(!draft.isCustomer && !draft.isVendor) || (!!gstin && !gstin.valid) || (!!pan && !pan.valid)}>Save {l.contact.toLowerCase()}</Button>
+            <Button type="submit" loading={save.isPending} disabled={(!draft.isCustomer && !draft.isVendor) || (!!gstin && !gstin.valid) || (!!pan && !pan.valid) || (!!draft.pincode && !/^[1-9][0-9]{5}$/.test(draft.pincode))}>Save {l.contact.toLowerCase()}</Button>
           </div>
         </form>
       ) : null}

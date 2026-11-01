@@ -257,7 +257,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-012 | India Module | capability | Input tax credit | Tested |
 | TAX-013 | India Module | capability | GST reconciliation | Tested |
 | TAX-014 | India Module | capability | GSTR-related reporting | Tested |
-| TAX-015 | India Module | capability | E-invoicing | Not started |
+| TAX-015 | India Module | capability | E-invoicing | Tested |
 | TAX-016 | India Module | capability | E-way bill workflows | Not started |
 | TAX-017 | India Module | capability | TDS | Tested |
 | TAX-018 | India Module | capability | TCS | Tested |
@@ -269,7 +269,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-024 | India Module | capability | Tax notices | Not started |
 | TAX-025 | India Module | capability | Compliance document management | Not started |
 | TAX-026 | India Module | capability | Tax audit support | Not started |
-| TAX-027 | India Module | rule | External government submission must be implemented only through approved and authorized integrations | Not started |
+| TAX-027 | India Module | rule | External government submission must be implemented only through approved and authorized integrations | Implementing |
 | TAX-028 | Global Tax Modules | capability | US sales tax | Not started |
 | TAX-029 | Global Tax Modules | capability | US federal and state tax-related reporting | Not started |
 | TAX-030 | Global Tax Modules | capability | UK VAT | Not started |

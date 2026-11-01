@@ -113,6 +113,9 @@ export interface Contact {
   /** Default TDS (vendor) or TCS (customer) section. */
   withholdingSectionId: string | null;
   address: string | null;
+  city: string | null;
+  /** India PIN code (six digits). */
+  pincode: string | null;
   isCustomer: boolean;
   isVendor: boolean;
   paymentTermsDays: number;
@@ -884,3 +887,54 @@ export interface ComplianceSettings {
   advanceTaxFrom: string | null;
   areas: { gst: { stateCode: string; from: string } | null; withholding: { from: string } | null; payroll: { from: string; ptStates: string[] } | null };
 }
+
+// ---------------------------------------------------------------- e-invoicing (India)
+
+export type EInvoiceSettings =
+  | { configured: false; gstRegistered: boolean }
+  | { configured: true; gstRegistered: boolean; applicableFrom: string; aatoTenCroreOrMore: boolean; tradeName: string | null; address1: string; address2: string | null; city: string; pincode: string; goodsUnit: string; irpPublicKeySet: boolean };
+
+export type EInvoiceState = 'NOT_REQUIRED' | 'UNSUPPORTED' | 'NEEDS_DATA' | 'READY' | 'TOO_LATE' | 'GENERATED' | 'CANCELLED';
+
+export interface EInvoiceRecord {
+  id: string;
+  irn: string;
+  ackNo: string;
+  ackDate: string;
+  status: 'ACTIVE' | 'CANCELLED';
+  signedQrCode: string;
+  signatureVerified: boolean;
+  qr: { sellerGstin: string; buyerGstin: string; docNo: string; docType: string; docDate: string; total: string; itemCount: number | null; mainHsn: string | null } | null;
+  cancellableUntil: string;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  cancelRemark: string | null;
+  createdAt: string;
+}
+
+export interface EInvoiceRow {
+  documentId: string;
+  kind: 'INVOICE' | 'CREDIT_NOTE';
+  number: string | null;
+  issueDate: string;
+  documentStatus: string;
+  contact: { id: string; name: string };
+  buyerGstin: string | null;
+  total: string;
+  deadline: string | null;
+  state: EInvoiceState;
+  reason: string;
+  issues: { field: string; message: string }[];
+  eInvoice: EInvoiceRecord | null;
+}
+
+export interface EInvoiceRegister {
+  from: string;
+  to: string;
+  today: string;
+  aatoTenCroreOrMore: boolean;
+  summary: { ready: number; needsData: number; tooLate: number; generated: number; cancelled: number; notRequired: number };
+  rows: EInvoiceRow[];
+}
+
+export type EInvoiceDocument = { configured: false; documentId: string } | (EInvoiceRow & { configured: true; history: EInvoiceRecord[] });

@@ -100,3 +100,13 @@ describe('IRP response', () => {
     expect(matchIrpResponse({ ...parseIrpResponse(raw).response!, signedQrCode: 'garbage' }, doc)[0]).toMatch(/could not be read/);
   });
 });
+
+describe('token decoding', () => {
+  it('reads UTF-8 payloads without Buffer', async () => {
+    const { jwtPayload } = await import('../src');
+    const payload = { data: JSON.stringify({ LglNm: 'Café ₹ Traders 🚚' }) };
+    const t = `e30.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.c2ln`;
+    expect(JSON.parse(String(jwtPayload(t).data))).toEqual({ LglNm: 'Café ₹ Traders 🚚' });
+    expect(() => jwtPayload('e30.b!c.c2ln')).toThrow();
+  });
+});

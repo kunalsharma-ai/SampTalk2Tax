@@ -80,10 +80,10 @@ function checkParty(p: EInvoiceParty, who: 'Seller' | 'Buyer', issues: EInvoiceI
   const f = (k: string) => `${who.toLowerCase()}.${k}`;
   if (!GSTIN.test(p.gstin)) issues.push({ field: f('gstin'), message: `${who} GSTIN is missing or malformed` });
   if (p.legalName.trim().length < 3 || p.legalName.length > 100) issues.push({ field: f('legalName'), message: `${who} legal name must be 3 to 100 characters` });
-  if (!p.address1.trim() || p.address1.length > 100) issues.push({ field: f('address1'), message: `${who} address line 1 is needed (up to 100 characters)` });
+  if (!p.address1.trim() || p.address1.length > 100) issues.push({ field: f('address1'), message: p.address1.trim() ? `${who} address line 1 is longer than 100 characters` : `${who} address is missing` });
   if ((p.address2 ?? '').length > 100) issues.push({ field: f('address2'), message: `${who} address line 2 is longer than 100 characters` });
-  if (p.location.trim().length < 3 || p.location.length > 50) issues.push({ field: f('location'), message: `${who} city or location must be 3 to 50 characters` });
-  if (!PIN.test(p.pincode)) issues.push({ field: f('pincode'), message: `${who} PIN code must be six digits` });
+  if (p.location.trim().length < 3 || p.location.length > 50) issues.push({ field: f('location'), message: p.location.trim() ? `${who} city or location must be 3 to 50 characters` : `${who} city is missing` });
+  if (!PIN.test(p.pincode)) issues.push({ field: f('pincode'), message: p.pincode ? `${who} PIN code must be six digits` : `${who} PIN code is missing` });
 }
 
 /** The INV-01 payload for a posted B2B invoice or credit note, or the reasons it cannot be built. */
@@ -220,10 +220,37 @@ export interface QrData {
   IrnDt: string;
 }
 
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+/** Base64url to UTF-8 text, without Node's Buffer or the browser's atob, so it runs in both. */
+function base64UrlText(part: string): string {
+  const clean = part.replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+  if (/[^A-Za-z0-9+/]/.test(clean)) throw new Error('Not base64url');
+  const bytes: number[] = [];
+  let bits = 0;
+  let value = 0;
+  for (const ch of clean) {
+    value = (value << 6) | B64.indexOf(ch);
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((value >> bits) & 0xff);
+    }
+  }
+  let out = '';
+  for (let i = 0; i < bytes.length; ) {
+    const b = bytes[i];
+    const n = b < 0x80 ? 1 : b >= 0xf0 ? 4 : b >= 0xe0 ? 3 : 2;
+    let cp = n === 1 ? b : b & (0xff >> (n + 1));
+    for (let k = 1; k < n; k++) cp = (cp << 6) | ((bytes[i + k] ?? 0) & 0x3f);
+    out += String.fromCodePoint(cp);
+    i += n;
+  }
+  return out;
+}
+
 function base64UrlJson(part: string): unknown {
-  const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
-  const text = typeof Buffer !== 'undefined' ? Buffer.from(b64, 'base64').toString('utf8') : decodeURIComponent(escape(atob(b64)));
-  return JSON.parse(text);
+  return JSON.parse(base64UrlText(part));
 }
 
 /** The payload of a JWT, without checking its signature. Throws when it is not a JWT. */

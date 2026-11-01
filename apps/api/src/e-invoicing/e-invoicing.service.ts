@@ -31,6 +31,9 @@ interface Context {
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 const MAX_RANGE_DAYS = 400;
+/** 30 Apr 2026, for messages people read. */
+const human = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const humanTime = (d: Date) => `${d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })} IST`;
 
 @Injectable()
 export class EInvoicingService {
@@ -146,10 +149,10 @@ export class EInvoicingService {
     const built = this.build(ctx, d);
     if (!built.payload) throw this.notReady(r);
     const parsed = parseIrpResponse(raw);
-    if (!parsed.response) throw new DomainError('INVALID_IRP_RESPONSE', 'That is not an IRP response', HttpStatus.UNPROCESSABLE_ENTITY, parsed.issues);
+    if (!parsed.response) throw new DomainError('INVALID_IRP_RESPONSE', 'That is not an IRP response', HttpStatus.UNPROCESSABLE_ENTITY, { issues: parsed.issues });
     const res = parsed.response;
     const mismatch = matchIrpResponse(res, { sellerGstin: ctx.gst.gstin, buyerGstin: d.counterpartyGstin!, number: d.number!, kind: d.kind as 'INVOICE' | 'CREDIT_NOTE', issueDate: fromDbDate(d.issueDate), total: d.total.toFixed() });
-    if (mismatch.length) throw new DomainError('IRP_RESPONSE_MISMATCH', 'The IRP response is not for this document', HttpStatus.UNPROCESSABLE_ENTITY, mismatch);
+    if (mismatch.length) throw new DomainError('IRP_RESPONSE_MISMATCH', 'The IRP response is not for this document', HttpStatus.UNPROCESSABLE_ENTITY, { issues: mismatch });
     if (Date.parse(res.ackDate) > Date.now() + 5 * 60_000) throw new DomainError('INVALID_IRP_RESPONSE', 'The acknowledgement date is in the future');
     let verified = false;
     if (ctx.settings.irpPublicKey) {
@@ -177,7 +180,7 @@ export class EInvoicingService {
     if (!live) throw new DomainError('NO_IRN', `${d.number} has no live IRN`, HttpStatus.CONFLICT);
     const at = input.cancelledAt ?? new Date().toISOString();
     if (Date.parse(at) > Date.now() + 5 * 60_000) throw new DomainError('INVALID_DATE', 'The cancellation time cannot be in the future');
-    if (!cancellable(live.ackDate.toISOString(), at)) throw new DomainError('CANCEL_WINDOW_CLOSED', `An IRN can be cancelled only within 24 hours of its acknowledgement (${live.ackDate.toISOString()}). Issue a credit note instead.`, HttpStatus.CONFLICT);
+    if (!cancellable(live.ackDate.toISOString(), at)) throw new DomainError('CANCEL_WINDOW_CLOSED', `An IRN can be cancelled only within 24 hours of its acknowledgement (${humanTime(live.ackDate)}). Issue a credit note instead.`, HttpStatus.CONFLICT);
     const e = await this.prisma.$transaction(async (tx) => {
       const row = await tx.eInvoice.update({ where: { id: live.id }, data: { status: 'CANCELLED', cancelledAt: new Date(at), cancelReason: input.reason, cancelRemark: input.remark.trim(), cancelledById: actor.id } });
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'einvoice.irn_cancelled', entityType: 'document', entityId: documentId, data: { number: d.number, irn: live.irn, reason: EINVOICE_CANCEL_REASONS[input.reason], remark: input.remark } });
@@ -257,21 +260,21 @@ export class EInvoicingService {
       payload: null as Record<string, unknown> | null,
     };
     const out = (state: EInvoiceState, reason: string, extra: Partial<typeof base> = {}) => ({ ...base, ...extra, state, reason });
-    if (live) return out('GENERATED', `IRN ${live.irn.slice(0, 12)}… acknowledged ${live.ackDate.toISOString()}`);
+    if (live) return out('GENERATED', `IRN recorded, acknowledged ${humanTime(live.ackDate)}`);
     if (fromDbDate(d.issueDate) < fromDbDate(ctx.settings.applicableFrom)) return out('NOT_REQUIRED', 'Dated before e-invoicing applies');
-    if (!d.counterpartyGstin) return out('NOT_REQUIRED', d.placeOfSupply === '96' ? 'Export' : 'Customer not registered for GST (B2C)');
-    if (d.placeOfSupply === '96') return out('UNSUPPORTED', 'Exports are not supported yet');
+    if (d.placeOfSupply === '96') return out('UNSUPPORTED', 'Export: e-invoices for exports are not supported yet; report it on the IRP directly');
+    if (!d.counterpartyGstin) return out('NOT_REQUIRED', 'Customer not registered for GST (B2C)');
     if (d.status === 'VOID') return out(last ? 'CANCELLED' : 'NOT_REQUIRED', last ? 'IRN cancelled and document voided' : 'Voided');
     const built = this.build(ctx, d);
     if (!built.payload) return out('NEEDS_DATA', built.issues.map((i) => i.message).join('; '), { issues: built.issues });
-    if (deadline && today > deadline) return out('TOO_LATE', `The IRP accepts it only until ${deadline} (30-day limit); issue a fresh document or take advice`, { payload: built.payload });
+    if (deadline && today > deadline) return out('TOO_LATE', `The IRP accepts it only until ${human(deadline)} (30-day limit); issue a fresh document or take advice`, { payload: built.payload });
     if (last) return out('READY', 'IRN cancelled; a new IRN can be generated for corrected details', { payload: built.payload });
-    return out('READY', deadline ? `Report to the IRP by ${deadline}` : 'Ready to upload to the IRP', { payload: built.payload });
+    return out('READY', deadline ? `Report to the IRP by ${human(deadline)}` : 'Ready to upload to the IRP', { payload: built.payload });
   }
 
   private notReady(r: { state: EInvoiceState; reason: string; issues: EInvoiceIssue[] }) {
     const code = r.state === 'NEEDS_DATA' ? 'EINVOICE_DATA_MISSING' : r.state === 'TOO_LATE' ? 'REPORTING_WINDOW_CLOSED' : 'EINVOICE_NOT_APPLICABLE';
-    return new DomainError(code, r.reason, HttpStatus.UNPROCESSABLE_ENTITY, r.issues.length ? r.issues.map((i) => i.message) : undefined);
+    return new DomainError(code, r.reason, HttpStatus.UNPROCESSABLE_ENTITY, r.issues.length ? { issues: r.issues.map((i) => i.message) } : undefined);
   }
 
   private serializeSettings(s: EInvoiceSettings) {
