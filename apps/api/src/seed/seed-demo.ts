@@ -21,6 +21,7 @@ import { GstService } from '../gst/gst.service';
 import { WithholdingService } from '../withholding/withholding.service';
 import { depositDueDate, gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { PayrollService } from '../payroll/payroll.service';
 
 /**
  * Creates a clearly-labelled SYNTHETIC demo organization with a few months of
@@ -373,6 +374,56 @@ async function main() {
   await expenses.submit(emp, empActor, waiting.id);
   await expenses.create(emp, empActor, { title: 'Team lunch (synthetic)', lines: [{ date: ago(1), accountId: a['6700'], merchant: 'Synthetic Diner', amount: '1250.00', taxRateId: null }] });
   console.log('  Expense claims: one paid back, one waiting for approval, one draft (synthetic employee)');
+
+  // SYNTHETIC payroll: five made-up employees (PANs start ZZZ and belong to no one), monthly
+  // pay runs from April posted through the same service as the API, and statutory dues paid
+  // on time except the latest month's, which are still to pay.
+  const payroll = app.get(PayrollService);
+  await payroll.saveSettings(org.id, actor, { pfEstablishmentCode: 'MHBAN0099999000', esiEmployerCode: '31000999990000999', ptRegistration: '27999999999P' });
+  const salary = (from: string, basic: string, hra: string, special: string) => ({
+    effectiveFrom: from,
+    components: [
+      { code: 'BASIC', name: 'Basic', kind: 'WAGES' as const, monthlyAmount: basic },
+      { code: 'HRA', name: 'House rent allowance', kind: 'EXCLUDED' as const, monthlyAmount: hra },
+      { code: 'SPECIAL', name: 'Special allowance', kind: 'WAGES' as const, monthlyAmount: special },
+    ],
+  });
+  const fy = first.slice(0, 4);
+  const month = (offset: number) => {
+    const d = new Date(Date.UTC(Number(fy), 3 + offset, 1));
+    return d.toISOString().slice(0, 7);
+  };
+  const people = [
+    { code: 'NW001', name: 'Aarav Mehta (synthetic)', pan: 'ZZZPM1001Z', dateOfJoining: first, workStateCode: '27', uan: '100900000001', structure: salary(first, '60000', '30000', '20000') },
+    { code: 'NW002', name: 'Priya Nair (synthetic)', pan: 'ZZZPN1002Z', dateOfJoining: first, workStateCode: '27', ptCategory: 'WOMAN' as const, uan: '100900000002', structure: salary(first, '35000', '17500', '7500') },
+    { code: 'NW003', name: 'Rohan Patil (synthetic)', pan: 'ZZZPP1003Z', dateOfJoining: first, workStateCode: '27', uan: '100900000003', esiNumber: '3100999901', structure: salary(first, '10000', '5000', '3000') },
+    { code: 'NW004', name: 'Sneha Joshi (synthetic)', pan: 'ZZZPJ1004Z', dateOfJoining: first, workStateCode: '27', ptCategory: 'WOMAN' as const, pfMember: false, epsMember: false, structure: salary(first, '90000', '45000', '40000') },
+    { code: 'NW005', name: 'Kabir Shaikh (synthetic)', pan: null, dateOfJoining: `${month(4)}-11`, workStateCode: '27', uan: '100900000005', structure: salary(`${month(4)}-01`, '22000', '11000', '7000') },
+  ];
+  const staff = [];
+  for (const p of people) staff.push(await payroll.createEmployee(org.id, actor, p));
+  // A raise from July for the first employee.
+  await payroll.addStructure(org.id, actor, staff[0].id, salary(`${month(3)}-01`, '66000', '33000', '22000'));
+  const lastClosed = today.slice(0, 7);
+  let runs = 0;
+  for (let i = 0; month(i) < lastClosed; i++) {
+    const period = month(i);
+    const [y, m] = period.split('-').map(Number);
+    const end = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    const run = await payroll.createRun(ledgerOrg, actor, { period, payDate: end });
+    if (i === 2) await payroll.updatePayslip(ledgerOrg, actor, run.id, staff[2].id, { lopDays: '2', oneOffs: [] });
+    if (period.endsWith('-10')) await payroll.updatePayslip(ledgerOrg, actor, run.id, staff[1].id, { lopDays: '0', oneOffs: [{ name: 'Diwali bonus (synthetic)', kind: 'EXCLUDED', amount: '25000.00' }] });
+    const posted = await payroll.postRun(ledgerOrg, actor, run.id);
+    runs++;
+    const latest = month(i + 1) >= lastClosed;
+    const dues = posted.liabilities.filter((l: { liability: string; amount: string }) => !new D(l.amount).isZero() && (!latest || l.liability === 'NET_PAY'));
+    for (const l of dues) {
+      const paidOn = l.liability === 'NET_PAY' ? end : l.dueDate;
+      if (paidOn > today) continue;
+      await payroll.remit(ledgerOrg, actor, run.id, { liability: l.liability, date: paidOn, bankAccountId: a['1120'], reference: `SYN-${l.liability}-${period}` });
+    }
+  }
+  console.log(`  Payroll: ${staff.length} synthetic employees, ${runs} posted pay runs`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

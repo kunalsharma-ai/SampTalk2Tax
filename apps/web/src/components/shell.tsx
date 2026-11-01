@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { signOut } from '@/lib/api';
 import { useOrg, useOrgs } from '@/lib/org';
+import { can } from '@/lib/types';
 import { Logo } from './brand';
 
 const NAV: { group: string; items: { href: string; label: string }[] }[] = [
@@ -29,6 +30,14 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
   },
   { group: 'Banking', items: [{ href: '/banking', label: 'Bank accounts' }] },
   { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }] },
+  {
+    group: 'Payroll',
+    items: [
+      { href: '/payroll/runs', label: 'Pay runs' },
+      { href: '/payroll/employees', label: 'Employees' },
+      { href: '/settings/payroll', label: 'Payroll settings' },
+    ],
+  },
   {
     group: 'Accounting',
     items: [
@@ -72,7 +81,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const nav = (
     <nav aria-label="Main" className="flex flex-col gap-6">
-      {(org?.role === 'EMPLOYEE' ? EMPLOYEE_NAV : NAV).map((g) => (
+      {(org?.role === 'EMPLOYEE' ? EMPLOYEE_NAV : NAV.filter((g) => g.group !== 'Payroll' || can(org?.role, 'payroll.read'))).map((g) => (
         <div key={g.group}>
           <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{g.group}</p>
           <ul className="mt-2 flex flex-col gap-0.5">
@@ -102,8 +111,8 @@ export function Shell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr]">
-      <aside className={cn('fixed inset-y-0 left-0 z-30 w-64 overflow-y-auto border-r border-line bg-surface/95 p-4 backdrop-blur lg:sticky lg:top-0 lg:block lg:h-screen', open ? 'block' : 'hidden')}>
+    <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr] print:block">
+      <aside className={cn('fixed inset-y-0 left-0 z-30 w-64 overflow-y-auto border-r border-line bg-surface/95 p-4 backdrop-blur lg:sticky lg:top-0 lg:block lg:h-screen print:hidden', open ? 'block' : 'hidden')}>
         <div className="flex h-10 items-center px-2">
           <Link href="/">
             <Logo />
@@ -112,7 +121,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="mt-6">{nav}</div>
       </aside>
       <div className="flex min-w-0 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-bg/80 px-4 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-20 flex print:hidden h-14 items-center gap-3 border-b border-line bg-bg/80 px-4 backdrop-blur lg:px-8">
           <button className="rounded p-2 text-fg-muted hover:text-fg lg:hidden" onClick={() => setOpen((v) => !v)} aria-label="Toggle navigation" aria-expanded={open}>
             ☰
           </button>

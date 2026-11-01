@@ -33,6 +33,10 @@ export const PERMISSIONS = [
   'expenses.read',
   /** Pay approved claims back from a bank account. */
   'expenses.reimburse',
+  /** See employees, salaries and payslips. Salaries are sensitive, so viewers do not get it. */
+  'payroll.read',
+  /** Add employees, change salaries and prepare pay runs. Posting also needs journals.post. */
+  'payroll.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -68,6 +72,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'banking.reconcile',
     'expenses.submit',
     'expenses.reimburse',
+    'payroll.read',
+    'payroll.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set<Permission>(READ_ONLY),

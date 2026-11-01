@@ -30,6 +30,13 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `withholding_sections` | TDS or TCS sections: code, name, rates (normal, individual/HUF, no PAN), thresholds, window, basis, validity, source, active flag | unique `(org_id, kind, code)`; rates 0–100; never deleted and the rule never changes (trigger); RLS |
 | `withholding_deposits` | Challans: number, kind, date, bank account, challan reference, tax and interest, journal and void journal | amounts ≥ 0; interest needs an account; only a single move to VOID (trigger); RLS |
 | `withholding_deposit_items` | Documents covered by a deposit and their amounts | one active deposit per document (partial unique index); an item is deactivated only when its deposit is VOID (trigger); RLS |
+| `payroll_settings` | One per org: PF establishment, ESI employer and PT registration codes; the seven payroll accounts | account FKs `(…_account_id, org_id)`; RLS |
+| `employees` | Code, name, PAN, UAN, ESI number, joining/leaving dates, work state, PT category, PF/EPS membership, previous-employer salary and TDS for a tax year | unique `(org_id, code)`; PAN format; leaving ≥ joining; prior amounts ≥ 0; EPS needs PF; RLS |
+| `salary_structures` | An employee's salary from a month | unique `(employee_id, effective_from)`; `effective_from` on the 1st; never changed once created (trigger); RLS |
+| `salary_components` | Code, name, kind (WAGES/EXCLUDED), monthly amount | unique `(structure_id, code)`; amount ≥ 0; added or removed only while no payslip uses the structure (trigger); RLS |
+| `pay_runs` | One month's payroll: number, period, pay date, DRAFT → POSTED → VOID, posting and void journals | **one non-void run per org and month** (partial unique index); status consistent with its journals (CHECK); transitions only DRAFT → POSTED → VOID, only drafts deleted (trigger); RLS |
+| `payslips` | One employee in a run: days, loss of pay, one-offs, earnings (JSON), wages, PF/ESI/PT/TDS amounts, net and employer cost, TDS working (JSON) | net = gross − deductions and the deduction sum (CHECK); written only while the run is DRAFT (trigger); RLS |
+| `payroll_remittances` | Payments of a run's net pay, PF, ESI, PT or TDS: number, date, bank account, reference, amount, journal and void journal | **one posted payment per run and liability** (partial unique index); only on a POSTED run, only a single move to VOID (trigger); RLS |
 | `documents` | Invoices, credit notes, bills, vendor credits. DRAFT → POSTED → VOID, with links to the posting and void journals; GST place of supply, supplier state, nature (INTRA/INTER) and counterparty GSTIN, reverse charge and its tax, and TDS/TCS (section, kind, subject, base, rate, amount, counterparty PAN), frozen once posted | total = subtotal + tax ∓ TDS/TCS > 0; TDS only on bills and TCS only on invoices; reverse charge only on bills and vendor credits with a place of supply and tax total 0; due ≥ issue; status fields consistent; unique `(org_id, kind, number)`; **one bill per vendor reference** (case-insensitive partial unique index) |
 | `document_lines` | Account, quantity, unit price, tax rate, net and tax amount; HSN/SAC and CGST, SGST/UTGST, IGST amounts | quantity > 0, amounts ≥ 0; FKs `(document_id, org_id)`, `(account_id, org_id)`, `(tax_rate_id, org_id)` |
 | `payments` | Receipts and vendor payments from a bank/cash account; POSTED or VOID; idempotency key + body hash | amount > 0; unique `(org_id, idempotency_key)` |
@@ -62,6 +69,7 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `documents_void_check`, `payments_void_check` (BEFORE) | Cannot void while active allocations exist |
 | `documents_void_deposited_check` (BEFORE) | A document whose TDS/TCS is in an active challan cannot be voided |
 | `withholding_sections_guard`, `withholding_deposits_guard`, `withholding_deposit_items_guard` (BEFORE) | Section rules never change and sections are never deleted; a challan only moves once to VOID; its items are released only after that |
+| `salary_structures_guard`, `salary_components_guard`, `pay_runs_guard`, `payslips_guard`, `payroll_remittances_guard` (BEFORE) | Salary structures never change after creation and their components change only while no payslip uses them; pay runs move only DRAFT → POSTED → VOID and only drafts are deleted; payslips change only while their run is a draft; payroll payments are made only against a posted run and only move once to VOID. Migration `20261101180000_india_payroll`, exercised by `apps/api/test/payroll.e2e.test.ts` |
 | `bank_statement_lines_guard` (BEFORE) | Statement lines are never deleted and what the bank said (date, amount, text, account) never changes; a reconciled line's status is frozen; only matched or excluded lines can be reconciled |
 | `bank_matches_guard` (BEFORE) | Matches are never deleted, only removed once, and not while their line is reconciled |
 | `bank_matches_checked`, `bank_statement_lines_checked` (DEFERRED constraint triggers) | At commit: a MATCHED line's active matches are posted lines on the same bank account whose net equals the statement amount; other lines have no active matches |
@@ -86,7 +94,7 @@ Migration `20261031220000_row_level_security` enables and forces row-level secur
 
 | Table | Visible / writable when |
 |---|---|
-| tables with `org_id` (23, including `invitations`) | `org_id` is the current organisation |
+| tables with `org_id` (all tenant tables, including `invitations` and the payroll tables) | `org_id` is the current organisation |
 | `audit_events` | `org_id` is the current organisation; the global chain (`org_id` NULL) only with system access |
 | `memberships` | read: current organisation or the current user's own; write: current organisation |
 | `organizations` | read: current organisation or one the user belongs to; write: current organisation |

@@ -41,6 +41,8 @@ import { PeriodsController } from './periods/periods.controller';
 import { PeriodsService } from './periods/periods.service';
 import { ReportsController } from './reports/reports.controller';
 import { ReportsService } from './reports/reports.service';
+import { PayrollController } from './payroll/payroll.controller';
+import { PayrollService } from './payroll/payroll.service';
 import { WithholdingController } from './withholding/withholding.controller';
 import { WithholdingService } from './withholding/withholding.service';
 
@@ -73,6 +75,7 @@ export class AppModule {
         ExpensesController,
         GstController,
         WithholdingController,
+        PayrollController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -98,6 +101,7 @@ export class AppModule {
         ExpensesService,
         GstService,
         WithholdingService,
+        PayrollService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
