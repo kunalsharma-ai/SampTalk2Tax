@@ -6,3 +6,4 @@ export * from './india/withholding';
 export * from './india/payroll';
 export * from './india/calendar';
 export * from './india/einvoice';
+export * from './india/ewaybill';

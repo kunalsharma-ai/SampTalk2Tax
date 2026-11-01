@@ -47,6 +47,8 @@ import { ComplianceController } from './compliance/compliance.controller';
 import { ComplianceService } from './compliance/compliance.service';
 import { EInvoicingController } from './e-invoicing/e-invoicing.controller';
 import { EInvoicingService } from './e-invoicing/e-invoicing.service';
+import { EWayBillsController } from './e-way-bills/e-way-bills.controller';
+import { EWayBillsService } from './e-way-bills/e-way-bills.service';
 import { WithholdingController } from './withholding/withholding.controller';
 import { WithholdingService } from './withholding/withholding.service';
 
@@ -82,6 +84,7 @@ export class AppModule {
         PayrollController,
         ComplianceController,
         EInvoicingController,
+        EWayBillsController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -110,6 +113,7 @@ export class AppModule {
         PayrollService,
         ComplianceService,
         EInvoicingService,
+        EWayBillsService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },

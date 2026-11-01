@@ -19,11 +19,12 @@ import { ExpensesService } from '../expenses/expenses.service';
 import { TaxRatesService } from '../tax-rates/tax-rates.service';
 import { GstService } from '../gst/gst.service';
 import { WithholdingService } from '../withholding/withholding.service';
-import { depositDueDate, gstinCheckCharacter } from '@talk2tax/tax-engine';
+import { depositDueDate, expectedValidUntil, gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayrollService } from '../payroll/payroll.service';
 import { ComplianceService } from '../compliance/compliance.service';
 import { EInvoicingService } from '../e-invoicing/e-invoicing.service';
+import { EWayBillsService } from '../e-way-bills/e-way-bills.service';
 
 /**
  * Creates a clearly-labelled SYNTHETIC demo organization with a few months of
@@ -464,6 +465,24 @@ async function main() {
     irns++;
   }
   console.log(`  E-invoicing: ${irns} synthetic IRNs (unsigned, not from the IRP)`);
+
+  // SYNTHETIC e-way bills: settings with the Rule 138 threshold, and a made-up e-way bill
+  // (number not from the portal) with a vehicle for this month's Asterix invoice.
+  const ewb = app.get(EWayBillsService);
+  await ewb.saveSettings(org.id, actor, { threshold: '50000', intraStateThreshold: null, address1: 'Plot 7, Synthetic Industrial Estate, Bhosari', address2: null, city: 'Pune', pincode: '411026', goodsUnit: 'NOS' });
+  const ewbReg = await ewb.register(org.id, lastMonth.toISOString().slice(0, 10), today);
+  let ewbs = 0;
+  for (const r of ewbReg.rows.filter((x) => x.state === 'NEEDED' && x.contact.id === customers[0].id && x.issueDate.slice(0, 7) === today.slice(0, 7))) {
+    const generatedAt = new Date(Math.min(Date.parse(`${r.issueDate}T05:00:00Z`), Date.now() - 60_000));
+    await ewb.record(org.id, actor, r.documentId, {
+      number: `27${String(1000000000 + ewbs).padStart(10, '0')}`,
+      generatedAt: generatedAt.toISOString(),
+      validUntil: expectedValidUntil(generatedAt.toISOString(), 18),
+      transport: { mode: 'ROAD', distanceKm: 18, vehicleNo: 'MH14ZZ0001', vehicleType: 'R', transporterId: null, transporterName: 'Synthetic Roadways', transDocNo: null, transDocDate: null },
+    });
+    ewbs++;
+  }
+  console.log(`  E-way bills: ${ewbs} synthetic e-way bill (not from the portal)`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);
