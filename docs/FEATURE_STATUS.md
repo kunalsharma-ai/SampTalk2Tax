@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1162 |
+| Not started | 1150 |
 | Designed | 0 |
-| Implementing | 33 |
+| Implementing | 39 |
 | Implemented | 28 |
-| Tested | 120 |
+| Tested | 126 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -29,7 +29,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
 | Global taxation engine | M3 | 54 | 36 | 18 |
-| Payroll and workforce finance | M3 | 34 | 33 | 1 |
+| Payroll and workforce finance | M3 | 34 | 21 | 13 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
 | Treasury management | M6 | 28 | 28 | 0 |
@@ -801,6 +801,64 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/tax-engine/test
   - packages/accounting-engine/test
 
+### PAY-001 — Build a complete payroll financial management domain
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: India payroll slice: employees, salary structures, monthly pay runs, payslips, ledger posting and statutory payments. Approvals, cost allocation, reporting and other countries are not built.
+- Evidence:
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+
+### PAY-002 — Employee master records
+
+- Module: Payroll and workforce finance
+- Status: **Tested**
+- Notes: Code, PAN (validated), UAN/ESI numbers, joining and leaving dates, work state, PT category, PF/EPS membership and previous-employer salary for the tax year. Identity fields freeze once a payslip is posted.
+- Evidence:
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/payroll/employees
+
+### PAY-003 — Salary structures
+
+- Module: Payroll and workforce finance
+- Status: **Tested**
+- Notes: Dated monthly structures (from the 1st of a month) with components marked as wages or excluded allowances under the Code on Social Security 2020; revisions are kept as history and a used structure cannot change.
+- Evidence:
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/payroll/employees/[employeeId]
+
+### PAY-005 — Earnings
+
+- Module: Payroll and workforce finance
+- Status: **Tested**
+- Notes: Components pro-rated by paid days; the 50% excluded-allowance add-back decides PF and ESI wages.
+- Evidence:
+  - packages/tax-engine/test/payroll.test.ts
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+
+### PAY-006 — Deductions
+
+- Module: Payroll and workforce finance
+- Status: **Tested**
+- Notes: Employee PF, ESI, Maharashtra professional tax and TDS on salary (new regime). No voluntary deductions, loans or advances.
+- Evidence:
+  - packages/tax-engine/test/payroll.test.ts
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+
+### PAY-007 — Bonuses
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: Bonuses can be added as one-off earnings on a payslip and are taxed in the month. No statutory bonus (Payment of Bonus Act) calculation.
+- Evidence:
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+
 ### PAY-009 — Reimbursements
 
 - Module: Payroll and workforce finance
@@ -808,6 +866,61 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Expense reimbursements only; no payroll.
 - Evidence:
   - apps/api/test/expenses.e2e.test.ts
+
+### PAY-011 — Leave-related adjustments
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: Loss-of-pay days (whole or half) per payslip, and pro-rating for joining or leaving mid-month. No leave balances or leave module.
+- Evidence:
+  - packages/tax-engine/test/payroll.test.ts
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+
+### PAY-016 — Payroll journals
+
+- Module: Payroll and workforce finance
+- Status: **Tested**
+- Notes: Posting a pay run journals gross salary and employer PF/ESI against net pay, PF, ESI, PT and TDS payables; voiding reverses it. Source PAYROLL.
+- Evidence:
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+
+### PAY-017 — Salary payment preparation
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: Records net-pay and statutory payments from a bank account with due dates (Dr liability, Cr bank). No bank transfer files, ECR or challan files.
+- Evidence:
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+
+### PAY-018 — Payslips
+
+- Module: Payroll and workforce finance
+- Status: **Tested**
+- Notes: Printable payslip with earnings, deductions, employer contributions, income-tax working and year-to-date figures. No PDF or email delivery.
+- Evidence:
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/payroll-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/payroll/runs/[runId]/payslips/[employeeId]
+
+### PAY-025 — For India, design configurable statutory components covering applicable PF, ESI, professional tax, TDS and other payroll obligations
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: PF/EPS/EDLI (with the Rs 25,000 ceiling from 17 Sep 2026), ESI, Maharashtra PT and new-regime TDS on salary. Not built: old regime, other states' PT, LWF, gratuity, perquisites. See docs/PAYROLL_INDIA.md.
+- Evidence:
+  - packages/tax-engine/test/payroll.test.ts
+  - apps/api/test/payroll.e2e.test.ts
+
+### PAY-026 — Country-specific payroll calculations must be activated only after appropriate regulatory validation
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: Every rate is cited to its source in the engine and on the settings page, but the rules have not been reviewed by a payroll professional; that review is required before real use.
+- Evidence:
+  - docs/PAYROLL_INDIA.md
 
 ### EXP-002 — Employee expense submissions
 

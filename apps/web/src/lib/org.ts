@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { api } from './api';
-import type { Account, Contact, GstRegistration, GstState, Org, Period, TaxRate, WithholdingSection, WithholdingSettings } from './types';
+import type { Account, Contact, Employee, GstRegistration, GstState, Org, PayrollSettings, Period, TaxRate, WithholdingSection, WithholdingSettings } from './types';
 
 export function useOrgId(): string {
   return useParams<{ orgId: string }>().orgId;
@@ -62,4 +62,14 @@ export function useWithholdingSettings() {
 export function useWithholdingSections(includeInactive = false) {
   const orgId = useOrgId();
   return useQuery({ queryKey: ['withholding-sections', orgId, includeInactive], queryFn: () => api<WithholdingSection[]>(`/v1/orgs/${orgId}/withholding/sections?includeInactive=${includeInactive}`) });
+}
+
+export function usePayrollSettings() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['payroll-settings', orgId], queryFn: () => api<PayrollSettings>(`/v1/orgs/${orgId}/payroll/settings`) });
+}
+
+export function useEmployees() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['employees', orgId], queryFn: () => api<Employee[]>(`/v1/orgs/${orgId}/payroll/employees`) });
 }

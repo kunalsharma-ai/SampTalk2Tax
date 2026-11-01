@@ -58,7 +58,7 @@ export interface Journal {
   displayNumber: string | null;
   date: string;
   type: string;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL';
   status: 'DRAFT' | 'POSTED';
   memo: string | null;
   reference: string | null;
@@ -75,7 +75,7 @@ export interface Journal {
 export const PERMS: Record<Role, Set<string>> = {
   OWNER: new Set(['*']),
   ADMIN: new Set(['*']),
-  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse']),
+  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse', 'payroll.read', 'payroll.manage']),
   APPROVER: new Set(['journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set([]),
   EMPLOYEE: new Set(['expenses.submit']),
@@ -388,7 +388,7 @@ export interface LedgerLink {
   date: string;
   memo: string | null;
   reference: string | null;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL';
   amount: string;
   payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
 }
@@ -709,4 +709,136 @@ export interface WithholdingDeposit {
   voidDate: string | null;
   voidReason: string | null;
   items: { documentId: string; number: string; date: string; contactName: string; amount: string }[];
+}
+
+// ---------------------------------------------------------------- payroll
+
+export type PayComponentKind = 'WAGES' | 'EXCLUDED';
+export type PtCategory = 'GENERAL' | 'WOMAN' | 'EXEMPT';
+export type PayrollLiability = 'NET_PAY' | 'PF' | 'ESI' | 'PT' | 'TDS';
+export interface AccountRef {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export type PayrollSettings =
+  | { configured: false }
+  | {
+      configured: true;
+      pfEstablishmentCode: string | null;
+      esiEmployerCode: string | null;
+      ptRegistration: string | null;
+      accounts: Record<'salaryExpense' | 'employerContribution' | 'netPay' | 'pfPayable' | 'esiPayable' | 'ptPayable' | 'tdsPayable', AccountRef>;
+    };
+
+export interface SalaryComponent {
+  code: string;
+  name: string;
+  kind: PayComponentKind;
+  monthlyAmount: string;
+}
+
+export interface SalaryStructure {
+  id: string;
+  effectiveFrom: string;
+  monthlyGross: string;
+  components: SalaryComponent[];
+}
+
+export interface EmployeeSummary {
+  id: string;
+  code: string;
+  name: string;
+  pan: string | null;
+  uan: string | null;
+  esiNumber: string | null;
+  dateOfJoining: string;
+  dateOfLeaving: string | null;
+}
+
+export interface Employee extends EmployeeSummary {
+  email: string | null;
+  workStateCode: string | null;
+  ptCategory: PtCategory;
+  pfMember: boolean;
+  epsMember: boolean;
+  pfOnFullWages: boolean;
+  priorTaxYear: string | null;
+  priorIncome: string;
+  priorTds: string;
+  status: 'ACTIVE' | 'JOINING' | 'LEFT';
+  currentSalary: SalaryStructure | null;
+  salaries: SalaryStructure[];
+}
+
+export interface PayslipData {
+  id: string;
+  daysInMonth: number;
+  daysOutside: string;
+  lopDays: string;
+  paidDays: string;
+  oneOffs: { name: string; kind: PayComponentKind; amount: string }[];
+  earnings: { code: string; name: string; kind: PayComponentKind; amount: string }[];
+  gross: string;
+  wages: string;
+  wagesAddedBack: string;
+  pf: { wages: string; employee: string; eps: string; epfEmployer: string; edli: string; admin: string };
+  esi: { covered: boolean; wages: string; employee: string; employer: string };
+  pt: { amount: string; note: string };
+  tds: { amount: string; projectedIncome: string; taxableIncome: string; annualTax: string; note: string; incomeBefore: string; tdsBefore: string; futureMonths: number };
+  deductions: string;
+  net: string;
+  employerCost: string;
+}
+
+export interface PayrollRemittance {
+  id: string;
+  number: string;
+  liability: PayrollLiability;
+  date: string;
+  reference: string;
+  amount: string;
+  status: 'POSTED' | 'VOID';
+  bankAccount: AccountRef;
+  journalEntryId: string;
+  voidReason: string | null;
+}
+
+export interface PayRunSummary {
+  id: string;
+  number: string;
+  period: string;
+  status: 'DRAFT' | 'POSTED' | 'VOID';
+  payDate: string;
+  employees: number;
+  gross: string;
+  deductions: string;
+  net: string;
+  employerCost: string;
+  paid: PayrollLiability[];
+}
+
+export interface PayRun {
+  id: string;
+  number: string;
+  period: string;
+  status: 'DRAFT' | 'POSTED' | 'VOID';
+  payDate: string;
+  journalEntryId: string | null;
+  voidJournalEntryId: string | null;
+  voidDate: string | null;
+  voidReason: string | null;
+  totals: Record<'gross' | 'deductions' | 'net' | 'employerCost' | 'pfEmployee' | 'pfEmployer' | 'eps' | 'edli' | 'pfAdmin' | 'esiEmployee' | 'esiEmployer' | 'pt' | 'tds', string>;
+  liabilities: { liability: PayrollLiability; label: string; amount: string; dueDate: string; payment: PayrollRemittance | null }[];
+  payslips: (PayslipData & { employee: EmployeeSummary })[];
+  missing: { employeeId: string; name: string; code: string; reason: string }[];
+  remittances: PayrollRemittance[];
+}
+
+export interface Payslip extends PayslipData {
+  organisation: { name: string; pfEstablishmentCode: string | null; esiEmployerCode: string | null };
+  payRun: { id: string; number: string; period: string; status: PayRun['status']; payDate: string };
+  employee: EmployeeSummary;
+  yearToDate: { taxYear: string; postedOnly: boolean; gross: string; tds: string; pfEmployee: string; pt: string };
 }

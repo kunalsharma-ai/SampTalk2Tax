@@ -42,6 +42,13 @@ describe('permissions', () => {
     expect(hasPermission('APPROVER', 'expenses.reimburse')).toBe(false);
     expect(hasPermission('VIEWER', 'expenses.submit')).toBe(false);
   });
+  it('keeps salaries from viewers, approvers and employees', () => {
+    expect(hasPermission('ACCOUNTANT', 'payroll.manage')).toBe(true);
+    expect(hasPermission('ADMIN', 'payroll.read')).toBe(true);
+    expect(hasPermission('VIEWER', 'payroll.read')).toBe(false);
+    expect(hasPermission('APPROVER', 'payroll.read')).toBe(false);
+    expect(hasPermission('EMPLOYEE', 'payroll.read')).toBe(false);
+  });
   it('restricts role assignment', () => {
     expect(canAssignRole('ADMIN', 'OWNER')).toBe(false);
     expect(canAssignRole('ADMIN', 'ACCOUNTANT')).toBe(true);
