@@ -207,6 +207,8 @@ model Organization {
   payrollSettings      PayrollSettings?
   complianceSettings   ComplianceSettings?
   complianceFilings    ComplianceFiling[]
+  eInvoiceSettings     EInvoiceSettings?
+  eInvoices            EInvoice[]
   employees            Employee[]
   payRuns              PayRun[]
 
@@ -405,6 +407,10 @@ model Contact {
   /// Default TDS (vendors) or TCS (customers) section for new documents.
   withholdingSectionId String?      @map("withholding_section_id") @db.Uuid
   address              String?
+  /// City or locality (e-invoice Loc).
+  city                 String?
+  /// Six-digit PIN code (e-invoice Pin).
+  pincode              String?      @db.Char(6)
   isCustomer           Boolean      @default(false) @map("is_customer")
   isVendor             Boolean      @default(false) @map("is_vendor")
   paymentTermsDays     Int          @default(30) @map("payment_terms_days")
@@ -518,6 +524,7 @@ model Document {
   approvalRequests     ApprovalRequest[]
   withholdingSection   WithholdingSection?      @relation(fields: [withholdingSectionId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_withholding_section_fk")
   depositItems         WithholdingDepositItem[]
+  eInvoices            EInvoice[]
 
   @@unique([orgId, kind, number])
   @@unique([id, orgId])
@@ -1223,4 +1230,63 @@ model ComplianceFiling {
 
   @@index([orgId, obligationKey])
   @@map("compliance_filings")
+}
+
+// ---------------------------------------------------------------- e-invoicing (M3)
+
+/// E-invoicing for the organisation's GST registration: from when, the seller address on the IRP, and the IRP key.
+model EInvoiceSettings {
+  orgId              String       @id @map("org_id") @db.Uuid
+  /// B2B invoices and credit notes dated on or after this need an IRN.
+  applicableFrom     DateTime     @map("applicable_from") @db.Date
+  /// Aggregate annual turnover of Rs 10 crore or more: the 30-day reporting limit applies.
+  aatoTenCroreOrMore Boolean      @default(false) @map("aato_ten_crore_or_more")
+  tradeName          String?      @map("trade_name")
+  address1           String
+  address2           String?
+  city               String
+  pincode            String       @db.Char(6)
+  /// UQC for goods lines, for example NOS.
+  goodsUnit          String       @default("NOS") @map("goods_unit")
+  /// The IRP's public key (PEM); when set, signed QR codes are verified with it.
+  irpPublicKey       String?      @map("irp_public_key")
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("e_invoice_settings")
+}
+
+enum EInvoiceStatus {
+  ACTIVE
+  CANCELLED
+}
+
+/// An IRN the IRP issued for a document, as imported from its response. Never changed except to record a cancellation.
+model EInvoice {
+  id                String         @id @default(uuid()) @db.Uuid
+  orgId             String         @map("org_id") @db.Uuid
+  documentId        String         @map("document_id") @db.Uuid
+  irn               String         @db.Char(64)
+  ackNo             String         @map("ack_no")
+  ackDate           DateTime       @map("ack_date") @db.Timestamptz(6)
+  signedQrCode      String         @map("signed_qr_code")
+  signedInvoice     String?        @map("signed_invoice")
+  /// True when the QR code's signature was checked with the IRP key in the settings.
+  signatureVerified Boolean        @default(false) @map("signature_verified")
+  /// SHA-256 of the JSON Talk2Tax generated for the document when the response was imported.
+  payloadHash       String         @map("payload_hash") @db.Char(64)
+  status            EInvoiceStatus @default(ACTIVE)
+  cancelledAt       DateTime?      @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason      String?        @map("cancel_reason") @db.Char(1)
+  cancelRemark      String?        @map("cancel_remark")
+  createdById       String         @map("created_by_id") @db.Uuid
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  cancelledById     String?        @map("cancelled_by_id") @db.Uuid
+  org               Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  document          Document       @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([orgId, irn])
+  @@index([documentId])
+  @@map("e_invoices")
 }
