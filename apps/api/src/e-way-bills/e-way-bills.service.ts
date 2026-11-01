@@ -53,6 +53,16 @@ const humanTime = (d: Date) => `${d.toLocaleString('en-GB', { day: 'numeric', mo
 const EXEMPT = new Set(['NIL_RATED', 'EXEMPT', 'NON_GST']);
 const DOC_INCLUDE = { contact: true, lines: { orderBy: { lineNo: 'asc' as const }, include: { tax: true } }, eWayBills: { orderBy: { createdAt: 'asc' as const }, include: { vehicleUpdates: { orderBy: { updatedAt: 'asc' as const } } } } };
 
+/** Rupees with Indian digit grouping (₹1,80,313.22), from a decimal without floats. */
+function inr(value: string | number | InstanceType<typeof D>): string {
+  const fixed = new D(value).toFixed(2);
+  const negative = fixed.startsWith('-');
+  const [whole, paise] = fixed.replace('-', '').split('.');
+  const last3 = whole.slice(-3);
+  const rest = whole.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+  return `${negative ? '-' : ''}₹${rest ? `${rest},` : ''}${last3}.${paise}`;
+}
+
 @Injectable()
 export class EWayBillsService {
   constructor(
@@ -336,14 +346,15 @@ export class EWayBillsService {
       return out('GENERATED', !s.partB ? 'Part A only: add the vehicle (Part B) before the goods move' : s.expired ? `Expired ${humanTime(new Date(s.validUntil!))}` : `Valid until ${humanTime(new Date(s.validUntil!))}`);
     }
     if (d.status === 'VOID') return out(last ? 'CANCELLED' : 'NOT_APPLICABLE', last ? 'E-way bill cancelled and invoice voided' : 'Voided');
-    if (d.placeOfSupply === '96') return out('UNSUPPORTED', 'Export: e-way bills for exports are not supported yet; generate it on the portal');
     if (!pre.lines.some((l) => l.hsnCode && !l.hsnCode.startsWith('99'))) return out('NOT_APPLICABLE', 'Services only: no goods move');
+    if (d.placeOfSupply === '96') return out('UNSUPPORTED', 'Export: e-way bills for exports are not supported yet; generate it on the portal');
     const built = buildEWayBill(pre);
     const dataIssues = built.issues.filter((i) => !i.field.startsWith('transport.') && i.field !== 'issueDate');
     if (todayIso() > base.generateBy) return out('TOO_OLD', `Dated more than 180 days ago: the portal no longer takes it (last day ${human(base.generateBy)})`);
-    if (dataIssues.length) return out(required ? 'NEEDS_DATA' : 'OPTIONAL', dataIssues.map((i) => i.message).join('; '), { issues: dataIssues });
-    if (!required) return out('OPTIONAL', `Goods worth ₹${new D(value).toFixed(2)}: not over the threshold, an e-way bill is optional`);
-    return out('NEEDED', last ? 'E-way bill cancelled; generate a new one before the goods move' : `Goods worth ₹${new D(value).toFixed(2)}: an e-way bill is needed before the goods move`);
+    const under = `Goods worth ${inr(value)}: not over the threshold, an e-way bill is optional`;
+    if (dataIssues.length) return required ? out('NEEDS_DATA', dataIssues.map((i) => i.message).join('; '), { issues: dataIssues }) : out('OPTIONAL', `${under} (to make one, first: ${dataIssues.map((i) => i.message.charAt(0).toLowerCase() + i.message.slice(1)).join('; ')})`, { issues: dataIssues });
+    if (!required) return out('OPTIONAL', under);
+    return out('NEEDED', last ? 'E-way bill cancelled; generate a new one before the goods move' : `Goods worth ${inr(value)}: an e-way bill is needed before the goods move`);
   }
 
   private notReady(r: { state: EWayBillState; reason: string; issues: EWayBillIssue[] }) {

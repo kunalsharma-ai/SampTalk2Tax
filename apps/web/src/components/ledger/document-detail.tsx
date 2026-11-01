@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { ApprovalCard, useApprovalState } from '@/components/approvals/approval-card';
 import { AttachmentsPanel } from '@/components/attachments';
 import { EInvoicePanel } from '@/components/e-invoice';
+import { EWayBillPanel } from '@/components/e-way-bill';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
@@ -44,7 +45,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
     queryFn: () => api<{ items: DocumentSummary[] }>(`${base}/documents?view=open&contactId=${d!.contact.id}&kind=${isCharge ? l.credit.kind : l.charge.kind}&limit=200`),
   });
   const refresh = async () => {
-    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice']) await qc.invalidateQueries({ queryKey: [k, orgId] });
+    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
   const post = useMutation({ mutationFn: () => api<FinancialDocument>(`${base}/documents/${documentId}/post`, { method: 'POST', body: { overrideCreditLimit: override } }), onSuccess: refresh });
   const remove = useMutation({
@@ -164,6 +165,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
       {d.withholding ? <WithholdingSummary w={d.withholding} currency={c} orgId={orgId} /> : null}
 
       {l.ledger === 'SALES' && org.countryCode === 'IN' && d.status !== 'DRAFT' && (d.kind === 'INVOICE' || d.kind === 'CREDIT_NOTE') ? <EInvoicePanel orgId={orgId} documentId={d.id} canManage={canManage} onChange={refresh} /> : null}
+      {l.ledger === 'SALES' && org.countryCode === 'IN' && d.status !== 'DRAFT' && d.kind === 'INVOICE' ? <EWayBillPanel orgId={orgId} documentId={d.id} issueDate={d.issueDate} canManage={canManage} onChange={refresh} /> : null}
 
       <ApprovalCard documentId={d.id} isDraft={d.status === 'DRAFT'} canManage={canManage} currency={c} onChange={refresh} />
 

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1145 |
+| Not started | 1144 |
 | Designed | 0 |
 | Implementing | 42 |
 | Implemented | 28 |
-| Tested | 128 |
+| Tested | 129 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 33 | 10 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
-| Global taxation engine | M3 | 54 | 32 | 22 |
+| Global taxation engine | M3 | 54 | 31 | 23 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
@@ -763,6 +763,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/e-invoicing-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/tax/e-invoices
   - apps/web/src/components/e-invoice.tsx
+
+### TAX-016 — E-way bill workflows
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: India e-way bills for outward supplies on tax invoices: which invoices need one (goods value with GST over Rs 50,000 or a state's own intra-state threshold; services and exempt goods left out; 180-day document limit), the portal's bulk JSON with Part B, validity under Rule 138(10), recording the number, vehicle changes kept in order, cancellation within 24 hours, and no void with a live e-way bill (API and trigger). No portal/GSP connection, exports, inward or job-work movements, extensions or consolidated bills; see docs/E_WAY_BILLS_INDIA.md.
+- Evidence:
+  - packages/tax-engine/src/india/ewaybill.ts
+  - packages/tax-engine/test/ewaybill.test.ts
+  - apps/api/src/e-way-bills
+  - apps/api/test/e-way-bills.e2e.test.ts
+  - apps/web/e2e/e-way-bills-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/tax/e-way-bills
+  - apps/web/src/components/e-way-bill.tsx
 
 ### TAX-017 — TDS
 
