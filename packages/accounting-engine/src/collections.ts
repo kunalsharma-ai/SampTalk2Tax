@@ -6,6 +6,7 @@
  * out here, from posted records, and everything it writes is checked here before a
  * person can send it. No framework or database code. Money is decimal strings.
  */
+import { daysBetween } from './documents';
 import { D, Dec } from './money';
 import { formatAmountText, formatDateText } from './workflows';
 
@@ -45,8 +46,6 @@ export interface CustomerFacts {
 export const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH'] as const;
 export type RiskLevel = (typeof RISK_LEVELS)[number];
 
-const day = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / 86_400_000;
-export const daysBetween = (from: string, to: string) => Math.round(day(to) - day(from));
 
 /** Builds the facts for one customer's reminder. Overdue means due before today. */
 export function customerFacts(p: {
