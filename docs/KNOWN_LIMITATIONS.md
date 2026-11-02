@@ -90,6 +90,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * The AI review has not yet run against the live Claude API; it is tested with the official SDK against a local stand-in.
 * A person starts each close and each review. Nothing starts on its own as a month ends. Proposed entries cannot be edited before posting. Entries are in the functional currency, with no tax or dimensions. No report pack is generated at close (the certification records the headline figures). There is no year-end close to retained earnings. See [`MONTH_END_CLOSE.md`](MONTH_END_CLOSE.md).
 
+## AI control center (M5, slice 6)
+
+* Budgets are in tokens, not money; one call can take usage past a budget because its size is known only when it returns. The stop applies to one organisation; a platform-wide stop is removing `ANTHROPIC_API_KEY`. Acceptance rates come from people's decisions, not a labelled evaluation set. No orchestrator hands work between agents, and no agent is above level 2. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
+
 ## AI bank reconciliation (M5, slice 4)
 
 * Not yet run against the live Claude API; tested with the official SDK against a local stand-in.

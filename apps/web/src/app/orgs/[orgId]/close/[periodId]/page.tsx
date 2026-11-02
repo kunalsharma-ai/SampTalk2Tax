@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Card, CardHeader, Field, Stat, Table, Td, Textare
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
+import { AiNoticeAlert } from '@/components/ai/ai-notice';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
@@ -97,6 +98,8 @@ export default function ClosePage() {
                 <Alert tone="warning" title="AI is not set up on this server">
                   An administrator needs to set <code className="font-mono">ANTHROPIC_API_KEY</code> for the API and restart it. The checklist, tasks and closing work without it.
                 </Alert>
+              ) : v.ai.notice ? (
+                <AiNoticeAlert notice={v.ai.notice} orgId={orgId} canChange={v.ai.canChangeAi} />
               ) : !v.ai.enabled ? (
                 <Alert tone="warning" title={`AI is off for ${org.name}`}>
                   A review sends account codes, names and monthly totals, and the checklist, to the AI model ({v.ai.model}).{' '}

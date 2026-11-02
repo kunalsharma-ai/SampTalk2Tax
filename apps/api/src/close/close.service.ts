@@ -16,6 +16,7 @@ import {
 } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
+import { AiControlService } from '../ai-control/ai-control.service';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
@@ -141,6 +142,7 @@ export class CloseService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly guard: AiControlService,
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly tasks: TasksService,
@@ -198,7 +200,7 @@ export class CloseService {
         return { ...c, link: c.key === 'AI_WAITING' ? null : CHECK_LINK[c.key], task: taskId ? { id: taskId, status: taskBy.get(taskId) ?? 'OPEN' } : null };
       }),
       readiness,
-      ai: { configured: !!this.model, enabled: settings?.enabled ?? false, model: this.config.COPILOT_MODEL, canChangeAi: hasPermission(org.role, 'org.manage') },
+      ai: { configured: !!this.model, enabled: settings?.enabled ?? false, model: this.config.COPILOT_MODEL, canChangeAi: hasPermission(org.role, 'org.manage'), notice: await this.guard.notice(org.id, 'CLOSE') },
       review: review
         ? {
             id: review.id,
@@ -397,10 +399,8 @@ export class CloseService {
 
   /** Have the AI model review the month and propose adjusting entries. Runs in the background; nothing is posted. */
   async startReview(org: CloseOrg, actor: Actor, periodId: string) {
-    if (!this.model) throw new DomainError('AI_NOT_CONFIGURED', 'AI is not set up on this server: an administrator needs to set ANTHROPIC_API_KEY. Nothing was sent anywhere.', HttpStatus.SERVICE_UNAVAILABLE);
-    const settings = await this.prisma.copilotSettings.findUnique({ where: { orgId: org.id } });
-    if (!settings?.enabled) throw new DomainError('AI_OFF', 'AI is turned off for this organisation. An owner or admin can turn it on in the copilot settings.', HttpStatus.CONFLICT);
-    const model = this.model;
+    await this.guard.assert(org.id, 'CLOSE');
+    const model = this.model!;
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true, functionalCurrency: true } });
 
     const review = await this.prisma.$transaction(
@@ -497,7 +497,10 @@ export class CloseService {
       const usage = { servedModel: res.model, inputTokens: res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0), outputTokens: res.usage.output_tokens };
       const call = res.content.find((b): b is Anthropic.Beta.Messages.BetaToolUseBlock => b.type === 'tool_use' && b.name === REVIEW_TOOL.name);
       const input = (res.stop_reason === 'max_tokens' ? null : call?.input) as Record<string, unknown> | null | undefined;
-      if (res.stop_reason === 'refusal') outcome = { data: { ...usage, status: 'FAILED', errorCode: 'REFUSED', errorMessage: 'The AI model declined to review this month.' }, adjustments: [] };
+      // Stopped while the model was working: keep the usage, show nothing it proposed.
+      const blocked = await this.guard.check(orgId, 'CLOSE');
+      if (blocked) outcome = { data: { ...usage, status: 'FAILED', ...AiControlService.stoppedError(blocked) }, adjustments: [] };
+      else if (res.stop_reason === 'refusal') outcome = { data: { ...usage, status: 'FAILED', errorCode: 'REFUSED', errorMessage: 'The AI model declined to review this month.' }, adjustments: [] };
       else if (!input || typeof input.summary !== 'string' || !input.summary.trim() || !Array.isArray(input.findings) || !Array.isArray(input.adjustments)) {
         outcome = { data: { ...usage, status: 'FAILED', errorCode: 'BAD_REVIEW', errorMessage: 'The AI model did not return a complete review. Run again.' }, adjustments: [] };
       } else {

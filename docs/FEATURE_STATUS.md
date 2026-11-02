@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1086 |
+| Not started | 1079 |
 | Designed | 0 |
-| Implementing | 49 |
+| Implementing | 51 |
 | Implemented | 30 |
-| Tested | 170 |
+| Tested | 175 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -36,7 +36,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
-| Multi-agent AI finance workforce | M5 | 60 | 56 | 4 |
+| Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
@@ -1283,6 +1283,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/cash-flow-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/cash-flow
 
+### AGENT-001 — Create a dedicated AI Agent Control Center
+
+- Module: Multi-agent AI finance workforce
+- Status: **Tested**
+- Notes: AI control center page: every AI agent (copilot, collections, bank reconciliation, month-end close) with its action level, on/off switch, monthly token budget, usage this month, failures, acceptance rate over 90 days, what is running and waiting, and the organisation-wide emergency stop.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
+
 ### AGENT-004 — Bank Reconciliation Agent
 
 - Module: Multi-agent AI finance workforce
@@ -1324,12 +1337,97 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/collections-flow.test.mjs
   - docs/AI_COLLECTIONS.md
 
-### AGENT-060 — Provide an emergency stop and tenant-wide AI disable controls
+### AGENT-044 — Enforces permissions
 
 - Module: Multi-agent AI finance workforce
 - Status: **Implementing**
-- Notes: Tenant-wide switch for the copilot exists; there is no platform-wide emergency stop other than removing the API key, and no AI agents yet.
+- Notes: Each agent run needs the starting member's permission for that feature, the organisation's AI switch, the agent's own switch and its budget, checked again before every model call. Not built: an orchestrator assigning work between agents.
 - Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
+
+### AGENT-046 — Tracks execution status
+
+- Module: Multi-agent AI finance workforce
+- Status: **Implementing**
+- Notes: Running and failed work per agent in the control center; every call in AI activity. Not built: a single cross-agent task model.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
+  - apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx
+
+### AGENT-052 — Measures accuracy
+
+- Module: Multi-agent AI finance workforce
+- Status: **Tested**
+- Notes: Acceptance rate per agent over the last 90 days, from what people did with its proposals: reminders sent (with or without edits) or rejected, bank suggestions accepted or dismissed by a person, adjusting entries posted or rejected. Not built: accuracy against a labelled set.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
+
+### AGENT-053 — Tracks model costs
+
+- Module: Multi-agent AI finance workforce
+- Status: **Implementing**
+- Notes: Tokens in and out tracked per call and per agent per month, with an optional monthly token budget per agent that is enforced before each model call. Not built: converting tokens to money at provider prices.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
+
+### AGENT-054 — Level 0: Read-only analysis
+
+- Module: Multi-agent AI finance workforce
+- Status: **Tested**
+- Notes: The copilot is level 0: it can only run read-only reports; shown in the control center.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
+
+### AGENT-056 — Level 2: Prepare changes for approval
+
+- Module: Multi-agent AI finance workforce
+- Status: **Tested**
+- Notes: Collections, bank reconciliation and month-end close agents are level 2: they prepare reminders, matches and entries that only take effect when a person approves them. The level is fixed in code, not a setting.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
+
+### AGENT-060 — Provide an emergency stop and tenant-wide AI disable controls
+
+- Module: Multi-agent AI finance workforce
+- Status: **Tested**
+- Notes: Organisation-wide emergency stop with a reason (owners and admins), shown in every refusal; every agent checks before each model call, so work already running stops and what it had not reached is marked as not done. Per-agent switches too. Not built: a platform-wide stop across all organisations (only removing the API key does that).
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/test/ai-control.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - docs/AI_CONTROL_CENTER.md
   - apps/api/src/copilot
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs

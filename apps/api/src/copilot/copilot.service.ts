@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { CopilotMessageStatus, Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
+import { AiControlService } from '../ai-control/ai-control.service';
 import { AuditService } from '../audit/audit.service';
 import { todayIst } from '../cash-flow/cash-flow.service';
 import { DomainError } from '../common/errors';
@@ -61,6 +62,7 @@ export class CopilotService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly guard: AiControlService,
     private readonly audit: AuditService,
     private readonly tools: CopilotTools,
     @Inject(CONFIG) private readonly config: AppConfig,
@@ -82,13 +84,14 @@ export class CopilotService {
       canChange: hasPermission(member.role, 'org.manage'),
       questionsPerHour: QUESTIONS_PER_HOUR,
       tools: this.tools.names(),
+      notice: await this.guard.notice(member.orgId, 'COPILOT'),
     };
   }
 
   async saveSettings(member: Member, actor: Actor, enabled: boolean) {
     await this.prisma.$transaction(async (tx) => {
       const before = await tx.copilotSettings.findUnique({ where: { orgId: member.orgId } });
-      await tx.copilotSettings.upsert({ where: { orgId: member.orgId }, create: { orgId: member.orgId, enabled, updatedById: actor.id }, update: { enabled, updatedById: actor.id } });
+      await tx.copilotSettings.upsert({ where: { orgId: member.orgId }, create: { orgId: member.orgId, enabled, updatedById: actor.id }, update: { enabled, offReason: null, updatedById: actor.id } });
       await this.audit.append(tx, { orgId: member.orgId, actorId: actor.id, action: enabled ? 'copilot.turned_on' : 'copilot.turned_off', entityType: 'copilot_settings', entityId: member.orgId, data: { from: before?.enabled ?? false, to: enabled } });
     });
     return this.status(member);
@@ -168,7 +171,8 @@ export class CopilotService {
     if (!this.model) throw new DomainError('AI_NOT_CONFIGURED', STATUS_MESSAGES.AI_NOT_CONFIGURED, HttpStatus.SERVICE_UNAVAILABLE);
     const model = this.model;
     const settings = await this.prisma.copilotSettings.findUnique({ where: { orgId: member.orgId } });
-    if (!settings?.enabled) throw new DomainError('COPILOT_OFF', STATUS_MESSAGES.COPILOT_OFF, HttpStatus.CONFLICT);
+    if (!settings?.enabled) throw new DomainError('COPILOT_OFF', settings?.offReason ? `AI was stopped for this organisation: ${settings.offReason}. An owner or admin can turn it back on in the AI control center.` : STATUS_MESSAGES.COPILOT_OFF, HttpStatus.CONFLICT);
+    await this.guard.assert(member.orgId, 'COPILOT');
     const { orgId } = member;
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true, functionalCurrency: true, fiscalYearStartMonth: true } });
     const today = todayIst();
@@ -297,6 +301,9 @@ export class CopilotService {
     const turn: CopilotMessageParam[] = [];
     const tools = this.tools.definitions();
     for (let round = 0; ; round++) {
+      // Stopped, switched off or over budget since the question was asked: no more model calls.
+      const blocked = round > 0 ? await this.guard.check(ctx.orgId, 'COPILOT') : null;
+      if (blocked) return { status: 'FAILED', text: null, apiMessages: [], ...AiControlService.stoppedError(blocked) };
       const request: CopilotRequest = {
         model: conv.model,
         max_tokens: MAX_OUTPUT_TOKENS,
