@@ -49,6 +49,14 @@ describe('permissions', () => {
     expect(hasPermission('APPROVER', 'payroll.read')).toBe(false);
     expect(hasPermission('EMPLOYEE', 'payroll.read')).toBe(false);
   });
+  it('leaves automations to owners and admins, and gives tasks to everyone but employees', () => {
+    expect(hasPermission('OWNER', 'workflows.manage')).toBe(true);
+    expect(hasPermission('ADMIN', 'workflows.manage')).toBe(true);
+    expect(hasPermission('ACCOUNTANT', 'workflows.manage')).toBe(false);
+    expect(hasPermission('VIEWER', 'workflows.manage')).toBe(false);
+    for (const role of ['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER', 'VIEWER'] as const) expect(hasPermission(role, 'tasks.use')).toBe(true);
+    expect(hasPermission('EMPLOYEE', 'tasks.use')).toBe(false);
+  });
   it('restricts role assignment', () => {
     expect(canAssignRole('ADMIN', 'OWNER')).toBe(false);
     expect(canAssignRole('ADMIN', 'ACCOUNTANT')).toBe(true);

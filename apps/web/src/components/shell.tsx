@@ -8,8 +8,9 @@ import { useOrg, useOrgs } from '@/lib/org';
 import { can } from '@/lib/types';
 import { Logo } from './brand';
 
-const NAV: { group: string; items: { href: string; label: string }[] }[] = [
-  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }] },
+/** perm: shown only to roles that have it (a hint; the API enforces the real check). */
+const NAV: { group: string; items: { href: string; label: string; perm?: string }[] }[] = [
+  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }, { href: '/tasks', label: 'My tasks' }] },
   {
     group: 'Sales',
     items: [
@@ -73,7 +74,7 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
     ],
   },
   { group: 'Planning', items: [{ href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }] },
-  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/approvals', label: 'Approval rules' }] },
+  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/approvals', label: 'Approval rules' }, { href: '/automations', label: 'Automations', perm: 'workflows.manage' }] },
 ];
 
 /** Employees only claim expenses; the rest of the books is not theirs to see. */
@@ -93,7 +94,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div key={g.group}>
           <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{g.group}</p>
           <ul className="mt-2 flex flex-col gap-0.5">
-            {g.items.map((i) => {
+            {g.items.filter((i) => !i.perm || can(org?.role, i.perm)).map((i) => {
               const href = `${base}${i.href}`;
               const active = i.href === '' ? pathname === base : pathname.startsWith(href);
               return (
