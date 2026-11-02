@@ -51,6 +51,8 @@ import { KpisController } from './kpis/kpis.controller';
 import { KpisService } from './kpis/kpis.service';
 import { AlertsController } from './alerts/alerts.controller';
 import { AlertsService } from './alerts/alerts.service';
+import { CollectionsController } from './collections/collections.controller';
+import { CollectionsService } from './collections/collections.service';
 import { CopilotController } from './copilot/copilot.controller';
 import { COPILOT_MODEL, CopilotModel, copilotModelFromConfig } from './copilot/copilot.model';
 import { CopilotService } from './copilot/copilot.service';
@@ -106,6 +108,7 @@ export class AppModule {
         KpisController,
         AlertsController,
         CopilotController,
+        CollectionsController,
         EInvoicingController,
         EWayBillsController,
         WorkflowsController,
@@ -143,6 +146,7 @@ export class AppModule {
         AlertsService,
         CopilotTools,
         CopilotService,
+        CollectionsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,
         EWayBillsService,
