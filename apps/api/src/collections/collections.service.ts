@@ -456,7 +456,9 @@ export class CollectionsService {
       }),
       this.prisma.collectionDraft.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: limit, include: { contact: { select: { name: true } }, run: { select: { startedById: true } } } }),
     ]);
-    const names = await this.names([...answers.map((a) => a.conversation.userId), ...drafts.flatMap((d) => [d.run.startedById, d.decidedById])]);
+    const bank = await this.prisma.bankAiSuggestion.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: limit, include: { statementLine: { select: { description: true, amount: true, accountId: true } }, run: { select: { startedById: true } } } });
+    const names = await this.names([...answers.map((a) => a.conversation.userId), ...drafts.flatMap((d) => [d.run.startedById, d.decidedById]), ...bank.flatMap((b) => [b.run.startedById, b.decidedById])]);
+    const ACTION: Record<string, string> = { MATCH: 'match to the books', PAYMENT: 'a receipt or payment', ENTRY: 'an entry' };
     const rows = [
       ...answers.map((a) => ({
         id: a.id,
@@ -488,6 +490,22 @@ export class CollectionsService {
         decision:
           d.status === 'SENT' ? `Sent${d.edited ? ' with edits' : ''} by ${names.get(d.decidedById!) ?? 'a former member'}` : d.status === 'REJECTED' ? `Rejected by ${names.get(d.decidedById!) ?? 'a former member'}` : d.status === 'SEND_FAILED' ? 'Approved; the mail server did not accept it' : d.status === 'READY' ? 'Waiting for review' : null,
         link: `/sales/collections/${d.id}`,
+      })),
+      ...bank.map((b) => ({
+        id: b.id,
+        feature: 'BANKING' as const,
+        at: b.createdAt.toISOString(),
+        by: names.get(b.run.startedById) ?? 'Former member',
+        what: `${b.action === 'NONE' ? 'Could not tell what' : `Suggested ${b.action ? ACTION[b.action] : 'what a bank line is'} for`} "${b.statementLine.description.slice(0, 60)}"${b.action === 'NONE' ? ' is' : ''}${b.confidence ? ` (${b.confidence.toLowerCase()} confidence)` : ''}`,
+        model: b.model,
+        servedModel: b.servedModel,
+        inputTokens: b.inputTokens,
+        outputTokens: b.outputTokens,
+        outcome: b.status,
+        error: b.errorCode,
+        decision:
+          b.status === 'ACCEPTED' ? `Accepted by ${names.get(b.decidedById!) ?? 'a former member'}` : b.status === 'DISMISSED' ? `Dismissed by ${names.get(b.decidedById!) ?? 'a former member'}` : b.status === 'READY' ? 'Waiting for review' : null,
+        link: `/banking/${b.statementLine.accountId}/ai?suggestion=${b.id}`,
       })),
     ];
     rows.sort((a, b) => b.at.localeCompare(a.at));

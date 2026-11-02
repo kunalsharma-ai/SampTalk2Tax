@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1093 |
+| Not started | 1089 |
 | Designed | 0 |
 | Implementing | 48 |
 | Implemented | 30 |
-| Tested | 167 |
-| Integration pending | 5 |
+| Tested | 169 |
+| Integration pending | 7 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -27,7 +27,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | General ledger and accounting engine | M1 | 44 | 16 | 28 |
 | Accounts receivable | M2 | 43 | 30 | 13 |
 | Accounts payable | M2 | 36 | 25 | 11 |
-| Banking and reconciliation | M2 | 24 | 9 | 15 |
+| Banking and reconciliation | M2 | 24 | 8 | 16 |
 | Global taxation engine | M3 | 54 | 31 | 23 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -36,14 +36,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
-| Multi-agent AI finance workforce | M5 | 60 | 58 | 2 |
+| Multi-agent AI finance workforce | M5 | 60 | 57 | 3 |
 | Autonomous financial workflows | M5 | 22 | 8 | 14 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 20 | 10 |
+| Continuous audit and governance | M6 | 30 | 18 | 12 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 38 | 3 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -628,6 +628,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Reconciliations are never deleted; undo keeps the record and reason; every step is in the audit trail.
 - Evidence:
   - apps/api/test/banking.e2e.test.ts › only owners and admins undo a reconciliation, which keeps its record
+
+### BANK-016 — Intelligent transaction classification
+
+- Module: Banking and reconciliation
+- Status: **Integration pending**
+- Notes: Bank lines are classified by the AI model into a match, a receipt or payment for a contact, or an entry to an account from the chart, using how a person booked the last 15 bank lines as examples. Suggestions only; a person accepts each. Waiting on ANTHROPIC_API_KEY for a live check.
+- Evidence:
+  - packages/accounting-engine/src/bank-ai.ts
+  - packages/accounting-engine/test/bank-ai.test.ts
+  - apps/api/src/bank-ai/bank-ai.service.ts
+  - apps/api/test/bank-ai.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/banking/[accountId]/ai/page.tsx
+  - apps/web/e2e/bank-ai-flow.test.mjs
+  - docs/AI_RECONCILIATION.md
 
 ### BANK-017 — Adaptive matching suggestions
 
@@ -1269,6 +1283,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/cash-flow-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/cash-flow
 
+### AGENT-004 — Bank Reconciliation Agent
+
+- Module: Multi-agent AI finance workforce
+- Status: **Integration pending**
+- Notes: Bank reconciliation agent: for each unmatched statement line without an exact one-to-one match (up to 25 per run, oldest first), the AI model (Anthropic Claude) suggests ledger lines already in the books that add up to it, a receipt or payment against open invoices or bills, or an entry to one account, with a confidence and a reason. It sees short references, never ids; every proposal is checked against what it was shown; a person accepts or dismisses each, and accepting goes through the same matching, receipt and entry code as by hand. Tested with a scripted model and a local Messages API stand-in; waiting on ANTHROPIC_API_KEY for a live check.
+- Evidence:
+  - packages/accounting-engine/src/bank-ai.ts
+  - packages/accounting-engine/test/bank-ai.test.ts
+  - apps/api/src/bank-ai/bank-ai.service.ts
+  - apps/api/test/bank-ai.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/banking/[accountId]/ai/page.tsx
+  - apps/web/e2e/bank-ai-flow.test.mjs
+  - docs/AI_RECONCILIATION.md
+
 ### AGENT-024 — Collections Agent
 
 - Module: Multi-agent AI finance workforce
@@ -1575,6 +1603,29 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/collections.e2e.test.ts
   - apps/web/e2e/collections-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx
+
+### AUDIT-022 — Proposed action
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Every AI proposal is kept as proposed (bank suggestions: the action and references the model sent, and the resolved records; reminders: the text the model wrote), frozen by database triggers, next to what a person decided.
+- Evidence:
+  - apps/api/src/bank-ai/bank-ai.service.ts
+  - apps/api/src/collections/collections.service.ts
+  - apps/api/test/bank-ai.e2e.test.ts
+  - apps/api/test/collections.e2e.test.ts
+  - apps/web/e2e/bank-ai-flow.test.mjs
+
+### AUDIT-023 — Reasoning summary
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Each AI proposal stores and shows the model's own short reason (bank suggestions) or risk reasons (reminders), with the checks run on it. These are the model's stated reasons, not its internal reasoning.
+- Evidence:
+  - apps/api/src/bank-ai/bank-ai.service.ts
+  - apps/api/src/collections/collections.service.ts
+  - apps/web/src/app/orgs/[orgId]/banking/[accountId]/ai/page.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
 
 ### AUDIT-024 — Approval status
 

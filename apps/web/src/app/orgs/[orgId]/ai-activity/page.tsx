@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { dateTime, type AiActivity } from '@/lib/collections';
 import { useOrg } from '@/lib/org';
 
-const FEATURE = { COPILOT: 'Copilot', COLLECTIONS: 'Collections' } as const;
+const FEATURE = { COPILOT: 'Copilot', COLLECTIONS: 'Collections', BANKING: 'Bank reconciliation' } as const;
 const OUTCOME_TONE: Record<string, 'neutral' | 'positive' | 'warning' | 'negative' | 'accent'> = {
   COMPLETE: 'positive',
   SENT: 'positive',
@@ -17,12 +17,14 @@ const OUTCOME_TONE: Record<string, 'neutral' | 'positive' | 'warning' | 'negativ
   PENDING: 'accent',
   DRAFTING: 'accent',
   REJECTED: 'neutral',
+  ACCEPTED: 'positive',
+  DISMISSED: 'neutral',
   INCOMPLETE: 'warning',
   REFUSED: 'negative',
   FAILED: 'negative',
   SEND_FAILED: 'negative',
 };
-const OUTCOME_LABEL: Record<string, string> = { COMPLETE: 'Answered', SENT: 'Sent', READY: 'To review', PENDING: 'Working', DRAFTING: 'Drafting', REJECTED: 'Rejected', INCOMPLETE: 'Incomplete', REFUSED: 'Declined', FAILED: 'Failed', SEND_FAILED: 'Not delivered' };
+const OUTCOME_LABEL: Record<string, string> = { COMPLETE: 'Answered', SENT: 'Sent', READY: 'To review', PENDING: 'Working', DRAFTING: 'Drafting', REJECTED: 'Rejected', ACCEPTED: 'Accepted', DISMISSED: 'Dismissed', INCOMPLETE: 'Incomplete', REFUSED: 'Declined', FAILED: 'Failed', SEND_FAILED: 'Not delivered' };
 
 export default function AiActivityPage() {
   const { org, orgId } = useOrg();
@@ -47,10 +49,11 @@ export default function AiActivityPage() {
           </div>
           <label className="mb-3 flex w-fit items-center gap-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
             Feature
-            <Select className="w-44" value={feature} onChange={(e) => setFeature(e.target.value as typeof feature)}>
+            <Select className="w-56" value={feature} onChange={(e) => setFeature(e.target.value as typeof feature)}>
               <option value="">Every feature</option>
               <option value="COPILOT">Copilot</option>
               <option value="COLLECTIONS">Collections</option>
+              <option value="BANKING">Bank reconciliation</option>
             </Select>
           </label>
           {rows.length ? (
@@ -92,7 +95,7 @@ export default function AiActivityPage() {
             </Card>
           ) : (
             <Card>
-              <EmptyState title="No AI calls yet">Calls appear here when someone asks the copilot a question or drafts payment reminders.</EmptyState>
+              <EmptyState title="No AI calls yet">Calls appear here when someone asks the copilot a question, drafts payment reminders or asks for bank suggestions.</EmptyState>
             </Card>
           )}
         </>
