@@ -60,6 +60,10 @@ jobs:
           # runner, so the runner looks every second and may reach private addresses here only.
           WORKFLOW_RUNNER_INTERVAL_SECONDS: 1
           WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true'
+          # The schedules browser test runs a local SMTP server (test-support/smtp-stand-in.mjs)
+          # on this port; nothing is sent beyond it.
+          SMTP_URL: smtp://127.0.0.1:4556
+          EMAIL_FROM: Talk2Tax CI <robot@talk2tax.test>
         run: |
           (cd apps/api && node dist/main.js > /tmp/api.log 2>&1 &)
           (cd apps/web && npx next start -p 3000 > /tmp/web.log 2>&1 &)

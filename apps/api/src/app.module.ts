@@ -63,6 +63,7 @@ import { EWayBillsController } from './e-way-bills/e-way-bills.controller';
 import { EWayBillsService } from './e-way-bills/e-way-bills.service';
 import { TasksController } from './tasks/tasks.controller';
 import { TasksService } from './tasks/tasks.service';
+import { MailerService } from './workflows/email';
 import { WorkflowRunnerService } from './workflows/workflow-runner.service';
 import { WorkflowsController } from './workflows/workflows.controller';
 import { WorkflowsService } from './workflows/workflows.service';
@@ -147,6 +148,7 @@ export class AppModule {
         EWayBillsService,
         TasksService,
         WorkflowRunnerService,
+        MailerService,
         WorkflowsService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },

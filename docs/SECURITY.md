@@ -54,6 +54,8 @@ The AI copilot sends questions and the figures it reads to Anthropic only when t
 
 Workflow webhooks (`docs/WORKFLOW_AUTOMATIONS.md`) are signed with a per-workflow HMAC-SHA256 secret. Outside development they may only reach public https addresses: the address is checked when saved, the host name is resolved when sending, every resolved address is checked against loopback, private, link-local (cloud metadata), CGNAT, reserved and IPv4-mapped forms, and the connection is pinned to the checked address. Redirects are not followed. `WEBHOOK_ALLOW_PRIVATE_NETWORKS` must stay false in production.
 
+Workflow emails are plain text, so no HTML from facts reaches a mail client. Subjects are kept to one line (line breaks are refused when saved and removed after filling placeholders), and addresses come only from member accounts or the contact's saved email, never from free text in the workflow. Emails to customers and vendors carry no link into the app; emails to members link to the record, which still needs a sign-in. A test sends each email to the person testing only. Each email has `Auto-Submitted: auto-generated` and a Message-ID that is the same on every retry. The SMTP password lives only in `SMTP_URL` and is never shown or logged.
+
 The EMPLOYEE role has only `org.read` and `expenses.submit`.
 
 ## Deployment notes for these controls

@@ -9,7 +9,7 @@ import { ago } from '@/lib/alerts';
 import { api } from '@/lib/api';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
-import { RUN_STATUS, type WorkflowSummary } from '@/lib/workflows';
+import { RUN_STATUS, type ActionType, type WorkflowSummary } from '@/lib/workflows';
 
 export default function AutomationsPage() {
   const { org, orgId } = useOrg();
@@ -67,8 +67,10 @@ export default function AutomationsPage() {
   );
 }
 
-function summariseActions(types: ('CREATE_TASK' | 'WEBHOOK')[]) {
-  const tasks = types.filter((t) => t === 'CREATE_TASK').length;
-  const hooks = types.length - tasks;
-  return [tasks ? `${tasks} task${tasks === 1 ? '' : 's'}` : null, hooks ? `${hooks} webhook${hooks === 1 ? '' : 's'}` : null].filter(Boolean).join(', ');
+function summariseActions(types: ActionType[]) {
+  const count = (k: ActionType, word: string) => {
+    const n = types.filter((t) => t === k).length;
+    return n ? `${n} ${word}${n === 1 ? '' : 's'}` : null;
+  };
+  return [count('CREATE_TASK', 'task'), count('SEND_EMAIL', 'email'), count('WEBHOOK', 'webhook')].filter(Boolean).join(', ');
 }

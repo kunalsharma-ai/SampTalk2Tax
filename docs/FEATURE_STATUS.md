@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1101 |
+| Not started | 1098 |
 | Designed | 0 |
 | Implementing | 47 |
 | Implemented | 30 |
-| Tested | 164 |
-| Integration pending | 1 |
+| Tested | 165 |
+| Integration pending | 3 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 16 | 28 |
-| Accounts receivable | M2 | 43 | 32 | 11 |
+| Accounts receivable | M2 | 43 | 31 | 12 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
 | Global taxation engine | M3 | 54 | 31 | 23 |
@@ -37,7 +37,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 59 | 1 |
-| Autonomous financial workflows | M5 | 22 | 11 | 11 |
+| Autonomous financial workflows | M5 | 22 | 9 | 13 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
@@ -398,6 +398,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › ageing ties to the receivables control account
   - apps/web/e2e/sales-flow.test.mjs
+
+### AR-024 — Collection reminders
+
+- Module: Accounts receivable
+- Status: **Integration pending**
+- Notes: Collection reminders as an automation: "An invoice is overdue" (N days after the due date, still not fully paid) can email the customer and give a task, once per invoice. Waiting on a real SMTP server for a live check. No reminder sequences, escalation by age or tracking of replies yet.
+- Evidence:
+  - apps/api/test/workflow-schedules.e2e.test.ts
+  - apps/web/e2e/automations-schedule-email.test.mjs
+  - docs/WORKFLOW_AUTOMATIONS.md
 
 ### AR-032 — Revenue leakage detection
 
@@ -1258,11 +1268,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Autonomous financial workflows
 - Status: **Implementing**
-- Notes: Form-based builder: one trigger, conditions that must all hold, and up to five actions (task or webhook). No visual canvas, branches or drag and drop yet.
+- Notes: Form-based builder: one trigger (an event, a schedule, or a date an invoice or bill reaches), conditions that must all hold, and up to five actions (task, email or webhook). No visual canvas, branches or drag and drop yet.
 - Evidence:
-  - apps/web/src/components/workflows/editor.tsx
-  - apps/web/src/app/orgs/[orgId]/automations
   - apps/web/e2e/automations-flow.test.mjs
+  - apps/web/e2e/automations-schedule-email.test.mjs
+  - apps/web/src/app/orgs/[orgId]/automations
+  - apps/web/src/components/workflows/editor.tsx
 
 ### WFLOW-002 — Trigger-based automation
 
@@ -1274,6 +1285,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/workflows.test.ts
   - apps/api/test/workflows.e2e.test.ts
   - apps/web/e2e/automations-flow.test.mjs
+
+### WFLOW-003 — Scheduled automation
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: Three schedule triggers: on a schedule (every day, every week on a weekday, or every month on day 1-28, at a time in India time), an invoice N days overdue, and a bill due in N days. Each acts once per occurrence (unique index on workflow and occurrence), only on times and dates from when it was turned on, so turning one on never sends a backlog. Schedule facts include overdue and outstanding receivables and payables.
+- Evidence:
+  - packages/accounting-engine/src/workflows.ts
+  - apps/api/src/workflows/workflow-runner.service.ts
+  - packages/accounting-engine/test/workflows.test.ts
+  - apps/api/test/workflow-schedules.e2e.test.ts
+  - apps/web/e2e/automations-schedule-email.test.mjs
+  - packages/database/prisma/migrations/20261102150000_workflow_schedules_email
 
 ### WFLOW-004 — Event-based automation
 
@@ -1304,6 +1328,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
   - apps/web/e2e/approvals-flow.test.mjs
 
+### WFLOW-009 — Notifications
+
+- Module: Autonomous financial workflows
+- Status: **Integration pending**
+- Notes: Email action: plain-text email to everyone with a role, one member, or the customer or vendor on the record, with {{placeholders}}, amounts like ₹1,50,000.00 and dates like 2 Nov 2026. Sent over SMTP (nodemailer, SMTP_URL and EMAIL_FROM) after the run commits, with the webhook retry schedule for 4xx answers or no answer; 5xx is final. Tests send to a local SMTP server; not yet run against a real mail provider. No SMS, chat or in-app notifications.
+- Evidence:
+  - apps/api/src/workflows/email.ts
+  - apps/api/src/workflows/workflow-runner.service.ts
+  - apps/api/test/workflow-schedules.e2e.test.ts
+  - apps/web/e2e/automations-schedule-email.test.mjs
+  - test-support/smtp-stand-in.mjs
+
 ### WFLOW-012 — Webhooks
 
 - Module: Autonomous financial workflows
@@ -1319,19 +1355,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Autonomous financial workflows
 - Status: **Tested**
-- Notes: Six attempts: retries after 1 min, 5 min, 30 min, 2 h and 6 h for network errors, timeouts, 408, 429 and 5xx; other answers end the delivery.
+- Notes: Six attempts: retries after 1 min, 5 min, 30 min, 2 h and 6 h. Webhooks: network errors, timeouts, 408, 429 and 5xx; other answers end the delivery. Emails: no answer or a 4xx SMTP answer; 5xx ends it.
 - Evidence:
+  - apps/api/test/workflow-schedules.e2e.test.ts
+  - apps/api/test/workflows.e2e.test.ts
   - packages/accounting-engine/src/workflows.ts
   - packages/accounting-engine/test/workflows.test.ts
-  - apps/api/test/workflows.e2e.test.ts
 
 ### WFLOW-015 — Failure recovery
 
 - Module: Autonomous financial workflows
 - Status: **Tested**
-- Notes: Failed runs say which action failed and why; an owner or admin can send a failed webhook again from the run log. A task for someone who has left fails that action only.
+- Notes: Failed runs say which action failed and why; an owner or admin can send a failed webhook or email again from the run log. A task for someone who has left, or an email with no address, fails that action only.
 - Evidence:
   - apps/api/src/workflows/workflows.service.ts
+  - apps/api/test/workflow-schedules.e2e.test.ts
   - apps/api/test/workflows.e2e.test.ts
 
 ### WFLOW-016 — Workflow versioning
@@ -1349,11 +1387,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Autonomous financial workflows
 - Status: **Tested**
-- Notes: Dry run on the latest real event (or a chosen one): facts, each condition with its actual value, and the task each action would create. Webhooks are sent only when asked, marked "test": true.
+- Notes: Dry run on the latest real event (or a chosen one), the latest time a schedule came round, or a real open invoice or bill: facts, each condition with its actual value, the task and the email each action would make. Webhooks are sent only when asked, marked "test": true; test emails go to the tester only, with [Test] in the subject.
 - Evidence:
   - apps/api/src/workflows/workflows.service.ts
+  - apps/api/test/workflow-schedules.e2e.test.ts
   - apps/api/test/workflows.e2e.test.ts
   - apps/web/e2e/automations-flow.test.mjs
+  - apps/web/e2e/automations-schedule-email.test.mjs
 
 ### WFLOW-018 — Execution logs
 
@@ -2193,10 +2233,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Navigation structure
 - Status: **Implementing**
-- Notes: Automations list, builder, test, run log, versions and webhook signing secret for owners and admins.
+- Notes: Automations list, builder (events, schedules, dates), test (emails go to the tester only), run log with each email and webhook attempt, versions and webhook signing secret for owners and admins.
 - Evidence:
-  - apps/web/src/app/orgs/[orgId]/automations
   - apps/web/e2e/automations-flow.test.mjs
+  - apps/web/e2e/automations-schedule-email.test.mjs
+  - apps/web/src/app/orgs/[orgId]/automations
 
 ### NAV-042 — User Management
 
