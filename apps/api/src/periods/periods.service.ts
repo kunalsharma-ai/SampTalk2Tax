@@ -38,6 +38,10 @@ export class PeriodsService {
       const p = rows[0];
       if (!p) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Period not found' });
       if (p.status === 'CLOSED') throw new ConflictException({ error: 'PERIOD_CLOSED', message: 'Closed periods cannot be changed' });
+      if (!locked) {
+        const close = await tx.periodClose.findUnique({ where: { periodId }, select: { status: true } });
+        if (close?.status === 'CLOSED') throw new ConflictException({ error: 'PERIOD_CLOSE_CERTIFIED', message: 'This month was closed at month end. Reopen the month-end close instead, which records why.' });
+      }
       const target = locked ? 'LOCKED' : 'OPEN';
       if (p.status === target) throw new ConflictException({ error: 'NO_CHANGE', message: `Period is already ${target}` });
       const updated = await tx.fiscalPeriod.update({

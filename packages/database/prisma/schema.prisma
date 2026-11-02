@@ -48,6 +48,7 @@ enum JournalSource {
   EXPENSE
   TAX
   PAYROLL
+  CLOSE
 }
 
 enum StatementLineStatus {
@@ -238,6 +239,10 @@ model Organization {
   collectionDrafts     CollectionDraft[]
   bankAiRuns           BankAiRun[]
   bankAiSuggestions    BankAiSuggestion[]
+  periodCloses         PeriodClose[]
+  closeCertifications  CloseCertification[]
+  closeAiReviews       CloseAiReview[]
+  closeAdjustments     CloseAdjustment[]
 
   @@map("organizations")
 }
@@ -322,6 +327,7 @@ model FiscalPeriod {
   lockedById String?        @map("locked_by_id") @db.Uuid
   org        Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
   entries    JournalEntry[]
+  close      PeriodClose?
 
   @@unique([orgId, fiscalYear, periodNo])
   @@unique([id, orgId])
@@ -1941,7 +1947,7 @@ model Task {
   assigneeUserId String?      @map("assignee_user_id") @db.Uuid
   assigneeRole   String?      @map("assignee_role") @db.VarChar(20)
   dueDate        DateTime?    @map("due_date") @db.Date
-  /// What the task is about, for a link: DOCUMENT, PAYMENT, JOURNAL, EXPENSE_CLAIM or ALERT.
+  /// What the task is about, for a link: DOCUMENT, PAYMENT, JOURNAL, EXPENSE_CLAIM, ALERT or PERIOD_CLOSE (the period id).
   linkType       String?      @map("link_type") @db.VarChar(20)
   linkId         String?      @map("link_id") @db.VarChar(64)
   workflowRunId  String?      @map("workflow_run_id") @db.Uuid
@@ -2127,4 +2133,121 @@ model BankAiSuggestion {
   @@index([orgId, status, createdAt])
   @@index([orgId, statementLineId])
   @@map("bank_ai_suggestions")
+}
+
+// ---------------------------------------------------------------- month-end close (M5 slice 5)
+
+enum PeriodCloseStatus {
+  IN_PROGRESS
+  CLOSED
+}
+
+/// The month-end close of one period: started by a person, closed (and the period locked) by an owner or admin.
+model PeriodClose {
+  id             String               @id @default(uuid()) @db.Uuid
+  orgId          String               @map("org_id") @db.Uuid
+  periodId       String               @unique @map("period_id") @db.Uuid
+  status         PeriodCloseStatus    @default(IN_PROGRESS)
+  startedById    String               @map("started_by_id") @db.Uuid
+  /// Task made for each open check, by check key: { "DRAFT_JOURNALS": "<task id>" }.
+  tasks          Json                 @default("{}")
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization         @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  period         FiscalPeriod         @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
+  certifications CloseCertification[]
+  reviews        CloseAiReview[]
+  adjustments    CloseAdjustment[]
+
+  @@unique([periodId, orgId])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("period_closes")
+}
+
+/// What was true when a month was closed, and who certified it. Never changed except once when reopened.
+model CloseCertification {
+  id            String       @id @default(uuid()) @db.Uuid
+  orgId         String       @map("org_id") @db.Uuid
+  closeId       String       @map("close_id") @db.Uuid
+  certifiedById String       @map("certified_by_id") @db.Uuid
+  certifiedAt   DateTime     @default(now()) @map("certified_at") @db.Timestamptz(6)
+  note          String?      @db.VarChar(2000)
+  checks        Json
+  totals        Json
+  reopenedById  String?      @map("reopened_by_id") @db.Uuid
+  reopenedAt    DateTime?    @map("reopened_at") @db.Timestamptz(6)
+  reopenReason  String?      @map("reopen_reason") @db.VarChar(2000)
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  close         PeriodClose  @relation(fields: [closeId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, closeId])
+  @@map("close_certifications")
+}
+
+enum CloseReviewStatus {
+  RUNNING
+  DONE
+  FAILED
+}
+
+/// One AI review of a month being closed: what it was shown, what it said, and its usage.
+model CloseAiReview {
+  id           String            @id @default(uuid()) @db.Uuid
+  orgId        String            @map("org_id") @db.Uuid
+  closeId      String            @map("close_id") @db.Uuid
+  status       CloseReviewStatus @default(RUNNING)
+  startedById  String            @map("started_by_id") @db.Uuid
+  context      Json
+  summary      String?
+  findings     Json?
+  model        String
+  servedModel  String?           @map("served_model")
+  inputTokens  Int?              @map("input_tokens")
+  outputTokens Int?              @map("output_tokens")
+  errorCode    String?           @map("error_code")
+  errorMessage String?           @map("error_message")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt   DateTime?         @map("finished_at") @db.Timestamptz(6)
+  org          Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  close        PeriodClose       @relation(fields: [closeId, orgId], references: [id, orgId], onDelete: Restrict)
+  adjustments  CloseAdjustment[]
+
+  @@unique([id, orgId])
+  @@index([orgId, closeId, createdAt])
+  @@map("close_ai_reviews")
+}
+
+enum CloseAdjustmentStatus {
+  READY
+  POSTED
+  REJECTED
+  SUPERSEDED
+}
+
+/// An adjusting entry the AI model proposed at month end. Posted only when a person approves it.
+model CloseAdjustment {
+  id              String                @id @default(uuid()) @db.Uuid
+  orgId           String                @map("org_id") @db.Uuid
+  closeId         String                @map("close_id") @db.Uuid
+  reviewId        String                @map("review_id") @db.Uuid
+  status          CloseAdjustmentStatus @default(READY)
+  proposal        Json
+  resolved        Json?
+  checks          Json
+  confidence      String
+  reason          String
+  journalEntryId  String?               @map("journal_entry_id") @db.Uuid
+  reversalEntryId String?               @map("reversal_entry_id") @db.Uuid
+  decidedById     String?               @map("decided_by_id") @db.Uuid
+  decidedAt       DateTime?             @map("decided_at") @db.Timestamptz(6)
+  decisionNote    String?               @map("decision_note") @db.VarChar(1000)
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org             Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  close           PeriodClose           @relation(fields: [closeId, orgId], references: [id, orgId], onDelete: Restrict)
+  review          CloseAiReview         @relation(fields: [reviewId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, closeId, status])
+  @@map("close_adjustments")
 }

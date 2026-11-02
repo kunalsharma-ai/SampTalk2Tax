@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1089 |
+| Not started | 1086 |
 | Designed | 0 |
-| Implementing | 48 |
+| Implementing | 49 |
 | Implemented | 30 |
-| Tested | 169 |
-| Integration pending | 7 |
+| Tested | 170 |
+| Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -36,14 +36,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
-| Multi-agent AI finance workforce | M5 | 60 | 57 | 3 |
-| Autonomous financial workflows | M5 | 22 | 8 | 14 |
+| Multi-agent AI finance workforce | M5 | 60 | 56 | 4 |
+| Autonomous financial workflows | M5 | 22 | 7 | 15 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 18 | 12 |
+| Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 38 | 3 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -1297,6 +1297,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/bank-ai-flow.test.mjs
   - docs/AI_RECONCILIATION.md
 
+### AGENT-005 — Month-End Closing Agent
+
+- Module: Multi-agent AI finance workforce
+- Status: **Integration pending**
+- Notes: Month-end closing agent: the AI model (Anthropic Claude) is shown the close checklist and how every account moved in the month against the three months before, points out what looks unusual, and proposes adjusting entries (accruals that reverse next month, prepayment releases, reclasses) using account codes only. Every entry is checked (allowed accounts, balanced, amounts, somewhere open to reverse) and posted only when a person approves it, through the normal journal code. Tested with a scripted model and a local Messages API stand-in; waiting on ANTHROPIC_API_KEY for a live check.
+- Evidence:
+  - packages/accounting-engine/src/close.ts
+  - packages/accounting-engine/test/close.test.ts
+  - apps/api/src/close/close.service.ts
+  - apps/api/test/close.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx
+  - apps/web/e2e/close-flow.test.mjs
+  - docs/MONTH_END_CLOSE.md
+
 ### AGENT-024 — Collections Agent
 
 - Module: Multi-agent AI finance workforce
@@ -1476,6 +1490,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/collections-flow.test.mjs
   - docs/AI_COLLECTIONS.md
 
+### WFLOW-021 — Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked
+
+- Module: Autonomous financial workflows
+- Status: **Implementing**
+- Notes: Built: a checklist worked out from the books (draft journals, unmatched bank lines, trial balance, draft documents, reconciliation, approvals, expense claims, payroll, depreciation, negative cash, AI items waiting, earlier months), tasks for accountants for each open check, an AI review that proposes adjusting entries, approval by a person, closing that locks the period with a certification of the figures, and reopening with a reason. Not built: starting the close automatically as a period ends, and generating the report pack at close.
+- Evidence:
+  - packages/accounting-engine/src/close.ts
+  - packages/accounting-engine/test/close.test.ts
+  - apps/api/src/close/close.service.ts
+  - apps/api/test/close.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx
+  - apps/web/e2e/close-flow.test.mjs
+  - docs/MONTH_END_CLOSE.md
+
 ### RISK-001 — Duplicate invoice detection
 
 - Module: Financial fraud and risk intelligence
@@ -1581,6 +1609,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
 
+### AUDIT-015 — Period-close certification
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Closing a month records a certification: who closed it and when, the checklist as it stood (with the warnings accepted and the note saying why), and the month's totals (revenue, expenses, net profit, assets, liabilities, trial balance, journals posted). Only owners and admins can close or reopen; a database trigger keeps a certification unchanged except for recording one reopening with its reason, and an unlock on the periods page is refused while the close stands.
+- Evidence:
+  - apps/api/src/close/close.service.ts
+  - apps/api/test/close.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx
+  - apps/web/e2e/close-flow.test.mjs
+  - packages/database/prisma/migrations/20261102230000_month_end_close/migration.sql
+  - docs/MONTH_END_CLOSE.md
+
 ### AUDIT-016 — AI action history
 
 - Module: Continuous audit and governance
@@ -1608,24 +1649,28 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Continuous audit and governance
 - Status: **Tested**
-- Notes: Every AI proposal is kept as proposed (bank suggestions: the action and references the model sent, and the resolved records; reminders: the text the model wrote), frozen by database triggers, next to what a person decided.
+- Notes: Every AI proposal is kept as proposed (bank suggestions: the action and references the model sent, and the resolved records; reminders: the text the model wrote), frozen by database triggers, next to what a person decided. Month-end close entries keep the lines, reason and confidence the model proposed, frozen the same way.
 - Evidence:
   - apps/api/src/bank-ai/bank-ai.service.ts
   - apps/api/src/collections/collections.service.ts
   - apps/api/test/bank-ai.e2e.test.ts
   - apps/api/test/collections.e2e.test.ts
   - apps/web/e2e/bank-ai-flow.test.mjs
+  - apps/api/src/close/close.service.ts
+  - apps/api/test/close.e2e.test.ts
 
 ### AUDIT-023 — Reasoning summary
 
 - Module: Continuous audit and governance
 - Status: **Tested**
-- Notes: Each AI proposal stores and shows the model's own short reason (bank suggestions) or risk reasons (reminders), with the checks run on it. These are the model's stated reasons, not its internal reasoning.
+- Notes: Each AI proposal stores and shows the model's own short reason (bank suggestions) or risk reasons (reminders), with the checks run on it. These are the model's stated reasons, not its internal reasoning. Month-end close entries keep the lines, reason and confidence the model proposed, frozen the same way.
 - Evidence:
   - apps/api/src/bank-ai/bank-ai.service.ts
   - apps/api/src/collections/collections.service.ts
   - apps/web/src/app/orgs/[orgId]/banking/[accountId]/ai/page.tsx
   - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
+  - apps/api/src/close/close.service.ts
+  - apps/api/test/close.e2e.test.ts
 
 ### AUDIT-024 — Approval status
 
