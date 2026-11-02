@@ -3,6 +3,7 @@ import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } f
 import { BANK_AI_ACTIONS, BankLineContext, BankProposalInput, checkProposal, CONFIDENCE_LEVELS, contextForModel, D, minorUnits, rankCandidates, ResolvedProposal } from '@talk2tax/accounting-engine';
 import { BankAiSuggestionStatus, Prisma } from '@talk2tax/database';
 import { hasPermission } from '@talk2tax/security';
+import { AiControlService } from '../ai-control/ai-control.service';
 import { AuditService } from '../audit/audit.service';
 import { BankingService, BankOrg } from '../banking/banking.service';
 import { fromDbDate } from '../common/dates';
@@ -105,6 +106,7 @@ export class BankAiService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly guard: AiControlService,
     private readonly audit: AuditService,
     private readonly banking: BankingService,
     @Inject(CONFIG) private readonly config: AppConfig,
@@ -127,6 +129,7 @@ export class BankAiService {
       aiEnabled: settings?.enabled ?? false,
       model: this.config.COPILOT_MODEL,
       canChangeAi: hasPermission(org.role, 'org.manage'),
+      aiNotice: await this.guard.notice(org.id, 'BANKING'),
       limits: { linesPerRun: MAX_LINES_PER_RUN },
       counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<BankAiSuggestionStatus, number>>,
       latestRun: run
@@ -267,11 +270,9 @@ export class BankAiService {
    * (the deterministic "match suggested"), or a suggestion already waiting, are left out.
    */
   async start(org: BankOrg, actor: Actor, accountId: string) {
-    if (!this.model) throw new DomainError('AI_NOT_CONFIGURED', 'AI is not set up on this server: an administrator needs to set ANTHROPIC_API_KEY. Nothing was sent anywhere.', HttpStatus.SERVICE_UNAVAILABLE);
-    const settings = await this.prisma.copilotSettings.findUnique({ where: { orgId: org.id } });
-    if (!settings?.enabled) throw new DomainError('AI_OFF', 'AI is turned off for this organisation. An owner or admin can turn it on in the copilot settings.', HttpStatus.CONFLICT);
+    await this.guard.assert(org.id, 'BANKING');
     await this.bankAccount(org.id, accountId);
-    const model = this.model;
+    const model = this.model!;
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true, functionalCurrency: true } });
     const scale = minorUnits(org.functionalCurrency);
 
@@ -350,7 +351,9 @@ export class BankAiService {
       metadata: { user_id: actor.id },
     };
     let data: Prisma.BankAiSuggestionUpdateInput;
-    try {
+    const blocked = await this.guard.check(orgId, 'BANKING');
+    if (blocked) data = { status: 'FAILED', ...AiControlService.stoppedError(blocked) };
+    else try {
       const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000) });
       const usage = { servedModel: res.model, inputTokens: res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0), outputTokens: res.usage.output_tokens };
       const call = res.content.find((b): b is Anthropic.Beta.Messages.BetaToolUseBlock => b.type === 'tool_use' && b.name === SUBMIT_TOOL.name);

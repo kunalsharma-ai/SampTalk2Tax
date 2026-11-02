@@ -12289,9 +12289,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "AI control center page: every AI agent (copilot, collections, bank reconciliation, month-end close) with its action level, on/off switch, monthly token budget, usage this month, failures, acceptance rate over 90 days, what is running and waiting, and the organisation-wide emergency stop."
     },
     {
       "id": "AGENT-002",
@@ -13387,9 +13394,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Each agent run needs the starting member's permission for that feature, the organisation's AI switch, the agent's own switch and its budget, checked again before every model call. Not built: an orchestrator assigning work between agents."
     },
     {
       "id": "AGENT-045",
@@ -13437,9 +13451,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md",
+        "apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx"
+      ],
+      "notes": "Running and failed work per agent in the control center; every call in AI activity. Not built: a single cross-agent task model."
     },
     {
       "id": "AGENT-047",
@@ -13587,9 +13609,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Acceptance rate per agent over the last 90 days, from what people did with its proposals: reminders sent (with or without edits) or rejected, bank suggestions accepted or dismissed by a person, adjusting entries posted or rejected. Not built: accuracy against a labelled set."
     },
     {
       "id": "AGENT-053",
@@ -13612,9 +13641,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Tokens in and out tracked per call and per agent per month, with an optional monthly token budget per agent that is enforced before each model call. Not built: converting tokens to money at provider prices."
     },
     {
       "id": "AGENT-054",
@@ -13637,9 +13673,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "The copilot is level 0: it can only run read-only reports; shown in the control center."
     },
     {
       "id": "AGENT-055",
@@ -13687,9 +13730,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Collections, bank reconciliation and month-end close agents are level 2: they prepare reminders, matches and entries that only take effect when a person approves them. The level is fixed in code, not a setting."
     },
     {
       "id": "AGENT-057",
@@ -13787,15 +13837,21 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/test/ai-control.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "docs/AI_CONTROL_CENTER.md",
         "apps/api/src/copilot",
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/copilot",
         "packages/database/prisma/migrations/20261102090000_ai_copilot"
       ],
-      "notes": "Tenant-wide switch for the copilot exists; there is no platform-wide emergency stop other than removing the API key, and no AI agents yet."
+      "notes": "Organisation-wide emergency stop with a reason (owners and admins), shown in every refusal; every agent checks before each model call, so work already running stops and what it had not reached is marked as not done. Per-agent switches too. Not built: a platform-wide stop across all organisations (only removing the API key does that)."
     },
     {
       "id": "WFLOW-001",

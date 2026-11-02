@@ -8,6 +8,7 @@ export interface CopilotStatus {
   canChange: boolean;
   questionsPerHour: number;
   tools: string[];
+  notice: import('@/components/ai/ai-notice').AiNotice;
 }
 export interface CopilotSource {
   tool: string;
