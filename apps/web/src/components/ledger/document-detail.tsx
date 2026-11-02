@@ -16,12 +16,15 @@ import { api, ApiError } from '@/lib/api';
 import { date, money, today } from '@/lib/format';
 import { kindLabel, type LedgerConfig } from '@/lib/ledgers';
 import { useOrg } from '@/lib/org';
+import { LineDimensionTags } from '@/components/dimensions/line-dimensions';
+import { useDimensions } from '@/lib/dimensions';
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
 import { DocumentForm } from './document-form';
 import { DocStatus } from './documents-table';
 
 export function DocumentDetail({ l }: { l: LedgerConfig }) {
   const { org, orgId } = useOrg();
+  const dims = useDimensions();
   const { documentId } = useParams<{ documentId: string }>();
   const router = useRouter();
   const qc = useQueryClient();
@@ -189,7 +192,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
             {d.lines.map((x) => (
               <Tr key={x.lineNo}>
                 <Td className="text-fg-muted">{x.lineNo}</Td>
-                <Td>{x.description}</Td>
+                <Td>{x.description}<LineDimensionTags values={dims.data?.values} departmentId={x.departmentId} projectId={x.projectId} /></Td>
                 <Td className="text-fg-muted"><span className="num">{x.accountCode}</span> {x.accountName}</Td>
                 {d.gst ? <Td className="num text-fg-muted">{x.hsnCode ?? '—'}</Td> : null}
                 <Td numeric className="num">{x.quantity}</Td>

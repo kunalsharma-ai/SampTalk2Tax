@@ -10,6 +10,8 @@ import { money, today } from '@/lib/format';
 import type { LedgerConfig } from '@/lib/ledgers';
 import { useAccounts, useContacts, useGstRegistration, useGstStates, useOrg, useTaxRates, useWithholdingSections, useWithholdingSettings } from '@/lib/org';
 import { can, type AccountType, type DocumentKind, type FinancialDocument, type WithholdingPreview } from '@/lib/types';
+import { LineDimensions } from '@/components/dimensions/line-dimensions';
+import { useDimensions } from '@/lib/dimensions';
 import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
 
 interface LineState {
@@ -20,6 +22,8 @@ interface LineState {
   unitPrice: string;
   taxRateId: string;
   hsnCode: string;
+  departmentId: string;
+  projectId: string;
 }
 
 const QTY = /^\d{0,12}(\.\d{0,6})?$/;
@@ -30,6 +34,7 @@ const RCM_ACCOUNTS = new Map([['cgst', 'out-cgst'], ['sgst', 'out-sgst'], ['igst
 export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string }) {
   const { org, orgId } = useOrg();
   const accounts = useAccounts();
+  const dims = useDimensions();
   const contacts = useContacts(l.contactRole);
   const taxRates = useTaxRates();
   const gstReg = useGstRegistration();
@@ -40,7 +45,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const qc = useQueryClient();
   const c = org?.functionalCurrency ?? 'INR';
   const nextKey = useRef(2);
-  const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '' });
+  const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '', departmentId: '', projectId: '' });
   const isCharge = kind === l.charge.kind;
   const label = isCharge ? l.charge.label : l.credit.label;
 
@@ -51,7 +56,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const [memo, setMemo] = useState(existing?.memo ?? '');
   const [lines, setLines] = useState<LineState[]>(
     existing
-      ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '' }))
+      ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '', departmentId: x.departmentId ?? '', projectId: x.projectId ?? '' }))
       : [blank(1)],
   );
   const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? '');
@@ -94,7 +99,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const defaultDue = selectedContact && issueDate ? addDays(issueDate, selectedContact.paymentTermsDays) : '';
 
   const filled = lines.filter((x) => x.accountId || x.unitPrice || x.description);
-  const payloadLines = filled.map((x) => ({ accountId: x.accountId, description: x.description || undefined, quantity: x.quantity || '0', unitPrice: x.unitPrice || '0', taxRateId: x.taxRateId || null, hsnCode: x.hsnCode.trim() || null }));
+  const payloadLines = filled.map((x) => ({ accountId: x.accountId, description: x.description || undefined, quantity: x.quantity || '0', unitPrice: x.unitPrice || '0', taxRateId: x.taxRateId || null, hsnCode: x.hsnCode.trim() || null, departmentId: x.departmentId || null, projectId: x.projectId || null }));
 
   // Same calculation the server runs, so the totals shown are the totals that post.
   const calc = useMemo(() => {
@@ -293,6 +298,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
                         </optgroup>
                       ))}
                     </Select>
+                    <LineDimensions values={dims.data?.values} line={idx + 1} departmentId={x.departmentId} projectId={x.projectId} onChange={(p) => update(x.key, p)} />
                   </Td>
                   <Td><Input aria-label={`Description for line ${idx + 1}`} value={x.description} maxLength={500} onChange={(e) => update(x.key, { description: e.target.value })} /></Td>
                   <Td numeric><Input aria-label={`Quantity for line ${idx + 1}`} className="num text-right" inputMode="decimal" value={x.quantity} onChange={(e) => QTY.test(e.target.value) && update(x.key, { quantity: e.target.value })} /></Td>

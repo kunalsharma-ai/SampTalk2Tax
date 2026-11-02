@@ -94,6 +94,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Budgets are in tokens, not money; one call can take usage past a budget because its size is known only when it returns. The stop applies to one organisation; a platform-wide stop is removing `ANTHROPIC_API_KEY`. Acceptance rates come from people's decisions, not a labelled evaluation set. No orchestrator hands work between agents, and no agent is above level 2. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
 
+## Departments and projects (M6, slice 3)
+
+* Two dimensions only (department, project), one of each per line. No location or custom dimensions, required tags per account, cost allocation or splitting a line across projects. Only the profit and loss is split; budgets, the trial balance, balance sheet and general ledger are not. Bank entries, expense claims, payroll, depreciation and deferral releases post untagged, and document tax, receivable and payable lines are not tagged. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md).
+
 ## Prepaid expenses, deferred revenue and accruals (M6, slice 2)
 
 * Release evenly by month or by days only; no revenue recognition by milestone, usage or performance obligation. Schedules are not created from invoice or bill lines automatically. Accruals reverse on the first of the next month only, and do not repeat. Only the latest release run can be reversed, and a schedule added after its months were run is released in the next month's run. See [`PREPAID_AND_DEFERRED.md`](PREPAID_AND_DEFERRED.md).

@@ -29,8 +29,10 @@ interface MovementRow {
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async movements(orgId: string, from: string | null, to: string): Promise<AccountMovement[]> {
+  private async movements(orgId: string, from: string | null, to: string, dims: { departmentId?: string | null; projectId?: string | null } = {}): Promise<AccountMovement[]> {
     const fromDate = from ? toDbDate(from) : null;
+    const dept = dims.departmentId ?? null;
+    const project = dims.projectId ?? null;
     const rows = await this.prisma.$queryRaw<MovementRow[]>`
       SELECT a.id, a.code, a.name, a.type::text AS type, a.subtype,
              COALESCE(m.debit, 0) AS debit, COALESCE(m.credit, 0) AS credit
@@ -43,6 +45,8 @@ export class ReportsService {
           AND e.status = 'POSTED'
           AND e.date <= ${toDbDate(to)}::date
           AND (${fromDate}::date IS NULL OR e.date >= ${fromDate}::date)
+          AND (${dept}::uuid IS NULL OR l.department_id = ${dept}::uuid)
+          AND (${project}::uuid IS NULL OR l.project_id = ${project}::uuid)
         GROUP BY l.account_id
       ) m ON m.account_id = a.id
       WHERE a.org_id = ${orgId}::uuid`;
@@ -87,10 +91,10 @@ export class ReportsService {
     };
   }
 
-  async incomeStatement(orgId: string, q: { from: string; to: string }) {
+  async incomeStatement(orgId: string, q: { from: string; to: string; departmentId?: string; projectId?: string }) {
     const ccy = await this.currency(orgId);
     const f = (d: Dec) => d.toFixed(minorUnits(ccy));
-    const is = buildIncomeStatement(await this.movements(orgId, q.from, q.to));
+    const is = buildIncomeStatement(await this.movements(orgId, q.from, q.to, q));
     const line = (l: { accountId: string; code: string; name: string; subtype?: string | null; amount: Dec }) => ({ ...l, subtype: l.subtype ?? null, amount: f(l.amount) });
     return {
       currency: ccy,

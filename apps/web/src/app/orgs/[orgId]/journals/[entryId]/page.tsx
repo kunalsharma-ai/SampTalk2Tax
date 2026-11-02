@@ -11,10 +11,13 @@ import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
 import { date, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
+import { LineDimensionTags } from '@/components/dimensions/line-dimensions';
+import { useDimensions } from '@/lib/dimensions';
 import { can, type Journal } from '@/lib/types';
 
 export default function JournalDetailPage() {
   const { org, orgId } = useOrg();
+  const dims = useDimensions();
   const { entryId } = useParams<{ entryId: string }>();
   const router = useRouter();
   const qc = useQueryClient();
@@ -161,7 +164,10 @@ export default function JournalDetailPage() {
                     </p>
                   ) : null}
                 </Td>
-                <Td className="text-fg-muted">{l.description}</Td>
+                <Td className="text-fg-muted">
+                  {l.description}
+                  <LineDimensionTags values={dims.data?.values} departmentId={l.departmentId} projectId={l.projectId} />
+                </Td>
                 <Td numeric>{l.functionalDebit !== '0.00' ? <Money value={l.functionalDebit} currency={c} /> : ''}</Td>
                 <Td numeric>{l.functionalCredit !== '0.00' ? <Money value={l.functionalCredit} currency={c} /> : ''}</Td>
               </Tr>

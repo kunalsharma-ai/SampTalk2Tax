@@ -18,6 +18,8 @@ const Line = z.object({
   taxRateId: z.uuid().nullable().optional(),
   /** India GST: HSN or SAC code (4, 6 or 8 digits). */
   hsnCode: z.string().trim().max(8).nullable().optional(),
+  departmentId: z.uuid().nullable().optional(),
+  projectId: z.uuid().nullable().optional(),
 });
 const kinds = { SALES: ['INVOICE', 'CREDIT_NOTE'], PURCHASES: ['BILL', 'VENDOR_CREDIT'] } as const;
 
