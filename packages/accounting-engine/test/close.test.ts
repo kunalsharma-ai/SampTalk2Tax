@@ -12,6 +12,7 @@ const facts = (over: Partial<CloseFacts> = {}): CloseFacts => ({
   submittedExpenseClaims: 0,
   payroll: null,
   depreciation: { fixedAssets: '0', postedThisMonth: '0' },
+  deferrals: { schedules: 0, amount: '0' },
   negativeCash: [],
   aiWaiting: { bankSuggestions: 0, adjustments: 0 },
   trialBalance: { debit: '1500.00', credit: '1500.00' },

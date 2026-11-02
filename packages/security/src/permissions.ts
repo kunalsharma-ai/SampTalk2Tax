@@ -53,6 +53,8 @@ export const PERMISSIONS = [
   'close.manage',
   /** Keep the fixed asset register: add assets, post depreciation, record disposals. */
   'assets.manage',
+  /** Keep prepaid expense and deferred revenue schedules, post their monthly releases, and post month-end accruals. */
+  'deferrals.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -97,6 +99,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'collections.manage',
     'close.manage',
     'assets.manage',
+    'deferrals.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set<Permission>(READ_ONLY),
