@@ -85,6 +85,11 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Not yet run against the live Claude API: no `ANTHROPIC_API_KEY` has been provided. The full path up to the HTTP call is tested with the official SDK against a local stand-in. Answers appear whole when finished (no streaming of text). Read-only questions only: no drafting of journals, invoices, reminders or filings, no document reading, no web search, no payroll. No platform screen for the model or spend; per-member hourly limit only. Answers come from tool results but a language model can still misread or miscalculate, so the screen asks members to check the linked reports. English only. See [`AI_COPILOT.md`](AI_COPILOT.md).
 
+## AI bank reconciliation (M5, slice 4)
+
+* Not yet run against the live Claude API; tested with the official SDK against a local stand-in.
+* A person starts each run and accepts each suggestion: no scheduled runs, bulk accept or editing a suggestion before accepting; entries go to one account with no split or tax; no transfers between own accounts or foreign-currency lines; learning is the last 15 entries a person made, not saved rules; up to 25 lines per run. See [`AI_RECONCILIATION.md`](AI_RECONCILIATION.md).
+
 ## AI collections agent (M5, slice 3)
 
 * Not yet run against the live Claude API or a real mail provider; tested with the official SDK against a local stand-in and a local SMTP server.

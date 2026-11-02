@@ -227,7 +227,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
 | BANK-014 |  | capability | Bank balance monitoring | Implementing |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |
-| BANK-016 | AI Enhancements | capability | Intelligent transaction classification | Not started |
+| BANK-016 | AI Enhancements | capability | Intelligent transaction classification | Integration pending |
 | BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Implementing |
 | BANK-018 | AI Enhancements | capability | Duplicate transaction detection | Tested |
 | BANK-019 | AI Enhancements | capability | Suspicious transaction monitoring | Not started |
@@ -573,7 +573,7 @@ Part 17 · M5 · priority P3 · depends on: AIGW, WFLOW
 | AGENT-001 |  | rule | Create a dedicated AI Agent Control Center | Not started |
 | AGENT-002 | Accounting Agents | capability | General Ledger Agent | Not started |
 | AGENT-003 | Accounting Agents | capability | Journal Entry Agent | Not started |
-| AGENT-004 | Accounting Agents | capability | Bank Reconciliation Agent | Not started |
+| AGENT-004 | Accounting Agents | capability | Bank Reconciliation Agent | Integration pending |
 | AGENT-005 | Accounting Agents | capability | Month-End Closing Agent | Not started |
 | AGENT-006 | Accounting Agents | capability | Accounting Policy Agent | Not started |
 | AGENT-007 | Accounting Agents | capability | Financial Statement Agent | Not started |
@@ -837,8 +837,8 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-019 | Explainable AI Ledger | capability | Model version | Tested |
 | AUDIT-020 | Explainable AI Ledger | capability | Prompt or policy version | Not started |
 | AUDIT-021 | Explainable AI Ledger | capability | Data sources | Not started |
-| AUDIT-022 | Explainable AI Ledger | capability | Proposed action | Not started |
-| AUDIT-023 | Explainable AI Ledger | capability | Reasoning summary | Not started |
+| AUDIT-022 | Explainable AI Ledger | capability | Proposed action | Tested |
+| AUDIT-023 | Explainable AI Ledger | capability | Reasoning summary | Tested |
 | AUDIT-024 | Explainable AI Ledger | capability | Approval status | Tested |
 | AUDIT-025 | Explainable AI Ledger | capability | Approving user | Tested |
 | AUDIT-026 | Explainable AI Ledger | capability | Execution result | Tested |
