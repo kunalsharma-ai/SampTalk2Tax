@@ -85,6 +85,11 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Not yet run against the live Claude API: no `ANTHROPIC_API_KEY` has been provided. The full path up to the HTTP call is tested with the official SDK against a local stand-in. Answers appear whole when finished (no streaming of text). Read-only questions only: no drafting of journals, invoices, reminders or filings, no document reading, no web search, no payroll. No platform screen for the model or spend; per-member hourly limit only. Answers come from tool results but a language model can still misread or miscalculate, so the screen asks members to check the linked reports. English only. See [`AI_COPILOT.md`](AI_COPILOT.md).
 
+## Month-end close (M5, slice 5)
+
+* The AI review has not yet run against the live Claude API; it is tested with the official SDK against a local stand-in.
+* A person starts each close and each review. Nothing starts on its own as a month ends. Proposed entries cannot be edited before posting. Entries are in the functional currency, with no tax or dimensions. No report pack is generated at close (the certification records the headline figures). There is no year-end close to retained earnings. See [`MONTH_END_CLOSE.md`](MONTH_END_CLOSE.md).
+
 ## AI bank reconciliation (M5, slice 4)
 
 * Not yet run against the live Claude API; tested with the official SDK against a local stand-in.

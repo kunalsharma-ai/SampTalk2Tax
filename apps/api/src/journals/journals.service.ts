@@ -193,7 +193,8 @@ export class JournalsService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         const original = await this.lockEntry(tx, org.id, id);
-        assertManual(original);
+        // Month-end adjustments are journals a person approved with nothing else attached: reversed like manual ones.
+        if (original.source !== 'CLOSE') assertManual(original);
         if (original.status !== 'POSTED') throw new DomainError('NOT_POSTED', 'Only posted entries can be reversed; delete the draft instead', HttpStatus.CONFLICT);
         if (original.type === 'REVERSING') throw new DomainError('IS_REVERSAL', 'A reversing entry cannot itself be reversed; post a new entry instead', HttpStatus.CONFLICT);
         const already = await tx.journalEntry.findFirst({ where: { reversesEntryId: id }, select: { id: true } });
@@ -261,7 +262,7 @@ export class JournalsService {
     tx: Tx,
     org: OrgInfo,
     actor: Actor,
-    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL'; lines: JournalLineInput[] },
+    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE'; lines: JournalLineInput[] },
   ): Promise<{ id: string; entryNumber: number }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
