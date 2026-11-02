@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1066 |
+| Not started | 1060 |
 | Designed | 0 |
-| Implementing | 51 |
+| Implementing | 53 |
 | Implemented | 31 |
-| Tested | 187 |
+| Tested | 191 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -27,12 +27,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | General ledger and accounting engine | M1 | 44 | 13 | 31 |
 | Accounts receivable | M2 | 43 | 30 | 13 |
 | Accounts payable | M2 | 36 | 25 | 11 |
-| Banking and reconciliation | M2 | 24 | 8 | 16 |
+| Banking and reconciliation | M2 | 24 | 7 | 17 |
 | Global taxation engine | M3 | 54 | 31 | 23 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
-| Treasury management | M6 | 28 | 28 | 0 |
+| Treasury management | M6 | 28 | 23 | 5 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
@@ -664,6 +664,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/banking.e2e.test.ts › books bank charges
   - apps/web/e2e/banking-flow.test.mjs
 
+### BANK-011 — Interest accounting
+
+- Module: Banking and reconciliation
+- Status: **Implementing**
+- Notes: Interest on loans is worked out per installment and posted to the interest expense account. Not built: interest earned on bank balances or deposits.
+- Evidence:
+  - packages/accounting-engine/src/loans.ts
+  - packages/accounting-engine/test/loans.test.ts
+  - apps/api/src/loans/loans.service.ts
+  - apps/api/test/loans.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/loans
+  - apps/web/e2e/loans-flow.test.mjs
+  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - docs/LOANS_AND_TREASURY.md
+
 ### BANK-013 — Unreconciled transaction reporting
 
 - Module: Banking and reconciliation
@@ -1172,6 +1187,75 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy.
 - Evidence:
   - apps/web/src/components/expenses/claim-detail.tsx
+
+### TRS-002 — Cash positioning
+
+- Module: Treasury management
+- Status: **Implementing**
+- Notes: Cash and bank balances from posted journals up to today, and net cash after borrowings, on the treasury overview. Not built: intraday or bank-fed balances, balances by entity or currency.
+- Evidence:
+  - apps/api/src/loans/loans.service.ts
+  - apps/api/test/loans.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/treasury/page.tsx
+  - apps/web/e2e/loans-flow.test.mjs
+  - docs/LOANS_AND_TREASURY.md
+
+### TRS-009 — Debt management
+
+- Module: Treasury management
+- Status: **Tested**
+- Notes: Loans kept as a register: money received posted or brought in from opening balances, installments posted from the bank split into principal and interest, prepayments with charges (shorter term or lower installment), floating-rate changes, reversal of the latest entry, closing when repaid, overdue installments, and what is owed within 12 months and later. Not built: covenants, security, drawdowns in tranches, moratorium periods, foreign-currency loans, loans given (receivable).
+- Evidence:
+  - packages/accounting-engine/src/loans.ts
+  - packages/accounting-engine/test/loans.test.ts
+  - apps/api/src/loans/loans.service.ts
+  - apps/api/test/loans.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/loans
+  - apps/web/e2e/loans-flow.test.mjs
+  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - docs/LOANS_AND_TREASURY.md
+
+### TRS-010 — Loan schedules
+
+- Module: Treasury management
+- Status: **Tested**
+- Notes: Repayment schedules for EMI and equal-principal loans, previewed as the loan is entered, recomputed after prepayments and rate changes, with installments paid and still to pay. Not built: bullet or balloon repayments, quarterly or irregular installments, step-up EMIs.
+- Evidence:
+  - packages/accounting-engine/src/loans.ts
+  - packages/accounting-engine/test/loans.test.ts
+  - apps/api/src/loans/loans.service.ts
+  - apps/api/test/loans.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/loans
+  - apps/web/e2e/loans-flow.test.mjs
+  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - docs/LOANS_AND_TREASURY.md
+
+### TRS-011 — Interest calculations
+
+- Module: Treasury management
+- Status: **Tested**
+- Notes: Interest monthly on the opening balance of each installment period (monthly rests), rounded to the currency; the lender's own split can be recorded instead. Not built: daily-balance interest, interest accrued at month end between installment dates, interest income on deposits.
+- Evidence:
+  - packages/accounting-engine/src/loans.ts
+  - packages/accounting-engine/test/loans.test.ts
+  - apps/api/src/loans/loans.service.ts
+  - apps/api/test/loans.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/loans
+  - apps/web/e2e/loans-flow.test.mjs
+  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - docs/LOANS_AND_TREASURY.md
+
+### TRS-016 — Treasury dashboards
+
+- Module: Treasury management
+- Status: **Tested**
+- Notes: Treasury overview: cash and bank balances, borrowings (within 12 months and later), net cash or debt, installments due in 30 days and overdue, repayments by month for 12 months, interest paid this financial year, and a check of each loan account in the ledger against the loans. Not built: cash forecast on the same page (see the cash-flow forecast), investments, FX exposure, multi-entity cash pooling.
+- Evidence:
+  - apps/api/src/loans/loans.service.ts
+  - apps/api/test/loans.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/treasury/page.tsx
+  - apps/web/e2e/loans-flow.test.mjs
+  - docs/LOANS_AND_TREASURY.md
 
 ### FPA-002 — Annual budgets
 

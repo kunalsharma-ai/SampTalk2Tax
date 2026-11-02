@@ -94,6 +94,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Budgets are in tokens, not money; one call can take usage past a budget because its size is known only when it returns. The stop applies to one organisation; a platform-wide stop is removing `ANTHROPIC_API_KEY`. Acceptance rates come from people's decisions, not a labelled evaluation set. No orchestrator hands work between agents, and no agent is above level 2. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
 
+## Loans and treasury (M6, slice 4)
+
+* Monthly installments only (EMI or equal principal), with interest on the opening balance of each period; no bullet, balloon, quarterly or step-up repayments, moratoriums, tranches, foreign-currency loans or loans given. Interest is recognised when an installment is recorded, not accrued at month end. No covenants, overdraft limits, investments or deposits; the treasury overview does not include the cash-flow forecast. Only the latest entry on a loan can be reversed. See [`LOANS_AND_TREASURY.md`](LOANS_AND_TREASURY.md).
+
 ## Departments and projects (M6, slice 3)
 
 * Two dimensions only (department, project), one of each per line. No location or custom dimensions, required tags per account, cost allocation or splitting a line across projects. Only the profit and loss is split; budgets, the trial balance, balance sheet and general ledger are not. Bank entries, expense claims, payroll, depreciation and deferral releases post untagged, and document tax, receivable and payable lines are not tagged. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md).
