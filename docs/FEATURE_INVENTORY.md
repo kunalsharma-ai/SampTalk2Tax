@@ -91,13 +91,13 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-021 | 5.1 General Ledger | capability | Trial balance | Tested |
 | GL-022 | 5.1 General Ledger | capability | General ledger reports | Implemented |
 | GL-023 | 5.1 General Ledger | capability | Subsidiary ledgers | Not started |
-| GL-024 | 5.1 General Ledger | capability | Cost centers | Not started |
+| GL-024 | 5.1 General Ledger | capability | Cost centers | Implementing |
 | GL-025 | 5.1 General Ledger | capability | Profit centers | Not started |
-| GL-026 | 5.1 General Ledger | capability | Departments | Not started |
+| GL-026 | 5.1 General Ledger | capability | Departments | Tested |
 | GL-027 | 5.1 General Ledger | capability | Business units | Not started |
 | GL-028 | 5.1 General Ledger | capability | Locations | Not started |
-| GL-029 | 5.1 General Ledger | capability | Projects | Not started |
-| GL-030 | 5.1 General Ledger | capability | Financial dimensions | Implementing |
+| GL-029 | 5.1 General Ledger | capability | Projects | Tested |
+| GL-030 | 5.1 General Ledger | capability | Financial dimensions | Tested |
 | GL-031 | 5.1 General Ledger | capability | Custom financial tags | Not started |
 | GL-032 | 5.1 General Ledger | capability | Account reconciliation | Implementing |
 | GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Not started |
@@ -679,7 +679,7 @@ Part 19 · M6 · priority P2 · depends on: GL
 | ENT-011 |  | capability | Foreign currency translation | Not started |
 | ENT-012 |  | capability | Group reporting | Not started |
 | ENT-013 |  | capability | Subsidiary reporting | Not started |
-| ENT-014 |  | capability | Financial dimensions | Not started |
+| ENT-014 |  | capability | Financial dimensions | Tested |
 | ENT-015 |  | capability | Revenue recognition | Not started |
 | ENT-016 |  | capability | Deferred revenue | Tested |
 | ENT-017 |  | capability | Prepaid expenses | Tested |
@@ -899,8 +899,8 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-010 |  | capability | Payroll reports | Not started |
 | RPT-011 |  | capability | Expense reports | Not started |
 | RPT-012 |  | capability | Budget-versus-actual | Not started |
-| RPT-013 |  | capability | Project profitability | Not started |
-| RPT-014 |  | capability | Department profitability | Not started |
+| RPT-013 |  | capability | Project profitability | Tested |
+| RPT-014 |  | capability | Department profitability | Tested |
 | RPT-015 |  | capability | Customer profitability | Not started |
 | RPT-016 |  | capability | Vendor spending | Not started |
 | RPT-017 |  | capability | Cash forecasts | Not started |
@@ -913,7 +913,7 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-024 |  | capability | Board reports | Tested |
 | RPT-025 | Reporting Features | capability | Custom report builder | Not started |
 | RPT-026 | Reporting Features | capability | Drag-and-drop metrics | Not started |
-| RPT-027 | Reporting Features | capability | Financial dimensions | Not started |
+| RPT-027 | Reporting Features | capability | Financial dimensions | Tested |
 | RPT-028 | Reporting Features | capability | Filters | Not started |
 | RPT-029 | Reporting Features | capability | Saved views | Not started |
 | RPT-030 | Reporting Features | capability | Report templates | Not started |

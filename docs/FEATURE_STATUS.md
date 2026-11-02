@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1073 |
+| Not started | 1066 |
 | Designed | 0 |
 | Implementing | 51 |
 | Implemented | 31 |
-| Tested | 180 |
+| Tested | 187 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 16 | 28 |
+| General ledger and accounting engine | M1 | 44 | 13 | 31 |
 | Accounts receivable | M2 | 43 | 30 | 13 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 8 | 16 |
@@ -38,14 +38,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
-| Enterprise financial management | M6 | 29 | 24 | 5 |
+| Enterprise financial management | M6 | 29 | 23 | 6 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 38 | 3 |
+| Advanced financial reporting | M6 | 41 | 35 | 6 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 17 | 0 |
@@ -235,13 +235,73 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances
   - apps/web/src
 
-### GL-030 — Financial dimensions
+### GL-024 — Cost centers
 
 - Module: General ledger and accounting engine
 - Status: **Implementing**
-- Notes: Journal lines accept free-form dimension key/values (stored as JSON). Dimension masters (cost centers, departments, etc.), validation and reporting by dimension are not done.
+- Notes: Departments serve as cost centres: expenses tagged to a department are its costs and the report shows them per department. Not built: a separate cost centre hierarchy, cost allocation rules, cost centre budgets.
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts
+  - packages/accounting-engine/src/dimensions.ts
+  - packages/accounting-engine/test/dimensions.test.ts
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/src/dimensions/check.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
+  - apps/web/src/components/dimensions/line-dimensions.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - docs/FINANCIAL_DIMENSIONS.md
+
+### GL-026 — Departments
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Departments: code, name, description, active; tag any journal or document line; profit and loss by department.
+- Evidence:
+  - packages/accounting-engine/src/dimensions.ts
+  - packages/accounting-engine/test/dimensions.test.ts
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/src/dimensions/check.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
+  - apps/web/src/components/dimensions/line-dimensions.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - docs/FINANCIAL_DIMENSIONS.md
+
+### GL-029 — Projects
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Projects: code, name, customer, start and end dates, active; tag any journal or document line; profit and loss by project. Not built: project budgets, time or billing by project.
+- Evidence:
+  - packages/accounting-engine/src/dimensions.ts
+  - packages/accounting-engine/test/dimensions.test.ts
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/src/dimensions/check.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
+  - apps/web/src/components/dimensions/line-dimensions.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - docs/FINANCIAL_DIMENSIONS.md
+
+### GL-030 — Financial dimensions
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Departments and projects as masters (code unique per kind, never deleted, made inactive instead) tagging journal, invoice, credit note, bill and vendor credit lines; tags checked by organisation, kind and active state in the API and by the database, carried from document lines to the journal and kept on reversals. The older free-form JSON dimensions on journal lines remain but are not reported. Not built: location or custom dimensions, required tags per account.
+- Evidence:
+  - packages/accounting-engine/src/dimensions.ts
+  - packages/accounting-engine/test/dimensions.test.ts
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/src/dimensions/check.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
+  - apps/web/src/components/dimensions/line-dimensions.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - docs/FINANCIAL_DIMENSIONS.md
 
 ### GL-032 — Account reconciliation
 
@@ -1602,6 +1662,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/close-flow.test.mjs
   - docs/MONTH_END_CLOSE.md
 
+### ENT-014 — Financial dimensions
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Departments and projects as masters (code unique per kind, never deleted, made inactive instead) tagging journal, invoice, credit note, bill and vendor credit lines; tags checked by organisation, kind and active state in the API and by the database, carried from document lines to the journal and kept on reversals. Not built: more than two dimensions, cost allocation across departments, splitting one line across projects.
+- Evidence:
+  - packages/accounting-engine/src/dimensions.ts
+  - packages/accounting-engine/test/dimensions.test.ts
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/src/dimensions/check.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
+  - apps/web/src/components/dimensions/line-dimensions.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - docs/FINANCIAL_DIMENSIONS.md
+
 ### ENT-016 — Deferred revenue
 
 - Module: Enterprise financial management
@@ -1924,6 +2001,32 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files
 
+### RPT-013 — Project profitability
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Project profitability: revenue, expenses, net profit and margin per project for any date range. Not built: budget vs actual per project, work in progress, percentage of completion.
+- Evidence:
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/profit-by-dimension/page.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - docs/FINANCIAL_DIMENSIONS.md
+
+### RPT-014 — Department profitability
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Department profitability: revenue, expenses, net profit and margin per department for any date range, with untagged activity under Not assigned.
+- Evidence:
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/profit-by-dimension/page.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - docs/FINANCIAL_DIMENSIONS.md
+
 ### RPT-018 — Working capital
 
 - Module: Advanced financial reporting
@@ -1963,6 +2066,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/kpis-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/reports/management
   - packages/database/prisma/migrations/20261101300000_kpis_management_reports
+
+### RPT-027 — Financial dimensions
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Profit and loss with a column per department or project plus Not assigned, totals, net profit and margin per column; the profit and loss filtered by department and project. Not built: trial balance, balance sheet, general ledger and budgets by dimension.
+- Evidence:
+  - apps/api/src/dimensions/dimensions.service.ts
+  - apps/api/test/dimensions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/profit-by-dimension/page.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
+  - apps/web/e2e/dimensions-flow.test.mjs
+  - docs/FINANCIAL_DIMENSIONS.md
 
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 

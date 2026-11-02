@@ -67,6 +67,9 @@ export interface DocumentLineInput {
   taxRateId?: string | null;
   /** HSN (goods) or SAC (services) code; used by tax regimes that report it, such as India GST. */
   hsnCode?: string | null;
+  /** Financial dimensions, carried to the line's journal line. */
+  departmentId?: string | null;
+  projectId?: string | null;
 }
 
 export interface TaxRateInfo {
@@ -115,6 +118,8 @@ export interface ComputedDocumentLine {
   hsnCode: string | null;
   /** The tax amount by account. Their sum always equals taxAmount. */
   taxComponents: TaxComponent[];
+  departmentId: string | null;
+  projectId: string | null;
 }
 
 export interface ComputedDocument {
@@ -207,6 +212,8 @@ export function computeDocument(lines: DocumentLineInput[], currency: string, ta
       taxAmount,
       hsnCode: l.hsnCode?.trim() || null,
       taxComponents,
+      departmentId: l.departmentId ?? null,
+      projectId: l.projectId ?? null,
     });
   });
   if (issues.length) throw new DocumentValidationError(issues);
@@ -266,7 +273,7 @@ export function buildDocumentJournal(kind: DocumentKind, doc: ComputedDocument, 
   const side = (amount: Dec, debit: boolean) => (debit ? { debit: amount.toFixed() } : { credit: amount.toFixed() });
   const out: JournalLineInput[] = [{ accountId: controlAccountId, currency, ...side(doc.total, controlOnDebit), description: 'Document total' }];
   for (const l of doc.lines) {
-    if (l.netAmount.gt(0)) out.push({ accountId: l.accountId, currency, ...side(l.netAmount, !controlOnDebit), description: l.description });
+    if (l.netAmount.gt(0)) out.push({ accountId: l.accountId, currency, ...side(l.netAmount, !controlOnDebit), description: l.description, departmentId: l.departmentId, projectId: l.projectId });
   }
   const taxByAccount = new Map<string, Dec>();
   const labelByAccount = new Map<string, string>();

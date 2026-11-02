@@ -11,6 +11,7 @@ const TbQuery = z.object({
   includeZero: z.enum(['true', 'false']).optional().transform((v) => v === 'true'),
 });
 const RangeQuery = z.object({ from: isoDate, to: isoDate });
+const IncomeQuery = RangeQuery.extend({ departmentId: z.uuid().optional(), projectId: z.uuid().optional() });
 const AsOfQuery = z.object({ asOf: isoDate });
 const LedgerQuery = RangeQuery.extend({ accountId: z.uuid() });
 
@@ -33,7 +34,7 @@ export class ReportsController {
 
   @Get('income-statement')
   @RequirePermission('reports.read')
-  incomeStatement(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(RangeQuery)) q: z.infer<typeof RangeQuery>) {
+  incomeStatement(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(IncomeQuery)) q: z.infer<typeof IncomeQuery>) {
     checkRange(q.from, q.to);
     return this.reports.incomeStatement(org.id, q);
   }
