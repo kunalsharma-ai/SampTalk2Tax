@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1079 |
+| Not started | 1076 |
 | Designed | 0 |
 | Implementing | 51 |
-| Implemented | 30 |
-| Tested | 175 |
+| Implemented | 31 |
+| Tested | 177 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -38,7 +38,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
-| Enterprise financial management | M6 | 29 | 29 | 0 |
+| Enterprise financial management | M6 | 29 | 27 | 2 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
@@ -64,7 +64,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 16 | 2 |
-| Navigation structure | M1 | 48 | 36 | 12 |
+| Navigation structure | M1 | 48 | 35 | 13 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
@@ -1602,6 +1602,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/close-flow.test.mjs
   - docs/MONTH_END_CLOSE.md
 
+### ENT-019 — Fixed asset management
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Fixed asset register: assets with category, serial number, location, accounts, cost, residual value and dates; purchase posted from the register or already in the books; assets brought in part-depreciated; terms fixed once depreciation is posted (database trigger); disposal with proceeds and gain or loss posted. Not built: asset categories with default terms, transfers between locations, revaluation, impairment, partial disposal, tagging or photos.
+- Evidence:
+  - packages/accounting-engine/src/fixed-assets.ts
+  - packages/accounting-engine/test/fixed-assets.test.ts
+  - apps/api/src/fixed-assets/fixed-assets.service.ts
+  - apps/api/test/fixed-assets.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fixed-assets
+  - apps/web/e2e/fixed-assets-flow.test.mjs
+  - packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql
+  - docs/FIXED_ASSETS.md
+
+### ENT-020 — Depreciation
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Straight-line and written-down-value depreciation by month, posted once a month as one journal (catching up missed months), reversible latest first; schedules per asset. Not tested against a published depreciation schedule (for example Companies Act Schedule II rates); no separate tax-book (Income Tax Act block) depreciation.
+- Evidence:
+  - packages/accounting-engine/src/fixed-assets.ts
+  - packages/accounting-engine/test/fixed-assets.test.ts
+  - apps/api/src/fixed-assets/fixed-assets.service.ts
+  - apps/api/test/fixed-assets.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fixed-assets
+  - apps/web/e2e/fixed-assets-flow.test.mjs
+  - packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql
+  - docs/FIXED_ASSETS.md
+
 ### RISK-001 — Duplicate invoice detection
 
 - Module: Financial fraud and risk intelligence
@@ -2473,6 +2503,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src/components/shell.tsx
   - apps/web/src/components/banking
+
+### NAV-026 — Fixed Assets
+
+- Module: Navigation structure
+- Status: **Implemented**
+- Notes: Accounting → Fixed assets: register, add or change an asset, asset detail with schedule and disposal, depreciation runs.
+- Evidence:
+  - apps/web/src/components/shell.tsx
+  - apps/web/src/app/orgs/[orgId]/fixed-assets
 
 ### NAV-029 — Reports
 

@@ -94,6 +94,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Budgets are in tokens, not money; one call can take usage past a budget because its size is known only when it returns. The stop applies to one organisation; a platform-wide stop is removing `ANTHROPIC_API_KEY`. Acceptance rates come from people's decisions, not a labelled evaluation set. No orchestrator hands work between agents, and no agent is above level 2. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
 
+## Fixed assets (M6, slice 1)
+
+* Straight line and written-down value only, by full calendar months. There are no categories with default terms, revaluation, impairment, partial disposal, transfers, capital work in progress or separate tax-book depreciation. Only the latest depreciation run can be reversed. The conventions have not been reviewed against Companies Act Schedule II by an accountant. See [`FIXED_ASSETS.md`](FIXED_ASSETS.md).
+
 ## AI bank reconciliation (M5, slice 4)
 
 * Not yet run against the live Claude API; tested with the official SDK against a local stand-in.
