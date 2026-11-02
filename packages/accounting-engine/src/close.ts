@@ -24,6 +24,7 @@ export const CLOSE_CHECK_KEYS = [
   'EXPENSE_CLAIMS_WAITING',
   'PAYROLL_NOT_POSTED',
   'DEPRECIATION_MISSING',
+  'DEFERRALS_NOT_POSTED',
   'NEGATIVE_CASH',
   'AI_WAITING',
   'EARLIER_PERIODS_OPEN',
@@ -49,6 +50,8 @@ export interface CloseFacts {
   payroll: { posted: boolean; drafts: number } | null;
   /** Fixed assets carried at the month end but no depreciation posted in the month. */
   depreciation: { fixedAssets: string; postedThisMonth: string };
+  /** Prepaid and deferred revenue releases due through the month end that are not posted. */
+  deferrals: { schedules: number; amount: string };
   /** Cash accounts below zero at the month end (cash cannot be negative). */
   negativeCash: { code: string; name: string; balance: string }[];
   /** AI items waiting for a person: bank suggestions for lines up to the month end, and this close's proposed entries. */
@@ -155,6 +158,14 @@ export function evaluateClose(f: CloseFacts): CloseCheck[] {
       count: depreciationMissing ? 1 : 0,
       label: 'Depreciation is posted for the month',
       detail: assets.lte(0) ? 'No fixed assets in the books' : depreciationMissing ? `Fixed assets of ${money(assets)} but no depreciation posted in the month` : `${money(f.depreciation.postedThisMonth)} of depreciation posted`,
+    },
+    {
+      key: 'DEFERRALS_NOT_POSTED',
+      severity: 'WARNING',
+      ok: f.deferrals.schedules === 0,
+      count: f.deferrals.schedules,
+      label: 'Prepaid and deferred revenue releases are posted',
+      detail: f.deferrals.schedules ? `${money(f.deferrals.amount)} due to be released from ${plural(f.deferrals.schedules, 'schedule')} is not posted` : 'Nothing due to be released is waiting',
     },
     {
       key: 'NEGATIVE_CASH',

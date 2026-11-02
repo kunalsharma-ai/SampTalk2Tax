@@ -24,6 +24,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { COPILOT_MODEL, CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
+import { DeferralsService } from '../deferrals/deferrals.service';
 import { JournalsService } from '../journals/journals.service';
 import { TasksService } from '../tasks/tasks.service';
 
@@ -127,6 +128,7 @@ const CHECK_LINK: Record<string, string | null> = {
   EXPENSE_CLAIMS_WAITING: '/expenses',
   PAYROLL_NOT_POSTED: '/payroll',
   DEPRECIATION_MISSING: '/fixed-assets/depreciation',
+  DEFERRALS_NOT_POSTED: '/deferrals/releases',
   NEGATIVE_CASH: '/reports/trial-balance',
   AI_WAITING: null,
   EARLIER_PERIODS_OPEN: '/close',
@@ -146,6 +148,7 @@ export class CloseService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly tasks: TasksService,
+    private readonly deferrals: DeferralsService,
     @Inject(CONFIG) private readonly config: AppConfig,
     @Optional() @Inject(COPILOT_MODEL) private readonly model: CopilotModel | null,
   ) {}
@@ -304,6 +307,7 @@ export class CloseService {
       db.bankAiSuggestion.count({ where: { orgId, status: 'READY', statementLine: { date: { lte: end } } } }),
       closeId ? db.closeAdjustment.count({ where: { orgId, closeId, status: 'READY' } }) : 0,
     ]);
+    const deferrals = await this.deferrals.dueThrough(db, org, month);
     const cash = await db.$queryRaw<{ code: string; name: string; balance: Prisma.Decimal }[]>`
       SELECT a.code, a.name, SUM(jl.functional_debit - jl.functional_credit) AS balance
       FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id JOIN accounts a ON a.id = jl.account_id
@@ -328,6 +332,7 @@ export class CloseService {
       submittedExpenseClaims,
       payroll: employees ? { posted: runCount('POSTED') > 0, drafts: runCount('DRAFT') } : null,
       depreciation: { fixedAssets: dec(s.fixed), postedThisMonth: dec(s.depreciation) },
+      deferrals,
       negativeCash: cash.map((c) => ({ code: c.code, name: c.name, balance: new D(c.balance.toString()).toFixed(2) })),
       aiWaiting: { bankSuggestions, adjustments },
       trialBalance: { debit: dec(s.debit), credit: dec(s.credit) },

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1076 |
+| Not started | 1073 |
 | Designed | 0 |
 | Implementing | 51 |
 | Implemented | 31 |
-| Tested | 177 |
+| Tested | 180 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -38,7 +38,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
-| Enterprise financial management | M6 | 29 | 27 | 2 |
+| Enterprise financial management | M6 | 29 | 24 | 5 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
@@ -1601,6 +1601,48 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx
   - apps/web/e2e/close-flow.test.mjs
   - docs/MONTH_END_CLOSE.md
+
+### ENT-016 — Deferred revenue
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Deferred revenue schedules: receipt posted to a liability (2350 Deferred Revenue in the standard chart) or already in the books, released to revenue evenly by month or by days in one monthly journal with catch-up, latest-first reversal, ended early with what is left to revenue or refunded; month-end close warns about unposted releases. Not built: schedules created from invoice lines, recognition by milestone, usage or performance obligation (Ind AS 115 beyond straight-line over time).
+- Evidence:
+  - packages/accounting-engine/src/deferrals.ts
+  - packages/accounting-engine/test/deferrals.test.ts
+  - apps/api/src/deferrals/deferrals.service.ts
+  - apps/api/test/deferrals.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/deferrals
+  - apps/web/e2e/deferrals-flow.test.mjs
+  - packages/database/prisma/migrations/20261103050000_prepaid_deferred_accruals/migration.sql
+  - docs/PREPAID_AND_DEFERRED.md
+
+### ENT-017 — Prepaid expenses
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Prepaid expense schedules: payment posted to a prepaid account or already in the books, released to expense evenly by month or by days in one monthly journal with catch-up, latest-first reversal, ended early with what is left expensed or moved to a refund account. Not built: schedules created from bill lines, foreign-currency schedules.
+- Evidence:
+  - packages/accounting-engine/src/deferrals.ts
+  - packages/accounting-engine/test/deferrals.test.ts
+  - apps/api/src/deferrals/deferrals.service.ts
+  - apps/api/test/deferrals.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/deferrals
+  - apps/web/e2e/deferrals-flow.test.mjs
+  - packages/database/prisma/migrations/20261103050000_prepaid_deferred_accruals/migration.sql
+  - docs/PREPAID_AND_DEFERRED.md
+
+### ENT-018 — Accruals
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Month-end accruals of expense or income: posted on the last day of the month with the automatic reversal on the first day of the next; cancelling posts the opposite entries on both dates. Not built: recurring accruals, other reversal dates, accruals suggested from history (the month-end close AI review can propose accrual entries separately).
+- Evidence:
+  - apps/api/src/deferrals/deferrals.service.ts
+  - apps/api/test/deferrals.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/accruals/page.tsx
+  - apps/web/e2e/deferrals-flow.test.mjs
+  - docs/PREPAID_AND_DEFERRED.md
 
 ### ENT-019 — Fixed asset management
 
