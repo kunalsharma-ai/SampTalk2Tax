@@ -19,3 +19,4 @@ export * from './fixed-assets';
 export * from './deferrals';
 export * from './dimensions';
 export * from './loans';
+export * from './invoice-templates';

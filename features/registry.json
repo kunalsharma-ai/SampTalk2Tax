@@ -2577,9 +2577,11 @@
       "evidence": [
         "apps/api/test/sales-purchases.e2e.test.ts › invoices",
         "packages/accounting-engine/test/documents.test.ts",
-        "apps/web/e2e/sales-flow.test.mjs"
+        "apps/web/e2e/sales-flow.test.mjs",
+        "apps/api/src/invoice-templates/invoice-templates.service.ts",
+        "apps/web/e2e/invoice-templates-flow.test.mjs"
       ],
-      "notes": "Invoices with tenant-configured tax rates. Not a statutory e-invoice format; no PDF or emailing yet."
+      "notes": "Invoices with tenant-configured tax rates. Not a statutory e-invoice format; no PDF or emailing yet. Printed with invoice templates (country presets, themes, HTML) and e-signed with a SHA-256 of the signed content."
     },
     {
       "id": "AR-010",
@@ -24322,9 +24324,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/invoice-templates.ts",
+        "packages/accounting-engine/test/invoice-templates.test.ts",
+        "apps/api/src/invoice-templates/invoice-templates.service.ts",
+        "apps/api/test/invoice-templates.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/invoice-templates",
+        "apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx",
+        "apps/web/e2e/invoice-templates-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql",
+        "docs/INVOICE_TEMPLATES.md"
+      ],
+      "notes": "Printed invoices use the template's date style (02 Nov 2026, Nov 2, 2026 or 2026-11-02). The app's own screens still use one format."
     },
     {
       "id": "I18N-005",
@@ -24366,9 +24378,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/invoice-templates.ts",
+        "packages/accounting-engine/test/invoice-templates.test.ts",
+        "apps/api/src/invoice-templates/invoice-templates.service.ts",
+        "apps/api/test/invoice-templates.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/invoice-templates",
+        "apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx",
+        "apps/web/e2e/invoice-templates-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql",
+        "docs/INVOICE_TEMPLATES.md"
+      ],
+      "notes": "Invoice and credit note layouts from country presets: India GST tax invoice (CGST Rule 46 checks), UAE VAT (bilingual title), UK VAT, US, Singapore GST, Australia GST, EU VAT (Article 226 checks) and generic. Each preset sets the title, tax number label, columns, date and number style, paper size and the rules the designer warns about. Not built: Saudi ZATCA QR, Arabic right-to-left body text, legal review of each preset."
     },
     {
       "id": "I18N-007",
@@ -24432,9 +24454,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/invoice-templates.ts",
+        "packages/accounting-engine/test/invoice-templates.test.ts",
+        "apps/api/src/invoice-templates/invoice-templates.service.ts",
+        "apps/api/test/invoice-templates.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/invoice-templates",
+        "apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx",
+        "apps/web/e2e/invoice-templates-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql",
+        "docs/INVOICE_TEMPLATES.md"
+      ],
+      "notes": "Templates per organisation: five themes, eight palettes plus custom colours, fonts, editable and reorderable sections and columns, logos, and HTML templates with safe placeholders. Covers invoices and credit notes; quotes, statements, receipts and payslips do not use templates yet."
     },
     {
       "id": "I18N-010",
