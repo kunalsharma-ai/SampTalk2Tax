@@ -1823,6 +1823,8 @@ model Workflow {
   currentVersion    Int               @map("current_version")
   /// Events at or before this audit-trail id are never acted on (set when the workflow is turned on), so turning a workflow on never replays history.
   activeFromEventId BigInt?           @map("active_from_event_id")
+  /// When the workflow was last turned on. Schedule triggers act only on times and dates from then, so turning one on never sends a backlog.
+  activatedAt       DateTime?         @map("activated_at") @db.Timestamptz(6)
   /// Secret for signing webhook deliveries (HMAC-SHA256).
   signingSecret     String            @map("signing_secret") @db.VarChar(100)
   createdById       String            @map("created_by_id") @db.Uuid
@@ -1838,18 +1840,20 @@ model Workflow {
 }
 
 model WorkflowVersion {
-  id          String       @id @default(uuid()) @db.Uuid
-  orgId       String       @map("org_id") @db.Uuid
-  workflowId  String       @map("workflow_id") @db.Uuid
-  version     Int
-  trigger     String       @db.VarChar(40)
-  conditions  Json
-  actions     Json
-  note        String?      @db.VarChar(500)
-  createdById String       @map("created_by_id") @db.Uuid
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  workflow    Workflow     @relation(fields: [workflowId, orgId], references: [id, orgId], onDelete: Restrict)
+  id            String       @id @default(uuid()) @db.Uuid
+  orgId         String       @map("org_id") @db.Uuid
+  workflowId    String       @map("workflow_id") @db.Uuid
+  version       Int
+  trigger       String       @db.VarChar(40)
+  /// Settings of a schedule trigger (frequency and time, or days); {} for event triggers.
+  triggerParams Json         @default("{}") @map("trigger_params")
+  conditions    Json
+  actions       Json
+  note          String?      @db.VarChar(500)
+  createdById   String       @map("created_by_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  workflow      Workflow     @relation(fields: [workflowId, orgId], references: [id, orgId], onDelete: Restrict)
 
   @@unique([workflowId, version])
   @@map("workflow_versions")
@@ -1857,26 +1861,28 @@ model WorkflowVersion {
 
 /// One event looked at by one workflow version (or a test run).
 model WorkflowRun {
-  id         String              @id @default(uuid()) @db.Uuid
-  orgId      String              @map("org_id") @db.Uuid
-  workflowId String              @map("workflow_id") @db.Uuid
-  version    Int
-  trigger    String              @db.VarChar(40)
+  id            String              @id @default(uuid()) @db.Uuid
+  orgId         String              @map("org_id") @db.Uuid
+  workflowId    String              @map("workflow_id") @db.Uuid
+  version       Int
+  trigger       String              @db.VarChar(40)
   /// The audit-trail event that started the run (null for a test run without one).
-  eventId    BigInt?             @map("event_id")
-  entityType String?             @map("entity_type") @db.VarChar(40)
-  entityId   String?             @map("entity_id") @db.VarChar(64)
-  facts      Json
+  eventId       BigInt?             @map("event_id")
+  /// What a schedule trigger acted on, unique per workflow: "at:<time>" for a schedule, "doc:<id>:<days>" for a date trigger.
+  occurrenceKey String?             @map("occurrence_key") @db.VarChar(100)
+  entityType    String?             @map("entity_type") @db.VarChar(40)
+  entityId      String?             @map("entity_id") @db.VarChar(64)
+  facts         Json
   /// Each condition with its result and the value it saw.
-  conditions Json
-  status     WorkflowRunStatus
-  error      String?             @db.VarChar(1000)
-  testedById String?             @map("tested_by_id") @db.Uuid
-  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  finishedAt DateTime?           @map("finished_at") @db.Timestamptz(6)
-  org        Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  workflow   Workflow            @relation(fields: [workflowId, orgId], references: [id, orgId], onDelete: Restrict)
-  actions    WorkflowActionRun[]
+  conditions    Json
+  status        WorkflowRunStatus
+  error         String?             @db.VarChar(1000)
+  testedById    String?             @map("tested_by_id") @db.Uuid
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt    DateTime?           @map("finished_at") @db.Timestamptz(6)
+  org           Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  workflow      Workflow            @relation(fields: [workflowId, orgId], references: [id, orgId], onDelete: Restrict)
+  actions       WorkflowActionRun[]
 
   @@unique([id, orgId])
   @@index([orgId, workflowId, createdAt])

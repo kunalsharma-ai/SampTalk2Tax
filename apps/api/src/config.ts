@@ -59,6 +59,27 @@ const schema = z.object({
     .transform((v) => v === 'true'),
   /** Longest a webhook delivery may take before it counts as failed, in seconds. */
   WEBHOOK_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(60).default(10),
+  /**
+   * Email. The SMTP server automations send through, as smtp://user:password@host:587
+   * (STARTTLS is used when the server offers it; add ?requireTLS=true to insist) or
+   * smtps://user:password@host:465. Without it, email actions fail with "Email is not set up".
+   */
+  SMTP_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined))
+    .pipe(z.string().regex(/^smtps?:\/\/[^\s]+$/, 'SMTP_URL must start with smtp:// or smtps://').optional()),
+  /** The sender of every email, such as "Talk2Tax <no-reply@example.com>". Needed with SMTP_URL. */
+  EMAIL_FROM: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined)),
+  /** Longest one SMTP delivery may take, in seconds. */
+  SMTP_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(120).default(20),
+  /** The web app's address, used for links in emails to members. */
+  APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
+}).superRefine((c, ctx) => {
+  if (c.SMTP_URL && !c.EMAIL_FROM) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM is required when SMTP_URL is set' });
 });
 
 export type AppConfig = z.infer<typeof schema>;

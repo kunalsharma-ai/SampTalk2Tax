@@ -38,6 +38,9 @@ export const WORKFLOW_TRIGGERS = [
   'JOURNAL_POSTED',
   'EXPENSE_CLAIM_SUBMITTED',
   'ALERT_OPENED',
+  'SCHEDULE',
+  'INVOICE_OVERDUE',
+  'BILL_DUE_SOON',
 ] as const;
 export type WorkflowTrigger = (typeof WORKFLOW_TRIGGERS)[number];
 
@@ -45,12 +48,20 @@ export interface TriggerDef {
   key: WorkflowTrigger;
   label: string;
   description: string;
-  /** The audit-trail actions this trigger listens to. */
+  /**
+   * event: starts when something is recorded (read from the audit trail).
+   * schedule: starts at a time (SCHEDULE), or when a date is reached (INVOICE_OVERDUE, BILL_DUE_SOON).
+   */
+  kind: 'event' | 'schedule';
+  /** The audit-trail actions this trigger listens to (none for schedule triggers). */
   auditActions: readonly string[];
   facts: FactDef[];
+  /** Whether an email can go to the customer or vendor the event is about (the contactEmail fact). */
+  emailsContact: boolean;
 }
 
 const contact = (label: string): FactDef => ({ key: 'contactName', label, type: 'text' });
+const contactEmail = (label: string): FactDef => ({ key: 'contactEmail', label: `${label} email`, type: 'text' });
 const SEVERITY: FactDef = {
   key: 'severity',
   label: 'Severity',
@@ -67,10 +78,12 @@ export const WORKFLOW_TRIGGER_DEFS: readonly TriggerDef[] = [
     key: 'INVOICE_POSTED',
     label: 'An invoice is posted',
     description: 'A sales invoice is posted to the books.',
+    kind: 'event',
     auditActions: ['document.posted'],
+    emailsContact: true,
     facts: [
       { key: 'number', label: 'Invoice number', type: 'text' },
-      contact('Customer'),
+      contact('Customer'), contactEmail('Customer'),
       { key: 'total', label: 'Total', type: 'money' },
       { key: 'issueDate', label: 'Issue date', type: 'date' },
       { key: 'dueDate', label: 'Due date', type: 'date' },
@@ -81,10 +94,12 @@ export const WORKFLOW_TRIGGER_DEFS: readonly TriggerDef[] = [
     key: 'BILL_POSTED',
     label: 'A bill is posted',
     description: 'A vendor bill is posted to the books.',
+    kind: 'event',
     auditActions: ['document.posted'],
+    emailsContact: true,
     facts: [
       { key: 'number', label: 'Bill number', type: 'text' },
-      contact('Vendor'),
+      contact('Vendor'), contactEmail('Vendor'),
       { key: 'total', label: 'Total', type: 'money' },
       { key: 'issueDate', label: 'Bill date', type: 'date' },
       { key: 'dueDate', label: 'Due date', type: 'date' },
@@ -95,7 +110,9 @@ export const WORKFLOW_TRIGGER_DEFS: readonly TriggerDef[] = [
     key: 'DOCUMENT_VOIDED',
     label: 'An invoice or bill is voided',
     description: 'A posted invoice, credit note, bill or vendor credit is voided.',
+    kind: 'event',
     auditActions: ['document.voided'],
+    emailsContact: false,
     facts: [
       {
         key: 'kind',
@@ -118,21 +135,27 @@ export const WORKFLOW_TRIGGER_DEFS: readonly TriggerDef[] = [
     key: 'RECEIPT_RECORDED',
     label: 'A customer payment is received',
     description: 'A receipt from a customer is recorded.',
+    kind: 'event',
     auditActions: ['payment.recorded'],
-    facts: [{ key: 'number', label: 'Receipt number', type: 'text' }, contact('Customer'), { key: 'amount', label: 'Amount', type: 'money' }, { key: 'date', label: 'Date', type: 'date' }, { key: 'reference', label: 'Reference', type: 'text' }],
+    emailsContact: true,
+    facts: [{ key: 'number', label: 'Receipt number', type: 'text' }, contact('Customer'), contactEmail('Customer'), { key: 'amount', label: 'Amount', type: 'money' }, { key: 'date', label: 'Date', type: 'date' }, { key: 'reference', label: 'Reference', type: 'text' }],
   },
   {
     key: 'VENDOR_PAYMENT_RECORDED',
     label: 'A vendor is paid',
     description: 'A payment to a vendor is recorded.',
+    kind: 'event',
     auditActions: ['payment.recorded'],
-    facts: [{ key: 'number', label: 'Payment number', type: 'text' }, contact('Vendor'), { key: 'amount', label: 'Amount', type: 'money' }, { key: 'date', label: 'Date', type: 'date' }, { key: 'reference', label: 'Reference', type: 'text' }],
+    emailsContact: true,
+    facts: [{ key: 'number', label: 'Payment number', type: 'text' }, contact('Vendor'), contactEmail('Vendor'), { key: 'amount', label: 'Amount', type: 'money' }, { key: 'date', label: 'Date', type: 'date' }, { key: 'reference', label: 'Reference', type: 'text' }],
   },
   {
     key: 'JOURNAL_POSTED',
     label: 'A manual journal is posted',
     description: 'A journal entry typed in by a person is posted (not those made by invoices, payments or other modules).',
+    kind: 'event',
     auditActions: ['journal.posted', 'journal.created_and_posted'],
+    emailsContact: false,
     facts: [
       { key: 'number', label: 'Entry number', type: 'text' },
       { key: 'date', label: 'Date', type: 'date' },
@@ -145,7 +168,9 @@ export const WORKFLOW_TRIGGER_DEFS: readonly TriggerDef[] = [
     key: 'EXPENSE_CLAIM_SUBMITTED',
     label: 'An expense claim is submitted',
     description: 'An employee submits an expense claim for approval.',
+    kind: 'event',
     auditActions: ['expense_claim.submitted'],
+    emailsContact: false,
     facts: [
       { key: 'number', label: 'Claim number', type: 'text' },
       { key: 'claimant', label: 'Claimant', type: 'text' },
@@ -157,8 +182,62 @@ export const WORKFLOW_TRIGGER_DEFS: readonly TriggerDef[] = [
     key: 'ALERT_OPENED',
     label: 'An alert opens',
     description: 'The checks raise a new alert, or an alert that had cleared comes back.',
+    kind: 'event',
     auditActions: ['alert.opened'],
+    emailsContact: false,
     facts: [SEVERITY, { key: 'check', label: 'Check', type: 'text' }, { key: 'title', label: 'Title', type: 'text' }, { key: 'amount', label: 'Amount at stake', type: 'money' }],
+  },
+  {
+    key: 'SCHEDULE',
+    label: 'On a schedule',
+    description: 'Every day, every week on a weekday, or every month on a day, at a time (India time).',
+    kind: 'schedule',
+    auditActions: [],
+    emailsContact: false,
+    facts: [
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'weekday', label: 'Weekday', type: 'text' },
+      { key: 'overdueReceivables', label: 'Overdue receivables', type: 'money' },
+      { key: 'overduePayables', label: 'Overdue payables', type: 'money' },
+      { key: 'receivablesOutstanding', label: 'Receivables outstanding', type: 'money' },
+      { key: 'payablesOutstanding', label: 'Payables outstanding', type: 'money' },
+    ],
+  },
+  {
+    key: 'INVOICE_OVERDUE',
+    label: 'An invoice is overdue',
+    description: 'A posted invoice still has something to pay a number of days after its due date.',
+    kind: 'schedule',
+    auditActions: [],
+    emailsContact: true,
+    facts: [
+      { key: 'number', label: 'Invoice number', type: 'text' },
+      contact('Customer'),
+      contactEmail('Customer'),
+      { key: 'total', label: 'Total', type: 'money' },
+      { key: 'balance', label: 'Still to pay', type: 'money' },
+      { key: 'issueDate', label: 'Issue date', type: 'date' },
+      { key: 'dueDate', label: 'Due date', type: 'date' },
+      { key: 'reference', label: 'Reference', type: 'text' },
+    ],
+  },
+  {
+    key: 'BILL_DUE_SOON',
+    label: 'A bill is due soon',
+    description: 'A posted bill still has something to pay a number of days before its due date.',
+    kind: 'schedule',
+    auditActions: [],
+    emailsContact: true,
+    facts: [
+      { key: 'number', label: 'Bill number', type: 'text' },
+      contact('Vendor'),
+      contactEmail('Vendor'),
+      { key: 'total', label: 'Total', type: 'money' },
+      { key: 'balance', label: 'Still to pay', type: 'money' },
+      { key: 'issueDate', label: 'Bill date', type: 'date' },
+      { key: 'dueDate', label: 'Due date', type: 'date' },
+      { key: 'reference', label: 'Vendor invoice number', type: 'text' },
+    ],
   },
 ];
 
@@ -166,6 +245,126 @@ export function triggerDef(key: string): TriggerDef {
   const t = WORKFLOW_TRIGGER_DEFS.find((x) => x.key === key);
   if (!t) throw new WorkflowError(`Unknown trigger "${key}"`);
   return t;
+}
+
+// ---------------------------------------------------------------- trigger settings and schedules
+
+export const SCHEDULE_FREQUENCIES = ['DAILY', 'WEEKLY', 'MONTHLY'] as const;
+export type ScheduleFrequency = (typeof SCHEDULE_FREQUENCIES)[number];
+export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+
+/**
+ * Settings of a schedule trigger. SCHEDULE: frequency, time (HH:MM, India time), weekday
+ * (1 = Monday … 7 = Sunday) for WEEKLY, dayOfMonth (1–28) for MONTHLY.
+ * INVOICE_OVERDUE: days after the due date (1–365). BILL_DUE_SOON: days before the due date (0–90).
+ * Event triggers take none.
+ */
+export interface TriggerParams {
+  frequency?: ScheduleFrequency;
+  time?: string;
+  weekday?: number;
+  dayOfMonth?: number;
+  days?: number;
+}
+
+const TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const IST_MS = 330 * 60_000;
+const DAY_MS = 86_400_000;
+const isInt = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi;
+
+/** Checks a trigger's settings; returns them cleaned (only the keys that apply) and the problems found. */
+export function checkTriggerParams(trigger: WorkflowTrigger, raw: TriggerParams | null | undefined): { params: TriggerParams; issues: string[] } {
+  const p = raw ?? {};
+  const issues: string[] = [];
+  if (trigger === 'SCHEDULE') {
+    const frequency = p.frequency;
+    if (!frequency || !(SCHEDULE_FREQUENCIES as readonly string[]).includes(frequency)) {
+      issues.push('Schedule: choose every day, every week or every month');
+      return { params: {}, issues };
+    }
+    const time = (p.time ?? '').trim();
+    if (!TIME.test(time)) issues.push('Schedule: enter a time as HH:MM (24-hour, India time)');
+    const out: TriggerParams = { frequency, time };
+    if (frequency === 'WEEKLY') {
+      if (!isInt(p.weekday, 1, 7)) issues.push('Schedule: choose a weekday');
+      out.weekday = p.weekday;
+    }
+    if (frequency === 'MONTHLY') {
+      if (!isInt(p.dayOfMonth, 1, 28)) issues.push('Schedule: choose a day of the month from 1 to 28');
+      out.dayOfMonth = p.dayOfMonth;
+    }
+    return { params: out, issues };
+  }
+  if (trigger === 'INVOICE_OVERDUE') {
+    if (!isInt(p.days, 1, 365)) issues.push('Trigger: an invoice is overdue 1 to 365 days after its due date');
+    return { params: { days: p.days }, issues };
+  }
+  if (trigger === 'BILL_DUE_SOON') {
+    if (!isInt(p.days, 0, 90)) issues.push('Trigger: a bill is due soon 0 to 90 days before its due date');
+    return { params: { days: p.days }, issues };
+  }
+  return { params: {}, issues };
+}
+
+/** Plain-language description of a trigger with its settings. */
+export function describeTrigger(trigger: WorkflowTrigger, params: TriggerParams = {}): string {
+  if (trigger === 'SCHEDULE') {
+    const at = `at ${params.time ?? '??:??'} India time`;
+    if (params.frequency === 'DAILY') return `Every day ${at}`;
+    if (params.frequency === 'WEEKLY') return `Every ${WEEKDAYS[(params.weekday ?? 1) - 1]} ${at}`;
+    return `Every month on day ${params.dayOfMonth ?? '?'} ${at}`;
+  }
+  const d = params.days ?? 0;
+  if (trigger === 'INVOICE_OVERDUE') return `An invoice is ${d} day${d === 1 ? '' : 's'} overdue`;
+  if (trigger === 'BILL_DUE_SOON') return d === 0 ? 'A bill is due today' : `A bill is due in ${d} day${d === 1 ? '' : 's'}`;
+  return triggerDef(trigger).label;
+}
+
+/** The India date (YYYY-MM-DD) of an instant. */
+export function istDate(at: Date): string {
+  return new Date(at.getTime() + IST_MS).toISOString().slice(0, 10);
+}
+
+/** Adds days to a YYYY-MM-DD date. */
+export function shiftDate(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * The most recent time a schedule came round at or before now, as an instant and its India
+ * date. Times are India time (UTC+05:30, no daylight saving).
+ */
+export function latestOccurrence(params: TriggerParams, now: Date): { at: Date; date: string } {
+  const m = TIME.exec(params.time ?? '');
+  if (!m || !params.frequency) throw new WorkflowError('The schedule is not complete');
+  const minutes = Number(m[1]) * 60 + Number(m[2]);
+  const wall = new Date(now.getTime() + IST_MS); // India wall-clock time, read with UTC getters
+  const day = Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth(), wall.getUTCDate());
+  const at = (dayStart: number) => dayStart + minutes * 60_000;
+  let t: number;
+  if (params.frequency === 'DAILY') {
+    t = at(day);
+    if (t > wall.getTime()) t -= DAY_MS;
+  } else if (params.frequency === 'WEEKLY') {
+    const dow = ((wall.getUTCDay() + 6) % 7) + 1; // 1 = Monday
+    t = at(day - (((dow - (params.weekday ?? 1)) + 7) % 7) * DAY_MS);
+    if (t > wall.getTime()) t -= 7 * DAY_MS;
+  } else {
+    const dom = params.dayOfMonth ?? 1;
+    t = at(Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth(), dom));
+    if (t > wall.getTime()) t = at(Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth() - 1, dom));
+  }
+  return { at: new Date(t - IST_MS), date: new Date(t).toISOString().slice(0, 10) };
+}
+
+/**
+ * For INVOICE_OVERDUE and BILL_DUE_SOON: the due dates whose documents reach the trigger
+ * on India dates from `from` to `to` (inclusive). An invoice N days overdue on day X was
+ * due on X − N; a bill due in N days on day X is due on X + N.
+ */
+export function dueDateWindow(trigger: 'INVOICE_OVERDUE' | 'BILL_DUE_SOON', days: number, from: string, to: string): { from: string; to: string } {
+  const shift = trigger === 'INVOICE_OVERDUE' ? -days : days;
+  return { from: shiftDate(from, shift), to: shiftDate(to, shift) };
 }
 
 // ---------------------------------------------------------------- conditions
@@ -266,10 +465,22 @@ export interface WebhookAction {
   type: 'WEBHOOK';
   url: string;
 }
-export type WorkflowAction = CreateTaskAction | WebhookAction;
+/** Who an email goes to: everyone with a role, one member, or the customer or vendor the event is about. */
+export type EmailRecipient = { role: AssignableRole } | { userId: string } | { contact: true };
+export interface SendEmailAction {
+  type: 'SEND_EMAIL';
+  to: EmailRecipient;
+  /** Templates: {{fact}} is replaced by the event's value. Plain text. */
+  subject: string;
+  body: string;
+}
+export type WorkflowAction = CreateTaskAction | WebhookAction | SendEmailAction;
+export const WORKFLOW_ACTION_TYPES = ['CREATE_TASK', 'WEBHOOK', 'SEND_EMAIL'] as const;
 
 export interface WorkflowDefinition {
   trigger: WorkflowTrigger;
+  /** Settings of a schedule trigger; {} for event triggers. */
+  triggerParams?: TriggerParams;
   conditions: Condition[];
   actions: WorkflowAction[];
 }
@@ -287,6 +498,8 @@ export function validateWorkflow(def: WorkflowDefinition, opts: { allowHttp?: bo
   const issues: string[] = [];
   if (!(WORKFLOW_TRIGGERS as readonly string[]).includes(def.trigger)) throw new WorkflowError(`Unknown trigger "${def.trigger}"`);
   const t = triggerDef(def.trigger);
+  const tp = checkTriggerParams(def.trigger, def.triggerParams);
+  issues.push(...tp.issues);
   if (def.conditions.length > MAX_CONDITIONS) issues.push(`At most ${MAX_CONDITIONS} conditions`);
   const conditions = def.conditions.map((c, i): Condition => {
     const n = `Condition ${i + 1}`;
@@ -352,11 +565,31 @@ export function validateWorkflow(def: WorkflowDefinition, opts: { allowHttp?: bo
       }
       return { type: 'WEBHOOK', url };
     }
+    if (a.type === 'SEND_EMAIL') {
+      const subject = (a.subject ?? '').trim();
+      const body = (a.body ?? '').trim();
+      if (!subject) issues.push(`${n}: give the email a subject`);
+      if (subject.length > 200) issues.push(`${n}: keep the subject under 200 characters`);
+      if (/[\r\n]/.test(subject)) issues.push(`${n}: keep the subject on one line`);
+      if (!body) issues.push(`${n}: write the email`);
+      if (body.length > 5000) issues.push(`${n}: keep the email under 5,000 characters`);
+      placeholders(subject, n);
+      placeholders(body, n);
+      const to = a.to as Partial<{ role: string; userId: string; contact: boolean }> | undefined;
+      if (!to) issues.push(`${n}: choose who the email goes to`);
+      else if ('contact' in to) {
+        if (to.contact !== true) issues.push(`${n}: choose who the email goes to`);
+        else if (!t.emailsContact) issues.push(`${n}: ${t.label.toLowerCase()} has no customer or vendor to email`);
+      } else if ('role' in to) {
+        if (!(ASSIGNABLE_ROLES as readonly string[]).includes(to.role ?? '')) issues.push(`${n}: choose who the email goes to`);
+      } else if (!/^[0-9a-f-]{36}$/i.test(to.userId ?? '')) issues.push(`${n}: choose who the email goes to`);
+      return { type: 'SEND_EMAIL', to: a.to, subject, body };
+    }
     issues.push(`${n}: unknown action`);
     return a;
   });
   if (issues.length) throw new WorkflowError(issues.length === 1 ? issues[0] : `${issues.length} problems in the workflow`, issues);
-  return { trigger: def.trigger, conditions, actions };
+  return { trigger: def.trigger, triggerParams: tp.params, conditions, actions };
 }
 
 /** Fills {{fact}} placeholders with the event's values; money is shown as given (a decimal string). Unknown or missing values become "—". */
@@ -382,6 +615,43 @@ export function webhookRetryable(status: number | null): boolean {
 export function nextWebhookAttempt(attempt: number, status: number | null, now: Date): Date | null {
   if (!webhookRetryable(status) || attempt >= WEBHOOK_MAX_ATTEMPTS) return null;
   return new Date(now.getTime() + WEBHOOK_RETRY_DELAYS[attempt - 1] * 1000);
+}
+
+/**
+ * Email delivery uses the same retry schedule. An SMTP server's 4xx answer (or no answer) is
+ * temporary and tried again; a 5xx answer is final.
+ */
+export function smtpRetryable(code: number | null): boolean {
+  return code === null || (code >= 400 && code < 500);
+}
+
+/** When to try a delivery again after the given attempt (1-based) failed; null when it is final or attempts are used up. */
+export function nextDeliveryAttempt(attempt: number, retryable: boolean, now: Date): Date | null {
+  if (!retryable || attempt >= WEBHOOK_MAX_ATTEMPTS) return null;
+  return new Date(now.getTime() + WEBHOOK_RETRY_DELAYS[attempt - 1] * 1000);
+}
+
+/**
+ * An amount for people to read in an email: grouped digits (Indian grouping for INR, as in
+ * ₹1,50,000.00) and the currency. Works on the decimal string, never a floating-point number.
+ */
+export function formatAmountText(value: string, currency: string): string {
+  const neg = value.startsWith('-');
+  const [int, frac] = (neg ? value.slice(1) : value).split('.');
+  let grouped: string;
+  if (currency === 'INR' && int.length > 3) {
+    const head = int.slice(0, -3);
+    grouped = `${head.replace(/\B(?=(\d{2})+(?!\d))/g, ',')},${int.slice(-3)}`;
+  } else grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const n = `${neg ? '-' : ''}${grouped}${frac !== undefined ? `.${frac}` : ''}`;
+  return currency === 'INR' ? `₹${n}` : `${currency} ${n}`;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** A YYYY-MM-DD date for people to read: 2 Nov 2026. */
+export function formatDateText(date: string): string {
+  const m = DATE.exec(date) ? date.split('-') : null;
+  return m ? `${Number(m[2])} ${MONTHS[Number(m[1]) - 1]} ${m[0]}` : date;
 }
 
 /** Total of a list of decimal strings (used for journal totals as a fact). */

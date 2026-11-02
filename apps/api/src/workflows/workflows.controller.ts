@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
-import { ASSIGNABLE_ROLES, WORKFLOW_TRIGGERS } from '@talk2tax/accounting-engine';
+import { ASSIGNABLE_ROLES, SCHEDULE_FREQUENCIES, WORKFLOW_TRIGGERS } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
@@ -22,11 +22,30 @@ const ActionBody = z.discriminatedUnion('type', [
     })
     .strict(),
   z.object({ type: z.literal('WEBHOOK'), url: z.string().max(500) }).strict(),
+  z
+    .object({
+      type: z.literal('SEND_EMAIL'),
+      to: z.union([z.object({ role: z.enum(ASSIGNABLE_ROLES) }).strict(), z.object({ userId: z.string().uuid('Choose a member') }).strict(), z.object({ contact: z.literal(true) }).strict()]),
+      subject: z.string().max(300),
+      body: z.string().max(6000),
+    })
+    .strict(),
 ]);
+/** Settings of a schedule trigger; the rules engine checks which apply to which trigger. */
+const TriggerParamsBody = z
+  .object({
+    frequency: z.enum(SCHEDULE_FREQUENCIES).optional(),
+    time: z.string().max(5).optional(),
+    weekday: z.number().int().optional(),
+    dayOfMonth: z.number().int().optional(),
+    days: z.number().optional(),
+  })
+  .strict();
 const Definition = {
   name: z.string().trim().min(1, 'Give the workflow a name').max(120),
   description: z.string().trim().max(1000).nullable().optional(),
   trigger: z.enum(WORKFLOW_TRIGGERS),
+  triggerParams: TriggerParamsBody.default({}),
   conditions: z.array(ConditionBody).max(20),
   actions: z.array(ActionBody).max(10),
 };
@@ -45,7 +64,7 @@ const RunsQuery = z.object({
 export class WorkflowsController {
   constructor(private readonly workflows: WorkflowsService) {}
 
-  /** Triggers with their facts, condition operators, roles and members a task can go to. */
+  /** Triggers with their facts and settings, condition operators, roles and members a task or email can go to, and whether email is set up. */
   @Get('workflows/catalogue')
   @RequirePermission('workflows.manage')
   catalogue(@CurrentOrg() org: OrgContext) {

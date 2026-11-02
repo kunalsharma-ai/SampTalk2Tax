@@ -2,10 +2,18 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } f
 import {
   Condition,
   CreateTaskAction,
+  dueDateWindow,
   evaluateConditions,
   Facts,
+  formatAmountText,
+  formatDateText,
+  istDate,
+  latestOccurrence,
+  nextDeliveryAttempt,
   nextWebhookAttempt,
   renderTemplate,
+  SendEmailAction,
+  TriggerParams,
   triggerDef,
   WorkflowAction,
   WorkflowTrigger,
@@ -16,8 +24,9 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { addDays, ROLE_LABELS, TasksService, todayIst } from '../tasks/tasks.service';
+import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { sendWebhook, signPayload, WebhookResult } from './webhook';
-import { EventFacts, loadEventFacts, WATCHED_ACTIONS } from './workflow-facts';
+import { dueDocuments, EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, WATCHED_ACTIONS } from './workflow-facts';
 
 /** Events read for one organisation in one transaction. */
 const EVENT_BATCH = 200;
@@ -27,6 +36,23 @@ const DELIVERY_BATCH = 20;
 const CLAIM_SECONDS = 120;
 /** Attempts kept in an action's log. */
 const HISTORY_KEPT = 10;
+/** Invoices or bills one date-trigger workflow acts on in one pass. */
+const DUE_BATCH = 200;
+/** Most addresses one email goes to. */
+const MAX_RECIPIENTS = 50;
+
+export interface EmailPreview {
+  to: string[];
+  /** Who the email is for, in words: "Accountants", a member's name, or the customer. */
+  recipientLabel: string;
+  subject: string;
+  body: string;
+  /** Why it cannot be sent (no address), or null. */
+  problem: string | null;
+}
+
+/** Where a live run came from: an audit event, or an occurrence of a schedule trigger. */
+type RunSource = { eventId: bigint } | { occurrenceKey: string };
 
 export interface TaskPreview {
   title: string;
@@ -66,6 +92,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
   constructor(
     private readonly prisma: PrismaService,
     private readonly tasks: TasksService,
+    private readonly mailer: MailerService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -74,7 +101,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     if (every > 0) {
       this.timer = setInterval(() => void this.tick().catch((e) => this.logger.error(`Workflow runner failed: ${(e as Error).message}`)), every * 1000);
       this.timer.unref();
-      this.logger.log(`Workflow runner looks for events every ${every} s`);
+      this.logger.log(`Workflow runner looks for events, schedules and due deliveries every ${every} s${this.mailer.ready ? '' : '; email is not set up (SMTP_URL)'}`);
     }
   }
   async onModuleDestroy() {
@@ -82,11 +109,15 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     await this.inFlight?.catch(() => undefined);
   }
 
-  /** One pass: handle new events for every organisation, then send due webhooks. Overlapping calls share one pass. */
-  tick(): Promise<{ runs: number; deliveries: number }> {
+  /**
+   * One pass: handle new events, then schedules that have come round, then send due webhooks
+   * and emails. Overlapping calls share one pass. `now` is for tests: schedules are judged
+   * against it (deliveries always use the database clock).
+   */
+  tick(opts: { now?: Date } = {}): Promise<{ runs: number; deliveries: number }> {
     if (!this.inFlight) {
       this.inFlight = (async () => {
-        const runs = await this.processEvents();
+        const runs = (await this.processEvents()) + (await this.processSchedules(opts.now ?? new Date()));
         const deliveries = await this.deliverDue();
         return { runs, deliveries };
       })().finally(() => (this.inFlight = null));
@@ -98,9 +129,9 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
 
   async processEvents(): Promise<number> {
     // A Prisma query runs when awaited, so it is awaited inside the context it needs.
-    const orgs = await tenantStorage.run({ bypass: true }, async () => await this.prisma.workflow.findMany({ where: { enabled: true }, distinct: ['orgId'], select: { orgId: true } }));
+    const orgs = await this.orgsWithEnabled('event');
     let runs = 0;
-    for (const { orgId } of orgs) {
+    for (const orgId of orgs) {
       try {
         for (;;) {
           const r = await tenantStorage.run({ orgId }, () => this.processOrgBatch(orgId));
@@ -120,7 +151,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
         await tx.$executeRaw`INSERT INTO workflow_cursors (org_id, last_event_id, updated_at) VALUES (${orgId}::uuid, 0, now()) ON CONFLICT (org_id) DO NOTHING`;
         const cur = await tx.$queryRaw<{ last_event_id: bigint }[]>`SELECT last_event_id FROM workflow_cursors WHERE org_id = ${orgId}::uuid FOR UPDATE SKIP LOCKED`;
         if (!cur.length) return { runs: 0, more: false }; // another process has this organisation
-        const workflows = await this.enabledWorkflows(tx, orgId);
+        const workflows = (await this.enabledWorkflows(tx, orgId)).filter((w) => triggerDef(w.versions[0].trigger).kind === 'event');
         if (!workflows.length) return { runs: 0, more: false };
         // Nothing before the earliest "turned on" point can start a run, so skip straight past it.
         const earliest = workflows.reduce((m, w) => (w.activeFromEventId! < m ? w.activeFromEventId! : m), workflows[0].activeFromEventId!);
@@ -142,7 +173,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
           if (!facts) continue;
           for (const w of listening) {
             if (w.versions[0].trigger !== facts.trigger) continue;
-            await this.startRun(tx, orgId, w, e.id, facts, e.createdAt);
+            await this.startRun(tx, orgId, w, { eventId: e.id }, facts, e.createdAt);
             runs++;
           }
         }
@@ -150,6 +181,74 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
         const next = more ? events[events.length - 1].id : hi > from ? hi : from;
         await tx.workflowCursor.update({ where: { orgId }, data: { lastEventId: next } });
         return { runs, more };
+      },
+      { timeout: 60_000 },
+    );
+  }
+
+  /** Organisations with at least one workflow on whose trigger is of this kind. */
+  private async orgsWithEnabled(kind: 'event' | 'schedule'): Promise<string[]> {
+    // A Prisma query runs when awaited, so it is awaited inside the context it needs.
+    const rows = await tenantStorage.run({ bypass: true }, async () =>
+      await this.prisma.workflow.findMany({ where: { enabled: true }, select: { orgId: true, currentVersion: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { trigger: true } } } }),
+    );
+    return [...new Set(rows.filter((r) => r.versions[0] && triggerDef(r.versions[0].trigger).kind === kind).map((r) => r.orgId))];
+  }
+
+  // ------------------------------------------------------------------ schedules
+
+  /**
+   * Schedule triggers. SCHEDULE acts once on each time its schedule comes round; the date
+   * triggers act once per invoice or bill on the day it reaches the set number of days. Only
+   * times and dates from when the workflow was turned on count, so turning one on never
+   * sends a backlog. A per-organisation advisory lock keeps two API processes apart, and a
+   * unique index on (workflow, occurrence) makes each act at most once.
+   */
+  async processSchedules(now: Date): Promise<number> {
+    let runs = 0;
+    for (const orgId of await this.orgsWithEnabled('schedule')) {
+      try {
+        runs += await tenantStorage.run({ orgId }, () => this.scheduleOrg(orgId, now));
+      } catch (e) {
+        this.logger.error(`Scheduled workflows for organisation ${orgId} failed: ${(e as Error).message}`);
+      }
+    }
+    return runs;
+  }
+
+  private async scheduleOrg(orgId: string, now: Date): Promise<number> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const [lock] = await tx.$queryRaw<{ ok: boolean }[]>`SELECT pg_try_advisory_xact_lock(hashtext(${'workflow-schedule:' + orgId})) AS ok`;
+        if (!lock.ok) return 0; // another process has this organisation
+        const workflows = (await this.enabledWorkflows(tx, orgId)).filter((w) => triggerDef(w.versions[0].trigger).kind === 'schedule' && w.activatedAt);
+        const today = istDate(now);
+        let runs = 0;
+        for (const w of workflows) {
+          const v = w.versions[0];
+          const params = v.triggerParams as TriggerParams;
+          if (v.trigger === 'SCHEDULE') {
+            const occ = latestOccurrence(params, now);
+            if (occ.at < w.activatedAt!) continue;
+            const key = `at:${occ.at.toISOString()}`;
+            if (await tx.workflowRun.findFirst({ where: { workflowId: w.id, occurrenceKey: key, status: { not: 'TEST' } }, select: { id: true } })) continue;
+            await this.startRun(tx, orgId, w, { occurrenceKey: key }, await loadScheduleFacts(tx, orgId, occ.date), occ.at);
+            runs++;
+            continue;
+          }
+          const trigger = v.trigger as 'INVOICE_OVERDUE' | 'BILL_DUE_SOON';
+          const days = params.days ?? 0;
+          const win = dueDateWindow(trigger, days, istDate(w.activatedAt!), today);
+          const suffix = `:${days}`;
+          const ids = await dueDocuments(tx, orgId, { kind: trigger === 'INVOICE_OVERDUE' ? 'INVOICE' : 'BILL', from: win.from, to: win.to, asOf: today, workflowId: w.id, keyPrefix: 'doc:', keySuffix: suffix, limit: DUE_BATCH });
+          for (const id of ids) {
+            const facts = await loadDueDocumentFacts(tx, orgId, trigger, id, today);
+            if (!facts) continue;
+            await this.startRun(tx, orgId, w, { occurrenceKey: `doc:${id}${suffix}` }, facts, now);
+            runs++;
+          }
+        }
+        return runs;
       },
       { timeout: 60_000 },
     );
@@ -173,8 +272,52 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     return { title, description, assignTo: a.assignTo, assigneeLabel, dueDate: a.dueInDays === null ? null : addDays(todayIst(eventDate), a.dueInDays) };
   }
 
-  /** Records a live run for one event: conditions, then each action. Tasks are created here; webhooks are queued. */
-  private async startRun(tx: Tx, orgId: string, w: WorkflowWithVersion, eventId: bigint, ev: EventFacts, eventDate: Date) {
+  /**
+   * What an email action would send for these facts: the addresses, and the subject and body
+   * with amounts and dates written for people. Emails to members end with a link to the
+   * record; emails to a customer or vendor do not.
+   */
+  async previewEmail(tx: Tx, orgId: string, workflowName: string, a: SendEmailAction, ev: EventFacts): Promise<EmailPreview> {
+    const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true, functionalCurrency: true } });
+    const types = new Map(triggerDef(ev.trigger).facts.map((f) => [f.key, f.type]));
+    const format = (key: string, value: string) => (types.get(key) === 'money' ? formatAmountText(value, org.functionalCurrency) : types.get(key) === 'date' ? formatDateText(value) : value);
+    const subject = renderTemplate(a.subject, ev.facts, format).replace(/[\r\n]+/g, ' ').slice(0, 200);
+    let body = renderTemplate(a.body, ev.facts, format).slice(0, 5000);
+    let to: string[] = [];
+    let recipientLabel: string;
+    let problem: string | null = null;
+    if ('contact' in a.to) {
+      recipientLabel = ev.facts.contactName ?? 'The customer or vendor';
+      const email = (ev.facts.contactEmail ?? '').trim();
+      if (email) to = [email];
+      else problem = `${recipientLabel} has no email address`;
+      body += `\n\n--\nSent by ${org.name}.`;
+    } else {
+      if ('role' in a.to) {
+        recipientLabel = ROLE_LABELS[a.to.role] ?? a.to.role;
+        const members = await tx.membership.findMany({ where: { orgId, role: a.to.role as never }, select: { user: { select: { email: true } } }, orderBy: { createdAt: 'asc' } });
+        to = members.map((m) => m.user.email);
+        if (!to.length) problem = `No one in the organisation is in ${recipientLabel.toLowerCase()}`;
+      } else {
+        const m = await tx.membership.findFirst({ where: { orgId, userId: a.to.userId }, select: { user: { select: { name: true, email: true } } } });
+        recipientLabel = m?.user.name ?? 'Someone no longer in the organisation';
+        if (m) to = [m.user.email];
+        else problem = 'That person is no longer in the organisation';
+      }
+      const link = ev.link ? (await this.tasks.linkPaths(tx, [ev.link]))(ev.link) : null;
+      const base = this.config.APP_URL.replace(/\/+$/, '');
+      body += `\n\n--\nSent by the automation "${workflowName}" in Talk2Tax for ${org.name}.${link ? `\n${link.label}: ${base}/orgs/${orgId}${link.path}` : ''}`;
+    }
+    to = [...new Set(to.map((x) => x.toLowerCase()))];
+    if (to.length > MAX_RECIPIENTS) {
+      problem = `${to.length} addresses is more than ${MAX_RECIPIENTS}`;
+      to = to.slice(0, MAX_RECIPIENTS);
+    }
+    return { to, recipientLabel, subject, body, problem };
+  }
+
+  /** Records a live run: conditions, then each action. Tasks are created here; webhooks and emails are queued. */
+  private async startRun(tx: Tx, orgId: string, w: WorkflowWithVersion, source: RunSource, ev: EventFacts, eventDate: Date) {
     const v = w.versions[0];
     const conditions = v.conditions as unknown as Condition[];
     const actions = v.actions as unknown as WorkflowAction[];
@@ -186,10 +329,10 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
         workflowId: w.id,
         version: v.version,
         trigger: v.trigger,
-        eventId,
+        ...('eventId' in source ? { eventId: source.eventId } : { occurrenceKey: source.occurrenceKey }),
         entityType: ev.entityType,
         entityId: ev.entityId,
-        facts: { ...ev.facts, _link: ev.link } as Prisma.InputJsonValue,
+        facts: (ev.link ? { ...ev.facts, _link: ev.link } : ev.facts) as Prisma.InputJsonValue,
         conditions: result.results as unknown as Prisma.InputJsonValue,
         status: result.matched ? 'RUNNING' : 'SKIPPED',
         finishedAt: result.matched ? null : now,
@@ -206,6 +349,14 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
           if (!(e instanceof DomainError)) throw e;
           await tx.workflowActionRun.create({ data: { orgId, runId: run.id, position, type: a.type, status: 'FAILED', input: preview as unknown as Prisma.InputJsonValue, attempts: 1, error: e.message, finishedAt: now } });
         }
+      } else if (a.type === 'SEND_EMAIL') {
+        const preview = await this.previewEmail(tx, orgId, w.name, a, ev);
+        const problem = preview.problem ?? (this.mailer.ready ? null : EMAIL_NOT_SET_UP);
+        await tx.workflowActionRun.create({
+          data: problem
+            ? { orgId, runId: run.id, position, type: a.type, status: 'FAILED', input: preview as unknown as Prisma.InputJsonValue, attempts: 0, error: problem, finishedAt: now }
+            : { orgId, runId: run.id, position, type: a.type, status: 'PENDING', input: preview as unknown as Prisma.InputJsonValue, nextAttemptAt: now },
+        });
       } else {
         await tx.workflowActionRun.create({ data: { orgId, runId: run.id, position, type: a.type, status: 'PENDING', input: { url: a.url }, nextAttemptAt: now } });
       }
@@ -251,7 +402,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     );
   }
 
-  /** Claims webhooks that are due and sends them. Returns how many were attempted. */
+  /** Claims webhooks and emails that are due and sends them. Returns how many were attempted. */
   async deliverDue(): Promise<number> {
     const claimed = await tenantStorage.run({ bypass: true }, async () =>
       this.prisma.$transaction(
@@ -259,7 +410,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
           UPDATE workflow_action_runs SET locked_until = now() + make_interval(secs => ${CLAIM_SECONDS})
           WHERE id IN (
             SELECT id FROM workflow_action_runs
-            WHERE status = 'PENDING' AND type = 'WEBHOOK' AND next_attempt_at <= now() AND (locked_until IS NULL OR locked_until < now())
+            WHERE status = 'PENDING' AND type IN ('WEBHOOK', 'SEND_EMAIL') AND next_attempt_at <= now() AND (locked_until IS NULL OR locked_until < now())
             ORDER BY next_attempt_at LIMIT ${DELIVERY_BATCH} FOR UPDATE SKIP LOCKED)
           RETURNING id, org_id`,
       ),
@@ -268,7 +419,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
       try {
         await tenantStorage.run({ orgId: c.org_id }, () => this.deliverOne(c.org_id, c.id));
       } catch (e) {
-        this.logger.error(`Webhook ${c.id} failed to record: ${(e as Error).message}`);
+        this.logger.error(`Delivery ${c.id} failed to record: ${(e as Error).message}`);
       }
     }
     return claimed.length;
@@ -278,6 +429,13 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     const a = await this.prisma.workflowActionRun.findFirst({ where: { id: actionRunId, orgId }, include: { run: { include: { workflow: { select: { id: true, name: true, signingSecret: true } } } } } });
     if (!a || a.status !== 'PENDING') return;
     const attempt = a.attempts + 1;
+    if (a.type === 'SEND_EMAIL') {
+      const e = a.input as unknown as EmailPreview;
+      const res = await this.mailer.send({ to: e.to, subject: e.subject, text: e.body, messageId: `<${a.id}@talk2tax.workflow>`, headers: { 'X-T2T-Workflow': a.run.workflow.id, 'X-T2T-Attempt': String(attempt) } });
+      const now = new Date();
+      await this.recordAttempt(a.id, a.runId, attempt, { status: res.status, ok: res.ok, durationMs: res.durationMs, error: res.error, responseSnippet: res.responseSnippet }, res.ok ? null : nextDeliveryAttempt(attempt, res.retryable, now), now);
+      return;
+    }
     const body = this.webhookBody({
       deliveryId: a.id,
       orgId,
@@ -291,14 +449,18 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     });
     const res = await this.send(a.run.workflow.signingSecret, (a.input as { url: string }).url, a.id, a.run.trigger, attempt, body);
     const now = new Date();
+    await this.recordAttempt(a.id, a.runId, attempt, { status: res.status, ok: res.ok, durationMs: res.durationMs, error: res.error, responseSnippet: res.responseSnippet }, res.ok ? null : nextWebhookAttempt(attempt, res.status, now), now);
+  }
+
+  /** Records one delivery attempt: done, waiting for the next try, or failed for good. */
+  private async recordAttempt(id: string, runId: string, attempt: number, res: Omit<Attempt, 'at'>, next: Date | null, now: Date) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM workflow_action_runs WHERE id = ${a.id}::uuid FOR UPDATE`;
-      const fresh = await tx.workflowActionRun.findUniqueOrThrow({ where: { id: a.id } });
+      await tx.$queryRaw`SELECT id FROM workflow_action_runs WHERE id = ${id}::uuid FOR UPDATE`;
+      const fresh = await tx.workflowActionRun.findUniqueOrThrow({ where: { id } });
       if (fresh.status !== 'PENDING') return;
-      const history = [...(((fresh.result as { attempts?: Attempt[] }).attempts ?? []) as Attempt[]), { at: now.toISOString(), status: res.status, ok: res.ok, durationMs: res.durationMs, error: res.error, responseSnippet: res.responseSnippet }].slice(-HISTORY_KEPT);
-      const next = res.ok ? null : nextWebhookAttempt(attempt, res.status, now);
+      const history = [...(((fresh.result as { attempts?: Attempt[] }).attempts ?? []) as Attempt[]), { at: now.toISOString(), ...res }].slice(-HISTORY_KEPT);
       await tx.workflowActionRun.update({
-        where: { id: a.id },
+        where: { id },
         data: {
           attempts: attempt,
           result: { attempts: history } as unknown as Prisma.InputJsonValue,
@@ -310,7 +472,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
               : { status: 'FAILED', error: res.error ?? 'Delivery failed', nextAttemptAt: null, finishedAt: now }),
         },
       });
-      await this.finishRunIfDone(tx, a.runId);
+      await this.finishRunIfDone(tx, runId);
     });
   }
 }

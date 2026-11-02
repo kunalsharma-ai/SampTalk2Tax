@@ -8,7 +8,7 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { useOrg } from '@/lib/org';
-import { ACTION_STATUS, assigneeLabel, dateTime, describeCondition, RUN_STATUS, seconds, type Catalogue, type Run, type RunStatus, type Workflow } from '@/lib/workflows';
+import { ACTION_LABEL, ACTION_STATUS, assigneeLabel, dateTime, describeCondition, emailToLabel, RUN_STATUS, seconds, type Catalogue, type Run, type RunStatus, type Workflow } from '@/lib/workflows';
 
 export default function WorkflowPage() {
   const { org, orgId } = useOrg();
@@ -47,6 +47,9 @@ export default function WorkflowPage() {
   const wf = w.data;
   const t = cat.data?.triggers.find((x) => x.key === wf?.trigger);
   const hasWebhook = !!wf?.actions.some((a) => a.type === 'WEBHOOK');
+  const hasEmail = !!wf?.actions.some((a) => a.type === 'SEND_EMAIL');
+  const scheduled = wf?.triggerKind === 'schedule';
+  const contactWord = t?.facts.find((f) => f.key === 'contactName')?.label.toLowerCase() ?? 'customer or vendor';
   return (
     <>
       <PageHeader
@@ -58,7 +61,11 @@ export default function WorkflowPage() {
               {wf.enabled ? <Badge tone="positive">On</Badge> : <Badge>Off</Badge>}
               <Button variant="secondary" onClick={() => router.push(`/orgs/${orgId}/automations/${workflowId}/edit`)}>Edit</Button>
               <Button variant="secondary" loading={test.isPending && test.variables === false} onClick={() => test.mutate(false)}>Test</Button>
-              {hasWebhook ? <Button variant="secondary" loading={test.isPending && test.variables === true} onClick={() => test.mutate(true)}>Test and send webhooks</Button> : null}
+              {hasWebhook || hasEmail ? (
+                <Button variant="secondary" loading={test.isPending && test.variables === true} onClick={() => test.mutate(true)}>
+                  {hasEmail ? (hasWebhook ? 'Test and send' : 'Test and email me') : 'Test and send webhooks'}
+                </Button>
+              ) : null}
               <Button variant={wf.enabled ? 'danger' : 'primary'} loading={toggle.isPending} onClick={() => toggle.mutate(!wf.enabled)}>{wf.enabled ? 'Turn off' : 'Turn on'}</Button>
             </>
           ) : null
@@ -69,14 +76,26 @@ export default function WorkflowPage() {
       <ErrorAlert title="The test did not run" error={test.error} />
       {wf ? (
         <div className="flex flex-col gap-4">
-          {!wf.enabled ? <Notice tone="warning" title="This workflow is off">It does nothing until it is turned on. When it is, it acts only on what happens from then on, not on earlier events.</Notice> : null}
+          {!wf.enabled ? (
+            <Notice tone="warning" title="This workflow is off">
+              {scheduled
+                ? 'It does nothing until it is turned on. When it is, it acts only on times and dates from then on, so turning it on never sends a backlog.'
+                : 'It does nothing until it is turned on. When it is, it acts only on what happens from then on, not on earlier events.'}
+            </Notice>
+          ) : null}
+          {hasEmail && cat.data && !cat.data.email.ready ? (
+            <Notice tone="warning" title="Email is not set up on this server">Its emails fail, with that reason in the run log, until an administrator sets SMTP_URL and EMAIL_FROM. Tasks and webhooks still work.</Notice>
+          ) : null}
 
           <Card>
             <CardHeader title="What it does" description={wf.description ?? undefined} />
             <dl className="grid gap-4 p-5 md:grid-cols-3">
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">When</dt>
-                <dd className="mt-1 text-sm">{wf.triggerLabel}</dd>
+                <dd className="mt-1 text-sm">
+                  {wf.triggerLabel}
+                  {wf.nextOccurrence ? <p className="text-xs text-fg-muted">Next: {dateTime(wf.nextOccurrence)}</p> : null}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">Only if</dt>
@@ -90,6 +109,8 @@ export default function WorkflowPage() {
                       <li key={i}>
                         {a.type === 'CREATE_TASK' ? (
                           <>Task “{a.title}” for {assigneeLabel(a.assignTo, cat.data)}{a.dueInDays === null ? '' : `, due ${a.dueInDays === 0 ? 'the same day' : `in ${a.dueInDays} day${a.dueInDays === 1 ? '' : 's'}`}`}</>
+                        ) : a.type === 'SEND_EMAIL' ? (
+                          <>Email “{a.subject}” to {emailToLabel(a.to, cat.data, `the ${contactWord}`)}</>
                         ) : (
                           <>Webhook to <span className="break-all font-mono text-xs">{a.url}</span></>
                         )}
@@ -106,7 +127,7 @@ export default function WorkflowPage() {
           <Card>
             <CardHeader
               title="Run log"
-              description="Every event the workflow looked at, with what it found and what it did."
+              description={scheduled ? 'Every time or record the workflow acted on, with what it found and what it did.' : 'Every event the workflow looked at, with what it found and what it did.'}
               actions={
                 <Select aria-label="Show runs" className="w-48" value={filter} onChange={(e) => setFilter(e.target.value as RunStatus | '')}>
                   <option value="">Every run</option>
@@ -115,18 +136,18 @@ export default function WorkflowPage() {
               }
             />
             <ErrorAlert title="Could not load runs" error={runs.error} />
-            {runs.data && !runs.data.length ? <EmptyState title="No runs yet">{wf.enabled ? 'The next matching event will appear here within a few seconds.' : 'Turn the workflow on, or test it.'}</EmptyState> : null}
+            {runs.data && !runs.data.length ? <EmptyState title="No runs yet">{wf.enabled ? (scheduled ? 'Runs appear here when the schedule comes round, or a record reaches the date.' : 'The next matching event will appear here within a few seconds.') : 'Turn the workflow on, or test it.'}</EmptyState> : null}
             {runs.data?.length ? (
               <Table aria-label="Runs">
-                <thead><tr><Th>When</Th><Th>Event</Th><Th>Version</Th><Th>Result</Th><Th>Actions</Th><Th /></tr></thead>
+                <thead><tr><Th>When</Th><Th>About</Th><Th>Version</Th><Th>Result</Th><Th>Actions</Th><Th /></tr></thead>
                 <tbody>
                   {runs.data.map((r) => (
                     <Tr key={r.id}>
                       <Td className="whitespace-nowrap">{dateTime(r.createdAt)}</Td>
-                      <Td>{r.link ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}${r.link.path}`}>{r.link.label}</Link> : '—'}</Td>
+                      <Td>{r.link ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}${r.link.path}`}>{r.link.label}</Link> : r.trigger === 'SCHEDULE' ? `Schedule, ${r.facts.find((f) => f.key === 'date')?.value ?? ''}` : '—'}</Td>
                       <Td className="num">{r.version}</Td>
                       <Td><Badge tone={RUN_STATUS[r.status].tone}>{RUN_STATUS[r.status].label}</Badge>{r.error ? <p className="mt-1 text-xs text-negative">{r.error}</p> : null}</Td>
-                      <Td className="text-xs text-fg-muted">{r.actions.length ? r.actions.map((a) => `${a.type === 'CREATE_TASK' ? 'Task' : 'Webhook'}: ${ACTION_STATUS[a.status].label.toLowerCase()}`).join(' · ') : 'None'}</Td>
+                      <Td className="text-xs text-fg-muted">{r.actions.length ? r.actions.map((a) => `${ACTION_LABEL[a.type]}: ${ACTION_STATUS[a.status].label.toLowerCase()}`).join(' · ') : 'None'}</Td>
                       <Td><Button size="sm" variant="ghost" onClick={() => setOpenRun(r.id)}>Details</Button></Td>
                     </Tr>
                   ))}
@@ -148,10 +169,10 @@ export default function WorkflowPage() {
           <Card>
             <CardHeader title="Versions" description="A change to the trigger, conditions or actions makes a new version. Versions are never changed." />
             <Table aria-label="Versions">
-              <thead><tr><Th>Version</Th><Th>Saved</Th><Th>By</Th><Th>Note</Th></tr></thead>
+              <thead><tr><Th>Version</Th><Th>When</Th><Th>Saved</Th><Th>By</Th><Th>Note</Th></tr></thead>
               <tbody>
                 {wf.versions.map((v) => (
-                  <Tr key={v.version}><Td className="num">{v.version}</Td><Td>{dateTime(v.createdAt)}</Td><Td>{v.createdBy ?? '—'}</Td><Td>{v.note ?? (v.version === 1 ? 'Created' : '—')}</Td></Tr>
+                  <Tr key={v.version}><Td className="num">{v.version}</Td><Td>{v.triggerLabel}</Td><Td>{dateTime(v.createdAt)}</Td><Td>{v.createdBy ?? '—'}</Td><Td>{v.note ?? (v.version === 1 ? 'Created' : '—')}</Td></Tr>
                 ))}
               </tbody>
             </Table>
@@ -176,7 +197,19 @@ function TestResult({ result, onClose, orgId }: { result: { matched: boolean; ru
     <Card aria-label="Test result">
       <CardHeader
         title={result.matched ? 'Test: the conditions hold, so it would act' : 'Test: the conditions do not hold, so it would do nothing'}
-        description={<>On {r.link ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}${r.link.path}`}>{r.link.label}</Link> : 'the latest event'}, the most recent {r.triggerLabel.toLowerCase().replace(/^an? /, '')}. Nothing was created{r.actions.some((a) => a.type === 'WEBHOOK' && a.status !== 'SKIPPED') ? '; test webhooks were sent, marked "test": true' : ''}.</>}
+        description={
+          <>
+            {r.trigger === 'SCHEDULE' ? (
+              <>On the latest time the schedule came round, with today’s figures</>
+            ) : r.eventId === null ? (
+              <>On {r.link ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}${r.link.path}`}>{r.link.label}</Link> : 'a record'}, {r.trigger === 'INVOICE_OVERDUE' ? 'the most recently overdue invoice still to be paid' : 'the next bill to fall due that is still to be paid'}</>
+            ) : (
+              <>On {r.link ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}${r.link.path}`}>{r.link.label}</Link> : 'the latest event'}, the most recent {r.triggerLabel.toLowerCase().replace(/^an? /, '')}</>
+            )}
+            . Nothing was created{r.actions.some((a) => a.type === 'WEBHOOK' && a.status !== 'SKIPPED') ? '; test webhooks were sent, marked "test": true' : ''}
+            {r.actions.some((a) => a.type === 'SEND_EMAIL' && a.status !== 'SKIPPED') ? '; each email was sent to you only, with [Test] in front of the subject' : ''}.
+          </>
+        }
         actions={<Button size="sm" variant="ghost" onClick={onClose}>Close</Button>}
       />
       <RunBody run={r} />
@@ -220,11 +253,22 @@ function RunBody({ run, retry, narrow }: { run: Run; retry?: (position: number) 
             {run.actions.map((a) => (
               <li key={a.position} className="rounded-[var(--t2t-radius-md)] border border-line p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{a.position + 1}. {a.type === 'CREATE_TASK' ? 'Task' : 'Webhook'}</span>
+                  <span className="font-medium">{a.position + 1}. {ACTION_LABEL[a.type]}</span>
                   <Badge tone={ACTION_STATUS[a.status].tone}>{ACTION_STATUS[a.status].label}</Badge>
                 </div>
                 {a.type === 'CREATE_TASK' ? (
                   <p className="mt-1">“{a.input.title}” for {a.input.assigneeLabel}{a.input.dueDate ? `, due ${a.input.dueDate}` : ''}</p>
+                ) : a.type === 'SEND_EMAIL' ? (
+                  <div className="mt-1 flex flex-col gap-1" aria-label={`Email ${a.position + 1}`}>
+                    <p>
+                      To {a.input.recipientLabel}
+                      {a.input.to?.length ? <span className="break-all text-fg-muted"> ({a.input.to.join(', ')})</span> : null}
+                    </p>
+                    {a.input.testSentTo ? <p className="text-xs text-fg-muted">Test sent to {a.input.testSentTo} only</p> : null}
+                    <p className="font-medium">{a.input.subject}</p>
+                    <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded bg-surface-hover p-2 font-sans text-xs">{a.input.body}</pre>
+                    {a.input.problem && !a.error ? <p className="text-xs text-negative">{a.input.problem}</p> : null}
+                  </div>
                 ) : (
                   <p className="mt-1 break-all font-mono text-xs">{a.input.url}</p>
                 )}

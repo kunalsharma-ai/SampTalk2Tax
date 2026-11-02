@@ -9,10 +9,21 @@ export interface TriggerDef {
   key: string;
   label: string;
   description: string;
+  kind: 'event' | 'schedule';
+  emailsContact: boolean;
   facts: FactDef[];
+}
+export interface TriggerParams {
+  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  time?: string;
+  weekday?: number;
+  dayOfMonth?: number;
+  days?: number;
 }
 export interface Catalogue {
   triggers: TriggerDef[];
+  schedule: { frequencies: string[]; weekdays: { value: number; label: string }[]; timeZone: string };
+  email: { ready: boolean; from: string | null };
   operators: Record<FactType, { op: string; label: string }[]>;
   roles: { role: string; label: string }[];
   members: { userId: string; name: string; email: string; role: string }[];
@@ -26,7 +37,12 @@ export interface Condition {
   value?: string | string[];
 }
 export type AssignTo = { role: string } | { userId: string };
-export type Action = { type: 'CREATE_TASK'; title: string; description?: string; assignTo: AssignTo; dueInDays: number | null } | { type: 'WEBHOOK'; url: string };
+export type EmailTo = { role: string } | { userId: string } | { contact: true };
+export type Action =
+  | { type: 'CREATE_TASK'; title: string; description?: string; assignTo: AssignTo; dueInDays: number | null }
+  | { type: 'WEBHOOK'; url: string }
+  | { type: 'SEND_EMAIL'; to: EmailTo; subject: string; body: string };
+export type ActionType = Action['type'];
 
 export type RunStatus = 'SKIPPED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'TEST';
 export type ActionStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED';
@@ -38,9 +54,11 @@ export interface WorkflowSummary {
   enabled: boolean;
   version: number;
   trigger: string;
+  triggerParams: TriggerParams;
   triggerLabel: string;
+  triggerKind: 'event' | 'schedule';
   conditions: number;
-  actions: ('CREATE_TASK' | 'WEBHOOK')[];
+  actions: ActionType[];
   lastRun: { status: RunStatus; at: string } | null;
   last30Days: { acted: number; skipped: number; failed: number };
 }
@@ -62,14 +80,27 @@ export interface Run {
   status: RunStatus;
   error: string | null;
   eventId: string | null;
+  occurrenceKey: string | null;
   link: { path: string; label: string } | null;
   facts: { key: string; label: string; type: FactType; value: string | null; display: string | null }[];
   conditions: { label: string; passed: boolean; actual: string | null }[];
   actions: {
     position: number;
-    type: 'CREATE_TASK' | 'WEBHOOK';
+    type: ActionType;
     status: ActionStatus;
-    input: { url?: string; title?: string; description?: string | null; assigneeLabel?: string; dueDate?: string | null };
+    input: {
+      url?: string;
+      title?: string;
+      description?: string | null;
+      assigneeLabel?: string;
+      dueDate?: string | null;
+      to?: string[];
+      recipientLabel?: string;
+      subject?: string;
+      body?: string;
+      problem?: string | null;
+      testSentTo?: string;
+    };
     taskId: string | null;
     attempts: number;
     history: Attempt[];
@@ -90,14 +121,18 @@ export interface Workflow {
   enabled: boolean;
   version: number;
   trigger: string;
+  triggerParams: TriggerParams;
   triggerLabel: string;
+  triggerKind: 'event' | 'schedule';
+  nextOccurrence: string | null;
+  activatedAt: string | null;
   conditions: Condition[];
   actions: Action[];
   signingSecret: string;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
-  versions: { version: number; trigger: string; note: string | null; createdBy: string | null; createdAt: string }[];
+  versions: { version: number; trigger: string; triggerLabel: string; note: string | null; createdBy: string | null; createdAt: string }[];
   recentRuns: Run[];
 }
 
@@ -137,3 +172,10 @@ export function assigneeLabel(a: AssignTo, cat: Catalogue | undefined): string {
   if ('role' in a) return cat?.roles.find((r) => r.role === a.role)?.label ?? a.role;
   return cat?.members.find((m) => m.userId === a.userId)?.name ?? 'A former member';
 }
+
+export function emailToLabel(to: EmailTo, cat: Catalogue | undefined, contactWord = 'The customer or vendor'): string {
+  if ('contact' in to) return contactWord;
+  return assigneeLabel(to, cat);
+}
+
+export const ACTION_LABEL: Record<ActionType, string> = { CREATE_TASK: 'Task', WEBHOOK: 'Webhook', SEND_EMAIL: 'Email' };

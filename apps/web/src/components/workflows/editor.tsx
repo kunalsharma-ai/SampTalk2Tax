@@ -5,17 +5,22 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { api } from '@/lib/api';
-import type { Action, Catalogue, Condition, FactDef, TriggerDef, Workflow } from '@/lib/workflows';
+import type { Action, Catalogue, Condition, EmailTo, FactDef, TriggerDef, TriggerParams, Workflow } from '@/lib/workflows';
 
 /** A condition being edited: the value is kept as typed until saving. */
 interface Draft {
   name: string;
   description: string;
   trigger: string;
+  triggerParams: TriggerParams;
   conditions: Condition[];
   actions: Action[];
   note: string;
 }
+
+/** Settings a schedule trigger starts with. */
+const defaultParams = (trigger: string): TriggerParams =>
+  trigger === 'SCHEDULE' ? { frequency: 'WEEKLY', time: '09:00', weekday: 1 } : trigger === 'INVOICE_OVERDUE' ? { days: 7 } : trigger === 'BILL_DUE_SOON' ? { days: 3 } : {};
 
 const defaultValue = (f: FactDef): Condition['value'] => (f.type === 'enum' ? [] : '');
 const blankCondition = (t: TriggerDef): Condition => {
@@ -28,8 +33,8 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
   const qc = useQueryClient();
   const [d, setD] = useState<Draft>(() =>
     workflow
-      ? { name: workflow.name, description: workflow.description ?? '', trigger: workflow.trigger, conditions: workflow.conditions, actions: workflow.actions, note: '' }
-      : { name: '', description: '', trigger: catalogue.triggers[0].key, conditions: [], actions: [{ type: 'CREATE_TASK', title: '', assignTo: { role: 'ACCOUNTANT' }, dueInDays: 3 }], note: '' },
+      ? { name: workflow.name, description: workflow.description ?? '', trigger: workflow.trigger, triggerParams: workflow.triggerParams ?? {}, conditions: workflow.conditions, actions: workflow.actions, note: '' }
+      : { name: '', description: '', trigger: catalogue.triggers[0].key, triggerParams: {}, conditions: [], actions: [{ type: 'CREATE_TASK', title: '', assignTo: { role: 'ACCOUNTANT' }, dueInDays: 3 }], note: '' },
   );
   const t = catalogue.triggers.find((x) => x.key === d.trigger)!;
   const set = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
@@ -42,6 +47,7 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
         name: d.name,
         description: d.description || null,
         trigger: d.trigger,
+        triggerParams: d.triggerParams,
         conditions: d.conditions.map((c) => (c.op === 'is_empty' || c.op === 'not_empty' ? { fact: c.fact, op: c.op } : c)),
         actions: d.actions.map((a) => (a.type === 'CREATE_TASK' ? { ...a, description: a.description || undefined } : a)),
       };
@@ -74,8 +80,8 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
       </Card>
 
       <Card>
-        <CardHeader title="1. When" description="What happens in the books that starts this workflow." />
-        <div className="p-5">
+        <CardHeader title="1. When" description="What starts this workflow: something recorded in the books, a schedule, or a date an invoice or bill reaches." />
+        <div className="flex flex-col gap-4 p-5">
           <Field label="Trigger" hint={t.description}>
             {(p) => (
               <Select
@@ -84,17 +90,29 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
                 onChange={(e) => {
                   // Conditions and placeholders refer to the trigger's facts, so they start again.
                   const next = catalogue.triggers.find((x) => x.key === e.target.value)!;
-                  set({ trigger: next.key, conditions: [] });
+                  // An email to the customer or vendor needs a trigger that has one.
+                  const actions = d.actions.map((a): Action => (a.type === 'SEND_EMAIL' && 'contact' in a.to && !next.emailsContact ? { ...a, to: { role: 'OWNER' } } : a));
+                  set({ trigger: next.key, triggerParams: defaultParams(next.key), conditions: [], actions });
                 }}
               >
-                {catalogue.triggers.map((x) => (
-                  <option key={x.key} value={x.key}>
-                    {x.label}
-                  </option>
-                ))}
+                <optgroup label="When something is recorded">
+                  {catalogue.triggers.filter((x) => x.kind === 'event').map((x) => (
+                    <option key={x.key} value={x.key}>
+                      {x.label}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="On a schedule or a date">
+                  {catalogue.triggers.filter((x) => x.kind === 'schedule').map((x) => (
+                    <option key={x.key} value={x.key}>
+                      {x.label}
+                    </option>
+                  ))}
+                </optgroup>
               </Select>
             )}
           </Field>
+          <TriggerSettings trigger={d.trigger} params={d.triggerParams} catalogue={catalogue} onChange={(triggerParams) => set({ triggerParams })} />
         </div>
       </Card>
 
@@ -113,10 +131,10 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
       </Card>
 
       <Card>
-        <CardHeader title="3. Do" description={`Up to ${catalogue.limits.actions} actions, in order. In a task, ${placeholders} are replaced by the event's values.`} />
+        <CardHeader title="3. Do" description={`Up to ${catalogue.limits.actions} actions, in order. In tasks and emails, ${placeholders} are replaced by the values when it runs.`} />
         <div className="flex flex-col gap-3 p-5">
           {d.actions.map((a, i) => (
-            <ActionCard key={i} index={i} a={a} catalogue={catalogue} onChange={(x) => setAction(i, x)} onRemove={() => set({ actions: d.actions.filter((_, j) => j !== i) })} />
+            <ActionCard key={i} index={i} a={a} t={t} catalogue={catalogue} onChange={(x) => setAction(i, x)} onRemove={() => set({ actions: d.actions.filter((_, j) => j !== i) })} />
           ))}
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" size="sm" disabled={d.actions.length >= catalogue.limits.actions} onClick={() => set({ actions: [...d.actions, { type: 'CREATE_TASK', title: '', assignTo: { role: 'ACCOUNTANT' }, dueInDays: 3 }] })}>
@@ -124,6 +142,15 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
             </Button>
             <Button type="button" variant="secondary" size="sm" disabled={d.actions.length >= catalogue.limits.actions} onClick={() => set({ actions: [...d.actions, { type: 'WEBHOOK', url: '' }] })}>
               Add a webhook
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={d.actions.length >= catalogue.limits.actions}
+              onClick={() => set({ actions: [...d.actions, { type: 'SEND_EMAIL', to: t.emailsContact ? { contact: true } : { role: 'OWNER' }, subject: '', body: '' }] })}
+            >
+              Add an email
             </Button>
           </div>
         </div>
@@ -192,13 +219,72 @@ function ConditionRow({ index, c, t, catalogue, onChange, onRemove }: { index: n
   );
 }
 
-function ActionCard({ index, a, catalogue, onChange, onRemove }: { index: number; a: Action; catalogue: Catalogue; onChange: (a: Action) => void; onRemove: () => void }) {
+function TriggerSettings({ trigger, params, catalogue, onChange }: { trigger: string; params: TriggerParams; catalogue: Catalogue; onChange: (p: TriggerParams) => void }) {
+  if (trigger === 'SCHEDULE') {
+    return (
+      <div className="grid gap-3 md:grid-cols-3" role="group" aria-label="Schedule">
+        <Field label="Repeats">
+          {(p) => (
+            <Select
+              {...p}
+              value={params.frequency ?? 'WEEKLY'}
+              onChange={(e) => {
+                const frequency = e.target.value as TriggerParams['frequency'];
+                onChange({ frequency, time: params.time ?? '09:00', ...(frequency === 'WEEKLY' ? { weekday: params.weekday ?? 1 } : {}), ...(frequency === 'MONTHLY' ? { dayOfMonth: params.dayOfMonth ?? 1 } : {}) });
+              }}
+            >
+              <option value="DAILY">Every day</option>
+              <option value="WEEKLY">Every week</option>
+              <option value="MONTHLY">Every month</option>
+            </Select>
+          )}
+        </Field>
+        {params.frequency === 'WEEKLY' ? (
+          <Field label="On">
+            {(p) => (
+              <Select {...p} value={String(params.weekday ?? 1)} onChange={(e) => onChange({ ...params, weekday: Number(e.target.value) })}>
+                {catalogue.schedule.weekdays.map((w) => (
+                  <option key={w.value} value={w.value}>
+                    {w.label}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+        ) : params.frequency === 'MONTHLY' ? (
+          <Field label="Day of the month" hint="1 to 28, so it comes round every month.">
+            {(p) => <Input {...p} type="number" min={1} max={28} value={params.dayOfMonth === undefined ? '' : String(params.dayOfMonth)} onChange={(e) => onChange({ ...params, dayOfMonth: e.target.value === '' ? undefined : Number(e.target.value) })} />}
+          </Field>
+        ) : (
+          <span />
+        )}
+        <Field label="At (India time)">{(p) => <Input {...p} type="time" value={params.time ?? ''} onChange={(e) => onChange({ ...params, time: e.target.value })} />}</Field>
+      </div>
+    );
+  }
+  if (trigger === 'INVOICE_OVERDUE' || trigger === 'BILL_DUE_SOON') {
+    const overdue = trigger === 'INVOICE_OVERDUE';
+    return (
+      <div className="max-w-xs">
+        <Field
+          label={overdue ? 'Days after the due date' : 'Days before the due date'}
+          hint={overdue ? 'Acts once per invoice, on the day it is this many days overdue and still not fully paid.' : 'Acts once per bill, on the day it is this many days from due and still not fully paid. 0 means on the due date.'}
+        >
+          {(p) => <Input {...p} type="number" min={overdue ? 1 : 0} max={overdue ? 365 : 90} value={params.days === undefined ? '' : String(params.days)} onChange={(e) => onChange({ days: e.target.value === '' ? undefined : Number(e.target.value) })} />}
+        </Field>
+      </div>
+    );
+  }
+  return null;
+}
+
+function ActionCard({ index, a, t, catalogue, onChange, onRemove }: { index: number; a: Action; t: TriggerDef; catalogue: Catalogue; onChange: (a: Action) => void; onRemove: () => void }) {
   const n = `Action ${index + 1}`;
   return (
     <fieldset className="rounded-[var(--t2t-radius-md)] border border-line p-4" aria-label={n}>
       <div className="mb-3 flex items-center justify-between">
         <legend className="text-sm font-medium">
-          {n}: {a.type === 'CREATE_TASK' ? 'Create a task' : 'Send a webhook'}
+          {n}: {a.type === 'CREATE_TASK' ? 'Create a task' : a.type === 'SEND_EMAIL' ? 'Send an email' : 'Send a webhook'}
         </legend>
         <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
           Remove
@@ -231,11 +317,60 @@ function ActionCard({ index, a, catalogue, onChange, onRemove }: { index: number
             {(p) => <Input {...p} type="number" min={0} max={365} value={a.dueInDays === null ? '' : String(a.dueInDays)} onChange={(e) => onChange({ ...a, dueInDays: e.target.value === '' ? null : Number(e.target.value) })} />}
           </Field>
         </div>
+      ) : a.type === 'SEND_EMAIL' ? (
+        <EmailFields a={a} t={t} catalogue={catalogue} onChange={onChange} />
       ) : (
         <Field label="Address" hint={`A POST with JSON, signed with the workflow's secret. Failed deliveries are tried ${catalogue.limits.webhookAttempts} times in all.${catalogue.webhooksMustBeHttps ? ' Must be a public https:// address.' : ''}`}>
           {(p) => <Input {...p} value={a.url} maxLength={500} onChange={(e) => onChange({ ...a, url: e.target.value })} placeholder="https://hooks.example.com/talk2tax" />}
         </Field>
       )}
     </fieldset>
+  );
+}
+
+function EmailFields({ a, t, catalogue, onChange }: { a: Extract<Action, { type: 'SEND_EMAIL' }>; t: TriggerDef; catalogue: Catalogue; onChange: (a: Action) => void }) {
+  const contactWord = t.facts.find((f) => f.key === 'contactName')?.label ?? 'Customer or vendor';
+  const value = 'contact' in a.to ? 'contact' : 'role' in a.to ? `role:${a.to.role}` : `user:${a.to.userId}`;
+  return (
+    <div className="grid gap-3">
+      {!catalogue.email.ready ? (
+        <p className="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning" role="note">
+          Email is not set up on this server yet, so these emails will fail until an administrator sets SMTP_URL and EMAIL_FROM. You can still save and test the workflow.
+        </p>
+      ) : null}
+      <Field label="To" hint={'contact' in a.to ? `The email address on the ${contactWord.toLowerCase()}'s contact. If it has none, this action fails and says so.` : 'Members get a link to the record at the end of the email.'}>
+        {(p) => (
+          <Select
+            {...p}
+            value={value}
+            onChange={(e) => {
+              const [kind, v] = e.target.value.split(':');
+              const to: EmailTo = kind === 'contact' ? { contact: true } : kind === 'role' ? { role: v } : { userId: v };
+              onChange({ ...a, to });
+            }}
+          >
+            {t.emailsContact ? <option value="contact">The {contactWord.toLowerCase()} (their contact email)</option> : null}
+            <optgroup label="Everyone with a role">
+              {catalogue.roles.map((r) => (
+                <option key={r.role} value={`role:${r.role}`}>
+                  {r.label}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="One person">
+              {catalogue.members.map((m) => (
+                <option key={m.userId} value={`user:${m.userId}`}>
+                  {m.name}
+                </option>
+              ))}
+            </optgroup>
+          </Select>
+        )}
+      </Field>
+      <Field label="Subject">{(p) => <Input {...p} value={a.subject} maxLength={200} onChange={(e) => onChange({ ...a, subject: e.target.value })} placeholder="Invoice {{number}} is overdue" />}</Field>
+      <Field label="Message" hint={`Plain text. Amounts are written like ₹1,50,000.00 and dates like 2 Nov 2026.${catalogue.email.from ? ` Sent from ${catalogue.email.from}.` : ''}`}>
+        {(p) => <Textarea {...p} rows={5} value={a.body} maxLength={5000} onChange={(e) => onChange({ ...a, body: e.target.value })} placeholder={'Dear {{contactName}},\n\n{{balance}} on invoice {{number}} is still to pay.'} />}
+      </Field>
+    </div>
   );
 }
