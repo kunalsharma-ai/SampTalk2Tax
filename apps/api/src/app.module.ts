@@ -60,6 +60,8 @@ import { FixedAssetsController } from './fixed-assets/fixed-assets.controller';
 import { FixedAssetsService } from './fixed-assets/fixed-assets.service';
 import { DeferralsController } from './deferrals/deferrals.controller';
 import { DeferralsService } from './deferrals/deferrals.service';
+import { InvoicePrintController, InvoiceTemplatesController, SignaturesController } from './invoice-templates/invoice-templates.controller';
+import { InvoiceTemplatesService } from './invoice-templates/invoice-templates.service';
 import { LoansController } from './loans/loans.controller';
 import { LoansService } from './loans/loans.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
@@ -129,6 +131,9 @@ export class AppModule {
         FixedAssetsController,
         DeferralsController,
         LoansController,
+        InvoiceTemplatesController,
+        InvoicePrintController,
+        SignaturesController,
         DimensionsController,
         EInvoicingController,
         EWayBillsController,
@@ -174,6 +179,7 @@ export class AppModule {
         FixedAssetsService,
         DeferralsService,
         LoansService,
+        InvoiceTemplatesService,
         DimensionsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,

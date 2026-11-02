@@ -98,6 +98,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Monthly installments only (EMI or equal principal), with interest on the opening balance of each period; no bullet, balloon, quarterly or step-up repayments, moratoriums, tranches, foreign-currency loans or loans given. Interest is recognised when an installment is recorded, not accrued at month end. No covenants, overdraft limits, investments or deposits; the treasury overview does not include the cash-flow forecast. Only the latest entry on a loan can be reversed. See [`LOANS_AND_TREASURY.md`](LOANS_AND_TREASURY.md).
 
+## Invoice templates and e-signatures (M6, slice 5)
+
+* Templates cover invoices and credit notes only. PDFs come from the browser's print dialog; there is no server-made PDF and no invoice PDF on emails yet. The e-signature is an image with a SHA-256 of the signed content, not Aadhaar eSign or a DSC (those need a licensed provider). Country presets summarise the rules and have not been reviewed by a tax professional in each country. No QR codes (India e-invoice QR, UPI), no right-to-left body text, system fonts only, sections reorder with buttons rather than drag and drop. See [`INVOICE_TEMPLATES.md`](INVOICE_TEMPLATES.md).
+
 ## Departments and projects (M6, slice 3)
 
 * Two dimensions only (department, project), one of each per line. No location or custom dimensions, required tags per account, cost allocation or splitting a line across projects. Only the profit and loss is split; budgets, the trial balance, balance sheet and general ledger are not. Bank entries, expense claims, payroll, depreciation and deferral releases post untagged, and document tax, receivable and payable lines are not tagged. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md).
