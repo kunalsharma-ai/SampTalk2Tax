@@ -47,6 +47,8 @@ export const PERMISSIONS = [
   'workflows.manage',
   /** See and work on tasks given to oneself or one's role, and give tasks to others. */
   'tasks.use',
+  /** Have the AI model draft payment reminders for overdue customers, and send (or reject) them. */
+  'collections.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -88,6 +90,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'payroll.manage',
     'budgets.manage',
     'alerts.manage',
+    'collections.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set<Permission>(READ_ONLY),

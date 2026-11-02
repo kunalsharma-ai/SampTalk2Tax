@@ -56,6 +56,8 @@ describe('permissions', () => {
     expect(hasPermission('VIEWER', 'workflows.manage')).toBe(false);
     for (const role of ['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER', 'VIEWER'] as const) expect(hasPermission(role, 'tasks.use')).toBe(true);
     expect(hasPermission('EMPLOYEE', 'tasks.use')).toBe(false);
+    for (const role of ['OWNER', 'ADMIN', 'ACCOUNTANT'] as const) expect(hasPermission(role, 'collections.manage')).toBe(true);
+    for (const role of ['APPROVER', 'VIEWER', 'EMPLOYEE'] as const) expect(hasPermission(role, 'collections.manage')).toBe(false);
   });
   it('restricts role assignment', () => {
     expect(canAssignRole('ADMIN', 'OWNER')).toBe(false);

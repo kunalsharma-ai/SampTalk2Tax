@@ -153,7 +153,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-032 |  | capability | Revenue leakage detection | Tested |
 | AR-033 | Advanced AR AI | capability | Predictive payment-delay scoring | Not started |
 | AR-034 | Advanced AR AI | capability | Intelligent collection prioritization | Not started |
-| AR-035 | Advanced AR AI | capability | Automated reminder drafting | Not started |
+| AR-035 | Advanced AR AI | capability | Automated reminder drafting | Integration pending |
 | AR-036 | Advanced AR AI | capability | Customer risk analysis | Not started |
 | AR-037 | Advanced AR AI | capability | Invoice dispute classification | Not started |
 | AR-038 | Advanced AR AI | capability | Customer financial behavior analysis | Not started |
@@ -593,7 +593,7 @@ Part 17 · M5 · priority P3 · depends on: AIGW, WFLOW
 | AGENT-021 | Finance Agents | capability | Revenue Leakage Agent | Not started |
 | AGENT-022 | Operations Agents | capability | Accounts Payable Agent | Not started |
 | AGENT-023 | Operations Agents | capability | Accounts Receivable Agent | Not started |
-| AGENT-024 | Operations Agents | capability | Collections Agent | Not started |
+| AGENT-024 | Operations Agents | capability | Collections Agent | Integration pending |
 | AGENT-025 | Operations Agents | capability | Vendor Management Agent | Not started |
 | AGENT-026 | Operations Agents | capability | Procurement Agent | Not started |
 | AGENT-027 | Operations Agents | capability | Expense Audit Agent | Not started |
@@ -655,7 +655,7 @@ Part 18 · M5 · priority P2 · depends on: SEC
 | WFLOW-016 |  | capability | Workflow versioning | Tested |
 | WFLOW-017 |  | capability | Workflow testing | Tested |
 | WFLOW-018 |  | capability | Execution logs | Tested |
-| WFLOW-019 | Invoice Collection | rule | Invoice becomes overdue → AI assesses risk → Drafts reminder → Checks communication policy → Sends approved reminder → Monitors response → Updates collections dashboard | Not started |
+| WFLOW-019 | Invoice Collection | rule | Invoice becomes overdue → AI assesses risk → Drafts reminder → Checks communication policy → Sends approved reminder → Monitors response → Updates collections dashboard | Implementing |
 | WFLOW-020 | Vendor Invoice Processing | rule | Invoice received → Document extracted → Supplier validated → Duplicate check → PO matching → Tax validation → Approval → Ledger posting → Payment scheduling | Not started |
 | WFLOW-021 | Financial Close | rule | Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked | Not started |
 | WFLOW-022 | Tax Compliance | rule | Filing deadline approaches → Required records collected → Reconciliation performed → Exceptions highlighted → Tax professional reviews → Filing package prepared → Authorized submission → Confirmation stored | Not started |
@@ -834,14 +834,14 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-016 |  | capability | AI action history | Tested |
 | AUDIT-017 |  | capability | Financial transaction replay | Not started |
 | AUDIT-018 | Explainable AI Ledger | capability | Agent identity | Not started |
-| AUDIT-019 | Explainable AI Ledger | capability | Model version | Not started |
+| AUDIT-019 | Explainable AI Ledger | capability | Model version | Tested |
 | AUDIT-020 | Explainable AI Ledger | capability | Prompt or policy version | Not started |
 | AUDIT-021 | Explainable AI Ledger | capability | Data sources | Not started |
 | AUDIT-022 | Explainable AI Ledger | capability | Proposed action | Not started |
 | AUDIT-023 | Explainable AI Ledger | capability | Reasoning summary | Not started |
 | AUDIT-024 | Explainable AI Ledger | capability | Approval status | Tested |
 | AUDIT-025 | Explainable AI Ledger | capability | Approving user | Tested |
-| AUDIT-026 | Explainable AI Ledger | capability | Execution result | Not started |
+| AUDIT-026 | Explainable AI Ledger | capability | Execution result | Tested |
 | AUDIT-027 | Explainable AI Ledger | capability | Timestamp | Not started |
 | AUDIT-028 | Explainable AI Ledger | capability | Relevant evidence references | Implementing |
 | AUDIT-029 | Explainable AI Ledger | rule | Do not expose hidden model chain-of-thought | Not started |
