@@ -52,6 +52,7 @@ enum JournalSource {
   CLOSE
   DEFERRAL
   ACCRUAL
+  LOAN
 }
 
 enum StatementLineStatus {
@@ -238,6 +239,8 @@ model Organization {
   deferralRuns         DeferralRun[]
   deferralLines        DeferralLine[]
   accruals             Accrual[]
+  loans                Loan[]
+  loanEvents           LoanEvent[]
   dimensionValues      DimensionValue[]
   copilotConversations CopilotConversation[]
   copilotMessages      CopilotMessage[]
@@ -2564,4 +2567,109 @@ model DimensionValue {
   @@unique([id, orgId])
   @@index([orgId, type])
   @@map("dimension_values")
+}
+
+enum LoanMethod {
+  EMI
+  EQUAL_PRINCIPAL
+}
+
+enum LoanStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum LoanEventKind {
+  REPAYMENT
+  PREPAYMENT
+  RATE_CHANGE
+}
+
+enum LoanEventStatus {
+  POSTED
+  REVERSED
+}
+
+/// A loan taken by the organisation, repaid in monthly installments.
+model Loan {
+  id                  String       @id @default(uuid()) @db.Uuid
+  orgId               String       @map("org_id") @db.Uuid
+  /// Shown as LN-0001.
+  number              Int
+  name                String       @db.VarChar(200)
+  lender              String?      @db.VarChar(200)
+  accountNumber       String?      @map("account_number") @db.VarChar(60)
+  method              LoanMethod
+  principal           Decimal      @db.Decimal(24, 6)
+  /// The rate the loan started at, annual percent.
+  originalRate        Decimal      @map("original_rate") @db.Decimal(9, 4)
+  months              Int
+  disbursementDate    DateTime     @map("disbursement_date") @db.Date
+  firstDueDate        DateTime     @map("first_due_date") @db.Date
+  liabilityAccountId  String       @map("liability_account_id") @db.Uuid
+  interestAccountId   String       @map("interest_account_id") @db.Uuid
+  /// The bank account installments are usually paid from.
+  bankAccountId       String       @map("bank_account_id") @db.Uuid
+  /// The journal that recorded the money received, when it was recorded here.
+  disbursementEntryId String?      @map("disbursement_entry_id") @db.Uuid
+  /// Current terms: they change with prepayments and rate changes.
+  annualRate          Decimal      @map("annual_rate") @db.Decimal(9, 4)
+  installment         Decimal      @db.Decimal(24, 6)
+  /// The installment that clears the loan when the term is fixed; null when it runs until paid.
+  lastNo              Int?         @map("last_no")
+  status              LoanStatus   @default(ACTIVE)
+  closedOn            DateTime?    @map("closed_on") @db.Date
+  notes               String?      @db.VarChar(1000)
+  createdById         String       @map("created_by_id") @db.Uuid
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                 Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  events              LoanEvent[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("loans")
+}
+
+/// Something that happened to a loan: an installment paid, a prepayment, a change of rate.
+model LoanEvent {
+  id                String          @id @default(uuid()) @db.Uuid
+  orgId             String          @map("org_id") @db.Uuid
+  loanId            String          @map("loan_id") @db.Uuid
+  /// Order of events on the loan, from 1.
+  seq               Int
+  kind              LoanEventKind
+  date              DateTime        @db.Date
+  /// The installment paid, for repayments.
+  installmentNo     Int?            @map("installment_no")
+  principal         Decimal         @default(0) @db.Decimal(24, 6)
+  interest          Decimal         @default(0) @db.Decimal(24, 6)
+  charges           Decimal         @default(0) @db.Decimal(24, 6)
+  bankAccountId     String?         @map("bank_account_id") @db.Uuid
+  chargesAccountId  String?         @map("charges_account_id") @db.Uuid
+  entryId           String?         @map("entry_id") @db.Uuid
+  /// PREPAYMENT: REDUCE_TENURE or REDUCE_INSTALLMENT; RATE_CHANGE: KEEP_INSTALLMENT or KEEP_TENURE.
+  mode              String?         @db.VarChar(30)
+  balanceBefore     Decimal         @map("balance_before") @db.Decimal(24, 6)
+  balanceAfter      Decimal         @map("balance_after") @db.Decimal(24, 6)
+  rateBefore        Decimal         @map("rate_before") @db.Decimal(9, 4)
+  rateAfter         Decimal         @map("rate_after") @db.Decimal(9, 4)
+  installmentBefore Decimal         @map("installment_before") @db.Decimal(24, 6)
+  installmentAfter  Decimal         @map("installment_after") @db.Decimal(24, 6)
+  lastNoBefore      Int?            @map("last_no_before")
+  lastNoAfter       Int?            @map("last_no_after")
+  note              String?         @db.VarChar(500)
+  status            LoanEventStatus @default(POSTED)
+  reversalEntryId   String?         @map("reversal_entry_id") @db.Uuid
+  reversedById      String?         @map("reversed_by_id") @db.Uuid
+  reversedAt        DateTime?       @map("reversed_at") @db.Timestamptz(6)
+  createdById       String          @map("created_by_id") @db.Uuid
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  org               Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  loan              Loan            @relation(fields: [loanId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([loanId, seq])
+  @@index([orgId, kind, date])
+  @@map("loan_events")
 }

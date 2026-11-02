@@ -60,7 +60,7 @@ export interface Journal {
   displayNumber: string | null;
   date: string;
   type: string;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN';
   status: 'DRAFT' | 'POSTED';
   memo: string | null;
   reference: string | null;
@@ -77,7 +77,7 @@ export interface Journal {
 export const PERMS: Record<Role, Set<string>> = {
   OWNER: new Set(['*']),
   ADMIN: new Set(['*']),
-  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse', 'payroll.read', 'payroll.manage', 'budgets.manage', 'alerts.manage', 'collections.manage', 'close.manage', 'assets.manage', 'deferrals.manage']),
+  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse', 'payroll.read', 'payroll.manage', 'budgets.manage', 'alerts.manage', 'collections.manage', 'close.manage', 'assets.manage', 'deferrals.manage', 'loans.manage']),
   APPROVER: new Set(['journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set([]),
   EMPLOYEE: new Set(['expenses.submit']),
@@ -395,7 +395,7 @@ export interface LedgerLink {
   date: string;
   memo: string | null;
   reference: string | null;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN';
   amount: string;
   payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
 }
