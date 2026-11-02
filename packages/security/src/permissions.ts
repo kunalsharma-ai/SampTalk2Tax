@@ -51,6 +51,8 @@ export const PERMISSIONS = [
   'collections.manage',
   /** Prepare a month-end close: tasks for open checks, the AI review, and deciding on its adjusting entries. */
   'close.manage',
+  /** Keep the fixed asset register: add assets, post depreciation, record disposals. */
+  'assets.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -94,6 +96,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'alerts.manage',
     'collections.manage',
     'close.manage',
+    'assets.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set<Permission>(READ_ONLY),

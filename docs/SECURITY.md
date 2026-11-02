@@ -50,6 +50,7 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | workflows.manage (automations, their webhooks and signing secrets; every task) | ✓ | ✓ | | | |
 | collections.manage (draft, edit, send and reject AI payment reminders) | ✓ | ✓ | ✓ | | |
 | close.manage (prepare a month-end close: tasks, AI review, post or reject proposed entries; posting also needs journals.post) | ✓ | ✓ | ✓ | | |
+| assets.manage (fixed asset register: add, depreciate, dispose) | ✓ | ✓ | ✓ | | |
 | tasks.use (tasks for oneself or one's role; give tasks) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 The AI copilot sends questions and the figures it reads to Anthropic only when the server has `ANTHROPIC_API_KEY` **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
@@ -61,6 +62,8 @@ AI reconciliation also uses that switch: bank line text and amounts, nearby ledg
 The month-end close review uses the same switch: account codes and names, monthly totals for the month and the three before, closing balances and the checklist are sent to the model only while AI is on. It can only submit a review; every proposed entry is checked (offered accounts only, never bank, cash or control accounts; balanced; plain amounts) and posted only by a person with `close.manage` and `journals.post`, through the normal journal code. Closing and reopening a month need `periods.lock` (owners and admins); the certification is kept by a database trigger, and a certified month cannot be unlocked from the periods page. See [`MONTH_END_CLOSE.md`](MONTH_END_CLOSE.md).
 
 The AI control center lets owners and admins (`org.manage`) switch each agent off, cap its monthly tokens, and stop all AI for the organisation at once with a reason. Every agent goes through one guard before it starts and before each model call, so a stop, a switch-off or a reached budget also halts work already running; what it had not reached is marked as not done, and a review answered after a stop shows nothing it proposed. Accountants and approvers can see the control center (`audit.read`), not change it. Changes are in the audit trail. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
+
+Fixed assets: owners, admins and accountants (`assets.manage`) add assets, post and reverse depreciation and record disposals; everyone with `journals.read` can see the register. Every posting goes through the normal journal code (open periods, balanced, audit trail), and database triggers keep depreciated terms, posted lines and disposals from being changed. See [`FIXED_ASSETS.md`](FIXED_ASSETS.md).
 
 Workflow webhooks (`docs/WORKFLOW_AUTOMATIONS.md`) are signed with a per-workflow HMAC-SHA256 secret. Outside development they may only reach public https addresses: the address is checked when saved, the host name is resolved when sending, every resolved address is checked against loopback, private, link-local (cloud metadata), CGNAT, reserved and IPv4-mapped forms, and the connection is pinned to the checked address. Redirects are not followed. `WEBHOOK_ALLOW_PRIVATE_NETWORKS` must stay false in production.
 
