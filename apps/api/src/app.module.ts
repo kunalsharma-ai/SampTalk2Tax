@@ -51,6 +51,10 @@ import { KpisController } from './kpis/kpis.controller';
 import { KpisService } from './kpis/kpis.service';
 import { AlertsController } from './alerts/alerts.controller';
 import { AlertsService } from './alerts/alerts.service';
+import { CopilotController } from './copilot/copilot.controller';
+import { COPILOT_MODEL, CopilotModel, copilotModelFromConfig } from './copilot/copilot.model';
+import { CopilotService } from './copilot/copilot.service';
+import { CopilotTools } from './copilot/copilot.tools';
 import { ComplianceController } from './compliance/compliance.controller';
 import { ComplianceService } from './compliance/compliance.service';
 import { EInvoicingController } from './e-invoicing/e-invoicing.controller';
@@ -66,7 +70,7 @@ import { WithholdingService } from './withholding/withholding.service';
  */
 @Module({})
 export class AppModule {
-  static forRoot(config: AppConfig): DynamicModule {
+  static forRoot(config: AppConfig, copilotModel?: CopilotModel | null): DynamicModule {
     return {
       module: AppModule,
       controllers: [
@@ -95,6 +99,7 @@ export class AppModule {
         CashFlowController,
         KpisController,
         AlertsController,
+        CopilotController,
         EInvoicingController,
         EWayBillsController,
       ],
@@ -128,6 +133,9 @@ export class AppModule {
         CashFlowService,
         KpisService,
         AlertsService,
+        CopilotTools,
+        CopilotService,
+        { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,
         EWayBillsService,
         // Order matters: rate limiting runs before authentication.

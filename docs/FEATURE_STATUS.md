@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1120 |
+| Not started | 1113 |
 | Designed | 0 |
-| Implementing | 42 |
+| Implementing | 43 |
 | Implemented | 30 |
-| Tested | 151 |
-| Integration pending | 0 |
+| Tested | 156 |
+| Integration pending | 1 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -36,14 +36,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
-| Multi-agent AI finance workforce | M5 | 60 | 60 | 0 |
+| Multi-agent AI finance workforce | M5 | 60 | 59 | 1 |
 | Autonomous financial workflows | M5 | 22 | 21 | 1 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 23 | 7 |
+| Continuous audit and governance | M6 | 30 | 22 | 8 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 38 | 3 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
 | Internationalization | M8 | 16 | 13 | 3 |
 | Integration marketplace | M6 | 50 | 50 | 0 |
-| Security and enterprise governance | M1 | 38 | 26 | 12 |
+| Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 17 | 5 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
@@ -64,9 +64,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 17 | 1 |
-| Navigation structure | M1 | 48 | 38 | 10 |
+| Navigation structure | M1 | 48 | 37 | 11 |
 | Design system | M1 | 36 | 35 | 1 |
-| Absolute quality rules | All | 20 | 10 | 10 |
+| Absolute quality rules | All | 20 | 8 | 12 |
 
 ## Features with progress and evidence
 
@@ -1242,6 +1242,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/cash-flow-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/cash-flow
 
+### AGENT-060 — Provide an emergency stop and tenant-wide AI disable controls
+
+- Module: Multi-agent AI finance workforce
+- Status: **Implementing**
+- Notes: Tenant-wide switch for the copilot exists; there is no platform-wide emergency stop other than removing the API key, and no AI agents yet.
+- Evidence:
+  - apps/api/src/copilot
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/copilot-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/copilot
+  - packages/database/prisma/migrations/20261102090000_ai_copilot
+
 ### WFLOW-006 — Approval workflows
 
 - Module: Autonomous financial workflows
@@ -1355,6 +1367,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/alerts.e2e.test.ts
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
+
+### AUDIT-016 — AI action history
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Copilot conversations keep each answer with the reports it read; finished messages cannot be changed (database trigger).
+- Evidence:
+  - apps/api/src/copilot
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/copilot-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/copilot
+  - packages/database/prisma/migrations/20261102090000_ai_copilot
 
 ### AUDIT-024 — Approval status
 
@@ -1671,6 +1695,30 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries
   - zod schemas on every endpoint
 
+### SEC-032 — AI action logging
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Copilot: every question and answer is in the audit trail (who, outcome, tools used, model that answered, tokens); answers keep the exact exchange with the model.
+- Evidence:
+  - apps/api/src/copilot
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/copilot-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/copilot
+  - packages/database/prisma/migrations/20261102090000_ai_copilot
+
+### SEC-033 — AI usage controls
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Copilot: off per organisation until an owner or admin turns it on (copilot.use to ask, org.manage to switch), at most 60 questions per member per hour, a step limit and a time limit per answer.
+- Evidence:
+  - apps/api/src/copilot
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/copilot-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/copilot
+  - packages/database/prisma/migrations/20261102090000_ai_copilot
+
 ### SEC-035 — Cross-tenant data leakage tests
 
 - Module: Security and enterprise governance
@@ -1980,6 +2028,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src
 
+### NAV-004 — AI Finance Copilot
+
+- Module: Navigation structure
+- Status: **Integration pending**
+- Notes: Copilot screen with saved conversations; answers come from read-only tools over the books (P&L, balance sheet, trial balance, ageing, KPIs, management report, cash-flow forecast, budget vs actual, alerts, compliance calendar) and list the reports used. Runs on Anthropic's Claude API through the official SDK; tested end to end against a local stand-in for the API. Not yet run against the live API: waiting for ANTHROPIC_API_KEY.
+- Evidence:
+  - apps/api/src/copilot
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/copilot-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/copilot
+  - packages/database/prisma/migrations/20261102090000_ai_copilot
+
 ### NAV-005 — Accounting
 
 - Module: Navigation structure
@@ -2073,6 +2133,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src
 
+### RULE-005 — Do not claim AI functionality when only a static response exists
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: Without an API key the copilot says it is not set up and sends nothing; it never shows canned answers. Tests use a scripted stand-in model that is never reachable from the app.
+- Evidence:
+  - apps/api/src/copilot
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/copilot-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/copilot
+  - packages/database/prisma/migrations/20261102090000_ai_copilot
+
 ### RULE-009 — Do not store secrets in source code
 
 - Module: Absolute quality rules
@@ -2087,6 +2159,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts
+
+### RULE-011 — Do not permit unauthorized AI financial actions
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: The copilot has read-only tools only; a call to any other tool is refused and reported back to the model.
+- Evidence:
+  - apps/api/src/copilot
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/copilot-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/copilot
+  - packages/database/prisma/migrations/20261102090000_ai_copilot
 
 ### RULE-012 — Do not use floating-point arithmetic for financial postings
 

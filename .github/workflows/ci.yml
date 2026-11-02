@@ -52,6 +52,10 @@ jobs:
           # The web proxy is one hop; browser suites sign in many times from one address.
           TRUST_PROXY_HOPS: 1
           RATE_LIMIT_AUTH_PER_MINUTE: 1000
+          # The copilot browser test drives the real Anthropic SDK against a local stand-in
+          # for the Messages API (test-support/anthropic-stand-in.mjs); nothing reaches Anthropic.
+          ANTHROPIC_API_KEY: ci-stand-in-key-not-real
+          ANTHROPIC_BASE_URL: http://127.0.0.1:4555
         run: |
           (cd apps/api && node dist/main.js > /tmp/api.log 2>&1 &)
           (cd apps/web && npx next start -p 3000 > /tmp/web.log 2>&1 &)

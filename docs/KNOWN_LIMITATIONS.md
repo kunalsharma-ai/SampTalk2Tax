@@ -81,6 +81,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run on request or when alerts are opened and the last run is over an hour old: no background schedule, and no email, push or chat notifications. No assignment, due dates or snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
 
+## AI copilot (M4, slice 5)
+
+* Not yet run against the live Claude API: no `ANTHROPIC_API_KEY` has been provided. The full path up to the HTTP call is tested with the official SDK against a local stand-in. Answers appear whole when finished (no streaming of text). Read-only questions only: no drafting of journals, invoices, reminders or filings, no document reading, no web search, no payroll. No platform screen for the model or spend; per-member hourly limit only. Answers come from tool results but a language model can still misread or miscalculate, so the screen asks members to check the linked reports. English only. See [`AI_COPILOT.md`](AI_COPILOT.md).
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

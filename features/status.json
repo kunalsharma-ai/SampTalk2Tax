@@ -1832,6 +1832,83 @@
         "apps/web/src/app/orgs/[orgId]/alerts"
       ],
       "notes": "Nine checks run on demand and automatically when alerts are opened and the last run is over an hour old, ordered by severity. No background schedule or notifications yet."
+    },
+    "NAV-004": {
+      "status": "Integration pending",
+      "evidence": [
+        "apps/api/src/copilot",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/copilot-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/copilot",
+        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+      ],
+      "notes": "Copilot screen with saved conversations; answers come from read-only tools over the books (P&L, balance sheet, trial balance, ageing, KPIs, management report, cash-flow forecast, budget vs actual, alerts, compliance calendar) and list the reports used. Runs on Anthropic's Claude API through the official SDK; tested end to end against a local stand-in for the API. Not yet run against the live API: waiting for ANTHROPIC_API_KEY."
+    },
+    "SEC-033": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/copilot-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/copilot",
+        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+      ],
+      "notes": "Copilot: off per organisation until an owner or admin turns it on (copilot.use to ask, org.manage to switch), at most 60 questions per member per hour, a step limit and a time limit per answer."
+    },
+    "SEC-032": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/copilot-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/copilot",
+        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+      ],
+      "notes": "Copilot: every question and answer is in the audit trail (who, outcome, tools used, model that answered, tokens); answers keep the exact exchange with the model."
+    },
+    "AUDIT-016": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/copilot-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/copilot",
+        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+      ],
+      "notes": "Copilot conversations keep each answer with the reports it read; finished messages cannot be changed (database trigger)."
+    },
+    "RULE-005": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/copilot-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/copilot",
+        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+      ],
+      "notes": "Without an API key the copilot says it is not set up and sends nothing; it never shows canned answers. Tests use a scripted stand-in model that is never reachable from the app."
+    },
+    "RULE-011": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/copilot-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/copilot",
+        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+      ],
+      "notes": "The copilot has read-only tools only; a call to any other tool is refused and reported back to the model."
+    },
+    "AGENT-060": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/copilot",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/copilot-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/copilot",
+        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+      ],
+      "notes": "Tenant-wide switch for the copilot exists; there is no platform-wide emergency stop other than removing the API key, and no AI agents yet."
     }
   }
 }
