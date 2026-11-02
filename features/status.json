@@ -1909,6 +1909,116 @@
         "packages/database/prisma/migrations/20261102090000_ai_copilot"
       ],
       "notes": "Tenant-wide switch for the copilot exists; there is no platform-wide emergency stop other than removing the API key, and no AI agents yet."
+    },
+    "WFLOW-001": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/components/workflows/editor.tsx",
+        "apps/web/src/app/orgs/[orgId]/automations",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "Form-based builder: one trigger, conditions that must all hold, and up to five actions (task or webhook). No visual canvas, branches or drag and drop yet."
+    },
+    "WFLOW-002": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/workflows",
+        "packages/accounting-engine/test/workflows.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "Eight triggers read from the audit trail (a transactional outbox): invoice or bill posted, invoice or bill voided, customer payment, vendor payment, manual journal, expense claim submitted, alert opened. A workflow acts only on events after it is turned on."
+    },
+    "WFLOW-004": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/workflows/workflow-runner.service.ts",
+        "apps/api/src/workflows/workflow-facts.ts",
+        "apps/api/test/workflows.e2e.test.ts"
+      ],
+      "notes": "Runner in the API process (WORKFLOW_RUNNER_INTERVAL_SECONDS) with a per-organisation cursor locked FOR UPDATE SKIP LOCKED; one live run per workflow and event, enforced by a unique index."
+    },
+    "WFLOW-005": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/workflows.ts",
+        "packages/accounting-engine/test/workflows.test.ts",
+        "apps/api/test/workflows.e2e.test.ts"
+      ],
+      "notes": "Conditions on the event’s facts (money, text, date, choice), all of which must hold. No either/or branches yet."
+    },
+    "WFLOW-012": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/workflows/webhook.ts",
+        "apps/api/test/webhook.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "POST with JSON, signed HMAC-SHA256 (t2t-signature: t=,v1=), same delivery id and bytes on every retry, 10-second timeout, no redirects. Public https only in production: DNS answers are checked and the connection is pinned to the checked address."
+    },
+    "WFLOW-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/workflows.ts",
+        "packages/accounting-engine/test/workflows.test.ts",
+        "apps/api/test/workflows.e2e.test.ts"
+      ],
+      "notes": "Six attempts: retries after 1 min, 5 min, 30 min, 2 h and 6 h for network errors, timeouts, 408, 429 and 5xx; other answers end the delivery."
+    },
+    "WFLOW-015": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/workflows/workflows.service.ts",
+        "apps/api/test/workflows.e2e.test.ts"
+      ],
+      "notes": "Failed runs say which action failed and why; an owner or admin can send a failed webhook again from the run log. A task for someone who has left fails that action only."
+    },
+    "WFLOW-016": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/workflows/workflows.service.ts",
+        "packages/database/prisma/migrations/20261102120000_workflow_automations",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "A change to trigger, conditions or actions makes a new immutable version (database trigger); runs keep their version; stale edits are refused."
+    },
+    "WFLOW-017": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/workflows/workflows.service.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "Dry run on the latest real event (or a chosen one): facts, each condition with its actual value, and the task each action would create. Webhooks are sent only when asked, marked \"test\": true."
+    },
+    "WFLOW-018": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/app/orgs/[orgId]/automations/[workflowId]",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "Run log per workflow: event, version, conditions, each action with its attempts, answers and timings. Runs and actions are append-only in the database."
+    },
+    "INNOV-006": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/tasks",
+        "apps/web/src/app/orgs/[orgId]/tasks",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "Task queue for people and automations: tasks for a person or a role, due dates, overdue, links to the record, done or cancelled with a note, audit trail. Tasks from AI agents are later work."
+    },
+    "NAV-036": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/app/orgs/[orgId]/automations",
+        "apps/web/e2e/automations-flow.test.mjs"
+      ],
+      "notes": "Automations list, builder, test, run log, versions and webhook signing secret for owners and admins."
     }
   }
 }

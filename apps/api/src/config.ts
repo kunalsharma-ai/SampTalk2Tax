@@ -44,6 +44,21 @@ const schema = z.object({
   COPILOT_MAX_TOOL_ROUNDS: z.coerce.number().int().min(1).max(20).default(8),
   /** Longest the copilot may spend on one answer, in seconds, across all its calls to the model. */
   COPILOT_TURN_TIMEOUT_SECONDS: z.coerce.number().int().min(10).max(900).default(240),
+  /**
+   * Workflow automations. How often the runner looks for new events and due webhooks, in
+   * seconds; 0 turns the background runner off (the tests drive it by hand).
+   */
+  WORKFLOW_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(10),
+  /**
+   * Lets webhooks reach http:// addresses and private, loopback and link-local networks.
+   * Only for local development and tests: in production a webhook must be a public https address.
+   */
+  WEBHOOK_ALLOW_PRIVATE_NETWORKS: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((v) => v === 'true'),
+  /** Longest a webhook delivery may take before it counts as failed, in seconds. */
+  WEBHOOK_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(60).default(10),
 });
 
 export type AppConfig = z.infer<typeof schema>;

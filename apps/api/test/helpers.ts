@@ -25,6 +25,9 @@ export async function bootApp(overrides: Record<string, string> = {}, opts: { co
     ...process.env,
     ANTHROPIC_API_KEY: '',
     ANTHROPIC_BASE_URL: '',
+    // The tests drive the workflow runner by hand, and their webhook receiver is on localhost.
+    WORKFLOW_RUNNER_INTERVAL_SECONDS: '0',
+    WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true',
     NODE_ENV: 'test',
     DATABASE_URL: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET ?? 'test-secret-that-is-long-enough-for-hs256-signing',

@@ -61,6 +61,11 @@ import { EInvoicingController } from './e-invoicing/e-invoicing.controller';
 import { EInvoicingService } from './e-invoicing/e-invoicing.service';
 import { EWayBillsController } from './e-way-bills/e-way-bills.controller';
 import { EWayBillsService } from './e-way-bills/e-way-bills.service';
+import { TasksController } from './tasks/tasks.controller';
+import { TasksService } from './tasks/tasks.service';
+import { WorkflowRunnerService } from './workflows/workflow-runner.service';
+import { WorkflowsController } from './workflows/workflows.controller';
+import { WorkflowsService } from './workflows/workflows.service';
 import { WithholdingController } from './withholding/withholding.controller';
 import { WithholdingService } from './withholding/withholding.service';
 
@@ -102,6 +107,8 @@ export class AppModule {
         CopilotController,
         EInvoicingController,
         EWayBillsController,
+        WorkflowsController,
+        TasksController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -138,6 +145,9 @@ export class AppModule {
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,
         EWayBillsService,
+        TasksService,
+        WorkflowRunnerService,
+        WorkflowsService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
