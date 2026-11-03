@@ -6,6 +6,7 @@ import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from
 import { isoDate, openApi, ZodPipe } from '../common/zod';
 import { parseExportFormat } from '../report-exports/report-exports.service';
 import { ConsolidationService } from './consolidation.service';
+import { IntercompanyService } from './intercompany.service';
 
 const name = z.string().trim().min(1, 'Give it a name').max(120, 'Keep the name under 120 characters');
 const currency = z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code such as INR');
@@ -15,6 +16,23 @@ const CreateBody = z.object({ name, currency: currency.nullish() }).strict();
 const UpdateBody = z.object({ name, currency }).strict();
 const MemberBody = z.object({ orgId: z.uuid('Choose an organisation') }).strict();
 const OwnershipBody = z.object({ ownershipPercent: z.string().regex(/^\d{1,3}(\.\d{1,4})?$/, 'Enter a percentage such as 80 or 66.6667') }).strict();
+const code = z.string().trim().min(1).max(20).nullable();
+const IcAccountsBody = z.object({ receivable: code, payable: code, revenue: code, expense: code }).strict();
+const amount = z.string().regex(/^\d{1,14}(\.\d{1,4})?$/, 'Enter an amount such as 25000.00');
+const IntercompanyBody = z
+  .object({
+    kind: z.enum(['CHARGE', 'SETTLEMENT']),
+    fromOrgId: z.uuid('Choose the first company'),
+    toOrgId: z.uuid('Choose the second company'),
+    date: isoDate,
+    description: z.string().trim().min(1, 'Describe the transaction').max(200, 'Keep the description under 200 characters'),
+    amount,
+    toAmount: amount.nullish(),
+    fromBankCode: z.string().trim().max(20).nullish(),
+    toBankCode: z.string().trim().max(20).nullish(),
+  })
+  .strict();
+const ReverseBody = z.object({ date: isoDate }).strict();
 const RateBody = z.object({ memberOrgId: z.uuid(), periodEnd: isoDate, closing: rate, average: rate, historical: rate }).strict();
 const RuleBody = z.object({ name, left: side, right: side, isActive: z.boolean().optional() }).strict();
 const PeriodQuery = z.object({ from: isoDate, to: isoDate }).strict();
@@ -28,7 +46,10 @@ const ExportQuery = PeriodQuery.extend({ format: z.string().optional() }).strict
 @ApiBearerAuth()
 @Controller('v1/orgs/:orgId/consolidation/groups')
 export class ConsolidationController {
-  constructor(private readonly svc: ConsolidationService) {}
+  constructor(
+    private readonly svc: ConsolidationService,
+    private readonly ic: IntercompanyService,
+  ) {}
 
   @Get()
   @RequirePermission('reports.read')
@@ -119,6 +140,50 @@ export class ConsolidationController {
   @RequirePermission('org.manage')
   deleteRule(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Param('ruleId', ParseUUIDPipe) ruleId: string) {
     return this.svc.deleteRule(org, user, id, ruleId);
+  }
+
+  /** The accounts a company uses for intercompany transactions in this group. */
+  @Put(':groupId/members/:memberOrgId/intercompany-accounts')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(IcAccountsBody) })
+  setIntercompanyAccounts(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: AuthUser,
+    @Param('groupId', ParseUUIDPipe) id: string,
+    @Param('memberOrgId', ParseUUIDPipe) memberOrgId: string,
+    @Body(new ZodPipe(IcAccountsBody)) body: z.infer<typeof IcAccountsBody>,
+  ) {
+    return this.svc.setIntercompanyAccounts(org, user, id, memberOrgId, body);
+  }
+
+  /** Intercompany transactions the user can see (journals.read in both companies). */
+  @Get(':groupId/intercompany')
+  @RequirePermission('reports.read')
+  listIntercompany(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string) {
+    return this.ic.list(org, user.id, id);
+  }
+
+  /** Post a charge or settlement in both companies at once (journals.post in both). */
+  @Post(':groupId/intercompany')
+  @RequirePermission('reports.read')
+  @ApiBody({ schema: openApi(IntercompanyBody) })
+  createIntercompany(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Body(new ZodPipe(IntercompanyBody)) body: z.infer<typeof IntercompanyBody>) {
+    return this.ic.create(org, user, id, body);
+  }
+
+  /** Reverse both entries of an intercompany transaction (journals.reverse in both). */
+  @Post(':groupId/intercompany/:txnId/reverse')
+  @HttpCode(200)
+  @RequirePermission('reports.read')
+  @ApiBody({ schema: openApi(ReverseBody) })
+  reverseIntercompany(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: AuthUser,
+    @Param('groupId', ParseUUIDPipe) id: string,
+    @Param('txnId', ParseUUIDPipe) txnId: string,
+    @Body(new ZodPipe(ReverseBody)) body: z.infer<typeof ReverseBody>,
+  ) {
+    return this.ic.reverse(org, user, id, txnId, body);
   }
 
   /** The consolidation worksheet with consolidated profit and loss and balance sheet. */

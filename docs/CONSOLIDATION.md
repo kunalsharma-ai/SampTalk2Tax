@@ -28,9 +28,44 @@ Reports → Group consolidation, in the parent organisation.
   `consolidation_group.ownership_changed` with the old and new values.
   `PUT …/groups/:groupId/members/:memberOrgId` with `{ "ownershipPercent": "80" }`.
 
+**Intercompany accounts** (per company, in the setup tab): the receivable, payable, revenue and
+expense accounts it uses with other group companies. Each is checked against the company's chart
+(right type, active, posting). Amounts posted through the intercompany ledger (below) are
+eliminated by their exact amounts, so these accounts cannot also be used in an elimination rule,
+and a company's accounts cannot be set while a rule uses one of them.
+`PUT …/groups/:groupId/members/:memberOrgId/intercompany-accounts`.
+
 Intercompany balances need their own accounts. Receivable and payable control accounts (1200,
 2100) mix group and outside customers and cannot be split, so book intercompany amounts to
 dedicated accounts. Manual journals can post to them.
+
+## Intercompany transactions
+
+The Intercompany tab posts a transaction in both companies' books at once:
+
+| Type | First company | Second company |
+| --- | --- | --- |
+| Charge (an invoice for goods, services or fees) | Dr intercompany receivable, Cr intercompany revenue | Dr intercompany expense, Cr intercompany payable |
+| Settlement (the second company pays) | Dr bank, Cr intercompany receivable | Dr intercompany payable, Cr bank |
+
+* `POST …/groups/:groupId/intercompany` with `kind`, `fromOrgId`, `toOrgId`, `date`,
+  `description`, `amount` (first company's currency), `toAmount` (second company's currency, only
+  when the two differ: the amount the second company books, at the rate it used), and for a
+  settlement `fromBankCode` and `toBankCode` (bank or cash accounts). Needs `journals.post` in
+  both companies; companies the user does not belong to are not named in the error.
+* Both journals are posted in **one database transaction**, each with the transaction pointed at
+  its own company (`useOrgInTx`), so each company's row-level security, period locks, account
+  checks, numbering and audit apply exactly as for its own journals. The deferred ledger checks
+  (an entry balances and has at least two lines) are run for each entry before switching to the
+  next company. If the second company's period is locked, nothing is posted in either.
+* The entries have source `INTERCOMPANY` and share a reference (`IC-0001`, numbered per parent
+  organisation). They cannot be reversed on their own: `POST …/intercompany/:id/reverse` with a
+  `date` reverses both (needs `journals.reverse` in both).
+* `GET …/groups/:groupId/intercompany` lists the transactions the user can see (`journals.read`
+  in both companies) with links to each entry, and how many are hidden.
+* A company with intercompany transactions cannot be removed from the group, and the group cannot
+  be deleted. Audited as `intercompany.posted` and `intercompany.reversed` in the parent, and
+  `journal.system_posted` in each company.
 
 ## The consolidation
 
@@ -53,6 +88,12 @@ Method (`packages/accounting-engine/src/consolidation.ts`, `consolidate`):
 3. **Eliminations.** For each active rule, both translated balances are removed. If they do not
    cancel, the difference stays in "Intercompany differences to resolve", so the worksheet still
    balances and the mismatch is visible until the books are corrected.
+   **Intercompany ledger.** Per pair of companies and accounts, the balance still owed at the end
+   date (charges less settlements, reversals counted on their own dates) and the charges within
+   the period are removed by their exact amounts (`intercompanyEliminations`), translated at the
+   closing and average rates. Anything else on those accounts stays in the consolidation. With
+   two currencies, the difference between the two translated sides (exchange movements since
+   booking) shows as an intercompany difference.
 4. **Combining.** Accounts are added up by account code. Every worksheet column sums to zero.
 5. **Statements.** The consolidated profit and loss and balance sheet come from the consolidated
    column. Fully eliminated lines stay on the worksheet but drop off the statements.
@@ -112,7 +153,10 @@ download is audited as `report.exported` with the file's SHA-256.
   outside shareholders' part, plus any goodwill), shown as an intercompany difference.
 * **Combining by code.** Accounts are combined by account code, with no mapping between
   different charts of accounts.
-* **Intercompany transactions.** They are booked by hand in each company. There are no mirrored
-  intercompany invoices yet (ENT-008), and no unrealised profit in stock.
+* **Intercompany transactions.** Charges and settlements are posted as journals, not as sales
+  and purchase documents: there is no tax (GST/VAT) on them, no stock movement, and no unrealised
+  profit in stock. Intercompany balances are not revalued at the closing rate in the companies'
+  own books, so exchange movements show as intercompany differences. Intercompany transactions
+  belong to one group: two groups over the same companies keep separate ledgers.
 * **Rates.** Translation uses one historical rate per member and period end, not per equity
   movement. Rates are entered by hand.

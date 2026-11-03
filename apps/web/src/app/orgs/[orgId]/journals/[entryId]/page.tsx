@@ -105,7 +105,7 @@ export default function JournalDetailPage() {
       </div>
       {j.source !== 'MANUAL' ? (
         <div className="mt-4">
-          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : j.source === 'CLOSE' ? 'an AI-proposed month-end adjustment a person approved' : j.source === 'ASSET' ? 'the fixed asset register' : j.source === 'DEFERRAL' ? 'a prepaid or deferred revenue schedule' : j.source === 'ACCRUAL' ? 'a month-end accrual' : j.source === 'LOAN' ? 'a loan' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
+          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : j.source === 'CLOSE' ? 'an AI-proposed month-end adjustment a person approved' : j.source === 'ASSET' ? 'the fixed asset register' : j.source === 'DEFERRAL' ? 'a prepaid or deferred revenue schedule' : j.source === 'ACCRUAL' ? 'a month-end accrual' : j.source === 'LOAN' ? 'a loan' : j.source === 'INTERCOMPANY' ? 'an intercompany transaction' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
             {j.source === 'PAYROLL'
               ? 'This entry was posted by a pay run or a payroll payment. To correct it, void the payment or the pay run (Payroll → Pay runs).'
               : j.source === 'TAX'
@@ -122,6 +122,8 @@ export default function JournalDetailPage() {
               ? 'Posted from a month-end accrual, which is reversed automatically on the first day of the next month (Accounting → Accruals). To correct it, cancel the accrual there.'
               : j.source === 'LOAN'
               ? 'Posted from a loan: the money received, an installment or a prepayment (Banking → Loans). To correct it, reverse the latest entry on the loan.'
+              : j.source === 'INTERCOMPANY'
+              ? 'Posted together with the matching entry in the other group company, from the intercompany transactions of the group (Reports → Group consolidation). To correct it, reverse the transaction there, which reverses both entries.'
               : j.source === 'BANK'
               ? 'This entry was posted from a bank statement line. To correct it, unmatch that line on the bank account screen, which reverses this entry.'
               : `This entry stays in step with its ${j.source === 'DOCUMENT' ? 'document' : 'payment'}. To correct it, void the ${j.source === 'DOCUMENT' ? 'document' : 'payment'} instead of reversing this journal.`}
