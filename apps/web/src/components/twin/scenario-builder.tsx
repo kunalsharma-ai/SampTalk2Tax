@@ -6,7 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { api } from '@/lib/api';
-import { DRIVER_ORDER, DRIVERS, monthLabel, shiftYm, type Driver, type DriverKind, type Scenario, type TwinRun } from '@/lib/twin';
+import { dimLabel, lineChoices, useDimensions, type DimensionValue } from '@/lib/dimensions';
+import { DRIVER_ORDER, DRIVERS, monthLabel, shiftYm, type Driver, type DriverKind, type Scenario, type TwinRun, type TwinSuggestion } from '@/lib/twin';
 import { TwinCashChart } from './twin-chart';
 
 function useDebounced<T>(value: T, ms = 400): T {
@@ -26,7 +27,26 @@ const withId = (d: Driver): Driver => ({ ...d, id: d.id ?? `d${Date.now().toStri
  * you type (nothing saved), and saving stores only the changes. Projected figures are always
  * labelled hypothetical and drawn apart from the actual months.
  */
-export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { orgId: string; initial: Omit<Scenario, 'id' | 'createdAt' | 'updatedAt'>; scenarioId?: string; canManage: boolean }) {
+export function ScenarioBuilder({
+  orgId,
+  initial,
+  scenarioId,
+  canManage,
+  locked = false,
+  onSaved,
+}: {
+  orgId: string;
+  initial: Pick<Scenario, 'name' | 'description' | 'baselineMonths' | 'horizonMonths' | 'drivers'>;
+  scenarioId?: string;
+  canManage: boolean;
+  /** Waiting for approval or approved: shown read-only until withdrawn or reopened. */
+  locked?: boolean;
+  onSaved?: (s: Scenario) => void;
+}) {
+  const editable = canManage && !locked;
+  const tryable = editable || !scenarioId;
+  const dims = useDimensions();
+  const departments = dims.data?.values.filter((v) => v.type === 'DEPARTMENT');
   const router = useRouter();
   const qc = useQueryClient();
   const [name, setName] = useState(initial.name);
@@ -46,6 +66,7 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
     onSuccess: (s) => {
       setSaved(true);
       void qc.invalidateQueries({ queryKey: ['twin-scenarios', orgId] });
+      onSaved?.(s);
       if (!scenarioId) router.push(`/orgs/${orgId}/planning/twin/${s.id}`);
     },
   });
@@ -57,7 +78,12 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
     setSaved(false);
     setDrivers((ds) => [...ds, withId({ ...DRIVERS[kind].blank })]);
   };
+  const trySuggestion = (x: TwinSuggestion) => {
+    setSaved(false);
+    setDrivers((ds) => (x.replaces !== null ? ds.map((d, j) => (j === x.replaces ? withId({ ...x.drivers[0]!, departmentId: d.departmentId ?? null }) : d)) : [...ds, ...x.drivers.map(withId)]));
+  };
   const r = run.data;
+  const deptName = (id: string | null) => (id ? dimLabel(departments?.find((d) => d.id === id)) || 'Unknown department' : 'No department');
   const c = r?.currency ?? 'INR';
   const firstMonth = r ? shiftYm(r.baseline.toMonth, 1) : null;
   const monthName = (n: number) => (firstMonth ? monthLabel(shiftYm(firstMonth, n - 1)) : `Month ${n}`);
@@ -72,12 +98,12 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
           <Card className="p-4">
             <CardHeader title="Scenario" />
             <div className="grid grid-cols-1 gap-3">
-              <Field label="Name">{(p) => <Input {...p} value={name} onChange={(e) => (setName(e.target.value), setSaved(false))} maxLength={120} disabled={!canManage} />}</Field>
-              <Field label="Description">{(p) => <Input {...p} value={description} onChange={(e) => (setDescription(e.target.value), setSaved(false))} maxLength={1000} disabled={!canManage} />}</Field>
+              <Field label="Name">{(p) => <Input {...p} value={name} onChange={(e) => (setName(e.target.value), setSaved(false))} maxLength={120} disabled={!editable} />}</Field>
+              <Field label="Description">{(p) => <Input {...p} value={description} onChange={(e) => (setDescription(e.target.value), setSaved(false))} maxLength={1000} disabled={!editable} />}</Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Baseline">
                   {(p) => (
-                    <Select {...p} value={baselineMonths} onChange={(e) => (setBaselineMonths(Number(e.target.value) as 3 | 6 | 12), setSaved(false))}>
+                    <Select {...p} value={baselineMonths} disabled={!tryable} onChange={(e) => (setBaselineMonths(Number(e.target.value) as 3 | 6 | 12), setSaved(false))}>
                       <option value={3}>Last 3 months</option>
                       <option value={6}>Last 6 months</option>
                       <option value={12}>Last 12 months</option>
@@ -86,7 +112,7 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
                 </Field>
                 <Field label="Horizon">
                   {(p) => (
-                    <Select {...p} value={horizonMonths} onChange={(e) => (setHorizonMonths(Number(e.target.value)), setSaved(false))}>
+                    <Select {...p} value={horizonMonths} disabled={!tryable} onChange={(e) => (setHorizonMonths(Number(e.target.value)), setSaved(false))}>
                       {[6, 12, 18, 24, 36, 48, 60].map((h) => <option key={h} value={h}>{h} months</option>)}
                     </Select>
                   )}
@@ -98,10 +124,10 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
             <CardHeader title="Changes" description={drivers.length ? 'Each change applies from its month to the end of the horizon unless it says otherwise.' : 'No changes yet: the projection is your business as it is now.'} />
             <ol className="space-y-3" aria-label="Changes">
               {drivers.map((d, i) => (
-                <DriverCard key={d.id} d={d} n={i + 1} horizon={horizonMonths} monthName={monthName} disabled={!canManage} onChange={(p) => update(i, p)} onRemove={() => (setDrivers((ds) => ds.filter((_, j) => j !== i)), setSaved(false))} />
+                <DriverCard key={d.id} d={d} n={i + 1} horizon={horizonMonths} monthName={monthName} departments={departments} disabled={!tryable} onChange={(p) => update(i, p)} onRemove={() => (setDrivers((ds) => ds.filter((_, j) => j !== i)), setSaved(false))} />
               ))}
             </ol>
-            {canManage || !scenarioId ? (
+            {tryable ? (
               <div className="mt-3 flex items-end gap-2">
                 <Field label="Add a change">
                   {(p) => (
@@ -114,10 +140,12 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
               </div>
             ) : null}
           </Card>
-          {canManage ? (
+          {locked ? (
+            <p className="text-sm text-fg-muted">This scenario is {scenarioId ? 'frozen while it is waiting for approval or approved' : 'frozen'}. Withdraw or reopen it to change it.</p>
+          ) : canManage ? (
             <div className="flex items-center gap-3">
               <Button onClick={() => save.mutate()} loading={save.isPending} disabled={!name.trim()}>{scenarioId ? 'Save changes' : 'Save scenario'}</Button>
-              {saved ? <span role="status" className="text-sm text-positive">Saved</span> : null}
+              {saved && !onSaved ? <span role="status" className="text-sm text-positive">Saved</span> : null}
             </div>
           ) : (
             <p className="text-sm text-fg-muted">You can try changes here; saving scenarios needs the scenarios permission.</p>
@@ -166,7 +194,7 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
                       {r.missing.map((m) => (
                         <li key={m.field} className="flex items-start justify-between gap-2">
                           <span>{m.question}</span>
-                          {(m.field === 'TAX_RATE' || m.field === 'INFLATION' || m.field === 'INVESTMENT') && canManage ? (
+                          {(m.field === 'TAX_RATE' || m.field === 'INFLATION' || m.field === 'INVESTMENT') && tryable ? (
                             <Button size="sm" variant="ghost" onClick={() => add(m.field === 'TAX_RATE' ? 'TAX_RATE' : m.field === 'INFLATION' ? 'INFLATION' : 'INVESTMENT')}>
                               Add
                             </Button>
@@ -176,6 +204,30 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
                     </ul>
                   </Card>
                 </div>
+              ) : null}
+              {r.insights && drivers.length ? <ImpactPanel r={r} drivers={drivers} deptName={deptName} /> : null}
+              {r.insights?.suggestions.length ? (
+                <Card className="p-4">
+                  <CardHeader title="Suggested next moves" description="Each one is measured by running this scenario again with it applied. Try one to add it to the changes; nothing is saved until you save." />
+                  <ul className="space-y-3" aria-label="Suggested next moves">
+                    {r.insights.suggestions.map((x) => (
+                      <li key={x.code} className="rounded-md border border-line p-3" aria-label={x.title}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-medium text-fg">{x.title}</div>
+                            <p className="mt-1 text-sm text-fg-muted">{x.message}</p>
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
+                              <span>Net profit <Money value={x.effect.netProfit} currency={c} signed /></span>
+                              <span>Cash at the end <Money value={x.effect.closingCash} currency={c} signed /></span>
+                              <span>{x.effect.cashNegativeFrom ? `Cash still runs out in ${monthLabel(x.effect.cashNegativeFrom)}` : 'Cash stays positive'}</span>
+                            </div>
+                          </div>
+                          {tryable ? <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={() => trySuggestion(x)}>Try this</Button> : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
               ) : null}
               <Card className="overflow-x-auto">
                 <CardHeader title="Projection by month (hypothetical)" />
@@ -219,7 +271,8 @@ export function ScenarioBuilder({ orgId, initial, scenarioId, canManage }: { org
   );
 }
 
-function DriverCard({ d, n, horizon, monthName, disabled, onChange, onRemove }: { d: Driver; n: number; horizon: number; monthName: (n: number) => string; disabled: boolean; onChange: (p: Partial<Driver>) => void; onRemove: () => void }) {
+function DriverCard({ d, n, horizon, monthName, departments, disabled, onChange, onRemove }: { d: Driver; n: number; horizon: number; monthName: (n: number) => string; departments?: DimensionValue[]; disabled: boolean; onChange: (p: Partial<Driver>) => void; onRemove: () => void }) {
+  const choices = lineChoices(departments, 'DEPARTMENT', d.departmentId);
   const meta = DRIVERS[d.kind];
   return (
     <li className="rounded-md border border-line p-3" aria-label={`Change ${n}: ${meta.title}`}>
@@ -281,7 +334,72 @@ function DriverCard({ d, n, horizon, monthName, disabled, onChange, onRemove }: 
             </Field>
           );
         })}
+        {choices.length ? (
+          <Field label="Department">
+            {(p) => (
+              <Select {...p} value={d.departmentId ?? ''} disabled={disabled} onChange={(e) => onChange({ departmentId: e.target.value || null })}>
+                <option value="">No department</option>
+                {choices.map((v) => <option key={v.id} value={v.id}>{dimLabel(v)}</option>)}
+              </Select>
+            )}
+          </Field>
+        ) : null}
       </div>
     </li>
+  );
+}
+
+/** What each change does on its own, the effect of changes acting together, and the total by department. */
+function ImpactPanel({ r, drivers, deptName }: { r: TwinRun; drivers: Driver[]; deptName: (id: string | null) => string }) {
+  const ins = r.insights!;
+  const c = r.currency;
+  const showDepts = ins.departments.some((d) => d.departmentId);
+  return (
+    <Card className="overflow-x-auto">
+      <CardHeader title="What each change does" description="Measured by running the scenario without that one change. Changes can strengthen or offset each other; the difference is shown as acting together." />
+      <Table aria-label="What each change does">
+        <thead><tr><Th>Change</Th>{showDepts ? <Th>Department</Th> : null}<Th numeric>Net profit</Th><Th numeric>Cash at the end</Th><Th numeric>Lowest cash</Th></tr></thead>
+        <tbody>
+          {ins.impacts.map((x) => (
+            <Tr key={x.index}>
+              <Td>{x.index + 1}. {drivers[x.index]?.label || DRIVERS[x.kind]?.title || x.kind}</Td>
+              {showDepts ? <Td className="text-sm">{deptName(x.departmentId)}</Td> : null}
+              <Td numeric><Money value={x.netProfit} currency={c} signed /></Td>
+              <Td numeric><Money value={x.closingCash} currency={c} signed /></Td>
+              <Td numeric><Money value={x.minimumCash} currency={c} signed /></Td>
+            </Tr>
+          ))}
+          {Number(ins.interaction.netProfit) !== 0 || Number(ins.interaction.closingCash) !== 0 ? (
+            <Tr>
+              <Td className="text-fg-muted">Acting together</Td>
+              {showDepts ? <Td /> : null}
+              <Td numeric><Money value={ins.interaction.netProfit} currency={c} signed /></Td>
+              <Td numeric><Money value={ins.interaction.closingCash} currency={c} signed /></Td>
+              <Td />
+            </Tr>
+          ) : null}
+          <Tr>
+            <Td className="font-medium">All changes</Td>
+            {showDepts ? <Td /> : null}
+            <Td numeric className="font-medium"><Money value={ins.total.netProfit} currency={c} signed /></Td>
+            <Td numeric className="font-medium"><Money value={ins.total.closingCash} currency={c} signed /></Td>
+            <Td />
+          </Tr>
+        </tbody>
+      </Table>
+      {showDepts ? (
+        <div className="p-4">
+          <div className="mb-2 text-sm font-medium text-fg">By department</div>
+          <ul className="grid grid-cols-1 gap-2 md:grid-cols-2" aria-label="Effect by department">
+            {ins.departments.map((g) => (
+              <li key={g.departmentId ?? 'none'} className="flex items-center justify-between rounded-md border border-line px-3 py-2 text-sm">
+                <span>{deptName(g.departmentId)} <span className="text-xs text-fg-muted">({g.changes.length} change{g.changes.length === 1 ? '' : 's'})</span></span>
+                <span>Net profit <Money value={g.netProfit} currency={c} signed /></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </Card>
   );
 }
