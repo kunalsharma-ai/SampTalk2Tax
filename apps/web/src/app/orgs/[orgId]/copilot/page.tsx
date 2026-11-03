@@ -1,4 +1,5 @@
 'use client';
+import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, Dialog, EmptyState, Textarea } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -109,7 +110,7 @@ function Copilot() {
       {s && !s.configured ? (
         <div className="mb-6">
           <Alert tone="warning" title="The AI copilot is not set up">
-            This server has no AI provider key. An administrator needs to set <code className="font-mono">ANTHROPIC_API_KEY</code> for the API and restart it. Until then nothing is sent to any AI provider, and no answers can be given. Your earlier conversations stay readable.
+            No Claude API key is set up for this organisation. An owner or admin can add one in <IntegrationsLink />. Until then nothing is sent to any AI provider, and no answers can be given. Your earlier conversations stay readable.
           </Alert>
         </div>
       ) : null}

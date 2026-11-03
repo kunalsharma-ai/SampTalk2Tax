@@ -143,7 +143,7 @@ describe('setting up', () => {
     expect(o).toMatchObject({ aiConfigured: false, aiEnabled: true, emailReady: true, emailFrom: 'Talk2Tax <robot@talk2tax.test>' });
     const r = await bare.http().post(`${borg.base}/collections/runs`).set(owner.auth).expect(503);
     expect(r.body.error).toBe('AI_NOT_CONFIGURED');
-    expect(r.body.message).toContain('ANTHROPIC_API_KEY');
+    expect(r.body.message).toContain('Settings → Integrations');
     expect(await bare.prisma.collectionRun.count({ where: { orgId: borg.orgId } })).toBe(0);
   });
 

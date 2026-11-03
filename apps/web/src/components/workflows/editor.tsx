@@ -1,4 +1,5 @@
 'use client';
+import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Card, CardHeader, Field, Input, Select, Textarea } from '@talk2tax/ui';
 import { useRouter } from 'next/navigation';
@@ -335,7 +336,7 @@ function EmailFields({ a, t, catalogue, onChange }: { a: Extract<Action, { type:
     <div className="grid gap-3">
       {!catalogue.email.ready ? (
         <p className="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning" role="note">
-          Email is not set up on this server yet, so these emails will fail until an administrator sets SMTP_URL and EMAIL_FROM. You can still save and test the workflow.
+          Email is not set up yet, so these emails will fail until an owner or admin adds your mail server in <IntegrationsLink />. You can still save and test the workflow.
         </p>
       ) : null}
       <Field label="To" hint={'contact' in a.to ? `The email address on the ${contactWord.toLowerCase()}'s contact. If it has none, this action fails and says so.` : 'Members get a link to the record at the end of the email.'}>

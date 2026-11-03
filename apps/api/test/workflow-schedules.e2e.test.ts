@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { startSmtpStandIn, type SmtpStandIn } from '../../../test-support/smtp-stand-in.mjs';
 import { tenantStorage } from '../src/common/tenant-context';
 import { loadConfig } from '../src/config';
-import { MailerService } from '../src/workflows/email';
+import { IntegrationsService } from '../src/integrations/integrations.service';
+import { EMAIL_NOT_SET_UP, MailerService } from '../src/workflows/email';
 import { WorkflowRunnerService } from '../src/workflows/workflow-runner.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
 
@@ -82,7 +83,7 @@ describe('building schedule workflows', () => {
     const cat = (await ctx.http().get(`${org.base}/workflows/catalogue`).set(owner.auth).expect(200)).body;
     expect(cat.triggers.filter((t: { kind: string }) => t.kind === 'schedule').map((t: { key: string }) => t.key)).toEqual(['SCHEDULE', 'INVOICE_OVERDUE', 'BILL_DUE_SOON']);
     expect(cat.triggers.find((t: { key: string }) => t.key === 'INVOICE_OVERDUE').emailsContact).toBe(true);
-    expect(cat.email).toEqual({ ready: true, from: 'Talk2Tax <robot@talk2tax.test>' });
+    expect(cat.email).toEqual({ ready: true, from: 'Talk2Tax <robot@talk2tax.test>', source: 'SERVER' });
     expect(cat.schedule.weekdays[0]).toEqual({ value: 1, label: 'Monday' });
   });
 
@@ -322,14 +323,14 @@ describe('on a schedule', () => {
 
 describe('without a mail server', () => {
   it('says email is not set up, and an email action fails with that reason', async () => {
-    const mailer = new MailerService(loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: '', EMAIL_FROM: '' }));
-    expect(mailer.ready).toBe(false);
-    expect(await mailer.send({ to: ['a@b.test'], subject: 's', text: 't', messageId: '<x@y>' })).toMatchObject({ ok: false, retryable: false, error: 'Email is not set up on this server (SMTP_URL and EMAIL_FROM)' });
     expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'smtp://localhost:25', EMAIL_FROM: '' })).toThrow(/EMAIL_FROM is required when SMTP_URL is set/);
     expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'http://mail', EMAIL_FROM: 'a@b' })).toThrow(/SMTP_URL must start with smtp:\/\//);
 
+    // No mail server of the organisation's own and none on the server.
     const appMailer = ctx.app.get(MailerService);
-    const spy = vi.spyOn(appMailer, 'ready', 'get').mockReturnValue(false);
+    const spy = vi.spyOn(ctx.app.get(IntegrationsService), 'mail').mockResolvedValue({ source: 'NONE', from: null });
+    expect(await appMailer.status(org.orgId)).toEqual({ ready: false, from: null, source: 'NONE' });
+    expect(await appMailer.send(org.orgId, { to: ['a@b.test'], subject: 's', text: 't', messageId: '<x@y>' })).toMatchObject({ ok: false, retryable: false, error: EMAIL_NOT_SET_UP });
     try {
       const inv = await invoice('Banyan Retail', '321.00', addDays(T, -3), 'NO-SMTP');
       await tick();
@@ -340,9 +341,9 @@ describe('without a mail server', () => {
       })();
       const run = runs.find((r) => r.link?.label === `Invoice ${inv.number}`)!;
       expect(run.status).toBe('FAILED');
-      expect(run.actions[0]).toMatchObject({ status: 'FAILED', attempts: 0, error: 'Email is not set up on this server (SMTP_URL and EMAIL_FROM)' });
+      expect(run.actions[0]).toMatchObject({ status: 'FAILED', attempts: 0, error: EMAIL_NOT_SET_UP });
       const cat = (await ctx.http().get(`${org.base}/workflows/catalogue`).set(owner.auth).expect(200)).body;
-      expect(cat.email).toEqual({ ready: false, from: null });
+      expect(cat.email).toEqual({ ready: false, from: null, source: 'NONE' });
     } finally {
       spy.mockRestore();
     }

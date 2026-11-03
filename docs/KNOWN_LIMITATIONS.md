@@ -83,7 +83,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## AI copilot (M4, slice 5)
 
-* Not yet run against the live Claude API: no `ANTHROPIC_API_KEY` has been provided. The full path up to the HTTP call is tested with the official SDK against a local stand-in. Answers appear whole when finished (no streaming of text). Read-only questions only: no drafting of journals, invoices, reminders or filings, no document reading, no web search, no payroll. No platform screen for the model or spend; per-member hourly limit only. Answers come from tool results but a language model can still misread or miscalculate, so the screen asks members to check the linked reports. English only. See [`AI_COPILOT.md`](AI_COPILOT.md).
+* Not yet run against the live Claude API: no key has been added yet (Settings → Integrations). The full path up to the HTTP call is tested with the official SDK against a local stand-in. Answers appear whole when finished (no streaming of text). Read-only questions only: no drafting of journals, invoices, reminders or filings, no document reading, no web search, no payroll. No platform screen for the model or spend; per-member hourly limit only. Answers come from tool results but a language model can still misread or miscalculate, so the screen asks members to check the linked reports. English only. See [`AI_COPILOT.md`](AI_COPILOT.md).
 
 ## Month-end close (M5, slice 5)
 
@@ -137,7 +137,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Triggers are events, a schedule (daily, weekly, monthly at a time in India time), an invoice N days overdue and a bill due in N days. No balance or "became true" triggers beyond these (use "An alert opens"), no branches, waits or parallel paths.
 * Actions are tasks, plain-text emails and signed webhooks. No SMS, chat or in-app notifications, no HTML email, attachments (such as the invoice PDF) or reply tracking, no actions that post or approve, no AI agent steps, no custom webhook headers or bodies.
-* Email has been tested only against a local SMTP server: it is waiting for a real SMTP provider (`SMTP_URL`, `EMAIL_FROM`) for a live check. Without them, email actions fail with "Email is not set up". There is no bounce handling, unsubscribe or per-contact opt-out, and no SPF/DKIM set-up guide yet.
+* Email has been tested only against a local SMTP server: it is waiting for a real SMTP provider (added in Settings → Integrations) for a live check. Without them, email actions fail with "Email is not set up". There is no bounce handling, unsubscribe or per-contact opt-out, and no SPF/DKIM set-up guide yet.
 * The runner runs inside the API process (every 10 seconds by default); no separate worker or dead-letter view beyond the run log, and no load test yet.
 * Tasks have no reminders, comments, reassignment or navigation count.
 * See [`WORKFLOW_AUTOMATIONS.md`](WORKFLOW_AUTOMATIONS.md) › Not supported yet.
@@ -171,3 +171,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Financial digital twin (M7 slice 1)
 
 * A monthly driver model on averages of the last 3, 6 or 12 months: no seasonality, no per-customer or per-product detail, no balance sheet beyond cash, receivables and payables, and no GST/VAT cash timing. Tax is a flat rate on positive monthly profit with no loss relief. Loans are EMI only and investments depreciate straight-line. Templates are fixed placeholders, with no AI-written scenarios yet. Scenarios are re-run against the latest actuals each time, with no snapshot of a past run. See [`DIGITAL_TWIN.md`](DIGITAL_TWIN.md).
+
+## Integrations
+
+* Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

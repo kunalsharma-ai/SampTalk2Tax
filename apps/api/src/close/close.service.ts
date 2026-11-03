@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import {
   AdjustmentInput,
@@ -23,7 +24,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
-import { COPILOT_MODEL, CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
+import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { DeferralsService } from '../deferrals/deferrals.service';
 import { JournalsService } from '../journals/journals.service';
 import { TasksService } from '../tasks/tasks.service';
@@ -150,7 +151,7 @@ export class CloseService {
     private readonly tasks: TasksService,
     private readonly deferrals: DeferralsService,
     @Inject(CONFIG) private readonly config: AppConfig,
-    @Optional() @Inject(COPILOT_MODEL) private readonly model: CopilotModel | null,
+    private readonly integrations: IntegrationsService,
   ) {}
 
   // ------------------------------------------------------------------ reading
@@ -177,6 +178,7 @@ export class CloseService {
 
   /** One month's close: the checklist (live, or as certified), the AI review, its entries and the history. */
   async get(org: CloseOrg, periodId: string) {
+    const ai = await this.integrations.ai(org.id);
     const period = await this.period(this.prisma, org.id, periodId);
     const close = await this.prisma.periodClose.findUnique({ where: { periodId } });
     const [settings, certifications, review, adjustments] = await Promise.all([
@@ -203,7 +205,7 @@ export class CloseService {
         return { ...c, link: c.key === 'AI_WAITING' ? null : CHECK_LINK[c.key], task: taskId ? { id: taskId, status: taskBy.get(taskId) ?? 'OPEN' } : null };
       }),
       readiness,
-      ai: { configured: !!this.model, enabled: settings?.enabled ?? false, model: this.config.COPILOT_MODEL, canChangeAi: hasPermission(org.role, 'org.manage'), notice: await this.guard.notice(org.id, 'CLOSE') },
+      ai: { configured: ai.model !== null, enabled: settings?.enabled ?? false, model: ai.modelName, canChangeAi: hasPermission(org.role, 'org.manage'), notice: await this.guard.notice(org.id, 'CLOSE') },
       review: review
         ? {
             id: review.id,
@@ -405,7 +407,8 @@ export class CloseService {
   /** Have the AI model review the month and propose adjusting entries. Runs in the background; nothing is posted. */
   async startReview(org: CloseOrg, actor: Actor, periodId: string) {
     await this.guard.assert(org.id, 'CLOSE');
-    const model = this.model!;
+    const ai = await this.integrations.ai(org.id);
+    const model = ai.model!;
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true, functionalCurrency: true } });
 
     const review = await this.prisma.$transaction(
@@ -423,8 +426,8 @@ export class CloseService {
         }
         const superseded = await tx.closeAdjustment.updateMany({ where: { orgId: org.id, closeId: c.id, status: 'READY' }, data: { status: 'SUPERSEDED' } });
         const context = await this.reviewContext(tx, org, o.name, p, c.id);
-        const r = await tx.closeAiReview.create({ data: { orgId: org.id, closeId: c.id, startedById: actor.id, context: context as unknown as Prisma.InputJsonValue, model: this.config.COPILOT_MODEL } });
-        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'close.review_started', entityType: 'close_ai_review', entityId: r.id, data: { periodId, period: p.name, accounts: context.accounts.length, superseded: superseded.count, model: this.config.COPILOT_MODEL } });
+        const r = await tx.closeAiReview.create({ data: { orgId: org.id, closeId: c.id, startedById: actor.id, context: context as unknown as Prisma.InputJsonValue, model: ai.modelName } });
+        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'close.review_started', entityType: 'close_ai_review', entityId: r.id, data: { periodId, period: p.name, accounts: context.accounts.length, superseded: superseded.count, model: ai.modelName } });
         return { id: r.id, context };
       },
       { timeout: 60_000 },
@@ -546,7 +549,7 @@ export class CloseService {
 
   private providerError(e: unknown): { errorCode: string; errorMessage: string } {
     if (e instanceof Anthropic.APIUserAbortError || e instanceof Anthropic.APIConnectionTimeoutError || (e instanceof Error && e.name === 'TimeoutError')) return { errorCode: 'AI_TIMEOUT', errorMessage: 'The AI provider took too long. Run again.' };
-    if (e instanceof Anthropic.AuthenticationError) return { errorCode: 'AI_KEY_REJECTED', errorMessage: 'The AI provider rejected the API key. An administrator needs to check ANTHROPIC_API_KEY.' };
+    if (e instanceof Anthropic.AuthenticationError) return { errorCode: 'AI_KEY_REJECTED', errorMessage: 'The AI provider rejected the API key. An owner or admin needs to check the key in Settings → Integrations.' };
     if (e instanceof Anthropic.RateLimitError) return { errorCode: 'AI_RATE_LIMITED', errorMessage: 'The AI provider is limiting requests right now. Run again in a minute.' };
     if (e instanceof Anthropic.APIConnectionError) return { errorCode: 'AI_UNREACHABLE', errorMessage: 'The AI provider could not be reached. Run again shortly.' };
     if (e instanceof Anthropic.APIError) {
