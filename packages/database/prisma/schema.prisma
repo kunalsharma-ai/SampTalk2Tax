@@ -2795,15 +2795,17 @@ model ConsolidationGroup {
 }
 
 model ConsolidationMember {
-  id          String             @id @default(uuid()) @db.Uuid
+  id               String             @id @default(uuid()) @db.Uuid
   /// The parent organisation (the group's owner), for row-level security.
-  orgId       String             @map("org_id") @db.Uuid
-  groupId     String             @map("group_id") @db.Uuid
-  memberOrgId String             @map("member_org_id") @db.Uuid
-  addedById   String             @map("added_by_id") @db.Uuid
-  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  group       ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Cascade)
-  memberOrg   Organization       @relation("ConsolidationMemberOrg", fields: [memberOrgId], references: [id], onDelete: Restrict)
+  orgId            String             @map("org_id") @db.Uuid
+  groupId          String             @map("group_id") @db.Uuid
+  memberOrgId      String             @map("member_org_id") @db.Uuid
+  /// The group's share of this organisation; below 100 shows non-controlling interests.
+  ownershipPercent Decimal            @default(100) @map("ownership_percent") @db.Decimal(7, 4)
+  addedById        String             @map("added_by_id") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  group            ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Cascade)
+  memberOrg        Organization       @relation("ConsolidationMemberOrg", fields: [memberOrgId], references: [id], onDelete: Restrict)
 
   @@unique([groupId, memberOrgId])
   @@index([orgId])

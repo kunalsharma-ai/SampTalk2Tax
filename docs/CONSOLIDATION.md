@@ -23,6 +23,10 @@ Reports → Group consolidation, in the parent organisation.
 
   Both accounts are checked against each company's own chart of accounts when the rule is saved.
   A rule can be turned off without deleting it.
+* **Group's share:** each company's ownership percentage (100 by default, up to 4 decimals, above
+  0 and at most 100). The parent always owns itself in full. Changing it is audited as
+  `consolidation_group.ownership_changed` with the old and new values.
+  `PUT …/groups/:groupId/members/:memberOrgId` with `{ "ownershipPercent": "80" }`.
 
 Intercompany balances need their own accounts. Receivable and payable control accounts (1200,
 2100) mix group and outside customers and cannot be split, so book intercompany amounts to
@@ -52,6 +56,12 @@ Method (`packages/accounting-engine/src/consolidation.ts`, `consolidate`):
 4. **Combining.** Accounts are added up by account code. Every worksheet column sums to zero.
 5. **Statements.** The consolidated profit and loss and balance sheet come from the consolidated
    column. Fully eliminated lines stay on the worksheet but drop off the statements.
+6. **Non-controlling interests.** A company owned less than 100% is still consolidated in full.
+   The outside shareholders' share is (100 − ownership)% of the company's translated assets less
+   liabilities, before eliminations, and the same share of its profit for the period, each rounded
+   to the currency's minor unit. The balance sheet splits total equity into "Equity attributable
+   to owners of the parent" and "Non-controlling interests"; the profit and loss splits the
+   group's profit the same way. This is a presentation split only: the worksheet does not change.
 
 The page shows four tabs:
 
@@ -60,7 +70,9 @@ The page shows four tabs:
 * **Balance sheet.**
 * **Companies, rates and rules.**
 
-It also shows the status of each elimination and a translation summary.
+It also shows the status of each elimination, a translation summary and, for partly owned
+companies, the non-controlling interests. Exports carry the same split lines and a note per
+partly owned company.
 
 `GET …/export/worksheet|income-statement|balance-sheet?from&to&format=csv|xlsx|pdf` downloads
 the file with the report-export writers (see [`REPORT_EXPORTS.md`](REPORT_EXPORTS.md)). Each
@@ -92,9 +104,12 @@ download is audited as `report.exported` with the file's SHA-256.
 
 ## Limitations
 
-* **Full consolidation only.** Every member is treated as 100% owned. There are no
-  non-controlling interests (ENT-010), associates or equity accounting. An investment that
-  differs from the subsidiary's capital (goodwill) shows as an intercompany difference.
+* **Full consolidation with a simple non-controlling interest.** The outside share is taken of the
+  subsidiary's reported net assets. Goodwill, fair value adjustments at acquisition, changes in
+  ownership during the period, indirect holdings (a subsidiary of a subsidiary) and associates or
+  equity accounting are not handled. For a partly owned subsidiary, an elimination rule pairing
+  the parent's investment with the subsidiary's full share capital leaves a difference (the
+  outside shareholders' part, plus any goodwill), shown as an intercompany difference.
 * **Combining by code.** Accounts are combined by account code, with no mapping between
   different charts of accounts.
 * **Intercompany transactions.** They are booked by hand in each company. There are no mirrored

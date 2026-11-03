@@ -14827,9 +14827,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts (ownershipPercent, non-controlling net assets and profit)",
+        "PUT v1/orgs/:orgId/consolidation/groups/:groupId/members/:memberOrgId",
+        "apps/web group consolidation page: share column, split lines",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/e2e/consolidation-flow.test.mjs"
+      ],
+      "notes": "Outside share of the subsidiary's reported net assets and profit; no goodwill, fair value adjustments or indirect holdings. See docs/CONSOLIDATION.md."
     },
     {
       "id": "ENT-011",
