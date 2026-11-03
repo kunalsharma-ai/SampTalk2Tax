@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ConsolidationError, checkTranslationRates, consolidate, type ConsolidationAccountBalance, type ConsolidationEntity } from '../src';
+import { ConsolidationError, checkOwnershipPercent, checkTranslationRates, consolidate, type ConsolidationAccountBalance, type ConsolidationEntity } from '../src';
 
 const a = (code: string, name: string, type: ConsolidationAccountBalance['type'], netDebit: string): ConsolidationAccountBalance => ({ code, name, type, netDebit });
 
@@ -133,5 +133,45 @@ describe('consolidation', () => {
     }
     expect(() => consolidate({ currency: 'INR', entities: [], rules: [] })).toThrow(/at least one/);
     expect(checkTranslationRates({ closing: '83.25', average: '82.9', historical: '75' })).toEqual([]);
+  });
+
+  it('shows the outside shareholders of a partly owned entity within equity', () => {
+    const r = consolidate({ currency: 'INR', entities: [parent, { ...sub, ownershipPercent: '80' }], rules: rules.slice(0, 2) });
+    expect(r.balanced).toBe(true);
+    const s = r.entities[1]!;
+    // Sub's net assets: bank 200,000 less payable 100,000; its loss for the period is 100,000.
+    expect(s).toMatchObject({ ownershipPercent: '80', netAssets: '100000.00', nonControllingNetAssets: '20000.00', nonControllingProfit: '-20000.00' });
+    expect(r.entities[0]).toMatchObject({ ownershipPercent: '100', nonControllingNetAssets: '0.00', nonControllingProfit: '0.00' });
+    expect(r.incomeStatement).toMatchObject({ netIncome: '100000.00', attributableToOwners: '120000.00', attributableToNonControlling: '-20000.00' });
+    expect(r.balanceSheet).toMatchObject({ totalEquity: '800000.00', nonControllingInterests: '20000.00', equityAttributableToOwners: '780000.00', balanced: true });
+    // Fully owned: nothing to split.
+    const full = consolidate({ currency: 'INR', entities: [parent, sub], rules });
+    expect(full.balanceSheet.nonControllingInterests).toBe('0.00');
+    expect(full.incomeStatement.attributableToOwners).toBe(full.incomeStatement.netIncome);
+  });
+
+  it('takes the outside share of translated net assets and rounds it', () => {
+    const fze: ConsolidationEntity = {
+      id: 'F',
+      name: 'Trading FZE',
+      currency: 'AED',
+      closing: [a('1120', 'Bank', 'ASSET', '1000.00'), a('3100', 'Share capital', 'EQUITY', '-900.00'), a('4100', 'Sales', 'REVENUE', '-100.00')],
+      period: [a('4100', 'Sales', 'REVENUE', '-100.00')],
+      rates: { closing: '23', average: '22.5', historical: '22' },
+      ownershipPercent: '66.6667',
+    };
+    const r = consolidate({ currency: 'INR', entities: [parent, fze], rules: [] });
+    const f = r.entities[1]!;
+    expect(f.netAssets).toBe('23000.00');
+    expect(f.nonControllingNetAssets).toBe('7666.66'); // 23,000 × 33.3333%
+    expect(f.nonControllingProfit).toBe('750.00'); // 2,250 × 33.3333% = 749.999…
+    expect(r.balanceSheet.balanced).toBe(true);
+  });
+
+  it('checks ownership percentages', () => {
+    expect(checkOwnershipPercent('100')).toEqual([]);
+    expect(checkOwnershipPercent('0.0001')).toEqual([]);
+    for (const bad of ['0', '100.0001', '101', '-5', '50.12345', 'abc', '']) expect(checkOwnershipPercent(bad)).toHaveLength(1);
+    expect(() => consolidate({ currency: 'INR', entities: [parent, { ...sub, ownershipPercent: '0' }], rules: [] })).toThrow(ConsolidationError);
   });
 });

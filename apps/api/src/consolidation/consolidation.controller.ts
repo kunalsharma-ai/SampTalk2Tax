@@ -14,6 +14,7 @@ const side = z.object({ orgId: z.uuid('Choose an organisation'), code: z.string(
 const CreateBody = z.object({ name, currency: currency.nullish() }).strict();
 const UpdateBody = z.object({ name, currency }).strict();
 const MemberBody = z.object({ orgId: z.uuid('Choose an organisation') }).strict();
+const OwnershipBody = z.object({ ownershipPercent: z.string().regex(/^\d{1,3}(\.\d{1,4})?$/, 'Enter a percentage such as 80 or 66.6667') }).strict();
 const RateBody = z.object({ memberOrgId: z.uuid(), periodEnd: isoDate, closing: rate, average: rate, historical: rate }).strict();
 const RuleBody = z.object({ name, left: side, right: side, isActive: z.boolean().optional() }).strict();
 const PeriodQuery = z.object({ from: isoDate, to: isoDate }).strict();
@@ -66,6 +67,19 @@ export class ConsolidationController {
   @ApiBody({ schema: openApi(MemberBody) })
   addMember(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Body(new ZodPipe(MemberBody)) body: z.infer<typeof MemberBody>) {
     return this.svc.addMember(org, user, id, body.orgId);
+  }
+
+  @Put(':groupId/members/:memberOrgId')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(OwnershipBody) })
+  setOwnership(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: AuthUser,
+    @Param('groupId', ParseUUIDPipe) id: string,
+    @Param('memberOrgId', ParseUUIDPipe) memberOrgId: string,
+    @Body(new ZodPipe(OwnershipBody)) body: z.infer<typeof OwnershipBody>,
+  ) {
+    return this.svc.setOwnership(org, user, id, memberOrgId, body.ownershipPercent);
   }
 
   @Delete(':groupId/members/:memberOrgId')

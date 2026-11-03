@@ -5,7 +5,7 @@ import { D, Dec, dec, minorUnits, sum } from './money';
  * Group consolidation: combines the trial balances of several organisations (entities) into one
  * set of statements in the group's presentation currency, with intercompany balances removed.
  *
- * Method (full consolidation, every entity 100% owned):
+ * Method (full consolidation):
  *  1. Each entity supplies its balances at the period end (balance sheet accounts) and its
  *     movements over the period (revenue and expense accounts), as signed net debits.
  *  2. Entities in another currency are translated (IAS 21 style): assets and liabilities at the
@@ -16,6 +16,11 @@ import { D, Dec, dec, minorUnits, sum } from './money';
  *     removed; if they do not cancel, the difference stays in an "intercompany differences" line
  *     so the consolidated trial balance still balances and the mismatch is visible.
  *  4. Accounts are combined by code. Every column of the worksheet sums to zero.
+ *  5. Non-controlling interests: an entity owned less than 100% is still fully consolidated; the
+ *     outside shareholders' share of its translated net assets (and of its profit for the period)
+ *     is shown separately within equity. This is a presentation split: the worksheet is unchanged.
+ *     The share is taken of the entity's own reported net assets; goodwill, fair value adjustments
+ *     and the investment elimination for partly owned entities are not computed.
  */
 
 export interface ConsolidationAccountBalance {
@@ -45,6 +50,8 @@ export interface ConsolidationEntity {
   period: ConsolidationAccountBalance[];
   /** Needed when the entity's currency differs from the presentation currency. */
   rates?: TranslationRates | null;
+  /** The group's share of the entity, as a percentage (up to 4 decimals). Defaults to 100. */
+  ownershipPercent?: string | null;
 }
 
 export interface EliminationRule {
@@ -89,12 +96,34 @@ export interface ConsolidatedLine {
 
 export interface ConsolidationResult {
   currency: string;
-  entities: { id: string; name: string; currency: string; rates: TranslationRates | null; translationReserve: string; netIncome: string }[];
+  entities: {
+    id: string;
+    name: string;
+    currency: string;
+    rates: TranslationRates | null;
+    translationReserve: string;
+    netIncome: string;
+    ownershipPercent: string;
+    /** Translated assets less liabilities, before eliminations. */
+    netAssets: string;
+    /** Outside shareholders' share of netAssets and of netIncome. */
+    nonControllingNetAssets: string;
+    nonControllingProfit: string;
+  }[];
   rows: WorksheetRow[];
   eliminations: EliminationResult[];
   /** Per entity, plus eliminations and consolidated: every column sums to zero. */
   balanced: boolean;
-  incomeStatement: { revenue: ConsolidatedLine[]; expenses: ConsolidatedLine[]; totalRevenue: string; totalExpenses: string; netIncome: string };
+  incomeStatement: {
+    revenue: ConsolidatedLine[];
+    expenses: ConsolidatedLine[];
+    totalRevenue: string;
+    totalExpenses: string;
+    netIncome: string;
+    /** Net income split between the parent's owners and non-controlling interests. */
+    attributableToOwners: string;
+    attributableToNonControlling: string;
+  };
   balanceSheet: {
     assets: ConsolidatedLine[];
     liabilities: ConsolidatedLine[];
@@ -104,6 +133,10 @@ export interface ConsolidationResult {
     totalAssets: string;
     totalLiabilities: string;
     totalEquity: string;
+    /** Part of totalEquity held by outside shareholders of partly owned entities. */
+    nonControllingInterests: string;
+    /** totalEquity less nonControllingInterests. */
+    equityAttributableToOwners: string;
     balanced: boolean;
   };
 }
@@ -128,6 +161,14 @@ export function checkTranslationRates(r: TranslationRates): string[] {
   return issues;
 }
 
+const PERCENT = /^\d{1,3}(\.\d{1,4})?$/;
+
+/** Problems with an ownership percentage: above zero, at most 100, up to 4 decimals. */
+export function checkOwnershipPercent(p: string): string[] {
+  if (!PERCENT.test(p) || dec(p).lte(0) || dec(p).gt(100)) return ['Ownership must be a percentage above 0 and at most 100, with up to 4 decimals'];
+  return [];
+}
+
 const SYNTHETIC: Record<Exclude<WorksheetRowKind, 'ACCOUNT'>, { code: string; name: string }> = {
   EARNINGS_BROUGHT_FORWARD: { code: '', name: 'Earnings brought forward (not yet closed)' },
   TRANSLATION_RESERVE: { code: '', name: 'Foreign currency translation reserve' },
@@ -149,6 +190,7 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
       if (!e.rates) issues.push(`${e.name} keeps its books in ${e.currency}: enter its ${e.currency} to ${currency} rates for the period`);
       else issues.push(...checkTranslationRates(e.rates).map((m) => `${e.name}: ${m}`));
     }
+    if (e.ownershipPercent != null) issues.push(...checkOwnershipPercent(e.ownershipPercent).map((m) => `${e.name}: ${m}`));
   }
   if (issues.length) throw new ConsolidationError('The group cannot be consolidated yet', issues);
 
@@ -172,9 +214,11 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
     const pnlClosing = new Map<string, Dec>();
     let columnTotal = new D(0);
     let netIncome = new D(0);
+    let netAssets = new D(0);
     for (const a of e.closing) {
       if (isBalanceSheetType(a.type)) {
         const amount = round(dec(a.netDebit).times(a.type === 'EQUITY' ? rate('historical') : rate('closing')));
+        if (a.type !== 'EQUITY') netAssets = netAssets.plus(amount);
         const r = row(a.code, () => ({ kind: 'ACCOUNT', code: a.code, name: a.name, type: a.type }));
         r.amounts[i] = r.amounts[i]!.plus(amount);
         columnTotal = columnTotal.plus(amount);
@@ -206,7 +250,20 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
       const r = synthetic('TRANSLATION_RESERVE');
       r.amounts[i] = r.amounts[i]!.plus(reserve);
     }
-    outEntities.push({ id: e.id, name: e.name, currency: e.currency, rates: same ? null : e.rates!, translationReserve: fmt(reserve), netIncome: fmt(netIncome) });
+    const owned = dec(e.ownershipPercent ?? '100');
+    const outside = new D(100).minus(owned).div(100);
+    outEntities.push({
+      id: e.id,
+      name: e.name,
+      currency: e.currency,
+      rates: same ? null : e.rates!,
+      translationReserve: fmt(reserve),
+      netIncome: fmt(netIncome),
+      ownershipPercent: owned.toFixed(),
+      netAssets: fmt(netAssets),
+      nonControllingNetAssets: fmt(round(netAssets.times(outside))),
+      nonControllingProfit: fmt(round(netIncome.times(outside))),
+    });
   });
 
   // Eliminations.
@@ -271,6 +328,8 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
   const totalAssets = sum(assets.map((l) => dec(l.amount)));
   const totalLiabilities = sum(liabilities.map((l) => dec(l.amount)));
   const totalEquity = sum(equity.map((l) => dec(l.amount))).plus(netIncome);
+  const nci = sum(outEntities.map((e) => dec(e.nonControllingNetAssets)));
+  const nciProfit = sum(outEntities.map((e) => dec(e.nonControllingProfit)));
 
   return {
     currency,
@@ -278,7 +337,15 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
     rows: outRows,
     eliminations,
     balanced: columnsZero,
-    incomeStatement: { revenue, expenses, totalRevenue: fmt(totalRevenue), totalExpenses: fmt(totalExpenses), netIncome: fmt(netIncome) },
+    incomeStatement: {
+      revenue,
+      expenses,
+      totalRevenue: fmt(totalRevenue),
+      totalExpenses: fmt(totalExpenses),
+      netIncome: fmt(netIncome),
+      attributableToOwners: fmt(netIncome.minus(nciProfit)),
+      attributableToNonControlling: fmt(nciProfit),
+    },
     balanceSheet: {
       assets,
       liabilities,
@@ -287,6 +354,8 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
       totalAssets: fmt(totalAssets),
       totalLiabilities: fmt(totalLiabilities),
       totalEquity: fmt(totalEquity),
+      nonControllingInterests: fmt(nci),
+      equityAttributableToOwners: fmt(totalEquity.minus(nci)),
       balanced: totalAssets.equals(totalLiabilities.plus(totalEquity)),
     },
   };
