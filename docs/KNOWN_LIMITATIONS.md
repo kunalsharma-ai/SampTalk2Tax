@@ -167,3 +167,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Documents from Directive Part 48 not written yet
 `TAX_ENGINE.md`, `AI_AGENT_ARCHITECTURE.md`, `AI_SAFETY_AND_GOVERNANCE.md`, `FINANCIAL_DIGITAL_TWIN.md`, `WORKFLOW_ENGINE.md`, `INTEGRATION_ARCHITECTURE.md`, `DESIGN_SYSTEM.md`, `DASHBOARD_SPECIFICATIONS.md`, `PRICING_STRATEGY.md`. They will be written with the milestone that builds each area rather than as speculative stubs.
+
+## Financial digital twin (M7 slice 1)
+
+* A monthly driver model on averages of the last 3, 6 or 12 months: no seasonality, no per-customer or per-product detail, no balance sheet beyond cash, receivables and payables, and no GST/VAT cash timing. Tax is a flat rate on positive monthly profit with no loss relief. Loans are EMI only and investments depreciate straight-line. Templates are fixed placeholders, with no AI-written scenarios yet. Scenarios are re-run against the latest actuals each time, with no snapshot of a past run. See [`DIGITAL_TWIN.md`](DIGITAL_TWIN.md).

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1046 |
+| Not started | 1019 |
 | Designed | 0 |
 | Implementing | 54 |
 | Implemented | 31 |
-| Tested | 204 |
+| Tested | 231 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -34,7 +34,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Expense management | M2 | 27 | 19 | 8 |
 | Treasury management | M6 | 28 | 23 | 5 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
-| Financial digital twin | M7 | 28 | 28 | 0 |
+| Financial digital twin | M7 | 28 | 1 | 27 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
@@ -1428,6 +1428,411 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/cash-flow.e2e.test.ts
   - apps/web/e2e/cash-flow-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+
+### TWIN-002 — Create a simulation environment representing an organization's financial structure and operating drivers
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Monthly driver model built from the last 3, 6 or 12 months of posted figures: revenue as volume x price x exchange rate, cost of sales following volume, payroll, other costs, receivables and payables days, cash, and tax.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-003 — Revenue simulations
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Revenue growth per month, from a chosen month.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-004 — Expense simulations
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Expense change by percentage and/or monthly amount on operating costs, payroll or cost of sales.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-005 — Hiring scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: People, monthly cost each, one-off cost each, from a month.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-006 — Expansion scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: One-off cost, running cost, and revenue ramping to full speed.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-007 — Product pricing scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Price change with a volume response; cost of sales follows volume, not price.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-008 — Tax impact scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Income tax rate on profit before tax; losses get no relief (documented simplification). Rate comes from the scenario, else history, else none (asked for).
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-009 — Debt scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: New loan repaid by EMI from the month after; interest through profit, principal through cash.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-010 — Investment scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Asset purchase depreciated straight-line from the month after.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-011 — Supplier cost scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Supplier cost change on cost of sales.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-012 — Customer churn scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Monthly compounding churn on volume.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-013 — Currency fluctuations
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Share of revenue in foreign currency and a rate change.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-014 — Market downturn scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Revenue drop and slower collections, for a number of months or for good.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-015 — Inflation scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Yearly cost inflation compounded monthly.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-016 — Working capital scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Collection and payment days changes, flowing through receivables and payables.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-017 — Identify missing assumptions
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Gaps listed as Inputs to confirm: no tax rate (none in the scenario or history), no revenue in the baseline, no inflation over horizons beyond 12 months, and no investment when hiring five or more people.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-018 — Request necessary inputs
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Each missing input is asked as a question, with an Add button for the change it needs.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-019 — Generate scenarios
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Nine ready-made templates plus a builder with 15 kinds of change. Templates are fixed placeholder figures, not AI-generated.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-020 — Estimate financial consequences
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Monthly projection of revenue, costs, EBITDA, depreciation, interest, tax, net profit, cash flow and closing cash.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-021 — Calculate cash requirements
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Lowest cash, the month cash runs out, and cash to raise to stay above the buffer.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-022 — Estimate profitability
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Net profit and margin over the horizon, and break-even month.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-023 — Identify key risks
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Rule-based risks, each High/Medium/Low: cash runs out (with the amount to raise), cash below the buffer, a loss over the horizon, ending loss-making, thin gross margin, growing receivables, weak loan-payment cover, and a short history.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-024 — Compare alternatives
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Up to five saved scenarios side by side with no change, same baseline and horizon.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-025 — Explain assumptions
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Every change and baseline figure explained in words in the Assumptions list.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-026 — Save the scenario
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Saved per organisation with name, description, baseline and horizon; re-run against the latest actuals on every open; audited.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-027 — Simulations must remain separate from actual accounting records
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Scenarios are stored only as inputs in twin_scenarios; nothing posts to the ledger (API and browser tests count journals before and after).
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### TWIN-028 — Provide clear visual differentiation between actual, forecast and hypothetical figures
+
+- Module: Financial digital twin
+- Status: **Tested**
+- Notes: Actual months solid, hypothetical dashed over a shaded band, every projected figure labelled hypothetical. The separate cash-flow forecast stays on its own page and is not overlaid here.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - packages/accounting-engine/test/twin.test.ts
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
 
 ### AGENT-001 — Create a dedicated AI Agent Control Center
 
