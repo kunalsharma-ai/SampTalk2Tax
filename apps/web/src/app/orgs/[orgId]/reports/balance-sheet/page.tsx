@@ -4,6 +4,7 @@ import { Alert, Card, CardHeader, Table, Td, Tr } from '@talk2tax/ui';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { BalancedBadge, DateInput } from '@/components/report-bits';
+import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { today } from '@/lib/format';
@@ -23,7 +24,7 @@ export default function BalanceSheetPage() {
   const total = (t: string, v: string) => <tr><Td className="font-semibold">{t}</Td><Td numeric className="font-semibold"><Money value={v} currency={c} signed /></Td></tr>;
   return (
     <>
-      <PageHeader title="Balance sheet" description="Assets = liabilities + equity, from posted journals up to the date." actions={<><DateInput label="As of" value={asOf} onChange={setAsOf} />{q.data ? <BalancedBadge balanced={q.data.balanced}>Assets = liabilities + equity</BalancedBadge> : null}</>} />
+      <PageHeader title="Balance sheet" description="Assets = liabilities + equity, from posted journals up to the date." actions={<><DateInput label="As of" value={asOf} onChange={setAsOf} />{q.data ? <BalancedBadge balanced={q.data.balanced}>Assets = liabilities + equity</BalancedBadge> : null}<ExportButtons orgId={orgId} report="balance-sheet" params={{ asOf }} /></>} />
       {q.error ? <Alert title="Could not load">{(q.error as Error).message}</Alert> : null}
       {q.data ? (
         <div className="grid gap-6 lg:grid-cols-2">

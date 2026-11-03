@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1057 |
+| Not started | 1054 |
 | Designed | 0 |
 | Implementing | 54 |
 | Implemented | 31 |
-| Tested | 193 |
+| Tested | 196 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 35 | 6 |
+| Advanced financial reporting | M6 | 41 | 32 | 9 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 17 | 0 |
@@ -2165,6 +2165,54 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
   - docs/FINANCIAL_DIMENSIONS.md
+
+### RPT-033 — PDF exports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: PDF export of the trial balance, profit and loss, balance sheet, general ledger, receivables and payables ageing, and profit by department or project from an Export button on each report page. A4 with landscape for wide reports, header row repeated on every page, bold subtotals and totals with rules, notes, footer with page numbers, lakh/crore grouping for INR. Uses the PDF standard fonts, so characters outside Western European scripts print as '?'. Every export is audited (report.exported) with the file's SHA-256.
+- Evidence:
+  - packages/accounting-engine/src/report-export.ts
+  - packages/accounting-engine/test/report-export.test.ts
+  - apps/api/src/report-exports/report-exports.service.ts
+  - apps/api/src/report-exports/pdf.ts
+  - apps/api/src/report-exports/report-exports.controller.ts
+  - apps/api/test/report-exports.e2e.test.ts
+  - apps/web/src/components/reports/export-buttons.tsx
+  - apps/web/e2e/report-exports-flow.test.mjs
+  - docs/REPORT_EXPORTS.md
+
+### RPT-034 — Excel exports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Excel (.xlsx) export of the trial balance, profit and loss, balance sheet, general ledger, receivables and payables ageing, and profit by department or project. Amounts are real numbers with a currency format (lakh/crore grouping chosen per cell for INR, checked in LibreOffice), dates are Excel dates, frozen header, bold totals, notes. Written without dependencies (stored ZIP). Text is never written as a formula.
+- Evidence:
+  - packages/accounting-engine/src/report-export.ts
+  - packages/accounting-engine/test/report-export.test.ts
+  - apps/api/src/report-exports/report-exports.service.ts
+  - apps/api/src/report-exports/pdf.ts
+  - apps/api/src/report-exports/report-exports.controller.ts
+  - apps/api/test/report-exports.e2e.test.ts
+  - apps/web/src/components/reports/export-buttons.tsx
+  - apps/web/e2e/report-exports-flow.test.mjs
+  - docs/REPORT_EXPORTS.md
+
+### RPT-035 — CSV exports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: CSV export of the trial balance, profit and loss, balance sheet, general ledger, receivables and payables ageing, and profit by department or project: UTF-8 with BOM, CRLF, RFC 4180 quoting, amounts as plain decimals, and text that a spreadsheet would run as a formula (=, +, -, @) prefixed with an apostrophe.
+- Evidence:
+  - packages/accounting-engine/src/report-export.ts
+  - packages/accounting-engine/test/report-export.test.ts
+  - apps/api/src/report-exports/report-exports.service.ts
+  - apps/api/src/report-exports/pdf.ts
+  - apps/api/src/report-exports/report-exports.controller.ts
+  - apps/api/test/report-exports.e2e.test.ts
+  - apps/web/src/components/reports/export-buttons.tsx
+  - apps/web/e2e/report-exports-flow.test.mjs
+  - docs/REPORT_EXPORTS.md
 
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 

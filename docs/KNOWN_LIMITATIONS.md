@@ -102,6 +102,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Templates cover invoices and credit notes only. PDFs come from the browser's print dialog; there is no server-made PDF and no invoice PDF on emails yet. The e-signature is an image with a SHA-256 of the signed content, not Aadhaar eSign or a DSC (those need a licensed provider). Country presets summarise the rules and have not been reviewed by a tax professional in each country. No QR codes (India e-invoice QR, UPI), no right-to-left body text, system fonts only, sections reorder with buttons rather than drag and drop. See [`INVOICE_TEMPLATES.md`](INVOICE_TEMPLATES.md).
 
+## Report exports (M6, slice 6)
+
+* PDFs use the standard Helvetica font, so characters outside Western European scripts (Devanagari, Arabic, CJK, the rupee sign) print as `?`; amounts carry no currency symbol. Exports are on request only (no schedules or email), the Excel file holds values without formulas, and KPIs, management reports, budgets and forecasts are not exportable yet. See [`REPORT_EXPORTS.md`](REPORT_EXPORTS.md).
+
 ## Departments and projects (M6, slice 3)
 
 * Two dimensions only (department, project), one of each per line. No location or custom dimensions, required tags per account, cost allocation or splitting a line across projects. Only the profit and loss is split; budgets, the trial balance, balance sheet and general ledger are not. Bank entries, expense claims, payroll, depreciation and deferral releases post untagged, and document tax, receivable and payable lines are not tagged. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md).

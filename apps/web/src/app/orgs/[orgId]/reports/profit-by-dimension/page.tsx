@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Fragment, useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
+import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import type { DimensionType, ProfitByDimension } from '@/lib/dimensions';
@@ -31,7 +32,7 @@ export default function ProfitByDimensionPage() {
       <PageHeader
         title="Profit by department or project"
         description="Revenue and expenses from posted journals, split by the department or project on each line. Lines without one are under Not assigned, so every column adds up to the profit and loss."
-        actions={<><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /></>}
+        actions={<><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /><ExportButtons orgId={orgId} report="profit-by-dimension" params={{ type, from, to, includeInactive: inactive }} /></>}
       />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex gap-2" role="tablist" aria-label="Split by">
