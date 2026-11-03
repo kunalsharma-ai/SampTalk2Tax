@@ -210,6 +210,7 @@ model Organization {
   invoiceTemplates     InvoiceTemplate[]
   consolidationGroups  ConsolidationGroup[]
   consolidatedIn       ConsolidationMember[]   @relation("ConsolidationMemberOrg")
+  twinScenarios        TwinScenario[]
   userSignatures       UserSignature[]
   documentSignatures   DocumentSignature[]
   approvalPolicies     ApprovalPolicy[]
@@ -2903,4 +2904,27 @@ model IntercompanyTransaction {
   @@index([orgId])
   @@index([groupId, date])
   @@map("intercompany_transactions")
+}
+
+/// A what-if scenario in the financial digital twin: the changes (drivers) to play forward from
+/// the organisation's actual figures. Purely hypothetical: nothing here is posted to the books.
+model TwinScenario {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  name           String       @db.VarChar(120)
+  description    String?      @db.VarChar(1000)
+  /// Actual months the baseline averages (3, 6 or 12).
+  baselineMonths Int          @map("baseline_months")
+  horizonMonths  Int          @map("horizon_months")
+  /// The list of drivers, validated by the engine on every save.
+  drivers        Json
+  createdById    String       @map("created_by_id") @db.Uuid
+  updatedById    String       @map("updated_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, name])
+  @@index([orgId])
+  @@map("twin_scenarios")
 }

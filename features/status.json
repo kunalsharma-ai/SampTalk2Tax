@@ -2767,6 +2767,384 @@
         "docs/CONSOLIDATION.md"
       ],
       "notes": "Charges and settlements posted in both companies in one database transaction, reversed together, and eliminated by their exact amounts. Journals only: no GST/VAT, stock or unrealised profit."
+    },
+    "TWIN-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Monthly driver model built from the last 3, 6 or 12 months of posted figures: revenue as volume x price x exchange rate, cost of sales following volume, payroll, other costs, receivables and payables days, cash, and tax."
+    },
+    "TWIN-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Revenue growth per month, from a chosen month."
+    },
+    "TWIN-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Expense change by percentage and/or monthly amount on operating costs, payroll or cost of sales."
+    },
+    "TWIN-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "People, monthly cost each, one-off cost each, from a month."
+    },
+    "TWIN-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "One-off cost, running cost, and revenue ramping to full speed."
+    },
+    "TWIN-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Price change with a volume response; cost of sales follows volume, not price."
+    },
+    "TWIN-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Income tax rate on profit before tax; losses get no relief (documented simplification). Rate comes from the scenario, else history, else none (asked for)."
+    },
+    "TWIN-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "New loan repaid by EMI from the month after; interest through profit, principal through cash."
+    },
+    "TWIN-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Asset purchase depreciated straight-line from the month after."
+    },
+    "TWIN-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Supplier cost change on cost of sales."
+    },
+    "TWIN-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Monthly compounding churn on volume."
+    },
+    "TWIN-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Share of revenue in foreign currency and a rate change."
+    },
+    "TWIN-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Revenue drop and slower collections, for a number of months or for good."
+    },
+    "TWIN-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Yearly cost inflation compounded monthly."
+    },
+    "TWIN-016": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Collection and payment days changes, flowing through receivables and payables."
+    },
+    "TWIN-017": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Gaps listed as Inputs to confirm: no tax rate (none in the scenario or history), no revenue in the baseline, no inflation over horizons beyond 12 months, and no investment when hiring five or more people."
+    },
+    "TWIN-018": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Each missing input is asked as a question, with an Add button for the change it needs."
+    },
+    "TWIN-019": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Nine ready-made templates plus a builder with 15 kinds of change. Templates are fixed placeholder figures, not AI-generated."
+    },
+    "TWIN-020": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Monthly projection of revenue, costs, EBITDA, depreciation, interest, tax, net profit, cash flow and closing cash."
+    },
+    "TWIN-021": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Lowest cash, the month cash runs out, and cash to raise to stay above the buffer."
+    },
+    "TWIN-022": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Net profit and margin over the horizon, and break-even month."
+    },
+    "TWIN-023": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Rule-based risks, each High/Medium/Low: cash runs out (with the amount to raise), cash below the buffer, a loss over the horizon, ending loss-making, thin gross margin, growing receivables, weak loan-payment cover, and a short history."
+    },
+    "TWIN-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Up to five saved scenarios side by side with no change, same baseline and horizon."
+    },
+    "TWIN-025": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Every change and baseline figure explained in words in the Assumptions list."
+    },
+    "TWIN-026": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Saved per organisation with name, description, baseline and horizon; re-run against the latest actuals on every open; audited."
+    },
+    "TWIN-027": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Scenarios are stored only as inputs in twin_scenarios; nothing posts to the ledger (API and browser tests count journals before and after)."
+    },
+    "TWIN-028": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "packages/accounting-engine/test/twin.test.ts",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Actual months solid, hypothetical dashed over a shaded band, every projected figure labelled hypothetical. The separate cash-flow forecast stays on its own page and is not overlaid here."
     }
   }
 }
