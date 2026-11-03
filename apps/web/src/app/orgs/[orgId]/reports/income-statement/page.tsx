@@ -4,6 +4,7 @@ import { Alert, Card, CardHeader, Select, Table, Td, Tr } from '@talk2tax/ui';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
+import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { useDimensions } from '@/lib/dimensions';
@@ -37,7 +38,7 @@ export default function IncomeStatementPage() {
   );
   return (
     <>
-      <PageHeader title="Profit and loss" description="Revenue and expenses from posted journals in the period." actions={<><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /></>} />
+      <PageHeader title="Profit and loss" description="Revenue and expenses from posted journals in the period." actions={<><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /><ExportButtons orgId={orgId} report="income-statement" params={{ from, to, departmentId, projectId }} /></>} />
       {departments.length || projects.length ? (
         <div className="mb-4 flex flex-wrap gap-3">
           {departments.length ? (
