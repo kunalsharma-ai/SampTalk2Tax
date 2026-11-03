@@ -2909,22 +2909,85 @@ model IntercompanyTransaction {
 /// A what-if scenario in the financial digital twin: the changes (drivers) to play forward from
 /// the organisation's actual figures. Purely hypothetical: nothing here is posted to the books.
 model TwinScenario {
-  id             String       @id @default(uuid()) @db.Uuid
-  orgId          String       @map("org_id") @db.Uuid
-  name           String       @db.VarChar(120)
-  description    String?      @db.VarChar(1000)
+  id             String                @id @default(uuid()) @db.Uuid
+  orgId          String                @map("org_id") @db.Uuid
+  name           String                @db.VarChar(120)
+  description    String?               @db.VarChar(1000)
   /// Actual months the baseline averages (3, 6 or 12).
-  baselineMonths Int          @map("baseline_months")
-  horizonMonths  Int          @map("horizon_months")
+  baselineMonths Int                   @map("baseline_months")
+  horizonMonths  Int                   @map("horizon_months")
   /// The list of drivers, validated by the engine on every save.
   drivers        Json
-  createdById    String       @map("created_by_id") @db.Uuid
-  updatedById    String       @map("updated_by_id") @db.Uuid
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  createdById    String                @map("created_by_id") @db.Uuid
+  updatedById    String                @map("updated_by_id") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// War room: where the scenario is in its approval, and its current version number.
+  status         ScenarioStatus        @default(DRAFT)
+  version        Int                   @default(1)
+  submittedById  String?               @map("submitted_by_id") @db.Uuid
+  submittedAt    DateTime?             @map("submitted_at") @db.Timestamptz(6)
+  decidedById    String?               @map("decided_by_id") @db.Uuid
+  decidedAt      DateTime?             @map("decided_at") @db.Timestamptz(6)
+  decisionNote   String?               @map("decision_note") @db.VarChar(1000)
+  org            Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  versions       TwinScenarioVersion[]
+  notes          TwinScenarioNote[]
 
   @@unique([orgId, name])
+  @@unique([id, orgId], map: "twin_scenarios_id_org_key")
   @@index([orgId])
   @@map("twin_scenarios")
+}
+
+enum ScenarioStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+/// Every saved set of inputs of a scenario, kept so earlier versions can be read and restored.
+model TwinScenarioVersion {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  scenarioId     String       @map("scenario_id") @db.Uuid
+  version        Int
+  name           String       @db.VarChar(120)
+  description    String?      @db.VarChar(1000)
+  baselineMonths Int          @map("baseline_months")
+  horizonMonths  Int          @map("horizon_months")
+  drivers        Json
+  /// Why this version exists: CREATED, EDITED or RESTORED (from version n).
+  reason         String       @db.VarChar(40)
+  createdById    String       @map("created_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  scenario       TwinScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([scenarioId, version])
+  @@index([orgId])
+  @@map("twin_scenario_versions")
+}
+
+/// War-room annotations on a scenario, optionally pinned to a projected month or to one change.
+model TwinScenarioNote {
+  id           String       @id @default(uuid()) @db.Uuid
+  orgId        String       @map("org_id") @db.Uuid
+  scenarioId   String       @map("scenario_id") @db.Uuid
+  /// The scenario version the note was written against.
+  version      Int
+  /// 1-based projected month the note is about, if any.
+  month        Int?
+  /// 1-based position of the change the note is about, if any.
+  changeNumber Int?         @map("change_number")
+  body         String       @db.VarChar(2000)
+  authorId     String       @map("author_id") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedById String?      @map("resolved_by_id") @db.Uuid
+  resolvedAt   DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  scenario     TwinScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([scenarioId])
+  @@map("twin_scenario_notes")
 }
