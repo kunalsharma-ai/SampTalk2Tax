@@ -72,6 +72,7 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
       { href: '/reports/general-ledger', label: 'General ledger' },
       { href: '/reports/kpis', label: 'KPIs' },
       { href: '/reports/management', label: 'Management reports' },
+      { href: '/consolidation', label: 'Group consolidation' },
     ],
   },
   {

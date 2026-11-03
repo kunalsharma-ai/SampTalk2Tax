@@ -666,18 +666,18 @@ Part 19 · M6 · priority P2 · depends on: GL
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| ENT-001 |  | capability | Multi-company accounting | Not started |
-| ENT-002 |  | capability | Multi-entity accounting | Not started |
+| ENT-001 |  | capability | Multi-company accounting | Tested |
+| ENT-002 |  | capability | Multi-entity accounting | Tested |
 | ENT-003 |  | capability | Multi-branch management | Not started |
 | ENT-004 |  | capability | Multi-country organizations | Not started |
 | ENT-005 |  | capability | Multi-currency accounting | Not started |
 | ENT-006 |  | capability | Multi-language interfaces | Not started |
-| ENT-007 |  | capability | Consolidated financial statements | Not started |
+| ENT-007 |  | capability | Consolidated financial statements | Tested |
 | ENT-008 |  | capability | Intercompany transactions | Not started |
-| ENT-009 |  | capability | Intercompany elimination | Not started |
+| ENT-009 |  | capability | Intercompany elimination | Tested |
 | ENT-010 |  | capability | Minority interest support | Not started |
-| ENT-011 |  | capability | Foreign currency translation | Not started |
-| ENT-012 |  | capability | Group reporting | Not started |
+| ENT-011 |  | capability | Foreign currency translation | Tested |
+| ENT-012 |  | capability | Group reporting | Tested |
 | ENT-013 |  | capability | Subsidiary reporting | Not started |
 | ENT-014 |  | capability | Financial dimensions | Tested |
 | ENT-015 |  | capability | Revenue recognition | Not started |

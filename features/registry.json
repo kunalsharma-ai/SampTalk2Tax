@@ -14571,9 +14571,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/consolidation/consolidation.service.ts",
+        "apps/api/src/consolidation/consolidation.controller.ts",
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/consolidation",
+        "apps/web/e2e/consolidation-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Each company is its own organisation with its own books; a user can belong to many and switch between them. Companies owned or administered by the same user can now be grouped under a parent for group reporting (see ENT-007)."
     },
     {
       "id": "ENT-002",
@@ -14595,9 +14605,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/consolidation/consolidation.service.ts",
+        "apps/api/src/consolidation/consolidation.controller.ts",
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/consolidation",
+        "apps/web/e2e/consolidation-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Groups of entities owned by a parent organisation: owners and admins add the companies they also own or administer; consolidated reports need report access in every member, and each member's figures are read inside its own tenant context (row-level security applies)."
     },
     {
       "id": "ENT-003",
@@ -14715,9 +14735,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/consolidation/consolidation.service.ts",
+        "apps/api/src/consolidation/consolidation.controller.ts",
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/consolidation",
+        "apps/web/e2e/consolidation-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Consolidation worksheet (per company, eliminations, consolidated) and consolidated profit and loss and balance sheet for any period, combined by account code, with CSV/Excel/PDF export audited with the file hash. Full consolidation only (every member treated as 100% owned)."
     },
     {
       "id": "ENT-008",
@@ -14763,9 +14793,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/consolidation/consolidation.service.ts",
+        "apps/api/src/consolidation/consolidation.controller.ts",
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/consolidation",
+        "apps/web/e2e/consolidation-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Elimination rules pair one member's account with another's (current accounts, intercompany sales and purchases, investment and share capital), checked against each member's chart of accounts. Both balances are removed; a mismatch stays visible in an 'Intercompany differences to resolve' line and the worksheet still balances. Intercompany balances must sit on dedicated accounts (AR/AP control accounts cannot be split)."
     },
     {
       "id": "ENT-010",
@@ -14811,9 +14851,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/consolidation/consolidation.service.ts",
+        "apps/api/src/consolidation/consolidation.controller.ts",
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/consolidation",
+        "apps/web/e2e/consolidation-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Members in another currency are translated with user-entered rates per period end: assets and liabilities at closing, revenue and expenses at average, equity and earnings brought forward at a historical rate, with the difference in a foreign currency translation reserve. Rates are not fetched from a market source."
     },
     {
       "id": "ENT-012",
@@ -14835,9 +14885,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/consolidation/consolidation.service.ts",
+        "apps/api/src/consolidation/consolidation.controller.ts",
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/consolidation",
+        "apps/web/e2e/consolidation-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Group reporting through consolidation groups: worksheet, consolidated P&L and balance sheet, elimination status and translation summary on one page, exportable."
     },
     {
       "id": "ENT-013",

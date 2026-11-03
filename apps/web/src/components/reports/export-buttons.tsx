@@ -16,7 +16,7 @@ const FORMATS: { id: Format; label: string; name: string }[] = [
  * fetched first so a refusal (a bad date, no permission) shows here instead of downloading an
  * error as a file.
  */
-export function ExportButtons({ orgId, report, params, disabled }: { orgId: string; report: ExportableReport; params: Record<string, string | boolean | null | undefined>; disabled?: boolean }) {
+export function ExportButtons({ orgId, report, path, params, disabled }: { orgId: string; report?: ExportableReport; /** Another export endpoint under the organisation, such as consolidation/groups/:id/export/worksheet. */ path?: string; params: Record<string, string | boolean | null | undefined>; disabled?: boolean }) {
   const [busy, setBusy] = useState<Format | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export function ExportButtons({ orgId, report, params, disabled }: { orgId: stri
       const qs = new URLSearchParams();
       for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== '' && v !== false) qs.set(k, String(v));
       qs.set('format', format);
-      const res = await fetch(`/api/t2t/v1/orgs/${orgId}/reports/export/${report}?${qs}`, { headers: { 'x-t2t-csrf': '1' } });
+      const res = await fetch(`/api/t2t/v1/orgs/${orgId}/${path ?? `reports/export/${report}`}?${qs}`, { headers: { 'x-t2t-csrf': '1' } });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const issues: string[] = Array.isArray(body.details?.issues) ? body.details.issues : [];
@@ -37,7 +37,7 @@ export function ExportButtons({ orgId, report, params, disabled }: { orgId: stri
       }
       const blob = await res.blob();
       const cd = res.headers.get('content-disposition') ?? '';
-      const fileName = decodeURIComponent(/filename\*=UTF-8''([^;]+)/.exec(cd)?.[1] ?? `${report}.${format}`);
+      const fileName = decodeURIComponent(/filename\*=UTF-8''([^;]+)/.exec(cd)?.[1] ?? `${report ?? 'report'}.${format}`);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
