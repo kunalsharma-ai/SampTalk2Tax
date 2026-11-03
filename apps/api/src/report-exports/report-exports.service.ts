@@ -41,6 +41,19 @@ export interface ExportedFile {
   sha256: string;
 }
 
+/** Writes a report model as a file in one of the export formats. */
+export async function renderExportFile(model: ExportReport, fmt: ExportFormat): Promise<ExportedFile> {
+  checkExportReport(model);
+  const body = fmt === 'csv' ? Buffer.from(toCsv(model), 'utf8') : fmt === 'xlsx' ? Buffer.from(toXlsx(model)) : await renderReportPdf(model);
+  return { body, sha256: createHash('sha256').update(body).digest('hex'), fileName: exportFileName(model, fmt), contentType: CONTENT_TYPES[fmt] };
+}
+
+export function parseExportFormat(format: string | undefined): ExportFormat {
+  const fmt = (format ?? '').toLowerCase();
+  if (fmt !== 'csv' && fmt !== 'xlsx' && fmt !== 'pdf') throw new DomainError('INVALID_FORMAT', 'Choose a format: csv, xlsx or pdf', HttpStatus.BAD_REQUEST);
+  return fmt;
+}
+
 const d = (iso: string) => formatDate(iso, 'DMY');
 const text = (label: string, width?: number): ExportColumn => ({ label, type: 'text', width });
 const money = (label: string, width = 14): ExportColumn => ({ label, type: 'money', width });
@@ -65,8 +78,7 @@ export class ReportExportService {
       throw new DomainError('NOT_FOUND', `There is no report called ${report}. Reports that export: ${EXPORTABLE_REPORTS.join(', ')}`, HttpStatus.NOT_FOUND);
     }
     const r = report as ExportableReport;
-    const fmt = (format ?? '').toLowerCase();
-    if (fmt !== 'csv' && fmt !== 'xlsx' && fmt !== 'pdf') throw new DomainError('INVALID_FORMAT', 'Choose a format: csv, xlsx or pdf', HttpStatus.BAD_REQUEST);
+    const fmt = parseExportFormat(format);
     if (r === 'receivables-ageing' && !hasPermission(org.role, 'sales.read')) throw new DomainError('FORBIDDEN', `Your role (${org.role}) does not have sales.read`, HttpStatus.FORBIDDEN);
     if (r === 'payables-ageing' && !hasPermission(org.role, 'purchases.read')) throw new DomainError('FORBIDDEN', `Your role (${org.role}) does not have purchases.read`, HttpStatus.FORBIDDEN);
     const parsed = PARAMS[r].safeParse(query);
@@ -79,10 +91,7 @@ export class ReportExportService {
 
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true } });
     const model = await this.build(org, r, params, { orgName: o.name, generatedAt: now.toISOString() });
-    checkExportReport(model);
-    const body = fmt === 'csv' ? Buffer.from(toCsv(model), 'utf8') : fmt === 'xlsx' ? Buffer.from(toXlsx(model)) : await renderReportPdf(model);
-    const sha256 = createHash('sha256').update(body).digest('hex');
-    const fileName = exportFileName(model, fmt);
+    const { body, sha256, fileName } = await renderExportFile(model, fmt);
     await this.prisma.$transaction(async (tx) => {
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'report.exported', entityType: 'report', entityId: null, data: { report: r, format: fmt, params, fileName, bytes: body.length, sha256, rows: model.rows.length } });
     });

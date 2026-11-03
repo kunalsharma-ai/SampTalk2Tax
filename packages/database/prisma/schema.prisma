@@ -202,6 +202,8 @@ model Organization {
   reconciliations      BankReconciliation[]
   attachments          Attachment[]
   invoiceTemplates     InvoiceTemplate[]
+  consolidationGroups  ConsolidationGroup[]
+  consolidatedIn       ConsolidationMember[]   @relation("ConsolidationMemberOrg")
   userSignatures       UserSignature[]
   documentSignatures   DocumentSignature[]
   approvalPolicies     ApprovalPolicy[]
@@ -2769,4 +2771,83 @@ model DocumentSignature {
 
   @@index([orgId, documentId])
   @@map("document_signatures")
+}
+
+/// A group of organisations reported together. Owned by one organisation (the parent), whose
+/// owners and admins set it up; consolidated reports also need access to every member.
+model ConsolidationGroup {
+  id          String                @id @default(uuid()) @db.Uuid
+  orgId       String                @map("org_id") @db.Uuid
+  name        String                @db.VarChar(120)
+  /// Presentation currency of the consolidated statements.
+  currency    String                @db.Char(3)
+  createdById String                @map("created_by_id") @db.Uuid
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  members     ConsolidationMember[]
+  rates       ConsolidationRate[]
+  rules       EliminationRule[]
+
+  @@unique([id, orgId])
+  @@unique([orgId, name])
+  @@map("consolidation_groups")
+}
+
+model ConsolidationMember {
+  id          String             @id @default(uuid()) @db.Uuid
+  /// The parent organisation (the group's owner), for row-level security.
+  orgId       String             @map("org_id") @db.Uuid
+  groupId     String             @map("group_id") @db.Uuid
+  memberOrgId String             @map("member_org_id") @db.Uuid
+  addedById   String             @map("added_by_id") @db.Uuid
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  group       ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Cascade)
+  memberOrg   Organization       @relation("ConsolidationMemberOrg", fields: [memberOrgId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, memberOrgId])
+  @@index([orgId])
+  @@map("consolidation_members")
+}
+
+/// Translation rates for a member keeping its books in another currency, for one period end:
+/// presentation currency per one unit of the member's currency.
+model ConsolidationRate {
+  id          String             @id @default(uuid()) @db.Uuid
+  orgId       String             @map("org_id") @db.Uuid
+  groupId     String             @map("group_id") @db.Uuid
+  memberOrgId String             @map("member_org_id") @db.Uuid
+  periodEnd   DateTime           @map("period_end") @db.Date
+  closing     Decimal            @db.Decimal(22, 10)
+  average     Decimal            @db.Decimal(22, 10)
+  historical  Decimal            @db.Decimal(22, 10)
+  updatedById String             @map("updated_by_id") @db.Uuid
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  group       ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([groupId, memberOrgId, periodEnd])
+  @@index([orgId])
+  @@map("consolidation_rates")
+}
+
+/// Pairs one member's account with another's; both balances are removed on consolidation.
+model EliminationRule {
+  id          String             @id @default(uuid()) @db.Uuid
+  orgId       String             @map("org_id") @db.Uuid
+  groupId     String             @map("group_id") @db.Uuid
+  name        String             @db.VarChar(120)
+  leftOrgId   String             @map("left_org_id") @db.Uuid
+  leftCode    String             @map("left_code") @db.VarChar(20)
+  rightOrgId  String             @map("right_org_id") @db.Uuid
+  rightCode   String             @map("right_code") @db.VarChar(20)
+  isActive    Boolean            @default(true) @map("is_active")
+  createdById String             @map("created_by_id") @db.Uuid
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  group       ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([groupId])
+  @@map("elimination_rules")
 }
