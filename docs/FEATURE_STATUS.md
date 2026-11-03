@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1012 |
+| Not started | 996 |
 | Designed | 0 |
-| Implementing | 54 |
+| Implementing | 56 |
 | Implemented | 31 |
-| Tested | 236 |
+| Tested | 250 |
 | Integration pending | 10 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -48,7 +48,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Advanced financial reporting | M6 | 41 | 32 | 9 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
-| AI financial war room | M7 | 17 | 17 | 0 |
+| AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 11 | 0 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
@@ -2829,6 +2829,238 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Chart animation and CSS transitions are disabled under prefers-reduced-motion.
 - Evidence:
   - apps/web/src
+
+### WAR-001 — Create an immersive collaborative financial planning environment
+
+- Module: AI financial war room
+- Status: **Implementing**
+- Notes: One page per scenario where the team works together: model, impacts, suggestions, notes, versions and approval. Not live: others see changes on reload, with no presence or live cursors.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-002 — Scenario comparison
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Up to five saved scenarios side by side with the no-change baseline, now with approval status and a risk map.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+  - apps/web/src/app/orgs/[orgId]/planning/twin/compare/page.tsx
+
+### WAR-003 — Financial simulations
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Driver-based monthly simulations played forward from the posted books (see the digital twin).
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### WAR-004 — Cash-flow projections
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Monthly closing cash, lowest cash, cash to raise and the month cash runs out, for every scenario.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### WAR-005 — Strategic planning boards
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Planning board: scenarios in Draft, Waiting for approval, Approved and Rejected columns, with version, open notes and who submitted or decided.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+  - apps/web/src/app/orgs/[orgId]/planning/twin/page.tsx
+
+### WAR-006 — Risk maps
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Risk map on the comparison page: each risk the engine finds, by scenario, with its level and details.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+  - apps/web/src/app/orgs/[orgId]/planning/twin/compare/page.tsx
+
+### WAR-008 — Departmental financial impact
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Each change can belong to a department; the war room shows the measured net profit and cash effect of each change and the total by department.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-009 — Investment scenarios
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Investment changes (equipment bought and depreciated) and new loans in scenarios.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### WAR-010 — Business expansion scenarios
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Expansion changes: one-off cost, running costs and revenue ramping up to full speed.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+
+### WAR-011 — Collaborative annotations
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Notes on a scenario, optionally pinned to a projected month and a change, recorded against the version; resolve by the author or a scenario manager, delete by the author; open notes counted on the board.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-012 — Approval workflows
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Submit, withdraw, approve, reject (with a reason) and reopen; frozen while waiting or approved; the submitter cannot decide; new permission scenarios.approve (owners, admins, approvers); every step audited.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-013 — Scenario version history
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Every saved set of inputs is an immutable version with who and why; restoring makes an earlier version the newest.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-014 — Left: Assumptions and controls
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Left column: scenario settings and the changes, each with its department.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-015 — Center: Interactive financial model
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Centre: the projection updating as changes are typed, chart, risks, inputs to confirm, impacts and month table.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-016 — Right: AI recommendations, risks and explanations
+
+- Module: AI financial war room
+- Status: **Implementing**
+- Notes: Suggested next moves (fund the gap, collect sooner, price rise, delay the largest cost, set the tax rate) measured by re-running the model, plus risks and assumptions in words. Rule-based, not written by AI yet.
+- Evidence:
+  - packages/accounting-engine/src/twin-insights.ts
+  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
+  - packages/accounting-engine/test/twin-insights.test.ts
+  - apps/api/test/war-room.e2e.test.ts
+  - apps/web/e2e/war-room-flow.test.mjs
+  - docs/WAR_ROOM.md
+
+### WAR-017 — Executives should be able to compare multiple scenarios simultaneously
+
+- Module: AI financial war room
+- Status: **Tested**
+- Notes: Compare up to five scenarios at once.
+- Evidence:
+  - packages/accounting-engine/src/twin.ts
+  - apps/api/src/twin/twin.service.ts
+  - apps/web/src/components/twin/scenario-builder.tsx
+  - apps/api/test/twin.e2e.test.ts
+  - apps/web/e2e/twin-flow.test.mjs
+  - docs/DIGITAL_TWIN.md
+  - apps/web/src/app/orgs/[orgId]/planning/twin/compare/page.tsx
 
 ### I18N-002 — Multi-currency accounting
 

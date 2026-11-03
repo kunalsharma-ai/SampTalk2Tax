@@ -108,9 +108,19 @@ export function twinInsights(input: Input, full?: TwinResult): TwinInsights {
   if (required.gt(0) && negativeFrom) {
     // Fund the gap with a three-year loan received one month before cash runs out (or at once).
     const month = Math.max(1, firstMonthIndex(negativeFrom) - 1);
-    const amount = required.times(1.1).div(1000).toDecimalPlaces(0, D.ROUND_UP).times(1000);
-    const loan: TwinDriverWithMeta = { kind: 'NEW_DEBT', amount: amount.toFixed(0), annualRatePercent: '11', termMonths: 36, month, label: 'Working capital loan (suggested)' };
-    const e = tryAdd([loan]);
+    // Sized at 1.1 times the shortfall, then raised while the repayments open a new gap (a few
+    // rounds at most), so the suggestion is measured rather than assumed to work.
+    const up = (x: Dec) => x.times(1.1).div(1000).toDecimalPlaces(0, D.ROUND_UP).times(1000);
+    const loanOf = (a: Dec): TwinDriverWithMeta => ({ kind: 'NEW_DEBT', amount: a.toFixed(0), annualRatePercent: '11', termMonths: 36, month, label: 'Working capital loan (suggested)' });
+    let amount = up(required);
+    let loan = loanOf(amount);
+    let r = run([...input.drivers, loan]);
+    for (let i = 0; i < 6 && r.projection.cashNegativeFrom && dec(r.projection.cashRequired).gt(0); i++) {
+      amount = amount.plus(up(dec(r.projection.cashRequired)));
+      loan = loanOf(amount);
+      r = run([...input.drivers, loan]);
+    }
+    const e = effect(r);
     suggestions.push({
       code: 'FUND_GAP',
       title: 'Arrange funding before cash runs out',

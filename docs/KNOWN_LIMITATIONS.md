@@ -172,6 +172,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * A monthly driver model on averages of the last 3, 6 or 12 months: no seasonality, no per-customer or per-product detail, no balance sheet beyond cash, receivables and payables, and no GST/VAT cash timing. Tax is a flat rate on positive monthly profit with no loss relief. Loans are EMI only and investments depreciate straight-line. Templates are fixed placeholders, with no AI-written scenarios yet. Scenarios are re-run against the latest actuals each time, with no snapshot of a past run. See [`DIGITAL_TWIN.md`](DIGITAL_TWIN.md).
 
+## Scenario war room (M7 slice 2)
+
+* Not live: others see changes on reload, with no presence, live cursors or notifications for notes. Suggestions are rules measured on the model, not written by AI. Approving a scenario records a decision only; it does not feed budgets or the cash-flow forecast. Marginal impacts can be a paisa away from the exact cost because totals are rounded separately. See [`WAR_ROOM.md`](WAR_ROOM.md).
+
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

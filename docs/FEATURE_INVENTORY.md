@@ -1055,23 +1055,23 @@ Part 29 · M7 · priority P3 · depends on: VCFO
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| WAR-001 |  | rule | Create an immersive collaborative financial planning environment | Not started |
-| WAR-002 |  | capability | Scenario comparison | Not started |
-| WAR-003 |  | capability | Financial simulations | Not started |
-| WAR-004 |  | capability | Cash-flow projections | Not started |
-| WAR-005 |  | capability | Strategic planning boards | Not started |
-| WAR-006 |  | capability | Risk maps | Not started |
+| WAR-001 |  | rule | Create an immersive collaborative financial planning environment | Implementing |
+| WAR-002 |  | capability | Scenario comparison | Tested |
+| WAR-003 |  | capability | Financial simulations | Tested |
+| WAR-004 |  | capability | Cash-flow projections | Tested |
+| WAR-005 |  | capability | Strategic planning boards | Tested |
+| WAR-006 |  | capability | Risk maps | Tested |
 | WAR-007 |  | capability | Budget simulations | Not started |
-| WAR-008 |  | capability | Departmental financial impact | Not started |
-| WAR-009 |  | capability | Investment scenarios | Not started |
-| WAR-010 |  | capability | Business expansion scenarios | Not started |
-| WAR-011 |  | capability | Collaborative annotations | Not started |
-| WAR-012 |  | capability | Approval workflows | Not started |
-| WAR-013 |  | capability | Scenario version history | Not started |
-| WAR-014 |  | rule | Left: Assumptions and controls | Not started |
-| WAR-015 |  | rule | Center: Interactive financial model | Not started |
-| WAR-016 |  | rule | Right: AI recommendations, risks and explanations | Not started |
-| WAR-017 |  | rule | Executives should be able to compare multiple scenarios simultaneously | Not started |
+| WAR-008 |  | capability | Departmental financial impact | Tested |
+| WAR-009 |  | capability | Investment scenarios | Tested |
+| WAR-010 |  | capability | Business expansion scenarios | Tested |
+| WAR-011 |  | capability | Collaborative annotations | Tested |
+| WAR-012 |  | capability | Approval workflows | Tested |
+| WAR-013 |  | capability | Scenario version history | Tested |
+| WAR-014 |  | rule | Left: Assumptions and controls | Tested |
+| WAR-015 |  | rule | Center: Interactive financial model | Tested |
+| WAR-016 |  | rule | Right: AI recommendations, risks and explanations | Implementing |
+| WAR-017 |  | rule | Executives should be able to compare multiple scenarios simultaneously | Tested |
 
 ## Revenue leakage and profit optimization
 
