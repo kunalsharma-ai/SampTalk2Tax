@@ -26,18 +26,24 @@ export class AnthropicCopilotModel implements CopilotModel {
   readonly provider = 'Anthropic';
   private readonly client: Anthropic;
 
-  constructor(apiKey: string, baseURL?: string) {
+  /** modelName, when given, replaces the model in every request (an organisation's own choice of Claude model). */
+  constructor(
+    apiKey: string,
+    baseURL?: string,
+    private readonly modelName?: string,
+  ) {
     // The SDK retries connection errors, 408, 409, 429 and 5xx with backoff.
     this.client = new Anthropic({ apiKey, maxRetries: 2, ...(baseURL ? { baseURL } : {}) });
   }
 
   async send(request: CopilotRequest, options: { signal: AbortSignal }): Promise<CopilotResponse> {
     // Streamed so a long answer never runs into an HTTP idle timeout; only the final message is used.
-    return this.client.beta.messages.stream(request, { signal: options.signal }).finalMessage();
+    const r = this.modelName ? { ...request, model: this.modelName } : request;
+    return this.client.beta.messages.stream(r, { signal: options.signal }).finalMessage();
   }
 }
 
-/** The configured model, or null when no API key is set (the copilot then reports that it is not set up). */
+/** The server's fallback model from ANTHROPIC_API_KEY, or null. Organisations can set their own key in Settings → Integrations. */
 export function copilotModelFromConfig(config: AppConfig): CopilotModel | null {
   return config.ANTHROPIC_API_KEY ? new AnthropicCopilotModel(config.ANTHROPIC_API_KEY, config.ANTHROPIC_BASE_URL) : null;
 }

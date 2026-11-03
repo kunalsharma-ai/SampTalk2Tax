@@ -67,6 +67,8 @@ import { ReportExportsController } from './report-exports/report-exports.control
 import { ConsolidationController } from './consolidation/consolidation.controller';
 import { ConsolidationService } from './consolidation/consolidation.service';
 import { IntercompanyService } from './consolidation/intercompany.service';
+import { IntegrationsController } from './integrations/integrations.controller';
+import { IntegrationsService } from './integrations/integrations.service';
 import { TwinController } from './twin/twin.controller';
 import { TwinService } from './twin/twin.service';
 import { ReportExportService } from './report-exports/report-exports.service';
@@ -143,6 +145,7 @@ export class AppModule {
         ReportExportsController,
         ConsolidationController,
         TwinController,
+        IntegrationsController,
         SignaturesController,
         DimensionsController,
         EInvoicingController,
@@ -194,6 +197,7 @@ export class AppModule {
         ConsolidationService,
         IntercompanyService,
         TwinService,
+        IntegrationsService,
         DimensionsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,

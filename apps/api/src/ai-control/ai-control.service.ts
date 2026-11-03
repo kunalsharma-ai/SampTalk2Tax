@@ -1,11 +1,12 @@
 import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
+import { IntegrationsService } from '../integrations/integrations.service';
 import { AiAgent } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { AppConfig, CONFIG } from '../config';
-import { COPILOT_MODEL, CopilotModel } from '../copilot/copilot.model';
+import { CopilotModel } from '../copilot/copilot.model';
 import { todayIst } from '../tasks/tasks.service';
 
 type Member = { orgId: string; role: RoleName };
@@ -49,7 +50,7 @@ export class AiControlService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     @Inject(CONFIG) private readonly config: AppConfig,
-    @Optional() @Inject(COPILOT_MODEL) private readonly model: CopilotModel | null,
+    private readonly integrations: IntegrationsService,
   ) {}
 
   // ------------------------------------------------------------------ the guard every agent goes through
@@ -79,7 +80,7 @@ export class AiControlService {
    * agent off or reaching the budget also stops work already running.
    */
   async check(orgId: string, agent: AiAgent): Promise<AgentBlock | null> {
-    if (!this.model) return { code: 'AI_NOT_CONFIGURED', message: 'AI is not set up on this server: an administrator needs to set ANTHROPIC_API_KEY. Nothing was sent anywhere.', status: HttpStatus.SERVICE_UNAVAILABLE };
+    if (!(await this.integrations.ai(orgId)).model) return { code: 'AI_NOT_CONFIGURED', message: 'AI is not set up: an owner or admin can add a Claude API key in Settings → Integrations. Nothing was sent anywhere.', status: HttpStatus.SERVICE_UNAVAILABLE };
     const [s, a] = await Promise.all([
       this.prisma.copilotSettings.findUnique({ where: { orgId } }),
       this.prisma.aiAgentSetting.findUnique({ where: { orgId_agent: { orgId, agent } } }),
@@ -125,6 +126,7 @@ export class AiControlService {
   // ------------------------------------------------------------------ the control center
 
   async overview(member: Member) {
+    const ai = await this.integrations.ai(member.orgId);
     const { orgId } = member;
     const { month, since } = monthStartIst();
     const accuracySince = new Date(Date.now() - ACCURACY_DAYS * 86_400_000);
@@ -199,9 +201,10 @@ export class AiControlService {
     return {
       month,
       accuracyDays: ACCURACY_DAYS,
-      configured: !!this.model,
-      provider: this.model?.provider ?? 'Anthropic',
-      model: this.config.COPILOT_MODEL,
+      configured: ai.model !== null,
+      provider: ai.model?.provider ?? 'Anthropic',
+      model: ai.modelName,
+      source: ai.source,
       enabled: settings?.enabled ?? false,
       stopped: !!settings?.offReason,
       offReason: settings?.offReason ?? null,

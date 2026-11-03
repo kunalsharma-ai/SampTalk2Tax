@@ -63,7 +63,7 @@ A check that already has an open task does not get a second one.
 ## The AI review
 
 1. **Starting.** **Review with AI** needs:
-   * `ANTHROPIC_API_KEY` on the server (`503 AI_NOT_CONFIGURED`);
+   * a Claude key in Settings → Integrations, or the server's `ANTHROPIC_API_KEY` (`503 AI_NOT_CONFIGURED`);
    * AI turned on for the organisation (`409 AI_OFF`);
    * the close started (`409 CLOSE_NOT_STARTED`);
    * the month not closed (`409 CLOSE_CLOSED`) and the period open (`409 PERIOD_NOT_OPEN`).

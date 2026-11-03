@@ -1,4 +1,5 @@
 'use client';
+import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, EmptyState, Stat, cn } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -76,8 +77,8 @@ function Collections() {
       <ErrorAlert title="Drafting did not start" error={start.error} />
       {o && !o.aiConfigured ? (
         <div className="mb-4">
-          <Alert tone="warning" title="AI is not set up on this server">
-            An administrator needs to set <code className="font-mono">ANTHROPIC_API_KEY</code> for the API and restart it. Until then no reminders can be drafted, and nothing is sent to any AI provider. Reminders drafted earlier stay here.
+          <Alert tone="warning" title="AI is not set up yet">
+            An owner or admin can add a Claude API key in <IntegrationsLink />. Until then no reminders can be drafted, and nothing is sent to any AI provider. Reminders drafted earlier stay here.
           </Alert>
         </div>
       ) : null}
@@ -92,8 +93,8 @@ function Collections() {
       ) : null}
       {o && !o.emailReady ? (
         <div className="mb-4">
-          <Alert tone="warning" title="Email is not set up on this server">
-            Reminders can be drafted and reviewed, but not sent until an administrator sets <code className="font-mono">SMTP_URL</code> and <code className="font-mono">EMAIL_FROM</code>.
+          <Alert tone="warning" title="Email is not set up yet">
+            Reminders can be drafted and reviewed, but not sent until an owner or admin adds your mail server in <IntegrationsLink />.
           </Alert>
         </div>
       ) : null}

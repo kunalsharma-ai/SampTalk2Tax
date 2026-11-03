@@ -83,7 +83,7 @@ So every control takes effect on work that is already running, not only on new w
 ## Not built yet
 
 * Money cost. Tokens are tracked, but prices per model are not applied.
-* A platform-wide stop across all organisations. Removing `ANTHROPIC_API_KEY` does that today.
+* A platform-wide stop across all organisations. Removing the server's `ANTHROPIC_API_KEY` stops only organisations without a key of their own.
 * Accuracy against a labelled evaluation set.
 * An orchestrator that hands work between agents.
 * Agents above level 2.

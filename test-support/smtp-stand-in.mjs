@@ -34,6 +34,9 @@ function parse(raw) {
 export async function startSmtpStandIn(port = 0) {
   const messages = [];
   const answers = new Map();
+  /** Logins seen (AUTH PLAIN), and whether to refuse them. */
+  const logins = [];
+  const settings = { refuseLogins: false };
   let queued = 0;
   const server = createServer((socket) => {
     let buf = '';
@@ -83,7 +86,12 @@ export async function startSmtpStandIn(port = 0) {
             if (/^LOGIN/i.test(arg)) {
               mode = 'auth-user';
               reply('334 VXNlcm5hbWU6');
-            } else reply('235 2.7.0 Authentication successful');
+            } else {
+              // AUTH PLAIN with the initial response: base64("\0user\0password").
+              const [, user, pass] = Buffer.from(arg.split(' ')[1] ?? '', 'base64').toString('utf8').split('\0');
+              logins.push({ user, pass });
+              reply(settings.refuseLogins ? '535 5.7.8 Authentication credentials invalid' : '235 2.7.0 Authentication successful');
+            }
             break;
           case 'MAIL':
             tx = { from: /<([^>]*)>/.exec(arg)?.[1] ?? '', to: [] };
@@ -125,5 +133,5 @@ export async function startSmtpStandIn(port = 0) {
   });
   await new Promise((r) => server.listen(port, '127.0.0.1', r));
   const p = server.address().port;
-  return { url: `smtp://127.0.0.1:${p}`, port: p, messages, answers, close: () => new Promise((r) => server.close(() => r())) };
+  return { url: `smtp://127.0.0.1:${p}`, port: p, messages, answers, logins, settings, close: () => new Promise((r) => server.close(() => r())) };
 }

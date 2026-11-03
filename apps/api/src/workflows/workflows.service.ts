@@ -32,7 +32,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { AppConfig, CONFIG } from '../config';
 import { ROLE_LABELS, TasksService } from '../tasks/tasks.service';
-import { MailerService } from './email';
+import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { checkWebhookUrl, WebhookAddressError } from './webhook';
 import { EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, sampleDueDocument } from './workflow-facts';
 import { Attempt, EmailPreview, WorkflowRunnerService } from './workflow-runner.service';
@@ -83,7 +83,7 @@ export class WorkflowsService {
     return {
       triggers: WORKFLOW_TRIGGER_DEFS.map((t) => ({ key: t.key, label: t.label, description: t.description, kind: t.kind, emailsContact: t.emailsContact, facts: t.facts })),
       schedule: { frequencies: SCHEDULE_FREQUENCIES, weekdays: WEEKDAYS.map((label, i) => ({ value: i + 1, label })), timeZone: 'Asia/Kolkata' },
-      email: { ready: this.mailer.ready, from: this.mailer.ready ? (this.config.EMAIL_FROM ?? null) : null },
+      email: await this.mailer.status(orgId),
       operators: Object.fromEntries(Object.entries(CONDITION_OPERATORS).map(([type, ops]) => [type, ops.map((op) => ({ op, label: OPERATOR_LABELS[op] }))])),
       roles: ASSIGNABLE_ROLES.map((r) => ({ role: r, label: ROLE_LABELS[r] })),
       members: members.filter((m) => hasPermission(m.role as RoleName, 'tasks.use')).map((m) => ({ userId: m.userId, name: m.user.name, email: m.user.email, role: m.role })),
@@ -414,7 +414,7 @@ export class WorkflowsService {
           actionRows.push({ id: deliveryId, orgId: org.id, runId, position, type: a.type, status: 'SKIPPED', input: preview as unknown as Prisma.InputJsonValue, finishedAt: now });
           continue;
         }
-        const res = await this.mailer.send({
+        const res = await this.mailer.send(org.id, {
           to: [tester.email],
           subject: `[Test] ${preview.subject}`.slice(0, 200),
           text: `This is a test of the automation "${w.name}". The real email would go to ${preview.recipientLabel}${preview.to.length ? ` (${preview.to.join(', ')})` : ''}${preview.problem ? `, but cannot: ${preview.problem}` : ''}.\n\n${preview.body}`,
@@ -478,7 +478,7 @@ export class WorkflowsService {
       if (a.type === 'SEND_EMAIL') {
         const e = a.input as unknown as EmailPreview;
         if (!e.to?.length) throw new DomainError('NO_RECIPIENTS', `This email has no address to go to (${e.problem ?? 'none found'}). Fix the workflow; later runs use the change.`, HttpStatus.CONFLICT);
-        if (!this.mailer.ready) throw new DomainError('EMAIL_NOT_SET_UP', 'Email is not set up on this server yet', HttpStatus.CONFLICT);
+        if (!(await this.mailer.status(org.id)).ready) throw new DomainError('EMAIL_NOT_SET_UP', EMAIL_NOT_SET_UP, HttpStatus.CONFLICT);
       }
       if (run.status === 'FAILED') await tx.workflowRun.update({ where: { id: runId }, data: { status: 'RUNNING', error: null, finishedAt: null } });
       await tx.workflowActionRun.update({ where: { id: a.id }, data: { status: 'PENDING', nextAttemptAt: new Date(), lockedUntil: null, finishedAt: null } });

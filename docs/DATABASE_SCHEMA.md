@@ -189,3 +189,7 @@ Dimension masters (cost centre, department, project, location), recurring journa
 ## Digital twin (M7 slice 1)
 
 `twin_scenarios`: `org_id`, `name` (unique per organisation), `description`, `baseline_months` (3, 6 or 12), `horizon_months` (1 to 60), `drivers` (a JSON array of at most 50 changes, checked by the engine before saving), created and updated by and at. Forced row-level security on `org_id`. Only inputs are stored; projections are worked out on read and nothing is written to the ledger. See [`DIGITAL_TWIN.md`](DIGITAL_TWIN.md).
+
+## Integrations
+
+`org_integrations`: one row per organisation and kind (`AI_ANTHROPIC`, `EMAIL_SMTP`): `enabled`, `settings` (JSON object, no secrets), `secret_cipher` (base64 of IV, GCM tag and ciphertext) with the `key_id` that sealed it (both set or both null), `secret_hint`, the last test (`test_status` NOT_TESTED/OK/FAILED, message, when and by whom; `tested_at` set exactly when tested), updated by and at. Forced row-level security on `org_id`. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
