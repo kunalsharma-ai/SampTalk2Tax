@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ConsolidationError, D, checkOwnershipPercent, checkTranslationRates, consolidate, formatDate, minorUnits, type ConsolidationEntity, type ConsolidationResult, type ExportFormat, type ExportReport, type ExportRow } from '@talk2tax/accounting-engine';
+import { ConsolidationError, D, checkOwnershipPercent, intercompanyEliminations, checkTranslationRates, consolidate, formatDate, minorUnits, type ConsolidationEntity, type ConsolidationResult, type ExportFormat, type ExportReport, type ExportRow } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -21,6 +21,19 @@ export interface RateInput {
   average: string;
   historical: string;
 }
+export interface IntercompanyAccountsInput {
+  receivable: string | null;
+  payable: string | null;
+  revenue: string | null;
+  expense: string | null;
+}
+const IC_ACCOUNT_TYPES = { receivable: 'ASSET', payable: 'LIABILITY', revenue: 'REVENUE', expense: 'EXPENSE' } as const;
+const IC_LABELS = { receivable: 'receivable', payable: 'payable', revenue: 'revenue', expense: 'expense' } as const;
+type IcMember = { icReceivableCode: string | null; icPayableCode: string | null; icRevenueCode: string | null; icExpenseCode: string | null };
+export function icCodes(m: IcMember): string[] {
+  return [m.icReceivableCode, m.icPayableCode, m.icRevenueCode, m.icExpenseCode].filter((c): c is string => !!c);
+}
+
 export interface RuleInput {
   name: string;
   left: { orgId: string; code: string };
@@ -106,6 +119,7 @@ export class ConsolidationService {
           currency: names.get(m.memberOrgId)?.currency ?? null,
           isParent: m.memberOrgId === g.orgId,
           ownershipPercent: m.ownershipPercent.toFixed(),
+          intercompanyAccounts: { receivable: m.icReceivableCode, payable: m.icPayableCode, revenue: m.icRevenueCode, expense: m.icExpenseCode },
           yourRole: role,
           canReadReports: !!role && hasPermission(role, 'reports.read'),
           addedAt: m.createdAt.toISOString(),
@@ -172,6 +186,9 @@ export class ConsolidationService {
 
   async remove(org: OrgContext, actor: Actor, id: string) {
     const g = await this.group(org, id);
+    if (await this.prisma.intercompanyTransaction.count({ where: { groupId: id, orgId: org.id } })) {
+      throw new DomainError('GROUP_IN_USE', 'This group has intercompany transactions and cannot be deleted', HttpStatus.CONFLICT);
+    }
     await this.prisma.$transaction(async (tx) => {
       await tx.eliminationRule.deleteMany({ where: { groupId: id, orgId: org.id } });
       await tx.consolidationGroup.delete({ where: { id } });
@@ -217,10 +234,44 @@ export class ConsolidationService {
     return this.detail(org, actor.id, id);
   }
 
+  /**
+   * The accounts a company uses for intercompany transactions. Postings to them through the
+   * intercompany ledger are eliminated by their exact amounts, so no elimination rule may use them.
+   */
+  async setIntercompanyAccounts(org: OrgContext, actor: Actor, id: string, memberOrgId: string, input: IntercompanyAccountsInput) {
+    const g = await this.group(org, id);
+    const m = g.members.find((x) => x.memberOrgId === memberOrgId);
+    if (!m) throw new DomainError('NOT_FOUND', 'That organisation is not in the group', HttpStatus.NOT_FOUND);
+    const role = (await this.myRoles(actor.id)).get(memberOrgId);
+    if (!role || !hasPermission(role, 'accounts.read')) throw new DomainError('FORBIDDEN', 'You cannot see the accounts of that organisation', HttpStatus.FORBIDDEN);
+    const issues: string[] = [];
+    const codes = Object.entries(input).filter(([, c]) => c) as [keyof IntercompanyAccountsInput, string][];
+    if (new Set(codes.map(([, c]) => c)).size !== codes.length) issues.push('Use a different account for each purpose');
+    for (const [k, code] of codes) {
+      const acc = await this.asOrg(memberOrgId, async () => await this.prisma.account.findFirst({ where: { orgId: memberOrgId, code } }));
+      if (!acc) issues.push(`There is no account ${code}`);
+      else if (acc.type !== IC_ACCOUNT_TYPES[k]) issues.push(`The ${IC_LABELS[k]} account must be ${IC_ACCOUNT_TYPES[k].toLowerCase()} account; ${code} ${acc.name} is ${acc.type.toLowerCase()}`);
+      else if (!acc.isActive || !acc.isPostable) issues.push(`${code} ${acc.name} is not an active posting account`);
+    }
+    const overlap = g.rules.filter((r) => (r.leftOrgId === memberOrgId && codes.some(([, c]) => c === r.leftCode)) || (r.rightOrgId === memberOrgId && codes.some(([, c]) => c === r.rightCode)));
+    for (const r of overlap) issues.push(`Elimination rule "${r.name}" already uses one of these accounts; delete it first, because intercompany transactions are eliminated by their exact amounts`);
+    if (issues.length) throw new DomainError('VALIDATION_FAILED', issues[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+    const data = { icReceivableCode: input.receivable, icPayableCode: input.payable, icRevenueCode: input.revenue, icExpenseCode: input.expense };
+    await this.prisma.$transaction(async (tx) => {
+      await tx.consolidationMember.update({ where: { groupId_memberOrgId: { groupId: id, memberOrgId } }, data });
+      await tx.consolidationGroup.update({ where: { id }, data: { updatedAt: new Date() } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'consolidation_group.intercompany_accounts_set', entityType: 'consolidation_group', entityId: id, data: { memberOrgId, ...input } });
+    });
+    return this.detail(org, actor.id, id);
+  }
+
   async removeMember(org: OrgContext, actor: Actor, id: string, memberOrgId: string) {
     const g = await this.group(org, id);
     if (memberOrgId === org.id) throw new DomainError('PARENT_MEMBER', 'The parent organisation is always in its own group', HttpStatus.CONFLICT);
     if (!g.members.some((m) => m.memberOrgId === memberOrgId)) throw new DomainError('NOT_FOUND', 'That organisation is not in the group', HttpStatus.NOT_FOUND);
+    if (await this.prisma.intercompanyTransaction.count({ where: { groupId: id, orgId: org.id, OR: [{ fromOrgId: memberOrgId }, { toOrgId: memberOrgId }] } })) {
+      throw new DomainError('MEMBER_IN_USE', 'This company has intercompany transactions in the group and cannot be removed', HttpStatus.CONFLICT);
+    }
     const used = g.rules.filter((r) => r.leftOrgId === memberOrgId || r.rightOrgId === memberOrgId);
     if (used.length) {
       throw new DomainError('MEMBER_IN_USE', 'Delete the elimination rules that use this organisation first', HttpStatus.CONFLICT, { issues: used.map((r) => r.name) });
@@ -264,7 +315,7 @@ export class ConsolidationService {
   }
 
   /** Checks a rule's two accounts exist in their organisations (read in each one's own context). */
-  private async checkRule(g: { members: { memberOrgId: string }[] }, userId: string, input: RuleInput) {
+  private async checkRule(g: { members: ({ memberOrgId: string } & IcMember)[] }, userId: string, input: RuleInput) {
     const roles = await this.myRoles(userId);
     const issues: string[] = [];
     for (const [label, s] of [['first', input.left], ['second', input.right]] as const) {
@@ -281,6 +332,10 @@ export class ConsolidationService {
       if (!acc) issues.push(`The ${label} organisation has no account ${s.code}`);
     }
     if (input.left.orgId === input.right.orgId && input.left.code === input.right.code) issues.push('Pick two different accounts');
+    for (const s of [input.left, input.right]) {
+      const m = g.members.find((x) => x.memberOrgId === s.orgId);
+      if (m && icCodes(m).includes(s.code)) issues.push(`Account ${s.code} is an intercompany account: its intercompany transactions are already eliminated by their exact amounts`);
+    }
     if (issues.length) throw new DomainError('VALIDATION_FAILED', issues[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { issues });
   }
 
@@ -357,12 +412,31 @@ export class ConsolidationService {
         ownershipPercent: m.ownershipPercent.toFixed(),
       });
     }
+    const ic = await this.prisma.intercompanyTransaction.findMany({ where: { groupId: id, orgId: org.id, date: { lte: toDbDate(q.to) } }, orderBy: { number: 'asc' } });
     let result: ConsolidationResult;
     try {
       result = consolidate({
         currency: g.currency,
         entities,
         rules: g.rules.filter((r) => r.isActive).map((r) => ({ id: r.id, name: r.name, left: { entityId: r.leftOrgId, code: r.leftCode }, right: { entityId: r.rightOrgId, code: r.rightCode } })),
+        ledger: intercompanyEliminations(
+          ic.map((t) => ({
+            id: t.id,
+            kind: t.kind,
+            fromEntityId: t.fromOrgId,
+            toEntityId: t.toOrgId,
+            date: fromDbDate(t.date),
+            reversedOn: t.reversedOn ? fromDbDate(t.reversedOn) : null,
+            amount: t.amount.toFixed(),
+            toAmount: t.toAmount.toFixed(),
+            fromReceivableCode: t.fromReceivableCode,
+            toPayableCode: t.toPayableCode,
+            fromRevenueCode: t.fromRevenueCode,
+            toExpenseCode: t.toExpenseCode,
+          })),
+          q,
+          new Map([...names.entries()].map(([k, v]) => [k, v.name])),
+        ),
       });
     } catch (e) {
       if (e instanceof ConsolidationError) throw new DomainError('CONSOLIDATION_BLOCKED', e.message, HttpStatus.UNPROCESSABLE_ENTITY, { issues: e.issues });

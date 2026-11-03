@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
+import { IntercompanyAccountsCard, IntercompanyTab } from '@/components/consolidation/intercompany';
 import { Money } from '@/components/money';
 import { BalancedBadge, DateInput, fyStartFor } from '@/components/report-bits';
 import { ExportButtons } from '@/components/reports/export-buttons';
@@ -16,11 +17,12 @@ import { date, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
-type Tab = 'worksheet' | 'income-statement' | 'balance-sheet' | 'setup';
+type Tab = 'worksheet' | 'income-statement' | 'balance-sheet' | 'intercompany' | 'setup';
 const TABS: [Tab, string][] = [
   ['worksheet', 'Worksheet'],
   ['income-statement', 'Profit and loss'],
   ['balance-sheet', 'Balance sheet'],
+  ['intercompany', 'Intercompany'],
   ['setup', 'Companies, rates and rules'],
 ];
 const KIND_NOTE: Record<RowKind, string | null> = {
@@ -52,7 +54,7 @@ export default function ConsolidationGroupPage() {
             <DateInput label="From" value={from} onChange={setFrom} />
             <DateInput label="To" value={to} onChange={setTo} />
             {r.data ? <BalancedBadge balanced={r.data.balanced && r.data.balanceSheet.balanced}>Balanced</BalancedBadge> : null}
-            {tab !== 'setup' ? <ExportButtons orgId={orgId} path={`consolidation/groups/${groupId}/export/${tab}`} params={{ from, to }} disabled={!r.data} /> : null}
+            {tab !== 'setup' && tab !== 'intercompany' ? <ExportButtons orgId={orgId} path={`consolidation/groups/${groupId}/export/${tab}`} params={{ from, to }} disabled={!r.data} /> : null}
           </>
         }
       />
@@ -65,7 +67,7 @@ export default function ConsolidationGroupPage() {
         <Link href={`/orgs/${orgId}/consolidation`} className="ml-auto self-center text-sm text-accent hover:underline">All groups</Link>
       </div>
       <ErrorAlert title="Could not load the group" error={g.error} />
-      {tab !== 'setup' && r.error ? (
+      {tab !== 'setup' && tab !== 'intercompany' && r.error ? (
         <div className="mb-4">
           <ErrorAlert title="The group cannot be consolidated yet" error={r.error} />
           {manage ? <Button className="mt-2" size="sm" variant="secondary" onClick={() => setTab('setup')}>Open companies, rates and rules</Button> : null}
@@ -74,7 +76,13 @@ export default function ConsolidationGroupPage() {
       {r.data && tab === 'worksheet' ? <Worksheet r={r.data} /> : null}
       {r.data && tab === 'income-statement' ? <IncomeStatement r={r.data} /> : null}
       {r.data && tab === 'balance-sheet' ? <BalanceSheet r={r.data} /> : null}
-      {g.data && tab === 'setup' ? <Setup g={g.data} orgId={orgId} base={base} manage={manage} periodEnd={to} currency={c} /> : null}
+      {g.data && tab === 'intercompany' ? <IntercompanyTab g={g.data} orgId={orgId} base={base} /> : null}
+      {g.data && tab === 'setup' ? (
+        <>
+          <Setup g={g.data} orgId={orgId} base={base} manage={manage} periodEnd={to} currency={c} />
+          <IntercompanyAccountsCard g={g.data} orgId={orgId} base={base} manage={manage} />
+        </>
+      ) : null}
     </>
   );
 }
@@ -125,7 +133,7 @@ function Worksheet({ r }: { r: ConsolidationReport }) {
         </Table>
       </Card>
       <Card className="mb-4 p-4">
-        <CardHeader title="Eliminations" description="Each rule removes both balances. When they do not cancel, the difference stays in Intercompany differences until the books are corrected." />
+        <CardHeader title="Eliminations" description="Rules remove both account balances; intercompany transactions are removed by their exact amounts. When the two sides do not cancel, the difference stays in Intercompany differences until the books are corrected." />
         {!r.eliminations.length ? <EmptyState title="No elimination rules">Add rules under Companies, rates and rules to remove balances between group companies.</EmptyState> : null}
         <ul className="space-y-2" aria-label="Eliminations">
           {r.eliminations.map((e) => {
@@ -133,7 +141,7 @@ function Worksheet({ r }: { r: ConsolidationReport }) {
             return (
               <li key={e.ruleId} className="rounded-md border border-line p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-fg">{e.name}</span>
+                  <span className="font-medium text-fg">{e.name} {e.source === 'LEDGER' ? <Badge tone="accent">From intercompany transactions</Badge> : null}</span>
                   {e.matched ? <Badge tone="positive">Agrees</Badge> : <Badge tone="warning">{e.problem ? 'Not applied' : 'Difference'}</Badge>}
                 </div>
                 <div className="mt-1 text-fg-muted">

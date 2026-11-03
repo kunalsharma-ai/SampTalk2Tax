@@ -14769,9 +14769,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)",
+        "packages/database/prisma/migrations/20261103180000_intercompany/migration.sql",
+        "apps/api/src/consolidation/intercompany.service.ts",
+        "apps/web/src/components/consolidation/intercompany.tsx",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "apps/api/test/intercompany.e2e.test.ts",
+        "apps/web/e2e/intercompany-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Charges and settlements posted in both companies in one database transaction, reversed together, and eliminated by their exact amounts. Journals only: no GST/VAT, stock or unrealised profit."
     },
     {
       "id": "ENT-009",

@@ -53,6 +53,12 @@ enum JournalSource {
   DEFERRAL
   ACCRUAL
   LOAN
+  INTERCOMPANY
+}
+
+enum IntercompanyKind {
+  CHARGE
+  SETTLEMENT
 }
 
 enum StatementLineStatus {
@@ -2776,18 +2782,19 @@ model DocumentSignature {
 /// A group of organisations reported together. Owned by one organisation (the parent), whose
 /// owners and admins set it up; consolidated reports also need access to every member.
 model ConsolidationGroup {
-  id          String                @id @default(uuid()) @db.Uuid
-  orgId       String                @map("org_id") @db.Uuid
-  name        String                @db.VarChar(120)
+  id           String                    @id @default(uuid()) @db.Uuid
+  orgId        String                    @map("org_id") @db.Uuid
+  name         String                    @db.VarChar(120)
   /// Presentation currency of the consolidated statements.
-  currency    String                @db.Char(3)
-  createdById String                @map("created_by_id") @db.Uuid
-  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org         Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  members     ConsolidationMember[]
-  rates       ConsolidationRate[]
-  rules       EliminationRule[]
+  currency     String                    @db.Char(3)
+  createdById  String                    @map("created_by_id") @db.Uuid
+  createdAt    DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org          Organization              @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  members      ConsolidationMember[]
+  rates        ConsolidationRate[]
+  rules        EliminationRule[]
+  intercompany IntercompanyTransaction[]
 
   @@unique([id, orgId])
   @@unique([orgId, name])
@@ -2802,6 +2809,11 @@ model ConsolidationMember {
   memberOrgId      String             @map("member_org_id") @db.Uuid
   /// The group's share of this organisation; below 100 shows non-controlling interests.
   ownershipPercent Decimal            @default(100) @map("ownership_percent") @db.Decimal(7, 4)
+  /// Accounts this company uses for intercompany transactions (codes in its own chart).
+  icReceivableCode String?            @map("ic_receivable_code") @db.VarChar(20)
+  icPayableCode    String?            @map("ic_payable_code") @db.VarChar(20)
+  icRevenueCode    String?            @map("ic_revenue_code") @db.VarChar(20)
+  icExpenseCode    String?            @map("ic_expense_code") @db.VarChar(20)
   addedById        String             @map("added_by_id") @db.Uuid
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   group            ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Cascade)
@@ -2852,4 +2864,43 @@ model EliminationRule {
   @@index([orgId])
   @@index([groupId])
   @@map("elimination_rules")
+}
+
+/// A charge or settlement between two companies of a group, posted in both sets of books in one
+/// database transaction. Owned by the group's parent organisation (row-level security); each
+/// company's journal lives in that company.
+model IntercompanyTransaction {
+  id                 String             @id @default(uuid()) @db.Uuid
+  orgId              String             @map("org_id") @db.Uuid
+  groupId            String             @map("group_id") @db.Uuid
+  number             Int
+  kind               IntercompanyKind
+  fromOrgId          String             @map("from_org_id") @db.Uuid
+  toOrgId            String             @map("to_org_id") @db.Uuid
+  date               DateTime           @db.Date
+  description        String             @db.VarChar(200)
+  amount             Decimal            @db.Decimal(20, 4)
+  fromCurrency       String             @map("from_currency") @db.Char(3)
+  toAmount           Decimal            @map("to_amount") @db.Decimal(20, 4)
+  toCurrency         String             @map("to_currency") @db.Char(3)
+  fromReceivableCode String             @map("from_receivable_code") @db.VarChar(20)
+  toPayableCode      String             @map("to_payable_code") @db.VarChar(20)
+  fromRevenueCode    String?            @map("from_revenue_code") @db.VarChar(20)
+  toExpenseCode      String?            @map("to_expense_code") @db.VarChar(20)
+  fromBankCode       String?            @map("from_bank_code") @db.VarChar(20)
+  toBankCode         String?            @map("to_bank_code") @db.VarChar(20)
+  fromEntryId        String             @map("from_entry_id") @db.Uuid
+  toEntryId          String             @map("to_entry_id") @db.Uuid
+  reversedOn         DateTime?          @map("reversed_on") @db.Date
+  fromReversalId     String?            @map("from_reversal_id") @db.Uuid
+  toReversalId       String?            @map("to_reversal_id") @db.Uuid
+  createdById        String             @map("created_by_id") @db.Uuid
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  reversedById       String?            @map("reversed_by_id") @db.Uuid
+  group              ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([groupId, number])
+  @@index([orgId])
+  @@index([groupId, date])
+  @@map("intercompany_transactions")
 }
