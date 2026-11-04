@@ -53,7 +53,7 @@ export function TwinCashChart({ actual, series, currency, label }: { actual: { m
             }}
           />
           <Legend wrapperStyle={{ fontSize: 12, color: 'var(--t2t-text-muted)' }} />
-          <Line dataKey="actual" name="Actual (from the books)" stroke={chartSeries[2]} strokeWidth={2.5} dot={false} isAnimationActive={!reducedMotion} />
+          {actual.length ? <Line dataKey="actual" name="Actual (from the books)" stroke={chartSeries[2]} strokeWidth={2.5} dot={false} isAnimationActive={!reducedMotion} /> : null}
           {series.map((s, i) => (
             <Line key={s.name} dataKey={`s${i}`} name={s.name} stroke={colors[i % colors.length]} strokeWidth={2} strokeDasharray={i === 0 ? '3 4' : '7 4'} dot={false} isAnimationActive={!reducedMotion} />
           ))}

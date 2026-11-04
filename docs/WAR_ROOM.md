@@ -26,7 +26,7 @@ Each suggestion is tested by running the scenario again with the suggestion appl
 
 | Suggestion | When it appears | What it tries |
 |---|---|---|
-| Arrange funding before cash runs out | Cash runs out | A 3-year loan at 11%, received the month before cash runs out. It is sized at 1.1 times the shortfall, then raised (up to six times) while the repayments open a new gap. The text says plainly if cash still runs out. |
+| Arrange funding before cash runs out | Cash runs out | A 3-year loan at 11%, received the month before cash runs out. It is sized at 1.1 times the shortfall, then raised (up to twenty times) while the repayments open a new gap. The text says plainly if cash still runs out. |
 | Collect from customers sooner | Customers take 20 days or more to pay, and it would release cash | Collecting 10 days sooner from month 1 |
 | Test a price rise | The scenario makes less profit than no change, or a loss, and the rise would add profit | Prices +5% from month 2, with 2% less volume |
 | Start the costliest change three months later | Cash runs out or there is a loss, and the costliest hiring, expense, expansion, investment or supplier change can start three months later and that helps | The same change three months later, replacing it |

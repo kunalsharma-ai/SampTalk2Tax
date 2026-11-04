@@ -115,7 +115,7 @@ export function twinInsights(input: Input, full?: TwinResult): TwinInsights {
     let amount = up(required);
     let loan = loanOf(amount);
     let r = run([...input.drivers, loan]);
-    for (let i = 0; i < 6 && r.projection.cashNegativeFrom && dec(r.projection.cashRequired).gt(0); i++) {
+    for (let i = 0; i < 20 && r.projection.cashNegativeFrom && dec(r.projection.cashRequired).gt(0); i++) {
       amount = amount.plus(up(dec(r.projection.cashRequired)));
       loan = loanOf(amount);
       r = run([...input.drivers, loan]);
