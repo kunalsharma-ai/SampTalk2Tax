@@ -30,6 +30,7 @@ export const AGENTS: Record<AiAgent, { name: string; does: string; level: 0 | 1 
   COLLECTIONS: { name: 'Collections agent', does: 'Drafts a payment reminder for each overdue customer, checked against the books.', level: 2, approval: 'A person sends, edits or rejects each reminder.', link: '/sales/collections' },
   BANKING: { name: 'Bank reconciliation agent', does: 'Suggests a match, receipt, payment or entry for unmatched bank lines.', level: 2, approval: 'A person accepts or dismisses each suggestion.', link: '/banking' },
   CLOSE: { name: 'Month-end close agent', does: 'Reviews a month before it is closed and proposes adjusting entries.', level: 2, approval: 'A person posts or rejects each entry, and closes the month.', link: '/close' },
+  CFO: { name: 'Virtual CFO', does: 'Writes the executive summary of a board pack or investor update from its figures; a summary quoting any figure not in the books is rejected.', level: 1, approval: 'A person reviews the pack and finalises it.', link: '/cfo' },
 };
 export const AGENT_KEYS = Object.keys(AGENTS) as AiAgent[];
 
@@ -58,11 +59,12 @@ export class AiControlService {
   /** Tokens (input plus output) each agent used since the start of this month, India time. */
   async usage(orgId: string, since = monthStartIst().since) {
     const where = { orgId, createdAt: { gte: since } };
-    const [copilot, collections, banking, close] = await Promise.all([
+    const [copilot, collections, banking, close, cfo] = await Promise.all([
       this.prisma.copilotMessage.aggregate({ where: { ...where, role: 'ASSISTANT' }, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.collectionDraft.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.bankAiSuggestion.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.closeAiReview.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
+      this.prisma.cfoReport.aggregate({ where: { orgId, aiStartedAt: { gte: since } }, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
     ]);
     const u = (a: { _count: number; _sum: { inputTokens: number | null; outputTokens: number | null } }) => ({
       calls: a._count,
@@ -70,7 +72,7 @@ export class AiControlService {
       outputTokens: a._sum.outputTokens ?? 0,
       tokens: (a._sum.inputTokens ?? 0) + (a._sum.outputTokens ?? 0),
     });
-    return { COPILOT: u(copilot), COLLECTIONS: u(collections), BANKING: u(banking), CLOSE: u(close) } as Record<AiAgent, ReturnType<typeof u>>;
+    return { COPILOT: u(copilot), COLLECTIONS: u(collections), BANKING: u(banking), CLOSE: u(close), CFO: u(cfo) } as Record<AiAgent, ReturnType<typeof u>>;
   }
 
   /**
@@ -142,18 +144,21 @@ export class AiControlService {
         this.prisma.collectionDraft.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
         this.prisma.bankAiSuggestion.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
         this.prisma.closeAiReview.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
+        this.prisma.cfoReport.count({ where: { orgId, aiStatus: 'FAILED', aiStartedAt: { gte: since } } }),
       ]),
       Promise.all([
         this.prisma.copilotMessage.count({ where: { orgId, role: 'ASSISTANT', status: 'PENDING' } }),
         this.prisma.collectionDraft.count({ where: { orgId, status: 'DRAFTING' } }),
         this.prisma.bankAiSuggestion.count({ where: { orgId, status: 'DRAFTING' } }),
         this.prisma.closeAiReview.count({ where: { orgId, status: 'RUNNING' } }),
+        this.prisma.cfoReport.count({ where: { orgId, aiStatus: 'RUNNING' } }),
       ]),
       Promise.all([
         this.prisma.copilotMessage.findFirst({ where: { orgId, role: 'ASSISTANT' }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
         this.prisma.collectionDraft.findFirst({ where: { orgId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
         this.prisma.bankAiSuggestion.findFirst({ where: { orgId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
         this.prisma.closeAiReview.findFirst({ where: { orgId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+        this.prisma.cfoReport.findFirst({ where: { orgId, aiStartedAt: { not: null } }, orderBy: { aiStartedAt: 'desc' }, select: { aiStartedAt: true } }).then((r) => (r ? { createdAt: r.aiStartedAt! } : null)),
       ]),
     ]);
     const n = <T extends { status: string; _count: number }>(rows: T[], ...statuses: string[]) => rows.filter((r) => statuses.includes(r.status)).reduce((s, r) => s + r._count, 0);
@@ -176,6 +181,7 @@ export class AiControlService {
         const rejected = n(adjustments, 'REJECTED');
         return { accepted, acceptedWithEdits: 0, rejected, waiting: n(adjustments, 'READY'), rate: rate(accepted, rejected) };
       })(),
+      CFO: null,
     };
     const ids = [settings?.updatedById, ...agentRows.map((a) => a.updatedById)].filter((x): x is string => !!x);
     const users = new Map((await this.prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })).map((u) => [u.id, u.name]));

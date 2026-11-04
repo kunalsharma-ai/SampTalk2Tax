@@ -180,6 +180,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Options are rules measured on the twin, not written by AI, with fixed percentages (open the plan as a twin scenario to try other figures). No reminders when actions fall due. Supplier spend comes from posted bills only. See [`RECOVERY_PLANNER.md`](RECOVERY_PLANNER.md).
 
+## Virtual CFO (M7 slice 4)
+
+* Analyses and answers are rules with fixed thresholds; benchmarking is against the organisation's own history only; profit by client is not known (costs are not recorded per client), so that answer ranks revenue; nine fixed questions (the copilot covers the rest); packs print from the browser, with no PDF export; the AI summary has been tested against the local stand-in only. See [`VIRTUAL_CFO.md`](VIRTUAL_CFO.md).
+
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

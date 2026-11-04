@@ -211,6 +211,7 @@ model Organization {
   consolidationGroups  ConsolidationGroup[]
   consolidatedIn       ConsolidationMember[]   @relation("ConsolidationMemberOrg")
   twinScenarios        TwinScenario[]
+  cfoReports           CfoReport[]
   recoveryPlans        RecoveryPlan[]
   integrations         OrgIntegration[]
   userSignatures       UserSignature[]
@@ -1795,6 +1796,7 @@ enum AiAgent {
   COLLECTIONS
   BANKING
   CLOSE
+  CFO
 }
 
 /// Per-organisation switch and monthly token budget for one AI agent. No row means on, with no budget.
@@ -3097,4 +3099,57 @@ model RecoveryAction {
   @@unique([planId, optionKey])
   @@index([orgId])
   @@map("recovery_actions")
+}
+
+enum CfoReportKind {
+  BOARD
+  INVESTOR
+}
+
+enum CfoReportStatus {
+  DRAFT
+  FINAL
+}
+
+enum CfoAiStatus {
+  NONE
+  RUNNING
+  DONE
+  FAILED
+}
+
+/// A board pack or investor update from the virtual CFO: the assessment as it stood when the pack
+/// was made (snapshot), the facts text an AI summary may be written from, people's commentary,
+/// and an optional AI summary that passed the figure check. A final pack cannot be changed.
+model CfoReport {
+  id             String          @id @default(uuid()) @db.Uuid
+  orgId          String          @map("org_id") @db.Uuid
+  kind           CfoReportKind
+  month          String          @db.Char(7)
+  title          String          @db.VarChar(160)
+  status         CfoReportStatus @default(DRAFT)
+  snapshot       Json
+  facts          String
+  commentary     String?         @db.VarChar(10000)
+  aiStatus       CfoAiStatus     @default(NONE) @map("ai_status")
+  aiSummary      String?         @map("ai_summary") @db.VarChar(6000)
+  aiModel        String?         @map("ai_model") @db.VarChar(100)
+  servedModel    String?         @map("served_model") @db.VarChar(100)
+  aiErrorCode    String?         @map("ai_error_code") @db.VarChar(60)
+  aiErrorMessage String?         @map("ai_error_message") @db.VarChar(1000)
+  inputTokens    Int?            @map("input_tokens")
+  outputTokens   Int?            @map("output_tokens")
+  aiStartedById  String?         @map("ai_started_by_id") @db.Uuid
+  aiStartedAt    DateTime?       @map("ai_started_at") @db.Timestamptz(6)
+  aiFinishedAt   DateTime?       @map("ai_finished_at") @db.Timestamptz(6)
+  createdById    String          @map("created_by_id") @db.Uuid
+  finalisedById  String?         @map("finalised_by_id") @db.Uuid
+  finalisedAt    DateTime?       @map("finalised_at") @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, kind, month])
+  @@index([orgId])
+  @@map("cfo_reports")
 }
