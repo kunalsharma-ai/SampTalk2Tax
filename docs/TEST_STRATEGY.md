@@ -111,6 +111,8 @@ Digital twin (M7 slice 1): `packages/accounting-engine/test/twin.test.ts` (9) co
 
 Scenario war room (M7 slice 2): `packages/accounting-engine/test/twin-insights.test.ts` (4) covers marginal impacts and interaction, departments, sized funding and when suggestions appear; `apps/api/test/war-room.e2e.test.ts` (5) covers impacts by department and refusing another organisation's department, versions and restore, notes with pins and who may resolve or delete, the approval flow (frozen states, no self-approval, rejection needs a reason, reopen), audit and tenant isolation; `apps/web/e2e/war-room-flow.test.mjs` drives an owner and an approver in two browsers through impacts, a suggested loan, notes, restores, rejection, approval, the planning board and the risk map.
 
+Recovery planner (M7 slice 3): `packages/accounting-engine/test/recovery.test.ts` (6) covers the no-action summary, every option and its measured effect, recoverable debt and the people to talk to, loan sizing, which options need a decision, plan forecasts and a healthy business; `apps/api/test/recovery.e2e.test.ts` (6) covers options from real invoices, bills and journals, plans and actions with permissions, owners who must be members, dropped actions leaving the forecast, plan status rules, copying into a twin scenario, tenant isolation, audit, and that no journal, payment or loan is created; `apps/web/e2e/recovery-flow.test.mjs` runs the whole flow in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

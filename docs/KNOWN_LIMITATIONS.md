@@ -176,6 +176,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Not live: others see changes on reload, with no presence, live cursors or notifications for notes. Suggestions are rules measured on the model, not written by AI. Approving a scenario records a decision only; it does not feed budgets or the cash-flow forecast. Marginal impacts can be a paisa away from the exact cost because totals are rounded separately. See [`WAR_ROOM.md`](WAR_ROOM.md).
 
+## Recovery planner (M7 slice 3)
+
+* Options are rules measured on the twin, not written by AI, with fixed percentages (open the plan as a twin scenario to try other figures). No reminders when actions fall due. Supplier spend comes from posted bills only. See [`RECOVERY_PLANNER.md`](RECOVERY_PLANNER.md).
+
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

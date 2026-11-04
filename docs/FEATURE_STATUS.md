@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 996 |
+| Not started | 985 |
 | Designed | 0 |
-| Implementing | 56 |
+| Implementing | 57 |
 | Implemented | 31 |
-| Tested | 250 |
+| Tested | 260 |
 | Integration pending | 10 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -50,7 +50,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
-| Financial recovery planner | M7 | 11 | 11 | 0 |
+| Financial recovery planner | M7 | 11 | 0 | 11 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
 | Internationalization | M8 | 16 | 10 | 6 |
 | Integration marketplace | M6 | 50 | 44 | 6 |
@@ -3061,6 +3061,171 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/twin-flow.test.mjs
   - docs/DIGITAL_TWIN.md
   - apps/web/src/app/orgs/[orgId]/planning/twin/compare/page.tsx
+
+### RECOV-001 — Create an AI-assisted business financial recovery workspace
+
+- Module: Financial recovery planner
+- Status: **Implementing**
+- Notes: Recovery workspace: options from the books, plans with owners, due dates, status and notes, liquidity forecast, and copying into a twin scenario. Rule-based, not AI-assisted yet.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-002 — Cash conservation scenarios
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Spending freeze option (other operating costs -10%) measured on the twin.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-003 — Collection acceleration plans
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Chase overdue invoices (up to 90 days late counted as recoverable, customers listed largest first) and shorter terms for new invoices.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-004 — Expense reduction options
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: A 20% cut option for each of the five largest operating expense accounts, from their average monthly spend.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-005 — Supplier renegotiation opportunities
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Longer payment terms and 3% lower prices from suppliers, listing suppliers by average monthly bills.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-006 — Financing scenarios
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Working capital loan sized until its repayments no longer open a gap, and new capital from owners or investors.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-007 — Revenue improvement opportunities
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Price rise option (+5% with 2% less volume).
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-008 — Operational restructuring simulations
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Payroll cost reduction modelled only, marked as a decision for the owners, never a recommendation to let anyone go.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-009 — Liquidity recovery forecasts
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Liquidity forecast of the plan against no action: runway, lowest cash, cash still to raise, month-end cash chart.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-010 — Display projected outcomes and risks
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: Each option and the plan show measured outcomes (lowest cash, cash at the end, net profit, whether cash runs out) and risks.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### RECOV-011 — Do not execute layoffs, borrowing, contract changes or financial transfers autonomously
+
+- Module: Financial recovery planner
+- Status: **Tested**
+- Notes: The planner only records decisions: tests check no journal, payment or loan is created; options needing a decision are marked.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
 
 ### I18N-002 — Multi-currency accounting
 

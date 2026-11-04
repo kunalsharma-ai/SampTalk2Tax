@@ -23942,9 +23942,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Recovery workspace: options from the books, plans with owners, due dates, status and notes, liquidity forecast, and copying into a twin scenario. Rule-based, not AI-assisted yet."
     },
     {
       "id": "RECOV-002",
@@ -23967,9 +23976,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Spending freeze option (other operating costs -10%) measured on the twin."
     },
     {
       "id": "RECOV-003",
@@ -23992,9 +24010,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Chase overdue invoices (up to 90 days late counted as recoverable, customers listed largest first) and shorter terms for new invoices."
     },
     {
       "id": "RECOV-004",
@@ -24017,9 +24044,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "A 20% cut option for each of the five largest operating expense accounts, from their average monthly spend."
     },
     {
       "id": "RECOV-005",
@@ -24042,9 +24078,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Longer payment terms and 3% lower prices from suppliers, listing suppliers by average monthly bills."
     },
     {
       "id": "RECOV-006",
@@ -24067,9 +24112,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Working capital loan sized until its repayments no longer open a gap, and new capital from owners or investors."
     },
     {
       "id": "RECOV-007",
@@ -24092,9 +24146,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Price rise option (+5% with 2% less volume)."
     },
     {
       "id": "RECOV-008",
@@ -24117,9 +24180,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Payroll cost reduction modelled only, marked as a decision for the owners, never a recommendation to let anyone go."
     },
     {
       "id": "RECOV-009",
@@ -24142,9 +24214,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Liquidity forecast of the plan against no action: runway, lowest cash, cash still to raise, month-end cash chart."
     },
     {
       "id": "RECOV-010",
@@ -24167,9 +24248,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Each option and the plan show measured outcomes (lowest cash, cash at the end, net profit, whether cash runs out) and risks."
     },
     {
       "id": "RECOV-011",
@@ -24192,9 +24282,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "The planner only records decisions: tests check no journal, payment or loan is created; options needing a decision are marked."
     },
     {
       "id": "BENCH-001",
