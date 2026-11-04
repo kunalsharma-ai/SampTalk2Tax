@@ -71,6 +71,8 @@ import { IntegrationsController } from './integrations/integrations.controller';
 import { IntegrationsService } from './integrations/integrations.service';
 import { CfoController } from './cfo/cfo.controller';
 import { CfoService } from './cfo/cfo.service';
+import { BenchmarkingController } from './benchmarking/benchmarking.controller';
+import { BenchmarkingService } from './benchmarking/benchmarking.service';
 import { RecoveryController } from './recovery/recovery.controller';
 import { RecoveryService } from './recovery/recovery.service';
 import { TwinController } from './twin/twin.controller';
@@ -151,6 +153,7 @@ export class AppModule {
         TwinController,
         RecoveryController,
         CfoController,
+        BenchmarkingController,
         IntegrationsController,
         SignaturesController,
         DimensionsController,
@@ -205,6 +208,7 @@ export class AppModule {
         TwinService,
         RecoveryService,
         CfoService,
+        BenchmarkingService,
         IntegrationsService,
         DimensionsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },

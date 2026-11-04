@@ -182,7 +182,11 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Virtual CFO (M7 slice 4)
 
-* Analyses and answers are rules with fixed thresholds; benchmarking is against the organisation's own history only; profit by client is not known (costs are not recorded per client), so that answer ranks revenue; nine fixed questions (the copilot covers the rest); packs print from the browser, with no PDF export; the AI summary has been tested against the local stand-in only. See [`VIRTUAL_CFO.md`](VIRTUAL_CFO.md).
+* Analyses and answers are rules with fixed thresholds; the CFO's verdicts compare with the organisation's own history (peer comparison is on the Benchmarking page); profit by client is not known (costs are not recorded per client), so that answer ranks revenue; nine fixed questions (the copilot covers the rest); packs print from the browser, with no PDF export; the AI summary has been tested against the local stand-in only. See [`VIRTUAL_CFO.md`](VIRTUAL_CFO.md).
+
+## Benchmarking (M7 slice 5)
+
+* No statistical noise is added, so changes in aggregates over time can reveal a little about a participant who joined or left; one person with several organisations could add them all; database operators can link a participant key to its organisation; industries and size bands are fixed; no external or industry datasets; latest month only. See [`BENCHMARKING.md`](BENCHMARKING.md).
 
 ## Integrations
 

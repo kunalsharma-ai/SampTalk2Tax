@@ -1119,27 +1119,27 @@ Part 32 · M7 · priority P3 · depends on: RPT, SEC
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| BENCH-001 |  | rule | Design an opt-in benchmarking network | Not started |
-| BENCH-002 |  | rule | Allow organizations to compare selected metrics against aggregated peer groups | Not started |
-| BENCH-003 |  | capability | Gross margin | Not started |
-| BENCH-004 |  | capability | Net margin | Not started |
-| BENCH-005 |  | capability | Revenue growth | Not started |
-| BENCH-006 |  | capability | Operating expense ratio | Not started |
-| BENCH-007 |  | capability | Days sales outstanding | Not started |
-| BENCH-008 |  | capability | Days payable outstanding | Not started |
-| BENCH-009 |  | capability | Working capital efficiency | Not started |
-| BENCH-010 |  | capability | Revenue per employee | Not started |
-| BENCH-011 |  | capability | Project profitability | Not started |
-| BENCH-012 |  | capability | Cash conversion cycle | Not started |
-| BENCH-013 |  | capability | Explicit customer consent | Not started |
-| BENCH-014 |  | capability | Aggregation thresholds | Not started |
-| BENCH-015 |  | capability | Suppression of small groups | Not started |
-| BENCH-016 |  | capability | No exposure of competitor-specific financial data | Not started |
-| BENCH-017 |  | capability | Privacy-preserving processing | Not started |
-| BENCH-018 |  | capability | Tenant isolation | Not started |
-| BENCH-019 |  | capability | Transparent benchmark methodology | Not started |
-| BENCH-020 |  | rule | Do not fabricate benchmark datasets | Not started |
-| BENCH-021 |  | rule | Use clearly labeled synthetic data for demonstrations | Not started |
+| BENCH-001 |  | rule | Design an opt-in benchmarking network | Tested |
+| BENCH-002 |  | rule | Allow organizations to compare selected metrics against aggregated peer groups | Tested |
+| BENCH-003 |  | capability | Gross margin | Tested |
+| BENCH-004 |  | capability | Net margin | Tested |
+| BENCH-005 |  | capability | Revenue growth | Tested |
+| BENCH-006 |  | capability | Operating expense ratio | Tested |
+| BENCH-007 |  | capability | Days sales outstanding | Tested |
+| BENCH-008 |  | capability | Days payable outstanding | Tested |
+| BENCH-009 |  | capability | Working capital efficiency | Tested |
+| BENCH-010 |  | capability | Revenue per employee | Tested |
+| BENCH-011 |  | capability | Project profitability | Tested |
+| BENCH-012 |  | capability | Cash conversion cycle | Tested |
+| BENCH-013 |  | capability | Explicit customer consent | Tested |
+| BENCH-014 |  | capability | Aggregation thresholds | Tested |
+| BENCH-015 |  | capability | Suppression of small groups | Tested |
+| BENCH-016 |  | capability | No exposure of competitor-specific financial data | Tested |
+| BENCH-017 |  | capability | Privacy-preserving processing | Implementing |
+| BENCH-018 |  | capability | Tenant isolation | Tested |
+| BENCH-019 |  | capability | Transparent benchmark methodology | Tested |
+| BENCH-020 |  | rule | Do not fabricate benchmark datasets | Tested |
+| BENCH-021 |  | rule | Use clearly labeled synthetic data for demonstrations | Tested |
 
 ## Internationalization
 
