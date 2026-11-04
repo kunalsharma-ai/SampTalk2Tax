@@ -112,6 +112,7 @@ describe('AI control center', () => {
       ['COLLECTIONS', 2, 'Prepare changes for approval'],
       ['BANKING', 2, 'Prepare changes for approval'],
       ['CLOSE', 2, 'Prepare changes for approval'],
+      ['CFO', 1, 'Draft recommendations'],
     ]);
     for (const a of o.agents) expect(a).toMatchObject({ enabled: true, monthlyTokenLimit: null, budgetReached: false, running: 0, changedBy: null });
     expect(agent(o, 'COPILOT').accuracy).toBeNull();

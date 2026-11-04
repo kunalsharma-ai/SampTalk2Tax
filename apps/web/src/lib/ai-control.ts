@@ -1,4 +1,4 @@
-export type AiAgentKey = 'COPILOT' | 'COLLECTIONS' | 'BANKING' | 'CLOSE';
+export type AiAgentKey = 'COPILOT' | 'COLLECTIONS' | 'BANKING' | 'CLOSE' | 'CFO';
 
 export interface AiAgentView {
   key: AiAgentKey;

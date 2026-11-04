@@ -4,6 +4,8 @@ import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { z } from 'zod';
 import { AlertsService } from '../alerts/alerts.service';
 import { BudgetsService } from '../budgets/budgets.service';
+import { CfoService } from '../cfo/cfo.service';
+import { CFO_QUESTIONS, type CfoQuestionKey } from '@talk2tax/accounting-engine';
 import { CashFlowService } from '../cash-flow/cash-flow.service';
 import { DomainError } from '../common/errors';
 import { ComplianceService } from '../compliance/compliance.service';
@@ -18,7 +20,7 @@ import type { CopilotTool } from './copilot.model';
  * tool set it was started with, so an older conversation is closed for new questions
  * rather than continued with tools the model never saw.
  */
-export const TOOLSET_VERSION = 1;
+export const TOOLSET_VERSION = 2;
 
 /** Tool output longer than this is cut, so one call cannot fill the model's context. */
 export const MAX_TOOL_OUTPUT_CHARS = 40_000;
@@ -104,6 +106,7 @@ export class CopilotTools {
     private readonly compliance: ComplianceService,
     private readonly subledger: SubledgerService,
     private readonly orgs: OrganizationsService,
+    private readonly cfo: CfoService,
   ) {
     const def = <I extends z.ZodTypeAny>(t: ToolDef<I>) => t as unknown as ToolDef<z.ZodTypeAny>;
     this.defs = [
@@ -247,6 +250,30 @@ export class CopilotTools {
         label: (i) => `Compliance calendar, ${d(i.from)} to ${d(i.to)}`,
         path: () => '/tax/compliance',
         run: async (i, c) => compact(await this.compliance.calendar(c.orgId, i.from, i.to)),
+      }),
+      def({
+        name: 'get_cfo_assessment',
+        description:
+          "The virtual CFO's assessment from the books today: a financial health score out of 100 with how each part was scored, and findings on liquidity, profitability, working capital, revenue growth, costs (lines growing fastest), debt, capital allocation and expansion capacity, risks and planning. Each finding has its figures, period, calculation method, assumptions, confidence, sources, recommended actions and who must approve them. Call this for broad questions about financial health, strategy, recommendations, cost reduction, debt, investment or expansion.",
+        inputSchema: object({}),
+        input: z.object({}).strict(),
+        permission: 'reports.read',
+        label: () => 'Virtual CFO assessment',
+        path: () => '/cfo',
+        run: async (_i, c) => {
+          const { questions: _q, ...a } = await this.cfo.assessment({ id: c.orgId, role: c.role, functionalCurrency: (await this.orgs.get(c.orgId)).functionalCurrency, fiscalYearStartMonth: c.fiscalYearStartMonth });
+          return a;
+        },
+      }),
+      def({
+        name: 'get_cfo_answer',
+        description: `The virtual CFO's worked answer to one of these questions, computed from the books now, with its figures, a table of the records behind it, period, method, assumptions, confidence, recommended actions and approvals: ${CFO_QUESTIONS.map((q) => `${q.key} ("${q.question}")`).join('; ')}. Use it whenever a member asks one of these or something close to it, then explain the answer, including its method, assumptions and confidence.`,
+        inputSchema: object({ question: { type: 'string', enum: CFO_QUESTIONS.map((q) => q.key), description: 'Which question.' } }),
+        input: z.object({ question: z.enum(CFO_QUESTIONS.map((q) => q.key) as [CfoQuestionKey, ...CfoQuestionKey[]]) }).strict(),
+        permission: 'reports.read',
+        label: (i) => `Virtual CFO: ${CFO_QUESTIONS.find((q) => q.key === i.question)!.question}`,
+        path: (i) => `/cfo?q=${i.question}`,
+        run: async (i, c) => this.cfo.ask({ id: c.orgId, role: c.role, functionalCurrency: (await this.orgs.get(c.orgId)).functionalCurrency, fiscalYearStartMonth: c.fiscalYearStartMonth }, i.question),
       }),
     ];
   }
