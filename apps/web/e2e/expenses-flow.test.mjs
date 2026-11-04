@@ -11,7 +11,7 @@ import { chromium } from 'playwright';
 
 const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
 const PDF = Buffer.from('%PDF-1.4\n% synthetic e2e cab receipt\n%%EOF\n');
-const todayIso = new Date().toISOString().slice(0, 10);
+const todayIso = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 let browser, owner, employee, orgId, claimUrl;
 const consoleErrors = [];
 const employeeEmail = `e2e-employee-${randomUUID()}@example.test`;

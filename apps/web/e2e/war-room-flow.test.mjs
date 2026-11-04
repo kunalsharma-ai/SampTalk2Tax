@@ -62,7 +62,7 @@ test('a team works a scenario through the war room: impacts, suggestions, notes,
   base = `/v1/orgs/${orgId}`;
   assert.equal((await call(owner, `${base}/members`, { email: approverEmail, role: 'APPROVER' })).status, 201);
   accounts = Object.fromEntries((await call(owner, `${base}/accounts`)).body.map((a) => [a.code, a.id]));
-  const now = new Date().toISOString().slice(0, 7);
+  const now = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 7);
   const last = shift(now, -1);
   const have = new Set((await call(owner, `${base}/periods`)).body.map((p) => p.fiscalYear));
   for (const m of [last, now]) {

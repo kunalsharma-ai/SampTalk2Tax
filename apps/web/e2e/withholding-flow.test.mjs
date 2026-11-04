@@ -21,7 +21,7 @@ const ADVOCATE_PAN = 'ZZZPK0012Z';
 let browser, page, orgId, base, billId;
 const consoleErrors = [];
 const shot = (p, name) => (SHOTS ? p.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true }) : undefined);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 
 async function call(p, path, body, method = body ? 'POST' : 'GET') {
   return p.evaluate(

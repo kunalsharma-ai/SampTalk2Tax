@@ -15,7 +15,7 @@ import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 
 const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
 const SHOTS = process.env.E2E_SCREENSHOTS;
-const t = new Date().toISOString().slice(0, 10);
+const t = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const FY = Number(t.slice(5, 7)) >= 4 ? Number(t.slice(0, 4)) : Number(t.slice(0, 4)) - 1;
 const gstin = (state, pan) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
 const OWN = gstin('27', 'ZZZCE0201Z');
