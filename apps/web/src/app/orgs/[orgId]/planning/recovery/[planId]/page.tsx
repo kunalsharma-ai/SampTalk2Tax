@@ -51,6 +51,7 @@ export default function RecoveryPlanPage() {
         actions={
           <>
             {manage && p?.status === 'DRAFT' ? <Button variant="ghost" onClick={() => confirm(`Delete the plan "${p.name}"?`) && del.mutate()}>Delete</Button> : null}
+            {p && p.status !== 'DRAFT' && can(org.role, 'decisions.manage') ? <Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/decisions/new?sourceType=RECOVERY_PLAN&sourceId=${p.id}`}>Record as a decision</Link> : null}
             <Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/planning/recovery`}>Recovery planner</Link>
           </>
         }
