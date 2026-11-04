@@ -32301,9 +32301,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/api/src/graph/graph.service.ts",
+        "apps/api/src/graph/graph.controller.ts",
+        "apps/api/test/graph.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/graph/page.tsx",
+        "apps/web/e2e/knowledge-graph-flow.test.mjs",
+        "docs/KNOWLEDGE_GRAPH.md"
+      ],
+      "notes": "Relationship explorer over customers, vendors, invoices, bills, payments, journal entries, accounts, projects, departments, loans, fixed assets and alerts (risks), every connection with a plain-language reason, read live from the books. Contracts are not modelled in the product yet, so they are not in the graph."
     },
     {
       "id": "INNOV-002",
@@ -32445,9 +32452,21 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/graph/graph.service.ts",
+        "apps/api/src/graph/graph.controller.ts",
+        "apps/api/test/graph.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/graph/page.tsx",
+        "apps/web/e2e/knowledge-graph-flow.test.mjs",
+        "docs/KNOWLEDGE_GRAPH.md",
+        "apps/api/src/reports/reports.service.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/general-ledger/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/balance-sheet/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/trial-balance/page.tsx"
+      ],
+      "notes": "Trial balance, profit and loss and balance sheet lines open the general ledger for the same dates; each ledger line names the record that created it (document, payment, expense claim, pay run, asset, depreciation, deferral, accrual, loan, close adjustment, intercompany charge or the reversed entry) and links to it and to its connections. P&L lines filtered by department or project are not linked because the ledger is not filtered."
     },
     {
       "id": "INNOV-008",

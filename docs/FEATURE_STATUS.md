@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 929 |
+| Not started | 927 |
 | Designed | 0 |
 | Implementing | 61 |
-| Implemented | 31 |
-| Tested | 311 |
+| Implemented | 32 |
+| Tested | 312 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 16 | 2 |
+| Additional differentiating innovations | M7 | 18 | 14 | 4 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4626,6 +4626,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/seed/seed-demo.ts
 
+### INNOV-001 — Connect customers, contracts, invoices, vendors, projects, payments, journal entries and risks in an explainable relationship graph
+
+- Module: Additional differentiating innovations
+- Status: **Implemented**
+- Notes: Relationship explorer over customers, vendors, invoices, bills, payments, journal entries, accounts, projects, departments, loans, fixed assets and alerts (risks), every connection with a plain-language reason, read live from the books. Contracts are not modelled in the product yet, so they are not in the graph.
+- Evidence:
+  - apps/api/src/graph/graph.service.ts
+  - apps/api/src/graph/graph.controller.ts
+  - apps/api/test/graph.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/graph/page.tsx
+  - apps/web/e2e/knowledge-graph-flow.test.mjs
+  - docs/KNOWLEDGE_GRAPH.md
+
 ### INNOV-005 — Evaluate financial indicators continuously and provide prioritized alerts
 
 - Module: Additional differentiating innovations
@@ -4649,6 +4662,24 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tasks
   - apps/api/test/workflows.e2e.test.ts
   - apps/web/e2e/automations-flow.test.mjs
+
+### INNOV-007 — Allow users to trace any reported figure to its originating transactions and documents
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Trial balance, profit and loss and balance sheet lines open the general ledger for the same dates; each ledger line names the record that created it (document, payment, expense claim, pay run, asset, depreciation, deferral, accrual, loan, close adjustment, intercompany charge or the reversed entry) and links to it and to its connections. P&L lines filtered by department or project are not linked because the ledger is not filtered.
+- Evidence:
+  - apps/api/src/graph/graph.service.ts
+  - apps/api/src/graph/graph.controller.ts
+  - apps/api/test/graph.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/graph/page.tsx
+  - apps/web/e2e/knowledge-graph-flow.test.mjs
+  - docs/KNOWLEDGE_GRAPH.md
+  - apps/api/src/reports/reports.service.ts
+  - apps/web/src/app/orgs/[orgId]/reports/general-ledger/page.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/balance-sheet/page.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/trial-balance/page.tsx
 
 ### NAV-001 — Create a premium sidebar and global navigation system
 

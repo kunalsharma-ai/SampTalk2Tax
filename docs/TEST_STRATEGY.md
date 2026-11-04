@@ -117,6 +117,8 @@ Virtual CFO (M7 slice 4): `packages/accounting-engine/test/cfo.test.ts` (17) cov
 
 Benchmarking (M7 slice 5): `packages/accounting-engine/test/benchmark.test.ts` (7) covers the ten metrics, thresholds, banded counts, positions, peer-group fallback and that no single value is returned; `apps/api/test/benchmarking.e2e.test.ts` (9) covers consent and permissions, the pool's contents, RLS keeping tenants out of the pool, suppression, live and synthetic pools kept apart, refresh, withdrawal and rejoining under a new key, and the audit trail; `apps/web/e2e/benchmarking-flow.test.mjs` runs the whole flow in the browser with five real peer organisations.
 
+Relationship explorer and figure tracing (M7 slice 6): `apps/api/test/graph.e2e.test.ts` (8) covers search, the explained connections of a customer, invoice, receipt, journal entry, account, project and alert, permissions and tenant isolation, and the source of each general ledger line; `apps/web/e2e/knowledge-graph-flow.test.mjs` walks from a customer to its invoice and traces a profit and loss line to the ledger, the invoice and back.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

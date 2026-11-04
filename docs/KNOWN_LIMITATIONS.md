@@ -188,6 +188,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * No statistical noise is added, so changes in aggregates over time can reveal a little about a participant who joined or left; one person with several organisations could add them all; database operators can link a participant key to its organisation; industries and size bands are fixed; no external or industry datasets; latest month only. See [`BENCHMARKING.md`](BENCHMARKING.md).
 
+## Relationship explorer and figure tracing (M7 slice 6)
+
+* Contracts are not modelled, so they are not in the graph; risks are the alerts that cite a record; bank statement lines, budgets, scenarios and tax returns are not nodes; one record's neighbours at a time, shown as lists; a profit and loss filtered by department or project does not link to the ledger. See [`KNOWLEDGE_GRAPH.md`](KNOWLEDGE_GRAPH.md).
+
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

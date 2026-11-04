@@ -1,6 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Card, CardHeader, Select, Table, Td, Tr } from '@talk2tax/ui';
+import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
@@ -31,7 +32,7 @@ export default function IncomeStatementPage() {
     <>
       <tr><Td colSpan={2} className="bg-surface-raised/60 text-xs font-semibold uppercase tracking-wide text-fg-muted">{title}</Td></tr>
       {lines.map((l) => (
-        <Tr key={l.accountId}><Td><span className="num text-fg-muted">{l.code}</span> {l.name}</Td><Td numeric><Money value={l.amount} currency={c} signed /></Td></Tr>
+        <Tr key={l.accountId}><Td><span className="num text-fg-muted">{l.code}</span> {filter ? l.name : <Link className="hover:text-accent" href={`/orgs/${orgId}/reports/general-ledger?accountId=${l.accountId}&from=${from}&to=${to}`}>{l.name}</Link>}</Td><Td numeric><Money value={l.amount} currency={c} signed /></Td></Tr>
       ))}
       <tr><Td className="font-semibold">Total {title.toLowerCase()}</Td><Td numeric className="font-semibold"><Money value={total} currency={c} /></Td></tr>
     </>

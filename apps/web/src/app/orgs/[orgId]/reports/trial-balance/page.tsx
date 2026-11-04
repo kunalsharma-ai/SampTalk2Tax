@@ -4,7 +4,7 @@ import { Alert, Card, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
-import { BalancedBadge, DateInput } from '@/components/report-bits';
+import { BalancedBadge, DateInput, fyStartFor } from '@/components/report-bits';
 import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -42,7 +42,7 @@ export default function TrialBalancePage() {
             {(q.data?.rows ?? []).map((r) => (
               <Tr key={r.accountId}>
                 <Td className="num text-fg-muted">{r.code}</Td>
-                <Td><Link className="hover:text-accent" href={`/orgs/${orgId}/reports/general-ledger?accountId=${r.accountId}`}>{r.name}</Link></Td>
+                <Td><Link className="hover:text-accent" href={`/orgs/${orgId}/reports/general-ledger?accountId=${r.accountId}&from=${fyStartFor(asOf, org.fiscalYearStartMonth ?? 4)}&to=${asOf}`}>{r.name}</Link></Td>
                 <Td className="text-xs text-fg-muted">{r.type.toLowerCase()}</Td>
                 <Td numeric>{r.netDebit !== '0.00' ? <Money value={r.netDebit} currency={c} /> : ''}</Td>
                 <Td numeric>{r.netCredit !== '0.00' ? <Money value={r.netCredit} currency={c} /> : ''}</Td>
