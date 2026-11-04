@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { date, isNegative, money } from '../src/lib/format';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { date, isNegative, money, today } from '../src/lib/format';
 
 describe('display formatting', () => {
   it('formats decimal strings exactly, without float rounding', () => {
@@ -18,5 +18,16 @@ describe('display formatting', () => {
 
   it('formats ISO dates without timezone drift', () => {
     expect(date('2026-04-01')).toBe('01 Apr 2026');
+  });
+});
+
+describe('today', () => {
+  afterEach(() => vi.useRealTimers());
+  it('is the date in India, not the browser’s own date', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-04T18:45:00Z')); // 00:15 on 5 Nov in India
+    expect(today()).toBe('2026-11-05');
+    vi.setSystemTime(new Date('2026-11-04T18:29:59Z')); // 23:59 on 4 Nov in India
+    expect(today()).toBe('2026-11-04');
   });
 });

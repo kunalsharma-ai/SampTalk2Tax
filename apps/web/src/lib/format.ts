@@ -37,9 +37,13 @@ export function date(iso: string): string {
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+/**
+ * Today's date in India (YYYY-MM-DD), the calendar the API uses for "today", periods and due
+ * dates. Using the browser's own date would leave out today's documents for anyone whose clock is
+ * behind India time (between 00:00 and 05:30 IST for a browser on UTC).
+ */
 export function today(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 }
 
 /** A readable name for a browser's user-agent string. Display only; never used for decisions. */
