@@ -178,102 +178,103 @@ model LoginThrottle {
 }
 
 model Organization {
-  id                   String                  @id @default(uuid()) @db.Uuid
-  name                 String
-  legalName            String?                 @map("legal_name")
-  countryCode          String                  @map("country_code") @db.Char(2)
-  functionalCurrency   String                  @map("functional_currency") @db.Char(3)
-  fiscalYearStartMonth Int                     @map("fiscal_year_start_month") @db.SmallInt
-  isDemo               Boolean                 @default(false) @map("is_demo")
+  id                     String                  @id @default(uuid()) @db.Uuid
+  name                   String
+  legalName              String?                 @map("legal_name")
+  countryCode            String                  @map("country_code") @db.Char(2)
+  functionalCurrency     String                  @map("functional_currency") @db.Char(3)
+  fiscalYearStartMonth   Int                     @map("fiscal_year_start_month") @db.SmallInt
+  isDemo                 Boolean                 @default(false) @map("is_demo")
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
-  arAccountId          String?                 @map("ar_account_id") @db.Uuid
-  apAccountId          String?                 @map("ap_account_id") @db.Uuid
+  arAccountId            String?                 @map("ar_account_id") @db.Uuid
+  apAccountId            String?                 @map("ap_account_id") @db.Uuid
   /// Employee reimbursements payable. Only expense claims post to it (DB trigger).
-  claimsAccountId      String?                 @map("claims_account_id") @db.Uuid
-  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
-  memberships          Membership[]
-  accounts             Account[]
-  periods              FiscalPeriod[]
-  journalEntries       JournalEntry[]
-  counters             OrgCounter[]
-  auditEvents          AuditEvent[]
-  contacts             Contact[]
-  taxRates             TaxRate[]
-  documents            Document[]
-  payments             Payment[]
-  statementImports     BankStatementImport[]
-  statementLines       BankStatementLine[]
-  bankMatches          BankMatch[]
-  reconciliations      BankReconciliation[]
-  attachments          Attachment[]
-  invoiceTemplates     InvoiceTemplate[]
-  consolidationGroups  ConsolidationGroup[]
-  consolidatedIn       ConsolidationMember[]   @relation("ConsolidationMemberOrg")
-  twinScenarios        TwinScenario[]
-  cfoReports           CfoReport[]
+  claimsAccountId        String?                 @map("claims_account_id") @db.Uuid
+  createdAt              DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships            Membership[]
+  accounts               Account[]
+  periods                FiscalPeriod[]
+  journalEntries         JournalEntry[]
+  counters               OrgCounter[]
+  auditEvents            AuditEvent[]
+  contacts               Contact[]
+  taxRates               TaxRate[]
+  documents              Document[]
+  payments               Payment[]
+  statementImports       BankStatementImport[]
+  statementLines         BankStatementLine[]
+  bankMatches            BankMatch[]
+  reconciliations        BankReconciliation[]
+  attachments            Attachment[]
+  invoiceTemplates       InvoiceTemplate[]
+  consolidationGroups    ConsolidationGroup[]
+  consolidatedIn         ConsolidationMember[]   @relation("ConsolidationMemberOrg")
+  twinScenarios          TwinScenario[]
+  cfoReports             CfoReport[]
   benchmarkParticipation BenchmarkParticipation?
-  recoveryPlans        RecoveryPlan[]
-  integrations         OrgIntegration[]
-  userSignatures       UserSignature[]
-  documentSignatures   DocumentSignature[]
-  approvalPolicies     ApprovalPolicy[]
-  approvalRequests     ApprovalRequest[]
-  expenseClaims        ExpenseClaim[]
-  invitations          Invitation[]
-  gstRegistration      GstRegistration?
-  withholdingSettings  WithholdingSettings?
-  withholdingSections  WithholdingSection[]
-  withholdingDeposits  WithholdingDeposit[]
-  payrollSettings      PayrollSettings?
-  complianceSettings   ComplianceSettings?
-  complianceFilings    ComplianceFiling[]
-  eInvoiceSettings     EInvoiceSettings?
-  eInvoices            EInvoice[]
-  eWayBillSettings     EWayBillSettings?
-  eWayBills            EWayBill[]
-  eWayBillVehicles     EWayBillVehicleUpdate[]
-  employees            Employee[]
-  payRuns              PayRun[]
-  budgets              Budget[]
-  budgetLines          BudgetLine[]
-  cashFlowSettings     CashFlowSettings?
-  cashFlowItems        CashFlowItem[]
-  cashForecasts        CashForecast[]
-  kpiTargets           KpiTarget[]
-  managementReports    ManagementReport[]
-  alertRuleSettings    AlertRuleSetting[]
-  alerts               Alert[]
-  alertEvents          AlertEvent[]
-  alertScans           AlertScan[]
-  copilotSettings      CopilotSettings?
-  aiAgentSettings      AiAgentSetting[]
-  fixedAssets          FixedAsset[]
-  depreciationRuns     DepreciationRun[]
-  depreciationLines    DepreciationLine[]
-  deferralSchedules    DeferralSchedule[]
-  deferralRuns         DeferralRun[]
-  deferralLines        DeferralLine[]
-  accruals             Accrual[]
-  loans                Loan[]
-  loanEvents           LoanEvent[]
-  dimensionValues      DimensionValue[]
-  copilotConversations CopilotConversation[]
-  copilotMessages      CopilotMessage[]
-  workflows            Workflow[]
-  workflowVersions     WorkflowVersion[]
-  workflowRuns         WorkflowRun[]
-  workflowActionRuns   WorkflowActionRun[]
-  workflowCursor       WorkflowCursor?
-  tasks                Task[]
-  collectionRuns       CollectionRun[]
-  collectionDrafts     CollectionDraft[]
-  bankAiRuns           BankAiRun[]
-  bankAiSuggestions    BankAiSuggestion[]
-  periodCloses         PeriodClose[]
-  closeCertifications  CloseCertification[]
-  closeAiReviews       CloseAiReview[]
-  closeAdjustments     CloseAdjustment[]
+  decisions              Decision[]
+  recoveryPlans          RecoveryPlan[]
+  integrations           OrgIntegration[]
+  userSignatures         UserSignature[]
+  documentSignatures     DocumentSignature[]
+  approvalPolicies       ApprovalPolicy[]
+  approvalRequests       ApprovalRequest[]
+  expenseClaims          ExpenseClaim[]
+  invitations            Invitation[]
+  gstRegistration        GstRegistration?
+  withholdingSettings    WithholdingSettings?
+  withholdingSections    WithholdingSection[]
+  withholdingDeposits    WithholdingDeposit[]
+  payrollSettings        PayrollSettings?
+  complianceSettings     ComplianceSettings?
+  complianceFilings      ComplianceFiling[]
+  eInvoiceSettings       EInvoiceSettings?
+  eInvoices              EInvoice[]
+  eWayBillSettings       EWayBillSettings?
+  eWayBills              EWayBill[]
+  eWayBillVehicles       EWayBillVehicleUpdate[]
+  employees              Employee[]
+  payRuns                PayRun[]
+  budgets                Budget[]
+  budgetLines            BudgetLine[]
+  cashFlowSettings       CashFlowSettings?
+  cashFlowItems          CashFlowItem[]
+  cashForecasts          CashForecast[]
+  kpiTargets             KpiTarget[]
+  managementReports      ManagementReport[]
+  alertRuleSettings      AlertRuleSetting[]
+  alerts                 Alert[]
+  alertEvents            AlertEvent[]
+  alertScans             AlertScan[]
+  copilotSettings        CopilotSettings?
+  aiAgentSettings        AiAgentSetting[]
+  fixedAssets            FixedAsset[]
+  depreciationRuns       DepreciationRun[]
+  depreciationLines      DepreciationLine[]
+  deferralSchedules      DeferralSchedule[]
+  deferralRuns           DeferralRun[]
+  deferralLines          DeferralLine[]
+  accruals               Accrual[]
+  loans                  Loan[]
+  loanEvents             LoanEvent[]
+  dimensionValues        DimensionValue[]
+  copilotConversations   CopilotConversation[]
+  copilotMessages        CopilotMessage[]
+  workflows              Workflow[]
+  workflowVersions       WorkflowVersion[]
+  workflowRuns           WorkflowRun[]
+  workflowActionRuns     WorkflowActionRun[]
+  workflowCursor         WorkflowCursor?
+  tasks                  Task[]
+  collectionRuns         CollectionRun[]
+  collectionDrafts       CollectionDraft[]
+  bankAiRuns             BankAiRun[]
+  bankAiSuggestions      BankAiSuggestion[]
+  periodCloses           PeriodClose[]
+  closeCertifications    CloseCertification[]
+  closeAiReviews         CloseAiReview[]
+  closeAdjustments       CloseAdjustment[]
 
   @@map("organizations")
 }
@@ -3206,4 +3207,54 @@ model BenchmarkContribution {
 
   @@index([period, isSynthetic])
   @@map("benchmark_contributions")
+}
+
+enum DecisionStatus {
+  ACTIVE
+  REVIEWED
+  WITHDRAWN
+}
+
+/// Decision memory: an approved management decision, the assumptions behind it, the outcomes it
+/// was expected to produce (KPIs measured later from the books) and, once reviewed, what happened
+/// and the lessons learned. A reviewed or withdrawn decision cannot be changed.
+model Decision {
+  id              String         @id @default(uuid()) @db.Uuid
+  orgId           String         @map("org_id") @db.Uuid
+  number          Int
+  title           String         @db.VarChar(200)
+  /// What was decided.
+  decision        String         @db.VarChar(4000)
+  /// Why: the situation and the options considered.
+  context         String?        @db.VarChar(4000)
+  category        String         @db.VarChar(20)
+  tags            String[]
+  decidedOn       DateTime       @map("decided_on") @db.Date
+  decidedBy       String?        @map("decided_by") @db.VarChar(200)
+  reviewDue       DateTime?      @map("review_due") @db.Date
+  /// [{ text, held: boolean | null, note }]
+  assumptions     Json
+  /// [{ kpi, comparator, target, measureMonth, baselineMonth, baseline, actual?, status? }]
+  outcomes        Json
+  sourceType      String?        @map("source_type") @db.VarChar(20)
+  sourceId        String?        @map("source_id") @db.Uuid
+  status          DecisionStatus @default(ACTIVE)
+  verdict         String?        @db.VarChar(20)
+  outcomeNotes    String?        @map("outcome_notes") @db.VarChar(4000)
+  lessons         String?        @db.VarChar(4000)
+  reviewedById    String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime?      @map("reviewed_at") @db.Timestamptz(6)
+  withdrawnReason String?        @map("withdrawn_reason") @db.VarChar(1000)
+  withdrawnById   String?        @map("withdrawn_by_id") @db.Uuid
+  withdrawnAt     DateTime?      @map("withdrawn_at") @db.Timestamptz(6)
+  createdById     String         @map("created_by_id") @db.Uuid
+  updatedById     String         @map("updated_by_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org             Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([id, orgId], map: "decisions_id_org_key")
+  @@index([orgId, status])
+  @@map("decisions")
 }

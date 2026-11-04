@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 927 |
+| Not started | 926 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 312 |
+| Tested | 313 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 14 | 4 |
+| Additional differentiating innovations | M7 | 18 | 13 | 5 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4638,6 +4638,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/graph/page.tsx
   - apps/web/e2e/knowledge-graph-flow.test.mjs
   - docs/KNOWLEDGE_GRAPH.md
+
+### INNOV-002 — Maintain a searchable history of approved management decisions, assumptions, financial outcomes and lessons learned
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Decisions with context, assumptions and expected outcomes (KPIs with a target and month, compared with the month before the decision and measured from the posted books); search across decisions, assumptions and lessons; review records whether each assumption held, a verdict and lessons, and freezes the measured figures; reviewed and withdrawn decisions are locked by a database trigger. Approved scenarios and recovery plans can be recorded as decisions.
+- Evidence:
+  - packages/accounting-engine/src/decisions.ts
+  - packages/accounting-engine/test/decisions.test.ts
+  - packages/database/prisma/migrations/20261105120000_decision_memory/migration.sql
+  - apps/api/src/decisions
+  - apps/api/test/decisions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/decisions
+  - apps/web/e2e/decision-memory-flow.test.mjs
+  - docs/DECISION_MEMORY.md
 
 ### INNOV-005 — Evaluate financial indicators continuously and provide prioritized alerts
 
