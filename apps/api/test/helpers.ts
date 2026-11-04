@@ -67,5 +67,5 @@ export async function createOrg(ctx: Ctx, user: TestUser, overrides: Record<stri
 
 /** A date inside the fiscal year created at onboarding (the current one). */
 export function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 }
