@@ -115,6 +115,8 @@ Recovery planner (M7 slice 3): `packages/accounting-engine/test/recovery.test.ts
 
 Virtual CFO (M7 slice 4): `packages/accounting-engine/test/cfo.test.ts` (17) covers the health score and its rules, every area's figures and verdicts, cost increases, an empty organisation, all nine questions and the AI summary figure check; `apps/api/test/cfo.e2e.test.ts` (13) covers the assessment and every question from real invoices, bills and journals, permissions, tenant isolation, packs (one per kind a month, commentary, refresh, finalise, the database refusing changes to a final pack), the AI guard, a summary rejected by the figure check and one kept (scripted model), the AI control center and activity log, the audit trail, the copilot's CFO tools, and that nothing is posted; `apps/web/e2e/cfo-flow.test.mjs` runs the whole flow in the browser against the Anthropic stand-in.
 
+Benchmarking (M7 slice 5): `packages/accounting-engine/test/benchmark.test.ts` (7) covers the ten metrics, thresholds, banded counts, positions, peer-group fallback and that no single value is returned; `apps/api/test/benchmarking.e2e.test.ts` (9) covers consent and permissions, the pool's contents, RLS keeping tenants out of the pool, suppression, live and synthetic pools kept apart, refresh, withdrawal and rejoining under a new key, and the audit trail; `apps/web/e2e/benchmarking-flow.test.mjs` runs the whole flow in the browser with five real peer organisations.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

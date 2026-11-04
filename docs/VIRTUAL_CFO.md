@@ -172,7 +172,7 @@ All routes are under `v1/orgs/:orgId/cfo`.
 
 ## Not built yet
 
-* **Benchmarking** compares only with the organisation's own history. Peer and industry benchmarks are the benchmarking module.
+* **Benchmarking**: the CFO's verdicts compare only with the organisation's own history. Peer comparison is on the Benchmarking page ([`BENCHMARKING.md`](BENCHMARKING.md)).
 * **Profit by client** needs costs per client. Today the answer ranks clients by revenue.
 * **Questions** are the nine listed above. For anything else, use the copilot, which can combine these answers with the reports.
 * **Thresholds** are fixed rules of thumb. They cannot be set per organisation yet.

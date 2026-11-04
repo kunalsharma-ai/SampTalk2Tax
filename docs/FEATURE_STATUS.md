@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 950 |
+| Not started | 929 |
 | Designed | 0 |
-| Implementing | 60 |
+| Implementing | 61 |
 | Implemented | 31 |
-| Tested | 291 |
+| Tested | 311 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -51,7 +51,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 0 | 11 |
-| Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
+| Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 10 | 6 |
 | Integration marketplace | M6 | 50 | 44 | 6 |
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
@@ -3755,6 +3755,321 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/recovery.e2e.test.ts
   - apps/web/e2e/recovery-flow.test.mjs
   - docs/RECOVERY_PLANNER.md
+
+### BENCH-001 — Design an opt-in benchmarking network
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Opt-in network: owners and admins join with recorded, versioned consent and can withdraw at any time.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-002 — Allow organizations to compare selected metrics against aggregated peer groups
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Give-to-get: each shared metric is compared with the median and quartiles of peer groups (industry, size, country), narrowest group with enough participants first.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-003 — Gross margin
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Gross margin over 12 months.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-004 — Net margin
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Net margin over 12 months.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-005 — Revenue growth
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Revenue growth, 12 months against the 12 before.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-006 — Operating expense ratio
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Operating expense ratio over 12 months.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-007 — Days sales outstanding
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Days sales outstanding (3-month basis).
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-008 — Days payable outstanding
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Days payables outstanding (3-month basis).
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-009 — Working capital efficiency
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Working capital efficiency: days of sales tied up in receivables + inventory − payables.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-010 — Revenue per employee
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Revenue per employee from payroll headcount (or entered); compared only within the same currency.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-011 — Project profitability
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Project profitability: profit before overheads of tagged projects ÷ their revenue.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-012 — Cash conversion cycle
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Cash conversion cycle: DSO + days inventory − DPO.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-013 — Explicit customer consent
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Explicit consent statement must be ticked; who agreed, when and the consent version are stored and audited.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-014 — Aggregation thresholds
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Median only with 5+ other participants; quartiles only with 10+.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-015 — Suppression of small groups
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Groups below the threshold are suppressed and the next broader group is tried; counts are shown only as bands.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-016 — No exposure of competitor-specific financial data
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Only aggregates over other participants are returned; no organisation id in the pool; tests check no single value is returned.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-017 — Privacy-preserving processing
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Implementing**
+- Notes: Rounded ratios under random keys in a system-only pool; no differential-privacy noise yet (differencing over time is a documented limitation).
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-018 — Tenant isolation
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Participation is a tenant table with forced RLS; the pool has a system-only RLS policy, tested against tenant reads and writes.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-019 — Transparent benchmark methodology
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Formulas, thresholds, peer-group order and privacy rules are shown on the page and in docs/BENCHMARKING.md.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-020 — Do not fabricate benchmark datasets
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: The live pool holds only real participants; nothing is invented. Demo organisations never reach it.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
+
+### BENCH-021 — Use clearly labeled synthetic data for demonstrations
+
+- Module: Privacy-preserving financial benchmarking
+- Status: **Tested**
+- Notes: Synthetic peers (seed:benchmark-peers, refused in production) are flagged is_synthetic, compared only with demo organisations and labelled on the page.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
 
 ### I18N-002 — Multi-currency accounting
 

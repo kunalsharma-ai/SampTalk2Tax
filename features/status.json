@@ -4101,6 +4101,300 @@
         "apps/api/src/copilot/copilot.tools.ts"
       ],
       "notes": "Figures are worked out in code; the AI summary is rejected if it quotes any figure not in the facts; the copilot reads CFO answers through tools and is told to pass on method and confidence."
+    },
+    "BENCH-001": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Opt-in network: owners and admins join with recorded, versioned consent and can withdraw at any time."
+    },
+    "BENCH-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Give-to-get: each shared metric is compared with the median and quartiles of peer groups (industry, size, country), narrowest group with enough participants first."
+    },
+    "BENCH-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Gross margin over 12 months."
+    },
+    "BENCH-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Net margin over 12 months."
+    },
+    "BENCH-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Revenue growth, 12 months against the 12 before."
+    },
+    "BENCH-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Operating expense ratio over 12 months."
+    },
+    "BENCH-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Days sales outstanding (3-month basis)."
+    },
+    "BENCH-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Days payables outstanding (3-month basis)."
+    },
+    "BENCH-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Working capital efficiency: days of sales tied up in receivables + inventory − payables."
+    },
+    "BENCH-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Revenue per employee from payroll headcount (or entered); compared only within the same currency."
+    },
+    "BENCH-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Project profitability: profit before overheads of tagged projects ÷ their revenue."
+    },
+    "BENCH-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Cash conversion cycle: DSO + days inventory − DPO."
+    },
+    "BENCH-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Explicit consent statement must be ticked; who agreed, when and the consent version are stored and audited."
+    },
+    "BENCH-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Median only with 5+ other participants; quartiles only with 10+."
+    },
+    "BENCH-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Groups below the threshold are suppressed and the next broader group is tried; counts are shown only as bands."
+    },
+    "BENCH-016": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Only aggregates over other participants are returned; no organisation id in the pool; tests check no single value is returned."
+    },
+    "BENCH-017": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Rounded ratios under random keys in a system-only pool; no differential-privacy noise yet (differencing over time is a documented limitation)."
+    },
+    "BENCH-018": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Participation is a tenant table with forced RLS; the pool has a system-only RLS policy, tested against tenant reads and writes."
+    },
+    "BENCH-019": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Formulas, thresholds, peer-group order and privacy rules are shown on the page and in docs/BENCHMARKING.md."
+    },
+    "BENCH-020": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "The live pool holds only real participants; nothing is invented. Demo organisations never reach it."
+    },
+    "BENCH-021": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Synthetic peers (seed:benchmark-peers, refused in production) are flagged is_synthetic, compared only with demo organisations and labelled on the page."
     }
   }
 }

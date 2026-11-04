@@ -212,6 +212,7 @@ model Organization {
   consolidatedIn       ConsolidationMember[]   @relation("ConsolidationMemberOrg")
   twinScenarios        TwinScenario[]
   cfoReports           CfoReport[]
+  benchmarkParticipation BenchmarkParticipation?
   recoveryPlans        RecoveryPlan[]
   integrations         OrgIntegration[]
   userSignatures       UserSignature[]
@@ -3152,4 +3153,57 @@ model CfoReport {
   @@unique([orgId, kind, month])
   @@index([orgId])
   @@map("cfo_reports")
+}
+
+enum BenchmarkStatus {
+  OPTED_IN
+  WITHDRAWN
+}
+
+/// An organisation's consent to the benchmarking network: its peer profile, the metrics it shares
+/// and who agreed. While opted in, `participantKey` links it to its one row in the pool; the key is
+/// random and replaced each time the organisation joins again.
+model BenchmarkParticipation {
+  id                String          @id @default(uuid()) @db.Uuid
+  orgId             String          @unique @map("org_id") @db.Uuid
+  status            BenchmarkStatus
+  industry          String
+  sizeBand          String          @map("size_band")
+  /// Entered when payroll has no employees; payroll's count wins when it has some.
+  headcount         Int?
+  sharedMetrics     String[]        @map("shared_metrics")
+  consentVersion    Int             @map("consent_version")
+  participantKey    String?         @unique @map("participant_key") @db.Uuid
+  contributedPeriod String?         @map("contributed_period") @db.Char(7)
+  contributedAt     DateTime?       @map("contributed_at") @db.Timestamptz(6)
+  consentedById     String          @map("consented_by_id") @db.Uuid
+  consentedAt       DateTime        @map("consented_at") @db.Timestamptz(6)
+  withdrawnById     String?         @map("withdrawn_by_id") @db.Uuid
+  withdrawnAt       DateTime?       @map("withdrawn_at") @db.Timestamptz(6)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org               Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("benchmark_participations")
+}
+
+/// The benchmarking pool. Platform-wide and pseudonymous: no organisation id, name or amount, only a
+/// random participant key, the peer profile and rounded ratios. Tenants cannot read it; only
+/// aggregates over at least five other participants leave the server.
+model BenchmarkContribution {
+  id             String   @id @default(uuid()) @db.Uuid
+  participantKey String   @unique @map("participant_key") @db.Uuid
+  period         String   @db.Char(7)
+  industry       String
+  sizeBand       String   @map("size_band")
+  countryCode    String   @map("country_code") @db.Char(2)
+  currency       String   @db.Char(3)
+  /// Synthetic demonstration peers, compared only with demo organisations.
+  isSynthetic    Boolean  @map("is_synthetic")
+  metrics        Json
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([period, isSynthetic])
+  @@map("benchmark_contributions")
 }
