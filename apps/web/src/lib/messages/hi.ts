@@ -150,6 +150,8 @@ export const hi: Record<string, string> = {
   'Not saved': 'सहेजा नहीं गया',
   'Organisation time zone': 'संगठन का समय क्षेत्र',
   'Where your data is kept': 'आपका डेटा कहाँ रखा जाता है',
+  'Platform admin': 'प्लेटफ़ॉर्म प्रशासन',
+  'This organisation is suspended: {reason}. You can read and export its records, but nothing can be changed.': 'यह संगठन निलंबित है: {reason}। आप इसके रिकॉर्ड पढ़ और निर्यात कर सकते हैं, लेकिन कुछ भी बदला नहीं जा सकता।',
   'Each organisation’s books, documents and audit trail are stored in one region, the one it was created in, and are served only from there. Moving to another region is done by the service operator on request.': 'हर संगठन की बहियाँ, दस्तावेज़ और ऑडिट ट्रेल एक ही क्षेत्र में रखे जाते हैं, जिसमें वह बनाया गया था, और केवल वहीं से खोले जाते हैं। दूसरे क्षेत्र में ले जाना अनुरोध पर सेवा संचालक करता है।',
   Region: 'क्षेत्र',
   Code: 'कोड',

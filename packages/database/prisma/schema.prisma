@@ -132,6 +132,8 @@ model User {
   name         String
   passwordHash String        @map("password_hash")
   isActive     Boolean       @default(true) @map("is_active")
+  /// Platform administration: SUPER_ADMIN or SUPPORT; null for everyone else.
+  platformRole String?       @map("platform_role") @db.VarChar(16)
   /// Interface language: en or hi.
   language     String        @default("en") @db.VarChar(8)
   /// AUTO (by currency), IN, INTL, EU or SPACE.
@@ -144,6 +146,8 @@ model User {
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships  Membership[]
   sessions     AuthSession[]
+  announcementsCreated   PlatformAnnouncement[] @relation("AnnouncementCreatedBy")
+  announcementsWithdrawn PlatformAnnouncement[] @relation("AnnouncementWithdrawnBy")
 
   @@map("users")
 }
@@ -198,6 +202,9 @@ model Organization {
   isDemo                   Boolean                   @default(false) @map("is_demo")
   /// The region this organisation's data lives in (set at creation; see docs/REGIONAL_DEPLOYMENT.md).
   dataRegion               String?                   @map("data_region") @db.VarChar(32)
+  /// Suspended by the platform: readable by members, not changeable.
+  suspendedAt              DateTime?                 @map("suspended_at") @db.Timestamptz(6)
+  suspendedReason          String?                   @map("suspended_reason")
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
   arAccountId              String?                   @map("ar_account_id") @db.Uuid
   apAccountId              String?                   @map("ap_account_id") @db.Uuid
@@ -3643,4 +3650,22 @@ model FxRevaluation {
   @@unique([orgId, number])
   @@unique([orgId, date])
   @@map("fx_revaluations")
+}
+
+/// A message shown to every signed-in person while current (platform administration).
+model PlatformAnnouncement {
+  id          String    @id @db.Uuid
+  message     String
+  tone        String    @default("INFO") @db.VarChar(8)
+  startsAt    DateTime  @map("starts_at") @db.Timestamptz(6)
+  endsAt      DateTime? @map("ends_at") @db.Timestamptz(6)
+  createdBy   String    @map("created_by") @db.Uuid
+  creator     User      @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  withdrawnBy String?   @map("withdrawn_by") @db.Uuid
+  withdrawer  User?     @relation("AnnouncementWithdrawnBy", fields: [withdrawnBy], references: [id], onDelete: Restrict)
+
+  @@index([startsAt])
+  @@map("platform_announcements")
 }

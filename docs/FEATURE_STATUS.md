@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 897 |
+| Not started | 892 |
 | Designed | 0 |
 | Implementing | 62 |
 | Implemented | 33 |
-| Tested | 339 |
+| Tested | 344 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -58,7 +58,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
-| Platform super admin | M9 | 22 | 21 | 1 |
+| Platform super admin | M9 | 22 | 16 | 6 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
@@ -4675,17 +4675,99 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/approvals
   - apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule
 
+### ADMIN-001 — Create a dedicated SaaS administration application
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: A dedicated platform administration area (/admin) of the web app with its own layout and API (/v1/admin), for people with a platform role (SUPER_ADMIN, SUPPORT); first administrator via the admin:grant command.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+
+### ADMIN-002 — Tenant management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Tenants (organisations) listed and searched by name, member email or id, with country, region, members, owners and status; overview counts.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+  - apps/web/src/app/admin/organisations/page.tsx
+
+### ADMIN-003 — Organization management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Organisation detail (metadata and members only), suspension with a reason shown to members (read-only, 423 ORG_SUSPENDED on changes) and reinstatement, written to the organisation's own audit trail.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+  - apps/web/src/app/admin/organisations/[id]/page.tsx
+
 ### ADMIN-004 — User management
 
 - Module: Platform super admin
 - Status: **Tested**
-- Notes: Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link.
+- Notes: Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link. Platform administration adds people search, disable/enable with reason, sign out everywhere and platform roles (at least one super admin kept).
 - Evidence:
   - apps/api/src/organizations/invitations.service.ts
   - apps/api/test/invitations.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/members
   - apps/web/src/app/invite
   - apps/web/e2e/members-flow.test.mjs
+  - apps/api/src/admin/admin.service.ts
+  - apps/web/src/app/admin/people/page.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+
+### ADMIN-019 — System announcements
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Announcements with tone, start and optional end, withdrawn early if needed, shown on every page to everyone signed in.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+  - apps/web/src/app/admin/announcements/page.tsx
+  - apps/web/src/components/shell.tsx
+
+### ADMIN-021 — Super Admin access must not automatically grant unrestricted access to tenant financial data
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
 
 ### MOB-001 — Create a responsive web application first
 
