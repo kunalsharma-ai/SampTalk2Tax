@@ -80,7 +80,7 @@ export default function CountryModulePage() {
                 {m.capabilities.map((c) => (
                   <Tr key={c.key}>
                     <Td className="whitespace-nowrap">{CAPABILITY_LABELS[c.key]}</Td>
-                    <Td><Badge tone={STATUS[c.status].tone}>{STATUS[c.status].label}</Badge></Td>
+                    <Td className="whitespace-nowrap"><Badge tone={STATUS[c.status].tone}>{STATUS[c.status].label}</Badge></Td>
                     <Td className="text-fg-muted">{c.note}</Td>
                   </Tr>
                 ))}
