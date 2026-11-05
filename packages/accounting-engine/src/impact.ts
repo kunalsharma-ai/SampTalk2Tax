@@ -58,7 +58,7 @@ export const LEVER_INFO: Record<ImpactLever, { area: ImpactArea; label: string; 
 
 /** Month numbers are 1-based offsets into the projection (1 = the first projected month). */
 export type ImpactChange =
-  | { lever: 'NEW_CUSTOMER'; label?: string | null; monthlyRevenue: string; rampMonths: number; month?: number }
+  | { lever: 'NEW_CUSTOMER'; label?: string | null; monthlyRevenue: string; rampMonths: number; month?: number; costOfSalesPercent?: string }
   | { lever: 'LOSE_CUSTOMER'; contactId: string; month?: number }
   | { lever: 'PRICE_CHANGE'; pricePercent: string; volumePercent: string; month?: number }
   | { lever: 'SALES_HIRES'; count: number; monthlyCostPerHead: string; oneOffCostPerHead: string; monthlyRevenuePerHead: string; rampMonths: number; month?: number }
@@ -232,6 +232,7 @@ export function checkChange(c: ImpactChange, horizon: number, ctx: Pick<ImpactIn
       label(c.label);
       positive(c.monthlyRevenue, 'Monthly sales at full speed');
       int(c.rampMonths, 'Months to reach full speed', 1, 60);
+      if (c.costOfSalesPercent !== undefined) num(c.costOfSalesPercent, 'Cost of sales on these sales (%)', 0, 100);
       break;
     case 'LOSE_CUSTOMER':
       if (!ctx.customers.some((x) => x.contactId === c.contactId)) issues.push('Choose a customer from the list');
@@ -322,12 +323,17 @@ export function changeDrivers(c: ImpactChange, input: ImpactInput): { title: str
   const drivers: TwinDriverWithMeta[] = [];
   const explanation: string[] = [];
   let title: string = LEVER_INFO[c.lever].label;
-  const cosLine = (rev: string) => (cosPct.gt(0) ? ` Cost of sales follows at ${cosPct.toFixed(2)}% of that revenue, the business’s own ratio, so gross profit rises ${money(dec(rev).times(new D(100).minus(cosPct)).div(100))} a month at full speed.` : '');
+  const cosLine = (rev: string, own: Dec | null = null) => {
+    const r = own ?? cosPct;
+    if (r.isZero()) return '';
+    return ` Cost of sales follows at ${r.toFixed(2)}% of that revenue, ${own ? 'the figure given for these sales' : 'the business’s own ratio'}, so gross profit rises ${money(dec(rev).times(new D(100).minus(r)).div(100))} a month at full speed.`;
+  };
   switch (c.lever) {
     case 'NEW_CUSTOMER': {
-      title = c.label?.trim() ? `New customer: ${c.label.trim()}` : 'Win a new customer';
-      drivers.push({ kind: 'EXPANSION', label: title, oneOffCost: '0', monthlyCost: '0', monthlyRevenue: dec(c.monthlyRevenue).toFixed(), rampMonths: c.rampMonths, month: m, costOfSalesPercent: cosPct.toFixed(2) });
-      explanation.push(`Sales start in ${monthName(m)} and build up evenly to ${money(c.monthlyRevenue)} a month over ${c.rampMonths} month${c.rampMonths === 1 ? '' : 's'}.${cosLine(c.monthlyRevenue)}`);
+      title = c.label?.trim() ? (c.label.trim().includes(':') ? c.label.trim() : `New customer: ${c.label.trim()}`) : 'Win a new customer';
+      const own = c.costOfSalesPercent !== undefined ? dec(c.costOfSalesPercent).toDecimalPlaces(2, D.ROUND_HALF_UP) : null;
+      drivers.push({ kind: 'EXPANSION', label: title, oneOffCost: '0', monthlyCost: '0', monthlyRevenue: dec(c.monthlyRevenue).toFixed(), rampMonths: c.rampMonths, month: m, costOfSalesPercent: (own ?? cosPct).toFixed(2) });
+      explanation.push(`Sales start in ${monthName(m)} and build up evenly to ${money(c.monthlyRevenue)} a month over ${c.rampMonths} month${c.rampMonths === 1 ? '' : 's'}.${cosLine(c.monthlyRevenue, own)}`);
       explanation.push('The new customer pays in the business’s usual number of days, so receivables rise with the sales.');
       break;
     }

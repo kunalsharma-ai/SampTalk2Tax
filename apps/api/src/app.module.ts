@@ -80,6 +80,8 @@ import { DisastersController } from './disasters/disasters.controller';
 import { DisastersService } from './disasters/disasters.service';
 import { ImpactController } from './impact/impact.controller';
 import { ImpactService } from './impact/impact.service';
+import { OpportunitiesController } from './opportunities/opportunities.controller';
+import { OpportunitiesService } from './opportunities/opportunities.service';
 import { DashboardsController } from './dashboards/dashboards.controller';
 import { DashboardsService } from './dashboards/dashboards.service';
 import { ReportDesignerController } from './report-designer/report-designer.controller';
@@ -175,6 +177,7 @@ export class AppModule {
         DecisionsController,
     DisastersController,
     ImpactController,
+    OpportunitiesController,
     PoliciesController,
     DashboardsController,
     ReportDesignerController,
@@ -239,6 +242,7 @@ export class AppModule {
         DecisionsService,
     DisastersService,
     ImpactService,
+    OpportunitiesService,
     PoliciesService,
     DashboardsService,
     ReportDesignerService,
