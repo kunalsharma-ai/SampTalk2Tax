@@ -4496,6 +4496,64 @@
         "docs/POLICY_STUDIO.md"
       ],
       "notes": "Each rule is a workflow definition (trigger, conditions, actions to roles or the customer/vendor). Test cases state whether a rule should act on given facts and run on the server, with each condition's actual value; a back-test runs event rules over the last 90 days of real events. Approval needs every test passing and someone other than the last editor (workflows.manage); it creates or versions one workflow per rule and turns off workflows of removed rules. Every version (created, edited, approved, retired) is kept in an immutable table."
+    },
+    "INNOV-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dashboards.ts",
+        "packages/accounting-engine/test/dashboards.test.ts",
+        "packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql",
+        "apps/api/src/dashboards",
+        "apps/api/test/dashboards.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/dashboards",
+        "apps/web/src/components/dashboards",
+        "apps/web/e2e/dashboards-flow.test.mjs",
+        "docs/AI_DASHBOARDS.md"
+      ],
+      "notes": "A dashboard is described in words; the AI (Claude, through the AI control guard and the copilot's switch and budget, prompt version recorded) proposes widgets, says what asked-for data is not available, and asks questions that the person answers to revise the draft. Live drafting waits on a Claude key (scripted model in tests)."
+    },
+    "INNOV-016": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dashboards.ts",
+        "packages/accounting-engine/test/dashboards.test.ts",
+        "packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql",
+        "apps/api/src/dashboards",
+        "apps/api/test/dashboards.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/dashboards",
+        "apps/web/src/components/dashboards",
+        "apps/web/e2e/dashboards-flow.test.mjs",
+        "docs/AI_DASHBOARDS.md"
+      ],
+      "notes": "Configurations (figure, line, bar, table, top customers) may only use 23 approved metrics (the KPIs and main figures of the books); the engine checks every widget (approved metric, units not mixed in a chart, month and count limits) whether the AI or a person built it, and works out every figure from posted month figures. The AI never produces a number. Customer widgets need sales.read."
+    },
+    "INNOV-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Covered by the financial recovery planner (docs/RECOVERY_PLANNER.md): recovery options measured on the digital twin from the books (collections, supplier terms, cost cuts, funding, pricing), combined into plans with their cash effect and evidence."
+    },
+    "INNOV-018": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Covered by benchmarking (docs/BENCHMARKING.md): opt-in with recorded consent, an anonymous pool with no organisation id, medians only with 5+ peers and quartiles with 10+, each metric's formula shown for explanation."
     }
   }
 }

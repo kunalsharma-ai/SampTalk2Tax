@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 922 |
+| Not started | 918 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 317 |
+| Tested | 321 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 9 | 9 |
+| Additional differentiating innovations | M7 | 18 | 5 | 13 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4757,6 +4757,68 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/planning/disasters
   - apps/web/e2e/disaster-simulation-flow.test.mjs
   - docs/DISASTER_SIMULATION.md
+
+### INNOV-012 — Generate evidence-based financial recovery scenarios
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Covered by the financial recovery planner (docs/RECOVERY_PLANNER.md): recovery options measured on the digital twin from the books (collections, supplier terms, cost cuts, funding, pricing), combined into plans with their cash effect and evidence.
+- Evidence:
+  - packages/accounting-engine/src/recovery.ts
+  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/recovery/recovery.service.ts
+  - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
+  - packages/accounting-engine/test/recovery.test.ts
+  - apps/api/test/recovery.e2e.test.ts
+  - apps/web/e2e/recovery-flow.test.mjs
+  - docs/RECOVERY_PLANNER.md
+
+### INNOV-015 — Allow users to describe a dashboard in natural language
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: A dashboard is described in words; the AI (Claude, through the AI control guard and the copilot's switch and budget, prompt version recorded) proposes widgets, says what asked-for data is not available, and asks questions that the person answers to revise the draft. Live drafting waits on a Claude key (scripted model in tests).
+- Evidence:
+  - packages/accounting-engine/src/dashboards.ts
+  - packages/accounting-engine/test/dashboards.test.ts
+  - packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql
+  - apps/api/src/dashboards
+  - apps/api/test/dashboards.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/dashboards
+  - apps/web/src/components/dashboards
+  - apps/web/e2e/dashboards-flow.test.mjs
+  - docs/AI_DASHBOARDS.md
+
+### INNOV-016 — Generate a validated dashboard configuration using approved metrics
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Configurations (figure, line, bar, table, top customers) may only use 23 approved metrics (the KPIs and main figures of the books); the engine checks every widget (approved metric, units not mixed in a chart, month and count limits) whether the AI or a person built it, and works out every figure from posted month figures. The AI never produces a number. Customer widgets need sales.read.
+- Evidence:
+  - packages/accounting-engine/src/dashboards.ts
+  - packages/accounting-engine/test/dashboards.test.ts
+  - packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql
+  - apps/api/src/dashboards
+  - apps/api/test/dashboards.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/dashboards
+  - apps/web/src/components/dashboards
+  - apps/web/e2e/dashboards-flow.test.mjs
+  - docs/AI_DASHBOARDS.md
+
+### INNOV-018 — Compare company performance with properly anonymized, authorized benchmark datasets
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Covered by benchmarking (docs/BENCHMARKING.md): opt-in with recorded consent, an anonymous pool with no organisation id, medians only with 5+ peers and quartiles with 10+, each metric's formula shown for explanation.
+- Evidence:
+  - packages/accounting-engine/src/benchmark.ts
+  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/benchmarking/benchmarking.service.ts
+  - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
+  - packages/accounting-engine/test/benchmark.test.ts
+  - apps/api/test/benchmarking.e2e.test.ts
+  - apps/web/e2e/benchmarking-flow.test.mjs
+  - docs/BENCHMARKING.md
 
 ### NAV-001 — Create a premium sidebar and global navigation system
 
