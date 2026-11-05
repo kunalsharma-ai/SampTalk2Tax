@@ -2,15 +2,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Field, Input, Table, Td, Th, Tr } from '@talk2tax/ui';
 import { useState } from 'react';
+import { OrganisationTimeZoneCard, PreferencesCard } from '@/components/preferences';
 import { PageHeader } from '@/components/shell';
+import { useT } from '@/lib/i18n';
 import { api } from '@/lib/api';
-import { describeDevice } from '@/lib/format';
+import { dateTime, describeDevice } from '@/lib/format';
 import type { AuthSessionInfo } from '@/lib/types';
 
-const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+const when = (iso: string) => dateTime(iso);
 
 export default function AccountSecurityPage() {
   const qc = useQueryClient();
+  const t = useT();
   const sessions = useQuery({ queryKey: ['auth-sessions'], queryFn: () => api<AuthSessionInfo[]>('/v1/auth/sessions') });
   const refresh = () => qc.invalidateQueries({ queryKey: ['auth-sessions'] });
   const revoke = useMutation({ mutationFn: (id: string) => api<void>(`/v1/auth/sessions/${id}`, { method: 'DELETE' }), onSuccess: refresh });
@@ -29,7 +32,9 @@ export default function AccountSecurityPage() {
 
   return (
     <>
-      <PageHeader title="Sign-in and security" description="Where you are signed in, and your password. These settings are for your own account and apply in every organisation." />
+      <PageHeader title={t('Account and preferences')} description={t("Your language and formats, where you are signed in, and your password. These settings are for your own account and apply in every organisation, except the organisation's time zone.")} />
+      <PreferencesCard />
+      <OrganisationTimeZoneCard />
       <Card className="mb-6">
         <CardHeader
           title="Where you're signed in"

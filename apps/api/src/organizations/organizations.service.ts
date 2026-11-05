@@ -1,11 +1,12 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { fiscalYearForDate, GENERIC_SMB_COA, generateFiscalYear } from '@talk2tax/accounting-engine';
+import { fiscalYearForDate, GENERIC_SMB_COA, generateFiscalYear, isTimeZone } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
 import { canAssignRole, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { toDbDate, todayIso } from '../common/dates';
 import { PrismaService, Tx, useOrgInTx } from '../common/prisma.service';
+import { DomainError } from '../common/errors';
 
 export interface CreateOrgInput {
   name: string;
@@ -104,6 +105,17 @@ export class OrganizationsService {
     return serializeOrg(org);
   }
 
+  /** The time zone moments are shown in for this organisation (display only). */
+  async setTimeZone(orgId: string, actorId: string, timeZone: string) {
+    if (!isTimeZone(timeZone)) throw new DomainError('INVALID_TIME_ZONE', 'Choose a time zone such as Asia/Kolkata or Europe/London', HttpStatus.UNPROCESSABLE_ENTITY);
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { timeZone: true } });
+      await tx.organization.update({ where: { id: orgId }, data: { timeZone } });
+      await this.audit.append(tx, { orgId, actorId, action: 'org.time_zone_changed', entityType: 'organization', entityId: orgId, data: { before: before.timeZone, after: timeZone } });
+    });
+    return this.get(orgId);
+  }
+
   async listMembers(orgId: string) {
     const ms = await this.prisma.membership.findMany({
       where: { orgId },
@@ -139,6 +151,7 @@ function serializeOrg(o: {
   arAccountId: string | null;
   apAccountId: string | null;
   claimsAccountId: string | null;
+  timeZone: string;
   createdAt: Date;
 }) {
   return {
@@ -149,6 +162,7 @@ function serializeOrg(o: {
     functionalCurrency: o.functionalCurrency,
     fiscalYearStartMonth: o.fiscalYearStartMonth,
     isDemo: o.isDemo,
+    timeZone: o.timeZone,
     arAccountId: o.arAccountId,
     apAccountId: o.apAccountId,
     claimsAccountId: o.claimsAccountId,

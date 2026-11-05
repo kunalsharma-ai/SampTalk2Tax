@@ -159,6 +159,8 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/orgs/:orgId/management-reports/:month` | reports.read | The month's report: P&L `lines` (actual, previous, lastYear, budget, variance, favourable, ytd, ytdBudget), `cash`, `kpis`, `customers`, `commentary`, `status`; once FINAL the frozen figures plus `changedSince` |
 | `PUT /v1/orgs/:orgId/management-reports/:month/commentary` | budgets.manage | `commentary` (≤ 10,000 characters); `REPORT_FINAL` (409) once final |
 | `POST /v1/orgs/:orgId/management-reports/:month/finalise` | budgets.manage | Freeze figures and commentary; `MONTH_NOT_ENDED` or `REPORT_FINAL` (409) |
+| `GET /v1/auth/me` → `preferences`; `PUT /v1/auth/me/preferences` | signed in | My `language` (en\|hi), `numberFormat` (AUTO\|IN\|INTL\|EU\|SPACE), `dateFormat` (D_MON_Y\|DMY\|MDY\|YMD), `timeZone` (IANA or null = the organisation's). Display only |
+| `PUT /v1/orgs/:orgId/time-zone` | org.manage | `timeZone` (IANA); `422 INVALID_TIME_ZONE`; audited `org.time_zone_changed`. Organisations carry `timeZone` |
 | `GET /v1/orgs/:orgId/alerts?status=ACTIVE\|DISMISSED\|CLEARED\|ALL&fresh=` | reports.read | Alerts by severity with `evidence`, `summary` counts and `lastScan`; runs the checks first when the last run is over 60 minutes old (unless `fresh=false`) |
 | `POST /v1/orgs/:orgId/alerts/scan` | alerts.manage | Run every check that is on now; returns the run (found, opened, reopened, cleared, failures) |
 | `GET /v1/orgs/:orgId/alerts/:alertId` | reports.read | One alert with the check's description and its `history` |

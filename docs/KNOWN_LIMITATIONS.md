@@ -77,6 +77,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * A fixed set of 13 KPIs for the whole organisation, computed by calendar month from posted journals by account subtype: no custom formulas or dashboards, dimensions, peer benchmarks, alerts, drill-down to journals, scheduled or emailed reports, or PDF/Excel export (browser print only). DSO and DPO compare GST-inclusive balances with tax-exclusive revenue and expenses. The management report compares only the approved budget. See [`KPIS_AND_MANAGEMENT_REPORTS.md`](KPIS_AND_MANAGEMENT_REPORTS.md).
 
+## Languages and regional formats (M8, slice 1)
+
+* Hindi covers the navigation, header, roles and the preferences page; other pages are in English. Not yet reviewed by a professional translator. No right-to-left language yet. Business dates (today, due dates, periods) are in India time for every organisation; time zones change only how moments are shown. A few pages and printed documents format values themselves and do not follow the person's formats. Emails, exports and AI answers are not translated.
+
 ## Alerts and leakage checks (M4, slice 4)
 
 * Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run in the background (at most hourly per organisation, 20 organisations a pass), on request, and when alerts are opened. Priority is a fixed, explained formula, not learned. New alerts become tasks for a role by one setting for all checks; there are no email, push or chat notifications, no assignment to one person and no snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
