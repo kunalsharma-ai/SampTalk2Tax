@@ -20,6 +20,8 @@ interface Task {
   overdue: boolean;
   link: { path: string; label: string } | null;
   workflow: { id: string; name: string; runId: string } | null;
+  source: Source;
+  sourceLabel: string;
   createdBy: string | null;
   createdAt: string;
   closedBy: string | null;
@@ -35,6 +37,25 @@ interface Member {
   userId: string;
   name: string;
   role: string;
+}
+
+type Source = 'PERSON' | 'WORKFLOW' | 'AI_AGENT' | 'ALERT' | 'CLOSE';
+const SOURCES: { key: Source | 'ALL'; label: string }[] = [
+  { key: 'ALL', label: 'Anywhere' },
+  { key: 'PERSON', label: 'People' },
+  { key: 'ALERT', label: 'Alerts' },
+  { key: 'WORKFLOW', label: 'Automations' },
+  { key: 'AI_AGENT', label: 'The AI assistant' },
+  { key: 'CLOSE', label: 'Month-end close' },
+];
+const SOURCE_TONE: Record<Source, 'neutral' | 'negative' | 'accent' | 'violet' | 'warning'> = { PERSON: 'neutral', ALERT: 'negative', WORKFLOW: 'accent', AI_AGENT: 'violet', CLOSE: 'warning' };
+
+/** Who or what made the task, in words. */
+function origin(t: Task): string {
+  if (t.source === 'ALERT') return 'From an alert';
+  if (t.source === 'CLOSE') return `From the month-end close${t.createdBy ? `, by ${t.createdBy}` : ''}`;
+  if (t.source === 'AI_AGENT') return `Proposed by the AI assistant, confirmed by ${t.createdBy ?? 'a former member'}`;
+  return `From ${t.createdBy ?? 'a former member'}`;
 }
 
 const STATUSES = [
@@ -56,9 +77,10 @@ export default function TasksPage() {
   const qc = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUSES)[number]['key']>('OPEN');
   const [scope, setScope] = useState<'mine' | 'all'>('mine');
+  const [source, setSource] = useState<Source | 'ALL'>('ALL');
   const [creating, setCreating] = useState(false);
   const [closing, setClosing] = useState<{ task: Task; to: 'complete' | 'cancel' } | null>(null);
-  const q = useQuery({ queryKey: ['tasks', orgId, scope, status], queryFn: () => api<TaskList>(`/v1/orgs/${orgId}/tasks?scope=${scope}&status=${status}`), enabled: !!org });
+  const q = useQuery({ queryKey: ['tasks', orgId, scope, status, source], queryFn: () => api<TaskList>(`/v1/orgs/${orgId}/tasks?scope=${scope}&status=${status}&source=${source}`), enabled: !!org });
   if (!org) return null;
   const manager = can(org.role, 'workflows.manage');
   const refresh = () => void qc.invalidateQueries({ queryKey: ['tasks', orgId] });
@@ -66,7 +88,7 @@ export default function TasksPage() {
     <>
       <PageHeader
         title={scope === 'mine' ? 'My tasks' : 'Everyone’s tasks'}
-        description="Tasks given to you or to your role, by people or by automations. Each links to the record it is about."
+        description="One queue for everything that needs doing: tasks for you or your role from people, alerts, automations, the AI assistant (once you confirm) and the month-end close. Each says where it came from and links to the record it is about."
         actions={<Button onClick={() => setCreating(true)}>New task</Button>}
       />
       <ErrorAlert title="Could not load tasks" error={q.error} />
@@ -84,19 +106,27 @@ export default function TasksPage() {
             </button>
           ))}
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
+          From
+          <Select aria-label="Tasks from" className="w-44" value={source} onChange={(e) => setSource(e.target.value as Source | 'ALL')}>
+            {SOURCES.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+          </Select>
+        </label>
         {manager ? (
           <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
             Show
-            <Select className="w-48" value={scope} onChange={(e) => setScope(e.target.value as 'mine' | 'all')}>
+            <Select className="w-56" value={scope} onChange={(e) => setScope(e.target.value as 'mine' | 'all')}>
               <option value="mine">Mine and my role’s</option>
               <option value="all">Everyone’s</option>
             </Select>
           </label>
         ) : null}
+        </div>
       </div>
       {q.data && !q.data.tasks.length ? (
         <Card>
-          <EmptyState title={status === 'OPEN' ? 'Nothing to do' : 'No tasks here'}>{status === 'OPEN' ? 'New tasks for you or your role appear here.' : 'Closed tasks are kept here.'}</EmptyState>
+          <EmptyState title={status === 'OPEN' ? 'Nothing to do' : 'No tasks here'}>{source !== 'ALL' ? 'None from here. Choose “Anywhere” to see every task.' : status === 'OPEN' ? 'New tasks for you or your role appear here.' : 'Closed tasks are kept here.'}</EmptyState>
         </Card>
       ) : null}
       {q.data?.tasks.length ? (
@@ -107,6 +137,7 @@ export default function TasksPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={cn('font-medium', t.status !== 'OPEN' && 'text-fg-muted line-through')}>{t.title}</span>
+                    {t.source !== 'PERSON' ? <Badge tone={SOURCE_TONE[t.source]}>{t.sourceLabel}</Badge> : null}
                     {t.status === 'DONE' ? <Badge tone="positive">Done</Badge> : t.status === 'CANCELLED' ? <Badge>Cancelled</Badge> : t.overdue ? <Badge tone="negative">Overdue</Badge> : null}
                   </div>
                   {t.description ? <p className="mt-1 whitespace-pre-line text-sm text-fg-muted">{t.description}</p> : null}
@@ -114,8 +145,8 @@ export default function TasksPage() {
                     <span>For {t.assignee.label}</span>
                     {t.dueDate ? <span className={cn(t.overdue && 'text-negative')}>Due {date(t.dueDate)}</span> : <span>No due date</span>}
                     {t.link ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}${t.link.path}`}>{t.link.label}</Link> : null}
-                    <span>{t.workflow ? <>From the automation {manager ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}/automations/${t.workflow.id}`}>{t.workflow.name}</Link> : t.workflow.name}</> : `From ${t.createdBy ?? 'a former member'}`}</span>
-                    {t.closedAt ? <span>{t.status === 'DONE' ? 'Done' : 'Cancelled'} by {t.closedBy ?? 'a former member'}{t.closeNote ? `: ${t.closeNote}` : ''}</span> : null}
+                    <span>{t.workflow ? <>From the automation {manager ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}/automations/${t.workflow.id}`}>{t.workflow.name}</Link> : t.workflow.name}</> : origin(t)}</span>
+                    {t.closedAt ? <span>{t.status === 'DONE' ? 'Done' : 'Cancelled'} {t.closedBy ? `by ${t.closedBy}` : t.source === 'ALERT' ? 'automatically' : 'by a former member'}{t.closeNote ? `: ${t.closeNote}` : ''}</span> : null}
                   </p>
                 </div>
                 {t.canClose ? (

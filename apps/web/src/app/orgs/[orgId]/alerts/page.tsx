@@ -7,7 +7,7 @@ import { Suspense, useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
-import { ACTION_LABEL, ago, AREAS, dateTime, evidenceHref, SEVERITY, STATUS, type Alert, type AlertDetail, type AlertList, type Area, type Scan } from '@/lib/alerts';
+import { ACTION_LABEL, ago, AREAS, BAND, dateTime, evidenceHref, SEVERITY, STATUS, type Alert, type AlertDetail, type AlertList, type Area, type Scan } from '@/lib/alerts';
 import { api } from '@/lib/api';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
@@ -60,7 +60,7 @@ function Alerts() {
     <>
       <PageHeader
         title="Alerts"
-        description="Checks on cash, compliance, budgets and targets, and for money that may be leaking: duplicate bills and payments, regular customers not billed, and unusual manual journals. Each alert shows the figures it was raised on. The checks run when you open this page if the last run is over an hour old."
+        description="Checks on cash, compliance, budgets and targets, and for money that may be leaking: duplicate bills and payments, regular customers not billed, and unusual manual journals. Each alert shows the figures it was raised on and a priority score that explains the order. The checks run in the background every hour, and when you open this page if the last run is over an hour old."
         actions={
           <>
             <Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/alerts/settings`}>Check settings</Link>
@@ -79,6 +79,12 @@ function Alerts() {
             <Stat label="Being looked at" value={d.summary.acknowledged} tone="violet" sub={`${d.summary.dismissed} dismissed · ${d.summary.cleared} cleared`} />
           </div>
           <ScanLine scan={scan} justRan={!!run.data} />
+          {view === 'ACTIVE' && d.alerts.length ? (
+            <p className="mb-3 text-sm text-fg-muted">
+              Most urgent first: <span className="num font-medium text-fg">{d.bands.urgent}</span> urgent, <span className="num font-medium text-fg">{d.bands.high}</span> high, <span className="num">{d.bands.normal}</span> normal, <span className="num">{d.bands.low}</span> low. The order comes from how severe each alert is, the money at stake
+              {d.monthlyRevenue ? <> against average monthly revenue of <Money value={d.monthlyRevenue} currency={c} /></> : ''}, how long it has been open and how often it came back. Open an alert to see its score.
+            </p>
+          ) : null}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div role="tablist" aria-label="Alerts by state" className="flex flex-wrap gap-1 rounded-[var(--t2t-radius-md)] border border-line bg-surface p-1">
               {VIEWS.map((v) => (
@@ -154,6 +160,7 @@ function AlertRow({ a, currency, onOpen }: { a: Alert; currency: string; onOpen:
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
             <Badge tone={s.tone}>{s.label}</Badge>
+            {a.priority.score > 0 ? <Badge tone={BAND[a.priority.band].tone}><span className="sr-only">Priority </span>{BAND[a.priority.band].label} · <span className="num">{a.priority.score}</span></Badge> : null}
             <span className="text-xs text-fg-muted">{a.ruleName}</span>
             {a.status !== 'OPEN' ? <Badge tone={STATUS[a.status].tone}>{STATUS[a.status].label}</Badge> : null}
             {a.reopenCount ? <span className="text-xs text-fg-faint">back {a.reopenCount}×</span> : null}
@@ -245,6 +252,16 @@ function AlertDialog({ id, canManage, onClose }: { id: string; canManage: boolea
                 })}
               </ul>
             ) : null}
+          </section>
+          <section aria-label="Priority">
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-muted">
+              Priority: {BAND[a.priority.band].label}, <span className="num">{a.priority.score}</span> of 100
+            </h3>
+            {a.priority.score > 0 ? (
+              <ul className="list-inside list-disc text-sm text-fg-muted">{a.priority.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+            ) : (
+              <p className="text-sm text-fg-muted">{a.priority.reasons[0] ?? 'Not active, so it needs no attention.'}</p>
+            )}
           </section>
           <section aria-label="History">
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-muted">History</h3>

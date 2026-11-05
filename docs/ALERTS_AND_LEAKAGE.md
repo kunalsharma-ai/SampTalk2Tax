@@ -1,4 +1,4 @@
-# Alerts and leakage checks (M4, slice 4)
+# Alerts and leakage checks (M4, slice 4; priority and tasks M7)
 
 **Alerts** runs nine checks over the books: cash, overdue customers, compliance due dates, KPI targets, budgets, and money that may be leaking. Each check raises an alert for each thing it finds. The alert holds the figures and records it was raised on, so anyone can check it.
 
@@ -64,6 +64,38 @@ Notes on individual checks:
    * **A check that is turned off** has its open and acknowledged alerts cleared, with the note "The check was turned off".
 4. **Concurrent runs.** Runs for one organisation are serialised with a transaction-level advisory lock. An automatic run that finds a newer run already finished writes nothing.
 
+## Priority
+
+Every active alert has a **priority score** from 0 to 100, and the list shows the most urgent first. The score is made of fixed parts, and the alert dialog lists each one, so the order can always be explained (`alertPriority` in the engine):
+
+| Part | Points |
+|---|---|
+| Severity | Critical 60, warning 35, information 10 |
+| Money at stake, against average monthly operating revenue of the last three complete months | 25 for a month or more, 15 for a quarter of a month, 8 for 5%, 3 below that; 8 when there is no revenue to compare with |
+| Days open since first found | 1 for every 3 days, up to 10 |
+| Times it came back after it cleared or was dismissed | 5 each, up to 10 |
+| Acknowledged (someone is dealing with it) | minus 15 |
+
+The total is kept between 0 and 100 and put in a band: **urgent** from 70, **high** from 45, **normal** from 20, otherwise **low**. Dismissed and cleared alerts score 0. Ties are broken by severity, then by the most recently found.
+
+## Background checks
+
+The API runs the checks in the background every `ALERTS_RUNNER_INTERVAL_SECONDS` (default 300; 0 turns it off). Each pass takes up to 20 organisations that have posted entries and were not checked in the last hour, oldest first, and runs the checks for each as the system (the run shows as automatic). A failure for one organisation is logged and does not stop the others. Opening the alerts page still runs the checks when the last run is over an hour old.
+
+## Tasks from alerts
+
+New alerts, and alerts that come back, can become tasks in the **work queue** (**My tasks**). The setting is per organisation, under **Check settings → Tasks from alerts**:
+
+* **Make a task for:** critical alerts (the default), critical alerts and warnings, or none.
+* **Give it to:** owners (the default), admins, accountants or approvers. The task goes to the role, so anyone with it can pick it up.
+* **Due after:** 0 to 30 days from the day the alert is found (default 0, the same day).
+
+The task is titled "Critical alert: …" or "Warning: …", links to the alert, and is marked as coming from an alert. Only one open task is kept per alert. It **closes itself**: done when the alert clears (with the reason it cleared), cancelled when someone dismisses the alert (with their reason). Reopening a dismissed alert makes a new task. Changing the setting is audited with the before and after values, and applies to alerts found from then on.
+
+## The work queue
+
+Every task records where it came from: **a person**, **an automation**, **the AI assistant** (a task it proposed and the member confirmed), **an alert** or **the month-end close**. The work queue shows it on each task and can be filtered by it. Tasks made before this was recorded were classified once by the migration: tasks with a workflow run are from an automation, tasks linked to a month-end close are from the close, tasks matching a confirmed assistant action are from the assistant, and the rest are from a person.
+
 ## Acting on an alert
 
 | Action | From | Needs |
@@ -81,7 +113,7 @@ Wording follows the directive: an alert says what looks unusual and what to chec
 | Action | Permission | Roles |
 |---|---|---|
 | See alerts, their history and the check settings | `reports.read` | all roles except Employee |
-| Run the checks; acknowledge, dismiss or reopen; change settings | `alerts.manage` | Owner, Admin, Accountant |
+| Run the checks; acknowledge, dismiss or reopen; change settings, including tasks from alerts | `alerts.manage` | Owner, Admin, Accountant |
 
 ## Database guards
 
@@ -96,13 +128,16 @@ Wording follows the directive: an alert says what looks unusual and what to chec
   * a trigger makes alerts start open, keeps the organisation, check, finding and first-seen time, stops the reopen count from going down, and refuses deletes.
 * **`alert_events` and `alert_scans`** are append-only (trigger).
 * **Row-level security** applies as on every tenant table.
-* **Audit trail:** setting changes, runs started by a person, acknowledgements, dismissals and reopens.
+* **`alert_notification_settings`:** one row per organisation; severity CRITICAL, WARNING or OFF, a role that can take tasks, and due days from 0 to 30 (CHECK).
+* **`tasks.source`:** PERSON, WORKFLOW, AI_AGENT, ALERT or CLOSE (CHECK).
+* **Audit trail:** setting changes (checks and tasks from alerts), runs started by a person, acknowledgements, dismissals and reopens, and tasks closed by an alert (marked automatic).
 
 ## Not supported yet (do not rely on these)
 
-* **No notifications.** Alerts reach no one by email, SMS, push or chat, and there are no digests. Alerts are seen in the app only.
-* **No schedule.** The checks run on request, or when alerts are opened and the last run is over an hour old.
-* **No assignment.** Alerts are not assigned to a person, have no due date, and cannot be snoozed.
+* **No email, SMS, push or chat.** Alerts reach people as tasks in the app's work queue only, and there are no digests. (An automation can send an email on the "alert opened" event.)
+* **Background schedule is fixed.** The checks run at most hourly per organisation, 20 organisations a pass; a very large installation may need a shorter interval or a separate worker.
+* **Tasks go to a role, not a person,** and alerts cannot be snoozed. One setting applies to every check.
+* **Priority is a fixed formula,** not learned from how people act on alerts.
 * **No AI or statistics.** All nine checks are fixed rules with thresholds. There is no machine learning, anomaly scoring or AI explanation.
 * **Duplicates.** Only exact amounts from the same contact are matched: no near-amount, cross-vendor or OCR-based matching. Duplicate expense claims are checked separately when a claim is entered.
 * **Unusual journals.** Size and posting delay only: no checks on weekend or holiday posting, the user, the accounts, or round amounts.
@@ -111,14 +146,15 @@ Wording follows the directive: an alert says what looks unusual and what to chec
 
 ## Tests
 
-* `packages/accounting-engine/test/alerts.test.ts` (11 tests):
+* `packages/accounting-engine/test/alerts.test.ts` (14 tests):
   * settings, defaults and refused values;
   * duplicates, including chains and a zero window;
   * unusual journals, by size and by late posting, and with too little history;
   * missed billing across year ends and with credit notes;
   * budget overruns, including unbudgeted spending;
   * overdue customers;
-  * how a run opens, refreshes, reopens and clears alerts.
+  * how a run opens, refreshes, reopens and clears alerts;
+  * the priority score and its bands, and which severities make a task.
 * `apps/api/test/alerts.e2e.test.ts` (9 tests), against real postings:
   * every check finds its case, with its title, amount and evidence;
   * automatic and on-demand runs;
@@ -131,6 +167,15 @@ Wording follows the directive: an alert says what looks unusual and what to chec
   * turning a check off and on;
   * database tampering;
   * tenant isolation.
+* `apps/api/test/continuous-alerts.e2e.test.ts` (8 tests):
+  * the default task setting, who may change it, and refused values;
+  * every alert scored with reasons, and the list ordered by score;
+  * a critical alert becoming one task for the owners, linked and due the same day, and not twice;
+  * the task cancelled on dismissal and a new one made on reopening;
+  * a changed setting (warnings, accountants, 3 days) and the task done when the alert clears;
+  * the background runner checking a stale organisation and leaving out one with nothing posted;
+  * the work queue showing and filtering the source of each task.
+* `apps/web/e2e/continuous-alerts-flow.test.mjs` (1 test), in the browser: the critical alert first with its score explained, its task in the queue filtered to alerts, the task setting changed (with a refused value), and the task cancelled when the alert is dismissed.
 * `apps/web/e2e/alerts-flow.test.mjs` (1 test), in the browser:
   * a run that finds a repeated bill and payment;
   * the evidence and its links;
