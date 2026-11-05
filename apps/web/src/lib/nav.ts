@@ -1,6 +1,13 @@
 /** The main navigation. Labels are English; the shell translates them. */
-/** perm: shown only to roles that have it (a hint; the API enforces the real check). */
-export const NAV: { group: string; items: { href: string; label: string; perm?: string }[] }[] = [
+import { countrySupports, type CapabilityKey } from '@talk2tax/accounting-engine';
+import { can, type Org } from './types';
+
+/**
+ * perm: shown only to roles that have it (a hint; the API enforces the real check).
+ * needs: shown only where the organisation's country module supports it (the API refuses too).
+ */
+export interface NavItem { href: string; label: string; perm?: string; needs?: CapabilityKey }
+export const NAV: { group: string; items: NavItem[] }[] = [
   { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }, { href: '/tasks', label: 'My tasks' }] },
   {
     group: 'Sales',
@@ -35,9 +42,9 @@ export const NAV: { group: string; items: { href: string; label: string; perm?: 
   {
     group: 'Payroll',
     items: [
-      { href: '/payroll/runs', label: 'Pay runs' },
-      { href: '/payroll/employees', label: 'Employees' },
-      { href: '/settings/payroll', label: 'Payroll settings' },
+      { href: '/payroll/runs', label: 'Pay runs', needs: 'PAYROLL' },
+      { href: '/payroll/employees', label: 'Employees', needs: 'PAYROLL' },
+      { href: '/settings/payroll', label: 'Payroll settings', needs: 'PAYROLL' },
     ],
   },
   {
@@ -72,16 +79,17 @@ export const NAV: { group: string; items: { href: string; label: string; perm?: 
   {
     group: 'Tax',
     items: [
-      { href: '/tax/compliance', label: 'Compliance calendar' },
-      { href: '/tax/gst-returns', label: 'GST returns' },
-      { href: '/tax/e-invoices', label: 'E-invoices' },
-      { href: '/tax/e-way-bills', label: 'E-way bills' },
-      { href: '/tax/tds-tcs', label: 'TDS and TCS' },
-      { href: '/settings/gst', label: 'GST settings' },
-      { href: '/settings/e-invoicing', label: 'E-invoicing settings' },
-      { href: '/settings/e-way-bills', label: 'E-way bill settings' },
-      { href: '/settings/tds-tcs', label: 'TDS/TCS settings' },
+      { href: '/tax/compliance', label: 'Compliance calendar', needs: 'COMPLIANCE_CALENDAR' },
+      { href: '/tax/gst-returns', label: 'GST returns', needs: 'SALES_TAX_RETURNS' },
+      { href: '/tax/e-invoices', label: 'E-invoices', needs: 'E_INVOICING' },
+      { href: '/tax/e-way-bills', label: 'E-way bills', needs: 'TRANSPORT_DOCUMENTS' },
+      { href: '/tax/tds-tcs', label: 'TDS and TCS', needs: 'WITHHOLDING' },
+      { href: '/settings/gst', label: 'GST settings', needs: 'SALES_TAX_RETURNS' },
+      { href: '/settings/e-invoicing', label: 'E-invoicing settings', needs: 'E_INVOICING' },
+      { href: '/settings/e-way-bills', label: 'E-way bill settings', needs: 'TRANSPORT_DOCUMENTS' },
+      { href: '/settings/tds-tcs', label: 'TDS/TCS settings', needs: 'WITHHOLDING' },
       { href: '/settings/tax-rates', label: 'Tax rates' },
+      { href: '/settings/country-module', label: 'Country module' },
     ],
   },
   { group: 'Planning', items: [{ href: '/cfo', label: 'Virtual CFO' }, { href: '/benchmarking', label: 'Benchmarking' }, { href: '/decisions', label: 'Decision memory' }, { href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }, { href: '/planning/twin', label: 'Digital twin' }, { href: '/planning/recovery', label: 'Recovery planner' }, { href: '/planning/forecast-lab', label: 'Forecast lab' }, { href: '/planning/disasters', label: 'Disaster simulation' }, { href: '/planning/impact', label: 'Business impact' }, { href: '/planning/opportunities', label: 'Growth opportunities' }] },
@@ -91,3 +99,11 @@ export const NAV: { group: string; items: { href: string; label: string; perm?: 
 /** Employees only claim expenses; the rest of the books is not theirs to see. */
 export const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/expenses', label: 'My expense claims' }] }];
 
+
+/** The navigation an organisation sees: its role's items, in its country, without empty groups. */
+export function navFor(org: Pick<Org, 'role' | 'countryCode'> | undefined) {
+  if (org?.role === 'EMPLOYEE') return EMPLOYEE_NAV;
+  return NAV.filter((g) => g.group !== 'Payroll' || can(org?.role, 'payroll.read'))
+    .map((g) => ({ ...g, items: g.items.filter((i) => (!i.perm || can(org?.role, i.perm)) && (!i.needs || (!!org && countrySupports(org.countryCode, i.needs)))) }))
+    .filter((g) => g.items.length > 0);
+}
