@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { fiscalYearForDate, GENERIC_SMB_COA, generateFiscalYear, isTimeZone } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
 import { canAssignRole, RoleName } from '@talk2tax/security';
+import { RegionsService } from '../regions/regions.service';
 import { AuditService } from '../audit/audit.service';
 import { toDbDate, todayIso } from '../common/dates';
 import { PrismaService, Tx, useOrgInTx } from '../common/prisma.service';
@@ -23,6 +24,7 @@ export class OrganizationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly regions: RegionsService,
   ) {}
 
   async create(userId: string, input: CreateOrgInput, today = todayIso()) {
@@ -39,6 +41,7 @@ export class OrganizationsService {
           functionalCurrency: input.functionalCurrency,
           fiscalYearStartMonth: input.fiscalYearStartMonth,
           isDemo: input.isDemo ?? false,
+          dataRegion: this.regions.current,
         },
       });
       await tx.membership.create({ data: { orgId: org.id, userId, role: 'OWNER' } });
@@ -54,7 +57,7 @@ export class OrganizationsService {
         action: 'organization.created',
         entityType: 'organization',
         entityId: org.id,
-        data: { ...input, initialFiscalYear: fy },
+        data: { ...input, initialFiscalYear: fy, dataRegion: this.regions.current },
       });
       return org;
     });
@@ -97,12 +100,12 @@ export class OrganizationsService {
   listForUser(userId: string) {
     return this.prisma.membership
       .findMany({ where: { userId }, include: { org: true }, orderBy: { createdAt: 'asc' } })
-      .then((ms) => ms.map((m) => ({ ...serializeOrg(m.org), role: m.role })));
+      .then((ms) => ms.map((m) => ({ ...serializeOrg(m.org), dataRegion: this.regions.describe(m.org.dataRegion), role: m.role })));
   }
 
   async get(orgId: string) {
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId } });
-    return serializeOrg(org);
+    return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion) };
   }
 
   /** The time zone moments are shown in for this organisation (display only). */

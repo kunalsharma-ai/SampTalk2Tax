@@ -8,10 +8,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 898 |
+| Not started | 897 |
 | Designed | 0 |
 | Implementing | 62 |
-| Implemented | 32 |
+| Implemented | 33 |
 | Tested | 339 |
 | Integration pending | 12 |
 | External approval required | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
 | Platform super admin | M9 | 22 | 21 | 1 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 19 | 2 |
+| Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -4702,6 +4702,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Approvals work in the responsive web app at phone width; no mobile app.
 - Evidence:
   - apps/web/src/components/expenses/claims-list.tsx
+
+### PERF-007 — Regional deployments
+
+- Module: Performance and scalability
+- Status: **Implemented**
+- Notes: One deployment per region (DEPLOYMENT_REGION); organisations tagged with their data region at creation and served only there (421 WRONG_REGION elsewhere, with a link to the home region); audited operator move command. Implemented, not Production ready: no second region is running, and the data copy during a move is a manual database step.
+- Evidence:
+  - packages/database/prisma/migrations/20261110090000_data_regions/migration.sql
+  - apps/api/src/regions/regions.service.ts
+  - apps/api/src/regions/move-org.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/regional-deployment.e2e.test.ts
+  - apps/web/src/components/data-region.tsx
+  - apps/web/e2e/regional-deployment-flow.test.mjs
+  - docs/REGIONAL_DEPLOYMENT.md
 
 ### PERF-017 — Financial posting with transactional consistency
 

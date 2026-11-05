@@ -196,6 +196,8 @@ model Organization {
   functionalCurrency       String                    @map("functional_currency") @db.Char(3)
   fiscalYearStartMonth     Int                       @map("fiscal_year_start_month") @db.SmallInt
   isDemo                   Boolean                   @default(false) @map("is_demo")
+  /// The region this organisation's data lives in (set at creation; see docs/REGIONAL_DEPLOYMENT.md).
+  dataRegion               String?                   @map("data_region") @db.VarChar(32)
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
   arAccountId              String?                   @map("ar_account_id") @db.Uuid
   apAccountId              String?                   @map("ap_account_id") @db.Uuid
