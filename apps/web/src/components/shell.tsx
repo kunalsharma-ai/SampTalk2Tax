@@ -65,6 +65,7 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
   {
     group: 'Reports',
     items: [
+      { href: '/reports/dashboards', label: 'Dashboards' },
       { href: '/reports/trial-balance', label: 'Trial balance' },
       { href: '/reports/income-statement', label: 'Profit and loss' },
       { href: '/reports/profit-by-dimension', label: 'Profit by department' },
