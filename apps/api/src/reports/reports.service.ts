@@ -5,8 +5,13 @@ import {
   buildAccountLedger,
   buildBalanceSheet,
   buildIncomeStatement,
+  buildStatutoryStatements,
   buildTrialBalance,
   D,
+  defaultStatutoryFormat,
+  STATUTORY_FORMATS,
+  type StatutoryFormatId,
+  type StatutoryStatement,
   Dec,
   minorUnits,
 } from '@talk2tax/accounting-engine';
@@ -128,6 +133,43 @@ export class ReportsService {
       totalAssets: f(bs.totalAssets),
       totalLiabilities: f(bs.totalLiabilities),
       totalEquity: f(bs.totalEquity),
+    };
+  }
+
+  async statutoryFormats(orgId: string) {
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { countryCode: true } });
+    return {
+      default: defaultStatutoryFormat(org.countryCode),
+      formats: STATUTORY_FORMATS.map((f) => ({ id: f.id, name: f.name, countries: f.countries, basis: f.basis })),
+    };
+  }
+
+  async statutory(orgId: string, q: { from: string; to: string; format?: StatutoryFormatId; comparative: boolean }) {
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true, legalName: true, countryCode: true, functionalCurrency: true } });
+    const ccy = org.functionalCurrency;
+    const f = (d: Dec | null) => (d === null ? null : d.toFixed(minorUnits(ccy)));
+    const formatId = q.format ?? defaultStatutoryFormat(org.countryCode);
+    const run = async (from: string, to: string) => buildStatutoryStatements(formatId, await this.movements(orgId, null, to), await this.movements(orgId, from, to));
+    const now = await run(q.from, q.to);
+    const prevRange = { from: yearBefore(q.from), to: yearBefore(q.to) };
+    const prev = q.comparative ? await run(prevRange.from, prevRange.to) : null;
+    const merge = (cur: StatutoryStatement, before: StatutoryStatement | null) =>
+      cur.rows.map((r) => {
+        const p = before?.rows.find((x) => x.key === r.key);
+        return { key: r.key, label: r.label, kind: r.kind, level: r.level, note: r.note, amount: f(r.amount), previous: p ? f(p.amount) : null, accounts: r.accounts.map((a) => ({ accountId: a.accountId, code: a.code, name: a.name, amount: f(a.amount) })) };
+      });
+    const fm = now.format;
+    return {
+      organisation: { name: org.name, legalName: org.legalName, countryCode: org.countryCode },
+      currency: ccy,
+      format: { id: fm.id, name: fm.name, basis: fm.basis, balanceSheetTitle: fm.balanceSheetTitle, profitAndLossTitle: fm.profitAndLossTitle, sources: fm.sources, notIncluded: fm.notIncluded, isCountryDefault: formatId === defaultStatutoryFormat(org.countryCode) },
+      from: q.from,
+      to: q.to,
+      previous: prev ? prevRange : null,
+      balanceSheet: merge(now.balanceSheet, prev?.balanceSheet ?? null),
+      profitAndLoss: merge(now.profitAndLoss, prev?.profitAndLoss ?? null),
+      checks: { balanced: now.balanced && (prev?.balanced ?? true), profitAgrees: now.profitAgrees && (prev?.profitAgrees ?? true), netProfit: f(now.netProfit) },
+      unclassified: now.unclassified,
     };
   }
 
@@ -258,4 +300,11 @@ export class ReportsService {
       draftJournals: draftCount,
     };
   }
+}
+
+/** The same day a year earlier (29 February becomes 28 February). */
+function yearBefore(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const last = new Date(Date.UTC(y - 1, m, 0)).getUTCDate();
+  return `${y - 1}-${String(m).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
 }

@@ -4818,6 +4818,32 @@
         "apps/web/e2e/country-modules-flow.test.mjs"
       ],
       "notes": "Onboarding offers the eight country modules, fills in the usual currency and financial-year start, and shows what Talk2Tax covers in the chosen country before the organisation is created. The country cannot be changed later."
+    },
+    "I18N-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/statutory.ts",
+        "packages/accounting-engine/test/statutory.test.ts",
+        "apps/api/src/reports/reports.service.ts",
+        "apps/api/test/statutory-statements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/statutory/page.tsx",
+        "apps/web/e2e/statutory-statements-flow.test.mjs",
+        "docs/LOCAL_FINANCIAL_REPORTING.md"
+      ],
+      "notes": "Balance sheet and profit and loss in India Schedule III (Division I), UK Companies Act formats (FRS 102) and IFRS IAS 1 layouts, chosen by country, with the year before, the accounts behind each line, and accounts without a subtype flagged. Presentation only: no notes, cash flow statement, Ind AS (Division II), rounding to lakhs or crores, or MCA/Companies House filing."
+    },
+    "ENT-028": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/statutory.ts",
+        "packages/accounting-engine/test/statutory.test.ts",
+        "apps/api/src/reports/reports.service.ts",
+        "apps/api/test/statutory-statements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/statutory/page.tsx",
+        "apps/web/e2e/statutory-statements-flow.test.mjs",
+        "docs/LOCAL_FINANCIAL_REPORTING.md"
+      ],
+      "notes": "Presentation layouts for Schedule III (AS), UK Companies Act/FRS 102 and IFRS IAS 1 over one ledger. Recognition and measurement do not differ by framework: there are no framework-specific adjustments, Ind AS or US GAAP."
     }
   }
 }
