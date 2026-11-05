@@ -21,7 +21,7 @@ Talk2Tax is planned as an AI-native accounting, tax and finance platform. This r
 ## Quick start
 
 ```bash
-corepack enable                      # pnpm 10
+npm install -g corepack && corepack enable   # Node 26 (see .nvmrc), pnpm 10
 cp .env.example .env                 # set JWT_SECRET (openssl rand -base64 48)
 docker compose up -d postgres
 pnpm install && pnpm build
