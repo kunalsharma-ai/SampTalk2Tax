@@ -9,6 +9,7 @@ import { useT } from '@/lib/i18n';
 import { useOrg, useOrgs } from '@/lib/org';
 import { Logo } from './brand';
 import { navFor } from '@/lib/nav';
+import type { DataRegion } from '@/lib/types';
 
 export function Shell({ children }: { children: ReactNode }) {
   const { org, orgId, isLoading } = useOrg();
@@ -21,7 +22,8 @@ export function Shell({ children }: { children: ReactNode }) {
   // Moments are shown in the organisation's time zone unless the person chose their own.
   setOrganisationTimeZone(org?.timeZone ?? null);
 
-  const nav = (
+  const elsewhere = org && org.dataRegion && !org.dataRegion.here ? org.dataRegion : null;
+  const nav = elsewhere ? null : (
     <nav aria-label={t('Main')} className="flex flex-col gap-6">
       {navFor(org).map((g) => (
         <div key={g.group}>
@@ -78,7 +80,7 @@ export function Shell({ children }: { children: ReactNode }) {
           >
             {(orgs.data ?? []).map((o) => (
               <option key={o.id} value={o.id}>
-                {o.name}
+                {o.dataRegion && !o.dataRegion.here ? `${o.name} (${o.dataRegion.name})` : o.name}
               </option>
             ))}
             <option value="__new">{t('+ New organisation…')}</option>
@@ -98,10 +100,31 @@ export function Shell({ children }: { children: ReactNode }) {
         </header>
         {org?.isDemo ? <p className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-xs text-warning sm:hidden">{t('Synthetic demo data')}</p> : null}
         <main id="main" key={org?.timeZone ?? ""} className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
-          {isLoading ? <p className="text-sm text-fg-muted">{t('Loading…')}</p> : !org ? <p className="text-sm text-fg-muted">{t('Organisation not found or you do not have access.')}</p> : children}
+          {isLoading ? <p className="text-sm text-fg-muted">{t('Loading…')}</p> : !org ? <p className="text-sm text-fg-muted">{t('Organisation not found or you do not have access.')}</p> : elsewhere ? <RegionElsewhere orgId={org.id} name={org.name} region={elsewhere} /> : children}
         </main>
       </div>
     </div>
+  );
+}
+
+/** An organisation whose data lives in another region is served only there. */
+function RegionElsewhere({ orgId, name, region }: { orgId: string; name: string; region: DataRegion }) {
+  const t = useT();
+  return (
+    <section aria-label={t('Kept in another region')} className="mx-auto max-w-xl rounded-[var(--t2t-radius-lg)] border border-line bg-surface p-6">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{t('Kept in another region')}</p>
+      <h1 className="mt-2 text-xl font-semibold text-fg">{name}</h1>
+      <p className="mt-3 text-sm text-fg-muted">
+        {t('This organisation’s data is kept in {region}, so it is opened there and not on this server. Nothing about it is read or changed here.', { region: region.name })}
+      </p>
+      {region.appUrl ? (
+        <a className="mt-5 inline-flex h-10 items-center rounded-[var(--t2t-radius-md)] bg-[image:var(--t2t-gradient-brand)] px-4 text-sm font-semibold text-[#050a18] hover:brightness-110" href={`${region.appUrl.replace(/\/$/, '')}/orgs/${orgId}`}>
+          {t('Open it in {region}', { region: region.name })}
+        </a>
+      ) : (
+        <p className="mt-4 text-sm text-fg-muted">{t('Ask your administrator for the address of that region.')}</p>
+      )}
+    </section>
   );
 }
 

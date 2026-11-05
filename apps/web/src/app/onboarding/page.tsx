@@ -1,6 +1,7 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { DataRegionNote } from '@/components/data-region';
 import { COUNTRY_MODULES, countryModule, type ModuleLevel } from '@talk2tax/accounting-engine';
 import { Alert, Badge, Button, Card, Field, Input, Select } from '@talk2tax/ui';
 import { useRouter } from 'next/navigation';
@@ -116,6 +117,7 @@ export default function OnboardingPage() {
             )}
           </Field>
           <CountrySummary code={form.watch('countryCode')} />
+          <DataRegionNote />
           <p className="text-xs text-fg-faint sm:col-span-2">You can add tax rates afterwards under Tax rates, or the country's starter rates under Country module. Bank connections and data imports come in later releases. Nothing here files anything with any authority.</p>
           <div className="flex justify-end sm:col-span-2">
             <Button type="submit" loading={create.isPending}>

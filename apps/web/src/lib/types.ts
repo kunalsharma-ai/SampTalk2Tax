@@ -14,7 +14,16 @@ export interface Org {
   claimsAccountId: string | null;
   /** IANA time zone moments are shown in. */
   timeZone: string;
+  /** The region this organisation's data lives in, and whether this deployment serves it. */
+  dataRegion: DataRegion;
   role: Role;
+}
+
+export interface DataRegion {
+  region: string;
+  name: string;
+  appUrl: string | null;
+  here: boolean;
 }
 
 export interface Account {

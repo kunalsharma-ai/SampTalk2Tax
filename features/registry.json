@@ -30899,9 +30899,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "packages/database/prisma/migrations/20261110090000_data_regions/migration.sql",
+        "apps/api/src/regions/regions.service.ts",
+        "apps/api/src/regions/move-org.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/test/regional-deployment.e2e.test.ts",
+        "apps/web/src/components/data-region.tsx",
+        "apps/web/e2e/regional-deployment-flow.test.mjs",
+        "docs/REGIONAL_DEPLOYMENT.md"
+      ],
+      "notes": "One deployment per region (DEPLOYMENT_REGION); organisations tagged with their data region at creation and served only there (421 WRONG_REGION elsewhere, with a link to the home region); audited operator move command. Implemented, not Production ready: no second region is running, and the data copy during a move is a manual database step."
     },
     {
       "id": "PERF-008",

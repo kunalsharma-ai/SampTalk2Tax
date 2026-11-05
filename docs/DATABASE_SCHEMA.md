@@ -225,3 +225,7 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 * `exchange_rates`: one rate per organisation, currency and date (`rate > 0`), forced RLS.
 * `fx_revaluations`: number, date, reversal date, rates and lines (JSON), gain, journal and reversal entry; unique per organisation and date; immutable by trigger; forced RLS.
 * `JournalSource` gains `FX_REVALUATION`.
+
+## Regional deployment (M8, slice 5)
+
+* `organizations.data_region`: the region the organisation's data lives in (`^[a-z0-9-]{2,32}$` check; set at creation; untagged rows are claimed by the first API to start; a trigger refuses clearing it). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
