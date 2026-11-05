@@ -280,6 +280,9 @@ model Organization {
   policies               Policy[]
   policyVersions         PolicyVersion[]
   dashboards Dashboard[]
+  reportDesigns ReportDesign[]
+  reportRuns ReportRun[]
+  reportAiCalls ReportAiCall[]
   dashboardAiDrafts DashboardAiDraft[]
   policyAiDrafts         PolicyAiDraft[]
 
@@ -3428,4 +3431,79 @@ model DashboardAiDraft {
 
   @@index([orgId, createdAt])
   @@map("dashboard_ai_drafts")
+}
+
+/// A report layout: headings, text, commentary and figures of approved metrics.
+model ReportDesign {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  number      Int
+  name        String       @db.VarChar(120)
+  description String?      @db.VarChar(1000)
+  /// { sections: [...] }, checked by the engine before saving.
+  layout      Json
+  version     Int          @default(1)
+  createdById String       @map("created_by_id") @db.Uuid
+  updatedById String       @map("updated_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  runs        ReportRun[]
+
+  @@unique([orgId, number])
+  @@unique([orgId, name])
+  @@unique([orgId, id], map: "report_designs_org_id_id_key")
+  @@map("report_designs")
+}
+
+/// A report produced from a design for a month: its figures frozen, its commentary, and once final, never changed.
+model ReportRun {
+  id            String       @id @default(uuid()) @db.Uuid
+  orgId         String       @map("org_id") @db.Uuid
+  designId      String       @map("design_id") @db.Uuid
+  number        Int
+  month         String       @db.VarChar(7)
+  title         String       @db.VarChar(200)
+  /// The layout as it was, the figures, and the facts the commentary must stick to.
+  content       Json
+  /// One entry per commentary section: { text, source: AI | PERSON | NONE, issues }.
+  commentary    Json
+  /// DRAFT or FINAL
+  status        String       @db.VarChar(10)
+  version       Int          @default(1)
+  createdById   String       @map("created_by_id") @db.Uuid
+  updatedById   String       @map("updated_by_id") @db.Uuid
+  finalisedById String?      @map("finalised_by_id") @db.Uuid
+  finalisedAt   DateTime?    @map("finalised_at") @db.Timestamptz(6)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  design        ReportDesign @relation(fields: [designId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@index([orgId, designId, month])
+  @@map("report_runs")
+}
+
+/// Each AI call of the report designer (drafting a layout or writing commentary), with its tokens.
+model ReportAiCall {
+  id           String       @id @default(uuid()) @db.Uuid
+  orgId        String       @map("org_id") @db.Uuid
+  /// DESIGN or COMMENTARY
+  kind         String       @db.VarChar(12)
+  request      String       @db.VarChar(8000)
+  /// DONE or FAILED
+  status       String       @db.VarChar(10)
+  result       Json?
+  errorCode    String?      @map("error_code") @db.VarChar(40)
+  errorMessage String?      @map("error_message") @db.VarChar(500)
+  model        String?      @db.VarChar(100)
+  inputTokens  Int          @default(0) @map("input_tokens")
+  outputTokens Int          @default(0) @map("output_tokens")
+  createdById  String       @map("created_by_id") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, createdAt])
+  @@map("report_ai_calls")
 }

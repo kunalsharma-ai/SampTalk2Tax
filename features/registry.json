@@ -32760,9 +32760,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-designer.ts",
+        "packages/accounting-engine/test/report-designer.test.ts",
+        "packages/database/prisma/migrations/20261106120000_report_designer/migration.sql",
+        "apps/api/src/report-designer",
+        "apps/api/test/report-designer.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/designer",
+        "apps/web/src/components/report-designer",
+        "apps/web/e2e/report-designer-flow.test.mjs",
+        "docs/REPORT_DESIGNER.md"
+      ],
+      "notes": "Layouts of headings, fixed text, figures and monthly commentary, drafted by the AI from instructions (through the AI control guard, prompt version recorded) or built by hand. Reports freeze the month's figures; commentary is written from them by the AI (rejected if it quotes a number not in them) or by a person (flagged); final reports are immutable in the database. Live AI waits on a Claude key (scripted model in tests)."
     },
     {
       "id": "INNOV-018",

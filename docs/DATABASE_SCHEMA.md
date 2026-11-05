@@ -208,6 +208,8 @@ Policy studio: `policies` (`number` unique per organisation, shown as POL-0001; 
 
 Dashboards: `dashboards` (`number` unique per organisation, shown as DB-0001; `name` unique per organisation; `description`; `config` JSON with 1 to 12 widgets, checked in the database and by the engine; `version` for safe concurrent changes; creator, last editor and times) and `dashboard_ai_drafts` (request, result or error, model and tokens of each AI draft). Both have forced row-level security on `org_id`. Figures are never stored. See [`AI_DASHBOARDS.md`](AI_DASHBOARDS.md).
 
+Report designer: `report_designs` (number shown as RD-0001, unique name, `layout` JSON of 1 to 30 sections checked in the database and by the engine, `version`), `report_runs` (number shown as RPT-0001, month, title, frozen `content` with layout, currency, figures and facts, `commentary`, `status` DRAFT or FINAL, `version`, finaliser and time; composite foreign key to a design of the same organisation; trigger `t2t_report_runs_final` blocks changing or deleting a final report) and `report_ai_calls` (request, result or error, model, tokens). All have forced row-level security on `org_id`. See [`REPORT_DESIGNER.md`](REPORT_DESIGNER.md).
+
 ## Integrations
 
 `org_integrations`: one row per organisation and kind (`AI_ANTHROPIC`, `EMAIL_SMTP`): `enabled`, `settings` (JSON object, no secrets), `secret_cipher` (base64 of IV, GCM tag and ciphertext) with the `key_id` that sealed it (both set or both null), `secret_hint`, the last test (`test_status` NOT_TESTED/OK/FAILED, message, when and by whom; `tested_at` set exactly when tested), updated by and at. Forced row-level security on `org_id`. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

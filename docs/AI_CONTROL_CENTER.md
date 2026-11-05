@@ -1,6 +1,6 @@
 # AI control center
 
-The AI control center (`/orgs/:orgId/ai-control`, under Governance) puts every AI agent in one place and gives owners and admins the controls over them. It is the governance layer over the five AI features built so far: the finance copilot (including drafting rules in the [policy studio](POLICY_STUDIO.md) and [dashboards](AI_DASHBOARDS.md), which count towards the copilot's usage and budget), the collections agent, AI bank reconciliation, the month-end close review and the virtual CFO's pack summaries.
+The AI control center (`/orgs/:orgId/ai-control`, under Governance) puts every AI agent in one place and gives owners and admins the controls over them. It is the governance layer over the five AI features built so far: the finance copilot (including drafting rules in the [policy studio](POLICY_STUDIO.md) [dashboards](AI_DASHBOARDS.md) and the [report designer](REPORT_DESIGNER.md), which count towards the copilot's usage and budget), the collections agent, AI bank reconciliation, the month-end close review and the virtual CFO's pack summaries.
 
 ## What it shows
 

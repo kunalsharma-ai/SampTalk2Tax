@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 918 |
+| Not started | 917 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 321 |
+| Tested | 322 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 5 | 13 |
+| Additional differentiating innovations | M7 | 18 | 4 | 14 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4804,6 +4804,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/dashboards
   - apps/web/e2e/dashboards-flow.test.mjs
   - docs/AI_DASHBOARDS.md
+
+### INNOV-017 — Generate report layouts and narrative summaries from user instructions
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Layouts of headings, fixed text, figures and monthly commentary, drafted by the AI from instructions (through the AI control guard, prompt version recorded) or built by hand. Reports freeze the month's figures; commentary is written from them by the AI (rejected if it quotes a number not in them) or by a person (flagged); final reports are immutable in the database. Live AI waits on a Claude key (scripted model in tests).
+- Evidence:
+  - packages/accounting-engine/src/report-designer.ts
+  - packages/accounting-engine/test/report-designer.test.ts
+  - packages/database/prisma/migrations/20261106120000_report_designer/migration.sql
+  - apps/api/src/report-designer
+  - apps/api/test/report-designer.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/designer
+  - apps/web/src/components/report-designer
+  - apps/web/e2e/report-designer-flow.test.mjs
+  - docs/REPORT_DESIGNER.md
 
 ### INNOV-018 — Compare company performance with properly anonymized, authorized benchmark datasets
 
