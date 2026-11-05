@@ -164,6 +164,8 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/country-modules`, `GET /v1/country-modules/:code` | signed in | Country modules: level (FULL\|STARTER\|ACCOUNTING_ONLY), capabilities with status and note, starter rates, limitations, sources, `reviewedOn`. See [`COUNTRY_MODULES.md`](COUNTRY_MODULES.md) |
 | `GET /v1/orgs/:orgId/country-module` | org.read | The organisation's module, starter rates with `existing`, and `taxAccounts` |
 | `POST /v1/orgs/:orgId/country-module/starter-rates` | accounts.manage | Optional `names`; returns `created`, `skipped`; `409 NO_STARTER_RATES` or `TAX_ACCOUNT_REQUIRED`; audited |
+| `GET /v1/orgs/:orgId/reports/statutory/formats` | reports.read | Layouts for local statements (IN_SCHEDULE_III, GB_COMPANIES_ACT, IFRS_IAS1) and the country `default` |
+| `GET /v1/orgs/:orgId/reports/statutory?from=&to=&format=&comparative=` | reports.read | Balance sheet and profit and loss in that layout with the year before, `checks` and `unclassified` accounts. See [`LOCAL_FINANCIAL_REPORTING.md`](LOCAL_FINANCIAL_REPORTING.md) |
 | `GET /v1/orgs/:orgId/alerts?status=ACTIVE\|DISMISSED\|CLEARED\|ALL&fresh=` | reports.read | Alerts by severity with `evidence`, `summary` counts and `lastScan`; runs the checks first when the last run is over 60 minutes old (unless `fresh=false`) |
 | `POST /v1/orgs/:orgId/alerts/scan` | alerts.manage | Run every check that is on now; returns the run (found, opened, reopened, cleared, failures) |
 | `GET /v1/orgs/:orgId/alerts/:alertId` | reports.read | One alert with the check's description and its `history` |

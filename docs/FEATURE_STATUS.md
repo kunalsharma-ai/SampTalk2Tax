@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 902 |
+| Not started | 900 |
 | Designed | 0 |
-| Implementing | 61 |
+| Implementing | 62 |
 | Implemented | 32 |
-| Tested | 336 |
+| Tested | 337 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -38,7 +38,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | AI Virtual CFO | M7 | 35 | 0 | 35 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
-| Enterprise financial management | M6 | 29 | 15 | 14 |
+| Enterprise financial management | M6 | 29 | 14 | 15 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
@@ -52,7 +52,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 0 | 11 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
-| Internationalization | M8 | 16 | 1 | 15 |
+| Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 44 | 6 |
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
@@ -2916,6 +2916,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql
   - docs/FIXED_ASSETS.md
 
+### ENT-028 — Design for configurable accounting frameworks such as IFRS and applicable local GAAP
+
+- Module: Enterprise financial management
+- Status: **Implementing**
+- Notes: Presentation layouts for Schedule III (AS), UK Companies Act/FRS 102 and IFRS IAS 1 over one ledger. Recognition and measurement do not differ by framework: there are no framework-specific adjustments, Ind AS or US GAAP.
+- Evidence:
+  - packages/accounting-engine/src/statutory.ts
+  - packages/accounting-engine/test/statutory.test.ts
+  - apps/api/src/reports/reports.service.ts
+  - apps/api/test/statutory-statements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/statutory/page.tsx
+  - apps/web/e2e/statutory-statements-flow.test.mjs
+  - docs/LOCAL_FINANCIAL_REPORTING.md
+
 ### RISK-001 — Duplicate invoice detection
 
 - Module: Financial fraud and risk intelligence
@@ -4189,6 +4203,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/invoice-templates-flow.test.mjs
   - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
   - docs/INVOICE_TEMPLATES.md
+
+### I18N-007 — Local financial reporting
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: Balance sheet and profit and loss in India Schedule III (Division I), UK Companies Act formats (FRS 102) and IFRS IAS 1 layouts, chosen by country, with the year before, the accounts behind each line, and accounts without a subtype flagged. Presentation only: no notes, cash flow statement, Ind AS (Division II), rounding to lakhs or crores, or MCA/Companies House filing.
+- Evidence:
+  - packages/accounting-engine/src/statutory.ts
+  - packages/accounting-engine/test/statutory.test.ts
+  - apps/api/src/reports/reports.service.ts
+  - apps/api/test/statutory-statements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/statutory/page.tsx
+  - apps/web/e2e/statutory-statements-flow.test.mjs
+  - docs/LOCAL_FINANCIAL_REPORTING.md
 
 ### I18N-008 — Time-zone awareness
 
