@@ -32361,9 +32361,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/policies.ts",
+        "packages/accounting-engine/test/policies.test.ts",
+        "packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql",
+        "apps/api/src/policies",
+        "apps/api/test/policies.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/governance/policies",
+        "apps/web/src/components/policies",
+        "apps/web/e2e/policy-studio-flow.test.mjs",
+        "docs/POLICY_STUDIO.md"
+      ],
+      "notes": "A policy is written in plain words; the AI (Claude, through the AI control guard and the copilot's switch and budget, prompt version recorded) drafts rules and tests from the words and asks about anything unclear, and the person answers to revise the draft. Nothing the AI proposes is saved or runs until a person saves it and someone else approves it. Live drafting waits on a Claude key (scripted model in tests)."
     },
     {
       "id": "INNOV-004",
@@ -32383,9 +32393,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/policies.ts",
+        "packages/accounting-engine/test/policies.test.ts",
+        "packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql",
+        "apps/api/src/policies",
+        "apps/api/test/policies.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/governance/policies",
+        "apps/web/src/components/policies",
+        "apps/web/e2e/policy-studio-flow.test.mjs",
+        "docs/POLICY_STUDIO.md"
+      ],
+      "notes": "Each rule is a workflow definition (trigger, conditions, actions to roles or the customer/vendor). Test cases state whether a rule should act on given facts and run on the server, with each condition's actual value; a back-test runs event rules over the last 90 days of real events. Approval needs every test passing and someone other than the last editor (workflows.manage); it creates or versions one workflow per rule and turns off workflows of removed rules. Every version (created, edited, approved, retired) is kept in an immutable table."
     },
     {
       "id": "INNOV-005",

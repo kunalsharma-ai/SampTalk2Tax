@@ -20,11 +20,11 @@ interface Draft {
 }
 
 /** Settings a schedule trigger starts with. */
-const defaultParams = (trigger: string): TriggerParams =>
+export const defaultParams = (trigger: string): TriggerParams =>
   trigger === 'SCHEDULE' ? { frequency: 'WEEKLY', time: '09:00', weekday: 1 } : trigger === 'INVOICE_OVERDUE' ? { days: 7 } : trigger === 'BILL_DUE_SOON' ? { days: 3 } : {};
 
 const defaultValue = (f: FactDef): Condition['value'] => (f.type === 'enum' ? [] : '');
-const blankCondition = (t: TriggerDef): Condition => {
+export const blankCondition = (t: TriggerDef): Condition => {
   const f = t.facts.find((x) => x.type === 'money') ?? t.facts[0];
   return { fact: f.key, op: f.type === 'money' ? 'gte' : f.type === 'enum' ? 'in' : f.type === 'date' ? 'before' : 'contains', value: defaultValue(f) };
 };
@@ -181,7 +181,7 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
   );
 }
 
-function ConditionRow({ index, c, t, catalogue, onChange, onRemove }: { index: number; c: Condition; t: TriggerDef; catalogue: Catalogue; onChange: (c: Condition) => void; onRemove: () => void }) {
+export function ConditionRow({ index, c, t, catalogue, onChange, onRemove }: { index: number; c: Condition; t: TriggerDef; catalogue: Catalogue; onChange: (c: Condition) => void; onRemove: () => void }) {
   const f = t.facts.find((x) => x.key === c.fact) ?? t.facts[0];
   const ops = catalogue.operators[f.type];
   const n = `Condition ${index + 1}`;
@@ -220,7 +220,7 @@ function ConditionRow({ index, c, t, catalogue, onChange, onRemove }: { index: n
   );
 }
 
-function TriggerSettings({ trigger, params, catalogue, onChange }: { trigger: string; params: TriggerParams; catalogue: Catalogue; onChange: (p: TriggerParams) => void }) {
+export function TriggerSettings({ trigger, params, catalogue, onChange }: { trigger: string; params: TriggerParams; catalogue: Catalogue; onChange: (p: TriggerParams) => void }) {
   if (trigger === 'SCHEDULE') {
     return (
       <div className="grid gap-3 md:grid-cols-3" role="group" aria-label="Schedule">
@@ -279,7 +279,7 @@ function TriggerSettings({ trigger, params, catalogue, onChange }: { trigger: st
   return null;
 }
 
-function ActionCard({ index, a, t, catalogue, onChange, onRemove }: { index: number; a: Action; t: TriggerDef; catalogue: Catalogue; onChange: (a: Action) => void; onRemove: () => void }) {
+export function ActionCard({ index, a, t, catalogue, onChange, onRemove }: { index: number; a: Action; t: TriggerDef; catalogue: Catalogue; onChange: (a: Action) => void; onRemove: () => void }) {
   const n = `Action ${index + 1}`;
   return (
     <fieldset className="rounded-[var(--t2t-radius-md)] border border-line p-4" aria-label={n}>
@@ -308,9 +308,11 @@ function ActionCard({ index, a, t, catalogue, onChange, onRemove }: { index: num
                 <optgroup label="Everyone with a role">
                   {catalogue.roles.map((r) => <option key={r.role} value={`role:${r.role}`}>{r.label}</option>)}
                 </optgroup>
-                <optgroup label="One person">
-                  {catalogue.members.map((m) => <option key={m.userId} value={`user:${m.userId}`}>{m.name}</option>)}
-                </optgroup>
+                {catalogue.members.length ? (
+                  <optgroup label="One person">
+                    {catalogue.members.map((m) => <option key={m.userId} value={`user:${m.userId}`}>{m.name}</option>)}
+                  </optgroup>
+                ) : null}
               </Select>
             )}
           </Field>
@@ -358,13 +360,15 @@ function EmailFields({ a, t, catalogue, onChange }: { a: Extract<Action, { type:
                 </option>
               ))}
             </optgroup>
-            <optgroup label="One person">
-              {catalogue.members.map((m) => (
-                <option key={m.userId} value={`user:${m.userId}`}>
-                  {m.name}
-                </option>
-              ))}
-            </optgroup>
+            {catalogue.members.length ? (
+              <optgroup label="One person">
+                {catalogue.members.map((m) => (
+                  <option key={m.userId} value={`user:${m.userId}`}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
           </Select>
         )}
       </Field>

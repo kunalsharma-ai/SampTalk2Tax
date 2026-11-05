@@ -125,6 +125,8 @@ Forecast evaluation lab: `packages/accounting-engine/test/forecast-lab.test.ts` 
 
 Disaster simulation: `packages/accounting-engine/test/disaster.test.ts` (6) checks each shock's figures by hand, shocks together, validation and the standard stress tests; `apps/api/test/disasters.e2e.test.ts` (5) covers figures from posted invoices and bills, simulation, validation, stress tests, saving, copying to the twin, audit, no postings, permissions and tenant isolation; `apps/web/e2e/disaster-simulation-flow.test.mjs` runs, saves, extends, copies and deletes a simulation in the browser.
 
+Policy studio: `packages/accounting-engine/test/policies.test.ts` (3) checks rule and test validation, test results with actual values and rules in words; `apps/api/test/policies.e2e.test.ts` (11) covers checking without saving, saving, back-tests against posted bills, the self-approval, accountant and failing-test blocks, approval into workflows and later versions, retiring, audit, immutable versions, AI drafts with a scripted model counted in the AI control center, AI off or not set up, permissions and tenant isolation; `apps/web/e2e/policy-studio-flow.test.mjs` writes, tests, back-tests, approves and retires a policy in the browser with two users.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

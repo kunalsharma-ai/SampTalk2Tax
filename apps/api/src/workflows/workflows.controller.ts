@@ -10,8 +10,8 @@ const id = z.string().uuid('Not a workflow id');
 const runId = z.string().uuid('Not a run id');
 const position = z.coerce.number().int().min(0).max(20);
 
-const ConditionBody = z.object({ fact: z.string().max(40), op: z.string().max(20), value: z.union([z.string().max(200), z.array(z.string().max(40)).max(20)]).optional() }).strict();
-const ActionBody = z.discriminatedUnion('type', [
+export const ConditionBody = z.object({ fact: z.string().max(40), op: z.string().max(20), value: z.union([z.string().max(200), z.array(z.string().max(40)).max(20)]).optional() }).strict();
+export const ActionBody = z.discriminatedUnion('type', [
   z
     .object({
       type: z.literal('CREATE_TASK'),
@@ -32,7 +32,7 @@ const ActionBody = z.discriminatedUnion('type', [
     .strict(),
 ]);
 /** Settings of a schedule trigger; the rules engine checks which apply to which trigger. */
-const TriggerParamsBody = z
+export const TriggerParamsBody = z
   .object({
     frequency: z.enum(SCHEDULE_FREQUENCIES).optional(),
     time: z.string().max(5).optional(),
