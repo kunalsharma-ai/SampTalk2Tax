@@ -131,6 +131,8 @@ Dashboards: `packages/accounting-engine/test/dashboards.test.ts` (3) checks vali
 
 Report designer: `packages/accounting-engine/test/report-designer.test.ts` (2) checks layouts with problems in words, facts from the figures and the commentary number check; `apps/api/test/report-designer.e2e.test.ts` (6) covers previews from the books, saving with audit, producing without the AI, AI commentary with a scripted model (invented numbers rejected), finalising into a record the database will not change, AI layout drafts counted in the AI control center, and tenant isolation; `apps/web/e2e/report-designer-flow.test.mjs` designs, previews, produces, writes commentary (with a flagged number) and finalises a report in the browser.
 
+Voice assistant: `apps/api/test/voice-assistant.e2e.test.ts` (6) covers spoken questions (channel stored, the model told), proposals that change nothing until confirmed, confirming once only and only by the member who asked, the decided-action trigger, cancelling, expiry, a record changed in the meantime, a dismissal without the member's reason refused, and proposals refused without the permission; `apps/web/e2e/voice-assistant-flow.test.mjs` speaks a question (speech recognition and output replaced by test doubles), checks the answer is read aloud, and confirms and cancels proposals in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

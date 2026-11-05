@@ -25,6 +25,8 @@ export interface CopilotMessage {
   role: 'USER' | 'ASSISTANT';
   status: CopilotMessageStatus;
   text: string | null;
+  /** How a question was asked. */
+  channel: 'TEXT' | 'VOICE';
   sources: CopilotSource[];
   errorCode: string | null;
   errorMessage: string | null;
@@ -41,6 +43,21 @@ export interface CopilotConversation {
   createdAt: string;
   updatedAt: string;
   messages: CopilotMessage[];
+  actions: CopilotAction[];
+}
+/** Something the assistant proposed; it happens only when the member confirms it. */
+export interface CopilotAction {
+  id: string;
+  messageId: string;
+  kind: 'CREATE_TASK' | 'ACKNOWLEDGE_ALERT' | 'DISMISS_ALERT';
+  summary: string;
+  sensitive: boolean;
+  status: 'PROPOSED' | 'DONE' | 'CANCELLED' | 'FAILED' | 'EXPIRED';
+  result: { path: string; label: string } | null;
+  error: string | null;
+  expiresAt: string;
+  decidedAt: string | null;
+  createdAt: string;
 }
 export interface CopilotConversationSummary {
   id: string;

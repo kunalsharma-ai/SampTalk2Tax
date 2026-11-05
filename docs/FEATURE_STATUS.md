@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 917 |
+| Not started | 915 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 322 |
-| Integration pending | 11 |
+| Tested | 323 |
+| Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 4 | 14 |
+| Additional differentiating innovations | M7 | 18 | 2 | 16 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4772,6 +4772,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/recovery.e2e.test.ts
   - apps/web/e2e/recovery-flow.test.mjs
   - docs/RECOVERY_PLANNER.md
+
+### INNOV-013 — Allow authorized users to ask financial questions by voice
+
+- Module: Additional differentiating innovations
+- Status: **Integration pending**
+- Notes: Speak a question (browser Web Speech API, en-IN; Talk2Tax receives only text), stored as VOICE, model told it was spoken; answers to spoken questions read aloud. Tested end to end with test doubles for speech recognition and output; waits on a live Claude key and a real-browser microphone check.
+- Evidence:
+  - packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql
+  - apps/api/src/copilot/copilot.actions.ts
+  - apps/api/src/copilot/copilot.tools.ts
+  - apps/api/test/voice-assistant.e2e.test.ts
+  - apps/web/src/components/copilot/speech.ts
+  - apps/web/src/app/orgs/[orgId]/copilot/page.tsx
+  - apps/web/e2e/voice-assistant-flow.test.mjs
+  - docs/VOICE_ASSISTANT.md
+
+### INNOV-014 — Require confirmation for sensitive actions
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: The copilot can only propose a task or acknowledging/dismissing an alert; the member who asked confirms on screen within 15 minutes (never by speech; sensitive ones ask twice), permission re-checked and the action carried out in the same transaction as the decision; decided actions immutable (trigger); audited.
+- Evidence:
+  - packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql
+  - apps/api/src/copilot/copilot.actions.ts
+  - apps/api/src/copilot/copilot.tools.ts
+  - apps/api/test/voice-assistant.e2e.test.ts
+  - apps/web/src/components/copilot/speech.ts
+  - apps/web/src/app/orgs/[orgId]/copilot/page.tsx
+  - apps/web/e2e/voice-assistant-flow.test.mjs
+  - docs/VOICE_ASSISTANT.md
 
 ### INNOV-015 — Allow users to describe a dashboard in natural language
 
