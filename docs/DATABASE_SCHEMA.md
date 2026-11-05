@@ -202,6 +202,8 @@ Decision memory (M7 slice 7): `decisions` (`number` unique per organisation, sho
 
 Forecast evaluation lab: `forecast_lab_runs` (`number` unique per organisation, shown as FL-0001; `base_month` YYYY-MM, the last complete month of books; `window` 6, 12 or 18; `note`; `results` JSON object of every method's backtest per figure; `forecasts` JSON array of every method's forecasts for the next three months; creator and time; a trigger refuses every update and delete; forced row-level security on `org_id`). See [`FORECAST_LAB.md`](FORECAST_LAB.md).
 
+Disaster simulation: `disaster_simulations` (`number` unique per organisation, shown as DS-0001; `name` unique per organisation; `description`; `baseline_months` 3, 6 or 12 and `horizon_months` 1 to 60, checked; `shocks` a JSON array of 1 to 10 shocks, checked by the engine before saving; creator, last editor and times; forced row-level security on `org_id`). Only the shocks are stored: results are re-run on the books each time. See [`DISASTER_SIMULATION.md`](DISASTER_SIMULATION.md).
+
 ## Integrations
 
 `org_integrations`: one row per organisation and kind (`AI_ANTHROPIC`, `EMAIL_SMTP`): `enabled`, `settings` (JSON object, no secrets), `secret_cipher` (base64 of IV, GCM tag and ciphertext) with the `key_id` that sealed it (both set or both null), `secret_hint`, the last test (`test_status` NOT_TESTED/OK/FAILED, message, when and by whom; `tested_at` set exactly when tested), updated by and at. Forced row-level security on `org_id`. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

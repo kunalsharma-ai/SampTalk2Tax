@@ -200,6 +200,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Eight simple, explainable statistical methods only (no ARIMA, decomposition, machine learning or AI); methods are not combined, and the lab does not change which method the cash-flow forecast uses; organisation-wide figures only. See [`FORECAST_LAB.md`](FORECAST_LAB.md).
 
+## Disaster simulation
+
+* Organisation-wide figures only; customer and supplier shares are baseline averages; a supplier's share is measured against cost of sales only; one deterministic path per simulation, not a distribution. See [`DISASTER_SIMULATION.md`](DISASTER_SIMULATION.md).
+
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
