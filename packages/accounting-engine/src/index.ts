@@ -28,3 +28,4 @@ export * from './recovery';
 export * from './cfo';
 export * from './benchmark';
 export * from './decisions';
+export * from './forecast-lab';

@@ -121,6 +121,8 @@ Relationship explorer and figure tracing (M7 slice 6): `apps/api/test/graph.e2e.
 
 Decision memory (M7 slice 7): `packages/accounting-engine/test/decisions.test.ts` (5) covers outcome checks, explanations, changes and the suggested verdict; `apps/api/test/decisions.e2e.test.ts` (6) covers measuring outcomes from the books against the month before, validation, search, editing, review freezing the figures, the database lock on reviewed decisions, drafts from approved scenarios and recovery plans, permissions, tenant isolation and audit; `apps/web/e2e/decision-memory-flow.test.mjs` records, reviews, searches, records a recovery plan and withdraws it in the browser.
 
+Forecast evaluation lab: `packages/accounting-engine/test/forecast-lab.test.ts` (4) covers each method, the accuracy measures, the rolling origin and ranking; `apps/api/test/forecast-lab.e2e.test.ts` (3) covers backtests on twelve months of books, saving a run, measuring an older run against the books, the database lock on saved runs, audit, permissions and tenant isolation; `apps/web/e2e/forecast-lab-flow.test.mjs` runs the lab and saves a run in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;
