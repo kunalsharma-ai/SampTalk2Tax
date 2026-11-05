@@ -102,7 +102,7 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-032 | 5.1 General Ledger | capability | Account reconciliation | Implementing |
 | GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Not started |
 | GL-034 | 5.1 General Ledger | capability | Consolidation adjustments | Not started |
-| GL-035 | 5.1 General Ledger | capability | Foreign currency revaluation | Not started |
+| GL-035 | 5.1 General Ledger | capability | Foreign currency revaluation | Tested |
 | GL-036 | 5.1 General Ledger | capability | Automated journal suggestions | Not started |
 | GL-037 | Critical accounting invariants | rule | Every posted journal must balance | Tested |
 | GL-038 | Critical accounting invariants | rule | Use fixed-precision decimal arithmetic | Tested |
@@ -428,7 +428,7 @@ Part 13 · M6 · priority P2 · depends on: GL, BANK
 | TRS-010 |  | capability | Loan schedules | Tested |
 | TRS-011 |  | capability | Interest calculations | Tested |
 | TRS-012 |  | capability | Investment tracking | Not started |
-| TRS-013 |  | capability | Foreign exchange exposure | Not started |
+| TRS-013 |  | capability | Foreign exchange exposure | Tested |
 | TRS-014 |  | capability | Currency risk monitoring | Not started |
 | TRS-015 |  | capability | Payment planning | Not started |
 | TRS-016 |  | capability | Treasury dashboards | Tested |
