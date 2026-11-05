@@ -4438,6 +4438,20 @@
         "docs/DECISION_MEMORY.md"
       ],
       "notes": "Decisions with context, assumptions and expected outcomes (KPIs with a target and month, compared with the month before the decision and measured from the posted books); search across decisions, assumptions and lessons; review records whether each assumption held, a verdict and lessons, and freezes the measured figures; reviewed and withdrawn decisions are locked by a database trigger. Approved scenarios and recovery plans can be recorded as decisions."
+    },
+    "INNOV-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/forecast-lab.ts",
+        "packages/accounting-engine/test/forecast-lab.test.ts",
+        "packages/database/prisma/migrations/20261105150000_forecast_lab/migration.sql",
+        "apps/api/src/forecast-lab",
+        "apps/api/test/forecast-lab.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/forecast-lab",
+        "apps/web/e2e/forecast-lab-flow.test.mjs",
+        "docs/FORECAST_LAB.md"
+      ],
+      "notes": "Eight forecasting methods (last month, 3/6/12-month averages, same month last year, last month plus trend, straight-line trend, exponential smoothing) backtested with a rolling origin over 6, 12 or 18 months on revenue, cost of sales, operating expenses, net income and net cash flow; ranked by WAPE with MAE, bias, within-10% and error by months ahead; saved runs are immutable and their forecasts are measured against the books once each month is over."
     }
   }
 }

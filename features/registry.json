@@ -32517,9 +32517,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/forecast-lab.ts",
+        "packages/accounting-engine/test/forecast-lab.test.ts",
+        "packages/database/prisma/migrations/20261105150000_forecast_lab/migration.sql",
+        "apps/api/src/forecast-lab",
+        "apps/api/test/forecast-lab.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/forecast-lab",
+        "apps/web/e2e/forecast-lab-flow.test.mjs",
+        "docs/FORECAST_LAB.md"
+      ],
+      "notes": "Eight forecasting methods (last month, 3/6/12-month averages, same month last year, last month plus trend, straight-line trend, exponential smoothing) backtested with a rolling origin over 6, 12 or 18 months on revenue, cost of sales, operating expenses, net income and net cash flow; ranked by WAPE with MAE, bias, within-10% and error by months ahead; saved runs are immutable and their forecasts are measured against the books once each month is over."
     },
     {
       "id": "INNOV-010",
