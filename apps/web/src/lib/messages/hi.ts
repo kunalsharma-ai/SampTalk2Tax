@@ -81,6 +81,7 @@ export const hi: Record<string, string> = {
   'E-way bill settings': 'ई-वे बिल सेटिंग',
   'TDS/TCS settings': 'TDS/TCS सेटिंग',
   'Tax rates': 'कर दरें',
+  'Country module': 'देश मॉड्यूल',
   // Planning
   'Virtual CFO': 'वर्चुअल CFO',
   Benchmarking: 'तुलनात्मक आकलन',

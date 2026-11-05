@@ -246,7 +246,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-001 |  | rule | Create a modular, jurisdiction-aware taxation architecture | Implementing |
 | TAX-002 |  | rule | Do not hard-code global tax rates | Tested |
 | TAX-003 |  | rule | Use effective-dated, version-controlled rules | Not started |
-| TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Implementing |
+| TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Tested |
 | TAX-005 | India Module | capability | GST | Tested |
 | TAX-006 | India Module | capability | CGST | Tested |
 | TAX-007 | India Module | capability | SGST | Tested |
@@ -284,7 +284,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-039 | Global Tax Modules | capability | Country-specific invoice formats | Not started |
 | TAX-040 | Global Tax Modules | capability | Electronic invoicing requirements | Not started |
 | TAX-041 | Global Tax Modules | rule | Implement supported jurisdictions incrementally | Not started |
-| TAX-042 | Global Tax Modules | rule | Do not claim worldwide compliance without verified, maintained country modules | Not started |
+| TAX-042 | Global Tax Modules | rule | Do not claim worldwide compliance without verified, maintained country modules | Tested |
 | TAX-043 | AI Tax Intelligence | capability | Tax document interpretation | Not started |
 | TAX-044 | AI Tax Intelligence | capability | Tax discrepancy detection | Not started |
 | TAX-045 | AI Tax Intelligence | capability | Tax reconciliation | Not started |
@@ -1151,7 +1151,7 @@ Part 33 · M8 · priority P2 · depends on: none
 | I18N-002 |  | capability | Multi-currency accounting | Implementing |
 | I18N-003 |  | capability | Regional number formats | Tested |
 | I18N-004 |  | capability | Regional date formats | Tested |
-| I18N-005 |  | capability | Country-specific tax configurations | Not started |
+| I18N-005 |  | capability | Country-specific tax configurations | Tested |
 | I18N-006 |  | capability | Country-specific invoice formats | Tested |
 | I18N-007 |  | capability | Local financial reporting | Not started |
 | I18N-008 |  | capability | Time-zone awareness | Implementing |
@@ -1274,7 +1274,7 @@ Part 36 · M1 · priority P1 · depends on: DS
 |---|---|---|---|---|
 | UX-001 |  | rule | Create an exceptionally smooth onboarding experience | Not started |
 | UX-002 | Onboarding Wizard | capability | Create organization | Tested |
-| UX-003 | Onboarding Wizard | capability | Select country | Not started |
+| UX-003 | Onboarding Wizard | capability | Select country | Tested |
 | UX-004 | Onboarding Wizard | capability | Select industry | Not started |
 | UX-005 | Onboarding Wizard | capability | Select business size | Not started |
 | UX-006 | Onboarding Wizard | capability | Select accounting framework | Not started |

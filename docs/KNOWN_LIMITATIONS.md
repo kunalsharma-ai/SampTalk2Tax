@@ -81,6 +81,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Hindi covers the navigation, header, roles and the preferences page; other pages are in English. Not yet reviewed by a professional translator. No right-to-left language yet. Business dates (today, due dates, periods) are in India time for every organisation; time zones change only how moments are shown. A few pages and printed documents format values themselves and do not follow the person's formats. Emails, exports and AI answers are not translated.
 
+## Country modules (M8, slice 2)
+
+* India is the only full tax module. The UAE, UK, Singapore, Australia, Germany and Canada are starter modules: standard national sales-tax rates only, as ordinary tax rates, with no returns, filings, reverse charge, schemes, e-invoicing or payroll, and no check of which rate applies. Canada has federal GST only. The United States and every other country are accounting only. Starter rates have no effective dates, and nothing warns when a module's review is overdue. Reports use one layout everywhere: no local statutory statements. See [`COUNTRY_MODULES.md`](COUNTRY_MODULES.md).
+
 ## Alerts and leakage checks (M4, slice 4)
 
 * Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run in the background (at most hourly per organisation, 20 organisations a pass), on request, and when alerts are opened. Priority is a fixed, explained formula, not learned. New alerts become tasks for a role by one setting for all checks; there are no email, push or chat notifications, no assignment to one person and no snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
