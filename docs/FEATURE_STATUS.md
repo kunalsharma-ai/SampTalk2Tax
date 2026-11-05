@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 925 |
+| Not started | 924 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 314 |
+| Tested | 315 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 12 | 6 |
+| Additional differentiating innovations | M7 | 18 | 11 | 7 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4710,6 +4710,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/planning/forecast-lab
   - apps/web/e2e/forecast-lab-flow.test.mjs
   - docs/FORECAST_LAB.md
+
+### INNOV-010 — Simulate liquidity shocks, customer defaults, supplier failures and major operational disruptions
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Customer default (write-off of the customer's balance and loss of its share of sales), supplier failure (lost sales until replaced, then a share-weighted cost rise), liquidity shock (frozen cash, withdrawn credit, late payers), operational disruption (lost sales, recovery cost, insurance) and demand collapse, built from the organisation's own customers, suppliers and cash and played through the digital twin; each shock also measured alone; seven standard stress tests ranked worst first; saved simulations re-run on the latest books and can be copied into a twin scenario.
+- Evidence:
+  - packages/accounting-engine/src/disaster.ts
+  - packages/accounting-engine/test/disaster.test.ts
+  - packages/database/prisma/migrations/20261105180000_disaster_simulation/migration.sql
+  - apps/api/src/disasters
+  - apps/api/test/disasters.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/planning/disasters
+  - apps/web/e2e/disaster-simulation-flow.test.mjs
+  - docs/DISASTER_SIMULATION.md
 
 ### NAV-001 — Create a premium sidebar and global navigation system
 
