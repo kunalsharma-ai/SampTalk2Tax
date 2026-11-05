@@ -178,115 +178,116 @@ model LoginThrottle {
 }
 
 model Organization {
-  id                     String                  @id @default(uuid()) @db.Uuid
-  name                   String
-  legalName              String?                 @map("legal_name")
-  countryCode            String                  @map("country_code") @db.Char(2)
-  functionalCurrency     String                  @map("functional_currency") @db.Char(3)
-  fiscalYearStartMonth   Int                     @map("fiscal_year_start_month") @db.SmallInt
-  isDemo                 Boolean                 @default(false) @map("is_demo")
+  id                       String                    @id @default(uuid()) @db.Uuid
+  name                     String
+  legalName                String?                   @map("legal_name")
+  countryCode              String                    @map("country_code") @db.Char(2)
+  functionalCurrency       String                    @map("functional_currency") @db.Char(3)
+  fiscalYearStartMonth     Int                       @map("fiscal_year_start_month") @db.SmallInt
+  isDemo                   Boolean                   @default(false) @map("is_demo")
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
-  arAccountId            String?                 @map("ar_account_id") @db.Uuid
-  apAccountId            String?                 @map("ap_account_id") @db.Uuid
+  arAccountId              String?                   @map("ar_account_id") @db.Uuid
+  apAccountId              String?                   @map("ap_account_id") @db.Uuid
   /// Employee reimbursements payable. Only expense claims post to it (DB trigger).
-  claimsAccountId        String?                 @map("claims_account_id") @db.Uuid
-  createdAt              DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt              DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
-  memberships            Membership[]
-  accounts               Account[]
-  periods                FiscalPeriod[]
-  journalEntries         JournalEntry[]
-  counters               OrgCounter[]
-  auditEvents            AuditEvent[]
-  contacts               Contact[]
-  taxRates               TaxRate[]
-  documents              Document[]
-  payments               Payment[]
-  statementImports       BankStatementImport[]
-  statementLines         BankStatementLine[]
-  bankMatches            BankMatch[]
-  reconciliations        BankReconciliation[]
-  attachments            Attachment[]
-  invoiceTemplates       InvoiceTemplate[]
-  consolidationGroups    ConsolidationGroup[]
-  consolidatedIn         ConsolidationMember[]   @relation("ConsolidationMemberOrg")
-  twinScenarios          TwinScenario[]
-  cfoReports             CfoReport[]
-  benchmarkParticipation BenchmarkParticipation?
-  decisions              Decision[]
-  recoveryPlans          RecoveryPlan[]
-  integrations           OrgIntegration[]
-  userSignatures         UserSignature[]
-  documentSignatures     DocumentSignature[]
-  approvalPolicies       ApprovalPolicy[]
-  approvalRequests       ApprovalRequest[]
-  expenseClaims          ExpenseClaim[]
-  invitations            Invitation[]
-  gstRegistration        GstRegistration?
-  withholdingSettings    WithholdingSettings?
-  withholdingSections    WithholdingSection[]
-  withholdingDeposits    WithholdingDeposit[]
-  payrollSettings        PayrollSettings?
-  complianceSettings     ComplianceSettings?
-  complianceFilings      ComplianceFiling[]
-  eInvoiceSettings       EInvoiceSettings?
-  eInvoices              EInvoice[]
-  eWayBillSettings       EWayBillSettings?
-  eWayBills              EWayBill[]
-  eWayBillVehicles       EWayBillVehicleUpdate[]
-  employees              Employee[]
-  payRuns                PayRun[]
-  budgets                Budget[]
-  budgetLines            BudgetLine[]
-  cashFlowSettings       CashFlowSettings?
-  cashFlowItems          CashFlowItem[]
-  cashForecasts          CashForecast[]
-  kpiTargets             KpiTarget[]
-  managementReports      ManagementReport[]
-  alertRuleSettings      AlertRuleSetting[]
-  alerts                 Alert[]
-  alertEvents            AlertEvent[]
-  alertScans             AlertScan[]
-  copilotSettings        CopilotSettings?
-  aiAgentSettings        AiAgentSetting[]
-  fixedAssets            FixedAsset[]
-  depreciationRuns       DepreciationRun[]
-  depreciationLines      DepreciationLine[]
-  deferralSchedules      DeferralSchedule[]
-  deferralRuns           DeferralRun[]
-  deferralLines          DeferralLine[]
-  accruals               Accrual[]
-  loans                  Loan[]
-  loanEvents             LoanEvent[]
-  dimensionValues        DimensionValue[]
-  copilotConversations   CopilotConversation[]
-  copilotMessages        CopilotMessage[]
-  workflows              Workflow[]
-  workflowVersions       WorkflowVersion[]
-  workflowRuns           WorkflowRun[]
-  workflowActionRuns     WorkflowActionRun[]
-  workflowCursor         WorkflowCursor?
-  tasks                  Task[]
-  collectionRuns         CollectionRun[]
-  collectionDrafts       CollectionDraft[]
-  bankAiRuns             BankAiRun[]
-  bankAiSuggestions      BankAiSuggestion[]
-  periodCloses           PeriodClose[]
-  closeCertifications    CloseCertification[]
-  closeAiReviews         CloseAiReview[]
-  closeAdjustments       CloseAdjustment[]
-  forecastLabRuns        ForecastLabRun[]
-  disasterSimulations    DisasterSimulation[]
-  impactAssessments      ImpactAssessment[]
-  policies               Policy[]
-  policyVersions         PolicyVersion[]
-  dashboards             Dashboard[]
-  reportDesigns          ReportDesign[]
-  reportRuns             ReportRun[]
-  reportAiCalls          ReportAiCall[]
-  copilotActions         CopilotAction[]
-  dashboardAiDrafts      DashboardAiDraft[]
-  policyAiDrafts         PolicyAiDraft[]
+  claimsAccountId          String?                   @map("claims_account_id") @db.Uuid
+  createdAt                DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships              Membership[]
+  accounts                 Account[]
+  periods                  FiscalPeriod[]
+  journalEntries           JournalEntry[]
+  counters                 OrgCounter[]
+  auditEvents              AuditEvent[]
+  contacts                 Contact[]
+  taxRates                 TaxRate[]
+  documents                Document[]
+  payments                 Payment[]
+  statementImports         BankStatementImport[]
+  statementLines           BankStatementLine[]
+  bankMatches              BankMatch[]
+  reconciliations          BankReconciliation[]
+  attachments              Attachment[]
+  invoiceTemplates         InvoiceTemplate[]
+  consolidationGroups      ConsolidationGroup[]
+  consolidatedIn           ConsolidationMember[]     @relation("ConsolidationMemberOrg")
+  twinScenarios            TwinScenario[]
+  cfoReports               CfoReport[]
+  benchmarkParticipation   BenchmarkParticipation?
+  decisions                Decision[]
+  recoveryPlans            RecoveryPlan[]
+  integrations             OrgIntegration[]
+  userSignatures           UserSignature[]
+  documentSignatures       DocumentSignature[]
+  approvalPolicies         ApprovalPolicy[]
+  approvalRequests         ApprovalRequest[]
+  expenseClaims            ExpenseClaim[]
+  invitations              Invitation[]
+  gstRegistration          GstRegistration?
+  withholdingSettings      WithholdingSettings?
+  withholdingSections      WithholdingSection[]
+  withholdingDeposits      WithholdingDeposit[]
+  payrollSettings          PayrollSettings?
+  complianceSettings       ComplianceSettings?
+  complianceFilings        ComplianceFiling[]
+  eInvoiceSettings         EInvoiceSettings?
+  eInvoices                EInvoice[]
+  eWayBillSettings         EWayBillSettings?
+  eWayBills                EWayBill[]
+  eWayBillVehicles         EWayBillVehicleUpdate[]
+  employees                Employee[]
+  payRuns                  PayRun[]
+  budgets                  Budget[]
+  budgetLines              BudgetLine[]
+  cashFlowSettings         CashFlowSettings?
+  cashFlowItems            CashFlowItem[]
+  cashForecasts            CashForecast[]
+  kpiTargets               KpiTarget[]
+  managementReports        ManagementReport[]
+  alertRuleSettings        AlertRuleSetting[]
+  alerts                   Alert[]
+  alertEvents              AlertEvent[]
+  alertScans               AlertScan[]
+  copilotSettings          CopilotSettings?
+  aiAgentSettings          AiAgentSetting[]
+  fixedAssets              FixedAsset[]
+  depreciationRuns         DepreciationRun[]
+  depreciationLines        DepreciationLine[]
+  deferralSchedules        DeferralSchedule[]
+  deferralRuns             DeferralRun[]
+  deferralLines            DeferralLine[]
+  accruals                 Accrual[]
+  loans                    Loan[]
+  loanEvents               LoanEvent[]
+  dimensionValues          DimensionValue[]
+  copilotConversations     CopilotConversation[]
+  copilotMessages          CopilotMessage[]
+  workflows                Workflow[]
+  workflowVersions         WorkflowVersion[]
+  workflowRuns             WorkflowRun[]
+  workflowActionRuns       WorkflowActionRun[]
+  workflowCursor           WorkflowCursor?
+  tasks                    Task[]
+  collectionRuns           CollectionRun[]
+  collectionDrafts         CollectionDraft[]
+  bankAiRuns               BankAiRun[]
+  bankAiSuggestions        BankAiSuggestion[]
+  periodCloses             PeriodClose[]
+  closeCertifications      CloseCertification[]
+  closeAiReviews           CloseAiReview[]
+  closeAdjustments         CloseAdjustment[]
+  forecastLabRuns          ForecastLabRun[]
+  disasterSimulations      DisasterSimulation[]
+  impactAssessments        ImpactAssessment[]
+  alertNotificationSetting AlertNotificationSetting?
+  policies                 Policy[]
+  policyVersions           PolicyVersion[]
+  dashboards               Dashboard[]
+  reportDesigns            ReportDesign[]
+  reportRuns               ReportRun[]
+  reportAiCalls            ReportAiCall[]
+  copilotActions           CopilotAction[]
+  dashboardAiDrafts        DashboardAiDraft[]
+  policyAiDrafts           PolicyAiDraft[]
 
   @@map("organizations")
 }
@@ -1751,6 +1752,23 @@ model AlertEvent {
   @@map("alert_events")
 }
 
+/// Who hears about new alerts: an alert opened or reopened at or above `minSeverity` becomes a
+/// task for `taskRole`, due in `dueDays`. No row means the default: critical alerts, owners, due today.
+model AlertNotificationSetting {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @unique @map("org_id") @db.Uuid
+  /// CRITICAL, WARNING or OFF
+  minSeverity String       @map("min_severity") @db.VarChar(10)
+  taskRole    String       @map("task_role") @db.VarChar(20)
+  dueDays     Int          @map("due_days")
+  updatedById String       @map("updated_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("alert_notification_settings")
+}
+
 /// One run of the checks. Append-only.
 model AlertScan {
   id         String       @id @default(uuid()) @db.Uuid
@@ -2065,6 +2083,8 @@ model Task {
   linkType       String?      @map("link_type") @db.VarChar(20)
   linkId         String?      @map("link_id") @db.VarChar(64)
   workflowRunId  String?      @map("workflow_run_id") @db.Uuid
+  /// Where the task came from: PERSON, WORKFLOW (an automation), AI_AGENT (proposed by the copilot and confirmed by a member), ALERT or CLOSE (the month-end checklist).
+  source         String       @default("PERSON") @db.VarChar(20)
   createdById    String?      @map("created_by_id") @db.Uuid
   closedById     String?      @map("closed_by_id") @db.Uuid
   closedAt       DateTime?    @map("closed_at") @db.Timestamptz(6)
@@ -2075,6 +2095,8 @@ model Task {
 
   @@index([orgId, status])
   @@index([orgId, assigneeUserId, status])
+  @@index([orgId, source, status])
+  @@index([orgId, linkType, linkId])
   @@map("tasks")
 }
 

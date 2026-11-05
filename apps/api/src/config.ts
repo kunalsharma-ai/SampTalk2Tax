@@ -50,6 +50,11 @@ const schema = z.object({
    */
   WORKFLOW_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(10),
   /**
+   * Continuous alerts. How often the background checker looks for organisations whose checks
+   * have not run for an hour, in seconds; 0 turns it off (the tests drive it by hand).
+   */
+  ALERTS_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(300),
+  /**
    * Lets webhooks reach http:// addresses and private, loopback and link-local networks.
    * Only for local development and tests: in production a webhook must be a public https address.
    */

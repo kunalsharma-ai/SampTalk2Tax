@@ -414,3 +414,64 @@ export function syncAlerts(existing: readonly ExistingAlert[], found: readonly {
 }
 
 export const SEVERITY_ORDER: Readonly<Record<AlertSeverity, number>> = Object.freeze({ CRITICAL: 0, WARNING: 1, INFO: 2 });
+
+// ---------------------------------------------------------------- priority
+
+export interface AlertPriorityInput {
+  severity: AlertSeverity;
+  status: 'OPEN' | 'ACKNOWLEDGED' | 'DISMISSED' | 'CLEARED';
+  /** The amount at stake, when the alert has one. */
+  amount: string | null;
+  /** Average monthly operating revenue, to judge the amount against; null or zero when unknown. */
+  monthlyRevenue: string | null;
+  firstSeenAt: string;
+  reopenCount: number;
+  /** Today, YYYY-MM-DD. */
+  today: string;
+}
+
+export interface AlertPriority {
+  /** 0 to 100; higher needs attention sooner. */
+  score: number;
+  band: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW';
+  /** What the score is made of, in words, largest part first. */
+  reasons: string[];
+}
+
+/**
+ * How soon an alert needs attention, from what is known about it: how severe it is, how much
+ * money is at stake against the size of the business, how long it has been open, and whether it
+ * keeps coming back. Someone acknowledging it lowers it, because it is being dealt with. The
+ * parts are fixed and shown, so the order can always be explained.
+ */
+export function alertPriority(a: AlertPriorityInput): AlertPriority {
+  const parts: [number, string][] = [];
+  parts.push([{ CRITICAL: 60, WARNING: 35, INFO: 10 }[a.severity], `${a.severity === 'CRITICAL' ? 'Critical' : a.severity === 'WARNING' ? 'Warning' : 'Information'} (${{ CRITICAL: 60, WARNING: 35, INFO: 10 }[a.severity]})`]);
+  const amount = a.amount ? new D(a.amount).abs() : null;
+  const revenue = a.monthlyRevenue ? new D(a.monthlyRevenue) : null;
+  if (amount && amount.gt(0)) {
+    if (revenue && revenue.gt(0)) {
+      const share = amount.div(revenue);
+      const pct = share.times(100).toDecimalPlaces(0, D.ROUND_HALF_UP).toFixed(0);
+      const pts = share.gte(1) ? 25 : share.gte(0.25) ? 15 : share.gte(0.05) ? 8 : 3;
+      parts.push([pts, `Amount at stake is ${share.gte(1) ? 'more than a month' : `${pct}% of a month`} of revenue (${pts})`]);
+    } else parts.push([8, 'Amount at stake, with no revenue to compare it with (8)']);
+  }
+  const days = Math.max(0, daysFrom(a.firstSeenAt.slice(0, 10), a.today));
+  const age = Math.min(10, Math.floor(days / 3));
+  if (age > 0) parts.push([age, `Open for ${days} day${days === 1 ? '' : 's'} (${age})`]);
+  const back = Math.min(10, a.reopenCount * 5);
+  if (back > 0) parts.push([back, `Came back ${a.reopenCount} time${a.reopenCount === 1 ? '' : 's'} after it cleared or was dismissed (${back})`]);
+  if (a.status === 'ACKNOWLEDGED') parts.push([-15, 'Acknowledged: someone is dealing with it (−15)']);
+  if (a.status === 'DISMISSED' || a.status === 'CLEARED') return { score: 0, band: 'LOW', reasons: [a.status === 'DISMISSED' ? 'Dismissed' : 'Cleared: no longer found'] };
+  const score = Math.max(0, Math.min(100, parts.reduce((s, [p]) => s + p, 0)));
+  const band = score >= 70 ? 'URGENT' : score >= 45 ? 'HIGH' : score >= 20 ? 'NORMAL' : 'LOW';
+  const reasons = [...parts].sort((x, y) => Math.abs(y[0]) - Math.abs(x[0])).map(([, r]) => r);
+  return { score, band, reasons };
+}
+
+/** Whether a new or reopened alert should become a task under a notification setting. */
+export function notifies(severity: AlertSeverity, minSeverity: 'CRITICAL' | 'WARNING' | 'OFF'): boolean {
+  if (minSeverity === 'OFF') return false;
+  return SEVERITY_ORDER[severity] <= SEVERITY_ORDER[minSeverity];
+}

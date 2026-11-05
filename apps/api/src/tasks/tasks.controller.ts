@@ -10,6 +10,7 @@ const id = z.string().uuid('Not a task id');
 const ListQuery = z.object({
   scope: z.enum(['mine', 'all']).default('mine'),
   status: z.enum(['OPEN', 'DONE', 'CANCELLED', 'ALL']).default('OPEN'),
+  source: z.enum(['PERSON', 'WORKFLOW', 'AI_AGENT', 'ALERT', 'CLOSE', 'ALL']).default('ALL'),
 });
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s), 'Not a real date');
 const CreateBody = z

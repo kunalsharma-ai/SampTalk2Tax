@@ -167,7 +167,7 @@ export class CopilotActionsService {
 
   private async carryOut(tx: Prisma.TransactionClient, member: Member, actor: Actor, input: ActionInput): Promise<{ path: string; label: string }> {
     if (input.kind === 'CREATE_TASK') {
-      const t = await this.tasks.createInTx(tx, member.orgId, { title: input.title.trim(), description: input.description, assignTo: input.forRole ? { role: input.forRole } : { userId: actor.id }, dueDate: input.dueDate, createdById: actor.id });
+      const t = await this.tasks.createInTx(tx, member.orgId, { title: input.title.trim(), description: input.description, assignTo: input.forRole ? { role: input.forRole } : { userId: actor.id }, dueDate: input.dueDate, createdById: actor.id, source: 'AI_AGENT' });
       return { path: '/tasks', label: `Task "${t.title}"` };
     }
     const title = input.kind === 'ACKNOWLEDGE_ALERT' ? await this.alerts.acknowledgeInTx(tx, member.orgId, actor, input.alertId, input.note) : await this.alerts.dismissInTx(tx, member.orgId, actor, input.alertId, input.reason.trim());

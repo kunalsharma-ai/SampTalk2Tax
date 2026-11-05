@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALERT_RULES,
+  alertPriority,
   alertRule,
+  notifies,
   AlertError,
   budgetOverruns,
   D,
@@ -189,5 +191,25 @@ describe('keeping alerts in step', () => {
     ]);
     // 2 (acknowledged, gone) clears; 5 stays dismissed; 6 belongs to a rule that did not run.
     expect(s.clear).toEqual(['2']);
+  });
+});
+
+describe('alert priority', () => {
+  const base = { severity: 'CRITICAL' as const, status: 'OPEN' as const, amount: null, monthlyRevenue: '100000', firstSeenAt: '2026-11-01T10:00:00Z', reopenCount: 0, today: '2026-11-01' };
+  it('scores severity, money at stake against revenue, age and recurrence, and explains it', () => {
+    expect(alertPriority(base)).toEqual({ score: 60, band: 'HIGH', reasons: ['Critical (60)'] });
+    const big = alertPriority({ ...base, amount: '150000', firstSeenAt: '2026-10-20T00:00:00Z', reopenCount: 1 });
+    expect(big.score).toBe(60 + 25 + 4 + 5);
+    expect(big.band).toBe('URGENT');
+    expect(big.reasons).toEqual(['Critical (60)', 'Amount at stake is more than a month of revenue (25)', 'Came back 1 time after it cleared or was dismissed (5)', 'Open for 12 days (4)']);
+    expect(alertPriority({ ...base, severity: 'WARNING', amount: '30000' }).reasons).toEqual(['Warning (35)', 'Amount at stake is 30% of a month of revenue (15)']);
+    expect(alertPriority({ ...base, severity: 'INFO', amount: '1000', monthlyRevenue: null })).toMatchObject({ score: 18, band: 'LOW' });
+  });
+  it('lowers acknowledged alerts and zeroes closed ones', () => {
+    expect(alertPriority({ ...base, status: 'ACKNOWLEDGED' })).toMatchObject({ score: 45, band: 'HIGH' });
+    expect(alertPriority({ ...base, status: 'CLEARED' })).toEqual({ score: 0, band: 'LOW', reasons: ['Cleared: no longer found'] });
+  });
+  it('decides which alerts become tasks', () => {
+    expect([notifies('CRITICAL', 'CRITICAL'), notifies('WARNING', 'CRITICAL'), notifies('WARNING', 'WARNING'), notifies('INFO', 'WARNING'), notifies('CRITICAL', 'OFF')]).toEqual([true, false, true, false, false]);
   });
 });
