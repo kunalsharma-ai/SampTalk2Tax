@@ -3,6 +3,7 @@ import type { Permission, RoleName } from '@talk2tax/security';
 
 export const IS_PUBLIC = 'talk2tax:isPublic';
 export const PERMISSION = 'talk2tax:permission';
+export const PLATFORM_PERMISSION = 'talk2tax:platformPermission';
 
 /** Route needs no authentication. */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
@@ -14,7 +15,24 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  /** SUPER_ADMIN or SUPPORT for the people who run the service; null for everyone else. */
+  platformRole: PlatformRole | null;
 }
+
+export type PlatformRole = 'SUPER_ADMIN' | 'SUPPORT';
+export type PlatformPermission = 'platform.read' | 'platform.manage';
+
+/** What each platform role may do. SUPPORT looks things up; only SUPER_ADMIN changes anything. */
+export const PLATFORM_PERMISSIONS: Record<PlatformRole, readonly PlatformPermission[]> = {
+  SUPER_ADMIN: ['platform.read', 'platform.manage'],
+  SUPPORT: ['platform.read'],
+};
+
+/**
+ * Platform administration route (v1/admin). Needs a platform role with this permission. It
+ * never grants access to any organisation's books: organisation routes still need membership.
+ */
+export const RequirePlatform = (permission: PlatformPermission) => SetMetadata(PLATFORM_PERMISSION, permission);
 
 export interface OrgContext {
   id: string;

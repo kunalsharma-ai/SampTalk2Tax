@@ -229,3 +229,9 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 ## Regional deployment (M8, slice 5)
 
 * `organizations.data_region`: the region the organisation's data lives in (`^[a-z0-9-]{2,32}$` check; set at creation; untagged rows are claimed by the first API to start; a trigger refuses clearing it). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
+
+## Platform administration (M9, slice 1)
+
+* `users.platform_role`: `SUPER_ADMIN`, `SUPPORT` or null (check constraint).
+* `organizations.suspended_at`, `suspended_reason`: both set or both null; a reason is required (check constraint).
+* `platform_announcements`: message (1-500 characters), tone `INFO`/`WARNING`, start, optional end after the start, creator, optional withdrawal (when and by whom, both or neither). Platform data: no `org_id`, no row-level security. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).

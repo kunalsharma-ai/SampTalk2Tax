@@ -10,6 +10,7 @@
     "dev": "tsc -p tsconfig.build.json && node --enable-source-maps --env-file-if-exists=../../.env dist/main.js",
     "seed": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/seed/seed-demo.js",
     "seed:benchmark-peers": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/seed/seed-benchmark-peers.js",
+    "admin:grant": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/admin/grant-admin.js",
     "region:move": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/regions/move-org.js",
     "test": "vitest run"
   },
