@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 924 |
+| Not started | 922 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 315 |
+| Tested | 317 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 11 | 7 |
+| Additional differentiating innovations | M7 | 18 | 9 | 9 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4653,6 +4653,38 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/decisions
   - apps/web/e2e/decision-memory-flow.test.mjs
   - docs/DECISION_MEMORY.md
+
+### INNOV-003 — Allow organizations to define financial policies conversationally
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: A policy is written in plain words; the AI (Claude, through the AI control guard and the copilot's switch and budget, prompt version recorded) drafts rules and tests from the words and asks about anything unclear, and the person answers to revise the draft. Nothing the AI proposes is saved or runs until a person saves it and someone else approves it. Live drafting waits on a Claude key (scripted model in tests).
+- Evidence:
+  - packages/accounting-engine/src/policies.ts
+  - packages/accounting-engine/test/policies.test.ts
+  - packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql
+  - apps/api/src/policies
+  - apps/api/test/policies.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/governance/policies
+  - apps/web/src/components/policies
+  - apps/web/e2e/policy-studio-flow.test.mjs
+  - docs/POLICY_STUDIO.md
+
+### INNOV-004 — Convert approved policies into testable, version-controlled workflow rules
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Each rule is a workflow definition (trigger, conditions, actions to roles or the customer/vendor). Test cases state whether a rule should act on given facts and run on the server, with each condition's actual value; a back-test runs event rules over the last 90 days of real events. Approval needs every test passing and someone other than the last editor (workflows.manage); it creates or versions one workflow per rule and turns off workflows of removed rules. Every version (created, edited, approved, retired) is kept in an immutable table.
+- Evidence:
+  - packages/accounting-engine/src/policies.ts
+  - packages/accounting-engine/test/policies.test.ts
+  - packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql
+  - apps/api/src/policies
+  - apps/api/test/policies.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/governance/policies
+  - apps/web/src/components/policies
+  - apps/web/e2e/policy-studio-flow.test.mjs
+  - docs/POLICY_STUDIO.md
 
 ### INNOV-005 — Evaluate financial indicators continuously and provide prioritized alerts
 
