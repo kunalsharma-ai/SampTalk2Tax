@@ -12,7 +12,7 @@ New revenue brings cost of sales at the business's own ratio: cost of sales over
 
 | Area | Change | Inputs | Becomes |
 | --- | --- | --- | --- |
-| Sales | **Win a new customer or contract** | Name, monthly sales at full speed, months to reach it | Revenue rising evenly to that figure, with cost of sales at the business's ratio |
+| Sales | **Win a new customer or contract** | Name, monthly sales at full speed, months to reach it (and, through the API, an optional cost of sales share for these sales) | Revenue rising evenly to that figure, with cost of sales at the business's ratio or the share given |
 | Sales | **Lose an existing customer** | A customer with sales in the baseline months | A permanent fall in volume equal to its share of revenue: its average monthly sales (revenue lines of posted invoices less credit notes, before tax) against baseline revenue. Its cost of sales goes too; payroll and running costs carry on |
 | Sales | **Change prices** | Price change (%), change in sales volume (%) | The twin's price change. Price moves revenue only; volume moves revenue and cost of sales |
 | Sales | **Add salespeople** | Number, monthly and one-off cost per person, monthly sales per person at full speed, months to reach it | A hire, plus revenue rising evenly with its cost of sales |

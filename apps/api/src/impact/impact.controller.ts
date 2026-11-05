@@ -14,7 +14,7 @@ const month = int.optional();
 const label = z.string().trim().max(80, 'Keep the description under 80 characters').nullish();
 const contactId = z.string().uuid('Choose from the list');
 const Change = z.discriminatedUnion('lever', [
-  z.object({ lever: z.literal('NEW_CUSTOMER'), label, monthlyRevenue: n, rampMonths: int, month }).strict(),
+  z.object({ lever: z.literal('NEW_CUSTOMER'), label, monthlyRevenue: n, rampMonths: int, month, costOfSalesPercent: n.optional() }).strict(),
   z.object({ lever: z.literal('LOSE_CUSTOMER'), contactId, month }).strict(),
   z.object({ lever: z.literal('PRICE_CHANGE'), pricePercent: n, volumePercent: n, month }).strict(),
   z.object({ lever: z.literal('SALES_HIRES'), count: int, monthlyCostPerHead: n, oneOffCostPerHead: n, monthlyRevenuePerHead: n, rampMonths: int, month }).strict(),

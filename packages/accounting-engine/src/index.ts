@@ -34,3 +34,4 @@ export * from './impact';
 export * from './policies';
 export * from './dashboards';
 export * from './report-designer';
+export * from './opportunities';
