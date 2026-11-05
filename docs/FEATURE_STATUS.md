@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 900 |
+| Not started | 898 |
 | Designed | 0 |
 | Implementing | 62 |
 | Implemented | 32 |
-| Tested | 337 |
+| Tested | 339 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 13 | 31 |
+| General ledger and accounting engine | M1 | 44 | 12 | 32 |
 | Accounts receivable | M2 | 43 | 30 | 13 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 7 | 17 |
@@ -32,7 +32,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
-| Treasury management | M6 | 28 | 23 | 5 |
+| Treasury management | M6 | 28 | 22 | 6 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
 | AI Virtual CFO | M7 | 35 | 0 | 35 |
@@ -310,6 +310,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Bank and cash accounts can be reconciled. Other balance-sheet account reconciliations are not built.
 - Evidence:
   - apps/api/test/banking.e2e.test.ts
+
+### GL-035 — Foreign currency revaluation
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Period-end revaluation of monetary foreign-currency balances (cash, receivables, payables, loans, accruals) at recorded or entered closing rates; unrealised gain or loss posted to the FX_GAIN_LOSS account and reversed the next day; immutable records. Inventory, prepayments and fixed assets stay at historical rates.
+- Evidence:
+  - packages/accounting-engine/src/fx.ts
+  - packages/accounting-engine/test/fx.test.ts
+  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/fx/fx.service.ts
+  - apps/api/test/fx-revaluation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fx/page.tsx
+  - apps/web/e2e/fx-revaluation-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
 
 ### GL-037 — Every posted journal must balance
 
@@ -1267,6 +1282,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/loans-flow.test.mjs
   - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
   - docs/LOANS_AND_TREASURY.md
+
+### TRS-013 — Foreign exchange exposure
+
+- Module: Treasury management
+- Status: **Tested**
+- Notes: Exchange rates page shows foreign-currency balances by account and currency at any date, carried and at a chosen rate, and the gain or loss a revaluation would post. No sensitivity ranges or hedging.
+- Evidence:
+  - packages/accounting-engine/src/fx.ts
+  - packages/accounting-engine/test/fx.test.ts
+  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/fx/fx.service.ts
+  - apps/api/test/fx-revaluation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fx/page.tsx
+  - apps/web/e2e/fx-revaluation-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
 
 ### TRS-016 — Treasury dashboards
 
@@ -4127,9 +4157,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Transaction currency + rate per line, functional currency per org. Rate tables, revaluation and multi-currency reporting are not done.
+- Notes: Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table that fills in missing journal rates, and period-end revaluation with automatic reversal. Not done: invoices, bills and payments in foreign currencies with realised gains and losses (AR-031), rate feeds, multi-currency reporting.
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
+  - packages/accounting-engine/src/fx.ts
+  - packages/accounting-engine/test/fx.test.ts
+  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/fx/fx.service.ts
+  - apps/api/test/fx-revaluation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fx/page.tsx
+  - apps/web/e2e/fx-revaluation-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
 
 ### I18N-003 — Regional number formats
 

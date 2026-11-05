@@ -26,6 +26,8 @@ import { DocumentsService } from './ledgers/documents.service';
 import { PurchasesController, SalesController } from './ledgers/ledger.controllers';
 import { SubledgerService } from './ledgers/subledger.service';
 import { TaxRatesController } from './tax-rates/tax-rates.controller';
+import { FxController } from './fx/fx.controller';
+import { FxService } from './fx/fx.service';
 import { CountryModuleController, CountryModulesCatalogueController } from './country-modules/country-modules.controller';
 import { CountryModulesService } from './country-modules/country-modules.service';
 import { TaxRatesService } from './tax-rates/tax-rates.service';
@@ -146,6 +148,7 @@ export class AppModule {
         AuditController,
         ContactsController,
         TaxRatesController,
+        FxController,
         CountryModulesCatalogueController,
         CountryModuleController,
         SalesController,
@@ -212,6 +215,7 @@ export class AppModule {
         SubledgerService,
         ContactsService,
         TaxRatesService,
+        FxService,
         CountryModulesService,
         DocumentsService,
         BankingService,
