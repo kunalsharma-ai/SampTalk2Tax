@@ -47,7 +47,7 @@ export type TwinDriver =
   | { kind: 'SUPPLIER_COST'; percent: string; fromMonth?: number }
   | { kind: 'NEW_DEBT'; amount: string; annualRatePercent: string; termMonths: number; month?: number }
   | { kind: 'INVESTMENT'; amount: string; usefulLifeMonths: number; month?: number }
-  | { kind: 'EXPANSION'; oneOffCost: string; monthlyCost: string; monthlyRevenue: string; rampMonths: number; month?: number }
+  | { kind: 'EXPANSION'; oneOffCost: string; monthlyCost: string; monthlyRevenue: string; rampMonths: number; month?: number; costOfSalesPercent?: string }
   | { kind: 'CURRENCY'; exposurePercent: string; changePercent: string; fromMonth?: number }
   | { kind: 'INFLATION'; annualPercent: string }
   | { kind: 'DOWNTURN'; revenuePercent: string; extraCollectionDays: number; fromMonth?: number; months?: number }
@@ -248,6 +248,7 @@ export function checkDriver(d: TwinDriver, horizon: number): string[] {
       num(d.monthlyRevenue, 'Monthly revenue at full speed', { min: 0 });
       int(d.rampMonths, 'Months to reach full speed', 1, 60);
       month(d.month, 'Opening month');
+      if (d.costOfSalesPercent !== undefined) num(d.costOfSalesPercent, 'Cost of sales on the new revenue (%)', { min: 0, max: 100 });
       break;
     case 'CURRENCY':
       num(d.exposurePercent, 'Revenue in foreign currency (%)', { min: 0, max: 100 });
@@ -309,7 +310,7 @@ export function describeDriver(d: TwinDriver, fmt: (v: Dec | string) => string, 
     case 'INVESTMENT':
       return `An investment of ${fmt(d.amount)} is paid in ${at(d.month)} and depreciated straight-line over ${d.usefulLifeMonths} months from the month after.`;
     case 'EXPANSION':
-      return `An expansion opening in ${at(d.month)} costs ${fmt(d.oneOffCost)} once and ${fmt(d.monthlyCost)} a month, and brings revenue rising evenly to ${fmt(d.monthlyRevenue)} a month over ${d.rampMonths} months.`;
+      return `An expansion opening in ${at(d.month)} costs ${fmt(d.oneOffCost)} once and ${fmt(d.monthlyCost)} a month, and brings revenue rising evenly to ${fmt(d.monthlyRevenue)} a month over ${d.rampMonths} months${d.costOfSalesPercent !== undefined && !dec(d.costOfSalesPercent).isZero() ? `, with cost of sales of ${d.costOfSalesPercent}% of that revenue` : ''}.`;
     case 'CURRENCY':
       return `${d.exposurePercent}% of revenue is earned in foreign currency, whose exchange rate changes ${d.changePercent}% from ${at(d.fromMonth)}.`;
     case 'INFLATION':
@@ -449,7 +450,10 @@ export function runTwin(input: { baseline: TwinBaseline; drivers: readonly TwinD
           if (i >= m) {
             extraOpex = extraOpex.plus(d.monthlyCost);
             const share = D.min(new D(i - m + 1).div(d.rampMonths), 1);
-            extraRevenue = extraRevenue.plus(dec(d.monthlyRevenue).times(share));
+            const added = dec(d.monthlyRevenue).times(share);
+            extraRevenue = extraRevenue.plus(added);
+            // The cost of the goods or services behind the new revenue, when given.
+            if (d.costOfSalesPercent !== undefined) extraCos = extraCos.plus(added.times(pct(d.costOfSalesPercent)));
           }
           break;
         }

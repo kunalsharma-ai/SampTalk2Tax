@@ -204,6 +204,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Organisation-wide figures only; customer and supplier shares are baseline averages; a supplier's share is measured against cost of sales only; one deterministic path per simulation, not a distribution. See [`DISASTER_SIMULATION.md`](DISASTER_SIMULATION.md).
 
+## Business impact engine
+
+* Organisation-wide figures only; customer and supplier shares are baseline averages; new revenue carries the average cost of sales ratio and the usual payment days; a headcount reduction assumes sales are unchanged; one deterministic path per assessment. See [`BUSINESS_IMPACT.md`](BUSINESS_IMPACT.md).
+
 ## Policy studio
 
 * Rules can only do what workflows can do; back-tests cover event rules over the last 90 days only; live AI drafting waits on a Claude key. See [`POLICY_STUDIO.md`](POLICY_STUDIO.md).
