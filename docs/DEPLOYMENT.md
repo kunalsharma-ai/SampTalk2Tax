@@ -2,7 +2,7 @@
 
 ## Local development
 
-Prerequisites: Node 22, pnpm 10 (`corepack enable`), Docker (or a local PostgreSQL 16).
+Prerequisites: Node 26, pnpm 10 (Node 26 no longer bundles corepack: `npm install -g corepack && corepack enable`), Docker (or a local PostgreSQL 16).
 
 ```bash
 cp .env.example .env                    # then set JWT_SECRET: openssl rand -base64 48
