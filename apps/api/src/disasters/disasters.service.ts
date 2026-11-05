@@ -34,7 +34,7 @@ export class DisastersService {
   ) {}
 
   /** The baseline, the minimum cash balance, and customers and suppliers from the books. */
-  private async context(orgId: string, q: Months): Promise<DisasterInput> {
+  async context(orgId: string, q: Months): Promise<DisasterInput> {
     const today = todayIst();
     const baseline = await this.twin.actuals(orgId, q.baselineMonths);
     const cashBuffer = await this.twin.buffer(orgId);

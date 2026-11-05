@@ -20,7 +20,7 @@ const Driver = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('SUPPLIER_COST'), percent: n, fromMonth: month, ...meta }).strict(),
   z.object({ kind: z.literal('NEW_DEBT'), amount: n, annualRatePercent: n, termMonths: z.number().int(), month, ...meta }).strict(),
   z.object({ kind: z.literal('INVESTMENT'), amount: n, usefulLifeMonths: z.number().int(), month, ...meta }).strict(),
-  z.object({ kind: z.literal('EXPANSION'), oneOffCost: n, monthlyCost: n, monthlyRevenue: n, rampMonths: z.number().int(), month, ...meta }).strict(),
+  z.object({ kind: z.literal('EXPANSION'), oneOffCost: n, monthlyCost: n, monthlyRevenue: n, rampMonths: z.number().int(), month, costOfSalesPercent: n.optional(), ...meta }).strict(),
   z.object({ kind: z.literal('CURRENCY'), exposurePercent: n, changePercent: n, fromMonth: month, ...meta }).strict(),
   z.object({ kind: z.literal('INFLATION'), annualPercent: n, ...meta }).strict(),
   z.object({ kind: z.literal('DOWNTURN'), revenuePercent: n, extraCollectionDays: z.number().int(), fromMonth: month, months: z.number().int().optional(), ...meta }).strict(),
