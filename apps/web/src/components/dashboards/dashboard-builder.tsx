@@ -10,7 +10,7 @@ import { COMPARISON_LABELS, SIZE_LABELS, type AiDraft, type AiStatus, type Catal
 
 type Turn = { role: 'user' | 'assistant'; text: string };
 
-const blank = (type: WidgetType): Widget =>
+export const blank = (type: WidgetType): Widget =>
   type === 'STAT'
     ? { type, title: '', size: 'SMALL', metric: 'revenue', compare: 'PREVIOUS_MONTH' }
     : type === 'TOP_CUSTOMERS'
@@ -18,7 +18,7 @@ const blank = (type: WidgetType): Widget =>
       : { type, title: '', size: type === 'TABLE' ? 'LARGE' : 'MEDIUM', metrics: ['revenue'], months: type === 'TABLE' ? 6 : 12 };
 
 /** Only the fields the widget's kind uses go to the server. */
-const clean = (w: Widget): Widget =>
+export const clean = (w: Widget): Widget =>
   w.type === 'STAT'
     ? { type: w.type, title: w.title, size: w.size, metric: w.metric, compare: w.compare }
     : w.type === 'TOP_CUSTOMERS'
@@ -185,8 +185,8 @@ export function DashboardBuilder({ orgId, catalogue, dashboard, ai, canDraft }: 
   );
 }
 
-function WidgetRow({ index, w, catalogue, count, onChange, onMove, onRemove }: { index: number; w: Widget; catalogue: Catalogue; count: number; onChange: (w: Widget) => void; onMove: (by: number) => void; onRemove: () => void }) {
-  const n = `Widget ${index + 1}`;
+export function WidgetRow({ index, w, catalogue, count, onChange, onMove, onRemove, name }: { index: number; w: Widget; catalogue: Catalogue; count: number; onChange: (w: Widget) => void; onMove: (by: number) => void; onRemove: () => void; name?: string }) {
+  const n = name ?? `Widget ${index + 1}`;
   const label = catalogue.widgetTypes.find((t) => t.type === w.type)?.label ?? w.type;
   const metricOptions = catalogue.metrics.map((m) => <option key={m.key} value={m.key}>{m.label}</option>);
   const chosen = w.metrics ?? [];

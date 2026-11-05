@@ -10,7 +10,7 @@ import { monthLabel } from '@/lib/twin';
 const SPAN = { SMALL: 'md:col-span-2', MEDIUM: 'md:col-span-3', LARGE: 'md:col-span-6' } as const;
 
 /** A dashboard's widgets with their figures, laid out on a six-column grid. */
-export function DashboardView({ config, data }: { config: DashboardConfig; data: DashboardData }) {
+export function DashboardView({ config, data }: { config: DashboardConfig; data: Pick<DashboardData, 'currency' | 'widgets'> }) {
   return (
     <div className="grid gap-4 md:grid-cols-6" data-testid="dashboard">
       {config.widgets.map((w, i) => {

@@ -208,6 +208,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Rules can only do what workflows can do; back-tests cover event rules over the last 90 days only; live AI drafting waits on a Claude key. See [`POLICY_STUDIO.md`](POLICY_STUDIO.md).
 
+## Report designer
+
+* Live AI layouts and commentary wait on a Claude key; organisation-wide monthly figures only; no PDF export of designed reports yet (print instead). See [`REPORT_DESIGNER.md`](REPORT_DESIGNER.md).
+
 ## Dashboards
 
 * Organisation-wide monthly figures only (no departments, projects, budgets or forecasts yet); live AI drafting waits on a Claude key. See [`AI_DASHBOARDS.md`](AI_DASHBOARDS.md).

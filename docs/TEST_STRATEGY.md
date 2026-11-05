@@ -129,6 +129,8 @@ Policy studio: `packages/accounting-engine/test/policies.test.ts` (3) checks rul
 
 Dashboards: `packages/accounting-engine/test/dashboards.test.ts` (3) checks validation, every widget's figures by hand and dashboards in words; `apps/api/test/dashboards.e2e.test.ts` (4) covers figures from posted documents, earlier months, saving, changing and deleting with audit, AI drafts with a scripted model counted in the AI control center, permissions and tenant isolation; `apps/web/e2e/dashboards-flow.test.mjs` builds, previews, saves, changes and deletes a dashboard in the browser.
 
+Report designer: `packages/accounting-engine/test/report-designer.test.ts` (2) checks layouts with problems in words, facts from the figures and the commentary number check; `apps/api/test/report-designer.e2e.test.ts` (6) covers previews from the books, saving with audit, producing without the AI, AI commentary with a scripted model (invented numbers rejected), finalising into a record the database will not change, AI layout drafts counted in the AI control center, and tenant isolation; `apps/web/e2e/report-designer-flow.test.mjs` designs, previews, produces, writes commentary (with a flagged number) and finalises a report in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;
