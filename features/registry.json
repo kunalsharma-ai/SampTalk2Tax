@@ -32652,9 +32652,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Integration pending",
+      "evidence": [
+        "packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql",
+        "apps/api/src/copilot/copilot.actions.ts",
+        "apps/api/src/copilot/copilot.tools.ts",
+        "apps/api/test/voice-assistant.e2e.test.ts",
+        "apps/web/src/components/copilot/speech.ts",
+        "apps/web/src/app/orgs/[orgId]/copilot/page.tsx",
+        "apps/web/e2e/voice-assistant-flow.test.mjs",
+        "docs/VOICE_ASSISTANT.md"
+      ],
+      "notes": "Speak a question (browser Web Speech API, en-IN; Talk2Tax receives only text), stored as VOICE, model told it was spoken; answers to spoken questions read aloud. Tested end to end with test doubles for speech recognition and output; waits on a live Claude key and a real-browser microphone check."
     },
     {
       "id": "INNOV-014",
@@ -32674,9 +32683,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql",
+        "apps/api/src/copilot/copilot.actions.ts",
+        "apps/api/src/copilot/copilot.tools.ts",
+        "apps/api/test/voice-assistant.e2e.test.ts",
+        "apps/web/src/components/copilot/speech.ts",
+        "apps/web/src/app/orgs/[orgId]/copilot/page.tsx",
+        "apps/web/e2e/voice-assistant-flow.test.mjs",
+        "docs/VOICE_ASSISTANT.md"
+      ],
+      "notes": "The copilot can only propose a task or acknowledging/dismissing an alert; the member who asked confirms on screen within 15 minutes (never by speech; sensitive ones ask twice), permission re-checked and the action carried out in the same transaction as the decision; decided actions immutable (trigger); audited."
     },
     {
       "id": "INNOV-015",

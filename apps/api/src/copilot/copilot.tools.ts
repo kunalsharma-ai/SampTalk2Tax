@@ -13,6 +13,7 @@ import { KpisService } from '../kpis/kpis.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { ReportsService } from '../reports/reports.service';
+import { CopilotActionsService } from './copilot.actions';
 import type { CopilotTool } from './copilot.model';
 
 /**
@@ -20,7 +21,7 @@ import type { CopilotTool } from './copilot.model';
  * tool set it was started with, so an older conversation is closed for new questions
  * rather than continued with tools the model never saw.
  */
-export const TOOLSET_VERSION = 2;
+export const TOOLSET_VERSION = 3;
 
 /** Tool output longer than this is cut, so one call cannot fill the model's context. */
 export const MAX_TOOL_OUTPUT_CHARS = 40_000;
@@ -31,6 +32,10 @@ export interface ToolContext {
   /** Today in India time, YYYY-MM-DD. */
   today: string;
   fiscalYearStartMonth: number;
+  /** Set while answering, so proposals can be tied to the member, conversation and answer. */
+  userId?: string;
+  conversationId?: string;
+  answerId?: string;
 }
 
 /** What the answer was based on: shown under the answer, with a link to the same figures in the app. */
@@ -107,6 +112,7 @@ export class CopilotTools {
     private readonly subledger: SubledgerService,
     private readonly orgs: OrganizationsService,
     private readonly cfo: CfoService,
+    private readonly actions: CopilotActionsService,
   ) {
     const def = <I extends z.ZodTypeAny>(t: ToolDef<I>) => t as unknown as ToolDef<z.ZodTypeAny>;
     this.defs = [
@@ -238,7 +244,7 @@ export class CopilotTools {
         // fresh: false, so asking the copilot never runs the checks (the copilot only reads).
         run: async (i, c) => {
           const r = await this.alerts.list(c.orgId, { status: i.status, fresh: false });
-          return compact({ lastChecked: r.lastScan?.finishedAt ?? null, summary: r.summary, alerts: r.alerts.map(({ evidence, rule, ...a }) => a) });
+          return compact({ lastChecked: r.lastScan?.finishedAt ?? null, summary: r.summary, alerts: r.alerts.map(({ evidence, rule, id, ...a }) => ({ alert_ref: id, ...a })) });
         },
       }),
       def({
@@ -275,7 +281,43 @@ export class CopilotTools {
         path: (i) => `/cfo?q=${i.question}`,
         run: async (i, c) => this.cfo.ask({ id: c.orgId, role: c.role, functionalCurrency: (await this.orgs.get(c.orgId)).functionalCurrency, fiscalYearStartMonth: c.fiscalYearStartMonth }, i.question),
       }),
+      def({
+        name: 'propose_task',
+        description:
+          'Propose creating a task in the task queue, for the member asking or for everyone in a role. This does NOT create it: the member sees a card and must press Confirm on screen within 15 minutes. Use it only when the member asks for a task or reminder to be set up. Afterwards tell them to confirm it on the card; never say it was created.',
+        inputSchema: object({
+          title: { type: 'string', description: 'Short task title, under 200 characters.' },
+          description: { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'More detail, or null.' },
+          due_date: S.nullableDate('Due date, YYYY-MM-DD, or null.'),
+          for_role: { anyOf: [{ type: 'string', enum: ['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER', 'VIEWER'] }, { type: 'null' }], description: 'A role to give it to, or null for the member asking.' },
+        }),
+        input: z.object({ title: z.string().trim().min(1).max(200), description: z.string().max(2000).nullable(), due_date: date.nullable(), for_role: z.enum(['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER', 'VIEWER']).nullable() }).strict(),
+        permission: 'tasks.use',
+        label: (i) => `Proposed task: ${i.title}`,
+        path: () => '/tasks',
+        run: async (i, c) => this.propose(c, { kind: 'CREATE_TASK', title: i.title, description: i.description, dueDate: i.due_date, forRole: i.for_role }),
+      }),
+      def({
+        name: 'propose_alert_update',
+        description:
+          'Propose acknowledging an open alert (someone is looking at it) or dismissing an alert as not a problem (sensitive: it stays dismissed when the checks find it again, and needs a reason the member gave). This does NOT change the alert: the member must press Confirm on screen within 15 minutes. Use the alert_ref from list_alerts. Never invent a reason for a dismissal; ask the member. Afterwards tell them to confirm it on the card; never say it was done.',
+        inputSchema: object({
+          alert_ref: { type: 'string', description: 'alert_ref from list_alerts.' },
+          action: { type: 'string', enum: ['ACKNOWLEDGE', 'DISMISS'], description: 'What to do.' },
+          note: { anyOf: [{ type: 'string' }, { type: 'null' }], description: "For ACKNOWLEDGE an optional note; for DISMISS the member's reason (required)." },
+        }),
+        input: z.object({ alert_ref: z.string().uuid('Use an alert_ref from list_alerts'), action: z.enum(['ACKNOWLEDGE', 'DISMISS']), note: z.string().max(500).nullable() }).strict(),
+        permission: 'alerts.manage',
+        label: (i) => (i.action === 'DISMISS' ? 'Proposed alert dismissal' : 'Proposed alert acknowledgement'),
+        path: () => '/alerts',
+        run: async (i, c) => this.propose(c, i.action === 'DISMISS' ? { kind: 'DISMISS_ALERT', alertId: i.alert_ref, reason: i.note ?? '' } : { kind: 'ACKNOWLEDGE_ALERT', alertId: i.alert_ref, note: i.note }),
+      }),
     ];
+  }
+
+  private propose(c: ToolContext, input: Parameters<CopilotActionsService['propose']>[1]) {
+    if (!c.userId || !c.conversationId || !c.answerId) throw new DomainError('INVALID_ACTION', 'Actions can only be proposed in a conversation');
+    return this.actions.propose({ orgId: c.orgId, role: c.role, userId: c.userId, conversationId: c.conversationId, answerId: c.answerId }, input);
   }
 
   /** Tool definitions sent to the model. */

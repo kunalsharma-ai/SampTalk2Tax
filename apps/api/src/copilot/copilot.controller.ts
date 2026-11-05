@@ -3,17 +3,22 @@ import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
+import { CopilotActionsService } from './copilot.actions';
 import { CopilotService, MAX_QUESTION_CHARS } from './copilot.service';
 
 const id = z.string().uuid('Not a conversation id');
-const AskBody = z.object({ question: z.string().trim().min(1, 'Ask a question').max(MAX_QUESTION_CHARS, `Keep a question under ${MAX_QUESTION_CHARS} characters`) }).strict();
+const AskBody = z.object({ question: z.string().trim().min(1, 'Ask a question').max(MAX_QUESTION_CHARS, `Keep a question under ${MAX_QUESTION_CHARS} characters`), channel: z.enum(['TEXT', 'VOICE']).default('TEXT') }).strict();
+const actionId = z.string().uuid('Not an action id');
 const SettingsBody = z.object({ enabled: z.boolean() }).strict();
 
 @ApiTags('copilot')
 @ApiBearerAuth()
 @Controller('v1/orgs/:orgId/copilot')
 export class CopilotController {
-  constructor(private readonly copilot: CopilotService) {}
+  constructor(
+    private readonly copilot: CopilotService,
+    private readonly actions: CopilotActionsService,
+  ) {}
 
   /** Whether the server has an AI provider key, whether the organisation has the copilot on, and the model. */
   @Get('status')
@@ -42,7 +47,7 @@ export class CopilotController {
   @RequirePermission('copilot.use')
   @ApiBody({ schema: openApi(AskBody) })
   start(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(AskBody)) body: z.infer<typeof AskBody>) {
-    return this.copilot.ask({ orgId: org.id, role: org.role }, user, null, body.question);
+    return this.copilot.ask({ orgId: org.id, role: org.role }, user, null, body.question, body.channel);
   }
 
   @Get('conversations/:conversationId')
@@ -56,7 +61,7 @@ export class CopilotController {
   @RequirePermission('copilot.use')
   @ApiBody({ schema: openApi(AskBody) })
   ask(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('conversationId', new ZodPipe(id)) conversationId: string, @Body(new ZodPipe(AskBody)) body: z.infer<typeof AskBody>) {
-    return this.copilot.ask({ orgId: org.id, role: org.role }, user, conversationId, body.question);
+    return this.copilot.ask({ orgId: org.id, role: org.role }, user, conversationId, body.question, body.channel);
   }
 
   @Delete('conversations/:conversationId')
@@ -64,5 +69,23 @@ export class CopilotController {
   @RequirePermission('copilot.use')
   async remove(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('conversationId', new ZodPipe(id)) conversationId: string) {
     await this.copilot.remove(org.id, user, conversationId);
+  }
+
+  /**
+   * Carry out an action the assistant proposed. Only the member who asked can confirm it, before it
+   * expires, and only with the permission the action needs at that moment.
+   */
+  @Post('actions/:actionId/confirm')
+  @HttpCode(200)
+  @RequirePermission('copilot.use')
+  confirm(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('actionId', new ZodPipe(actionId)) id: string) {
+    return this.actions.confirm({ orgId: org.id, role: org.role }, user, id);
+  }
+
+  @Post('actions/:actionId/cancel')
+  @HttpCode(200)
+  @RequirePermission('copilot.use')
+  cancel(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('actionId', new ZodPipe(actionId)) id: string) {
+    return this.actions.cancel({ orgId: org.id, role: org.role }, user, id);
   }
 }
