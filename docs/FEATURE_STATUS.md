@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 835 |
+| Not started | 834 |
 | Designed | 0 |
 | Implementing | 66 |
 | Implemented | 34 |
-| Tested | 394 |
+| Tested | 395 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -53,7 +53,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial recovery planner | M7 | 11 | 0 | 11 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
-| Integration marketplace | M6 | 50 | 42 | 8 |
+| Integration marketplace | M6 | 50 | 41 | 9 |
 | Security and enterprise governance | M1 | 38 | 23 | 15 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
@@ -3008,15 +3008,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### CRM-001 — Provide native lightweight CRM functionality and integration APIs for external CRM systems
 
 - Module: CRM and finance integration
-- Status: **Implementing**
-- Notes: Native lightweight CRM: leads and pipeline built (CRM slice 1). Quotations, sales orders, contracts, customer 360, revenue forecast and the external CRM API follow in later slices.
+- Status: **Tested**
+- Notes: Native lightweight CRM (leads, pipeline, quotations, orders, contracts, customer 360, revenue forecast) and integration APIs for external CRMs: API keys made under Settings > Integrations (hashed, scoped read/write, expiry, revoke, act as their creator), the CRM API at /v1/crm-api (also /api/crm on the app) with idempotent creation by externalRef, and signed CRM webhooks from the audit trail with retries, test, delivery log and secret rotation.
 - Evidence:
   - packages/accounting-engine/src/crm.ts
+  - packages/accounting-engine/src/crm-api.ts
   - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - packages/database/prisma/migrations/20261122090000_crm_external_api/migration.sql
   - apps/api/src/crm/crm.service.ts
+  - apps/api/src/crm-api/crm-api.controller.ts
+  - apps/api/src/crm-api/crm-webhooks.service.ts
   - apps/api/test/crm.e2e.test.ts
+  - apps/api/test/crm-api.e2e.test.ts
   - apps/web/e2e/crm-pipeline-flow.test.mjs
+  - apps/web/e2e/crm-connection-flow.test.mjs
   - docs/CRM_PIPELINE.md
+  - docs/CRM_EXTERNAL_API.md
 
 ### CRM-003 — Leads
 
@@ -4642,6 +4649,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/invoices/page.tsx
   - apps/web/e2e/subscription-payments-flow.test.mjs
   - docs/SUBSCRIPTION_PAYMENTS.md
+
+### INTG-025 — CRM platforms
+
+- Module: Integration marketplace
+- Status: **Implementing**
+- Notes: Any CRM platform can connect through the generic CRM API (API keys) and CRM webhooks. Ready-made connectors for named platforms (Salesforce, HubSpot, Zoho) that map their objects automatically are not built.
+- Evidence:
+  - apps/api/src/crm-api/crm-api.controller.ts
+  - apps/api/src/crm-api/crm-webhooks.service.ts
+  - apps/web/src/components/crm-connection/crm-connection.tsx
+  - docs/CRM_EXTERNAL_API.md
 
 ### INTG-032 — Email providers
 

@@ -97,6 +97,12 @@ import { CustomerInsightsController } from './crm/customer-insights.controller';
 import { CustomerInsightsService } from './crm/customer-insights.service';
 import { RevenueForecastController } from './crm/revenue-forecast.controller';
 import { RevenueForecastService } from './crm/revenue-forecast.service';
+import { ApiKeyGuard } from './crm-api/api-key.guard';
+import { ApiKeysService } from './crm-api/api-keys.service';
+import { CrmApiController } from './crm-api/crm-api.controller';
+import { CrmConnectionController } from './crm-api/crm-connection.controller';
+import { CrmWebhooksRunnerService } from './crm-api/crm-webhooks-runner.service';
+import { CrmWebhooksService } from './crm-api/crm-webhooks.service';
 import { ContractsController } from './sales-orders/contracts.controller';
 import { ContractsRunnerService } from './sales-orders/contracts-runner.service';
 import { ContractsService } from './sales-orders/contracts.service';
@@ -226,6 +232,8 @@ export class AppModule {
         CrmController,
         CustomerInsightsController,
         RevenueForecastController,
+        CrmApiController,
+        CrmConnectionController,
         SalesOrdersController,
         ContractsController,
         InvoiceTemplatesController,
@@ -309,6 +317,10 @@ export class AppModule {
         CrmService,
         CustomerInsightsService,
         RevenueForecastService,
+        ApiKeysService,
+        ApiKeyGuard,
+        CrmWebhooksService,
+        CrmWebhooksRunnerService,
         SalesOrdersService,
         ContractsService,
         ContractsRunnerService,

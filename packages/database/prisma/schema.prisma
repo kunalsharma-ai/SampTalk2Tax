@@ -287,6 +287,9 @@ model Organization {
   salesOrders              SalesOrder[]
   salesContracts           SalesContract[]
   revenueForecasts            RevenueForecast[]
+  apiKeys                     ApiKey[]
+  crmWebhooks                 CrmWebhook[]
+  crmWebhookDeliveries        CrmWebhookDelivery[]
   loanEvents               LoanEvent[]
   dimensionValues          DimensionValue[]
   copilotConversations     CopilotConversation[]
@@ -4078,6 +4081,8 @@ model CrmLead {
   /// A first guess at what the lead might buy, in the functional currency.
   estimatedValue     Decimal?      @map("estimated_value") @db.Decimal(24, 6)
   notes              String?       @db.VarChar(2000)
+  /// The other system's id when the lead came through the CRM API; unique in the organisation.
+  externalRef        String?       @map("external_ref") @db.VarChar(100)
   disqualifiedReason String?       @map("disqualified_reason") @db.VarChar(500)
   convertedContactId String?       @map("converted_contact_id") @db.Uuid
   convertedDealId    String?       @map("converted_deal_id") @db.Uuid
@@ -4090,6 +4095,7 @@ model CrmLead {
 
   @@unique([orgId, number])
   @@unique([id, orgId])
+  @@unique([orgId, externalRef])
   @@index([orgId, status])
   @@map("crm_leads")
 }
@@ -4114,6 +4120,8 @@ model CrmDeal {
   closedOn          DateTime?     @map("closed_on") @db.Date
   lostReason        String?       @map("lost_reason") @db.VarChar(500)
   notes             String?       @db.VarChar(2000)
+  /// The other system's id when the deal came through the CRM API; unique in the organisation.
+  externalRef       String?       @map("external_ref") @db.VarChar(100)
   createdById       String        @map("created_by_id") @db.Uuid
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -4122,6 +4130,7 @@ model CrmDeal {
 
   @@unique([orgId, number])
   @@unique([id, orgId])
+  @@unique([orgId, externalRef])
   @@index([orgId, stage])
   @@index([orgId, contactId])
   @@map("crm_deals")
@@ -4443,4 +4452,80 @@ model RevenueForecast {
   @@unique([id, orgId])
   @@index([orgId, asOf])
   @@map("revenue_forecasts")
+}
+
+/// A key another system uses to call the CRM API (/v1/crm-api) for one organisation. Only a
+/// SHA-256 of the key is kept; the key is shown once. It acts with its creator's role, limited to
+/// its scopes, and stops working when revoked or when its creator leaves. Never deleted.
+model ApiKey {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  name        String       @db.VarChar(100)
+  /// The visible start of the key (t2t_<prefix>_…), used to find it and shown in lists.
+  prefix      String       @unique @db.VarChar(16)
+  keyHash     String       @unique @map("key_hash") @db.Char(64)
+  /// crm.read and/or crm.write.
+  scopes      String[]
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt   DateTime?    @map("expires_at") @db.Timestamptz(6)
+  lastUsedAt  DateTime?    @map("last_used_at") @db.Timestamptz(6)
+  revokedAt   DateTime?    @map("revoked_at") @db.Timestamptz(6)
+  revokedById String?      @map("revoked_by_id") @db.Uuid
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("api_keys")
+}
+
+/// Sends CRM events to another system. Events are read from the audit trail after last_event_id;
+/// each becomes one signed delivery, tried again on failure. The secret is sealed by the API.
+model CrmWebhook {
+  id           String               @id @default(uuid()) @db.Uuid
+  orgId        String               @map("org_id") @db.Uuid
+  name         String               @db.VarChar(100)
+  url          String               @db.VarChar(500)
+  events       String[]
+  secretCipher String               @map("secret_cipher")
+  secretKeyId  String               @map("secret_key_id") @db.VarChar(16)
+  secretHint   String               @map("secret_hint") @db.VarChar(16)
+  enabled      Boolean              @default(true)
+  lastEventId  BigInt               @map("last_event_id")
+  createdById  String               @map("created_by_id") @db.Uuid
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org          Organization         @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  deliveries   CrmWebhookDelivery[]
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("crm_webhooks")
+}
+
+/// One event sent (or being sent) to a CRM webhook. The same body is sent on every attempt.
+model CrmWebhookDelivery {
+  id              String       @id @default(uuid()) @db.Uuid
+  orgId           String       @map("org_id") @db.Uuid
+  webhookId       String       @map("webhook_id") @db.Uuid
+  /// The audit event it came from; null for a test delivery.
+  eventId         BigInt?      @map("event_id")
+  event           String       @db.VarChar(40)
+  body            String
+  /// PENDING, SUCCEEDED or FAILED.
+  status          String       @default("PENDING") @db.VarChar(10)
+  attempts        Int          @default(0)
+  nextAttemptAt   DateTime?    @map("next_attempt_at") @db.Timestamptz(6)
+  lastStatusCode  Int?         @map("last_status_code")
+  lastError       String?      @map("last_error") @db.VarChar(300)
+  responseSnippet String?      @map("response_snippet") @db.VarChar(500)
+  durationMs      Int?         @map("duration_ms")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt      DateTime?    @map("finished_at") @db.Timestamptz(6)
+  org             Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  webhook         CrmWebhook   @relation(fields: [webhookId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([webhookId, eventId])
+  @@index([orgId, webhookId, createdAt])
+  @@map("crm_webhook_deliveries")
 }

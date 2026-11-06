@@ -467,9 +467,9 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Governance. Limits come from your plan.',
   },
   'settings/integrations': {
-    what: 'Connections to outside services such as the AI and email, set up here in the app.',
-    how: 'Enter the keys for a service, test the connection, and save. Keys are stored encrypted.',
-    where: 'Governance. Used by the copilot, emails and other connected features.',
+    what: 'Connections to outside services, set up here in the app: the AI, email, and your external CRM through API keys and webhooks.',
+    how: 'Enter the keys for a service, test the connection, and save. Keys are stored encrypted. For a CRM, make an API key for calls into Talk2Tax and add a webhook for events going out.',
+    where: 'Governance. Used by the copilot, emails, automations and any system connected to the CRM.',
   },
   'settings/approvals': {
     what: 'Rules that send documents for approval before they post.',
