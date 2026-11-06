@@ -1345,8 +1345,8 @@ Part 38 · M9 · priority P2 · depends on: SEC
 | SUBS-015 | Billing Capabilities | capability | Plan upgrades | Tested |
 | SUBS-016 | Billing Capabilities | capability | Plan downgrades | Tested |
 | SUBS-017 | Billing Capabilities | capability | Add-on modules | Not started |
-| SUBS-018 | Billing Capabilities | capability | Usage-based AI credits | Not started |
-| SUBS-019 | Billing Capabilities | capability | Document processing quotas | Not started |
+| SUBS-018 | Billing Capabilities | capability | Usage-based AI credits | Implementing |
+| SUBS-019 | Billing Capabilities | capability | Document processing quotas | Tested |
 | SUBS-020 | Billing Capabilities | capability | User-based licensing | Tested |
 | SUBS-021 | Billing Capabilities | capability | Multi-entity add-ons | Not started |
 | SUBS-022 | Billing Capabilities | capability | API usage plans | Not started |
@@ -1374,7 +1374,7 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-005 |  | capability | Subscription management | Tested |
 | ADMIN-006 |  | capability | Plan management | Tested |
 | ADMIN-007 |  | capability | Feature flags | Not started |
-| ADMIN-008 |  | capability | AI usage monitoring | Not started |
+| ADMIN-008 |  | capability | AI usage monitoring | Tested |
 | ADMIN-009 |  | capability | AI model configuration | Not started |
 | ADMIN-010 |  | capability | API usage monitoring | Not started |
 | ADMIN-011 |  | capability | Infrastructure monitoring | Not started |

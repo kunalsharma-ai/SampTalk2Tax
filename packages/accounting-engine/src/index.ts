@@ -42,3 +42,4 @@ export * from './fx';
 export * from './plans';
 export * from './subscription-billing';
 export * from './support';
+export * from './usage';

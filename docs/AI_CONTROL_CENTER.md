@@ -36,7 +36,7 @@ For each agent:
 These need `org.manage` (owners and admins). Accountants and approvers can look (`audit.read`); viewers and employees cannot.
 
 * **Turn an agent off or on.** An agent that is off refuses to start (`409 AGENT_OFF`). If it is switched off mid-run, the run stops before its next model call.
-* **Monthly token budget** per agent, from 1,000 to 1,000,000,000 tokens, or none. Once usage this month reaches the budget, the agent refuses to start (`429 AI_BUDGET_REACHED`) and a running batch stops before its next call. A single call can take usage past the budget, because a call's size is only known once it returns.
+* **Monthly token budget** per agent, from 1,000 to 1,000,000,000 tokens, or none. Once usage this month reaches the budget, the agent refuses to start (`429 AI_BUDGET_REACHED`) and a running batch stops before its next call. A single call can take usage past the budget, because a call's size is only known once it returns. On top of these budgets, the plan's AI requests for the month apply to all agents together (`429 AI_CREDITS_USED_UP`); see [`USAGE_METERING.md`](USAGE_METERING.md).
 * **Emergency stop.** This turns AI off for the whole organisation at once and needs a reason of at least 10 characters.
   * The reason is shown in every refusal until AI is turned back on: `409 AI_OFF`, or `COPILOT_OFF` for the copilot.
   * Nothing more is sent to the AI provider.

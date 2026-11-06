@@ -26,7 +26,7 @@ export type BillingInterval = 'MONTHLY' | 'ANNUAL';
 export interface PlanLimits {
   /** Most members an organisation may have; null for no limit. */
   members: number | null;
-  /** AI questions and agent runs a month (counted from the usage slice); null for no limit. */
+  /** Answered AI model calls a month, by any agent (see docs/USAGE_METERING.md); null for no limit. */
   aiCreditsPerMonth: number | null;
   /** Attachments uploaded a month; null for no limit. */
   documentUploadsPerMonth: number | null;

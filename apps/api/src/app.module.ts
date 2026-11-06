@@ -41,6 +41,8 @@ import { AdminController, AnnouncementsController } from './admin/admin.controll
 import { AdminService } from './admin/admin.service';
 import { PlatformSupportController, SupportController } from './support/support.controller';
 import { SupportService } from './support/support.service';
+import { PlatformUsageController, UsageController } from './usage/usage.controller';
+import { UsageService } from './usage/usage.service';
 import { SupportAccessService } from './support/support-access.service';
 import { BillingController } from './billing/billing.controller';
 import { BillingService } from './billing/billing.service';
@@ -157,6 +159,8 @@ export class AppModule {
         AdminController,
         SupportController,
         PlatformSupportController,
+        UsageController,
+        PlatformUsageController,
         AnnouncementsController,
         BillingController,
         PlatformBillingController,
@@ -228,6 +232,7 @@ export class AppModule {
         AdminService,
         SupportService,
         SupportAccessService,
+        UsageService,
         BillingService,
         PlatformBillingService,
         PaymentSettingsService,
