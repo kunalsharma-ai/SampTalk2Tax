@@ -275,3 +275,9 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Customer 360 counts direct costs only through projects linked to the customer (no allocation of shared costs, no cost of goods from stock, which is not modelled); lifetime value is undiscounted and uses one retention rate for all customers; the credit risk score is a fixed, explained rule set, not a model trained on defaults, and uses no outside credit data. See [`CUSTOMER_360.md`](CUSTOMER_360.md).
 * The revenue forecast places what is left on sales orders in the current month (orders have no delivery dates), counts deals once in their close month, leaves out quotations without a deal, recognises revenue at invoice date, has no AI explanation and no automatic monthly snapshot. See [`REVENUE_FORECAST.md`](REVENUE_FORECAST.md).
 * Contract invoices are made as drafts and are not posted or e-mailed automatically; there is no proration of part periods, no usage-based charges and no automatic collection. See [`CONTRACTS.md`](CONTRACTS.md).
+
+## In-app help
+
+* Help texts are in English only; the Hindi catalogue translates the panel's headings and the feature guide's labels, and a help text shows in English until its translation is added. See [`IN_APP_HELP.md`](IN_APP_HELP.md).
+* Detail and form pages without their own entry show the help of the page above them (a contract's page shows the contracts help); sections titled with a record's name rather than fixed text have no (i).
+* The help texts have not been reviewed by an accountant or a tax professional.

@@ -13,6 +13,7 @@ import type { DataRegion, SubscriptionAccess } from '@/lib/types';
 import { useAnnouncements, useMeWithRole } from '@/lib/admin';
 import { useOrgFlags } from '@/lib/operations';
 import { MaintenanceBanner } from './maintenance-banner';
+import { PageHelp } from './help';
 
 export function Shell({ children }: { children: ReactNode }) {
   const { org, orgId, isLoading } = useOrg();
@@ -178,7 +179,10 @@ export function PageHeader({ title, description, actions }: { title: string; des
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <PageHelp title={title} />
+        </div>
         {description ? <p className="mt-1 text-sm text-fg-muted">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
