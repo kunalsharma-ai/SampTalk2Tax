@@ -1,13 +1,16 @@
 import { CanActivate, ExecutionContext, ForbiddenException, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { hasPermission, Permission, RoleName } from '@talk2tax/security';
+import { FlagKey, isWriteMethod } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { PrismaService } from '../common/prisma.service';
 import { enterOrg, enterUser } from '../common/tenant-context';
 import { RegionsService } from '../regions/regions.service';
 import { accessOf } from '../billing/limits';
+import { FlagsService } from '../operations/flags.service';
+import { MaintenanceService } from '../operations/maintenance.service';
 import { SupportAccessService } from '../support/support-access.service';
-import { ALLOW_READ_ONLY, IS_PUBLIC, PERMISSION, PLAN_FEATURE, PLATFORM_PERMISSION, PLATFORM_PERMISSIONS, PlatformPermission, PlatformRole } from './decorators';
+import { ALLOW_READ_ONLY, FEATURE_FLAG, IS_PUBLIC, PERMISSION, PLAN_FEATURE, PLATFORM_PERMISSION, PLATFORM_PERMISSIONS, PlatformPermission, PlatformRole } from './decorators';
 import { SessionsService } from './sessions.service';
 import { TokensService } from './tokens.service';
 
@@ -21,6 +24,8 @@ export class AuthGuard implements CanActivate {
     private readonly sessions: SessionsService,
     private readonly regions: RegionsService,
     private readonly supportAccess: SupportAccessService,
+    private readonly maintenance: MaintenanceService,
+    private readonly flags: FlagsService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -41,6 +46,17 @@ export class AuthGuard implements CanActivate {
     enterUser(user.id);
     req.sessionId = claims.sessionId;
 
+    // During maintenance nothing changes except by the people who run Talk2Tax. Signing in,
+    // refreshing and signing out are public routes and keep working, as does the account itself.
+    if (isWriteMethod(req.method) && !user.platformRole && !String(req.path ?? '').startsWith('/v1/auth/')) {
+      const refusal = await this.maintenance.refusal();
+      if (refusal) {
+        const e = new HttpException({ error: 'MAINTENANCE', message: refusal.message }, HttpStatus.SERVICE_UNAVAILABLE);
+        if (refusal.retryAfterSeconds !== null) Object.assign(e, { retryAfterSeconds: refusal.retryAfterSeconds });
+        throw e;
+      }
+    }
+
     const platform = this.reflector.getAllAndOverride<PlatformPermission | undefined>(PLATFORM_PERMISSION, targets);
     if (platform) {
       // Platform administration: a platform role, and never an organisation's books.
@@ -60,7 +76,7 @@ export class AuthGuard implements CanActivate {
       });
       // Non-members get 404, not 403, so organization ids cannot be probed. The one exception
       // is support staff while the organisation has granted support access: read-only, logged.
-      if (!membership) return this.viaSupport(req, user, orgId, permission);
+      if (!membership) return this.viaSupport(req, user, orgId, permission, targets);
       // An organisation is served only in the region its data lives in.
       this.regions.assertHere(membership.org.dataRegion);
       const role = membership.role as RoleName;
@@ -87,6 +103,7 @@ export class AuthGuard implements CanActivate {
       if (!hasPermission(role, permission)) {
         throw new ForbiddenException({ error: 'FORBIDDEN', message: `Your role (${role}) does not have ${permission}` });
       }
+      await this.assertFlag(targets, orgId);
       enterOrg(orgId);
       req.org = {
         id: orgId,
@@ -100,8 +117,16 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
+  /** A module behind a feature flag that is off for this organisation is refused. */
+  private async assertFlag(targets: Parameters<Reflector['getAllAndOverride']>[1], orgId: string) {
+    const flag = this.reflector.getAllAndOverride<FlagKey | undefined>(FEATURE_FLAG, targets);
+    if (flag && !(await this.flags.isOn(flag, orgId))) {
+      throw new ForbiddenException({ error: 'FEATURE_OFF', message: 'This part of Talk2Tax is switched off for your organisation at the moment.', flag });
+    }
+  }
+
   /** Support staff reading an organisation's books under its grant: VIEWER rights, reads only, every request logged. */
-  private async viaSupport(req: any, user: { id: string; platformRole: PlatformRole | null }, orgId: string, permission: Permission | undefined): Promise<boolean> {
+  private async viaSupport(req: any, user: { id: string; platformRole: PlatformRole | null }, orgId: string, permission: Permission | undefined, targets: Parameters<Reflector['getAllAndOverride']>[1]): Promise<boolean> {
     const notFound = new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
     if (!user.platformRole || !PLATFORM_PERMISSIONS[user.platformRole].includes('platform.support')) throw notFound;
     const access = await this.supportAccess.activeGrant(orgId);
@@ -115,6 +140,7 @@ export class AuthGuard implements CanActivate {
     if (!hasPermission(role, permission)) {
       throw new ForbiddenException({ error: 'FORBIDDEN', message: `Support access has viewer rights only, which do not include ${permission}` });
     }
+    await this.assertFlag(targets, orgId);
     enterOrg(orgId);
     await this.supportAccess.logView(access.grant.id, orgId, user.id, String(req.originalUrl ?? req.url ?? ''));
     req.org = {

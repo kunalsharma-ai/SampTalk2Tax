@@ -43,3 +43,5 @@ export * from './plans';
 export * from './subscription-billing';
 export * from './support';
 export * from './usage';
+export * from './feature-flags';
+export * from './operations';

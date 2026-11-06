@@ -11,6 +11,8 @@ import { Logo } from './brand';
 import { navFor } from '@/lib/nav';
 import type { DataRegion, SubscriptionAccess } from '@/lib/types';
 import { useAnnouncements, useMeWithRole } from '@/lib/admin';
+import { useOrgFlags } from '@/lib/operations';
+import { MaintenanceBanner } from './maintenance-banner';
 
 export function Shell({ children }: { children: ReactNode }) {
   const { org, orgId, isLoading } = useOrg();
@@ -21,6 +23,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const t = useT();
   const me = useMeWithRole();
   const announcements = useAnnouncements();
+  const flags = useOrgFlags(org ? orgId : undefined);
   const base = `/orgs/${orgId}`;
   // Moments are shown in the organisation's time zone unless the person chose their own.
   setOrganisationTimeZone(org?.timeZone ?? null);
@@ -28,7 +31,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const elsewhere = org && org.dataRegion && !org.dataRegion.here ? org.dataRegion : null;
   const nav = elsewhere ? null : (
     <nav aria-label={t('Main')} className="flex flex-col gap-6">
-      {navFor(org).map((g) => (
+      {navFor(org, flags.data).map((g) => (
         <div key={g.group}>
           <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{t(g.group)}</p>
           <ul className="mt-2 flex flex-col gap-0.5">
@@ -108,6 +111,7 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
+        <MaintenanceBanner />
         {(announcements.data ?? []).map((a) => (
           <p key={a.id} role="status" className={cn('border-b px-4 py-2 text-center text-sm print:hidden', a.tone === 'WARNING' ? 'border-warning/30 bg-warning/10 text-warning' : 'border-accent/30 bg-accent/10 text-fg')} data-testid="announcement">
             {a.message}

@@ -6,6 +6,8 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly issues: string[] = [],
+    /** The server's id for the request: quoted to support, it finds the exact failure. */
+    public readonly requestId: string | null = null,
   ) {
     super(message);
   }
@@ -27,7 +29,10 @@ export async function api<T>(path: string, init: { method?: string; body?: Json;
   if (!res.ok) {
     const rawIssues = Array.isArray(body.issues) ? body.issues : Array.isArray(body.details?.issues) ? body.details.issues : null;
     const issues: string[] = rawIssues ? rawIssues.map((i: unknown) => (typeof i === 'string' ? i : `${(i as { path: string }).path}: ${(i as { message: string }).message}`)) : [];
-    throw new ApiError(res.status, body.error ?? 'ERROR', body.message ?? `Request failed (${res.status})`, issues);
+    const requestId = typeof body.requestId === 'string' ? body.requestId : res.headers.get('x-request-id');
+    // An unexpected failure carries its reference, so that support can find it.
+    const message = body.message ?? `Request failed (${res.status})`;
+    throw new ApiError(res.status, body.error ?? 'ERROR', res.status >= 500 && res.status !== 503 && requestId ? `${message}. Reference: ${requestId}` : message, issues, requestId);
   }
   return body as T;
 }

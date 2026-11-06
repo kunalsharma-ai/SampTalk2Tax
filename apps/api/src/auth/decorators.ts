@@ -1,4 +1,5 @@
 import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
+import type { FlagKey } from '@talk2tax/accounting-engine';
 import type { Permission, RoleName } from '@talk2tax/security';
 
 export const IS_PUBLIC = 'talk2tax:isPublic';
@@ -6,6 +7,10 @@ export const PERMISSION = 'talk2tax:permission';
 export const PLATFORM_PERMISSION = 'talk2tax:platformPermission';
 export const PLAN_FEATURE = 'talk2tax:planFeature';
 export const ALLOW_READ_ONLY = 'talk2tax:allowWhenReadOnly';
+export const FEATURE_FLAG = 'talk2tax:featureFlag';
+
+/** The route belongs to a module behind a feature flag: refused with 403 FEATURE_OFF while the flag is off for the organisation. */
+export const RequireFlag = (flag: FlagKey) => SetMetadata(FEATURE_FLAG, flag);
 
 /**
  * The route changes something in a module the organisation's plan must include (AI, PAYROLL,

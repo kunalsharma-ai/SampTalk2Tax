@@ -20,6 +20,13 @@ import { BankingService } from './banking/banking.service';
 import { ExpensesController } from './expenses/expenses.controller';
 import { ExpensesService } from './expenses/expenses.service';
 import { ErrorFilter } from './common/errors';
+import { ErrorsService } from './operations/errors.service';
+import { FlagsService } from './operations/flags.service';
+import { HeartbeatsService } from './operations/heartbeats.service';
+import { MaintenanceService } from './operations/maintenance.service';
+import { MetricsService } from './operations/metrics.service';
+import { OperationsController, OrgFlagsController, StatusController } from './operations/operations.controller';
+import { SystemService } from './operations/system.service';
 import { ContactsController } from './contacts/contacts.controller';
 import { ContactsService } from './contacts/contacts.service';
 import { DocumentsService } from './ledgers/documents.service';
@@ -157,6 +164,9 @@ export class AppModule {
         HealthController,
         RegionsController,
         AdminController,
+        StatusController,
+        OrgFlagsController,
+        OperationsController,
         SupportController,
         PlatformSupportController,
         UsageController,
@@ -306,6 +316,12 @@ export class AppModule {
         WorkflowRunnerService,
         MailerService,
         WorkflowsService,
+        MetricsService,
+        MaintenanceService,
+        HeartbeatsService,
+        FlagsService,
+        ErrorsService,
+        SystemService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
