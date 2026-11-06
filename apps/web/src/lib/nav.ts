@@ -61,6 +61,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Accounting',
     items: [
       { href: '/journals', label: 'Journals' },
+      { href: '/journal-templates', label: 'Journal templates' },
       { href: '/accounts', label: 'Chart of accounts' },
       { href: '/fixed-assets', label: 'Fixed assets' },
       { href: '/deferrals', label: 'Prepaid and deferred' },

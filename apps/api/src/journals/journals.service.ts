@@ -88,38 +88,7 @@ export class JournalsService {
     }
     try {
       const entry = await this.prisma.$transaction(async (tx) => {
-        const period = await this.lockPeriodForDate(tx, org.id, input.date);
-        if (period.status === 'CLOSED' || (opts.post && period.status !== 'OPEN')) {
-          throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
-        }
-        input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
-        const normalized = await this.validate(tx, org, input.lines, { manual: true });
-        const created = await tx.journalEntry.create({
-          data: {
-            orgId: org.id,
-            date: toDbDate(input.date),
-            periodId: period.id,
-            type: input.type,
-            memo: input.memo,
-            reference: input.reference,
-            functionalCurrency: org.functionalCurrency,
-            totalDebit: normalized.totalFunctionalDebit.toFixed(),
-            totalCredit: normalized.totalFunctionalCredit.toFixed(),
-            idempotencyKey: opts.idempotencyKey,
-            idempotencyHash: hash,
-            createdById: actor.id,
-            lines: { create: lineRows(normalized) },
-          },
-        });
-        if (opts.post) await this.markPosted(tx, org.id, created.id, actor.id);
-        await this.audit.append(tx, {
-          orgId: org.id,
-          actorId: actor.id,
-          action: opts.post ? 'journal.created_and_posted' : 'journal.draft_created',
-          entityType: 'journal_entry',
-          entityId: created.id,
-          data: { date: input.date, type: input.type, totalDebit: normalized.totalFunctionalDebit.toFixed(), lines: input.lines.length },
-        });
+        const created = await this.createInTx(tx, org, actor, input, { post: opts.post, idempotencyKey: opts.idempotencyKey, idempotencyHash: hash });
         return tx.journalEntry.findUniqueOrThrow({ where: { id: created.id }, include: ENTRY_INCLUDE });
       });
       return { replayed: false, entry: serialize(entry) };
@@ -131,6 +100,53 @@ export class JournalsService {
       }
       throw e;
     }
+  }
+
+  /**
+   * Create (and optionally post) a manual journal inside the caller's transaction: the period must
+   * be open to post (not closed to save a draft), foreign lines take the recorded rate, and the
+   * lines pass the usual checks. Used by journal templates and their schedules too.
+   */
+  async createInTx(
+    tx: Tx,
+    org: OrgInfo,
+    actor: Actor,
+    input: JournalInput,
+    opts: { post: boolean; idempotencyKey?: string; idempotencyHash?: string; auditData?: Record<string, unknown> },
+  ): Promise<{ id: string; entryNumber: number | null }> {
+    const period = await this.lockPeriodForDate(tx, org.id, input.date);
+    if (period.status === 'CLOSED' || (opts.post && period.status !== 'OPEN')) {
+      throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
+    }
+    input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
+    const normalized = await this.validate(tx, org, input.lines, { manual: true });
+    const created = await tx.journalEntry.create({
+      data: {
+        orgId: org.id,
+        date: toDbDate(input.date),
+        periodId: period.id,
+        type: input.type,
+        memo: input.memo,
+        reference: input.reference,
+        functionalCurrency: org.functionalCurrency,
+        totalDebit: normalized.totalFunctionalDebit.toFixed(),
+        totalCredit: normalized.totalFunctionalCredit.toFixed(),
+        idempotencyKey: opts.idempotencyKey,
+        idempotencyHash: opts.idempotencyHash,
+        createdById: actor.id,
+        lines: { create: lineRows(normalized) },
+      },
+    });
+    const entryNumber = opts.post ? await this.markPosted(tx, org.id, created.id, actor.id) : null;
+    await this.audit.append(tx, {
+      orgId: org.id,
+      actorId: actor.id,
+      action: opts.post ? 'journal.created_and_posted' : 'journal.draft_created',
+      entityType: 'journal_entry',
+      entityId: created.id,
+      data: { date: input.date, type: input.type, totalDebit: normalized.totalFunctionalDebit.toFixed(), lines: input.lines.length, ...opts.auditData },
+    });
+    return { id: created.id, entryNumber };
   }
 
   async updateDraft(org: OrgInfo, actor: Actor, id: string, input: JournalInput) {
