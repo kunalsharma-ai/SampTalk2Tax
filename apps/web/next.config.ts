@@ -1,7 +1,11 @@
 import type { NextConfig } from 'next';
+import { resolve } from 'node:path';
 
 const config: NextConfig = {
   reactStrictMode: true,
+  // The container image (apps/web/Dockerfile) runs the self-contained server; `next start` is used otherwise.
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
+  outputFileTracingRoot: resolve(process.cwd(), '../..'),
   poweredByHeader: false,
   transpilePackages: ['@talk2tax/ui', '@talk2tax/design-system'],
   async headers() {

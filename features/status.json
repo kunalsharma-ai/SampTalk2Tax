@@ -5673,6 +5673,16 @@
         "docs/OPERATIONS.md"
       ],
       "notes": "Start now or schedule a maintenance window with a message and expected end. While in progress every change by anyone but platform staff is refused (503 MAINTENANCE with Retry-After); reads, sign-in and payment webhooks keep working, background runners skip their passes, and a banner shows on every page including sign-in."
+    },
+    "SEC-025": {
+      "status": "Implemented",
+      "evidence": [
+        ".github/workflows/ci.yml",
+        ".github/dependabot.yml",
+        "pnpm-workspace.yaml",
+        "docs/CI_CD.md"
+      ],
+      "notes": "pnpm audit --prod --audit-level=high as a CI job, and weekly Dependabot updates for npm, GitHub Actions and base images. Four high-severity transitive advisories fixed with pinned overrides (audit clean locally). The CI job has not run on GitHub because Actions is blocked by billing."
     }
   }
 }

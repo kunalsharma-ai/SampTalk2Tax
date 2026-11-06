@@ -8,10 +8,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 851 |
+| Not started | 850 |
 | Designed | 0 |
 | Implementing | 65 |
-| Implemented | 33 |
+| Implemented | 34 |
 | Tested | 380 |
 | Integration pending | 14 |
 | External approval required | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 42 | 8 |
-| Security and enterprise governance | M1 | 38 | 24 | 14 |
+| Security and enterprise governance | M1 | 38 | 23 | 15 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 5 | 27 |
@@ -4614,6 +4614,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries
   - zod schemas on every endpoint
+
+### SEC-025 — Dependency scanning
+
+- Module: Security and enterprise governance
+- Status: **Implemented**
+- Notes: pnpm audit --prod --audit-level=high as a CI job, and weekly Dependabot updates for npm, GitHub Actions and base images. Four high-severity transitive advisories fixed with pinned overrides (audit clean locally). The CI job has not run on GitHub because Actions is blocked by billing.
+- Evidence:
+  - .github/workflows/ci.yml
+  - .github/dependabot.yml
+  - pnpm-workspace.yaml
+  - docs/CI_CD.md
 
 ### SEC-032 — AI action logging
 
