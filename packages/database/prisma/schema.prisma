@@ -57,6 +57,7 @@ enum JournalSource {
   FX_REVALUATION
   FX_SETTLEMENT
   BAD_DEBT
+  YEAR_END
 }
 
 enum IntercompanyKind {
@@ -4724,4 +4725,38 @@ model BadDebtProvision {
 
   @@unique([orgId, number])
   @@map("bad_debt_provisions")
+}
+
+enum YearEndCloseStatus {
+  ACTIVE
+  REVERSED
+}
+
+/// A fiscal year's revenue and expense accounts closed to retained earnings by one closing journal (GL-011). Immutable apart from one reversal.
+model YearEndClose {
+  id                        String             @id @default(uuid()) @db.Uuid
+  orgId                     String             @map("org_id") @db.Uuid
+  number                    Int
+  fiscalYear                Int                @map("fiscal_year")
+  closingDate               DateTime           @map("closing_date") @db.Date
+  retainedEarningsAccountId String             @map("retained_earnings_account_id") @db.Uuid
+  /// The year's profit (revenue less expenses, closing entries left out) when this close was made.
+  profit                    Decimal            @db.Decimal(24, 6)
+  /// Credited to retained earnings by this close (negative: debited, a loss).
+  toRetainedEarnings        Decimal            @map("to_retained_earnings") @db.Decimal(24, 6)
+  accounts                  Int
+  journalEntryId            String             @unique @map("journal_entry_id") @db.Uuid
+  memo                      String?            @db.VarChar(400)
+  status                    YearEndCloseStatus @default(ACTIVE)
+  reversedOn                DateTime?          @map("reversed_on") @db.Date
+  reversalReason            String?            @map("reversal_reason") @db.VarChar(500)
+  reversalJournalEntryId    String?            @unique @map("reversal_journal_entry_id") @db.Uuid
+  reversedById              String?            @map("reversed_by_id") @db.Uuid
+  createdById               String             @map("created_by_id") @db.Uuid
+  createdAt                 DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, fiscalYear])
+  @@map("year_end_closes")
 }

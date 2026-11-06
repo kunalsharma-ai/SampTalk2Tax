@@ -86,7 +86,7 @@ export class RecoveryService {
       FROM journal_lines l
       JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
       JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND a.type = 'EXPENSE' AND a.subtype = 'OPERATING_EXPENSE'
+      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND a.type = 'EXPENSE' AND a.subtype = 'OPERATING_EXPENSE'
         AND e.date BETWEEN ${from}::date AND ${to}::date
       GROUP BY a.id, a.code, a.name`;
     const expenses: RecoveryExpense[] = lines.map((x) => ({ accountId: x.id, code: x.code, name: x.name, monthly: new Prisma.Decimal(x.amount).div(q.baselineMonths).toFixed(scale) }));

@@ -159,7 +159,7 @@ export class DimensionsService {
       FROM journal_lines l
       JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
       JOIN accounts a ON a.id = l.account_id
-      WHERE l.org_id = ${org.id}::uuid AND e.status = 'POSTED' AND a.type IN ('REVENUE', 'EXPENSE')
+      WHERE l.org_id = ${org.id}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND a.type IN ('REVENUE', 'EXPENSE')
         AND e.date >= ${toDbDate(q.from)}::date AND e.date <= ${toDbDate(q.to)}::date
       GROUP BY a.id, a.code, a.name, a.type, ${col}`;
     const used = new Set(rows.map((r) => r.value_id).filter(Boolean));
