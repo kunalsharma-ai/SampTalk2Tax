@@ -37,6 +37,7 @@ export const hi: Record<string, string> = {
   Invoices: 'इनवॉइस',
   Receipts: 'प्राप्तियाँ',
   'Receivables ageing': 'प्राप्य राशि की आयु',
+  'Bad debts': 'डूबत ऋण',
   Collections: 'वसूली',
   'Invoice templates': 'इनवॉइस टेम्पलेट',
   'My signature': 'मेरे हस्ताक्षर',

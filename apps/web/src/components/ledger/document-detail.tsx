@@ -119,6 +119,9 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                 {isCharge ? (
                   <Link href={`/orgs/${orgId}/${l.paymentsPath}/new?contactId=${d.contact.id}&documentId=${d.id}`}><Button>{l.payment.verb}</Button></Link>
                 ) : null}
+                {d.kind === 'INVOICE' && can(org.role, 'journals.post') ? (
+                  <Link href={`/orgs/${orgId}/sales/bad-debts?writeOff=${d.id}`}><Button variant="ghost">Write off…</Button></Link>
+                ) : null}
               </>
             ) : null}
             {d.status === 'POSTED' && canManage && can(org.role, 'journals.reverse') ? (
@@ -255,11 +258,12 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
             <tbody>
               {d.allocations.map((a) => {
                 const other = a.source ?? a.target!;
-                const href = a.source?.type === 'payment' ? `/orgs/${orgId}/${l.paymentsPath}/${other.id}` : `/orgs/${orgId}/${l.docsPath}/${other.id}`;
+                const writeOff = a.source?.type === 'write_off';
+                const href = a.source?.type === 'payment' ? `/orgs/${orgId}/${l.paymentsPath}/${other.id}` : writeOff ? `/orgs/${orgId}/sales/bad-debts` : `/orgs/${orgId}/${l.docsPath}/${other.id}`;
                 return (
                   <Tr key={a.id}>
                     <Td>{date(a.date)}</Td>
-                    <Td><Link className="text-accent hover:underline" href={href}>{kindLabel(l, other.kind)} {other.number}</Link></Td>
+                    <Td><Link className="text-accent hover:underline" href={href}>{writeOff ? 'Bad-debt write-off' : kindLabel(l, other.kind)} {other.number}</Link></Td>
                     <Td numeric><Money value={a.amount} currency={c} /></Td>
                     {c !== d.functionalCurrency ? (
                       <Td numeric>
@@ -271,7 +275,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                       </Td>
                     ) : null}
                     <Td className="text-right">
-                      {canManage ? <Button size="sm" variant="ghost" loading={unallocate.isPending && unallocate.variables === a.id} onClick={() => confirm('Remove this application? The amount becomes open again.') && unallocate.mutate(a.id)}>Remove</Button> : null}
+                      {canManage && !writeOff ? <Button size="sm" variant="ghost" loading={unallocate.isPending && unallocate.variables === a.id} onClick={() => confirm('Remove this application? The amount becomes open again.') && unallocate.mutate(a.id)}>Remove</Button> : null}
                     </Td>
                   </Tr>
                 );

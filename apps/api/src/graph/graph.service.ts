@@ -243,7 +243,8 @@ export class GraphService {
         const edges: GraphEdge[] = [
           { relation: sales ? 'ISSUED_TO' : 'RECEIVED_FROM', explanation: sales ? `${label} was issued to ${d.contact.name}.` : `${label} was received from ${d.contact.name}.`, node: this.contactNode(d.contact) },
           ...entries.map((e) => ({ relation: e.id === d.journalEntryId ? 'POSTED_BY' : 'VOIDED_BY', explanation: e.id === d.journalEntryId ? `${je(e.entryNumber)} put ${label} into the ledger on ${formatDateText(fromDbDate(e.date))}.` : `${je(e.entryNumber)} reversed ${label} when it was voided.`, node: this.jeNode(e) })),
-          ...settledBy.map((a) =>
+          // Bad-debt write-offs are explained by their BAD_DEBT journal, not as a settling document.
+          ...settledBy.filter((a) => a.payment || a.creditDocument).map((a) =>
             a.payment
               ? { relation: 'SETTLED_BY', explanation: `${a.payment.number} settled ${m(a.amount, d.currency)} of ${label} on ${formatDateText(fromDbDate(a.date))}.`, node: this.payNode(a.payment) }
               : { relation: 'SETTLED_BY', explanation: `${DOC_LABEL[a.creditDocument!.kind]} ${a.creditDocument!.number} took ${m(a.amount, d.currency)} off ${label} on ${formatDateText(fromDbDate(a.date))}.`, node: this.docNode(a.creditDocument!, () => '', a.creditDocument!.total, a.creditDocument!.currency) },

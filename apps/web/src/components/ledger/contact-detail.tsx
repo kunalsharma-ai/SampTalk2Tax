@@ -92,7 +92,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
               {statement.data.lines.map((s, i) => (
                 <Tr key={`${s.id}-${s.kind}-${i}`}>
                   <Td className="whitespace-nowrap">{date(s.date)}</Td>
-                  <Td className="num"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/${s.kind.startsWith('RECEIPT') || s.kind.startsWith('PAYMENT') ? l.paymentsPath : l.docsPath}/${s.id}`}>{s.number}</Link></Td>
+                  <Td className="num"><Link className="text-accent hover:underline" href={s.kind.startsWith('WRITE_OFF') ? `/orgs/${orgId}/sales/bad-debts` : `/orgs/${orgId}/${s.kind.startsWith('RECEIPT') || s.kind.startsWith('PAYMENT') ? l.paymentsPath : l.docsPath}/${s.id}`}>{s.number}</Link></Td>
                   <Td className="text-fg-muted">{s.description}</Td>
                   <Td numeric>{s.charge ? <Money value={s.charge} currency={statement.data.currency} /> : ''}</Td>
                   <Td numeric>{s.credit ? <Money value={s.credit} currency={statement.data.currency} /> : ''}</Td>
