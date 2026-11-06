@@ -43,7 +43,7 @@ export default function PaymentBatchPage() {
     await qc.invalidateQueries({ queryKey: ['payable-bills', orgId] });
   };
   const approve = useMutation({ mutationFn: () => api(`${base}/${batchId}/approve`, { method: 'POST', body: {} }), onSuccess: refresh });
-  const paid = useMutation({ mutationFn: () => api(`${base}/${batchId}/paid`, { method: 'POST', body: {} }), onSuccess: async () => { await refresh(); setPayOpen(false); } });
+  const paid = useMutation({ mutationFn: () => api(`${base}/${batchId}/paid`, { method: 'POST', body: {} }), onSuccess: async () => { await refresh(); setPayOpen(false); setSaved(null); } });
   const remove = useMutation({ mutationFn: () => api(`${base}/${batchId}`, { method: 'DELETE' }), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['payment-batches', orgId] }); router.push(`/orgs/${orgId}/purchases/payment-batches`); } });
 
   const download = async () => {
