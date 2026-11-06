@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { Logo } from '@/components/brand';
 import { signOut } from '@/lib/api';
 import { ROLE_LABEL, useMeWithRole } from '@/lib/admin';
+import { SectionHelpProvider } from '@/components/help';
 import { MaintenanceBanner } from '@/components/maintenance-banner';
 
 const NAV = [
@@ -63,7 +64,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </header>
         <MaintenanceBanner />
         <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
-          {me.isLoading ? <p className="text-sm text-fg-muted">Loading…</p> : !role ? <p className="text-sm text-fg-muted">Platform administration is only for the people who run Talk2Tax.</p> : children}
+          {me.isLoading ? <p className="text-sm text-fg-muted">Loading…</p> : !role ? <p className="text-sm text-fg-muted">Platform administration is only for the people who run Talk2Tax.</p> : <SectionHelpProvider>{children}</SectionHelpProvider>}
         </main>
       </div>
     </div>
