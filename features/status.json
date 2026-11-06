@@ -5725,6 +5725,45 @@
         "docs/CRM_PIPELINE.md"
       ],
       "notes": "Native lightweight CRM: leads and pipeline built (CRM slice 1). Quotations, sales orders, contracts, customer 360, revenue forecast and the external CRM API follow in later slices."
+    },
+    "CRM-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/sales-orders.ts",
+        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/sales-orders/sales-orders.service.ts",
+        "apps/api/test/sales-orders.e2e.test.ts",
+        "apps/web/e2e/quotes-orders-flow.test.mjs",
+        "docs/QUOTES_AND_ORDERS.md",
+        "apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx"
+      ],
+      "notes": "Quotations QT-0001 with the invoice tax rules (tax rates, GST place of supply, HSN/SAC); draft (editable, deletable) -> sent (frozen by a trigger) -> accepted or declined (reason); expired past valid-until; revisions QT-0001-R2 supersede the previous one when sent; linked to a deal, which is won on acceptance; acceptance rate on the list. No PDF or e-mail of a quotation yet."
+    },
+    "CRM-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/sales-orders.ts",
+        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/sales-orders/sales-orders.service.ts",
+        "apps/api/test/sales-orders.e2e.test.ts",
+        "apps/web/e2e/quotes-orders-flow.test.mjs",
+        "docs/QUOTES_AND_ORDERS.md",
+        "apps/web/src/app/orgs/[orgId]/sales/orders/[orderId]/page.tsx"
+      ],
+      "notes": "Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal."
+    },
+    "CRM-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/sales-orders.ts",
+        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/sales-orders/sales-orders.service.ts",
+        "apps/api/test/sales-orders.e2e.test.ts",
+        "apps/web/e2e/quotes-orders-flow.test.mjs",
+        "docs/QUOTES_AND_ORDERS.md",
+        "apps/api/src/ledgers/documents.service.ts"
+      ],
+      "notes": "Bill an order in full or by chosen quantities into a draft invoice (reference SO-0001 / customer PO) built by the normal invoice rules; billed quantities count while the invoice is draft or posted and are freed when it is voided or the draft deleted; over-billing refused under a row lock."
     }
   }
 }

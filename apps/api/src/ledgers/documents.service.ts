@@ -222,38 +222,51 @@ export class DocumentsService {
     if (opts.post) this.requirePermission(org, 'journals.post', 'post documents');
     return this.retryOnNumberRace(() =>
       this.prisma.$transaction(async (tx) => {
-        const prepared = await this.prepare(tx, org, ledger, input);
-        const doc = await tx.document.create({
-          data: {
-            orgId: org.id,
-            kind: input.kind,
-            contactId: input.contactId,
-            issueDate: toDbDate(input.issueDate),
-            dueDate: toDbDate(prepared.dueDate),
-            reference: input.reference || null,
-            memo: input.memo || null,
-            currency: org.functionalCurrency,
-            ...gstColumns(prepared.gst),
-            ...taxColumns(prepared.computed, prepared.withholding),
-            subtotal: prepared.computed.subtotal.toFixed(),
-            taxTotal: prepared.computed.taxTotal.toFixed(),
-            total: prepared.computed.total.toFixed(),
-            createdById: actor.id,
-            lines: { create: lineRows(prepared.computed.lines) },
-          },
-        });
-        await this.audit.append(tx, {
-          orgId: org.id,
-          actorId: actor.id,
-          action: 'document.draft_created',
-          entityType: 'document',
-          entityId: doc.id,
-          data: { kind: input.kind, total: prepared.computed.total.toFixed(), contactId: input.contactId },
-        });
+        const doc = await this.createDraftInTx(tx, org, actor, ledger, input);
         if (opts.post) await this.postInTx(tx, org, actor, doc.id, opts.overrideCreditLimit ?? false);
         return this.serializeDoc(org, await tx.document.findUniqueOrThrow({ where: { id: doc.id }, include: DOC_INCLUDE }));
       }),
     );
+  }
+
+  /** Save a draft document inside the caller's transaction (also used to bill sales orders). */
+  async createDraftInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, input: DocumentInput) {
+    this.assertKinds(ledger, [input.kind]);
+    const prepared = await this.prepare(tx, org, ledger, input);
+    const doc = await tx.document.create({
+      data: {
+        orgId: org.id,
+        kind: input.kind,
+        contactId: input.contactId,
+        issueDate: toDbDate(input.issueDate),
+        dueDate: toDbDate(prepared.dueDate),
+        reference: input.reference || null,
+        memo: input.memo || null,
+        currency: org.functionalCurrency,
+        ...gstColumns(prepared.gst),
+        ...taxColumns(prepared.computed, prepared.withholding),
+        subtotal: prepared.computed.subtotal.toFixed(),
+        taxTotal: prepared.computed.taxTotal.toFixed(),
+        total: prepared.computed.total.toFixed(),
+        createdById: actor.id,
+        lines: { create: lineRows(prepared.computed.lines) },
+      },
+    });
+    await this.audit.append(tx, {
+      orgId: org.id,
+      actorId: actor.id,
+      action: 'document.draft_created',
+      entityType: 'document',
+      entityId: doc.id,
+      data: { kind: input.kind, total: prepared.computed.total.toFixed(), contactId: input.contactId },
+    });
+    return doc;
+  }
+
+  /** A sales document's lines and totals worked out by the invoice rules, without saving anything (quotations and orders). */
+  async computeSales(tx: Tx, org: LedgerOrg, input: Omit<DocumentInput, 'kind' | 'withholdingSectionId' | 'reverseCharge'>) {
+    const p = await this.prepare(tx, org, 'SALES', { ...input, kind: 'INVOICE' });
+    return { computed: p.computed, gst: p.gst };
   }
 
   async updateDraft(org: LedgerOrg, actor: Actor, ledger: Ledger, id: string, input: DocumentInput) {

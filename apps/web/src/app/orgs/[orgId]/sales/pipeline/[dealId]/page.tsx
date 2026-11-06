@@ -9,6 +9,7 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { StageBadge, Timeline } from '@/components/crm/bits';
 import { DealForm } from '@/components/crm/deal-form';
 import { Money } from '@/components/money';
+import { DealSales } from '@/components/sales-orders/deal-sales';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import type { DealDetail, DealStage } from '@/lib/crm';
@@ -100,7 +101,8 @@ export default function DealPage() {
             </Card>
           ) : null}
         </div>
-        <div className="xl:col-span-2">
+        <div className="flex flex-col gap-4 xl:col-span-2">
+          <DealSales orgId={orgId} dealId={d.id} contactId={d.contact?.id ?? null} currency={cur} />
           <Timeline orgId={orgId} target={{ dealId: d.id }} activities={d.activities} canLog={d.can.manage} currency={cur} queryKey={key} />
         </div>
       </div>
