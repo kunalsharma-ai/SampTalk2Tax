@@ -1,9 +1,12 @@
-import { ConflictException, ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { fiscalYearForDate, GENERIC_SMB_COA, generateFiscalYear, isTimeZone } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
 import { canAssignRole, RoleName } from '@talk2tax/security';
 import { RegionsService } from '../regions/regions.service';
+import { accessOf, assertMemberRoom } from '../billing/limits';
+import { startSubscription } from '../billing/start';
+import { AppConfig, CONFIG } from '../config';
 import { AuditService } from '../audit/audit.service';
 import { toDbDate, todayIso } from '../common/dates';
 import { PrismaService, Tx, useOrgInTx } from '../common/prisma.service';
@@ -25,7 +28,12 @@ export class OrganizationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly regions: RegionsService,
+    @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
+
+  private get trialDays() {
+    return this.config.PLAN_TRIAL_DAYS;
+  }
 
   async create(userId: string, input: CreateOrgInput, today = todayIso()) {
     const id = randomUUID();
@@ -45,6 +53,7 @@ export class OrganizationsService {
         },
       });
       await tx.membership.create({ data: { orgId: org.id, userId, role: 'OWNER' } });
+      await startSubscription(tx, org, userId, this.trialDays);
       if (input.chartTemplate === 'GENERIC_SMB') {
         const ids = await this.applyGenericChart(tx, org.id);
         await tx.organization.update({ where: { id: org.id }, data: { arAccountId: ids.get('1200'), apAccountId: ids.get('2100'), claimsAccountId: ids.get('2250') } });
@@ -99,13 +108,13 @@ export class OrganizationsService {
 
   listForUser(userId: string) {
     return this.prisma.membership
-      .findMany({ where: { userId }, include: { org: true }, orderBy: { createdAt: 'asc' } })
-      .then((ms) => ms.map((m) => ({ ...serializeOrg(m.org), dataRegion: this.regions.describe(m.org.dataRegion), role: m.role })));
+      .findMany({ where: { userId }, include: { org: { include: { subscription: { include: { plan: true } } } } }, orderBy: { createdAt: 'asc' } })
+      .then((ms) => ms.map((m) => ({ ...serializeOrg(m.org), dataRegion: this.regions.describe(m.org.dataRegion), subscription: subscriptionSummary(m.org.subscription), role: m.role })));
   }
 
   async get(orgId: string) {
-    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId } });
-    return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion) };
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, include: { subscription: { include: { plan: true } } } });
+    return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(org.subscription) };
   }
 
   /** The time zone moments are shown in for this organisation (display only). */
@@ -136,6 +145,7 @@ export class OrganizationsService {
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.membership.findUnique({ where: { orgId_userId: { orgId, userId: user.id } } });
       if (existing) throw new ConflictException({ error: 'ALREADY_MEMBER', message: 'User is already a member' });
+      await assertMemberRoom(tx, orgId, { countOpenInvitations: true });
       const m = await tx.membership.create({ data: { orgId, userId: user.id, role: role as Role } });
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'member.added', entityType: 'membership', entityId: m.id, data: { userId: user.id, role } });
       return { userId: user.id, email: user.email, name: user.name, role: m.role };
@@ -175,4 +185,10 @@ function serializeOrg(o: {
     /** Suspended by the platform: readable, not changeable. */
     suspended: o.suspendedAt ? { at: o.suspendedAt.toISOString(), reason: o.suspendedReason } : null,
   };
+}
+
+/** What the web app needs to show plan state: the plan, its modules, and whether the books can change. */
+function subscriptionSummary(s: { status: string; trialEndsAt: Date | null; currentPeriodEnd: Date | null; plan: { code: string; name: string; features: string[] } } | null) {
+  if (!s) return null;
+  return { plan: { code: s.plan.code, name: s.plan.name, features: s.plan.features }, status: s.status, access: accessOf(s) };
 }

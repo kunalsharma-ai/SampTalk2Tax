@@ -235,3 +235,9 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 * `users.platform_role`: `SUPER_ADMIN`, `SUPPORT` or null (check constraint).
 * `organizations.suspended_at`, `suspended_reason`: both set or both null; a reason is required (check constraint).
 * `platform_announcements`: message (1-500 characters), tone `INFO`/`WARNING`, start, optional end after the start, creator, optional withdrawal (when and by whom, both or neither). Platform data: no `org_id`, no row-level security. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+
+## Plans and subscriptions (M9, slice 2)
+
+* `plans` (platform data, no RLS): unique code, name, description, `prices` (INR and USD, monthly and annual), `limits`, `features`, offered flag, order. Seeded with the four proposed launch plans.
+* `subscriptions`: one per organisation (`org_id` primary key): plan, status (`TRIALING`, `ACTIVE`, `CANCELLED`, `COMPLIMENTARY`), interval, currency (`INR`/`USD`), price, trial end, current period, payment reference, and one pending request (plan, interval, when, by whom). Check constraints tie each status to its dates. Forced RLS; members can read their organisations' rows.
+* `subscription_events`: immutable history per organisation (trigger), forced RLS. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).

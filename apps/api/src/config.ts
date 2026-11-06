@@ -96,6 +96,8 @@ const schema = z.object({
     .optional()
     .transform((v) => (v && v.trim() ? v.trim() : undefined))
     .pipe(z.string().min(32, 'INTEGRATIONS_ENCRYPTION_KEY must be at least 32 characters').optional()),
+  /** Days a new organisation's trial (of every module) lasts. */
+  PLAN_TRIAL_DAYS: z.coerce.number().int().min(1).max(90).default(14),
   /** The web app's address, used for links in emails to members. */
   APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
   /**
