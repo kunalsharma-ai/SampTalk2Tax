@@ -35,7 +35,7 @@ const ListQuery = z.object({
   q: z.string().max(100).optional(),
   includeInactive: z.enum(['true', 'false']).optional().transform((v) => v === 'true'),
 });
-const StatementQuery = z.object({ ledger: z.enum(['SALES', 'PURCHASES']), from: isoDate.optional(), to: isoDate.optional() });
+const StatementQuery = z.object({ ledger: z.enum(['SALES', 'PURCHASES']), from: isoDate.optional(), to: isoDate.optional(), currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/).optional() });
 
 @ApiTags('contacts')
 @ApiBearerAuth()

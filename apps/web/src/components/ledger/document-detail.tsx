@@ -153,6 +153,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-fg-muted">Total</p>
           <p className="mt-2 text-sm"><Money value={d.total} currency={c} /></p>
+          {c !== d.functionalCurrency ? <p className="mt-1 text-xs text-fg-muted">= <Money value={d.functionalTotal} currency={d.functionalCurrency} /> at {d.exchangeRate}</p> : null}
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-fg-muted">{isCharge ? 'Still due' : 'Not yet applied'}</p>
@@ -237,7 +238,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
       </Card>
 
       <Card className="mt-6">
-        <CardHeader title={isCharge ? 'Payments and credits applied' : `Applied to ${l.charge.plural.toLowerCase()}`} description="Removing an application keeps a record of it and reopens the amount." />
+        <CardHeader title={isCharge ? 'Payments and credits applied' : `Applied to ${l.charge.plural.toLowerCase()}`} description={c !== d.functionalCurrency ? `Removing an application keeps a record of it, reopens the amount and reverses its exchange difference. Each amount settled at a rate other than this ${label.toLowerCase()}'s ${d.exchangeRate} posts a realised exchange gain or loss in ${d.functionalCurrency}.` : 'Removing an application keeps a record of it and reopens the amount.'} />
         {d.allocations.length === 0 ? (
           <p className="px-5 py-4 text-sm text-fg-muted">Nothing applied yet.</p>
         ) : (
@@ -247,6 +248,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                 <Th>Date</Th>
                 <Th>{isCharge ? 'From' : 'To'}</Th>
                 <Th numeric>Amount</Th>
+                {c !== d.functionalCurrency ? <Th numeric>Exchange difference</Th> : null}
                 <Th><span className="sr-only">Actions</span></Th>
               </tr>
             </thead>
@@ -259,6 +261,15 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                     <Td>{date(a.date)}</Td>
                     <Td><Link className="text-accent hover:underline" href={href}>{kindLabel(l, other.kind)} {other.number}</Link></Td>
                     <Td numeric><Money value={a.amount} currency={c} /></Td>
+                    {c !== d.functionalCurrency ? (
+                      <Td numeric>
+                        {a.fxGain ? (
+                          <Link className="hover:underline" href={`/orgs/${orgId}/journals/${a.fxJournalEntryId}`}>
+                            <span className={Number(a.fxGain) > 0 ? 'text-positive' : 'text-negative'}>{Number(a.fxGain) > 0 ? 'Gain ' : 'Loss '}{money(a.fxGain.replace('-', ''), d.functionalCurrency)}</span>
+                          </Link>
+                        ) : <span className="text-fg-faint">None</span>}
+                      </Td>
+                    ) : null}
                     <Td className="text-right">
                       {canManage ? <Button size="sm" variant="ghost" loading={unallocate.isPending && unallocate.variables === a.id} onClick={() => confirm('Remove this application? The amount becomes open again.') && unallocate.mutate(a.id)}>Remove</Button> : null}
                     </Td>
@@ -299,7 +310,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                     if (other) setApplyAmount(D.min(other.amountDue, d.amountDue).toFixed(2));
                   }}>
                     <option value="">Choose…</option>
-                    {(counterparts.data?.items ?? []).map((x) => <option key={x.id} value={x.id}>{x.number} · {x.amountDue} open</option>)}
+                    {(counterparts.data?.items ?? []).filter((x) => x.currency === c).map((x) => <option key={x.id} value={x.id}>{x.number} · {x.amountDue} {x.currency} open</option>)}
                   </Select>
                 )}
               </Field>

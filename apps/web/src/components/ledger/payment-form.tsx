@@ -11,6 +11,7 @@ import { date, money, today } from '@/lib/format';
 import type { LedgerConfig } from '@/lib/ledgers';
 import { useAccounts, useContacts, useOrg } from '@/lib/org';
 import type { DocumentSummary, Payment } from '@/lib/types';
+import { CurrencyRate, useRecordedRate } from './currency-rate';
 
 const AMT = /^\d{0,18}(\.\d{0,2})?$/;
 const parse = (s: string) => (s && /^\d+(\.\d+)?$/.test(s) ? dec(s) : new D(0));
@@ -30,7 +31,14 @@ function Form({ l }: { l: LedgerConfig }) {
   const [reference, setReference] = useState('');
   const [memo, setMemo] = useState('');
   const [alloc, setAlloc] = useState<Record<string, string>>({});
+  const [chosenCurrency, setCurrency] = useState('');
+  const [rate, setRate] = useState('');
   const preselect = params.get('documentId');
+  const fc = org?.functionalCurrency ?? 'INR';
+  const currency = chosenCurrency || fc;
+  const foreign = currency !== fc;
+  const { recorded } = useRecordedRate(currency, pdate);
+  const rateUsed = foreign ? rate.trim() || recorded?.rate || '' : '1';
 
   const banks = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && (a.subtype === 'BANK' || a.subtype === 'CASH'));
   useEffect(() => {
@@ -42,16 +50,23 @@ function Form({ l }: { l: LedgerConfig }) {
     queryKey: ['documents', orgId, l.api, 'open-for', contactId],
     queryFn: () => api<{ items: DocumentSummary[] }>(`/v1/orgs/${orgId}/${l.api}/documents?view=open&kind=${l.charge.kind}&contactId=${contactId}&limit=200`),
   });
-  const openItems = useMemo(() => [...(open.data?.items ?? [])].sort((a, b) => a.dueDate.localeCompare(b.dueDate)), [open.data]);
+  const allOpen = useMemo(() => [...(open.data?.items ?? [])].sort((a, b) => a.dueDate.localeCompare(b.dueDate)), [open.data]);
+  // A payment settles documents in its own currency only.
+  const openItems = useMemo(() => allOpen.filter((d) => d.currency === currency), [allOpen, currency]);
+  const otherCurrencies = [...new Set(allOpen.filter((d) => d.currency !== currency).map((d) => d.currency))];
   useEffect(() => {
-    if (preselect && openItems.length && Object.keys(alloc).length === 0) {
-      const doc = openItems.find((x) => x.id === preselect);
+    if (preselect && allOpen.length && Object.keys(alloc).length === 0) {
+      const doc = allOpen.find((x) => x.id === preselect);
+      if (doc && doc.currency !== currency) {
+        setCurrency(doc.currency);
+        return;
+      }
       if (doc) {
         setAlloc({ [doc.id]: doc.amountDue });
         setAmount(doc.amountDue);
       }
     }
-  }, [preselect, openItems, alloc]);
+  }, [preselect, allOpen, alloc, currency]);
 
   const allocated = Object.values(alloc).reduce((s, v) => s.plus(parse(v)), new D(0));
   const total = parse(amount);
@@ -62,6 +77,16 @@ function Form({ l }: { l: LedgerConfig }) {
   if (total.lte(0)) issues.push('Enter the amount');
   if (unallocated.isNegative()) issues.push(`Allocated ${allocated.toFixed(2)} is more than the ${l.payment.label.toLowerCase()} amount`);
   for (const d of openItems) if (parse(alloc[d.id] ?? '').gt(d.amountDue)) issues.push(`${d.number}: more than the ${d.amountDue} still due`);
+  if (foreign && !rateUsed) issues.push(`Enter the ${currency} rate, or add one under Exchange rates`);
+  // The realised exchange difference the server will post: each amount settled at this rate instead of the document's.
+  const fxEstimate = foreign && rateUsed
+    ? openItems.reduce((s, d) => {
+        const a = parse(alloc[d.id] ?? '');
+        if (a.isZero()) return s;
+        const diff = a.times(rateUsed).toDecimalPlaces(2).minus(a.times(d.exchangeRate).toDecimalPlaces(2));
+        return s.plus(l.ledger === 'SALES' ? diff : diff.negated());
+      }, new D(0))
+    : null;
 
   // Fill oldest due first, up to the amount.
   const autoAllocate = () => {
@@ -86,6 +111,8 @@ function Form({ l }: { l: LedgerConfig }) {
           date: pdate,
           bankAccountId: bankId,
           amount: total.toFixed(2),
+          currency,
+          exchangeRate: foreign ? rate.trim() || null : null,
           reference: reference || null,
           memo: memo || null,
           allocations: Object.entries(alloc).filter(([, v]) => parse(v).gt(0)).map(([documentId, v]) => ({ documentId, amount: parse(v).toFixed(2) })),
@@ -98,7 +125,7 @@ function Form({ l }: { l: LedgerConfig }) {
   });
 
   if (!org) return null;
-  const c = org.functionalCurrency;
+  const c = currency;
   return (
     <>
       <PageHeader title={l.payment.verb} description={`Posts ${l.ledger === 'SALES' ? 'Dr bank / Cr receivables' : 'Dr payables / Cr bank'} and settles the ${l.charge.plural.toLowerCase()} you choose. Anything not allocated stays as a credit for this ${l.contact.toLowerCase()}.`} />
@@ -125,6 +152,7 @@ function Form({ l }: { l: LedgerConfig }) {
             Amount ({c})
             <Input className="num" inputMode="decimal" value={amount} placeholder="0.00" onChange={(e) => AMT.test(e.target.value) && setAmount(e.target.value)} />
           </label>
+          <CurrencyRate id="pay" currency={currency} setCurrency={(x) => { setCurrency(x); setAlloc({}); }} rate={rate} setRate={setRate} date={pdate} amount={total.gt(0) ? total.toFixed(2) : null} />
           <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
             Bank reference
             <Input value={reference} maxLength={100} placeholder="UTR, cheque number…" onChange={(e) => setReference(e.target.value)} />
@@ -144,7 +172,7 @@ function Form({ l }: { l: LedgerConfig }) {
           {!contactId ? (
             <p className="px-5 py-4 text-sm text-fg-muted">Choose a {l.contact.toLowerCase()} to see what they {l.ledger === 'SALES' ? 'owe' : 'are owed'}.</p>
           ) : openItems.length === 0 ? (
-            <p className="px-5 py-4 text-sm text-fg-muted">No open {l.charge.plural.toLowerCase()}. The full amount will be kept as a credit.</p>
+            <p className="px-5 py-4 text-sm text-fg-muted">No open {l.charge.plural.toLowerCase()} in {currency}. The full amount will be kept as a credit.{otherCurrencies.length ? ` This ${l.contact.toLowerCase()} has open ${l.charge.plural.toLowerCase()} in ${otherCurrencies.join(', ')}: choose that currency to settle them.` : ''}</p>
           ) : (
             <Table>
               <thead>
@@ -176,6 +204,11 @@ function Form({ l }: { l: LedgerConfig }) {
           <div className="flex flex-wrap justify-end gap-6 border-t border-line px-5 py-3 text-sm">
             <span className="text-fg-muted">Allocated <span className="num text-fg">{money(allocated.toFixed(2), c)}</span></span>
             <span className="text-fg-muted">Kept as credit <span className={unallocated.isNegative() ? 'num text-negative' : 'num text-fg'}>{money(unallocated.toFixed(2), c)}</span></span>
+            {fxEstimate && !fxEstimate.isZero() ? (
+              <span className="text-fg-muted">
+                Exchange {fxEstimate.isPositive() ? 'gain' : 'loss'} <span className={`num ${fxEstimate.isPositive() ? 'text-positive' : 'text-negative'}`}>{money(fxEstimate.abs().toFixed(2), fc)}</span>
+              </span>
+            ) : null}
           </div>
           {issues.length && (amount || contactId) ? (
             <ul className="list-inside list-disc border-t border-line px-5 py-3 text-sm text-warning" aria-live="polite">{issues.map((i) => <li key={i}>{i}</li>)}</ul>

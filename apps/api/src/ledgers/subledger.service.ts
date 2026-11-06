@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AGEING_BUCKETS, AgeingBucket, D, Dec, Ledger, ageingBucket, minorUnits, paymentKindFor } from '@talk2tax/accounting-engine';
+import { AGEING_BUCKETS, AgeingBucket, D, Dec, Ledger, ageingBucket, functionalOpen, minorUnits, paymentKindFor, toFunctional } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { PrismaService, Tx } from '../common/prisma.service';
@@ -27,9 +27,15 @@ interface OpenItem {
   number: string;
   date: string;
   dueDate: string | null;
+  /** In the functional currency, at the item's own rate (as the books carry it). */
   total: Dec;
   open: Dec;
   type: 'charge' | 'credit' | 'payment';
+  /** The item's own currency and rate, and its amounts in that currency. */
+  currency: string;
+  rate: string;
+  foreignTotal: Dec;
+  foreignOpen: Dec;
 }
 
 /**
@@ -44,15 +50,19 @@ export class SubledgerService {
 
   /** Open charges, unapplied credits and unapplied payments as of a date. */
   async openItems(db: Db, orgId: string, ledger: Ledger, asOf: string, contactId?: string): Promise<OpenItem[]> {
+    const fc = (await db.organization.findUniqueOrThrow({ where: { id: orgId }, select: { functionalCurrency: true } })).functionalCurrency;
     const k = KINDS[ledger];
     const d = toDbDate(asOf);
     const contactFilter = contactId ? Prisma.sql`AND x.contact_id = ${contactId}::uuid` : Prisma.empty;
     const rows = await db.$queryRaw<
-      { id: string; contact_id: string; contact_name: string; number: string; date: Date; due_date: Date | null; total: Prisma.Decimal; used: Prisma.Decimal; type: string }[]
+      { id: string; contact_id: string; contact_name: string; number: string; date: Date; due_date: Date | null; total: Prisma.Decimal; used: Prisma.Decimal; parts: string[]; currency: string; exchange_rate: Prisma.Decimal; type: string }[]
     >`
       SELECT x.id, x.contact_id, c.name AS contact_name, x.number, x.issue_date AS date, x.due_date, x.total,
         COALESCE((SELECT SUM(a.amount) FROM allocations a
                   WHERE a.target_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)), 0) AS used,
+        ARRAY(SELECT a.amount::text FROM allocations a
+              WHERE a.target_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)) AS parts,
+        x.currency::text AS currency, x.exchange_rate,
         'charge' AS type
       FROM documents x JOIN contacts c ON c.id = x.contact_id
       WHERE x.org_id = ${orgId}::uuid AND x.kind = ${k.charge}::"DocumentKind" AND x.issue_date <= ${d}::date
@@ -61,6 +71,9 @@ export class SubledgerService {
       SELECT x.id, x.contact_id, c.name, x.number, x.issue_date, NULL, x.total,
         COALESCE((SELECT SUM(a.amount) FROM allocations a
                   WHERE a.credit_document_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)), 0),
+        ARRAY(SELECT a.amount::text FROM allocations a
+              WHERE a.credit_document_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)) AS parts,
+        x.currency::text AS currency, x.exchange_rate,
         'credit'
       FROM documents x JOIN contacts c ON c.id = x.contact_id
       WHERE x.org_id = ${orgId}::uuid AND x.kind = ${k.credit}::"DocumentKind" AND x.issue_date <= ${d}::date
@@ -69,23 +82,34 @@ export class SubledgerService {
       SELECT x.id, x.contact_id, c.name, x.number, x.date, NULL, x.amount,
         COALESCE((SELECT SUM(a.amount) FROM allocations a
                   WHERE a.payment_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)), 0),
+        ARRAY(SELECT a.amount::text FROM allocations a
+              WHERE a.payment_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)) AS parts,
+        x.currency::text AS currency, x.exchange_rate,
         'payment'
       FROM payments x JOIN contacts c ON c.id = x.contact_id
       WHERE x.org_id = ${orgId}::uuid AND x.kind = ${k.payment}::"PaymentKind" AND x.date <= ${d}::date
         AND (x.status = 'POSTED' OR x.void_date > ${d}::date) ${contactFilter}`;
     return rows
-      .map((r) => ({
-        id: r.id,
-        contactId: r.contact_id,
-        contactName: r.contact_name,
-        number: r.number,
-        date: fromDbDate(r.date),
-        dueDate: r.due_date ? fromDbDate(r.due_date) : null,
-        total: new D(r.total.toFixed()),
-        open: new D(r.total.toFixed()).minus(r.used.toFixed()),
-        type: r.type as OpenItem['type'],
-      }))
-      .filter((r) => !r.open.isZero());
+      .map((r) => {
+        const rate = r.exchange_rate.toFixed();
+        const foreignTotal = new D(r.total.toFixed());
+        return {
+          id: r.id,
+          contactId: r.contact_id,
+          contactName: r.contact_name,
+          number: r.number,
+          date: fromDbDate(r.date),
+          dueDate: r.due_date ? fromDbDate(r.due_date) : null,
+          total: r.currency === fc ? foreignTotal : toFunctional(foreignTotal, rate, fc),
+          open: functionalOpen(foreignTotal, r.parts.map((x) => new D(x)), rate, r.currency, fc),
+          type: r.type as OpenItem['type'],
+          currency: r.currency,
+          rate,
+          foreignTotal,
+          foreignOpen: foreignTotal.minus(r.used.toFixed()),
+        };
+      })
+      .filter((r) => !r.foreignOpen.isZero());
   }
 
   /** Net balance per contact (open charges minus unapplied credits and payments). */
@@ -164,6 +188,8 @@ export class SubledgerService {
               bucket: i.type === 'charge' ? ageingBucket(i.dueDate!, asOf) : null,
               total: f(i.total),
               open: f(i.open),
+              currency: i.currency,
+              ...(i.currency === org.functionalCurrency ? {} : { rate: i.rate, foreignTotal: i.foreignTotal.toFixed(minorUnits(i.currency)), foreignOpen: i.foreignOpen.toFixed(minorUnits(i.currency)) }),
             })),
         })),
       totals: fmtAmounts(totals),
@@ -177,8 +203,9 @@ export class SubledgerService {
   }
 
   /** Chronological statement for one contact with a running balance. */
-  async statement(org: OrgRef, contactId: string, ledger: Ledger, from: string, to: string) {
-    const scale = minorUnits(org.functionalCurrency);
+  async statement(org: OrgRef, contactId: string, ledger: Ledger, from: string, to: string, currencyIn?: string) {
+    const currency = (currencyIn || org.functionalCurrency).toUpperCase();
+    const scale = minorUnits(currency);
     const contact = await this.prisma.contact.findFirst({ where: { id: contactId, orgId: org.id } });
     if (!contact) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Contact not found' });
     const k = KINDS[ledger];
@@ -186,9 +213,12 @@ export class SubledgerService {
       this.prisma.document.findMany({ where: { orgId: org.id, contactId, kind: { in: [k.charge, k.credit] }, status: { in: ['POSTED', 'VOID'] } } }),
       this.prisma.payment.findMany({ where: { orgId: org.id, contactId, kind: paymentKindFor(ledger) } }),
     ]);
+    // A statement is in one currency: the contact's documents and payments in that currency.
+    const currencies = [...new Set([org.functionalCurrency, ...docs.map((d) => d.currency), ...pays.map((p) => p.currency)])].sort();
     type Ev = { date: string; seq: number; kind: string; id: string; number: string; description: string; amount: Dec };
     const events: Ev[] = [];
     for (const d of docs) {
+      if (d.currency !== currency) continue;
       const sign = d.kind === k.charge ? 1 : -1;
       const total = new D(d.total.toFixed());
       const label = d.kind === 'INVOICE' ? 'Invoice' : d.kind === 'BILL' ? 'Bill' : d.kind === 'CREDIT_NOTE' ? 'Credit note' : 'Vendor credit';
@@ -198,6 +228,7 @@ export class SubledgerService {
       }
     }
     for (const p of pays) {
+      if (p.currency !== currency) continue;
       const amt = new D(p.amount.toFixed());
       const label = p.kind === 'RECEIPT' ? 'Payment received' : 'Payment made';
       events.push({ date: fromDbDate(p.date), seq: 2, kind: p.kind, id: p.id, number: p.number, description: label + (p.reference ? ` · ${p.reference}` : ''), amount: amt.negated() });
@@ -231,7 +262,8 @@ export class SubledgerService {
     return {
       contact: { id: contact.id, name: contact.name },
       ledger,
-      currency: org.functionalCurrency,
+      currency,
+      currencies,
       from,
       to,
       openingBalance: opening.toFixed(scale),
