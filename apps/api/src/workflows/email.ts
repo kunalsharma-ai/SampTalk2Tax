@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { smtpRetryable } from '@talk2tax/accounting-engine';
 import { IntegrationsService, MailSetupError } from '../integrations/integrations.service';
+import { brandedEmailAttachments, brandedEmailHtml } from './branded-email';
 
 export interface EmailMessage {
   to: string[];
@@ -9,6 +10,11 @@ export interface EmailMessage {
   /** The same on every attempt of one delivery, so a mail system can drop repeats. */
   messageId: string;
   headers?: Record<string, string>;
+  /**
+   * Talk2Tax's own messages (support replies, subscription reminders) also carry an HTML version
+   * under the Talk2Tax logo. Leave it off for anything an organisation sends in its own name.
+   */
+  branded?: boolean;
 }
 
 export interface EmailResult {
@@ -26,7 +32,7 @@ export interface EmailResult {
 export const EMAIL_NOT_SET_UP = 'Email is not set up: an owner or admin can add a mail server in Settings → Integrations';
 
 /**
- * Sends plain-text email for one organisation, through its own mail server (Settings →
+ * Sends email for one organisation (plain text, plus a branded HTML version for Talk2Tax's own messages), through its own mail server (Settings →
  * Integrations) or else the server's SMTP_URL. One connection per message: automations and
  * reminders send a few emails a minute at most, and a fresh connection never carries a stale or
  * broken session into the next delivery.
@@ -55,6 +61,7 @@ export class MailerService {
         to: m.to,
         subject: m.subject,
         text: m.text,
+        ...(m.branded ? { html: brandedEmailHtml(m.text, m.subject), attachments: brandedEmailAttachments() } : {}),
         messageId: m.messageId,
         headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All', ...m.headers },
       });

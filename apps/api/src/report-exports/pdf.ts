@@ -1,10 +1,11 @@
 import { cellType, dec, exportAmount, formatDate, type ExportReport, type NumberStyle } from '@talk2tax/accounting-engine';
 import PDFDocument from 'pdfkit';
+import { PDF_ICON_PNG } from '../common/brand-assets';
 
 /**
  * Lays an export report out as an A4 PDF with pdfkit: title block, a table that repeats its
  * header on every page, bold subtotals and totals with rules, notes, and a footer with page
- * numbers. Uses the PDF standard fonts (Helvetica), which hold Western European characters
+ * numbers and the Talk2Tax mark. Uses the PDF standard fonts (Helvetica), which hold Western European characters
  * only; anything else is printed as "?" (see KNOWN_LIMITATIONS).
  */
 
@@ -138,7 +139,10 @@ export function renderReportPdf(r: ExportReport, opts: { numberStyle?: NumberSty
     doc.page.margins.bottom = 0;
     doc.font('Helvetica').fontSize(7.5).fillColor(MUTED);
     doc.text(pdfText(`${r.orgName} · ${r.title} · ${r.period}`), left, fy, { width: width * 0.6, lineBreak: false });
-    doc.text(`${stamp} · Page ${i + 1} of ${range.count}`, left + width * 0.4, fy, { width: width * 0.6, align: 'right', lineBreak: false });
+    const right = `${stamp} · Page ${i + 1} of ${range.count}`;
+    doc.text(right, left + width * 0.4, fy, { width: width * 0.6, align: 'right', lineBreak: false });
+    // The Talk2Tax mark just before "Exported … from Talk2Tax".
+    doc.image(PDF_ICON_PNG, left + width - doc.widthOfString(right) - 12, fy - 1.5, { width: 9, height: 9 });
     doc.page.margins.bottom = MARGIN;
   }
   doc.end();

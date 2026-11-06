@@ -947,7 +947,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-010 |  | capability | Interactive | Not started |
 | DASH-011 |  | capability | Highly intuitive | Not started |
 | DASH-012 |  | capability | Data-rich without becoming cluttered | Not started |
-| DASH-013 | Design Direction | rule | Create an original visual identity for Sampledge Talk2Tax | Implementing |
+| DASH-013 | Design Direction | rule | Create an original visual identity for Sampledge Talk2Tax | Tested |
 | DASH-014 | Design Direction | capability | Deep midnight navy | Tested |
 | DASH-015 | Design Direction | capability | Electric cyan | Tested |
 | DASH-016 | Design Direction | capability | Rich indigo | Tested |

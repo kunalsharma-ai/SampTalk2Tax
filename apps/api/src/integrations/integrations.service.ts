@@ -12,6 +12,7 @@ import { AppConfig, CONFIG } from '../config';
 import { AnthropicCopilotModel, COPILOT_MODEL, type CopilotModel } from '../copilot/copilot.model';
 import { isPublicAddress } from '../workflows/webhook';
 import { SecretBox, secretHint } from './secret-box';
+import { brandedEmailAttachments, brandedEmailHtml } from '../workflows/branded-email';
 import { UsageService } from '../usage/usage.service';
 
 type Actor = { id: string; email: string };
@@ -285,12 +286,16 @@ export class IntegrationsService {
     try {
       transport = await this.smtpTransport(s, password, timeoutMs);
       await transport.verify();
+      const subject = 'Talk2Tax: test email';
+      const text = `This is a test email from Talk2Tax.\n\nYour organisation's mail server (${s.host}:${s.port}) is set up correctly: reminders and automation emails will be sent through it from ${formatFrom(s)}.`;
       await transport.sendMail({
         from: formatFrom(s),
         ...(s.replyTo ? { replyTo: s.replyTo } : {}),
         to: actor.email,
-        subject: 'Talk2Tax: test email',
-        text: `This is a test email from Talk2Tax.\n\nYour organisation's mail server (${s.host}:${s.port}) is set up correctly: reminders and automation emails will be sent through it from ${formatFrom(s)}.`,
+        subject,
+        text,
+        html: brandedEmailHtml(text, subject),
+        attachments: brandedEmailAttachments(),
         headers: { 'Auto-Submitted': 'auto-generated' },
       });
       return { ok: true, message: `Connected to ${s.host}:${s.port} and sent a test email to ${actor.email}.` };

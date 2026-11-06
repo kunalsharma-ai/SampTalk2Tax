@@ -111,7 +111,7 @@ export class RenewalsRunnerService implements OnApplicationBootstrap, OnModuleDe
     ].join('\n');
     let delivery: { ok: boolean; error: string | null } = { ok: false, error: 'No owners or admins to tell' };
     if (to.length) {
-      const r = await this.mailer.send(orgId, { to, subject: SUBJECT[stage](orgName), text, messageId: `<renewal-${invoiceId}-${stage.toLowerCase()}@talk2tax>` });
+      const r = await this.mailer.send(orgId, { to, subject: SUBJECT[stage](orgName), text, messageId: `<renewal-${invoiceId}-${stage.toLowerCase()}@talk2tax>`, branded: true });
       delivery = { ok: r.ok, error: r.error };
     }
     await tenantStorage.run({ bypass: true }, async () =>
