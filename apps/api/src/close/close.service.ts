@@ -452,7 +452,7 @@ export class CloseService {
         COUNT(DISTINCT CASE WHEN je.date >= ${toDbDate(priorStart)}::date AND je.date < ${toDbDate(start)}::date THEN date_trunc('month', je.date) END)::int AS months,
         COALESCE(SUM(jl.functional_debit - jl.functional_credit), 0) AS closing
       FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id JOIN accounts a ON a.id = jl.account_id
-      WHERE jl.org_id = ${org.id}::uuid AND je.status = 'POSTED' AND je.date <= ${toDbDate(end)}::date
+      WHERE jl.org_id = ${org.id}::uuid AND je.status = 'POSTED' AND je.type <> 'CLOSING' AND je.date <= ${toDbDate(end)}::date
       GROUP BY a.code, a.name, a.type
       ORDER BY a.code`;
     const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
@@ -682,7 +682,7 @@ export class CloseService {
         COALESCE(SUM(jl.functional_debit - jl.functional_credit), 0) AS todate,
         COALESCE(SUM(jl.functional_debit), 0) AS debit, COALESCE(SUM(jl.functional_credit), 0) AS credit
       FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id JOIN accounts a ON a.id = jl.account_id
-      WHERE jl.org_id = ${org.id}::uuid AND je.status = 'POSTED' AND je.date <= ${p.endDate}::date
+      WHERE jl.org_id = ${org.id}::uuid AND je.status = 'POSTED' AND je.type <> 'CLOSING' AND je.date <= ${p.endDate}::date
       GROUP BY a.type`;
     const get = (t: string) => rows.find((r) => r.type === t);
     const n = (v: Prisma.Decimal | undefined) => new D(v?.toString() ?? '0');

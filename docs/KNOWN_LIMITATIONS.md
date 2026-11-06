@@ -9,7 +9,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * No AI functionality of any kind exists yet, and none is claimed.
 
 ## Accounting
-* No year-end close (retained earnings roll-forward is shown as "unclosed earnings" on the balance sheet).
+* Year-end close posts one closing journal to retained earnings per year (see [`YEAR_END_CLOSE.md`](YEAR_END_CLOSE.md)); years not closed show their profit as "unclosed earnings" on the balance sheet. Closing lines carry no departments or projects.
 * Journal templates and recurring journals exist (docs/JOURNAL_TEMPLATES.md); a schedule runs monthly, quarterly, half-yearly or yearly (no weekly or custom calendars), and a template cannot reverse itself on the next day (use Accruals for that). No revaluation, exchange-rate tables, intercompany, consolidation, subsidiary ledgers or cash-basis reporting.
 * Dimensions are free-form key/values on lines; there are no dimension masters or dimension reports.
 * The chart template is a generic SMB chart, not a statutory chart (e.g. Schedule III presentation is not implemented).
@@ -104,7 +104,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Month-end close (M5, slice 5)
 
 * The AI review has not yet run against the live Claude API; it is tested with the official SDK against a local stand-in.
-* A person starts each close and each review. Nothing starts on its own as a month ends. Proposed entries cannot be edited before posting. Entries are in the functional currency, with no tax or dimensions. No report pack is generated at close (the certification records the headline figures). There is no year-end close to retained earnings. See [`MONTH_END_CLOSE.md`](MONTH_END_CLOSE.md).
+* A person starts each close and each review. Nothing starts on its own as a month ends. Proposed entries cannot be edited before posting. Entries are in the functional currency, with no tax or dimensions. No report pack is generated at close (the certification records the headline figures). Year-end close is separate (see [`YEAR_END_CLOSE.md`](YEAR_END_CLOSE.md)). See [`MONTH_END_CLOSE.md`](MONTH_END_CLOSE.md).
 
 ## AI control center (M5, slice 6)
 

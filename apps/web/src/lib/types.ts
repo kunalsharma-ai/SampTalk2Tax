@@ -77,7 +77,7 @@ export interface Journal {
   displayNumber: string | null;
   date: string;
   type: string;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT' | 'YEAR_END';
   status: 'DRAFT' | 'POSTED';
   memo: string | null;
   reference: string | null;
@@ -435,7 +435,7 @@ export interface LedgerLink {
   date: string;
   memo: string | null;
   reference: string | null;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT' | 'YEAR_END';
   amount: string;
   payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
 }
