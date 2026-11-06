@@ -193,6 +193,8 @@ export const SECTION_HELP: Record<string, Help> = {
   Invitations: { what: 'Invitations sent and not yet accepted.', how: 'Revoke one that should no longer be used.' },
   'In use now': { what: 'The signature currently used when you sign documents.', how: 'Replace it by saving a new one.' },
   'New template': { what: 'Create an invoice template.', how: 'Start from a preset for your country, then change any section.' },
+  'CRM API keys': { what: 'Keys that let another system, such as your CRM or a website form, read and create leads, deals and customers in Talk2Tax.', how: 'Make one key per system, tick whether it may change records, and copy the key straight away: it is shown once. Revoke a key when the system no longer needs it. A key acts as you, so it stops working if you leave or lose the role.', where: 'Settings > Integrations. Changes made with a key appear in the audit trail with the key named.' },
+  'CRM webhooks': { what: 'Send CRM events, such as a new lead or a won deal, to another system as they happen.', how: 'Add the other system\'s https address, pick the events and copy the signing secret it should check. Use Send test to check the connection and Deliveries to see each call and its answer; failed calls are tried again for about nine hours.', where: 'Settings > Integrations. Events come from the audit trail, so only what happens after the webhook is added is sent.' },
   'Other connections': { what: 'Other services Talk2Tax can connect to.', how: 'Set each up here; keys are stored encrypted for your organisation.' },
   'Earlier months': { what: 'Your usage in previous months.', how: 'Compare with your plan\'s limits.' },
   'This month by day': { what: 'Usage this month, day by day.', how: 'Spot days with unusual activity.' },

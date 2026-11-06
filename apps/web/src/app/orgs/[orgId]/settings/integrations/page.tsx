@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Card, CardHeader, Field, Input, Select } from '@t
 import Link from 'next/link';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
+import { ApiKeysCard, CrmWebhooksCard } from '@/components/crm-connection/crm-connection';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { useOrg } from '@/lib/org';
@@ -257,11 +258,13 @@ export default function IntegrationsPage() {
         <div className="space-y-4">
           <AiCard key={`ai-${d.ai.updatedAt}`} orgId={orgId} d={d.ai} />
           <EmailCard key={`email-${d.email.updatedAt}`} orgId={orgId} d={d.email} />
+          <ApiKeysCard orgId={orgId} />
+          <CrmWebhooksCard orgId={orgId} />
           <Card className="p-5" role="region" aria-label="Other connections">
             <CardHeader title="Other connections" />
             <ul className="space-y-2 text-sm text-fg-muted">
               <li>
-                <span className="font-medium text-fg">Webhooks</span> are set per automation, with their own signing secret: see <Link className="text-accent hover:underline" href={`/orgs/${orgId}/automations`}>Automations</Link>.
+                <span className="font-medium text-fg">Automation webhooks</span> are set per automation, with their own signing secret: see <Link className="text-accent hover:underline" href={`/orgs/${orgId}/automations`}>Automations</Link>.
               </li>
               <li>
                 <span className="font-medium text-fg">E-invoicing and e-way bills</span> work through files today: the app prepares the JSON to upload on the IRP and e-way bill portals and reads their responses back. A direct connection through a GSP is not built yet; it will be added here when it is.

@@ -275,6 +275,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Customer 360 counts direct costs only through projects linked to the customer (no allocation of shared costs, no cost of goods from stock, which is not modelled); lifetime value is undiscounted and uses one retention rate for all customers; the credit risk score is a fixed, explained rule set, not a model trained on defaults, and uses no outside credit data. See [`CUSTOMER_360.md`](CUSTOMER_360.md).
 * The revenue forecast places what is left on sales orders in the current month (orders have no delivery dates), counts deals once in their close month, leaves out quotations without a deal, recognises revenue at invoice date, has no AI explanation and no automatic monthly snapshot. See [`REVENUE_FORECAST.md`](REVENUE_FORECAST.md).
 * Contract invoices are made as drafts and are not posted or e-mailed automatically; there is no proration of part periods, no usage-based charges and no automatic collection. See [`CONTRACTS.md`](CONTRACTS.md).
+* The CRM connection has no ready-made connectors for named platforms (Salesforce, HubSpot, Zoho), no OAuth for third-party apps and no per-key rate limit; quotations, orders and contracts are not in the CRM API yet. A webhook's `object` is the record when it is first sent, not at the moment of the event. See [`CRM_EXTERNAL_API.md`](CRM_EXTERNAL_API.md).
 
 ## In-app help
 

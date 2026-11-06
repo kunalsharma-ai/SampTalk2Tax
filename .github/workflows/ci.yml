@@ -69,6 +69,7 @@ jobs:
           # The automations browser test runs a webhook receiver on localhost, and waits for the
           # runner, so the runner looks every second and may reach private addresses here only.
           WORKFLOW_RUNNER_INTERVAL_SECONDS: 1
+          CRM_WEBHOOK_RUNNER_INTERVAL_SECONDS: 1
           WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true'
           # The schedules browser test runs a local SMTP server (test-support/smtp-stand-in.mjs)
           # on this port; nothing is sent beyond it.

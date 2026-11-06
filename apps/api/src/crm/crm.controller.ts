@@ -16,7 +16,7 @@ const text = (max: number) => z.string().trim().max(max, `Keep it under ${max} c
 const name = (what: string) => z.string().trim().min(1, `Give the ${what} a name`).max(200, 'Keep the name under 200 characters');
 const probability = z.number().int('Use a whole percentage').min(0, 'From 0 to 100').max(100, 'From 0 to 100');
 
-const LeadBody = z
+export const LeadBody = z
   .object({
     name: name('lead'),
     company: text(200),
@@ -28,21 +28,21 @@ const LeadBody = z
     notes: text(2000),
   })
   .strict();
-const LeadStatusBody = z.object({ status: z.enum(LEAD_STATUSES), reason: text(500) }).strict();
-const ConvertBody = z
+export const LeadStatusBody = z.object({ status: z.enum(LEAD_STATUSES), reason: text(500) }).strict();
+export const ConvertBody = z
   .object({
     contactId: id.nullish(),
     deal: z.object({ name: name('deal'), amount, expectedCloseDate: date }).strict().nullish(),
   })
   .strict();
-const DealBody = z.object({ name: name('deal'), contactId: z.string().uuid('Choose the customer'), amount, expectedCloseDate: date, ownerId: id.nullish(), notes: text(2000) }).strict();
-const NewDealBody = DealBody.extend({ stage: z.enum(DEAL_STAGES).optional(), probability: probability.nullish() }).strict();
-const MoveBody = z.object({ stage: z.enum(DEAL_STAGES), probability: probability.nullish(), lostReason: text(500) }).strict();
+export const DealBody = z.object({ name: name('deal'), contactId: z.string().uuid('Choose the customer'), amount, expectedCloseDate: date, ownerId: id.nullish(), notes: text(2000) }).strict();
+export const NewDealBody = DealBody.extend({ stage: z.enum(DEAL_STAGES).optional(), probability: probability.nullish() }).strict();
+export const MoveBody = z.object({ stage: z.enum(DEAL_STAGES), probability: probability.nullish(), lostReason: text(500) }).strict();
 const ActivityBody = z.object({ leadId: id.nullish(), dealId: id.nullish(), kind: z.enum(['NOTE', 'CALL', 'EMAIL', 'MEETING']), body: z.string().trim().min(1, 'Write what happened').max(4000, 'Keep it under 4000 characters') }).strict();
-const LeadQuery = z.object({ status: z.enum(LEAD_STATUSES).optional(), ownerId: id.optional(), q: z.string().trim().max(100).optional() });
-const DealQuery = z.object({ stage: z.enum(DEAL_STAGES).optional(), ownerId: id.optional(), contactId: id.optional(), q: z.string().trim().max(100).optional(), view: z.enum(['open', 'closed', 'all']).optional() });
+export const LeadQuery = z.object({ status: z.enum(LEAD_STATUSES).optional(), ownerId: id.optional(), q: z.string().trim().max(100).optional() });
+export const DealQuery = z.object({ stage: z.enum(DEAL_STAGES).optional(), ownerId: id.optional(), contactId: id.optional(), q: z.string().trim().max(100).optional(), view: z.enum(['open', 'closed', 'all']).optional() });
 
-const blank = <T extends { email?: string | null; estimatedValue?: string | null }>(b: T) => ({ ...b, email: b.email || null, estimatedValue: b.estimatedValue || null });
+export const blank = <T extends { email?: string | null; estimatedValue?: string | null }>(b: T) => ({ ...b, email: b.email || null, estimatedValue: b.estimatedValue || null });
 
 @ApiTags('crm')
 @ApiBearerAuth()
