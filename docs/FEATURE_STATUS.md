@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 829 |
+| Not started | 827 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 399 |
+| Tested | 401 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 10 | 34 |
-| Accounts receivable | M2 | 43 | 26 | 17 |
+| Accounts receivable | M2 | 43 | 24 | 19 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -548,6 +548,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/WORKFLOW_AUTOMATIONS.md
   - apps/api/test/collections.e2e.test.ts
   - apps/web/e2e/collections-flow.test.mjs
+
+### AR-026 — Bad debt provisions
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Provision matrix from the receivables ageing (rate per bucket, editable), specific provisions for invoices marked doubtful at their own percentage, foreign invoices at their own rate; each provision posts only the difference from the allowance in the books (increase or release) as a BAD_DEBT journal, kept append-only with the matrix it used. Not yet: provision rates learnt from history (expected-credit-loss model), provisions per customer group.
+- Evidence:
+  - packages/accounting-engine/src/bad-debts.ts
+  - packages/accounting-engine/test/bad-debts.test.ts
+  - packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql
+  - apps/api/src/bad-debts/bad-debts.service.ts
+  - apps/api/test/bad-debts.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx
+  - apps/web/e2e/bad-debts-flow.test.mjs
+  - docs/BAD_DEBTS.md
+
+### AR-027 — Write-offs
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Write off all or part of a posted invoice against the allowance (refused beyond what it holds) or straight to bad-debt expense, at the invoice's own exchange rate; settles the invoice like a receipt, so ageing, statement and control account agree, without changing GST returns or e-invoices; reversible once (journal and settlement reversed). Not yet: GST bad-debt relief, write-offs of payables or small balances in bulk.
+- Evidence:
+  - packages/accounting-engine/src/bad-debts.ts
+  - packages/accounting-engine/test/bad-debts.test.ts
+  - packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql
+  - apps/api/src/bad-debts/bad-debts.service.ts
+  - apps/api/test/bad-debts.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx
+  - apps/web/e2e/bad-debts-flow.test.mjs
+  - docs/BAD_DEBTS.md
 
 ### AR-029 — Contract billing
 

@@ -56,6 +56,7 @@ enum JournalSource {
   INTERCOMPANY
   FX_REVALUATION
   FX_SETTLEMENT
+  BAD_DEBT
 }
 
 enum IntercompanyKind {
@@ -753,13 +754,17 @@ model Allocation {
   fxGain                   Decimal   @default(0) @map("fx_gain") @db.Decimal(24, 6)
   fxJournalEntryId         String?   @unique @map("fx_journal_entry_id") @db.Uuid
   fxReversalJournalEntryId String?   @unique @map("fx_reversal_journal_entry_id") @db.Uuid
+  /// A bad-debt write-off settling the target invoice (the third kind of source).
+  writeOffId               String?   @map("write_off_id") @db.Uuid
   target           Document  @relation("AllocationTarget", fields: [targetId, orgId], references: [id, orgId], onDelete: Restrict)
   payment          Payment?  @relation(fields: [paymentId, orgId], references: [id, orgId], onDelete: Restrict)
   creditDocument   Document? @relation("AllocationCreditSource", fields: [creditDocumentId, orgId], references: [id, orgId], onDelete: Restrict)
+  writeOff         BadDebtWriteOff? @relation(fields: [writeOffId, orgId], references: [id, orgId], onDelete: Restrict)
 
   @@index([orgId, targetId])
   @@index([orgId, paymentId])
   @@index([orgId, creditDocumentId])
+  @@index([orgId, writeOffId])
   @@map("allocations")
 }
 
@@ -4633,4 +4638,90 @@ model JournalTemplateRun {
   @@index([templateId, createdAt])
   @@index([journalEntryId])
   @@map("journal_template_runs")
+}
+
+enum WriteOffStatus {
+  ACTIVE
+  REVERSED
+}
+
+/// The accounts and provision matrix (percent per ageing bucket) for bad debts (AR-026).
+model BadDebtSettings {
+  orgId              String   @id @map("org_id") @db.Uuid
+  expenseAccountId   String   @map("expense_account_id") @db.Uuid
+  allowanceAccountId String   @map("allowance_account_id") @db.Uuid
+  rates              Json
+  updatedById        String   @map("updated_by_id") @db.Uuid
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("bad_debt_settings")
+}
+
+/// An invoice provided for at its own percentage (a specific provision).
+model DoubtfulInvoice {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  documentId  String   @unique @map("document_id") @db.Uuid
+  percent     Decimal  @db.Decimal(7, 4)
+  reason      String   @db.VarChar(500)
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([orgId])
+  @@map("doubtful_invoices")
+}
+
+/// A bad-debt write-off (AR-027): settles what is left on an invoice through an allocation.
+model BadDebtWriteOff {
+  id                      String         @id @default(uuid()) @db.Uuid
+  orgId                   String         @map("org_id") @db.Uuid
+  number                  Int
+  documentId              String         @map("document_id") @db.Uuid
+  contactId               String         @map("contact_id") @db.Uuid
+  date                    DateTime       @db.Date
+  currency                String         @db.Char(3)
+  /// In the invoice currency.
+  amount                  Decimal        @db.Decimal(24, 6)
+  /// The invoice's rate.
+  exchangeRate            Decimal        @map("exchange_rate") @db.Decimal(24, 10)
+  functionalAmount        Decimal        @map("functional_amount") @db.Decimal(24, 6)
+  /// Debited: the bad-debt expense or the allowance for doubtful debts.
+  accountId               String         @map("account_id") @db.Uuid
+  reason                  String         @db.VarChar(500)
+  status                  WriteOffStatus @default(ACTIVE)
+  journalEntryId          String         @unique @map("journal_entry_id") @db.Uuid
+  reversedOn              DateTime?      @map("reversed_on") @db.Date
+  reversalReason          String?        @map("reversal_reason") @db.VarChar(500)
+  reversalJournalEntryId  String?        @unique @map("reversal_journal_entry_id") @db.Uuid
+  reversedById            String?        @map("reversed_by_id") @db.Uuid
+  createdById             String         @map("created_by_id") @db.Uuid
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  allocations             Allocation[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, documentId])
+  @@index([orgId, contactId])
+  @@map("bad_debt_write_offs")
+}
+
+/// One provision run (append-only): the matrix, the result, and the posting that set the allowance.
+model BadDebtProvision {
+  id             String   @id @default(uuid()) @db.Uuid
+  orgId          String   @map("org_id") @db.Uuid
+  number         Int
+  asOf           DateTime @map("as_of") @db.Date
+  rates          Json
+  result         Json
+  required       Decimal  @db.Decimal(24, 6)
+  carried        Decimal  @db.Decimal(24, 6)
+  adjustment     Decimal  @db.Decimal(24, 6)
+  journalEntryId String?  @unique @map("journal_entry_id") @db.Uuid
+  memo           String?  @db.VarChar(500)
+  createdById    String   @map("created_by_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([orgId, number])
+  @@map("bad_debt_provisions")
 }

@@ -26,6 +26,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/sales/invoices', label: 'Invoices' },
       { href: '/sales/receipts', label: 'Receipts' },
       { href: '/sales/ageing', label: 'Receivables ageing' },
+      { href: '/sales/bad-debts', label: 'Bad debts' },
       { href: '/sales/collections', label: 'Collections', perm: 'collections.manage', plan: 'AI' },
       { href: '/settings/invoice-templates', label: 'Invoice templates' },
       { href: '/settings/signature', label: 'My signature', perm: 'documents.sign' },

@@ -105,6 +105,8 @@ import { CrmWebhooksRunnerService } from './crm-api/crm-webhooks-runner.service'
 import { CrmWebhooksService } from './crm-api/crm-webhooks.service';
 import { ContractsController } from './sales-orders/contracts.controller';
 import { ContractsRunnerService } from './sales-orders/contracts-runner.service';
+import { BadDebtsController } from './bad-debts/bad-debts.controller';
+import { BadDebtsService } from './bad-debts/bad-debts.service';
 import { JournalTemplatesController } from './journal-templates/journal-templates.controller';
 import { JournalTemplatesRunnerService } from './journal-templates/journal-templates-runner.service';
 import { JournalTemplatesService } from './journal-templates/journal-templates.service';
@@ -240,6 +242,7 @@ export class AppModule {
         SalesOrdersController,
         ContractsController,
         JournalTemplatesController,
+        BadDebtsController,
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
@@ -329,6 +332,7 @@ export class AppModule {
         ContractsService,
         ContractsRunnerService,
         JournalTemplatesService,
+        BadDebtsService,
         JournalTemplatesRunnerService,
         InvoiceTemplatesService,
         ReportExportService,
