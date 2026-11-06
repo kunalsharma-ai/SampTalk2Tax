@@ -5828,6 +5828,48 @@
         "apps/web/e2e/contracts-flow.test.mjs"
       ],
       "notes": "Sales → Contracts."
+    },
+    "CRM-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-insights.ts",
+        "packages/database/prisma/migrations/20261120090000_customer_360/migration.sql",
+        "apps/api/src/crm/customer-insights.service.ts",
+        "apps/api/test/customer-insights.e2e.test.ts",
+        "apps/web/e2e/customer-360-flow.test.mjs",
+        "apps/web/src/components/crm/customer-360.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx",
+        "docs/CUSTOMER_360.md"
+      ],
+      "notes": "Customer profitability: revenue (income lines of posted invoices less credit notes) less direct costs (expenses posted to the customer's linked projects), monthly for 12 months and to date; ranked on Customer insights."
+    },
+    "CRM-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-insights.ts",
+        "packages/database/prisma/migrations/20261120090000_customer_360/migration.sql",
+        "apps/api/src/crm/customer-insights.service.ts",
+        "apps/api/test/customer-insights.e2e.test.ts",
+        "apps/web/e2e/customer-360-flow.test.mjs",
+        "apps/web/src/components/crm/customer-360.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx",
+        "docs/CUSTOMER_360.md"
+      ],
+      "notes": "Lifetime value = gross profit to date + yearly gross profit (max of trailing 12m revenue and contract ARR, at the customer's margin) x expected years r/(1-r) (max 5) from the org's own 12-month retention; 3 years assumed (and shown) with fewer than 5 customers to measure."
+    },
+    "CRM-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-insights.ts",
+        "packages/database/prisma/migrations/20261120090000_customer_360/migration.sql",
+        "apps/api/src/crm/customer-insights.service.ts",
+        "apps/api/test/customer-insights.e2e.test.ts",
+        "apps/web/e2e/customer-360-flow.test.mjs",
+        "apps/web/src/components/crm/customer-360.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx",
+        "docs/CUSTOMER_360.md"
+      ],
+      "notes": "Credit risk score 0-100 from 5 explained factors (overdue share, oldest overdue, days late, limit use, slowing), ratings low/medium/high/very high, suggested credit limit, credit hold that blocks invoice posting with audit trail."
     }
   }
 }

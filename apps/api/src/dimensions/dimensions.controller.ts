@@ -12,6 +12,8 @@ const Fields = {
   name: z.string().trim().min(1, 'Give it a name').max(120, 'Keep the name under 120 characters'),
   description: text(500),
   customer: text(200),
+  /** Projects: the customer it is run for; its costs count against that customer's profit. */
+  contactId: z.uuid().nullish(),
   startDate: isoDate.nullish(),
   endDate: isoDate.nullish(),
 };

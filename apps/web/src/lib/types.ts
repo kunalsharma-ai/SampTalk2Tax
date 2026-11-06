@@ -139,6 +139,9 @@ export interface Contact {
   isVendor: boolean;
   paymentTermsDays: number;
   creditLimit: string | null;
+  creditHold: boolean;
+  creditHoldReason: string | null;
+  creditHoldAt: string | null;
   isActive: boolean;
   receivable: Balance;
   payable: Balance;
