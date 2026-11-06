@@ -40,6 +40,9 @@ function JournalsList() {
               <option value="POSTED">Posted</option>
               <option value="DRAFT">Drafts</option>
             </Select>
+            <Link href={`/orgs/${orgId}/journal-templates`}>
+              <Button variant="secondary">Templates</Button>
+            </Link>
             {can(org.role, 'journals.create') ? (
               <Link href={`/orgs/${orgId}/journals/new`}>
                 <Button>New journal</Button>

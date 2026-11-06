@@ -69,6 +69,26 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Make an order from an accepted quotation or enter it directly with the customer\'s PO number. Use Bill this order to make a draft invoice for some or all of it.',
     where: 'Sales, after Quotations. Invoices made from an order show its reference; what is left to bill feeds the Revenue forecast.',
   },
+  'journal-templates': {
+    what: 'Journals you enter again and again, such as rent, accruals or management charges, kept as templates. A template with a schedule is a recurring journal: it makes the journal every month, quarter, half-year or year by itself.',
+    how: 'Create a template with its lines, or open a journal and choose Save as template. Use it to make one journal on a date you pick, or give it a schedule that makes drafts for review or posts straight away. Run due now makes any run that has fallen due without waiting for the hourly check.',
+    where: 'Accounting, next to Journals. Every journal a template makes is an ordinary journal, numbered and checked like any other, and appears under Journals and in every report.',
+  },
+  'journal-templates/new': {
+    what: 'A new journal template: the lines of a journal you post again and again, with an optional schedule.',
+    how: 'Name it, add the accounts and amounts until debits equal credits, and use placeholders such as {month} in the memo. Turn on the schedule to make the journal automatically, and choose whether each run makes a draft or posts.',
+    where: 'Opened from Journal templates. Nothing is posted when you save; journals are made when the template is used or a scheduled run falls due.',
+  },
+  'journal-templates/[id]': {
+    what: 'One journal template: its lines, its schedule, the runs still to come and every journal it has made.',
+    how: 'Use template makes one journal on a date you choose. Pause, resume or end the schedule from the buttons at the top. Open a journal in the history to check or post it. A template that has made journals is archived, not deleted.',
+    where: 'Opened from Journal templates. Scheduled runs are made by the hourly check; if one cannot be made (a locked period, an inactive account), the reason is shown here and the run is tried again.',
+  },
+  'journal-templates/[id]/edit': {
+    what: 'Change a journal template: its lines, memo, reference and schedule.',
+    how: 'Edit the lines and save. Once a schedule has made journals, its first run, frequency and run day stay fixed, but you can change the amounts, the last date and whether runs post.',
+    where: 'Opened from a template. Changes apply to journals made from now on; journals already made keep their lines.',
+  },
   'sales/contracts': {
     what: 'Agreements billed the same way every month, quarter, half-year or year, such as maintenance or retainers.',
     how: 'Create a contract with its lines, billing frequency and dates, then activate it. Each period due becomes a draft invoice automatically. Pause, renew with a price change, or cancel as needed.',

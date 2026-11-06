@@ -116,6 +116,8 @@ const schema = z.object({
    */
   CRM_WEBHOOK_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(10),
   CONTRACT_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
+  /** How often recurring journals are checked for runs that have fallen due (0 turns the runner off). */
+  RECURRING_JOURNAL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
   /** The web app's address, used for links in emails to members. */
   APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
   /**

@@ -19,7 +19,7 @@ The directive (Part 47) defines milestones M0–M9. This file tracks what each o
 
 ## Next priorities (proposed order)
 
-1. **M1 hardening:** ~~refresh tokens + logout, rate limiting on auth, PostgreSQL row-level security as a second tenant-isolation layer~~ (done), financial dimension masters, recurring journal templates, year-end close to retained earnings.
+1. **M1 hardening:** ~~refresh tokens + logout, rate limiting on auth, PostgreSQL row-level security as a second tenant-isolation layer~~ (done), financial dimension masters, ~~recurring journal templates~~ (done, docs/JOURNAL_TEMPLATES.md), year-end close to retained earnings.
 2. **M0 remainder:** competitive matrix with sourced, dated research; AI architecture (gateway with mock adapters); design system spec.
 3. **M2 depth:** multi-step approval chains, approvals for payments, batch reimbursements, mileage and per-diem claims, expense policies, OFX import, transfers between own accounts.
 
