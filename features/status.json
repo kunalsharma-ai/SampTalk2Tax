@@ -5870,6 +5870,19 @@
         "docs/CUSTOMER_360.md"
       ],
       "notes": "Credit risk score 0-100 from 5 explained factors (overdue share, oldest overdue, days late, limit use, slowing), ratings low/medium/high/very high, suggested credit limit, credit hold that blocks invoice posting with audit trail."
+    },
+    "CRM-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/revenue-forecast.ts",
+        "packages/database/prisma/migrations/20261121090000_revenue_forecasts/migration.sql",
+        "apps/api/src/crm/revenue-forecast.service.ts",
+        "apps/api/test/revenue-forecast.e2e.test.ts",
+        "apps/web/e2e/revenue-forecast-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/sales/revenue-forecast/page.tsx",
+        "docs/REVENUE_FORECAST.md"
+      ],
+      "notes": "Deterministic forecast by month from active contracts (by invoice date, auto-renew runs on), open orders (left to bill, this month), open deals (weighted/full at close month) and the 3-month run rate of other sales; committed/expected/best; itemised; saved forecasts RF-0001 (immutable) compared with actual revenue (WAPE). AI explanation not built yet."
     }
   }
 }
