@@ -42,7 +42,7 @@ export function DocumentsTable({ l, orgId, items, currency, showContact = true }
                 <Link className="text-accent hover:underline" href={href} onClick={(e) => e.stopPropagation()}>{d.number ?? 'Draft'}</Link>
                 {d.reference ? <p className="text-xs text-fg-muted">{d.reference}</p> : null}
               </Td>
-              <Td className="text-fg-muted">{kindLabel(l, d.kind)}</Td>
+              <Td className="text-fg-muted">{d.isDebitNote ? 'Debit note' : kindLabel(l, d.kind)}</Td>
               {showContact ? <Td>{d.contact.name}</Td> : null}
               <Td className="whitespace-nowrap">{date(d.issueDate)}</Td>
               <Td className="whitespace-nowrap text-fg-muted">{d.kind === l.charge.kind ? date(d.dueDate) : '—'}</Td>

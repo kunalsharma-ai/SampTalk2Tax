@@ -206,6 +206,8 @@ export interface Gstr1DocumentRow {
   placeOfSupply: string;
   value: string;
   rates: (TaxHeads & { rate: string })[];
+  noteType?: 'C' | 'D';
+  originalNumber?: string | null;
 }
 export interface HsnRow extends TaxHeads {
   hsnCode: string;
@@ -225,7 +227,7 @@ export interface Gstr1 {
   cdnur: Gstr1DocumentRow[];
   nil: { nature: 'INTRA' | 'INTER'; registered: boolean; nilRated: string; exempt: string; nonGst: string }[];
   hsn: { b2b: HsnRow[]; b2c: HsnRow[] };
-  documents: { kind: 'INVOICE' | 'CREDIT_NOTE'; from: string; to: string; issued: number; cancelled: number }[];
+  documents: { kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE'; from: string; to: string; issued: number; cancelled: number }[];
   totals: TaxHeads;
 }
 
@@ -272,6 +274,8 @@ export interface DocumentSummary {
   amountDue: string;
   paymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID' | null;
   isOverdue: boolean;
+  /** Lists only: an invoice that is a debit note on an earlier invoice. */
+  isDebitNote?: boolean;
 }
 
 export interface DocumentLine {
@@ -299,6 +303,9 @@ export interface DocumentLine {
 
 export interface FinancialDocument extends DocumentSummary {
   memo: string | null;
+  /** Set on a debit note: the invoice it raises the value of. */
+  debitNoteFor: { id: string; number: string | null; issueDate: string; total: string } | null;
+  debitNotes: { id: string; number: string | null; status: 'DRAFT' | 'POSTED' | 'VOID'; issueDate: string; total: string }[];
   functionalCurrency: string;
   reverseCharge: boolean;
   reverseChargeTax: string;
@@ -958,7 +965,7 @@ export interface EInvoiceRecord {
 
 export interface EInvoiceRow {
   documentId: string;
-  kind: 'INVOICE' | 'CREDIT_NOTE';
+  kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE';
   number: string | null;
   issueDate: string;
   documentStatus: string;

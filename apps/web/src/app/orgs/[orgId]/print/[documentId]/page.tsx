@@ -53,7 +53,7 @@ export default function PrintInvoicePage() {
 
   if (!org) return null;
   if (!d) return <ErrorAlert title="Could not load the invoice" error={q.error} />;
-  const label = d.document.kind === 'CREDIT_NOTE' ? 'Credit note' : 'Invoice';
+  const label = d.document.kind === 'CREDIT_NOTE' ? 'Credit note' : d.document.kind === 'DEBIT_NOTE' ? 'Debit note' : 'Invoice';
   const detailPath = 'sales/invoices';
   const showing = d.template.id ?? '';
   const own = d.document.templateId ?? '';

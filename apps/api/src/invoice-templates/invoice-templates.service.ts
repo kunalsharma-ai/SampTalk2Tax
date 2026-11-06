@@ -298,6 +298,7 @@ export class InvoiceTemplatesService {
         allocationsIn: { where: { removedOn: null }, select: { amount: true } },
         allocationsOut: { where: { removedOn: null }, select: { amount: true } },
         eInvoices: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' }, take: 1 },
+        debitNoteFor: { select: { number: true, issueDate: true } },
       },
     });
     if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Invoice not found' });
@@ -393,7 +394,8 @@ export class InvoiceTemplatesService {
     const paid = (d.kind === 'INVOICE' ? d.allocationsIn : d.allocationsOut).reduce((s, a) => s.plus(a.amount), new Prisma.Decimal(0));
     const ein = d.eInvoices[0];
     const source: InvoicePrintSource = {
-      kind: d.kind as 'INVOICE' | 'CREDIT_NOTE',
+      kind: d.debitNoteForId ? 'DEBIT_NOTE' : (d.kind as 'INVOICE' | 'CREDIT_NOTE'),
+      originalInvoice: d.debitNoteFor ? { number: d.debitNoteFor.number ?? '', issueDate: fromDbDate(d.debitNoteFor.issueDate) } : null,
       status: d.status,
       number: d.number,
       issueDate: fromDbDate(d.issueDate),
@@ -438,7 +440,7 @@ export class InvoiceTemplatesService {
       logoDataUrl: template.logoDataUrl,
     };
     return {
-      document: { id: d.id, kind: d.kind, status: d.status, number: d.number, templateId: d.templateId, contactName: d.contact.name },
+      document: { id: d.id, kind: d.debitNoteForId ? ('DEBIT_NOTE' as const) : d.kind, status: d.status, number: d.number, templateId: d.templateId, contactName: d.contact.name },
       source,
       template,
       templates,

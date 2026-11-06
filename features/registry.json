@@ -2861,9 +2861,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261128090000_debit_notes/migration.sql",
+        "apps/api/src/ledgers/documents.service.ts",
+        "apps/api/test/debit-notes.e2e.test.ts",
+        "packages/tax-engine/src/india/returns.ts",
+        "packages/tax-engine/test/returns.test.ts",
+        "apps/web/src/components/ledger/new-document.tsx",
+        "apps/web/e2e/debit-notes-flow.test.mjs",
+        "docs/DEBIT_NOTES.md"
+      ],
+      "notes": "Debit notes DN-000001: an INVOICE linked to an earlier posted invoice (same customer, currency, place of supply, not before it); owed, aged and paid like an invoice; GSTR-1 9B type D with the original number, table 13 own series, GSTR-3B outward tax, e-invoice DBN, print titled Debit note with Against invoice. Invoice cannot be voided while a debit note stands (trigger). Sales side only."
     },
     {
       "id": "AR-018",

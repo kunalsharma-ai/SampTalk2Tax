@@ -32,7 +32,15 @@ const TYPE_ORDER: AccountType[] = ['REVENUE', 'EXPENSE', 'ASSET', 'LIABILITY', '
 /** Reverse charge in the form: input-tax placeholders pair with output-tax placeholders. */
 const RCM_ACCOUNTS = new Map([['cgst', 'out-cgst'], ['sgst', 'out-sgst'], ['igst', 'out-igst']]);
 
-export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string }) {
+/** A debit note's invoice: the contact, currency and place of supply follow it. */
+export interface DebitNoteOf {
+  id: string;
+  number: string;
+  currency?: string;
+  placeOfSupply?: string | null;
+}
+
+export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string; debitNoteFor?: DebitNoteOf }) {
   const { org, orgId } = useOrg();
   const accounts = useAccounts();
   const dims = useDimensions();
@@ -48,7 +56,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const nextKey = useRef(2);
   const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '', departmentId: '', projectId: '' });
   const isCharge = kind === l.charge.kind;
-  const label = isCharge ? l.charge.label : l.credit.label;
+  const label = debitNoteFor ? 'Debit note' : isCharge ? l.charge.label : l.credit.label;
 
   const [contact, setContact] = useState(existing?.contact.id ?? contactId ?? '');
   const [issueDate, setIssueDate] = useState(existing?.issueDate ?? today());
@@ -60,13 +68,13 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
       ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '', departmentId: x.departmentId ?? '', projectId: x.projectId ?? '' }))
       : [blank(1)],
   );
-  const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? '');
+  const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? debitNoteFor?.placeOfSupply ?? '');
   const [reverseCharge, setReverseCharge] = useState(existing?.reverseCharge ?? false);
   const [sectionId, setSectionId] = useState(existing?.withholding?.section.id ?? (contactId ? '' : ''));
   const [sectionTouched, setSectionTouched] = useState(!!existing);
   const [newContact, setNewContact] = useState<ContactDraft | null>(null);
   const [override, setOverride] = useState(false);
-  const [chosenCurrency, setCurrency] = useState(existing?.currency ?? '');
+  const [chosenCurrency, setCurrency] = useState(existing?.currency ?? debitNoteFor?.currency ?? '');
   const currency = chosenCurrency || c;
   const [rate, setRate] = useState(existing && existing.currency !== existing.functionalCurrency ? existing.exchangeRate : '');
   // In another currency: no TDS/TCS or reverse charge yet, and GST only at zero (exports, nil-rated, exempt).
@@ -165,6 +173,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
         withholdingSectionId: wKind ? (foreign ? null : section || null) : undefined,
         currency,
         exchangeRate: foreign ? rate.trim() || null : null,
+        debitNoteFor: debitNoteFor?.id,
         lines: payloadLines,
       };
       const base = `/v1/orgs/${orgId}/${l.api}/documents`;
@@ -192,11 +201,11 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label htmlFor="doc-contact" className="text-xs font-medium uppercase tracking-wide text-fg-muted">{l.contact}</label>
           <div className="flex gap-2">
-            <Select id="doc-contact" value={contact} onChange={(e) => { setContact(e.target.value); if (!existing) setSectionTouched(false); }}>
+            <Select id="doc-contact" value={contact} disabled={!!debitNoteFor} onChange={(e) => { setContact(e.target.value); if (!existing) setSectionTouched(false); }}>
               <option value="">Choose a {l.contact.toLowerCase()}…</option>
               {(contacts.data ?? []).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
             </Select>
-            {can(org.role, 'contacts.manage') ? <Button type="button" variant="secondary" onClick={() => setNewContact(draftFrom(null, l))}>New</Button> : null}
+            {can(org.role, 'contacts.manage') && !debitNoteFor ? <Button type="button" variant="secondary" onClick={() => setNewContact(draftFrom(null, l))}>New</Button> : null}
           </div>
         </div>
         <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
@@ -218,12 +227,12 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
           Memo
           <Input value={memo} maxLength={1000} placeholder="Optional note" onChange={(e) => setMemo(e.target.value)} />
         </label>
-        <CurrencyRate id="doc" currency={currency} setCurrency={setCurrency} rate={rate} setRate={setRate} date={issueDate} amount={calc.total} />
+        <CurrencyRate id="doc" currency={currency} setCurrency={setCurrency} rate={rate} setRate={setRate} date={issueDate} amount={calc.total} locked={debitNoteFor ? `In ${currency}, like ${debitNoteFor.number}.` : undefined} />
         {gstMode ? (
           <div className="grid gap-4 rounded-lg border border-line bg-surface-raised p-4 sm:col-span-4 sm:grid-cols-4" aria-label="GST">
             <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted sm:col-span-2">
               Place of supply
-              <Select value={pos} onChange={(e) => setPlaceOfSupply(e.target.value)}>
+              <Select value={pos} disabled={!!debitNoteFor} onChange={(e) => setPlaceOfSupply(e.target.value)}>
                 <option value="">Choose a state…</option>
                 {(states.data ?? []).filter((x) => l.ledger === 'SALES' || x.code !== '96').map((x) => <option key={x.code} value={x.code}>{x.code} · {x.name}</option>)}
               </Select>

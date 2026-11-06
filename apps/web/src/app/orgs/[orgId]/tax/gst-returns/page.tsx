@@ -237,7 +237,7 @@ function Gstr1View({ r, c, orgId }: { r: Gstr1; c: string; orgId: string }) {
         <Stat label="Taxable value" value={money(r.totals.taxable, c)} sub="Net of credit notes" />
         <Stat label="Tax" value={money(tax(r.totals), c)} sub={`IGST ${money(r.totals.igst, c)} · CGST ${money(r.totals.cgst, c)} · SGST ${money(r.totals.sgst, c)}`} tone="accent" />
         <Stat label="B2B invoices" value={String(r.b2b.length)} sub="To registered buyers" tone="violet" />
-        <Stat label="Credit notes" value={String(r.cdnr.length + r.cdnur.length)} sub="Reported invoice-wise" />
+        <Stat label="Credit and debit notes" value={String(r.cdnr.length + r.cdnur.length)} sub="Reported note by note" />
       </div>
       {empty ? <Card><EmptyState title="No GST sales this month">Posted invoices and credit notes with GST rates appear here.</EmptyState></Card> : null}
       {r.b2b.length ? docs('4 B2B invoices', 'Taxable supplies to registered persons, invoice by invoice.', r.b2b) : null}
@@ -282,8 +282,8 @@ function Gstr1View({ r, c, orgId }: { r: Gstr1; c: string; orgId: string }) {
           </Table>
         </Card>
       ) : null}
-      {r.cdnr.length ? docs('9B Credit notes to registered persons', 'Reported note by note.', r.cdnr) : null}
-      {r.cdnur.length ? docs('9B Credit notes to unregistered persons', 'Against B2C large invoices and exports.', r.cdnur) : null}
+      {r.cdnr.length ? docs('9B Credit and debit notes to registered persons', 'Reported note by note: C for a credit note, which lowers tax, D for a debit note, which raises it.', r.cdnr) : null}
+      {r.cdnur.length ? docs('9B Credit and debit notes to unregistered persons', 'Against B2C large invoices and exports.', r.cdnur) : null}
       {r.hsn.b2b.length || r.hsn.b2c.length ? (
         <div className="flex flex-col gap-6">
           <HsnTable title="12 HSN summary: B2B" rows={r.hsn.b2b} c={c} />
@@ -298,7 +298,7 @@ function Gstr1View({ r, c, orgId }: { r: Gstr1; c: string; orgId: string }) {
             <tbody>
               {r.documents.map((x) => (
                 <Tr key={x.kind}>
-                  <Td>{x.kind === 'INVOICE' ? 'Invoices for outward supply' : 'Credit notes'}</Td>
+                  <Td>{x.kind === 'INVOICE' ? 'Invoices for outward supply' : x.kind === 'DEBIT_NOTE' ? 'Debit notes' : 'Credit notes'}</Td>
                   <Td className="num">{x.from}</Td>
                   <Td className="num">{x.to}</Td>
                   <Td numeric className="num">{x.issued}</Td>
@@ -324,7 +324,10 @@ function DocTable({ title, description, rows, c, orgId }: { title: string; descr
           {rows.flatMap((x) =>
             x.rates.map((rt, i) => (
               <Tr key={`${x.id}-${rt.rate}`}>
-                <Td>{i === 0 ? <Link className="num text-accent hover:underline" href={`/orgs/${orgId}/sales/invoices/${x.id}`}>{x.number}</Link> : null}</Td>
+                <Td>
+                  {i === 0 ? <Link className="num text-accent hover:underline" href={`/orgs/${orgId}/sales/invoices/${x.id}`}>{x.number}</Link> : null}
+                  {i === 0 && x.noteType ? <p className="text-xs text-fg-muted">{x.noteType === 'D' ? `Debit note${x.originalNumber ? ` on ${x.originalNumber}` : ''}` : 'Credit note'}</p> : null}
+                </Td>
                 <Td className="text-fg-muted">{i === 0 ? date(x.date) : null}</Td>
                 <Td>{i === 0 ? <>{x.name}{x.gstin ? <p className="num text-xs text-fg-muted">{x.gstin}</p> : null}</> : null}</Td>
                 <Td className="text-fg-muted">{i === 0 ? `${x.placeOfSupply} · ${placeOfSupplyName(x.placeOfSupply)}` : null}</Td>

@@ -50,6 +50,14 @@ export function documentNumber(kind: DocumentKind | PaymentKind, n: number): str
   return `${DOCUMENT_PREFIX[kind]}-${String(n).padStart(6, '0')}`;
 }
 
+/**
+ * Debit notes (AR-017) are invoices that raise the value of an earlier posted invoice to the same
+ * customer. They are owed, aged and paid like invoices but numbered in their own series.
+ */
+export function debitNoteNumber(n: number): string {
+  return `DN-${String(n).padStart(6, '0')}`;
+}
+
 export class DocumentValidationError extends Error {
   constructor(public readonly issues: string[]) {
     super(issues.join('; '));
