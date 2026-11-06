@@ -41,6 +41,9 @@ export interface GstReturnDocument {
   reverseCharge?: boolean;
   /** The supplier's state; 96 for a supplier outside India (import of services). */
   supplierState?: string;
+  /** Sales: an INVOICE that is a debit note on an earlier invoice (CGST Act s.34(3)), with that invoice's number. */
+  debitNote?: boolean;
+  originalNumber?: string | null;
   lines: GstReturnLine[];
 }
 
@@ -90,6 +93,10 @@ export interface Gstr1DocumentRow {
   placeOfSupply: string;
   value: string;
   rates: (TaxHeads & { rate: string })[];
+  /** Tables 9B: C for a credit note, D for a debit note. Absent on invoices. */
+  noteType?: 'C' | 'D';
+  /** Debit notes: the invoice they adjust. */
+  originalNumber?: string | null;
 }
 
 export interface Gstr1Summary {
@@ -101,16 +108,16 @@ export interface Gstr1Summary {
   exp: Gstr1DocumentRow[];
   /** Table 7: all other supplies to unregistered persons, by place of supply and rate, net of their credit notes. */
   b2cs: (TaxHeads & { placeOfSupply: string; nature: SupplyNature; rate: string })[];
-  /** Table 9B: credit notes to registered persons. */
+  /** Table 9B: credit and debit notes to registered persons. */
   cdnr: Gstr1DocumentRow[];
-  /** Table 9B: credit notes to unregistered persons on inter-state supplies above the B2CL threshold. */
+  /** Table 9B: credit and debit notes to unregistered persons on inter-state supplies above the B2CL threshold, and on exports. */
   cdnur: Gstr1DocumentRow[];
   /** Table 8: nil-rated, exempt and non-GST supplies. */
   nil: { nature: SupplyNature; registered: boolean; nilRated: string; exempt: string; nonGst: string }[];
   /** Table 12: HSN-wise summary, split into supplies to registered (B2B) and unregistered (B2C) recipients. */
   hsn: { b2b: HsnRow[]; b2c: HsnRow[] };
   /** Table 13: documents issued. */
-  documents: { kind: 'INVOICE' | 'CREDIT_NOTE'; from: string; to: string; issued: number; cancelled: number }[];
+  documents: { kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE'; from: string; to: string; issued: number; cancelled: number }[];
   totals: TaxHeads;
 }
 
@@ -149,13 +156,14 @@ export function gstr1Summary(documents: readonly GstReturnDocument[], options: G
     const sign = d.kind === 'INVOICE' ? 1 : -1;
     const registered = !!d.gstin;
     if (hasTaxable(d)) {
-      if (d.kind === 'INVOICE') {
+      if (d.kind === 'INVOICE' && !d.debitNote) {
         if (isExport(d)) exp.push(row(d));
         else if (registered) b2b.push(row(d));
         else if (isLarge(d)) b2cl.push(row(d));
       } else {
-        if (registered && !isExport(d)) cdnr.push(row(d));
-        else if (isLarge(d) || isExport(d)) cdnur.push(row(d));
+        const note: Gstr1DocumentRow = { ...row(d), noteType: d.kind === 'INVOICE' ? 'D' : 'C', ...(d.debitNote ? { originalNumber: d.originalNumber ?? null } : {}) };
+        if (registered && !isExport(d)) cdnr.push(note);
+        else if (isLarge(d) || isExport(d)) cdnur.push(note);
       }
       if (!registered && !isLarge(d) && !isExport(d)) {
         for (const l of d.lines) {
@@ -188,10 +196,11 @@ export function gstr1Summary(documents: readonly GstReturnDocument[], options: G
     }
   }
 
-  const docSeries = (['INVOICE', 'CREDIT_NOTE'] as const)
+  const series = (d: GstReturnDocument) => (d.kind === 'INVOICE' && d.debitNote ? 'DEBIT_NOTE' : d.kind);
+  const docSeries = (['INVOICE', 'DEBIT_NOTE', 'CREDIT_NOTE'] as const)
     .map((kind) => {
-      const all = sales.filter((d) => d.kind === kind).map((d) => d.number).sort();
-      return { kind, from: all[0] ?? '', to: all[all.length - 1] ?? '', issued: all.length, cancelled: sales.filter((d) => d.kind === kind && d.status === 'VOID').length };
+      const all = sales.filter((d) => series(d) === kind).map((d) => d.number).sort();
+      return { kind, from: all[0] ?? '', to: all[all.length - 1] ?? '', issued: all.length, cancelled: sales.filter((d) => series(d) === kind && d.status === 'VOID').length };
     })
     .filter((x) => x.issued > 0);
 

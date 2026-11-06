@@ -11,6 +11,7 @@ import {
   buildPaymentJournal,
   computeDocument,
   documentNumber,
+  debitNoteNumber,
   validateJournal,
 } from '../src';
 
@@ -158,5 +159,6 @@ describe('ageing and allocation', () => {
   it('numbers documents', () => {
     expect(documentNumber('INVOICE', 12)).toBe('INV-000012');
     expect(documentNumber('RECEIPT', 1)).toBe('RCPT-000001');
+    expect(debitNoteNumber(7)).toBe('DN-000007');
   });
 });

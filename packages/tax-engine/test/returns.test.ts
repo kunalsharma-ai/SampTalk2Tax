@@ -1,3 +1,4 @@
+import { D } from '@talk2tax/accounting-engine';
 import { describe, expect, it } from 'vitest';
 import { GstReturnDocument, GstReturnLine, gstr1Summary, gstr3bSummary, setOffItc } from '../src';
 
@@ -53,6 +54,27 @@ describe('GSTR-1', () => {
       { placeOfSupply: '27', nature: 'INTER', rate: '18', taxable: '50000.00', igst: '9000.00', cgst: '0.00', sgst: '0.00' },
       { placeOfSupply: '29', nature: 'INTRA', rate: '5', taxable: '900.00', igst: '0.00', cgst: '22.50', sgst: '22.50' },
     ]);
+  });
+
+  it('reports debit notes with credit notes in 9B, adds them to tax, and numbers them in their own series', () => {
+    const dn = doc({ kind: 'INVOICE', debitNote: true, originalNumber: 'INV-000001', number: 'DN-000001', gstin: '27AAPFU0939F1ZV', placeOfSupply: '27', nature: 'INTER', total: '236.00', lines: [line('200.00', '18', { igst: '36.00' })] });
+    const dnB2c = doc({ kind: 'INVOICE', debitNote: true, originalNumber: 'INV-000004', number: 'DN-000002', total: '52.50', lines: [line('50.00', '5', { cgst: '1.25', sgst: '1.25' }, { hsnCode: '998314' })] });
+    const r2 = gstr1Summary([...docs, dn, dnB2c]);
+    expect(r2.b2b.map((x) => x.number)).toEqual(r.b2b.map((x) => x.number));
+    expect(r2.cdnr.map((x) => [x.number, x.noteType, x.originalNumber ?? null, x.value])).toEqual([
+      [docs[5]!.number, 'C', null, '118.00'],
+      ['DN-000001', 'D', 'INV-000001', '236.00'],
+    ]);
+    // A small B2C debit note adds to its B2CS row instead.
+    expect(r2.b2cs.find((x) => x.placeOfSupply === '29')).toMatchObject({ taxable: '950.00', cgst: '23.75' });
+    expect(r2.totals.igst).toBe(new D(r.totals.igst).plus(36).toFixed(2));
+    expect(r2.documents.map((x) => [x.kind, x.from, x.to, x.issued])).toEqual([
+      ['INVOICE', r.documents[0]!.from, r.documents[0]!.to, r.documents[0]!.issued],
+      ['DEBIT_NOTE', 'DN-000001', 'DN-000002', 2],
+      ['CREDIT_NOTE', r.documents[1]!.from, r.documents[1]!.to, r.documents[1]!.issued],
+    ]);
+    // GSTR-3B counts it as outward tax.
+    expect(new D(gstr3bSummary([...docs, dn]).outwardTaxable.igst).minus(gstr3bSummary(docs).outwardTaxable.igst).toFixed(2)).toBe('36.00');
   });
 
   it('honours a different B2CL threshold', () => {

@@ -760,8 +760,9 @@ export const INVOICE_PLACEHOLDERS: readonly { path: string; description: string;
   { path: 'labels.taxId', description: 'Label for tax numbers (GSTIN, TRN, VAT No.)' },
   { path: 'labels.tax', description: 'Short tax name (GST, VAT, Sales tax)' },
   { path: 'logo', description: 'The logo as a data: URL, for <img src="{{logo}}">; empty when there is none' },
-  { path: 'doc.kind', description: 'Invoice or Credit note' },
+  { path: 'doc.kind', description: 'Invoice, Debit note or Credit note' },
   { path: 'doc.number', description: 'Document number (DRAFT until posted)' },
+  { path: 'doc.originalInvoice', description: 'Debit notes: the invoice they adjust, with its date; empty otherwise' },
   { path: 'doc.issueDate', description: 'Issue date, formatted' },
   { path: 'doc.dueDate', description: 'Due date, formatted' },
   { path: 'doc.reference', description: 'Your reference or PO number' },
@@ -1069,7 +1070,9 @@ export interface InvoiceSignatureInfo {
 
 /** Everything the page needs about one invoice, as the API returns it. */
 export interface InvoicePrintSource {
-  kind: 'INVOICE' | 'CREDIT_NOTE';
+  kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE';
+  /** Debit notes: the invoice whose value they raise (CGST Rule 53(1A) asks for its number and date). */
+  originalInvoice?: { number: string; issueDate: string } | null;
   status: 'DRAFT' | 'POSTED' | 'VOID';
   number: string | null;
   issueDate: string;
@@ -1172,7 +1175,8 @@ export function buildInvoiceView(
     labels: { taxId: opts.taxIdLabel, tax: opts.taxLabel },
     logo: opts.showLogo && src.logoDataUrl ? src.logoDataUrl : '',
     doc: {
-      kind: src.kind === 'CREDIT_NOTE' ? 'Credit note' : 'Invoice',
+      kind: src.kind === 'CREDIT_NOTE' ? 'Credit note' : src.kind === 'DEBIT_NOTE' ? 'Debit note' : 'Invoice',
+      originalInvoice: src.originalInvoice ? `${src.originalInvoice.number} of ${formatDate(src.originalInvoice.issueDate, opts.dateStyle)}` : '',
       number: src.number ?? 'DRAFT',
       issueDate: formatDate(src.issueDate, opts.dateStyle),
       dueDate: formatDate(src.dueDate, opts.dateStyle),
@@ -1424,7 +1428,7 @@ function renderSection(section: SectionConfig, view: InvoiceView, layout: Layout
     }
     case 'TITLE': {
       const sub = section.text.trim() ? `<div class="sub">${renderPlaceholders(section.text, v, { plain: true })}</div>` : '';
-      const kind = v.doc.kind === 'Credit note' && !/credit/i.test(v.title) ? 'Credit note' : v.title;
+      const kind = v.doc.kind === 'Credit note' && !/credit/i.test(v.title) ? 'Credit note' : v.doc.kind === 'Debit note' && !/debit/i.test(v.title) ? 'Debit note' : v.title;
       return `<div class="ttl">${heading(section)}<h1>${escapeHtml(kind)}</h1>${sub}</div>`;
     }
     case 'META': {
@@ -1432,6 +1436,7 @@ function renderSection(section: SectionConfig, view: InvoiceView, layout: Layout
       const rows: [string, string][] = [
         [`${d.kind} no.`, d.number!],
         ['Date', d.issueDate!],
+        ['Against invoice', d.originalInvoice ?? ''],
         ['Due date', d.dueDate!],
         ['Reference', d.reference!],
         ['Place of supply', d.placeOfSupply!],

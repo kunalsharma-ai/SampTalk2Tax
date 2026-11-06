@@ -47,6 +47,10 @@ describe('INV-01 payload', () => {
     expect(payload).toMatchObject({ DocDtls: { Typ: 'CRN' }, ValDtls: { OthChrg: 4, TotInvVal: 4724 } });
   });
 
+  it('marks a debit note DBN', () => {
+    expect(buildEInvoice(input({ kind: 'DEBIT_NOTE', number: 'DN-000001' })).payload).toMatchObject({ DocDtls: { Typ: 'DBN', No: 'DN-000001' } });
+  });
+
   it('lists everything the IRP would reject', () => {
     const { payload, issues } = buildEInvoice(
       input({

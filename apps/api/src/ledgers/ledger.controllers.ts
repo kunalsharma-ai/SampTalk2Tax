@@ -39,6 +39,8 @@ function schemas(ledger: Ledger) {
     withholdingSectionId: z.uuid().nullable().optional(),
     currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code').nullable().optional(),
     exchangeRate: z.string().trim().max(30).nullable().optional(),
+    /** Sales: the posted invoice this debit note raises the value of. */
+    debitNoteFor: z.uuid().nullable().optional(),
     lines: z.array(Line).min(1).max(500),
   });
   return {

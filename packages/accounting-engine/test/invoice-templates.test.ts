@@ -216,6 +216,14 @@ describe('rendering', () => {
     expect(html).not.toContain('<img src=x');
     expect(html).toContain('Thanks &lt;img src=x onerror=alert(1)&gt;<br>See you');
   });
+  it('titles a debit note and names the invoice it adjusts', () => {
+    const layout = layoutFromPreset('IN_GST');
+    const html = renderInvoiceDocument({ engine: 'LAYOUT', layout }, { ...sampleInvoiceSource('IN_GST'), kind: 'DEBIT_NOTE', number: 'DN-000001', originalInvoice: { number: 'INV-000042', issueDate: '2026-10-12' } });
+    expect(html).toContain('<h1>Debit note</h1>');
+    expect(html).toContain('Debit note no.');
+    expect(html).toMatch(/Against invoice<\/td><td>INV-000042 of /);
+    expect(renderInvoiceDocument({ engine: 'LAYOUT', layout }, sampleInvoiceSource('IN_GST'))).not.toContain('Against invoice');
+  });
   it('hides sections, orders them and pairs half-width ones', () => {
     const layout = layoutFromPreset('GENERIC');
     layout.sections.find((s) => s.key === 'TERMS')!.visible = false;
