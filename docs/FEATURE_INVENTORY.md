@@ -1176,9 +1176,9 @@ Part 34 · M6 · priority P2 · depends on: SEC
 | INTG-004 | Banking | capability | Payment initiation providers | Not started |
 | INTG-005 | Banking | capability | Bank account verification | Not started |
 | INTG-006 | Banking | capability | Banking reconciliation | Not started |
-| INTG-007 | Payments | capability | Stripe | Not started |
+| INTG-007 | Payments | capability | Stripe | Integration pending |
 | INTG-008 | Payments | capability | PayPal | Not started |
-| INTG-009 | Payments | capability | Razorpay | Not started |
+| INTG-009 | Payments | capability | Razorpay | Integration pending |
 | INTG-010 | Payments | capability | Adyen | Not started |
 | INTG-011 | Payments | capability | Supported local payment gateways | Not started |
 | INTG-012 | Accounting | capability | QuickBooks | Not started |
@@ -1342,8 +1342,8 @@ Part 38 · M9 · priority P2 · depends on: SEC
 | SUBS-012 | Billing Capabilities | capability | Monthly subscriptions | Tested |
 | SUBS-013 | Billing Capabilities | capability | Annual subscriptions | Tested |
 | SUBS-014 | Billing Capabilities | capability | Free trials | Tested |
-| SUBS-015 | Billing Capabilities | capability | Plan upgrades | Implementing |
-| SUBS-016 | Billing Capabilities | capability | Plan downgrades | Implementing |
+| SUBS-015 | Billing Capabilities | capability | Plan upgrades | Tested |
+| SUBS-016 | Billing Capabilities | capability | Plan downgrades | Tested |
 | SUBS-017 | Billing Capabilities | capability | Add-on modules | Not started |
 | SUBS-018 | Billing Capabilities | capability | Usage-based AI credits | Not started |
 | SUBS-019 | Billing Capabilities | capability | Document processing quotas | Not started |
@@ -1354,11 +1354,11 @@ Part 38 · M9 · priority P2 · depends on: SEC
 | SUBS-024 | Billing Capabilities | capability | Coupons | Not started |
 | SUBS-025 | Billing Capabilities | capability | Promotional pricing | Not started |
 | SUBS-026 | Billing Capabilities | capability | Regional pricing | Tested |
-| SUBS-027 | Billing Capabilities | capability | Tax on subscriptions | Not started |
-| SUBS-028 | Billing Capabilities | capability | Automated renewals | Not started |
-| SUBS-029 | Billing Capabilities | capability | Payment failure handling | Not started |
-| SUBS-030 | Billing Capabilities | capability | Dunning workflows | Not started |
-| SUBS-031 | Billing Capabilities | capability | Subscription invoices | Not started |
+| SUBS-027 | Billing Capabilities | capability | Tax on subscriptions | Tested |
+| SUBS-028 | Billing Capabilities | capability | Automated renewals | Tested |
+| SUBS-029 | Billing Capabilities | capability | Payment failure handling | Tested |
+| SUBS-030 | Billing Capabilities | capability | Dunning workflows | Tested |
+| SUBS-031 | Billing Capabilities | capability | Subscription invoices | Tested |
 | SUBS-032 | Billing Capabilities | rule | Maintain clear distinctions between platform subscription billing and customers' own accounting transactions | Tested |
 
 ## Platform super admin
@@ -1381,7 +1381,7 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-012 |  | capability | Support ticket management | Not started |
 | ADMIN-013 |  | capability | Audit log search | Not started |
 | ADMIN-014 |  | capability | Integration health | Not started |
-| ADMIN-015 |  | capability | Billing management | Not started |
+| ADMIN-015 |  | capability | Billing management | Tested |
 | ADMIN-016 |  | capability | Product analytics | Not started |
 | ADMIN-017 |  | capability | Error monitoring | Not started |
 | ADMIN-018 |  | capability | Security alerts | Not started |

@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 870 |
+| Not started | 862 |
 | Designed | 0 |
-| Implementing | 66 |
+| Implementing | 64 |
 | Implemented | 33 |
-| Tested | 362 |
-| Integration pending | 12 |
+| Tested | 370 |
+| Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -53,12 +53,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial recovery planner | M7 | 11 | 0 | 11 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
-| Integration marketplace | M6 | 50 | 44 | 6 |
+| Integration marketplace | M6 | 50 | 42 | 8 |
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
-| Subscription and monetization engine | M9 | 32 | 12 | 20 |
-| Platform super admin | M9 | 22 | 14 | 8 |
+| Subscription and monetization engine | M9 | 32 | 7 | 25 |
+| Platform super admin | M9 | 22 | 13 | 9 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
@@ -4399,6 +4399,44 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/display-preferences-flow.test.mjs
   - docs/LANGUAGES_AND_FORMATS.md
 
+### INTG-007 — Stripe
+
+- Module: Integration marketplace
+- Status: **Integration pending**
+- Notes: Stripe Checkout Sessions and webhooks, set up in Platform admin → Payments. Tested against a local stand-in of the API; needs a check with real Stripe test keys.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### INTG-009 — Razorpay
+
+- Module: Integration marketplace
+- Status: **Integration pending**
+- Notes: Razorpay Payment Links and webhooks, set up in Platform admin → Payments. Tested against a local stand-in of the API; needs a check with real Razorpay test keys.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
 ### INTG-032 — Email providers
 
 - Module: Integration marketplace
@@ -4679,7 +4717,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Subscription and monetization engine
 - Status: **Implementing**
-- Notes: Plans, subscriptions, trials, enforcement and admin activation are built and tested; online payment, renewals, invoices and dunning are later slices.
+- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons, add-ons and usage metering are later slices.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -4690,6 +4728,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### SUBS-002 — India: ₹499/month
 
@@ -4903,8 +4952,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SUBS-015 — Plan upgrades
 
 - Module: Subscription and monetization engine
-- Status: **Implementing**
-- Notes: Upgrades by request and activation on payment; proration (upgradeCharge) built in the engine, not yet charged online.
+- Status: **Tested**
+- Notes: Upgrades in a paid period are charged online for the days left (upgradeCharge) and take effect on payment; the period end is kept.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -4915,12 +4964,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### SUBS-016 — Plan downgrades
 
 - Module: Subscription and monetization engine
-- Status: **Implementing**
-- Notes: Downgrades by request, refused while members exceed the smaller plan; applied on activation (no scheduled change at period end yet).
+- Status: **Tested**
+- Notes: A cheaper plan or another billing interval in a paid period is scheduled: the renewal invoice is for it; refused while members exceed it.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -4931,6 +4991,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### SUBS-020 — User-based licensing
 
@@ -4952,7 +5023,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Subscription and monetization engine
 - Status: **Implementing**
-- Notes: Enterprise contracts activated by an administrator with the contract reference; no contract terms or custom prices yet.
+- Notes: Enterprise contracts activated by an administrator with the contract reference, or invoiced and paid by transfer (recorded under Invoices); no contract terms or custom prices yet.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -4979,6 +5050,101 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-027 — Tax on subscriptions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: GST on subscription invoices from an Indian supplier with a GSTIN: CGST+SGST in the same state (or state unknown), IGST in another state, zero-rated export outside India. No tax computed for a supplier outside India.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-028 — Automated renewals
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Renewal invoices are issued automatically 7 days before the period ends and paid by the customer (online or by transfer). Cards and UPI AutoPay are not charged automatically.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-029 — Payment failure handling
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Unpaid renewals go to 7 days grace, then read-only; a wrong amount or a payment on a replaced invoice is recorded and not applied; a cancelled payment can be retried; a late renewal starts from the day paid.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-030 — Dunning workflows
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Reminders once per invoice and stage (upcoming, due, final, lapsed), emailed to owners and admins through the organisation’s email set-up, and recorded in the subscription history.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-031 — Subscription invoices
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Payment request while unpaid; tax invoice numbered on payment (PREFIX/YY-YY/NNNNN, at most 16 characters, a series per financial year); printable; final once paid or void.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### SUBS-032 — Maintain clear distinctions between platform subscription billing and customers' own accounting transactions
 
@@ -5091,6 +5257,25 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
   - apps/web/src/app/admin/plans/page.tsx
+
+### ADMIN-015 — Billing management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Platform admin → Invoices (all subscription invoices, record a payment by hand, void, ask the gateway, issue due renewals, gateway notices) and → Payments (gateways and seller details).
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### ADMIN-019 — System announcements
 

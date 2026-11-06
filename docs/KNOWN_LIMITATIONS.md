@@ -258,4 +258,4 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Plans and subscriptions
 
-* No online payment yet: a requested plan is activated by a platform administrator with the payment reference. No renewals, dunning, invoices, tax on subscriptions, coupons or add-ons yet. AI and upload limits are shown but not yet counted. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
+* Online subscription payments (Razorpay, Stripe) are tested only against a local stand-in of their APIs, not yet with real test accounts. Renewals are paid by the customer: no saved-card, UPI AutoPay or e-mandate charging. No refunds or credit notes for subscriptions; no tax for suppliers outside India. No coupons or add-ons yet. See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). AI and upload limits are shown but not yet counted. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
