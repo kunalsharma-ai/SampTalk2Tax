@@ -31,12 +31,12 @@ export interface AuthUser {
 }
 
 export type PlatformRole = 'SUPER_ADMIN' | 'SUPPORT';
-export type PlatformPermission = 'platform.read' | 'platform.manage';
+export type PlatformPermission = 'platform.read' | 'platform.manage' | 'platform.support';
 
 /** What each platform role may do. SUPPORT looks things up; only SUPER_ADMIN changes anything. */
 export const PLATFORM_PERMISSIONS: Record<PlatformRole, readonly PlatformPermission[]> = {
-  SUPER_ADMIN: ['platform.read', 'platform.manage'],
-  SUPPORT: ['platform.read'],
+  SUPER_ADMIN: ['platform.read', 'platform.manage', 'platform.support'],
+  SUPPORT: ['platform.read', 'platform.support'],
 };
 
 /**
@@ -48,6 +48,8 @@ export const RequirePlatform = (permission: PlatformPermission) => SetMetadata(P
 export interface OrgContext {
   id: string;
   role: RoleName;
+  /** Set when a person who runs Talk2Tax is reading the books under the organisation's support access grant. */
+  viaSupport?: { grantId: string; expiresAt: Date };
   functionalCurrency: string;
   fiscalYearStartMonth: number;
 }

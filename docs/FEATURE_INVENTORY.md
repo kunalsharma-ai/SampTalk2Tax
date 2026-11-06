@@ -1378,7 +1378,7 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-009 |  | capability | AI model configuration | Not started |
 | ADMIN-010 |  | capability | API usage monitoring | Not started |
 | ADMIN-011 |  | capability | Infrastructure monitoring | Not started |
-| ADMIN-012 |  | capability | Support ticket management | Not started |
+| ADMIN-012 |  | capability | Support ticket management | Tested |
 | ADMIN-013 |  | capability | Audit log search | Not started |
 | ADMIN-014 |  | capability | Integration health | Not started |
 | ADMIN-015 |  | capability | Billing management | Tested |
@@ -1388,7 +1388,7 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-019 |  | capability | System announcements | Tested |
 | ADMIN-020 |  | capability | Maintenance controls | Not started |
 | ADMIN-021 |  | rule | Super Admin access must not automatically grant unrestricted access to tenant financial data | Tested |
-| ADMIN-022 |  | rule | Implement controlled support access with explicit authorization, logging and expiration | Not started |
+| ADMIN-022 |  | rule | Implement controlled support access with explicit authorization, logging and expiration | Tested |
 
 ## Mobile experience
 
@@ -1581,7 +1581,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-041 |  | capability | Organization Settings | Not started |
 | NAV-042 |  | capability | User Management | Tested |
 | NAV-043 |  | capability | Security Center | Not started |
-| NAV-044 |  | capability | Support | Not started |
+| NAV-044 |  | capability | Support | Tested |
 | NAV-045 |  | capability | Super Admin | Not started |
 | NAV-046 |  | rule | Use nested navigation and progressive disclosure | Implemented |
 | NAV-047 |  | rule | Do not overwhelm users by showing all modules simultaneously | Implemented |

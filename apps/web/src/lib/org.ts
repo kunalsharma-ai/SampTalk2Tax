@@ -15,7 +15,15 @@ export function useOrgs() {
 export function useOrg() {
   const orgId = useOrgId();
   const orgs = useOrgs();
-  return { ...orgs, org: orgs.data?.find((o) => o.id === orgId), orgId };
+  const listed = orgs.data?.find((o) => o.id === orgId);
+  // Not a member: support staff may still read it while the organisation grants support access.
+  const direct = useQuery({
+    queryKey: ['org-direct', orgId],
+    queryFn: () => api<Org>(`/v1/orgs/${orgId}`),
+    enabled: !!orgId && !!orgs.data && !listed,
+    retry: false,
+  });
+  return { ...orgs, isLoading: orgs.isLoading || (!!orgs.data && !listed && direct.isLoading), org: listed ?? direct.data, orgId };
 }
 
 export function useAccounts(includeInactive = false) {

@@ -9,6 +9,7 @@ import { ROLE_LABEL, useMeWithRole } from '@/lib/admin';
 
 const NAV = [
   { href: '/admin', label: 'Overview' },
+  { href: '/admin/support', label: 'Support' },
   { href: '/admin/organisations', label: 'Organisations' },
   { href: '/admin/people', label: 'People' },
   { href: '/admin/subscriptions', label: 'Subscriptions' },

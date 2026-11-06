@@ -6,7 +6,8 @@ import { PrismaService } from '../common/prisma.service';
 import { enterOrg, enterUser } from '../common/tenant-context';
 import { RegionsService } from '../regions/regions.service';
 import { accessOf } from '../billing/limits';
-import { ALLOW_READ_ONLY, IS_PUBLIC, PERMISSION, PLAN_FEATURE, PLATFORM_PERMISSION, PLATFORM_PERMISSIONS, PlatformPermission } from './decorators';
+import { SupportAccessService } from '../support/support-access.service';
+import { ALLOW_READ_ONLY, IS_PUBLIC, PERMISSION, PLAN_FEATURE, PLATFORM_PERMISSION, PLATFORM_PERMISSIONS, PlatformPermission, PlatformRole } from './decorators';
 import { SessionsService } from './sessions.service';
 import { TokensService } from './tokens.service';
 
@@ -19,6 +20,7 @@ export class AuthGuard implements CanActivate {
     private readonly prisma: PrismaService,
     private readonly sessions: SessionsService,
     private readonly regions: RegionsService,
+    private readonly supportAccess: SupportAccessService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -56,8 +58,9 @@ export class AuthGuard implements CanActivate {
         where: { orgId_userId: { orgId, userId: user.id } },
         include: { org: { select: { functionalCurrency: true, fiscalYearStartMonth: true, dataRegion: true, suspendedAt: true, suspendedReason: true, subscription: { select: { status: true, trialEndsAt: true, currentPeriodEnd: true, plan: { select: { name: true, features: true } } } } } } },
       });
-      // Non-members get 404, not 403, so organization ids cannot be probed.
-      if (!membership) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
+      // Non-members get 404, not 403, so organization ids cannot be probed. The one exception
+      // is support staff while the organisation has granted support access: read-only, logged.
+      if (!membership) return this.viaSupport(req, user, orgId, permission);
       // An organisation is served only in the region its data lives in.
       this.regions.assertHere(membership.org.dataRegion);
       const role = membership.role as RoleName;
@@ -94,6 +97,33 @@ export class AuthGuard implements CanActivate {
     } else if (permission) {
       throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Organization-scoped route is missing :orgId' });
     }
+    return true;
+  }
+
+  /** Support staff reading an organisation's books under its grant: VIEWER rights, reads only, every request logged. */
+  private async viaSupport(req: any, user: { id: string; platformRole: PlatformRole | null }, orgId: string, permission: Permission | undefined): Promise<boolean> {
+    const notFound = new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
+    if (!user.platformRole || !PLATFORM_PERMISSIONS[user.platformRole].includes('platform.support')) throw notFound;
+    const access = await this.supportAccess.activeGrant(orgId);
+    if (!access) throw notFound;
+    this.regions.assertHere(access.org.dataRegion);
+    if (!['GET', 'HEAD'].includes(req.method)) {
+      throw new ForbiddenException({ error: 'SUPPORT_READ_ONLY', message: 'Support access is read-only: nothing in this organisation can be changed by support.' });
+    }
+    const role: RoleName = 'VIEWER';
+    if (!permission) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Route has no permission declared' });
+    if (!hasPermission(role, permission)) {
+      throw new ForbiddenException({ error: 'FORBIDDEN', message: `Support access has viewer rights only, which do not include ${permission}` });
+    }
+    enterOrg(orgId);
+    await this.supportAccess.logView(access.grant.id, orgId, user.id, String(req.originalUrl ?? req.url ?? ''));
+    req.org = {
+      id: orgId,
+      role,
+      functionalCurrency: access.org.functionalCurrency,
+      fiscalYearStartMonth: access.org.fiscalYearStartMonth,
+      viaSupport: { grantId: access.grant.id, expiresAt: access.grant.expiresAt },
+    };
     return true;
   }
 }
