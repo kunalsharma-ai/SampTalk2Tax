@@ -4,6 +4,17 @@ import type { Permission, RoleName } from '@talk2tax/security';
 export const IS_PUBLIC = 'talk2tax:isPublic';
 export const PERMISSION = 'talk2tax:permission';
 export const PLATFORM_PERMISSION = 'talk2tax:platformPermission';
+export const PLAN_FEATURE = 'talk2tax:planFeature';
+export const ALLOW_READ_ONLY = 'talk2tax:allowWhenReadOnly';
+
+/**
+ * The route changes something in a module the organisation's plan must include (AI, PAYROLL,
+ * MULTI_CURRENCY, CONSOLIDATION). Reads are never refused: past records stay visible after a downgrade.
+ */
+export const RequireFeature = (feature: 'AI' | 'PAYROLL' | 'MULTI_CURRENCY' | 'CONSOLIDATION') => SetMetadata(PLAN_FEATURE, feature);
+
+/** The route works while the books are read-only (a lapsed plan or a suspension): choosing a plan. */
+export const AllowWhenReadOnly = () => SetMetadata(ALLOW_READ_ONLY, true);
 
 /** Route needs no authentication. */
 export const Public = () => SetMetadata(IS_PUBLIC, true);

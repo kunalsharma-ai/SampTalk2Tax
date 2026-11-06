@@ -94,7 +94,12 @@ test('a person reads Talk2Tax in Hindi with their own formats, and the organisat
 
   // Back to English.
   const prefs = page.locator('[aria-label="भाषा और प्रारूप"]');
-  await prefs.getByLabel('भाषा').selectOption('en');
+  // The time-zone save redraws the page once the organisation reloads; choose again if that redraw reset the form.
+  for (let i = 0; i < 5; i++) {
+    await prefs.getByLabel('भाषा').selectOption('en');
+    if (await prefs.getByRole('button', { name: 'सहेजें' }).isEnabled()) break;
+    await page.waitForTimeout(300);
+  }
   await prefs.getByRole('button', { name: 'सहेजें' }).click();
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Dashboard', exact: true }).waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');

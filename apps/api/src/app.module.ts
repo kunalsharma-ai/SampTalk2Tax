@@ -39,6 +39,10 @@ import { HealthController } from './health/health.controller';
 import { RegionsController } from './regions/regions.controller';
 import { AdminController, AnnouncementsController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
+import { BillingController } from './billing/billing.controller';
+import { BillingService } from './billing/billing.service';
+import { PlatformBillingController } from './billing/platform-billing.controller';
+import { PlatformBillingService } from './billing/platform-billing.service';
 import { RegionsService } from './regions/regions.service';
 import { JournalsController } from './journals/journals.controller';
 import { JournalsService } from './journals/journals.service';
@@ -145,6 +149,8 @@ export class AppModule {
         RegionsController,
         AdminController,
         AnnouncementsController,
+        BillingController,
+        PlatformBillingController,
         AuthController,
         OrganizationsController,
         InvitationLinksController,
@@ -208,6 +214,8 @@ export class AppModule {
       providers: [
         RegionsService,
         AdminService,
+        BillingService,
+        PlatformBillingService,
         { provide: CONFIG, useValue: config },
         prismaProvider,
         TokensService,

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
-import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFeature } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { CollectionsService } from './collections.service';
 
@@ -16,6 +16,7 @@ const ActivityQuery = z.object({ limit: z.coerce.number().int().min(1).max(500).
 
 @ApiTags('collections')
 @ApiBearerAuth()
+@RequireFeature('AI')
 @Controller('v1/orgs/:orgId')
 export class CollectionsController {
   constructor(private readonly collections: CollectionsService) {}
