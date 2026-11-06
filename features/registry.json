@@ -27746,9 +27746,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        ".github/workflows/ci.yml",
+        ".github/dependabot.yml",
+        "pnpm-workspace.yaml",
+        "docs/CI_CD.md"
+      ],
+      "notes": "pnpm audit --prod --audit-level=high as a CI job, and weekly Dependabot updates for npm, GitHub Actions and base images. Four high-severity transitive advisories fixed with pinned overrides (audit clean locally). The CI job has not run on GitHub because Actions is blocked by billing."
     },
     {
       "id": "SEC-026",

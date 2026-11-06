@@ -263,3 +263,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Operations
 
 * Request timings and runner heartbeats are in memory per API instance and cover the last 15 minutes; there is no metrics history, no aggregation across instances and no alerting to an on-call service. Errors in the web app's browser code and in background runner passes are not grouped under Errors. Feature flags cover four modules. Maintenance pauses changes by everyone except platform staff, including organisation owners; it does not stop already-running requests. See [`OPERATIONS.md`](OPERATIONS.md).
+
+## CI/CD and containers
+
+* The CI and release workflows have not run on GitHub (Actions is blocked for this account by billing); their steps were run locally. Deployment is to one Docker host, with a short gap while containers are replaced, and there is no staging environment, image vulnerability scan or log shipping. See [`CI_CD.md`](CI_CD.md).

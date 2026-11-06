@@ -1,0 +1,15 @@
+# Keep the build context small and free of secrets and local builds.
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/*.tsbuildinfo
+**/.turbo
+.git
+.env
+.env.*
+!.env.example
+docs
+features/*.md
+apps/web/e2e/*.png
+*.log

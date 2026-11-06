@@ -1,0 +1,58 @@
+# Production stack on one Docker host, deployed by .github/workflows/release.yml (or by hand):
+#   export REGISTRY=ghcr.io/<owner> IMAGE_TAG=sha-abc1234
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml run --rm migrate
+#   docker compose -f docker-compose.prod.yml up -d --wait api web caddy
+#
+# The database is managed PostgreSQL (backups, point-in-time recovery), not a container here.
+# .env.production next to this file holds DATABASE_URL (the app role, never a superuser),
+# JWT_SECRET, INTEGRATIONS_ENCRYPTION_KEY, APP_URL, DOMAIN and the other settings in
+# docs/DEPLOYMENT.md. Only Caddy is reachable from outside; it terminates TLS.
+services:
+  migrate:
+    image: ${REGISTRY:?set REGISTRY}/talk2tax-migrate:${IMAGE_TAG:?set IMAGE_TAG}
+    env_file: .env.production
+    restart: "no"
+    profiles: ["release"]
+
+  api:
+    image: ${REGISTRY}/talk2tax-api:${IMAGE_TAG}
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Requests arrive through Caddy and the web app's proxy.
+      TRUST_PROXY_HOPS: 2
+    restart: unless-stopped
+    logging: &logs
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  web:
+    image: ${REGISTRY}/talk2tax-web:${IMAGE_TAG}
+    environment:
+      T2T_API_URL: http://api:4000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logs
+
+  caddy:
+    image: caddy:2.10-alpine
+    env_file: .env.production
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+    logging: *logs
+
+volumes:
+  caddy_data:
+  caddy_config:
