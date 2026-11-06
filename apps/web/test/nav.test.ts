@@ -18,3 +18,17 @@ describe('navigation by country', () => {
     expect(hrefs({ role: 'VIEWER', countryCode: 'IN' })).not.toContain('/automations');
   });
 });
+
+describe('feature flags in the menu', () => {
+  const flagged = (flags?: Record<string, boolean>) => navFor({ role: 'OWNER', countryCode: 'IN' }, flags).flatMap((g) => g.items.map((i) => i.href));
+  it('show a flagged module once its flag is known to be on', () => {
+    expect(flagged()).not.toContain('/benchmarking');
+    expect(flagged({ benchmarking: true, 'forecast-lab': true, 'disaster-simulation': true, opportunities: true })).toContain('/benchmarking');
+  });
+  it('hide it while the flag is off, leaving the rest of the group', () => {
+    const items = flagged({ benchmarking: false, 'forecast-lab': true, 'disaster-simulation': true, opportunities: true });
+    expect(items).not.toContain('/benchmarking');
+    expect(items).toContain('/planning/forecast-lab');
+    expect(items).toContain('/planning/budgets');
+  });
+});

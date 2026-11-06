@@ -108,13 +108,9 @@ Errors:
 
 ## Not built yet
 
-These are the later M9 slices:
-
-- AI and API usage monitoring;
-- feature flags;
-- maintenance mode;
-- infrastructure and error monitoring;
-- product analytics.
+Usage metering is in [`USAGE_METERING.md`](USAGE_METERING.md); system health, error tracking,
+feature flags and maintenance mode are in [`OPERATIONS.md`](OPERATIONS.md). Product analytics is
+not built.
 
 An administrator in one region sees only that region's organisations and people (see
 [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md)).

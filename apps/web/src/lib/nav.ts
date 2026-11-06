@@ -5,10 +5,11 @@ import { can, type Org } from './types';
 /**
  * perm: shown only to roles that have it (a hint; the API enforces the real check).
  * needs: shown only where the organisation's country module supports it (the API refuses too).
+ * flag: shown once the organisation's flags are known and this one is on (the API refuses it when off).
  */
 export type PlanFeature = 'AI' | 'PAYROLL' | 'MULTI_CURRENCY' | 'CONSOLIDATION';
 /** plan: a module the organisation's plan must include to use it (shown with "Upgrade" otherwise; past records stay readable). */
-export interface NavItem { href: string; label: string; perm?: string; needs?: CapabilityKey; plan?: PlanFeature; locked?: boolean }
+export interface NavItem { href: string; label: string; perm?: string; needs?: CapabilityKey; plan?: PlanFeature; locked?: boolean; flag?: string }
 export const NAV: { group: string; items: NavItem[] }[] = [
   { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot', plan: 'AI' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }, { href: '/tasks', label: 'My tasks' }] },
   {
@@ -96,7 +97,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/settings/country-module', label: 'Country module' },
     ],
   },
-  { group: 'Planning', items: [{ href: '/cfo', label: 'Virtual CFO' }, { href: '/benchmarking', label: 'Benchmarking' }, { href: '/decisions', label: 'Decision memory' }, { href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }, { href: '/planning/twin', label: 'Digital twin' }, { href: '/planning/recovery', label: 'Recovery planner' }, { href: '/planning/forecast-lab', label: 'Forecast lab' }, { href: '/planning/disasters', label: 'Disaster simulation' }, { href: '/planning/impact', label: 'Business impact' }, { href: '/planning/opportunities', label: 'Growth opportunities' }] },
+  { group: 'Planning', items: [{ href: '/cfo', label: 'Virtual CFO' }, { href: '/benchmarking', label: 'Benchmarking', flag: 'benchmarking' }, { href: '/decisions', label: 'Decision memory' }, { href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }, { href: '/planning/twin', label: 'Digital twin' }, { href: '/planning/recovery', label: 'Recovery planner' }, { href: '/planning/forecast-lab', label: 'Forecast lab', flag: 'forecast-lab' }, { href: '/planning/disasters', label: 'Disaster simulation', flag: 'disaster-simulation' }, { href: '/planning/impact', label: 'Business impact' }, { href: '/planning/opportunities', label: 'Growth opportunities', flag: 'opportunities' }] },
   { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/ai-control', label: 'AI control center', perm: 'audit.read' }, { href: '/ai-activity', label: 'AI activity', perm: 'audit.read' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/subscription', label: 'Subscription' }, { href: '/settings/usage', label: 'Usage' }, { href: '/settings/integrations', label: 'Integrations', perm: 'org.manage' }, { href: '/settings/approvals', label: 'Approval rules' }, { href: '/automations', label: 'Automations', perm: 'workflows.manage' }, { href: '/governance/policies', label: 'Policy studio' }, { href: '/support', label: 'Help and support' }] },
 ];
 
@@ -105,14 +106,14 @@ export const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/
 
 
 /** The navigation an organisation sees: its role's items, in its country, without empty groups. */
-export function navFor(org: (Pick<Org, 'role' | 'countryCode'> & { subscription?: Org['subscription'] }) | undefined) {
+export function navFor(org: (Pick<Org, 'role' | 'countryCode'> & { subscription?: Org['subscription'] }) | undefined, flags?: Record<string, boolean>) {
   if (org?.role === 'EMPLOYEE') return EMPLOYEE_NAV;
   const features = org?.subscription?.plan.features;
   return NAV.filter((g) => g.group !== 'Payroll' || can(org?.role, 'payroll.read'))
     .map((g) => ({
       ...g,
       items: g.items
-        .filter((i) => (!i.perm || can(org?.role, i.perm)) && (!i.needs || (!!org && countrySupports(org.countryCode, i.needs))))
+        .filter((i) => (!i.perm || can(org?.role, i.perm)) && (!i.needs || (!!org && countrySupports(org.countryCode, i.needs))) && (!i.flag || flags?.[i.flag] === true))
         .map((i) => (i.plan && features && !features.includes(i.plan) ? { ...i, locked: true } : i)),
     }))
     .filter((g) => g.items.length > 0);

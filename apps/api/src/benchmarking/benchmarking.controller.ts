@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Post, Put } from '@nestjs/comm
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { BENCHMARK_INDUSTRIES, BENCHMARK_METRICS, BENCHMARK_SIZE_BANDS, type BenchmarkIndustry, type BenchmarkMetricKey, type BenchmarkSizeBand } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
-import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFlag } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { BenchmarkingService } from './benchmarking.service';
 
@@ -27,6 +27,7 @@ const JoinBody = z
  */
 @ApiTags('benchmarking')
 @ApiBearerAuth()
+@RequireFlag('benchmarking')
 @Controller('v1/orgs/:orgId/benchmarking')
 export class BenchmarkingController {
   constructor(private readonly svc: BenchmarkingService) {}

@@ -23,6 +23,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
+import { HeartbeatsService } from '../operations/heartbeats.service';
 import { addDays, ROLE_LABELS, TasksService, todayIst } from '../tasks/tasks.service';
 import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { sendWebhook, signPayload, WebhookResult } from './webhook';
@@ -94,12 +95,14 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     private readonly tasks: TasksService,
     private readonly mailer: MailerService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly heartbeats: HeartbeatsService,
   ) {}
 
   onApplicationBootstrap() {
     const every = this.config.WORKFLOW_RUNNER_INTERVAL_SECONDS;
+    this.heartbeats.register('Workflow runner', every);
     if (every > 0) {
-      this.timer = setInterval(() => void this.tick().catch((e) => this.logger.error(`Workflow runner failed: ${(e as Error).message}`)), every * 1000);
+      this.timer = setInterval(() => void this.heartbeats.track('Workflow runner', () => this.tick()), every * 1000);
       this.timer.unref();
       this.logger.log(`Workflow runner looks for events, schedules and due deliveries every ${every} s; email goes through each organisation's own mail server (Settings → Integrations)${this.config.SMTP_URL ? ', or the server\'s SMTP_URL' : ''}`);
     }

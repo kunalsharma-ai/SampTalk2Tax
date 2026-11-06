@@ -177,7 +177,9 @@ describe('sign-in lockout', () => {
     expect(locked.body.error).toBe('TOO_MANY_ATTEMPTS');
     expect(Number(locked.headers['retry-after'])).toBeGreaterThan(800);
     if (correctPassword) expect((await login(ctx, email, correctPassword).expect(429)).body.error).toBe('TOO_MANY_ATTEMPTS');
-    return locked.body;
+    // Each response has its own request id; the rest must not tell the two cases apart.
+    const { requestId: _id, ...body } = locked.body;
+    return body;
   }
 
   it('locks an address after five failures, even for the right password, then lets it in after the lock', async () => {
