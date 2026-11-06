@@ -27,11 +27,25 @@ html, body { background: var(--t2t-bg); color: var(--t2t-text); }
 body {
   font-family: var(--t2t-font-sans);
   background-image:
-    radial-gradient(1200px 600px at 85% -10%, rgba(99, 102, 241, 0.16), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(18, 194, 233, 0.10), transparent 60%);
+    radial-gradient(1200px 600px at 85% -10%, rgba(29, 78, 216, 0.20), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(94, 234, 212, 0.08), transparent 60%);
   background-attachment: fixed;
   min-height: 100vh;
 }
-::selection { background: rgba(56, 217, 245, 0.35); }
+::selection { background: rgba(94, 234, 212, 0.32); }
+
+/* Sign-in backdrop: the logo's three colours drifting slowly. Still under reduced motion (tokens.css). */
+.t2t-aurora {
+  background:
+    radial-gradient(420px 320px at 78% 30%, rgba(14, 165, 233, 0.28), transparent 70%),
+    radial-gradient(380px 300px at 18% 78%, rgba(94, 234, 212, 0.18), transparent 70%),
+    radial-gradient(520px 380px at 95% 95%, rgba(29, 78, 216, 0.30), transparent 70%);
+  animation: t2t-aurora 18s ease-in-out infinite alternate;
+}
+@keyframes t2t-aurora {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-4%, 3%, 0) scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) { .t2t-aurora { animation: none; } }
 :focus-visible { outline: 2px solid var(--t2t-focus); outline-offset: 2px; }
 .num { font-family: var(--t2t-font-mono); font-variant-numeric: tabular-nums; }

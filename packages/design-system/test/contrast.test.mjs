@@ -23,8 +23,14 @@ test('body and muted text meet WCAG AA (4.5:1) on every surface', () => {
   }
 });
 
+test('dark labels on primary buttons stay readable across the action gradient (4.5:1)', () => {
+  const stops = /--t2t-gradient-action:[^;]*/.exec(css)[0].match(/#[0-9a-f]{6}/gi);
+  assert.ok(stops.length >= 2);
+  for (const s of stops) assert.ok(ratio('#050a18', s) >= 4.5, `#050a18 on ${s}: ${ratio('#050a18', s).toFixed(2)}`);
+});
+
 test('status and accent colours meet 3:1 for non-text UI on surfaces', () => {
-  for (const c of ['accent', 'positive', 'warning', 'negative', 'violet', 'focus']) {
+  for (const c of ['accent', 'accent-strong', 'positive', 'warning', 'negative', 'violet', 'focus']) {
     assert.ok(ratio(v(c), v('surface')) >= 3, `${c}: ${ratio(v(c), v('surface')).toFixed(2)}`);
   }
 });

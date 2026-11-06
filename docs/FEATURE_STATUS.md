@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 850 |
 | Designed | 0 |
-| Implementing | 65 |
+| Implementing | 64 |
 | Implemented | 34 |
-| Tested | 380 |
+| Tested | 381 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3340,10 +3340,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 
 - Module: Dashboard design
-- Status: **Implementing**
-- Notes: Original palette and wordmark in packages/design-system; full brand system and illustration set not done.
+- Status: **Tested**
+- Notes: The Talk2Tax logo by Sampledge (mark, light and dark wordmarks) in packages/design-system/brand, built into app files by scripts/brand-assets.mjs: sign-in and first-run pages (animated, still under reduced motion), app and admin sidebars, favicon, home-screen icons and web manifest, accents from the logo's teal, sky and deep blue, Talk2Tax's own emails as branded HTML, and the mark on PDF exports. An illustration set is not done.
 - Evidence:
-  - apps/web/src
+  - packages/design-system/brand
+  - packages/design-system/test/contrast.test.mjs
+  - apps/web/src/components/brand.tsx
+  - apps/api/test/branded-email.test.ts
+  - apps/api/test/support.e2e.test.ts
 
 ### DASH-014 — Deep midnight navy
 

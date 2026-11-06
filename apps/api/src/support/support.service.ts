@@ -344,6 +344,7 @@ export class SupportService {
           subject: `[${ref}] ${result.t.subject}`,
           text: `${user.name} from Talk2Tax support replied to your ticket ${ref}:\n\n${input.body}\n\nReply or close the ticket in Talk2Tax: ${link}\n`,
           messageId: `<support-${id}-${Date.now()}@talk2tax>`,
+          branded: true,
         }));
         emailed = { ok: r.ok, to, error: r.error };
         if (!r.ok) this.log.warn(`Support reply on ${ref} not emailed: ${r.error}`);

@@ -17,4 +17,5 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ['/((?!api/|_next/|favicon.ico|icon.svg).*)'] };
+// Logos and app icons are public: the sign-in page shows them before anyone is signed in.
+export const config = { matcher: ['/((?!api/|_next/|brand/|favicon.ico|icon.svg|apple-icon.png|manifest.webmanifest).*)'] };

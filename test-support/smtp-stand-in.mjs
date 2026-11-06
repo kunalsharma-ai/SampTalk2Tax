@@ -6,7 +6,8 @@
  *   const smtp = await startSmtpStandIn(4556);
  *   smtp.answers.set('gone@example.test', '550 5.1.1 No such mailbox');   // refuse one address for good
  *   smtp.answers.set('busy@example.test', '451 4.3.0 Try again later');   // or for now
- *   … smtp.messages[0].subject, .text, .to, .headers['auto-submitted']
+ *   … smtp.messages[0].subject, .text, .to, .headers['auto-submitted'], and for HTML email .html and
+ *     .attachments ({ contentType, contentId, size, data })
  */
 import { createServer } from 'node:net';
 
@@ -16,19 +17,40 @@ function decodeWords(s) {
   );
 }
 
-function parse(raw) {
+function decodeBody(body, cte) {
+  cte = (cte ?? '').toLowerCase();
+  if (cte === 'base64') return Buffer.from(body.replace(/\s+/g, ''), 'base64');
+  if (cte === 'quoted-printable') return Buffer.from(body.replace(/=\r\n/g, '').replace(/=([0-9A-F]{2})/gi, (_x, h) => String.fromCharCode(parseInt(h, 16))), 'latin1');
+  // The message was already read as UTF-8 text.
+  return Buffer.from(body, 'utf8');
+}
+
+/** Splits one MIME entity into headers and body, and walks multipart bodies into their leaf parts. */
+function entity(raw) {
   const split = raw.indexOf('\r\n\r\n');
   const head = split < 0 ? raw : raw.slice(0, split);
-  let body = split < 0 ? '' : raw.slice(split + 4);
+  const body = split < 0 ? '' : raw.slice(split + 4);
   const headers = {};
   for (const line of head.replace(/\r\n[ \t]+/g, ' ').split('\r\n')) {
     const i = line.indexOf(':');
     if (i > 0) headers[line.slice(0, i).trim().toLowerCase()] = decodeWords(line.slice(i + 1).trim());
   }
-  const cte = (headers['content-transfer-encoding'] ?? '').toLowerCase();
-  if (cte === 'base64') body = Buffer.from(body.replace(/\s+/g, ''), 'base64').toString('utf8');
-  else if (cte === 'quoted-printable') body = Buffer.from(body.replace(/=\r\n/g, '').replace(/=([0-9A-F]{2})/gi, (_x, h) => String.fromCharCode(parseInt(h, 16))), 'latin1').toString('utf8');
-  return { headers, subject: headers.subject ?? '', text: body.replace(/\r\n/g, '\n').replace(/\n$/, '') };
+  const boundary = /^multipart\/[^;]+;.*boundary="?([^";]+)"?/i.exec(headers['content-type'] ?? '')?.[1];
+  if (!boundary) return { headers, parts: [{ headers, data: decodeBody(body, headers['content-transfer-encoding']) }] };
+  const chunks = body.split(`--${boundary}`).slice(1, -1).map((c) => c.replace(/^\r\n/, '').replace(/\r\n$/, ''));
+  return { headers, parts: chunks.flatMap((c) => entity(c).parts) };
+}
+
+function parse(raw) {
+  const { headers, parts } = entity(raw);
+  const type = (p) => (p.headers['content-type'] ?? 'text/plain').split(';')[0].trim().toLowerCase();
+  const plain = parts.find((p) => type(p) === 'text/plain' && !p.headers['content-id']);
+  const html = parts.find((p) => type(p) === 'text/html');
+  const attachments = parts
+    .filter((p) => p !== plain && p !== html)
+    .map((p) => ({ contentType: type(p), contentId: (p.headers['content-id'] ?? '').replace(/^<|>$/g, '') || null, size: p.data.length, data: p.data }));
+  const text = plain ? plain.data.toString('utf8').replace(/\r\n/g, '\n').replace(/\n$/, '') : '';
+  return { headers, subject: headers.subject ?? '', text, html: html ? html.data.toString('utf8') : null, attachments };
 }
 
 export async function startSmtpStandIn(port = 0) {

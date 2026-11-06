@@ -23,7 +23,7 @@ export default function InvitePage() {
   const inv = q.data;
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
-      <div className="mb-8"><Logo /></div>
+      <div className="mb-8"><Logo size="lg" animated /></div>
       <Card className="p-6">
         {q.isLoading ? <p className="text-sm text-fg-muted">Loading the invitation…</p> : null}
         {q.error ? <Alert title="Invitation not found">{q.error.message}</Alert> : null}
