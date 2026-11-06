@@ -128,8 +128,8 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-007 |  | capability | Sales orders | Not started |
 | AR-008 |  | capability | Pro forma invoices | Not started |
 | AR-009 |  | capability | Tax invoices | Tested |
-| AR-010 |  | capability | Recurring invoices | Not started |
-| AR-011 |  | capability | Subscription billing | Not started |
+| AR-010 |  | capability | Recurring invoices | Tested |
+| AR-011 |  | capability | Subscription billing | Implementing |
 | AR-012 |  | capability | Usage-based billing | Not started |
 | AR-013 |  | capability | Milestone billing | Not started |
 | AR-014 |  | capability | Progress billing | Not started |
@@ -147,7 +147,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-026 |  | capability | Bad debt provisions | Not started |
 | AR-027 |  | capability | Write-offs | Not started |
 | AR-028 |  | capability | Revenue recognition support | Not started |
-| AR-029 |  | capability | Contract billing | Not started |
+| AR-029 |  | capability | Contract billing | Tested |
 | AR-030 |  | capability | Customer portals | Not started |
 | AR-031 |  | capability | Multi-currency invoices | Not started |
 | AR-032 |  | capability | Revenue leakage detection | Tested |
@@ -775,7 +775,7 @@ Part 22 · M6 · priority P3 · depends on: AR, INTG
 | CRM-003 |  | capability | Leads | Tested |
 | CRM-004 |  | capability | Opportunities | Tested |
 | CRM-005 |  | capability | Quotations | Tested |
-| CRM-006 |  | capability | Contracts | Not started |
+| CRM-006 |  | capability | Contracts | Tested |
 | CRM-007 |  | capability | Sales orders | Tested |
 | CRM-008 |  | capability | Billing | Tested |
 | CRM-009 |  | capability | Collections | Not started |
@@ -1559,7 +1559,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-019 |  | capability | Financial Digital Twin | Not started |
 | NAV-020 |  | capability | Financial War Room | Not started |
 | NAV-021 |  | capability | Projects | Not started |
-| NAV-022 |  | capability | Contracts | Not started |
+| NAV-022 |  | capability | Contracts | Tested |
 | NAV-023 |  | capability | Customers | Not started |
 | NAV-024 |  | capability | Vendors | Not started |
 | NAV-025 |  | capability | Inventory Finance | Not started |

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 844 |
+| Not started | 839 |
 | Designed | 0 |
-| Implementing | 65 |
+| Implementing | 66 |
 | Implemented | 34 |
-| Tested | 386 |
+| Tested | 390 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 12 | 32 |
-| Accounts receivable | M2 | 43 | 30 | 13 |
+| Accounts receivable | M2 | 43 | 27 | 16 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 7 | 17 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -41,7 +41,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Enterprise financial management | M6 | 29 | 14 | 15 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
-| CRM and finance integration | M6 | 13 | 7 | 6 |
+| CRM and finance integration | M6 | 13 | 6 | 7 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
@@ -64,7 +64,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
-| Navigation structure | M1 | 48 | 33 | 15 |
+| Navigation structure | M1 | 48 | 32 | 16 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
@@ -429,6 +429,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/invoice-templates/invoice-templates.service.ts
   - apps/web/e2e/invoice-templates-flow.test.mjs
 
+### AR-010 — Recurring invoices
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Each due contract period becomes a draft invoice (invoice rules incl. GST), by the background runner (CONTRACT_RUNNER_INTERVAL_SECONDS), on activation, Bill now, or Bill due periods now; each period recorded once (no double billing); deleted/voided invoice can be billed again; failures kept on the contract and retried. Invoices are drafts to check and post; no auto-posting or auto-email yet.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
+### AR-011 — Subscription billing
+
+- Module: Accounts receivable
+- Status: **Implementing**
+- Notes: Fixed-fee recurring billing works through contracts (CRM-006/AR-010). Not built: usage-based or metered charges, proration of part periods, card/mandate auto-collection.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
 ### AR-016 — Credit notes
 
 - Module: Accounts receivable
@@ -487,6 +517,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/WORKFLOW_AUTOMATIONS.md
   - apps/api/test/collections.e2e.test.ts
   - apps/web/e2e/collections-flow.test.mjs
+
+### AR-029 — Contract billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Contract billing from the contract's lines in force on the billing day; price changes and renewals apply to later periods only; reference CT-0001 <period> / customer reference.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
 
 ### AR-032 — Revenue leakage detection
 
@@ -3014,6 +3059,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/quotes-orders-flow.test.mjs
   - docs/QUOTES_AND_ORDERS.md
   - apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx
+
+### CRM-006 — Contracts
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Customer contracts CT-0001: monthly/quarterly/half-yearly/yearly, in advance or arrears, fixed end on a period end or rolling; draft -> active <-> paused -> ended/cancelled; renew by hand (with % price change) or automatically; renewal-due flag from notice days; MRR/ARR; append-only history; activating for a deal wins it.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
 
 ### CRM-007 — Sales orders
 
@@ -6142,6 +6202,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src/components/shell.tsx
   - apps/web/src/components/banking
+
+### NAV-022 — Contracts
+
+- Module: Navigation structure
+- Status: **Tested**
+- Notes: Sales → Contracts.
+- Evidence:
+  - apps/web/src/lib/nav.ts
+  - apps/web/e2e/contracts-flow.test.mjs
 
 ### NAV-026 — Fixed Assets
 

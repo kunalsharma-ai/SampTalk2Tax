@@ -73,11 +73,11 @@ export class SalesOrdersService {
     return minorUnits(org.functionalCurrency);
   }
 
-  private can(org: SalesOrg) {
+  can(org: SalesOrg) {
     return { manage: hasPermission(org.role, 'sales.manage') };
   }
 
-  private invalid(message: string, code = 'SALES_ORDER_INVALID', details?: unknown): never {
+  invalid(message: string, code = 'SALES_ORDER_INVALID', details?: unknown): never {
     throw new DomainError(code, message, HttpStatus.UNPROCESSABLE_ENTITY, details);
   }
 
@@ -90,7 +90,8 @@ export class SalesOrdersService {
     }
   }
 
-  private async nextNumber(tx: Tx, orgId: string, key: 'sales_quote' | 'sales_order') {
+  /** Also used by contracts. */
+  async nextNumber(tx: Tx, orgId: string, key: 'sales_quote' | 'sales_order' | 'sales_contract') {
     const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
       INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${key}, 1)
       ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
@@ -98,8 +99,8 @@ export class SalesOrdersService {
     return value;
   }
 
-  /** The figures by the invoice rules, as rows to store. */
-  private async compute(tx: Tx, org: SalesOrg, input: { contactId: string; date: string; placeOfSupply?: string | null; lines: LineInput[] }) {
+  /** The figures by the invoice rules, as rows to store (also for contracts). */
+  async compute(tx: Tx, org: SalesOrg, input: { contactId: string; date: string; placeOfSupply?: string | null; lines: LineInput[] }) {
     const { computed, gst } = await this.documents.computeSales(tx, org, {
       contactId: input.contactId,
       issueDate: input.date,
@@ -125,7 +126,7 @@ export class SalesOrdersService {
     };
   }
 
-  private async checkDeal(db: Pick<Tx, 'crmDeal'>, orgId: string, dealId: string | null | undefined, contactId: string) {
+  async checkDeal(db: Pick<Tx, 'crmDeal'>, orgId: string, dealId: string | null | undefined, contactId: string) {
     if (!dealId) return null;
     const d = await db.crmDeal.findFirst({ where: { id: dealId, orgId } });
     if (!d) this.invalid('Choose a deal of this organisation', 'SALES_DEAL_NOT_FOUND');
@@ -135,7 +136,7 @@ export class SalesOrdersService {
 
   // ------------------------------------------------------------------ shared output
 
-  private async names(orgId: string, rows: { contactId: string; dealId: string | null }[], lines: { accountId: string; taxRateId: string | null }[] = []) {
+  async names(orgId: string, rows: { contactId: string; dealId: string | null }[], lines: { accountId: string; taxRateId: string | null }[] = []) {
     const contactIds = [...new Set(rows.map((r) => r.contactId))];
     const dealIds = [...new Set(rows.map((r) => r.dealId).filter((x): x is string => !!x))];
     const accountIds = [...new Set(lines.map((l) => l.accountId))];
@@ -160,11 +161,11 @@ export class SalesOrdersService {
     };
   }
 
-  private money(org: SalesOrg, v: Prisma.Decimal) {
+  money(org: SalesOrg, v: Prisma.Decimal) {
     return new D(v.toString()).toFixed(this.scale(org));
   }
 
-  private qty(v: Prisma.Decimal | string) {
+  qty(v: Prisma.Decimal | string) {
     return new D(v.toString()).toFixed();
   }
 
@@ -244,7 +245,7 @@ export class SalesOrdersService {
     };
   }
 
-  private lineOut(org: SalesOrg, l: SalesQuoteLine | SalesOrderLine, n: Awaited<ReturnType<SalesOrdersService['names']>>) {
+  lineOut(org: SalesOrg, l: Pick<SalesQuoteLine, 'id' | 'lineNo' | 'description' | 'accountId' | 'quantity' | 'unitPrice' | 'taxRateId' | 'hsnCode' | 'netAmount' | 'taxAmount'>, n: Awaited<ReturnType<SalesOrdersService['names']>>) {
     return {
       id: l.id,
       lineNo: l.lineNo,
@@ -411,7 +412,7 @@ export class SalesOrdersService {
     await tx.crmActivity.create({ data: { orgId: org.id, dealId, kind: 'NOTE', body, actorId: actor.id } });
   }
 
-  private async winDeal(tx: Tx, org: SalesOrg, actor: Actor, dealId: string, body: string) {
+  async winDeal(tx: Tx, org: SalesOrg, actor: Actor, dealId: string, body: string, by = 'quotation accepted') {
     await tx.$queryRaw`SELECT id FROM crm_deals WHERE id = ${dealId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
     const d = await tx.crmDeal.findFirst({ where: { id: dealId, orgId: org.id } });
     if (!d) return;
@@ -422,7 +423,7 @@ export class SalesOrdersService {
     const r = dealStageChange(d.stage, 'WON');
     await tx.crmDeal.update({ where: { id: dealId }, data: { stage: 'WON', probability: r.probability, closedOn: toDbDate(todayIst()), lostReason: null } });
     await tx.crmActivity.create({ data: { orgId: org.id, dealId, kind: 'STAGE_CHANGED', body, data: { from: d.stage, to: 'WON', probabilityFrom: d.probability, probability: 100, reopened: false }, actorId: actor.id } });
-    await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'crm.deal.won', entityType: 'crm_deal', entityId: dealId, data: { from: d.stage, to: 'WON', probability: 100, by: 'quotation accepted' } });
+    await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'crm.deal.won', entityType: 'crm_deal', entityId: dealId, data: { from: d.stage, to: 'WON', probability: 100, by } });
   }
 
   // ------------------------------------------------------------------ orders
@@ -522,7 +523,7 @@ export class SalesOrdersService {
         },
       });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_order.created', entityType: 'sales_order', entityId: o.id, data: { reference: orderRef(number), contactId: input.contactId, total: c.total } });
-      if (input.dealId) await this.winDeal(tx, org, actor, input.dealId, `Won: order ${orderRef(number)} received`);
+      if (input.dealId) await this.winDeal(tx, org, actor, input.dealId, `Won: order ${orderRef(number)} received`, 'order received');
       return o.id;
     });
     return this.getOrder(org, id);

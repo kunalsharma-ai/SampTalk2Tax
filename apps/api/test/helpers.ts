@@ -28,6 +28,7 @@ export async function bootApp(overrides: Record<string, string> = {}, opts: { co
     // The tests drive the workflow runner by hand, and their webhook receiver is on localhost.
     WORKFLOW_RUNNER_INTERVAL_SECONDS: '0',
     ALERTS_RUNNER_INTERVAL_SECONDS: '0',
+    CONTRACT_RUNNER_INTERVAL_SECONDS: '0',
     WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true',
     NODE_ENV: 'test',
     DATABASE_URL: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL,

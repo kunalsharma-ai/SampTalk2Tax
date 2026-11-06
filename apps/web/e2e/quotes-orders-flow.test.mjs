@@ -52,7 +52,7 @@ test('a quotation from a deal is sent, revised, accepted into an order, and part
 
   // From the deal: a new quotation with the customer and deal filled in.
   await page.goto(`${base}/sales/pipeline/${deal.id}`);
-  await page.getByRole('heading', { name: 'Quotations and orders' }).waitFor();
+  await page.getByRole('heading', { name: 'Quotations, orders and contracts' }).waitFor();
   await page.getByRole('link', { name: 'New quotation' }).click();
   await page.getByRole('heading', { name: 'New quotation' }).waitFor();
   await page.getByLabel('Deal', { exact: true }).locator('option', { hasText: 'Annual bookkeeping' }).waitFor({ state: 'attached' });
