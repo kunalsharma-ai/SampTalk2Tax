@@ -15,6 +15,8 @@ export const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: 'Sales',
     items: [
+      { href: '/sales/leads', label: 'Leads' },
+      { href: '/sales/pipeline', label: 'Pipeline' },
       { href: '/sales/customers', label: 'Customers' },
       { href: '/sales/invoices', label: 'Invoices' },
       { href: '/sales/receipts', label: 'Receipts' },

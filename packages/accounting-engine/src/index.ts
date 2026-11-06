@@ -45,3 +45,4 @@ export * from './support';
 export * from './usage';
 export * from './feature-flags';
 export * from './operations';
+export * from './crm';

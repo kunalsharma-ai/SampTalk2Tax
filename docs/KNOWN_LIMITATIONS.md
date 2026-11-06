@@ -267,3 +267,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## CI/CD and containers
 
 * The CI and release workflows have not run on GitHub (Actions is blocked for this account by billing); their steps were run locally. Deployment is to one Docker host, with a short gap while containers are replaced, and there is no staging environment, image vulnerability scan or log shipping. See [`CI_CD.md`](CI_CD.md).
+
+## CRM
+
+* Leads and the pipeline are built (CRM slice 1); quotations, sales orders, contracts, customer profitability and lifetime value, the revenue forecast and the external CRM connection are not yet, so a won deal does not produce an invoice by itself. Deals are in the functional currency only. There are no follow-up reminders from leads or deals, and no import of leads from a file. See [`CRM_PIPELINE.md`](CRM_PIPELINE.md).

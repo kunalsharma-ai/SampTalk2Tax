@@ -68,6 +68,11 @@ export function today(): string {
   return new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 }
 
+/** The India calendar date (YYYY-MM-DD) of a moment, matching the API's days. */
+export function istDay(at: string): string {
+  return new Date(Date.parse(at) + 5.5 * 3_600_000).toISOString().slice(0, 10);
+}
+
 /** A readable name for a browser's user-agent string. Display only; never used for decisions. */
 export function describeDevice(ua: string | null): string {
   if (!ua) return 'Unknown device';
