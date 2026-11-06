@@ -1,6 +1,6 @@
 'use client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
@@ -10,14 +10,14 @@ import { TYPE_LABEL, useDimensions, type DimensionType, type DimensionValue } fr
 import { date } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 
-type Form = { code: string; name: string; description: string; customer: string; startDate: string; endDate: string; isActive: boolean };
-const empty: Form = { code: '', name: '', description: '', customer: '', startDate: '', endDate: '', isActive: true };
-const fromValue = (v: DimensionValue): Form => ({ code: v.code, name: v.name, description: v.description ?? '', customer: v.customer ?? '', startDate: v.startDate ?? '', endDate: v.endDate ?? '', isActive: v.isActive });
+type Form = { code: string; name: string; description: string; customer: string; contactId: string; startDate: string; endDate: string; isActive: boolean };
+const empty: Form = { code: '', name: '', description: '', customer: '', contactId: '', startDate: '', endDate: '', isActive: true };
+const fromValue = (v: DimensionValue): Form => ({ code: v.code, name: v.name, description: v.description ?? '', customer: v.customer ?? '', contactId: v.contactId ?? '', startDate: v.startDate ?? '', endDate: v.endDate ?? '', isActive: v.isActive });
 const body = (type: DimensionType, f: Form) => ({
   code: f.code,
   name: f.name,
   description: f.description || null,
-  ...(type === 'PROJECT' ? { customer: f.customer || null, startDate: f.startDate || null, endDate: f.endDate || null } : {}),
+  ...(type === 'PROJECT' ? { customer: f.contactId ? null : f.customer || null, contactId: f.contactId || null, startDate: f.startDate || null, endDate: f.endDate || null } : {}),
 });
 
 export default function DimensionsPage() {
@@ -78,7 +78,7 @@ export default function DimensionsPage() {
                         {v.name}
                         {v.description ? <span className="block text-xs text-fg-faint">{v.description}</span> : null}
                       </Td>
-                      {project ? <Td>{v.customer ?? <span className="text-fg-faint">—</span>}</Td> : null}
+                      {project ? <Td>{v.contactId ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}/sales/customers/${v.contactId}`}>{v.contactName}</Link> : v.customer ?? <span className="text-fg-faint">—</span>}</Td> : null}
                       {project ? <Td className="whitespace-nowrap text-xs">{v.startDate ? date(v.startDate) : 'Open'} to {v.endDate ? date(v.endDate) : 'open'}</Td> : null}
                       <Td numeric className="num">{v.lines}</Td>
                       <Td>{v.isActive ? <Badge tone="positive">Active</Badge> : <Badge>Inactive</Badge>}</Td>
@@ -98,6 +98,8 @@ export default function DimensionsPage() {
 }
 
 function Fields({ type, f, set }: { type: DimensionType; f: Form; set: (k: keyof Form) => (e: { target: { value: string } }) => void }) {
+  const { orgId } = useOrg();
+  const customers = useQuery({ queryKey: ['contacts', orgId, 'customers'], queryFn: () => api<{ id: string; name: string }[]>(`/v1/orgs/${orgId}/contacts?role=customer`), enabled: type === 'PROJECT' });
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
       <Field label="Code" hint="Letters, digits, - and _">{(p) => <Input {...p} className="uppercase" value={f.code} onChange={set('code')} maxLength={20} required />}</Field>
@@ -107,7 +109,14 @@ function Fields({ type, f, set }: { type: DimensionType; f: Form; set: (k: keyof
       </div>
       {type === 'PROJECT' ? (
         <>
-          <Field label="Customer (optional)">{(p) => <Input {...p} value={f.customer} onChange={set('customer')} maxLength={200} />}</Field>
+          <Field label="Customer (optional)" hint="Its costs count against this customer's profit">
+            {(p) => (
+              <Select {...p} value={f.contactId} onChange={set('contactId')}>
+                <option value="">{f.customer && !f.contactId ? `${f.customer} (not linked)` : 'Not for one customer'}</option>
+                {(customers.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </Select>
+            )}
+          </Field>
           <Field label="Starts (optional)">{(p) => <Input {...p} type="date" value={f.startDate} onChange={set('startDate')} />}</Field>
           <Field label="Ends (optional)">{(p) => <Input {...p} type="date" value={f.endDate} onChange={set('endDate')} />}</Field>
         </>

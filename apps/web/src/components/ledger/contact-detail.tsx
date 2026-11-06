@@ -1,6 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, CardHeader, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -16,6 +16,7 @@ import { can, type Contact, type DocumentSummary, type Statement } from '@/lib/t
 import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
 import { DocumentsTable } from './documents-table';
 import { CustomerDeals } from '@/components/crm/customer-deals';
+import { Customer360 } from '@/components/crm/customer-360';
 
 export function ContactDetail({ l }: { l: LedgerConfig }) {
   const { org, orgId } = useOrg();
@@ -46,6 +47,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
         description={[x.email, x.phone, x.taxId ? `Tax ID ${x.taxId}` : null, `${x.paymentTermsDays} day terms`, x.creditLimit ? `credit limit ${money(x.creditLimit, org.functionalCurrency)}` : null].filter(Boolean).join(' · ')}
         actions={
           <>
+            {l.ledger === 'SALES' && x.creditHold ? <Badge tone="negative">On credit hold</Badge> : null}
             {can(org.role, 'contacts.manage') ? <Button variant="ghost" onClick={() => setDraft(draftFrom(x, l))}>Edit</Button> : null}
             {canManage ? (
               <>
@@ -92,6 +94,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
         <CardHeader title={`Recent ${l.charge.plural.toLowerCase()} and ${l.credit.plural.toLowerCase()}`} />
         {docs.data && docs.data.items.length === 0 ? <p className="px-5 py-4 text-sm text-fg-muted">None yet.</p> : <DocumentsTable l={l} orgId={orgId} items={docs.data?.items ?? []} currency={c} showContact={false} />}
       </Card>
+      {l.ledger === 'SALES' && x.isCustomer && can(org.role, 'reports.read') ? <Customer360 orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer ? <CustomerDeals orgId={orgId} contactId={x.id} currency={c} /> : null}
       <ContactDialog l={l} draft={draft} setDraft={setDraft} />
     </>

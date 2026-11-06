@@ -532,6 +532,11 @@ model Contact {
   isVendor             Boolean           @default(false) @map("is_vendor")
   paymentTermsDays     Int               @default(30) @map("payment_terms_days")
   creditLimit          Decimal?          @map("credit_limit") @db.Decimal(24, 6)
+  /// Credit hold: no invoice to this customer posts until it is lifted. Reason, when and who are required while on hold.
+  creditHold           Boolean           @default(false) @map("credit_hold")
+  creditHoldReason     String?           @map("credit_hold_reason") @db.VarChar(500)
+  creditHoldAt         DateTime?         @map("credit_hold_at") @db.Timestamptz(6)
+  creditHoldById       String?           @map("credit_hold_by_id") @db.Uuid
   isActive             Boolean           @default(true) @map("is_active")
   createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -539,6 +544,8 @@ model Contact {
   documents            Document[]
   payments             Payment[]
   collectionDrafts     CollectionDraft[]
+  /// Projects run for this customer: their costs are the customer's direct costs.
+  projects             DimensionValue[]
 
   @@unique([id, orgId])
   @@index([orgId, name])
@@ -2678,6 +2685,9 @@ model DimensionValue {
   description String?       @db.VarChar(500)
   /// Projects: who it is for, and when it runs.
   customer    String?       @db.VarChar(200)
+  /// Projects: the customer it is run for (its costs count against that customer's profit).
+  contactId   String?       @map("contact_id") @db.Uuid
+  contact     Contact?      @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict, map: "dimension_values_contact_fkey")
   startDate   DateTime?     @map("start_date") @db.Date
   endDate     DateTime?     @map("end_date") @db.Date
   isActive    Boolean       @default(true) @map("is_active")
@@ -2688,6 +2698,7 @@ model DimensionValue {
 
   @@unique([id, orgId])
   @@index([orgId, type])
+  @@index([orgId, contactId])
   @@map("dimension_values")
 }
 
