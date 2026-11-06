@@ -774,10 +774,10 @@ Part 22 · M6 · priority P3 · depends on: AR, INTG
 | CRM-002 |  | capability | Customer records | Not started |
 | CRM-003 |  | capability | Leads | Tested |
 | CRM-004 |  | capability | Opportunities | Tested |
-| CRM-005 |  | capability | Quotations | Not started |
+| CRM-005 |  | capability | Quotations | Tested |
 | CRM-006 |  | capability | Contracts | Not started |
-| CRM-007 |  | capability | Sales orders | Not started |
-| CRM-008 |  | capability | Billing | Not started |
+| CRM-007 |  | capability | Sales orders | Tested |
+| CRM-008 |  | capability | Billing | Tested |
 | CRM-009 |  | capability | Collections | Not started |
 | CRM-010 |  | capability | Customer profitability | Not started |
 | CRM-011 |  | capability | Customer lifetime value | Not started |
