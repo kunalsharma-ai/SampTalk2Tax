@@ -294,5 +294,29 @@ Content-Type: application/json
 | 409 | `PLAN_LIMIT`: the plan's member limit is reached |
 | 423 | `ORG_SUSPENDED`: the organisation is suspended by the platform (reads still work) |
 | 402 | `PLAN_REQUIRED` (with `state`): the trial or plan has run out; reads still work |
+| 409 | `PAYMENTS_NOT_SET_UP`, `BILLING_PROFILE_MISSING`: no gateway takes the currency, or the seller details are missing |
+| 502 | `GATEWAY_ERROR`: the payment gateway refused or did not answer |
 | 421 | `WRONG_REGION` (with `region`, `regionName`, `appUrl`): the organisation's data lives in another region |
 | 429 | `RATE_LIMITED`, `TOO_MANY_ATTEMPTS` (both with `Retry-After`) |
+
+
+## Subscription payments
+
+See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). All work while the books are read-only.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/orgs/:orgId/subscription/quote?plan=&interval=` | members | What paying for the plan now charges (kind, period, subtotal, tax lines, total, whether online payment is available) |
+| POST | `/v1/orgs/:orgId/subscription/checkout` | owners, admins | `{plan, interval}`: issues a payment request and returns the gateway's `url`; a cheaper plan or other billing is scheduled for the renewal instead (`scheduled: true`) |
+| GET | `/v1/orgs/:orgId/subscription/invoices` (`/:id`) | members | Payment requests and tax invoices |
+| POST | `/v1/orgs/:orgId/subscription/invoices/:id/pay` | owners, admins | The gateway page for an unpaid invoice (reused while open) |
+| POST | `/v1/orgs/:orgId/subscription/invoices/:id/check` | members | Asks the gateway whether it was paid, and records it |
+| POST | `/v1/billing/webhooks/stripe` \| `razorpay` | gateways (signature) | Signed payment notices; 400 `SIGNATURE_INVALID` when the signature does not match |
+| GET | `/v1/admin/payments` | platform.read | Gateways (no secrets) and seller details |
+| PUT | `/v1/admin/payments/gateways/:provider` | platform.manage | `{enabled, mode, currencies, keyId?, secret?, webhookSecret?}`; 409 `GATEWAY_CURRENCY_TAKEN` |
+| POST | `/v1/admin/payments/gateways/:provider/test` | platform.manage | Calls the gateway with the stored key |
+| DELETE | `/v1/admin/payments/gateways/:provider` | platform.manage | Removes it and its keys |
+| PUT | `/v1/admin/payments/profile` | platform.manage | Seller details |
+| GET | `/v1/admin/invoices?filter=all\|open\|paid\|void` | platform.read | Every invoice and the latest gateway notices |
+| POST | `/v1/admin/invoices/:id/mark-paid` \| `void` \| `check` | platform.manage | Record a payment by hand `{reference}`, void `{reason}`, or ask the gateway |
+| POST | `/v1/admin/billing/run-renewals` | platform.manage | Issue due renewals and reminders now |

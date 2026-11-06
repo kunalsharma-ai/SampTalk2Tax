@@ -4983,9 +4983,20 @@
         "apps/api/test/plans-subscriptions.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
         "apps/web/e2e/subscription-flow.test.mjs",
-        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+        "docs/PLANS_AND_SUBSCRIPTIONS.md",
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
-      "notes": "Plans, subscriptions, trials, enforcement and admin activation are built and tested; online payment, renewals, invoices and dunning are later slices."
+      "notes": "Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons, add-ons and usage metering are later slices."
     },
     "SUBS-002": {
       "status": "Tested",
@@ -5184,7 +5195,7 @@
       "notes": "14-day trial (PLAN_TRIAL_DAYS) of every module for new organisations; admins extend trials; read-only (not locked) when it ends."
     },
     "SUBS-015": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
@@ -5194,12 +5205,23 @@
         "apps/api/test/plans-subscriptions.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
         "apps/web/e2e/subscription-flow.test.mjs",
-        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+        "docs/PLANS_AND_SUBSCRIPTIONS.md",
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
-      "notes": "Upgrades by request and activation on payment; proration (upgradeCharge) built in the engine, not yet charged online."
+      "notes": "Upgrades in a paid period are charged online for the days left (upgradeCharge) and take effect on payment; the period end is kept."
     },
     "SUBS-016": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
@@ -5209,9 +5231,20 @@
         "apps/api/test/plans-subscriptions.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
         "apps/web/e2e/subscription-flow.test.mjs",
-        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+        "docs/PLANS_AND_SUBSCRIPTIONS.md",
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
-      "notes": "Downgrades by request, refused while members exceed the smaller plan; applied on activation (no scheduled change at period end yet)."
+      "notes": "A cheaper plan or another billing interval in a paid period is scheduled: the renewal invoice is for it; refused while members exceed it."
     },
     "SUBS-020": {
       "status": "Tested",
@@ -5241,7 +5274,7 @@
         "apps/web/e2e/subscription-flow.test.mjs",
         "docs/PLANS_AND_SUBSCRIPTIONS.md"
       ],
-      "notes": "Enterprise contracts activated by an administrator with the contract reference; no contract terms or custom prices yet."
+      "notes": "Enterprise contracts activated by an administrator with the contract reference, or invoiced and paid by transfer (recorded under Invoices); no contract terms or custom prices yet."
     },
     "SUBS-026": {
       "status": "Tested",
@@ -5304,6 +5337,150 @@
         "apps/web/src/app/admin/plans/page.tsx"
       ],
       "notes": "Plan management in Platform administration."
+    },
+    "SUBS-027": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "GST on subscription invoices from an Indian supplier with a GSTIN: CGST+SGST in the same state (or state unknown), IGST in another state, zero-rated export outside India. No tax computed for a supplier outside India."
+    },
+    "SUBS-028": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Renewal invoices are issued automatically 7 days before the period ends and paid by the customer (online or by transfer). Cards and UPI AutoPay are not charged automatically."
+    },
+    "SUBS-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Unpaid renewals go to 7 days grace, then read-only; a wrong amount or a payment on a replaced invoice is recorded and not applied; a cancelled payment can be retried; a late renewal starts from the day paid."
+    },
+    "SUBS-030": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Reminders once per invoice and stage (upcoming, due, final, lapsed), emailed to owners and admins through the organisation’s email set-up, and recorded in the subscription history."
+    },
+    "SUBS-031": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Payment request while unpaid; tax invoice numbered on payment (PREFIX/YY-YY/NNNNN, at most 16 characters, a series per financial year); printable; final once paid or void."
+    },
+    "INTG-009": {
+      "status": "Integration pending",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Razorpay Payment Links and webhooks, set up in Platform admin → Payments. Tested against a local stand-in of the API; needs a check with real Razorpay test keys."
+    },
+    "INTG-007": {
+      "status": "Integration pending",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Stripe Checkout Sessions and webhooks, set up in Platform admin → Payments. Tested against a local stand-in of the API; needs a check with real Stripe test keys."
+    },
+    "ADMIN-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/subscription-billing.ts",
+        "packages/accounting-engine/test/subscription-billing.test.ts",
+        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/billing/payments/gateways.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/test/subscription-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/src/app/admin/payments/page.tsx",
+        "apps/web/src/app/admin/invoices/page.tsx",
+        "apps/web/e2e/subscription-payments-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Platform admin → Invoices (all subscription invoices, record a payment by hand, void, ask the gateway, issue due renewals, gateway notices) and → Payments (gateways and seller details)."
     }
   }
 }

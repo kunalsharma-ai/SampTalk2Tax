@@ -69,6 +69,9 @@ docker compose --profile app up --build   # API + Postgres
 | `APP_URL` | no | The web app's public address, for links in emails to members. Default `http://localhost:3000` |
 | `DEPLOYMENT_REGION`, `DEPLOYMENT_REGION_NAME` | no | The region this deployment serves (default `local`, `Local server`). Organisations are tagged with it; see [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md) |
 | `PLAN_TRIAL_DAYS` | no | Days a new organisation's trial of every module lasts. Default 14 |
+| `BILLING_RUNNER_INTERVAL_SECONDS` | no | How often renewal invoices and reminders are checked. Default 3600; 0 turns it off |
+| `PAYMENTS_TIMEOUT_SECONDS` | no | Seconds to wait for a payment gateway. Default 20 |
+| `PAYMENTS_STRIPE_API_URL`, `PAYMENTS_RAZORPAY_API_URL` | no | Tests and previews only: point the gateway clients at the local stand-in. Gateways themselves are set up in Platform admin → Payments |
 | `REGION_DIRECTORY` | no | JSON of the other regions and their web addresses, used to point people to an organisation's home region |
 | `TEST_DATABASE_URL` | tests | Must contain "test" |
 | `DEMO_PASSWORD` | no | Fixed password for the seeded demo user |

@@ -51,7 +51,7 @@ export default function AdminSubscriptionsPage() {
     <>
       <PageHeader
         title="Subscriptions"
-        description="Each organisation's plan, status and any plan it has asked for. Activate a request when its payment is received (bank transfer, invoice or contract), with the payment reference. Online checkout comes next."
+        description="Each organisation's plan, status and any plan it has asked for. Activate a request when its payment is received (bank transfer, invoice or contract), with the payment reference. Online payments, renewals and invoices are under Invoices and Payments."
         actions={
           <Select className="w-48" aria-label="Show" value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
             <option value="all">All</option>

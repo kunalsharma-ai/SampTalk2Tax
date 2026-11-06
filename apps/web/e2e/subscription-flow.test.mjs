@@ -54,6 +54,8 @@ test('an owner asks for a plan and an administrator activates it on payment', as
   const growth = owner.locator('section[aria-label="Growth plan"]');
   assert.match(await growth.innerText(), /₹14,990\.00/);
   await growth.getByRole('button', { name: 'Choose Growth' }).click();
+  // No payment gateway takes rupees here, so the plan is requested and paid by transfer.
+  await owner.locator('[aria-label="Checkout"]').getByRole('button', { name: 'Request Growth' }).click();
   await owner.getByText('Growth requested, billed annually').waitFor();
   await growth.getByRole('button', { name: 'Requested' }).waitFor();
 
