@@ -90,3 +90,56 @@ export interface OrderDetail extends Order {
 
 /** What the quotation and order forms send. */
 export interface SalesLineInput { accountId: string; description: string | null; quantity: string; unitPrice: string; taxRateId: string | null; hsnCode: string | null }
+
+export type ContractStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ENDED' | 'CANCELLED';
+export type ContractFrequency = 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
+
+export interface Contract {
+  id: string;
+  reference: string;
+  title: string;
+  status: ContractStatus;
+  contact: SalesContact | null;
+  deal: SalesDealRef | null;
+  frequency: ContractFrequency;
+  timing: 'ADVANCE' | 'ARREARS';
+  startDate: string;
+  endDate: string | null;
+  autoRenew: boolean;
+  renewalMonths: number | null;
+  noticeDays: number;
+  paymentTermsDays: number | null;
+  placeOfSupply: string | null;
+  customerReference: string | null;
+  memo: string | null;
+  currency: string;
+  subtotal: string;
+  taxTotal: string;
+  total: string;
+  monthlyValue: string;
+  renewal: 'ROLLING' | 'RUNNING' | 'RENEWAL_DUE' | 'PAST_END' | null;
+  nextBill: { periodNo: number; date: string; start: string; end: string } | null;
+  periodsBilled: number;
+  lastError: string | null;
+  lastErrorAt: string | null;
+  activatedAt: string | null;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  endedAt: string | null;
+  createdAt: string;
+}
+
+export interface ContractList {
+  today: string;
+  contracts: Contract[];
+  summary: { active: number; paused: number; mrr: string; arr: string; renewalsDue: number; endingIn30Days: number; billingProblems: number };
+  can: { manage: boolean };
+}
+
+export interface ContractDetail extends Contract {
+  lines: SalesLine[];
+  periods: { id: string; periodNo: number; start: string; end: string; status: 'BILLED' | 'SKIPPED'; invoice: { id: string; number: string | null; status: string; total: string; issueDate: string } | null; canBillAgain: boolean }[];
+  upcoming: { periodNo: number; start: string; end: string; billDate: string }[];
+  events: { id: string; kind: string; body: string; actor: { id: string; name: string } | null; createdAt: string }[];
+  can: { manage: boolean };
+}
