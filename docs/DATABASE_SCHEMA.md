@@ -250,3 +250,7 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 * `support_messages`: the conversation (`CUSTOMER` or `SUPPORT` side; internal notes only on the support side), composite FK to the ticket and its organisation, append-only (trigger), forced RLS.
 * `support_access_grants`: read-only support access to the books: reason, who granted it, at most 72 hours (check), optional ticket; can only be revoked, once (trigger); no deletes. Forced RLS.
 * `support_access_views`: every request support made under a grant (path, who, when), append-only, forced RLS. See [`SUPPORT.md`](SUPPORT.md).
+
+## Usage metering (M9, slice 5)
+
+* `usage_events`: one row per metered use (`AI_CALL` with input and output tokens and whose key, or `UPLOAD` with bytes), counted per India-time calendar month against the plan's limits. Append-only (trigger), forced RLS. See [`USAGE_METERING.md`](USAGE_METERING.md).

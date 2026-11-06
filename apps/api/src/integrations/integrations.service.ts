@@ -12,6 +12,7 @@ import { AppConfig, CONFIG } from '../config';
 import { AnthropicCopilotModel, COPILOT_MODEL, type CopilotModel } from '../copilot/copilot.model';
 import { isPublicAddress } from '../workflows/webhook';
 import { SecretBox, secretHint } from './secret-box';
+import { UsageService } from '../usage/usage.service';
 
 type Actor = { id: string; email: string };
 export type Source = 'ORGANISATION' | 'SERVER' | 'NONE';
@@ -72,6 +73,7 @@ export class IntegrationsService {
     private readonly audit: AuditService,
     @Inject(CONFIG) private readonly config: AppConfig,
     @Optional() @Inject(COPILOT_MODEL) private readonly serverModel: CopilotModel | null,
+    private readonly usage: UsageService,
   ) {
     this.box = new SecretBox({ encryptionKey: config.INTEGRATIONS_ENCRYPTION_KEY, jwtSecret: config.JWT_SECRET });
   }
@@ -93,10 +95,10 @@ export class IntegrationsService {
       const s = r.settings as unknown as AiSettings;
       if (key) {
         const name = s.model || this.config.COPILOT_MODEL;
-        return { model: new AnthropicCopilotModel(key, this.config.ANTHROPIC_BASE_URL, name), modelName: name, source: 'ORGANISATION' };
+        return { model: this.usage.metered(orgId, new AnthropicCopilotModel(key, this.config.ANTHROPIC_BASE_URL, name), 'ORGANISATION'), modelName: name, source: 'ORGANISATION' };
       }
     }
-    if (this.serverModel) return { model: this.serverModel, modelName: this.config.COPILOT_MODEL, source: 'SERVER' };
+    if (this.serverModel) return { model: this.usage.metered(orgId, this.serverModel, 'SERVER'), modelName: this.config.COPILOT_MODEL, source: 'SERVER' };
     return { model: null, modelName: (r?.settings as unknown as AiSettings | undefined)?.model || this.config.COPILOT_MODEL, source: 'NONE' };
   }
 

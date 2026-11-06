@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 859 |
+| Not started | 856 |
 | Designed | 0 |
-| Implementing | 64 |
+| Implementing | 65 |
 | Implemented | 33 |
-| Tested | 373 |
+| Tested | 375 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -57,8 +57,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
-| Subscription and monetization engine | M9 | 32 | 7 | 25 |
-| Platform super admin | M9 | 22 | 11 | 11 |
+| Subscription and monetization engine | M9 | 32 | 5 | 27 |
+| Platform super admin | M9 | 22 | 10 | 12 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
@@ -5003,6 +5003,43 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/subscription-payments-flow.test.mjs
   - docs/SUBSCRIPTION_PAYMENTS.md
 
+### SUBS-018 — Usage-based AI credits
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Each plan's monthly AI requests are metered (one per answered model call, any agent, own key or Talk2Tax's) and enforced before every model call (429 AI_CREDITS_USED_UP). Buying extra credits beyond the plan is not built.
+- Evidence:
+  - packages/accounting-engine/src/usage.ts
+  - packages/accounting-engine/test/usage.test.ts
+  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/usage/usage.controller.ts
+  - apps/api/test/usage.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx
+  - apps/web/src/app/admin/usage/page.tsx
+  - apps/web/e2e/usage-flow.test.mjs
+  - docs/USAGE_METERING.md
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/ai-control/ai-control.service.ts
+
+### SUBS-019 — Document processing quotas
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Each plan's monthly uploads are counted per stored attachment and enforced inside the upload's transaction under a per-organisation lock (429 UPLOAD_LIMIT_REACHED); refused and duplicate files are not counted.
+- Evidence:
+  - packages/accounting-engine/src/usage.ts
+  - packages/accounting-engine/test/usage.test.ts
+  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/usage/usage.controller.ts
+  - apps/api/test/usage.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx
+  - apps/web/src/app/admin/usage/page.tsx
+  - apps/web/e2e/usage-flow.test.mjs
+  - docs/USAGE_METERING.md
+  - apps/api/src/attachments/attachments.service.ts
+
 ### SUBS-020 — User-based licensing
 
 - Module: Subscription and monetization engine
@@ -5257,6 +5294,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
   - apps/web/src/app/admin/plans/page.tsx
+
+### ADMIN-008 — AI usage monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Platform admin → Usage: AI requests and tokens and uploads per organisation per month against each plan, fullest first, with totals and organisations at or near a limit.
+- Evidence:
+  - packages/accounting-engine/src/usage.ts
+  - packages/accounting-engine/test/usage.test.ts
+  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/usage/usage.controller.ts
+  - apps/api/test/usage.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx
+  - apps/web/src/app/admin/usage/page.tsx
+  - apps/web/e2e/usage-flow.test.mjs
+  - docs/USAGE_METERING.md
 
 ### ADMIN-012 — Support ticket management
 
