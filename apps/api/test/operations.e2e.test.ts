@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AdminService } from '../src/admin/admin.service';
 import { FlagsService } from '../src/operations/flags.service';
@@ -88,7 +90,8 @@ describe('system health', () => {
     const h = (await ctx.http().get('/v1/admin/system').set(support.auth).expect(200)).body;
     expect(h.database).toMatchObject({ status: expect.stringMatching(/OK|SLOW/) });
     expect(h.database.latencyMs).toBeGreaterThanOrEqual(0);
-    expect(h.database.lastMigration.name).toBe('20261116090100_error_events_rls');
+    // The newest migration in the repository is the last one applied.
+    expect(h.database.lastMigration.name).toBe(readdirSync(join(__dirname, '../../../packages/database/prisma/migrations')).filter((d) => /^\d{14}_/.test(d)).sort().at(-1));
     expect(h.runners.map((r: { name: string }) => r.name).sort()).toEqual(['Alert checks', 'Renewals and reminders', 'Workflow runner']);
     expect(h.runners.find((r: { name: string }) => r.name === 'Workflow runner').state).toBe('OFF');
     expect(h.requests.totals.requests).toBeGreaterThan(5);
