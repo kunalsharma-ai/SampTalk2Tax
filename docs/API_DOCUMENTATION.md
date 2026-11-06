@@ -296,6 +296,8 @@ Content-Type: application/json
 | 402 | `PLAN_REQUIRED` (with `state`): the trial or plan has run out; reads still work |
 | 409 | `PAYMENTS_NOT_SET_UP`, `BILLING_PROFILE_MISSING`: no gateway takes the currency, or the seller details are missing |
 | 502 | `GATEWAY_ERROR`: the payment gateway refused or did not answer |
+| 403 | `SUPPORT_READ_ONLY`: support staff reading under the organisation's support access tried to change something |
+| 409 | `TICKET_CLOSED`, `TICKET_NOT_RESOLVED`, `TICKET_ALREADY_RESOLVED`, `SUPPORT_ACCESS_ACTIVE`, `SUPPORT_ACCESS_ENDED` |
 | 421 | `WRONG_REGION` (with `region`, `regionName`, `appUrl`): the organisation's data lives in another region |
 | 429 | `RATE_LIMITED`, `TOO_MANY_ATTEMPTS` (both with `Retry-After`) |
 
@@ -320,3 +322,24 @@ See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). All work while the b
 | GET | `/v1/admin/invoices?filter=all\|open\|paid\|void` | platform.read | Every invoice and the latest gateway notices |
 | POST | `/v1/admin/invoices/:id/mark-paid` \| `void` \| `check` | platform.manage | Record a payment by hand `{reference}`, void `{reason}`, or ask the gateway |
 | POST | `/v1/admin/billing/run-renewals` | platform.manage | Issue due renewals and reminders now |
+
+## Support
+
+See [`SUPPORT.md`](SUPPORT.md). The organisation's routes work while the books are read-only.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/orgs/:orgId/support/tickets` | members | Tickets: all for owners and admins, otherwise the ones you opened; each with its targets |
+| POST | `/v1/orgs/:orgId/support/tickets` | members | `{subject, category, priority?, body}` opens a ticket |
+| GET | `/v1/orgs/:orgId/support/tickets/:id` | members who can see it | The ticket, messages (no internal notes) and grants tied to it |
+| POST | `/v1/orgs/:orgId/support/tickets/:id/messages` | members who can see it | `{body}`: a reply; hands the ticket back to support |
+| POST | `/v1/orgs/:orgId/support/tickets/:id/close` \| `reopen` | members who can see it | Close (final) or reopen a resolved ticket |
+| GET | `/v1/orgs/:orgId/support/access` | org.manage | The active grant, past grants and every request support made |
+| POST | `/v1/orgs/:orgId/support/access` | org.manage | `{hours (1-72), reason, ticketId?}`; 409 `SUPPORT_ACCESS_ACTIVE` |
+| POST | `/v1/orgs/:orgId/support/access/:grantId/revoke` | org.manage | Ends it now |
+| GET | `/v1/admin/support/tickets?status=active\|all\|OPEN\|PENDING\|RESOLVED\|CLOSED&assigned=all\|me\|unassigned&q=` | platform.support | The queue and counts |
+| GET | `/v1/admin/support/tickets/:id` | platform.support | Ticket with internal notes, the organisation's name and plan, its active grant, and the support staff |
+| POST | `/v1/admin/support/tickets/:id/messages` | platform.support | `{body, internal?, resolve?}`; returns `{ticket, emailed}` |
+| PUT | `/v1/admin/support/tickets/:id` | platform.support | `{priority?, assigneeId?, action?: RESOLVE\|CLOSE\|REOPEN}` |
+
+`GET /v1/orgs/:orgId` now also returns `role` and `viaSupport` (`{expiresAt}` when read under support access, otherwise null).

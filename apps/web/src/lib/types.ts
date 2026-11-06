@@ -21,6 +21,8 @@ export interface Org {
   /** The organisation's Talk2Tax plan and whether its books can change. */
   subscription: OrgSubscription | null;
   role: Role;
+  /** Set when a person who runs Talk2Tax reads the books under the organisation's support access. */
+  viaSupport?: { expiresAt: string } | null;
 }
 
 export interface DataRegion {

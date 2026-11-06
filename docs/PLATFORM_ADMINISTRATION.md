@@ -11,7 +11,7 @@ Each user has an optional **platform role**, kept apart from organisation roles:
 | Role | Can |
 |---|---|
 | `SUPER_ADMIN` | Everything below, and suspend or reinstate organisations, disable or enable people, sign people out, change platform roles, make and withdraw announcements |
-| `SUPPORT` | Look up organisations and people, and read announcements. Changes nothing |
+| `SUPPORT` | Look up organisations and people, and read announcements; answer support tickets (`platform.support`, also held by `SUPER_ADMIN`). Changes nothing else |
 
 Name the first administrator from the API host. The person must already be registered:
 
@@ -44,9 +44,9 @@ They never read accounts, journals, documents, contacts, attachments, AI convers
 amount. These cross-tenant reads run as the system, inside a transaction, and select only those
 columns (`AdminService`).
 
-Controlled support access to an organisation's data needs explicit permission from the
-organisation, logging and an expiry (ADMIN-022). It is not built yet: today, an administrator
-who needs to see the books must be invited as a member by the organisation, like anyone else.
+The one exception is support access that the organisation grants itself (ADMIN-022). It is
+read-only, ends after at most 72 hours, can be ended early, and every request made under it
+is logged for the organisation to see. See [`SUPPORT.md`](SUPPORT.md).
 
 ## Organisations
 
@@ -110,9 +110,6 @@ Errors:
 
 These are the later M9 slices:
 
-- plans, subscriptions and plan limits;
-- billing, invoices and dunning;
-- support tickets and controlled support access (ADMIN-022);
 - AI and API usage monitoring;
 - feature flags;
 - maintenance mode;

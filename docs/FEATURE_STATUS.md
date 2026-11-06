@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 862 |
+| Not started | 859 |
 | Designed | 0 |
 | Implementing | 64 |
 | Implemented | 33 |
-| Tested | 370 |
+| Tested | 373 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -58,13 +58,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 7 | 25 |
-| Platform super admin | M9 | 22 | 13 | 9 |
+| Platform super admin | M9 | 22 | 11 | 11 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
-| Navigation structure | M1 | 48 | 34 | 14 |
+| Navigation structure | M1 | 48 | 33 | 15 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
@@ -5258,6 +5258,25 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/PLANS_AND_SUBSCRIPTIONS.md
   - apps/web/src/app/admin/plans/page.tsx
 
+### ADMIN-012 — Support ticket management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Tickets with topic and urgency, first-answer and resolution targets by urgency (1h/8h urgent to 72h/7d low, clock hours), a queue ordered by whose turn it is and the nearest target, assignment, internal notes never shown to the customer, replies emailed through the organisation's mail set-up, append-only messages, every status change in the organisation's audit chain.
+- Evidence:
+  - packages/accounting-engine/src/support.ts
+  - packages/accounting-engine/test/support.test.ts
+  - packages/database/prisma/migrations/20261114090000_support/migration.sql
+  - apps/api/src/support/support.service.ts
+  - apps/api/src/support/support.controller.ts
+  - apps/api/test/support.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/support/page.tsx
+  - apps/web/src/app/orgs/[orgId]/support/[ticketId]/page.tsx
+  - apps/web/src/app/admin/support/page.tsx
+  - apps/web/src/app/admin/support/[ticketId]/page.tsx
+  - apps/web/e2e/support-flow.test.mjs
+  - docs/SUPPORT.md
+
 ### ADMIN-015 — Billing management
 
 - Module: Platform super admin
@@ -5298,7 +5317,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Platform super admin
 - Status: **Tested**
-- Notes: Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals.
+- Notes: Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals. Since M9 slice 4 the one exception is support access the organisation grants itself (ADMIN-022): read-only, time-limited and logged.
 - Evidence:
   - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
   - apps/api/src/admin/admin.service.ts
@@ -5308,6 +5327,31 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/layout.tsx
   - apps/web/e2e/platform-admin-flow.test.mjs
   - docs/PLATFORM_ADMINISTRATION.md
+  - apps/api/test/support.e2e.test.ts
+
+### ADMIN-022 — Implement controlled support access with explicit authorization, logging and expiration
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Only an owner or admin can grant; 1 to 72 hours with a reason, optionally tied to a ticket; one grant at a time; revocable; support staff get viewer rights for GET requests only (writes 403 SUPPORT_READ_ONLY); every request logged in an append-only table the organisation sees; grants can only be revoked once (database trigger).
+- Evidence:
+  - packages/accounting-engine/src/support.ts
+  - packages/accounting-engine/test/support.test.ts
+  - packages/database/prisma/migrations/20261114090000_support/migration.sql
+  - apps/api/src/support/support.service.ts
+  - apps/api/src/support/support.controller.ts
+  - apps/api/test/support.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/support/page.tsx
+  - apps/web/src/app/orgs/[orgId]/support/[ticketId]/page.tsx
+  - apps/web/src/app/admin/support/page.tsx
+  - apps/web/src/app/admin/support/[ticketId]/page.tsx
+  - apps/web/e2e/support-flow.test.mjs
+  - docs/SUPPORT.md
+  - apps/api/src/support/support-access.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/web/src/components/support/access-card.tsx
+  - apps/web/src/components/shell.tsx
+  - apps/web/src/lib/org.ts
 
 ### MOB-001 — Create a responsive web application first
 
@@ -5910,6 +5954,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/members
   - apps/web/src/app/invite
   - apps/web/e2e/members-flow.test.mjs
+
+### NAV-044 — Support
+
+- Module: Navigation structure
+- Status: **Tested**
+- Notes: Help and support in the Governance group (and for staff who only claim expenses).
+- Evidence:
+  - apps/web/src/lib/nav.ts
+  - apps/web/src/app/orgs/[orgId]/support/page.tsx
+  - apps/web/e2e/support-flow.test.mjs
 
 ### NAV-046 — Use nested navigation and progressive disclosure
 
