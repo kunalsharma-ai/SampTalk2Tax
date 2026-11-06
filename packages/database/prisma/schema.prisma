@@ -4760,3 +4760,89 @@ model YearEndClose {
   @@index([orgId, fiscalYear])
   @@map("year_end_closes")
 }
+
+enum PaymentBatchStatus {
+  DRAFT
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+/// A vendor's bank account for payments (AP-027). Any change clears the verification (trigger); verified by someone other than who changed it.
+model VendorBankDetails {
+  contactId        String    @id @map("contact_id") @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  accountName      String    @map("account_name") @db.VarChar(140)
+  accountNumber    String    @map("account_number") @db.VarChar(34)
+  ifsc             String    @db.Char(11)
+  bankName         String?   @map("bank_name") @db.VarChar(140)
+  changedById      String    @map("changed_by_id") @db.Uuid
+  changedAt        DateTime  @default(now()) @map("changed_at") @db.Timestamptz(6)
+  verifiedById     String?   @map("verified_by_id") @db.Uuid
+  verifiedAt       DateTime? @map("verified_at") @db.Timestamptz(6)
+  verificationNote String?   @map("verification_note") @db.VarChar(500)
+
+  @@unique([contactId, orgId])
+  @@index([orgId])
+  @@map("vendor_bank_details")
+}
+
+/// Every change of a vendor's bank details (append-only, account numbers masked).
+model VendorBankDetailChange {
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  contactId    String   @map("contact_id") @db.Uuid
+  beforeMasked String?  @map("before_masked") @db.VarChar(80)
+  afterMasked  String   @map("after_masked") @db.VarChar(80)
+  changedById  String   @map("changed_by_id") @db.Uuid
+  changedAt    DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@index([orgId, contactId])
+  @@map("vendor_bank_detail_changes")
+}
+
+/// Bills paid together from one bank account on one date (AP-014): prepared, approved by a second person, sent to the bank, recorded as paid.
+model PaymentBatch {
+  id               String             @id @default(uuid()) @db.Uuid
+  orgId            String             @map("org_id") @db.Uuid
+  number           Int
+  bankAccountId    String             @map("bank_account_id") @db.Uuid
+  paymentDate      DateTime           @map("payment_date") @db.Date
+  currency         String             @db.Char(3)
+  memo             String?            @db.VarChar(400)
+  status           PaymentBatchStatus @default(DRAFT)
+  createdById      String             @map("created_by_id") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  approvedById     String?            @map("approved_by_id") @db.Uuid
+  approvedAt       DateTime?          @map("approved_at") @db.Timestamptz(6)
+  selfApproved     Boolean            @default(false) @map("self_approved")
+  fileDownloadedAt DateTime?          @map("file_downloaded_at") @db.Timestamptz(6)
+  paidById         String?            @map("paid_by_id") @db.Uuid
+  paidAt           DateTime?          @map("paid_at") @db.Timestamptz(6)
+  cancelledById    String?            @map("cancelled_by_id") @db.Uuid
+  cancelledAt      DateTime?          @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason     String?            @map("cancel_reason") @db.VarChar(500)
+  updatedAt        DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items            PaymentBatchItem[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("payment_batches")
+}
+
+model PaymentBatchItem {
+  id         String       @id @default(uuid()) @db.Uuid
+  orgId      String       @map("org_id") @db.Uuid
+  batchId    String       @map("batch_id") @db.Uuid
+  documentId String       @map("document_id") @db.Uuid
+  contactId  String       @map("contact_id") @db.Uuid
+  amount     Decimal      @db.Decimal(24, 6)
+  paymentId  String?      @map("payment_id") @db.Uuid
+  open       Boolean      @default(true)
+  batch      PaymentBatch @relation(fields: [batchId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([batchId, documentId])
+  @@index([orgId, batchId])
+  @@map("payment_batch_items")
+}

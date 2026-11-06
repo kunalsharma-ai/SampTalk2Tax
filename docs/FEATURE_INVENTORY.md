@@ -123,9 +123,9 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-002 |  | capability | Customer management | Tested |
 | AR-003 |  | capability | Customer onboarding | Not started |
 | AR-004 |  | capability | Customer credit limits | Tested |
-| AR-005 |  | capability | Quotations | Not started |
+| AR-005 |  | capability | Quotations | Tested |
 | AR-006 |  | capability | Estimates | Not started |
-| AR-007 |  | capability | Sales orders | Not started |
+| AR-007 |  | capability | Sales orders | Tested |
 | AR-008 |  | capability | Pro forma invoices | Not started |
 | AR-009 |  | capability | Tax invoices | Tested |
 | AR-010 |  | capability | Recurring invoices | Tested |
@@ -182,7 +182,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-011 |  | capability | Supplier statements | Implemented |
 | AP-012 |  | capability | Payables aging | Tested |
 | AP-013 |  | capability | Vendor portals | Not started |
-| AP-014 |  | capability | Payment batches | Not started |
+| AP-014 |  | capability | Payment batches | Tested |
 | AP-015 |  | capability | Purchase order matching | Not started |
 | AP-016 |  | capability | Goods receipt matching | Not started |
 | AP-017 |  | capability | Three-way matching | Not started |
@@ -195,7 +195,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-024 |  | capability | Vendor risk monitoring | Not started |
 | AP-025 | Advanced AP AI | capability | Invoice document extraction | Not started |
 | AP-026 | Advanced AP AI | capability | AI invoice coding | Not started |
-| AP-027 | Advanced AP AI | capability | Supplier bank-detail change detection | Not started |
+| AP-027 | Advanced AP AI | capability | Supplier bank-detail change detection | Tested |
 | AP-028 | Advanced AP AI | capability | Payment fraud indicators | Not started |
 | AP-029 | Advanced AP AI | capability | Dynamic discount recommendations | Not started |
 | AP-030 | Advanced AP AI | capability | Intelligent payment prioritization | Not started |

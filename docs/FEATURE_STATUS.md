@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 826 |
+| Not started | 822 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 402 |
+| Tested | 406 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,8 +25,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 24 | 19 |
-| Accounts payable | M2 | 36 | 25 | 11 |
+| Accounts receivable | M2 | 43 | 22 | 21 |
+| Accounts payable | M2 | 36 | 23 | 13 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -463,6 +463,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/sales-purchases.e2e.test.ts › credit limits
   - apps/web/src/components/ledger/document-form.tsx
 
+### AR-005 — Quotations
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Same feature as CRM-005: Quotations QT-0001 with the invoice tax rules (tax rates, GST place of supply, HSN/SAC); draft (editable, deletable) -> sent (frozen by a trigger) -> accepted or declined (reason); expired past valid-until; revisions QT-0001-R2 supersede the previous one when sent; linked to a deal, which is won on acceptance; acceptance rate on the list. No PDF or e-mail of a quotation yet.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx
+
+### AR-007 — Sales orders
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Same feature as CRM-007: Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/orders/[orderId]/page.tsx
+
 ### AR-009 — Tax invoices
 
 - Module: Accounts receivable
@@ -732,6 +760,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/sales-purchases.e2e.test.ts
   - apps/api/src/seed/seed-demo.ts
 
+### AP-014 — Payment batches
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Payment batches PB-0001: draft (bills, part payments) -> approved by someone other than the preparer (self-approval only when no one else can approve, flagged) -> bank file CSV (beneficiary, account, IFSC, amount, reference) -> payments recorded, one per vendor, settling the bills; cancel with a reason. A bill is in one open batch at most; approved batches are frozen by a trigger. Functional currency only; no direct bank API (H2H) upload yet.
+- Evidence:
+  - packages/accounting-engine/src/payment-batches.ts
+  - packages/accounting-engine/test/payment-batches.test.ts
+  - packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql
+  - apps/api/src/payment-batches/payment-batches.service.ts
+  - apps/api/test/payment-batches.e2e.test.ts
+  - apps/web/e2e/payment-batches-flow.test.mjs
+  - docs/PAYMENT_BATCHES.md
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-batches/[batchId]/page.tsx
+
 ### AP-018 — Duplicate invoice detection
 
 - Module: Accounts payable
@@ -748,6 +791,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/banking.e2e.test.ts › records a customer receipt from money in
   - apps/api/test/banking.e2e.test.ts › matching
+
+### AP-027 — Supplier bank-detail change detection
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Vendor bank details (account holder, number, IFSC) with an append-only masked change history; any change clears verification in the database; verification needs approvals.decide and someone other than the person who changed them (unless no one else can); batches with unverified or changed details cannot be approved, sent to the bank or paid.
+- Evidence:
+  - packages/accounting-engine/src/payment-batches.ts
+  - packages/accounting-engine/test/payment-batches.test.ts
+  - packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql
+  - apps/api/src/payment-batches/payment-batches.service.ts
+  - apps/api/test/payment-batches.e2e.test.ts
+  - apps/web/e2e/payment-batches-flow.test.mjs
+  - docs/PAYMENT_BATCHES.md
+  - apps/web/src/components/purchases/vendor-bank-card.tsx
 
 ### BANK-001 — Multiple bank account management
 
