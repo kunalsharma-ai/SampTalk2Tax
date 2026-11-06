@@ -8,7 +8,7 @@ import { DateInput } from '@/components/report-bits';
 import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
-import { date, today } from '@/lib/format';
+import { date, money, today } from '@/lib/format';
 import { BUCKET_LABELS, type LedgerConfig } from '@/lib/ledgers';
 import { useOrg } from '@/lib/org';
 import type { Ageing } from '@/lib/types';
@@ -83,6 +83,7 @@ export function AgeingReport({ l }: { l: LedgerConfig }) {
                               <Td className="pl-10">
                                 <Link className="text-accent hover:underline" href={`/orgs/${orgId}/${i.type === 'payment' ? l.paymentsPath : l.docsPath}/${i.id}`}>{i.number}</Link>
                                 <span className="text-fg-muted"> · {date(i.date)}{i.dueDate ? ` · due ${date(i.dueDate)}` : ''}{i.daysOverdue ? ` · ${i.daysOverdue} days overdue` : ''}</span>
+                                {i.foreignOpen ? <span className="block text-fg-muted">{money(i.foreignOpen, i.currency)} open, carried at {i.rate}</span> : null}
                               </Td>
                               {BUCKETS.map((b) => <Td key={b} numeric>{i.bucket === b ? <Money value={i.open} currency={c} /> : ''}</Td>)}
                               <Td numeric>{i.type !== 'charge' ? <Money value={i.open} currency={c} /> : ''}</Td>

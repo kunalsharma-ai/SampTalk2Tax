@@ -149,7 +149,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-028 |  | capability | Revenue recognition support | Not started |
 | AR-029 |  | capability | Contract billing | Tested |
 | AR-030 |  | capability | Customer portals | Not started |
-| AR-031 |  | capability | Multi-currency invoices | Not started |
+| AR-031 |  | capability | Multi-currency invoices | Tested |
 | AR-032 |  | capability | Revenue leakage detection | Tested |
 | AR-033 | Advanced AR AI | capability | Predictive payment-delay scoring | Not started |
 | AR-034 | Advanced AR AI | capability | Intelligent collection prioritization | Not started |
@@ -223,7 +223,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-009 |  | capability | Payment matching | Tested |
 | BANK-010 |  | capability | Bank charges | Tested |
 | BANK-011 |  | capability | Interest accounting | Implementing |
-| BANK-012 |  | capability | Foreign exchange accounting | Not started |
+| BANK-012 |  | capability | Foreign exchange accounting | Implementing |
 | BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
 | BANK-014 |  | capability | Bank balance monitoring | Implementing |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |
@@ -1604,7 +1604,7 @@ Part 46 · M1 · priority P1 · depends on: none
 | DS-009 |  | capability | Charts | Not started |
 | DS-010 |  | capability | Financial calculators | Not started |
 | DS-011 |  | capability | Date selectors | Not started |
-| DS-012 |  | capability | Currency selectors | Not started |
+| DS-012 |  | capability | Currency selectors | Tested |
 | DS-013 |  | capability | Multi-company selectors | Not started |
 | DS-014 |  | capability | Approval dialogs | Implemented |
 | DS-015 |  | capability | AI recommendation cards | Not started |

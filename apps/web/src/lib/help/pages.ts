@@ -106,7 +106,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'sales/invoices/new': {
     what: 'A new invoice or credit note for a customer.',
-    how: 'Choose the customer, dates and lines (account, quantity, price, tax rate, HSN/SAC). The totals update as you type. Save as a draft or save and post.',
+    how: 'Choose the customer, dates and lines (account, quantity, price, tax rate, HSN/SAC). For a customer abroad, pick their currency: the recorded exchange rate for the date fills in, or type the rate you agreed. The totals update as you type. Save as a draft or save and post.',
     where: 'Sales → Invoices. A posted invoice can be paid with a receipt or reduced with a credit note.',
   },
   'sales/invoices/[id]': {
@@ -116,7 +116,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'sales/receipts': {
     what: 'Money received from customers and the invoices it paid.',
-    how: 'Record a receipt into a bank account and apply it to open invoices. Money not applied stays as a credit you can apply later.',
+    how: 'Record a receipt into a bank account and apply it to open invoices in the same currency. Money not applied stays as a credit you can apply later. In another currency, enter the rate you were paid at: any difference from the invoice rate posts as an exchange gain or loss.',
     where: 'Sales. Receipts reduce what customers owe and appear on bank reconciliation.',
   },
   'sales/ageing': {
@@ -255,7 +255,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   fx: {
     what: 'Exchange rates and the month-end revaluation of foreign-currency balances.',
     how: 'Enter rates for each currency and date, then run the revaluation for a month end.',
-    where: 'Accounting. Revaluations post the unrealised gain or loss.',
+    where: 'Accounting. Invoices, bills and payments in another currency take these rates. Revaluations post the unrealised gain or loss; settling a document at another rate posts the realised one.',
   },
   // ---------------------------------------------------------------- reports
   'reports/dashboards': {

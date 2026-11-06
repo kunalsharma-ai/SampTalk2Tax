@@ -262,6 +262,7 @@ export class EInvoicingService {
     const out = (state: EInvoiceState, reason: string, extra: Partial<typeof base> = {}) => ({ ...base, ...extra, state, reason });
     if (live) return out('GENERATED', `IRN recorded, acknowledged ${humanTime(live.ackDate)}`);
     if (fromDbDate(d.issueDate) < fromDbDate(ctx.settings.applicableFrom)) return out('NOT_REQUIRED', 'Dated before e-invoicing applies');
+    if (d.currency !== 'INR') return out('UNSUPPORTED', `In ${d.currency}: e-invoices for foreign-currency documents are not supported yet; report it on the IRP directly`);
     if (d.placeOfSupply === '96') return out('UNSUPPORTED', 'Export: e-invoices for exports are not supported yet; report it on the IRP directly');
     if (!d.counterpartyGstin) return out('NOT_REQUIRED', 'Customer not registered for GST (B2C)');
     if (d.status === 'VOID') return out(last ? 'CANCELLED' : 'NOT_REQUIRED', last ? 'IRN cancelled and document voided' : 'Voided');

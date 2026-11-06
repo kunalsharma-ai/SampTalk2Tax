@@ -125,8 +125,8 @@ export class CustomerInsightsService {
       }),
       // Posted invoices with what has been applied to them, and the day the last of it was applied.
       this.prisma.$queryRaw<{ id: string; contact_id: string; number: string; issue_date: Date; due_date: Date; total: Prisma.Decimal; applied: Prisma.Decimal; last_applied: Date | null }[]>`
-        SELECT x.id, x.contact_id, x.number, x.issue_date, x.due_date, x.total,
-               COALESCE(SUM(a.amount), 0) AS applied, MAX(a.date) AS last_applied
+        SELECT x.id, x.contact_id, x.number, x.issue_date, x.due_date, ROUND(x.total * x.exchange_rate, 2) AS total,
+               ROUND(COALESCE(SUM(a.amount), 0) * x.exchange_rate, 2) AS applied, MAX(a.date) AS last_applied
         FROM documents x
         LEFT JOIN allocations a ON a.target_id = x.id AND a.org_id = x.org_id AND a.removed_on IS NULL AND a.date <= ${asOf}::date
         WHERE x.org_id = ${org.id}::uuid AND x.kind = 'INVOICE' AND x.status = 'POSTED' AND x.issue_date <= ${asOf}::date ${only}
@@ -134,8 +134,8 @@ export class CustomerInsightsService {
       // Revenue by month: income lines on posted invoices, less posted credit notes.
       this.prisma.$queryRaw<{ contact_id: string; month: string; revenue: Prisma.Decimal; billed: Prisma.Decimal }[]>`
         SELECT x.contact_id, to_char(x.issue_date, 'YYYY-MM') AS month,
-               SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE -l.net_amount END) AS revenue,
-               SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE 0 END) AS billed
+               ROUND(SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE -l.net_amount END * x.exchange_rate), 2) AS revenue,
+               ROUND(SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE 0 END * x.exchange_rate), 2) AS billed
         FROM documents x
         JOIN document_lines l ON l.document_id = x.id AND l.org_id = x.org_id
         JOIN accounts acc ON acc.id = l.account_id AND acc.org_id = l.org_id

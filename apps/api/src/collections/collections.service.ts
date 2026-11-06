@@ -197,7 +197,7 @@ export class CollectionsService {
   private async overdueCustomers(tx: Tx, orgId: string, today: string) {
     return tx.$queryRaw<{ contact_id: string; name: string; email: string | null; overdue: Prisma.Decimal }[]>`
       SELECT c.id AS contact_id, c.name, c.email, SUM(x.open) AS overdue FROM (
-        SELECT d.contact_id, d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open
+        SELECT d.contact_id, ROUND((d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0)) * d.exchange_rate, 2) AS open
         FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND d.due_date < ${toDbDate(today)}::date) x
       JOIN contacts c ON c.id = x.contact_id
       WHERE x.open > 0
@@ -206,13 +206,17 @@ export class CollectionsService {
   }
 
   private async factsFor(tx: Tx, orgId: string, contact: { id: string; name: string }, today: string, currency: string): Promise<CustomerFacts> {
-    const invoices = await tx.$queryRaw<{ number: string; issue_date: Date; due_date: Date; total: Prisma.Decimal; open: Prisma.Decimal; reference: string | null; last_paid: Date | null }[]>`
-      SELECT d.number, d.issue_date, d.due_date, d.total, d.reference,
+    const all = await tx.$queryRaw<{ number: string; issue_date: Date; due_date: Date; total: Prisma.Decimal; open: Prisma.Decimal; reference: string | null; last_paid: Date | null; currency: string }[]>`
+      SELECT d.number, d.issue_date, d.due_date, d.total, d.reference, d.currency::text AS currency,
         d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open,
         (SELECT MAX(a.date) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL) AS last_paid
       FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.contact_id = ${contact.id}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED'
       ORDER BY d.due_date`;
-    const lastPayment = await tx.payment.findFirst({ where: { orgId, contactId: contact.id, kind: 'RECEIPT', status: 'POSTED' }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], select: { date: true, amount: true } });
+    // A reminder is in one currency: that of the oldest invoice still open (usually the customer's only one).
+    const firstOpen = all.find((i) => new D(i.open.toString()).gt(0));
+    if (firstOpen && firstOpen.currency !== currency) currency = firstOpen.currency;
+    const invoices = all.filter((i) => i.currency === currency);
+    const lastPayment = await tx.payment.findFirst({ where: { orgId, contactId: contact.id, kind: 'RECEIPT', status: 'POSTED', currency }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], select: { date: true, amount: true } });
     const reminders = await tx.collectionDraft.findMany({ where: { orgId, contactId: contact.id, status: 'SENT' }, orderBy: { sentAt: 'desc' }, take: 5, select: { sentAt: true, subject: true } });
     const money = (v: Prisma.Decimal) => new D(v.toString()).toFixed(2);
     return customerFacts({
