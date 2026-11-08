@@ -290,6 +290,7 @@ model Organization {
   salesOrders              SalesOrder[]
   salesContracts           SalesContract[]
   journalTemplates         JournalTemplate[]
+  recurringBills           RecurringBill[]
   revenueForecasts            RevenueForecast[]
   apiKeys                     ApiKey[]
   crmWebhooks                 CrmWebhook[]
@@ -551,6 +552,7 @@ model Contact {
   updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   org                  Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
   documents            Document[]
+  recurringBills       RecurringBill[]
   payments             Payment[]
   collectionDrafts     CollectionDraft[]
   /// Projects run for this customer: their costs are the customer's direct costs.
@@ -4850,4 +4852,82 @@ model PaymentBatchItem {
   @@unique([batchId, documentId])
   @@index([orgId, batchId])
   @@map("payment_batch_items")
+}
+
+/// AP-005 recurring bills: a vendor bill made again on a schedule (RB-0001).
+model RecurringBill {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  orgId                String                  @map("org_id") @db.Uuid
+  number               Int
+  name                 String                  @db.VarChar(120)
+  contactId            String                  @map("contact_id") @db.Uuid
+  /// May hold placeholders such as {month}; must change from run to run (duplicate bill check).
+  reference            String?                 @db.VarChar(100)
+  memo                 String?                 @db.VarChar(1000)
+  /// India GST: null takes the registration's state, as a bill entered by hand.
+  placeOfSupply        String?                 @map("place_of_supply") @db.Char(2)
+  reverseCharge        Boolean                 @default(false) @map("reverse_charge")
+  withholdingSectionId String?                 @map("withholding_section_id") @db.Uuid
+  /// Days after the bill date the bill is due; null: the vendor's payment terms.
+  dueDays              Int?                    @map("due_days")
+  frequency            ContractFrequency
+  startDate            DateTime                @map("start_date") @db.Date
+  endDate              DateTime?               @map("end_date") @db.Date
+  monthEnd             Boolean                 @default(false) @map("month_end")
+  postMode             RecurringPostMode       @default(DRAFT) @map("post_mode")
+  status               RecurringScheduleStatus @default(ACTIVE)
+  nextRunNo            Int                     @default(1) @map("next_run_no")
+  lastError            String?                 @map("last_error") @db.VarChar(1000)
+  lastErrorAt          DateTime?               @map("last_error_at") @db.Timestamptz(6)
+  createdById          String                  @map("created_by_id") @db.Uuid
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                  Organization            @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  contact              Contact                 @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict, map: "recurring_bills_contact_fk")
+  lines                RecurringBillLine[]
+  runs                 RecurringBillRun[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([status])
+  @@map("recurring_bills")
+}
+
+model RecurringBillLine {
+  id              String        @id @default(uuid()) @db.Uuid
+  orgId           String        @map("org_id") @db.Uuid
+  recurringBillId String        @map("recurring_bill_id") @db.Uuid
+  lineNo          Int           @map("line_no")
+  accountId       String        @map("account_id") @db.Uuid
+  description     String?       @db.VarChar(500)
+  quantity        Decimal       @db.Decimal(24, 6)
+  unitPrice       Decimal       @map("unit_price") @db.Decimal(24, 6)
+  taxRateId       String?       @map("tax_rate_id") @db.Uuid
+  hsnCode         String?       @map("hsn_code") @db.VarChar(8)
+  departmentId    String?       @map("department_id") @db.Uuid
+  projectId       String?       @map("project_id") @db.Uuid
+  recurringBill   RecurringBill @relation(fields: [recurringBillId], references: [id], onDelete: Cascade)
+
+  @@unique([recurringBillId, lineNo])
+  @@map("recurring_bill_lines")
+}
+
+/// Append-only: one row per bill a schedule made.
+model RecurringBillRun {
+  id              String        @id @default(uuid()) @db.Uuid
+  orgId           String        @map("org_id") @db.Uuid
+  recurringBillId String        @map("recurring_bill_id") @db.Uuid
+  runNo           Int           @map("run_no")
+  runDate         DateTime      @map("run_date") @db.Date
+  /// Null once a draft bill the run made was deleted.
+  documentId      String?       @map("document_id") @db.Uuid
+  posted          Boolean
+  /// Null: the schedule runner.
+  actorId         String?       @map("actor_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  recurringBill   RecurringBill @relation(fields: [recurringBillId], references: [id], onDelete: Restrict)
+
+  @@unique([recurringBillId, runNo])
+  @@index([documentId])
+  @@map("recurring_bill_runs")
 }
