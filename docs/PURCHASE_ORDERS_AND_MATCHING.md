@@ -70,7 +70,7 @@ an exception when:
 | Not on the order | A bill line that is not for an order line (freight, for example). |
 | Order not open | The order is closed or cancelled. |
 
-Several bill lines for one order line add up. **A bill with exceptions does not post**: posting is
+Several bill lines for one order line add up, together with what other **posted** bills bill (for a posted bill, only those posted before it). Draft bills do not count against each other in the match: the first to post wins. They do count when **Make bill…** works out what is left, so the same quantity is not drafted twice; the order shows them as *in draft* next to what is billed. **A bill with exceptions does not post**: posting is
 refused with the differences listed. The bill can be corrected to the vendor's invoice, the goods
 received recorded, or someone who can **decide approvals** (owners, admins and approvers, not
 accountants) can **Accept differences…** with a reason. The acceptance applies to exactly the

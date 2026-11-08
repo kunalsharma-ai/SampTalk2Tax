@@ -135,6 +135,10 @@ describe('purchase orders', () => {
         ],
       }).expect(201)
     ).body;
+    // A later draft never turns the earlier posted bill into a mismatch; drafts show apart from what is billed.
+    const now = (await ctx.http().get(`${P()}/${po.id}`).set(owner.auth).expect(200)).body;
+    expect(now.bills.map((b: any) => b.match)).toEqual(['MATCHED', 'EXCEPTION']);
+    expect(now.lines[0]).toMatchObject({ billed: '60', inDraftBills: '30' });
     let m = (await ctx.http().get(`${org.base}/purchases/bills/${draft.id}/match`).set(owner.auth).expect(200)).body.match;
     expect(m.status).toBe('EXCEPTION');
     expect(m.lines.map((l: any) => l.exceptions.map((e: any) => e.code))).toEqual([['PRICE_ABOVE_ORDER', 'MORE_THAN_RECEIVED'], ['NOT_ON_ORDER']]);
@@ -183,12 +187,13 @@ describe('purchase orders', () => {
     expect(two.lines[0].toBill).toBe('100');
     expect(two.toReceive).toBe('0.00');
     const r = (await ctx.http().post(`${P()}/${two.id}/bill`).set(owner.auth).send({ issueDate: T, reference: 'HP-77' }).expect(201)).body;
-    expect(r.order.state).toBe('BILLED');
+    expect(r.order.state).toBe('ISSUED'); // a draft bill does not make it billed
+    expect(r.order.lines[0]).toMatchObject({ billed: '0', inDraftBills: '100', toBill: '0' });
     const m = (await ctx.http().get(`${org.base}/purchases/bills/${r.documentId}/match`).set(owner.auth).expect(200)).body.match;
     expect(m.status).toBe('MATCHED');
     // A draft bill must be settled before closing; billed orders are closed, not cancelled.
     expect((await ctx.http().post(`${P()}/${two.id}/close`).set(owner.auth).send({ reason: 'Done' }).expect(422)).body.message).toMatch(/draft bill/);
-    expect((await ctx.http().post(`${P()}/${two.id}/cancel`).set(owner.auth).send({ reason: 'x' }).expect(409)).body.message).toMatch(/close it instead/);
+    expect((await ctx.http().post(`${P()}/${two.id}/cancel`).set(owner.auth).send({ reason: 'x' }).expect(422)).body.message).toMatch(/A bill is matched to this order/);
     await ctx.http().delete(`${org.base}/purchases/documents/${r.documentId}`).set(owner.auth).expect(204);
     two = (await ctx.http().post(`${P()}/${two.id}/cancel`).set(owner.auth).send({ reason: 'Vendor could not supply' }).expect(200)).body;
     expect(two.state).toBe('CANCELLED');

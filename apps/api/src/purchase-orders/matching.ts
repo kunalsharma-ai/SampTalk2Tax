@@ -16,17 +16,40 @@ const invalid = (message: string, code = 'BILL_ORDER_INVALID'): never => {
 export async function lineProgress(db: Db, orgId: string, orderLineIds: string[], excludeDocumentId?: string) {
   const received = new Map<string, Dec>();
   const billed = new Map<string, Dec>();
-  if (!orderLineIds.length) return { received, billed };
+  /** On posted bills only. */
+  const posted = new Map<string, Dec>();
+  if (!orderLineIds.length) return { received, billed, posted };
   const [rl, bl] = await Promise.all([
     db.goodsReceiptLine.findMany({ where: { orgId, orderLineId: { in: orderLineIds }, receipt: { status: 'RECORDED' } }, select: { orderLineId: true, quantity: true } }),
     db.documentLine.findMany({
       where: { orgId, purchaseOrderLineId: { in: orderLineIds }, document: { status: { not: 'VOID' }, ...(excludeDocumentId ? { id: { not: excludeDocumentId } } : {}) } },
-      select: { purchaseOrderLineId: true, quantity: true },
+      select: { purchaseOrderLineId: true, quantity: true, document: { select: { status: true } } },
     }),
   ]);
   for (const r of rl) received.set(r.orderLineId, (received.get(r.orderLineId) ?? new D(0)).plus(r.quantity.toString()));
-  for (const b of bl) billed.set(b.purchaseOrderLineId!, (billed.get(b.purchaseOrderLineId!) ?? new D(0)).plus(b.quantity.toString()));
-  return { received, billed };
+  for (const b of bl) {
+    billed.set(b.purchaseOrderLineId!, (billed.get(b.purchaseOrderLineId!) ?? new D(0)).plus(b.quantity.toString()));
+    if (b.document.status === 'POSTED') posted.set(b.purchaseOrderLineId!, (posted.get(b.purchaseOrderLineId!) ?? new D(0)).plus(b.quantity.toString()));
+  }
+  return { received, billed, posted };
+}
+
+/**
+ * Billed by order line on the bills a bill is matched after: other posted bills, and for a posted
+ * bill only those posted before it. Drafts do not count against each other: the first to post wins.
+ */
+async function billedBefore(db: Db, orgId: string, orderLineIds: string[], doc: { id: string; status: string; postedAt: Date | null }) {
+  const out = new Map<string, Dec>();
+  const rows = await db.documentLine.findMany({
+    where: {
+      orgId,
+      purchaseOrderLineId: { in: orderLineIds },
+      document: { id: { not: doc.id }, status: 'POSTED', ...(doc.status === 'POSTED' && doc.postedAt ? { postedAt: { lt: doc.postedAt } } : {}) },
+    },
+    select: { purchaseOrderLineId: true, quantity: true },
+  });
+  for (const r of rows) out.set(r.purchaseOrderLineId!, (out.get(r.purchaseOrderLineId!) ?? new D(0)).plus(r.quantity.toString()));
+  return out;
 }
 
 /**
@@ -64,10 +87,11 @@ export interface BillMatch extends MatchResult {
 
 /** The match of a bill against its purchase order; null when the bill is not matched to one. */
 export async function matchDocument(db: Db, orgId: string, documentId: string): Promise<BillMatch | null> {
-  const doc = await db.document.findFirst({ where: { id: documentId, orgId }, select: { id: true, kind: true, purchaseOrderId: true, lines: { orderBy: { lineNo: 'asc' }, select: { lineNo: true, description: true, quantity: true, unitPrice: true, purchaseOrderLineId: true } } } });
+  const doc = await db.document.findFirst({ where: { id: documentId, orgId }, select: { id: true, kind: true, status: true, postedAt: true, purchaseOrderId: true, lines: { orderBy: { lineNo: 'asc' }, select: { lineNo: true, description: true, quantity: true, unitPrice: true, purchaseOrderLineId: true } } } });
   if (!doc?.purchaseOrderId) return null;
   const o = await db.purchaseOrder.findFirstOrThrow({ where: { id: doc.purchaseOrderId, orgId }, include: { lines: true } });
-  const { received, billed } = await lineProgress(db, orgId, o.lines.map((l) => l.id), doc.id);
+  const { received } = await lineProgress(db, orgId, o.lines.map((l) => l.id), doc.id);
+  const billed = await billedBefore(db, orgId, o.lines.map((l) => l.id), doc);
   const result = matchBill({
     mode: o.matchMode,
     priceTolerancePercent: o.priceTolerancePercent.toString(),

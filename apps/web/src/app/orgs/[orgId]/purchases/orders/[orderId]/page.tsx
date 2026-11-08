@@ -158,7 +158,7 @@ export default function PurchaseOrderPage() {
                     <Td>{l.description ?? '—'}<span className="block text-xs text-fg-muted">{l.account ? `${l.account.code} · ${l.account.name}` : ''}{l.hsnCode ? ` · HSN/SAC ${l.hsnCode}` : ''}</span></Td>
                     <Td numeric className="num">{l.quantity}</Td>
                     {threeWay ? <Td numeric className="num">{l.received}</Td> : null}
-                    <Td numeric className="num">{l.billed}</Td>
+                    <Td numeric className="num">{l.billed}{Number(l.inDraftBills) ? <span className="block text-xs text-fg-muted">+{l.inDraftBills} in draft</span> : null}</Td>
                     <Td numeric className="num font-medium">{l.toBill}</Td>
                     <Td numeric><Money value={l.unitPrice} currency={cur} /></Td>
                     <Td className="text-fg-muted">{l.tax?.name ?? 'No tax'}</Td>

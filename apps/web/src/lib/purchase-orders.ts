@@ -5,7 +5,10 @@ export type { MatchMode, PurchaseOrderState, PurchaseOrderStatus };
 
 export interface PurchaseOrderLine extends SalesLine {
   received: string;
+  /** On posted bills. */
   billed: string;
+  /** On draft bills, not yet posted (reserved: not offered again by Make bill). */
+  inDraftBills: string;
   toReceive: string;
   toBill: string;
 }

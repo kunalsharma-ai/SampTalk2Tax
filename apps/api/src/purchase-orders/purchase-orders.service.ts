@@ -137,7 +137,7 @@ export class PurchaseOrdersService {
   // ------------------------------------------------------------------ reads
 
   private async progressOf(orders: WithLines[]) {
-    if (!orders.length) return { received: new Map<string, Dec>(), billed: new Map<string, Dec>() };
+    if (!orders.length) return { received: new Map<string, Dec>(), billed: new Map<string, Dec>(), posted: new Map<string, Dec>() };
     return lineProgress(this.prisma, orders[0]!.orgId, orders.flatMap((o) => o.lines.map((l) => l.id)));
   }
 
@@ -151,13 +151,16 @@ export class PurchaseOrdersService {
           ...this.sales.lineOut(org, l, n),
           id: l.id,
           received: prog.received,
-          billed: prog.billed,
+          /** On posted bills; drafts still count in toBill so the same quantity is not drafted twice. */
+          billed: (p.posted.get(l.id) ?? new D(0)).toFixed(),
+          inDraftBills: new D(prog.billed).minus(p.posted.get(l.id) ?? new D(0)).toFixed(),
           toReceive: quantityToReceive(prog),
           toBill: quantityToBill(o.matchMode, prog),
           progress: prog,
         };
       });
-    const state = purchaseOrderState(o.status, o.matchMode, lines.map((l) => l.progress));
+    // The status follows posted bills; drafts only reserve what is left to bill.
+    const state = purchaseOrderState(o.status, o.matchMode, lines.map((l) => ({ ...l.progress, billed: l.billed })));
     const live = state !== 'DRAFT' && state !== 'CLOSED' && state !== 'CANCELLED';
     // Value still to bill at the order's prices, in proportion to the quantity left.
     const valueOf = (key: 'toBill' | 'toReceive') =>
@@ -284,7 +287,7 @@ export class PurchaseOrdersService {
     if (!o) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Purchase order not found' });
     const p = await lineProgress(tx, orgId, o.lines.map((l) => l.id));
     const lines = o.lines.map((l) => ({ id: l.id, lineNo: l.lineNo, quantity: l.quantity.toString(), received: (p.received.get(l.id) ?? new D(0)).toFixed(), billed: (p.billed.get(l.id) ?? new D(0)).toFixed(), line: l }));
-    return { o, lines, state: purchaseOrderState(o.status, o.matchMode, lines) };
+    return { o, lines, state: purchaseOrderState(o.status, o.matchMode, lines.map((l) => ({ ...l, billed: (p.posted.get(l.id) ?? new D(0)).toFixed() }))) };
   }
 
   async create(org: SalesOrg, actor: Actor, input: PurchaseOrderInput) {
