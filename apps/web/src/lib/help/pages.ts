@@ -190,6 +190,26 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add or remove bills, change amounts, the date or the bank account. An approved batch cannot be changed; cancel it and prepare a new one.',
     where: 'Purchases. Nothing is posted until the payments are recorded.',
   },
+  'purchases/recurring-bills': {
+    what: 'Vendor bills that come again and again, such as rent, maintenance contracts and subscriptions, each with its schedule and the bills it has made.',
+    how: 'Choose New recurring bill, or open a bill and choose Make recurring. Each bill is made by itself when its date comes, as a draft or posted. Make due bills now makes them straight away.',
+    where: 'Purchases. Each bill it makes is an ordinary bill: it goes through GST, TDS, approval rules and periods like one entered by hand.',
+  },
+  'purchases/recurring-bills/new': {
+    what: 'A new recurring bill: the vendor, the lines and the schedule.',
+    how: 'Fill in the vendor and lines as on a bill, give the vendor reference a placeholder such as {month}, then choose how often and from when. The first bill is checked before saving.',
+    where: 'Purchases. Nothing is posted until a bill falls due.',
+  },
+  'purchases/recurring-bills/[id]': {
+    what: 'One recurring bill: its lines, the bills to come and the bills it has made.',
+    how: 'Make due bills now, pause, resume (with or without the missed bills), edit or end it. One that has not made a bill can be deleted.',
+    where: 'Purchases. The bills it made are listed with links; they appear in Bills like any other.',
+  },
+  'purchases/recurring-bills/[id]/edit': {
+    what: 'Changing a recurring bill.',
+    how: 'Change the lines, the amounts, the end date or whether bills are posted. Once it has made bills, its vendor, first date, frequency and run day stay as they are.',
+    where: 'Purchases. Bills already made keep their lines and amounts.',
+  },
   'purchases/ageing': {
     what: 'What you owe vendors on a date, split by how long it has been due.',
     how: 'Pick the date and plan payments from the oldest buckets.',
