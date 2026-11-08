@@ -1,6 +1,6 @@
-import type { DealStage, OrderBilling, QuoteState, QuoteStatus } from '@talk2tax/accounting-engine';
+import type { DealStage, OrderBilling, ProFormaState, ProFormaStatus, QuoteState, QuoteStatus } from '@talk2tax/accounting-engine';
 
-export type { OrderBilling, QuoteState, QuoteStatus };
+export type { OrderBilling, ProFormaState, ProFormaStatus, QuoteState, QuoteStatus };
 
 export interface SalesContact { id: string; name: string; email: string | null; gstin: string | null }
 export interface SalesDealRef { id: string; reference: string; name: string; stage: DealStage }
@@ -141,5 +141,42 @@ export interface ContractDetail extends Contract {
   periods: { id: string; periodNo: number; start: string; end: string; status: 'BILLED' | 'SKIPPED'; invoice: { id: string; number: string | null; status: string; total: string; issueDate: string } | null; canBillAgain: boolean }[];
   upcoming: { periodNo: number; start: string; end: string; billDate: string }[];
   events: { id: string; kind: string; body: string; actor: { id: string; name: string } | null; createdAt: string }[];
+  can: { manage: boolean };
+}
+
+export interface ProForma {
+  id: string;
+  reference: string;
+  status: ProFormaStatus;
+  state: ProFormaState;
+  contact: SalesContact | null;
+  issueDate: string;
+  validUntil: string;
+  placeOfSupply: string | null;
+  customerReference: string | null;
+  terms: string | null;
+  memo: string | null;
+  currency: string;
+  subtotal: string;
+  taxTotal: string;
+  total: string;
+  issuedAt: string | null;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  invoice: { id: string; number: string | null; status: string } | null;
+  createdAt: string;
+  /** Pro forma invoices have no deal; kept for the shared form. */
+  deal?: null;
+}
+
+export interface ProFormaList {
+  proFormas: ProForma[];
+  totals: { drafts: number; awaiting: { count: number; total: string }; expired: number; invoiced: { count: number; total: string } };
+  can: { manage: boolean };
+}
+
+export interface ProFormaDetail extends ProForma {
+  lines: SalesLine[];
+  quote: { id: string; reference: string } | null;
   can: { manage: boolean };
 }
