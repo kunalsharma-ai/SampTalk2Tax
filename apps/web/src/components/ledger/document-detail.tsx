@@ -18,6 +18,7 @@ import { kindLabel, type LedgerConfig } from '@/lib/ledgers';
 import { useOrg } from '@/lib/org';
 import { LineDimensionTags } from '@/components/dimensions/line-dimensions';
 import { useDimensions } from '@/lib/dimensions';
+import { DISPUTE_REASON_LABEL, type DisputeList } from '@/lib/disputes';
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
 import { DocumentForm } from './document-form';
 import { DocStatus } from './documents-table';
@@ -47,8 +48,11 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
     queryKey: ['documents', orgId, l.api, 'counterparts', d?.contact.id, d?.kind],
     queryFn: () => api<{ items: DocumentSummary[] }>(`${base}/documents?view=open&contactId=${d!.contact.id}&kind=${isCharge ? l.credit.kind : l.charge.kind}&limit=200`),
   });
+  const disputable = l.ledger === 'SALES' && d?.kind === 'INVOICE' && d.status === 'POSTED';
+  const disputes = useQuery({ enabled: disputable, queryKey: ['disputes', orgId, 'invoice', documentId], queryFn: () => api<DisputeList>(`/v1/orgs/${orgId}/sales/disputes?status=open&documentId=${documentId}`) });
+  const openDispute = disputable ? disputes.data?.disputes[0] : undefined;
   const refresh = async () => {
-    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill']) await qc.invalidateQueries({ queryKey: [k, orgId] });
+    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill', 'disputes']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
   const post = useMutation({ mutationFn: () => api<FinancialDocument>(`${base}/documents/${documentId}/post`, { method: 'POST', body: { overrideCreditLimit: override } }), onSuccess: refresh });
   const remove = useMutation({
@@ -124,6 +128,9 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                 ) : null}
               </>
             ) : null}
+            {disputable && canManage && d.amountDue !== '0.00' && disputes.data && !openDispute ? (
+              <Link href={`/orgs/${orgId}/sales/disputes?raise=${d.id}`}><Button variant="ghost">Raise dispute…</Button></Link>
+            ) : null}
             {d.status === 'POSTED' && canManage && d.kind === 'INVOICE' && !d.debitNoteFor ? (
               <Link href={`/orgs/${orgId}/${l.docsPath}/new?debitNoteFor=${d.id}`}><Button variant="ghost">Raise debit note…</Button></Link>
             ) : null}
@@ -145,6 +152,14 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           {post.error?.message}.
           <label className="mt-2 flex items-center gap-2"><input type="checkbox" className="accent-[var(--t2t-accent)]" checked={override} onChange={(e) => setOverride(e.target.checked)} /> Post above the credit limit (recorded in the audit trail)</label>
         </Alert>
+      ) : null}
+      {openDispute ? (
+        <div className="mb-4">
+          <Alert tone="warning" title={`Disputed: ${openDispute.ref}`}>
+            {d.contact.name} disputes {openDispute.amount} {openDispute.invoice.currency} ({DISPUTE_REASON_LABEL[openDispute.reason].toLowerCase()}): {openDispute.description}. Left out of payment reminders until it is resolved.{' '}
+            <Link className="underline" href={`/orgs/${orgId}/sales/disputes/${openDispute.id}`}>Open the dispute</Link>
+          </Alert>
+        </div>
       ) : null}
       {d.status === 'VOID' ? (
         <div className="mb-4">

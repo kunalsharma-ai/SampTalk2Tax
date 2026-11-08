@@ -1,3 +1,4 @@
+import { NOT_DISPUTED } from '../disputes/disputes.service';
 import { alertRule, AlertRuleKey, D, Dec, Facts, minorUnits, WEEKDAYS, WORKFLOW_TRIGGER_DEFS, WorkflowTrigger } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { fromDbDate, toDbDate } from '../common/dates';
@@ -125,7 +126,7 @@ export async function dueDocuments(tx: Tx, orgId: string, p: { kind: 'INVOICE' |
     SELECT d.id FROM documents d
     WHERE d.org_id = ${orgId}::uuid AND d.kind = ${p.kind}::"DocumentKind" AND d.status = 'POSTED'
       AND d.due_date BETWEEN ${toDbDate(p.from)}::date AND ${toDbDate(p.to)}::date
-      AND ${OPEN(p.asOf)} > 0
+      AND ${OPEN(p.asOf)} > 0 AND ${NOT_DISPUTED}
       AND NOT EXISTS (SELECT 1 FROM workflow_runs r WHERE r.workflow_id = ${p.workflowId}::uuid AND r.status <> 'TEST'
                       AND r.occurrence_key = ${p.keyPrefix} || d.id::text || ${p.keySuffix})
     ORDER BY d.due_date, d.id
@@ -138,7 +139,7 @@ export async function sampleDueDocument(tx: Tx, orgId: string, kind: 'INVOICE' |
   const order = kind === 'INVOICE' ? Prisma.sql`(d.due_date < ${toDbDate(asOf)}::date) DESC, d.due_date DESC` : Prisma.sql`(d.due_date >= ${toDbDate(asOf)}::date) DESC, d.due_date ASC`;
   const rows = await tx.$queryRaw<{ id: string }[]>`
     SELECT d.id FROM documents d
-    WHERE d.org_id = ${orgId}::uuid AND d.kind = ${kind}::"DocumentKind" AND d.status = 'POSTED' AND ${OPEN(asOf)} > 0
+    WHERE d.org_id = ${orgId}::uuid AND d.kind = ${kind}::"DocumentKind" AND d.status = 'POSTED' AND ${OPEN(asOf)} > 0 AND ${NOT_DISPUTED}
     ORDER BY ${order}, d.id LIMIT 1`;
   return rows[0]?.id ?? null;
 }

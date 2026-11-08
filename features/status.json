@@ -6110,6 +6110,20 @@
         "apps/web/src/app/orgs/[orgId]/purchases/payment-schedule/page.tsx"
       ],
       "notes": "Payment schedule: each open bill gets a planned pay date and optional part amount (bill_payment_plans, bills only by trigger); suggested date = due date or the last chosen pay weekday before it, never the past; plans checked (not past, not before bill date, not more than left); weekly planned outflows against ledger bank balances with short weeks flagged (receipts not included); Plan the rest auto-plans unplanned bills; Prepare batch takes bills planned up to a date into a new payment batch with their amounts; Plan payment… from a bill. Functional currency only; planning moves no money."
+    },
+    "AR-025": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/disputes.ts",
+        "packages/accounting-engine/test/disputes.test.ts",
+        "packages/database/prisma/migrations/20261201090000_invoice_disputes/migration.sql",
+        "apps/api/src/disputes/disputes.service.ts",
+        "apps/api/test/disputes.e2e.test.ts",
+        "apps/web/e2e/disputes-flow.test.mjs",
+        "docs/INVOICE_DISPUTES.md",
+        "apps/web/src/app/orgs/[orgId]/sales/disputes/page.tsx"
+      ],
+      "notes": "Invoice disputes DS-0001: raised from a posted invoice with something due, for part or all of what is due (checked), with reason, description, owner (a member) and target date; one open per invoice (partial unique index); changes and notes kept in an append-only history; resolved by a posted credit note of the same customer and currency, customer pays, written off or withdrawn, then final (trigger). An open dispute keeps the invoice out of AI payment reminders and the INVOICE_OVERDUE workflow trigger; it still counts in receivables. Summary: open count and amount, past target, oldest, average days to settle, outcomes."
     }
   }
 }
