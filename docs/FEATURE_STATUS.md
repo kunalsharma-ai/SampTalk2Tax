@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 818 |
+| Not started | 817 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 410 |
+| Tested | 411 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 20 | 23 |
+| Accounts receivable | M2 | 43 | 19 | 24 |
 | Accounts payable | M2 | 36 | 21 | 15 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -490,6 +490,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/quotes-orders-flow.test.mjs
   - docs/QUOTES_AND_ORDERS.md
   - apps/web/src/app/orgs/[orgId]/sales/orders/[orderId]/page.tsx
+
+### AR-008 — Pro forma invoices
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Pro forma invoices PF-0001: drafted directly or from a sent/accepted quotation, lines worked out by the invoice rules (GST place of supply); issued then fixed (DB trigger on header and lines); printed with the invoice template as PRO_FORMA (heading Pro forma invoice, Not a tax invoice, Valid until); Make tax invoice creates a draft invoice with the same lines referenced PF-0001, deleting/voiding it frees the pro forma; cancel with reason; posts nothing. Functional currency only; advance via an ordinary receipt applied to the tax invoice.
+- Evidence:
+  - packages/accounting-engine/src/pro-forma.ts
+  - packages/accounting-engine/test/pro-forma.test.ts
+  - packages/database/prisma/migrations/20261202090000_pro_forma_invoices/migration.sql
+  - apps/api/src/sales-orders/pro-forma.service.ts
+  - apps/api/test/pro-forma.e2e.test.ts
+  - apps/web/e2e/pro-forma-flow.test.mjs
+  - docs/PRO_FORMA_INVOICES.md
+  - apps/web/src/app/orgs/[orgId]/sales/pro-formas/[proFormaId]/page.tsx
 
 ### AR-009 — Tax invoices
 

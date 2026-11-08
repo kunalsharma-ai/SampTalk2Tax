@@ -210,6 +210,31 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the lines, the amounts, the end date or whether bills are posted. Once it has made bills, its vendor, first date, frequency and run day stay as they are.',
     where: 'Purchases. Bills already made keep their lines and amounts.',
   },
+  'sales/pro-formas': {
+    what: 'Pro forma invoices: what a customer will be billed, sent before the sale to collect an advance or for their approvals. Not a tax invoice; nothing is posted.',
+    how: 'New pro forma invoice, or Make pro forma invoice… on a sent or accepted quotation. Issue it, print it, then Make tax invoice… when you supply or are paid.',
+    where: 'Sales. The tax invoice made from one is an ordinary draft invoice referenced PF-0001; deleting or voiding it frees the pro forma again.',
+  },
+  'sales/pro-formas/new': {
+    what: 'A new pro forma invoice, worked out by the same rules as an invoice (tax rates, GST place of supply).',
+    how: 'Choose the customer, dates and lines. It is saved as a draft you can change until it is issued.',
+    where: 'Sales. Filled from the quotation when opened from one.',
+  },
+  'sales/pro-formas/[id]': {
+    what: 'One pro forma invoice: its customer, dates, lines, totals and what became of it.',
+    how: 'Issue a draft, print it, record an advance the customer pays, make the tax invoice, or cancel it with a reason. Once issued its lines stay as they are.',
+    where: 'Opened from Pro forma invoices.',
+  },
+  'sales/pro-formas/[id]/edit': {
+    what: 'Changing a draft pro forma invoice.',
+    how: 'Change the customer, dates, terms or lines, then save. An issued one cannot change; cancel it and make a new one.',
+    where: 'Sales. Opened with Edit on a draft pro forma invoice.',
+  },
+  'sales/pro-formas/[id]/print': {
+    what: 'The pro forma invoice as the customer sees it, printed with your invoice template and marked as not a tax invoice.',
+    how: 'Pick a template and print, or choose Save as PDF in the print dialog.',
+    where: 'Opened from a pro forma invoice. Templates are managed under Invoice templates.',
+  },
   'sales/disputes': {
     what: 'Invoices a customer has queried, with the amount in dispute, the reason, who owns it and the date to settle it by.',
     how: 'Raise a dispute from the invoice with Raise dispute…. Open a dispute to add notes, change the owner, amount or target date, and resolve it with a credit note, the customer paying, a write-off or the customer withdrawing it.',

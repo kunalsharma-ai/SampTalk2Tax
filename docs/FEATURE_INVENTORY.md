@@ -126,7 +126,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-005 |  | capability | Quotations | Tested |
 | AR-006 |  | capability | Estimates | Not started |
 | AR-007 |  | capability | Sales orders | Tested |
-| AR-008 |  | capability | Pro forma invoices | Not started |
+| AR-008 |  | capability | Pro forma invoices | Tested |
 | AR-009 |  | capability | Tax invoices | Tested |
 | AR-010 |  | capability | Recurring invoices | Tested |
 | AR-011 |  | capability | Subscription billing | Implementing |
