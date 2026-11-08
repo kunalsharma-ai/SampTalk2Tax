@@ -49,6 +49,7 @@ export const hi: Record<string, string> = {
   Payments: 'भुगतान',
   'Recurring bills': 'आवर्ती बिल',
   'Payment schedule': 'भुगतान अनुसूची',
+  'Purchase orders': 'क्रय आदेश',
   'Payment batches': 'भुगतान बैच',
   'Payables ageing': 'देय राशि की आयु',
   // Banking

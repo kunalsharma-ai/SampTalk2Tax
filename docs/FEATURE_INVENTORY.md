@@ -183,9 +183,9 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-012 |  | capability | Payables aging | Tested |
 | AP-013 |  | capability | Vendor portals | Not started |
 | AP-014 |  | capability | Payment batches | Tested |
-| AP-015 |  | capability | Purchase order matching | Not started |
-| AP-016 |  | capability | Goods receipt matching | Not started |
-| AP-017 |  | capability | Three-way matching | Not started |
+| AP-015 |  | capability | Purchase order matching | Tested |
+| AP-016 |  | capability | Goods receipt matching | Tested |
+| AP-017 |  | capability | Three-way matching | Tested |
 | AP-018 |  | capability | Duplicate invoice detection | Tested |
 | AP-019 |  | capability | Supplier tax validation | Not started |
 | AP-020 |  | capability | Expense classification | Not started |

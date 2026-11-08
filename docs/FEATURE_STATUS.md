@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 817 |
+| Not started | 814 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 411 |
+| Tested | 414 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 19 | 24 |
-| Accounts payable | M2 | 36 | 21 | 15 |
+| Accounts payable | M2 | 36 | 18 | 18 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -849,6 +849,54 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/payment-batches-flow.test.mjs
   - docs/PAYMENT_BATCHES.md
   - apps/web/src/app/orgs/[orgId]/purchases/payment-batches/[batchId]/page.tsx
+
+### AP-015 — Purchase order matching
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Purchase orders PO-0001: drafted with lines worked out by the bill rules (GST vendor state/place of supply), expected date (late flag), match mode two-way/three-way and price/quantity tolerances; issued then fixed (DB trigger on header and lines); close with reason (short close) or cancel when nothing received/billed; Make bill drafts a bill for what is left to bill; bill lines keep purchase_order_line_id through edits; two-way matching checks price and quantity ordered. Functional currency only.
+- Evidence:
+  - packages/accounting-engine/src/purchase-orders.ts
+  - packages/accounting-engine/test/purchase-orders.test.ts
+  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/purchase-orders/purchase-orders.service.ts
+  - apps/api/src/purchase-orders/matching.ts
+  - apps/api/test/purchase-orders.e2e.test.ts
+  - apps/web/e2e/purchase-orders-flow.test.mjs
+  - docs/PURCHASE_ORDERS_AND_MATCHING.md
+  - apps/web/src/app/orgs/[orgId]/purchases/orders/[orderId]/page.tsx
+
+### AP-016 — Goods receipt matching
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Goods receipts GRN-0001 against issued three-way orders: date, delivery note, accepted and rejected quantity per line with note; over-receipt refused beyond the quantity tolerance; never edited or deleted (DB triggers), cancelled with a reason unless bills rely on the quantity. Does not move stock.
+- Evidence:
+  - packages/accounting-engine/src/purchase-orders.ts
+  - packages/accounting-engine/test/purchase-orders.test.ts
+  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/purchase-orders/purchase-orders.service.ts
+  - apps/api/src/purchase-orders/matching.ts
+  - apps/api/test/purchase-orders.e2e.test.ts
+  - apps/web/e2e/purchase-orders-flow.test.mjs
+  - docs/PURCHASE_ORDERS_AND_MATCHING.md
+  - apps/web/src/app/orgs/[orgId]/purchases/orders/[orderId]/page.tsx
+
+### AP-017 — Three-way matching
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Three-way matching of bills against order and goods received: exceptions for price above order (+tolerance), more than ordered, more than received (+tolerance), lines not on the order, order closed/cancelled; several bill lines per order line add up with other non-void bills; posting refused (409 BILL_MATCH_EXCEPTION) until approvals.decide accepts the exact differences with a reason (fingerprinted, append-only, audit); Purchase order match panel on the bill page.
+- Evidence:
+  - packages/accounting-engine/src/purchase-orders.ts
+  - packages/accounting-engine/test/purchase-orders.test.ts
+  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/purchase-orders/purchase-orders.service.ts
+  - apps/api/src/purchase-orders/matching.ts
+  - apps/api/test/purchase-orders.e2e.test.ts
+  - apps/web/e2e/purchase-orders-flow.test.mjs
+  - docs/PURCHASE_ORDERS_AND_MATCHING.md
+  - apps/web/src/app/orgs/[orgId]/purchases/orders/[orderId]/page.tsx
 
 ### AP-018 — Duplicate invoice detection
 

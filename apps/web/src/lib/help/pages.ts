@@ -210,6 +210,26 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the lines, the amounts, the end date or whether bills are posted. Once it has made bills, its vendor, first date, frequency and run day stay as they are.',
     where: 'Purchases. Bills already made keep their lines and amounts.',
   },
+  'purchases/orders': {
+    what: 'Purchase orders: what you ordered from vendors, what has arrived and what is billed.',
+    how: 'New purchase order, then Issue to vendor. Record goods received as deliveries arrive, and Make bill… when the vendor\'s invoice comes. Close an order when nothing more is coming.',
+    where: 'Purchases. Bills made from an order are checked against it, and against the goods received for three-way matching, before they post.',
+  },
+  'purchases/orders/new': {
+    what: 'A new purchase order, worked out by the same rules as a bill (tax rates, GST place of supply).',
+    how: 'Choose the vendor, dates and lines, how bills are matched (three-way for goods, two-way for services) and the price and quantity tolerances. It is saved as a draft you can change until it is issued.',
+    where: 'Purchases. Numbered PO- when saved.',
+  },
+  'purchases/orders/[id]': {
+    what: 'One purchase order: its lines with what was ordered, received and billed, its goods receipts and its bills.',
+    how: 'Issue a draft, record goods received, make the bill, close it when nothing more is coming, or cancel it if nothing was received or billed. Once issued its lines stay as they are.',
+    where: 'Opened from Purchase orders. Each bill links to its match against this order.',
+  },
+  'purchases/orders/[id]/edit': {
+    what: 'Changing a draft purchase order.',
+    how: 'Change the vendor, dates, terms, matching, tolerances or lines, then save. An issued order cannot change; close it and raise a new one.',
+    where: 'Purchases. Opened with Edit on a draft purchase order.',
+  },
   'sales/pro-formas': {
     what: 'Pro forma invoices: what a customer will be billed, sent before the sale to collect an advance or for their approvals. Not a tax invoice; nothing is posted.',
     how: 'New pro forma invoice, or Make pro forma invoice… on a sent or accepted quotation. Issue it, print it, then Make tax invoice… when you supply or are paid.',
