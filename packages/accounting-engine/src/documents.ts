@@ -78,6 +78,8 @@ export interface DocumentLineInput {
   /** Financial dimensions, carried to the line's journal line. */
   departmentId?: string | null;
   projectId?: string | null;
+  /** Bills: the purchase order line this line bills (matched against the order and its goods receipts). */
+  purchaseOrderLineId?: string | null;
 }
 
 export interface TaxRateInfo {
@@ -128,6 +130,7 @@ export interface ComputedDocumentLine {
   taxComponents: TaxComponent[];
   departmentId: string | null;
   projectId: string | null;
+  purchaseOrderLineId: string | null;
 }
 
 export interface ComputedDocument {
@@ -222,6 +225,7 @@ export function computeDocument(lines: DocumentLineInput[], currency: string, ta
       taxComponents,
       departmentId: l.departmentId ?? null,
       projectId: l.projectId ?? null,
+      purchaseOrderLineId: l.purchaseOrderLineId ?? null,
     });
   });
   if (issues.length) throw new DocumentValidationError(issues);

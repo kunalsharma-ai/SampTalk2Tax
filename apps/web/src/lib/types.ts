@@ -299,12 +299,16 @@ export interface DocumentLine {
   taxAmount: string;
   departmentId: string | null;
   projectId: string | null;
+  /** Bills: the purchase order line this line bills. */
+  purchaseOrderLineId?: string | null;
 }
 
 export interface FinancialDocument extends DocumentSummary {
   memo: string | null;
   /** Set on a debit note: the invoice it raises the value of. */
   debitNoteFor: { id: string; number: string | null; issueDate: string; total: string } | null;
+  /** Bills: the purchase order this bill is matched to. */
+  purchaseOrderId?: string | null;
   debitNotes: { id: string; number: string | null; status: 'DRAFT' | 'POSTED' | 'VOID'; issueDate: string; total: string }[];
   functionalCurrency: string;
   reverseCharge: boolean;

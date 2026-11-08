@@ -20,6 +20,8 @@ const Line = z.object({
   hsnCode: z.string().trim().max(8).nullable().optional(),
   departmentId: z.uuid().nullable().optional(),
   projectId: z.uuid().nullable().optional(),
+  /** Bills: the purchase order line this line bills. */
+  purchaseOrderLineId: z.uuid().nullable().optional(),
 });
 const kinds = { SALES: ['INVOICE', 'CREDIT_NOTE'], PURCHASES: ['BILL', 'VENDOR_CREDIT'] } as const;
 
@@ -41,6 +43,8 @@ function schemas(ledger: Ledger) {
     exchangeRate: z.string().trim().max(30).nullable().optional(),
     /** Sales: the posted invoice this debit note raises the value of. */
     debitNoteFor: z.uuid().nullable().optional(),
+    /** Purchases: the purchase order this bill is matched to (AP-015). */
+    purchaseOrderId: z.uuid().nullable().optional(),
     lines: z.array(Line).min(1).max(500),
   });
   return {
