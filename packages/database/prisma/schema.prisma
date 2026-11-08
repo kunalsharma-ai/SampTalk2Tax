@@ -4931,3 +4931,20 @@ model RecurringBillRun {
   @@index([documentId])
   @@map("recurring_bill_runs")
 }
+
+/// AP-007: the date (and amount) an open bill is planned to be paid. Planning moves no money.
+model BillPaymentPlan {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  documentId  String   @unique @map("document_id") @db.Uuid
+  payDate     DateTime @map("pay_date") @db.Date
+  /// Null: what is left on the bill.
+  amount      Decimal? @db.Decimal(24, 6)
+  note        String?  @db.VarChar(300)
+  updatedById String   @map("updated_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([orgId, payDate])
+  @@map("bill_payment_plans")
+}
