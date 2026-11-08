@@ -45,6 +45,7 @@ export * from './recurring-bills';
 export * from './bad-debts';
 export * from './year-end';
 export * from './payment-batches';
+export * from './payment-schedule';
 export * from './plans';
 export * from './subscription-billing';
 export * from './support';

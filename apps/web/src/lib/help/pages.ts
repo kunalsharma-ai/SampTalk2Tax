@@ -210,6 +210,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the lines, the amounts, the end date or whether bills are posted. Once it has made bills, its vendor, first date, frequency and run day stay as they are.',
     where: 'Purchases. Bills already made keep their lines and amounts.',
   },
+  'purchases/payment-schedule': {
+    what: 'When each open bill will be paid, and the bank balance week by week after the planned payments.',
+    how: 'Plan a date for each bill (and an amount, to pay part), or press Plan the rest to plan every unplanned bill for its due date or your pay day. Then prepare a payment batch from the bills planned up to a date.',
+    where: 'Purchases. A plan moves no money and posts nothing; the payment batch, approved and paid through the bank, does.',
+  },
   'purchases/ageing': {
     what: 'What you owe vendors on a date, split by how long it has been due.',
     how: 'Pick the date and plan payments from the oldest buckets.',

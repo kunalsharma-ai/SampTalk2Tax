@@ -175,7 +175,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-004 |  | capability | Supplier bills | Tested |
 | AP-005 |  | capability | Recurring bills | Tested |
 | AP-006 |  | capability | Bill approval workflows | Tested |
-| AP-007 |  | capability | Payment scheduling | Not started |
+| AP-007 |  | capability | Payment scheduling | Tested |
 | AP-008 |  | capability | Partial payments | Implemented |
 | AP-009 |  | capability | Advance payments | Implemented |
 | AP-010 |  | capability | Credit notes | Implemented |
