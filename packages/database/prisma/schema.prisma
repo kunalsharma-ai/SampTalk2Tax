@@ -4948,3 +4948,52 @@ model BillPaymentPlan {
   @@index([orgId, payDate])
   @@map("bill_payment_plans")
 }
+
+/// A customer's dispute about an invoice (AR-025). While OPEN, the invoice is held out of reminders.
+model InvoiceDispute {
+  id             String    @id @default(uuid()) @db.Uuid
+  orgId          String    @map("org_id") @db.Uuid
+  number         Int
+  documentId     String    @map("document_id") @db.Uuid
+  contactId      String    @map("contact_id") @db.Uuid
+  amount         Decimal   @db.Decimal(24, 6)
+  /// PRICE, QUANTITY, QUALITY, NOT_RECEIVED, DUPLICATE, TAX, OTHER
+  reason         String    @db.VarChar(20)
+  description    String    @db.VarChar(1000)
+  /// OPEN or RESOLVED
+  status         String    @default("OPEN") @db.VarChar(10)
+  ownerId        String?   @map("owner_id") @db.Uuid
+  targetDate     DateTime? @map("target_date") @db.Date
+  openedOn       DateTime  @map("opened_on") @db.Date
+  openedById     String    @map("opened_by_id") @db.Uuid
+  /// CREDIT_NOTE, CUSTOMER_PAYS, WRITTEN_OFF, WITHDRAWN
+  outcome        String?   @db.VarChar(20)
+  creditNoteId   String?   @map("credit_note_id") @db.Uuid
+  resolutionNote String?   @map("resolution_note") @db.VarChar(1000)
+  resolvedOn     DateTime? @map("resolved_on") @db.Date
+  resolvedById   String?   @map("resolved_by_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@unique([orgId, number])
+  @@index([orgId, status])
+  @@index([documentId])
+  @@map("invoice_disputes")
+}
+
+/// Append-only history of a dispute: raised, notes, changes, resolution.
+model InvoiceDisputeEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  disputeId String   @map("dispute_id") @db.Uuid
+  /// RAISED, NOTE, CHANGED, RESOLVED
+  kind      String   @db.VarChar(20)
+  body      String?  @db.VarChar(2000)
+  data      Json?
+  actorId   String   @map("actor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([disputeId, createdAt])
+  @@map("invoice_dispute_events")
+}

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { NOT_DISPUTED } from '../disputes/disputes.service';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { checkDraft, CustomerFacts, customerFacts, D, draftPasses, factsForModel, RISK_LEVELS, RiskLevel } from '@talk2tax/accounting-engine';
@@ -198,7 +199,7 @@ export class CollectionsService {
     return tx.$queryRaw<{ contact_id: string; name: string; email: string | null; overdue: Prisma.Decimal }[]>`
       SELECT c.id AS contact_id, c.name, c.email, SUM(x.open) AS overdue FROM (
         SELECT d.contact_id, ROUND((d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0)) * d.exchange_rate, 2) AS open
-        FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND d.due_date < ${toDbDate(today)}::date) x
+        FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND d.due_date < ${toDbDate(today)}::date AND ${NOT_DISPUTED}) x
       JOIN contacts c ON c.id = x.contact_id
       WHERE x.open > 0
       GROUP BY c.id, c.name, c.email
@@ -210,7 +211,7 @@ export class CollectionsService {
       SELECT d.number, d.issue_date, d.due_date, d.total, d.reference, d.currency::text AS currency,
         d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open,
         (SELECT MAX(a.date) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL) AS last_paid
-      FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.contact_id = ${contact.id}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED'
+      FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.contact_id = ${contact.id}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND ${NOT_DISPUTED}
       ORDER BY d.due_date`;
     // A reminder is in one currency: that of the oldest invoice still open (usually the customer's only one).
     const firstOpen = all.find((i) => new D(i.open.toString()).gt(0));
