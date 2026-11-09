@@ -14,8 +14,9 @@ module follows when it moves.
 | 1 | Data layer, replica set, migrations | Done (#87) |
 | 2 | `users`, `auth_sessions`, `login_throttles` | Done (#89) |
 | 3 | `organizations`, `memberships`, `invitations` | Done (#90) |
-| 4 | `accounts`, `fiscal_periods` | This step |
-| 5 | Ledger: journals and lines, reports | Next |
+| 4 | `accounts`, `fiscal_periods` | Done (#91) |
+| 5 | `journal_entries` (lines inside each entry) | This step |
+| 6 | Sales and purchases: contacts, documents, payments, banking | Next |
 
 ## Why these choices
 
@@ -73,6 +74,30 @@ Modules still on PostgreSQL point at moved records with foreign keys (for exampl
   new sign-up whose audit record cannot be written is removed again). Between the two
   commits a crash could still leave the copy behind. The copy is rewritten on the record's
   next change, and the copying tool below repairs it.
+
+**One transaction across both databases.** Every PostgreSQL transaction owns a MongoDB
+transaction (`createTenantAwarePrisma`, `DocumentStore.hold`). MongoDB work done inside the
+callback joins it and commits right after PostgreSQL commits; if PostgreSQL fails, it is
+abandoned. A MongoDB write conflict runs the whole callback again. So a module that has not
+moved (an invoice posting) can post a journal to MongoDB inside its own PostgreSQL transaction,
+and both stand or fall together. Two rules follow:
+
+* Inside a transaction, run MongoDB operations one after another, never with `Promise.all`:
+  MongoDB runs one operation at a time per transaction.
+* Do not open a second `$transaction` inside one to set something up for the outer one: the
+  outer MongoDB snapshot would not see it. Do the set-up in the outer transaction.
+
+If MongoDB fails to commit after PostgreSQL did (a crash in between), PostgreSQL holds a change
+MongoDB lacks; it is logged, and `db:copy-to-mongo` copies it.
+
+**The ledger.** Journal entries are MongoDB documents with their lines inside. Each posting
+is copied, with the same line ids, into the PostgreSQL transaction that made it, where
+documents, bank matches and reports still point at it. Entry numbers still come from
+PostgreSQL's `org_counters` row, which makes concurrent postings take turns. The triggers
+became guards: posted entries are immutable and cannot be deleted, posted entries balance and
+match their totals, line amounts are one-sided and non-negative, the period must be open and
+contain the date, and accounts must be postable and active. The department and project check
+stays on the PostgreSQL copy until dimensions move.
 
 **Writes from modules that have not moved.** GST, payroll, TDS/TCS, bad debts and expense
 claims set up their own accounts inside their PostgreSQL transactions. They do it through

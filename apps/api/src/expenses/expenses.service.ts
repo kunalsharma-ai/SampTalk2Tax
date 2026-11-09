@@ -197,7 +197,7 @@ export class ExpensesService {
       if (!computed.total.eq(c.total.toFixed()) || !computed.taxTotal.eq(c.taxTotal.toFixed())) {
         throw new DomainError('TOTAL_CHANGED', 'A tax rate used on this claim changed since it was submitted. Reject it so the claimant can save it again.', HttpStatus.CONFLICT);
       }
-      const payable = await this.claimsAccount(org.id, actor.id);
+      const payable = await this.claimsAccount(tx, org.id, actor.id);
       const claimant = (await this.names([c.claimantId])).get(c.claimantId) ?? 'employee';
       const je = await this.journals.postSystemEntry(tx, org, actor, {
         date,
@@ -230,7 +230,7 @@ export class ExpensesService {
       if (!bank || !bank.isActive || !bank.isPostable || (bank.subtype !== 'BANK' && bank.subtype !== 'CASH')) {
         throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
       }
-      const payable = await this.claimsAccount(org.id, actor.id);
+      const payable = await this.claimsAccount(tx, org.id, actor.id);
       const claimant = (await this.names([c.claimantId])).get(c.claimantId) ?? 'employee';
       const je = await this.journals.postSystemEntry(tx, org, actor, {
         date: input.date,
@@ -334,27 +334,22 @@ export class ExpensesService {
 
   /**
    * The employee reimbursements account; organisations created before it existed get one on
-   * first use. That set-up commits on its own (the organisation record is in MongoDB), so the
-   * caller's transaction only ever sees an account that exists.
+   * first use, inside the caller's transaction (MongoDB changes commit with it). The row lock on
+   * the organisation's copy makes two first uses take turns; if MongoDB still sees them collide,
+   * the whole transaction runs again.
    */
-  private async claimsAccount(orgId: string, actorId: string): Promise<string> {
+  private async claimsAccount(tx: Tx, orgId: string, actorId: string): Promise<string> {
     const known = (await this.store.collection(organizations).findById(orgId))?.claimsAccountId;
     if (known) return known;
-    const created = await this.prisma.$transaction(async (tx) => {
-      // One set-up at a time per organisation.
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
-      const again = (await this.store.collection(organizations).findById(orgId))?.claimsAccountId;
-      if (again) return again;
-      const candidates = ['2250', '2251', '2252', '2253', '2254', '2255', '2256', '2257', '2258', '2259'];
-      const taken = new Set((await this.chart.find(orgId, { code: { $in: candidates } })).map((a) => a.code));
-      const code = candidates.find((x) => !taken.has(x));
-      if (!code) throw new DomainError('NO_CLAIMS_ACCOUNT', 'Could not find a free account code (2250–2259) for employee reimbursements', HttpStatus.CONFLICT);
-      const a = { id: await this.chart.create(tx, orgId, actorId, { code, name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentCode: '2000' }, 'Employee expense claims') };
-      await this.store.collection(organizations).updateOne({ id: orgId, claimsAccountId: null }, { $set: { claimsAccountId: a.id, updatedAt: new Date() } });
-      await this.mirror.organizations([orgId], tx);
-      return a.id;
-    });
-    return created;
+    await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+    const candidates = ['2250', '2251', '2252', '2253', '2254', '2255', '2256', '2257', '2258', '2259'];
+    const taken = new Set((await this.chart.find(orgId, { code: { $in: candidates } })).map((a) => a.code));
+    const code = candidates.find((x) => !taken.has(x));
+    if (!code) throw new DomainError('NO_CLAIMS_ACCOUNT', 'Could not find a free account code (2250–2259) for employee reimbursements', HttpStatus.CONFLICT);
+    const id = await this.chart.create(tx, orgId, actorId, { code, name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentCode: '2000' }, 'Employee expense claims');
+    await this.store.collection(organizations).updateOne({ id: orgId, claimsAccountId: null }, { $set: { claimsAccountId: id, updatedAt: new Date() } });
+    await this.mirror.organizations([orgId], tx);
+    return id;
   }
 
   private async nextNumber(tx: Tx, orgId: string) {

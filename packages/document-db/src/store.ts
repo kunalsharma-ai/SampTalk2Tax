@@ -15,6 +15,23 @@ export interface DocumentStoreOptions {
   context: () => AccessContext;
 }
 
+/**
+ * A transaction whose caller decides when it commits: for work that must commit together with
+ * another database's transaction. ScopedCollection calls inside `run`, at any depth, join it,
+ * and so do `transaction()` calls (they do not commit on their own).
+ */
+export interface HeldTransaction {
+  run<R>(fn: () => Promise<R>): Promise<R>;
+  /** Commits what joined. Retries once if the outcome of the commit is unknown. */
+  commit(): Promise<void>;
+  abort(): Promise<void>;
+}
+
+/** MongoDB marks write conflicts and similar errors as worth retrying the whole transaction. */
+export function isTransientTransactionError(e: unknown): boolean {
+  return typeof (e as { hasErrorLabel?: unknown })?.hasErrorLabel === 'function' && (e as { hasErrorLabel(l: string): boolean }).hasErrorLabel('TransientTransactionError');
+}
+
 const TRANSACTION_OPTIONS: TransactionOptions = {
   readConcern: { level: 'snapshot' },
   writeConcern: { w: 'majority' },
@@ -85,6 +102,36 @@ export class DocumentStore {
     } finally {
       await session.endSession();
     }
+  }
+
+  /** Starts a transaction the caller commits or aborts (see HeldTransaction). */
+  hold(): HeldTransaction {
+    const session = this.client.startSession();
+    session.startTransaction(TRANSACTION_OPTIONS);
+    let done = false;
+    const end = async (how: 'commit' | 'abort') => {
+      if (done) return;
+      done = true;
+      try {
+        if (how === 'abort') {
+          await session.abortTransaction();
+          return;
+        }
+        try {
+          await session.commitTransaction();
+        } catch (e) {
+          if (!(e as { hasErrorLabel?: (l: string) => boolean }).hasErrorLabel?.('UnknownTransactionCommitResult')) throw e;
+          await session.commitTransaction();
+        }
+      } finally {
+        await session.endSession();
+      }
+    };
+    return {
+      run: (fn) => this.sessions.run(session, fn),
+      commit: () => end('commit'),
+      abort: () => end('abort'),
+    };
   }
 
   /** Next value of a global counter, inside the current transaction if there is one. */
