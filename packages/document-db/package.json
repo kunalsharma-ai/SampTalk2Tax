@@ -1,0 +1,21 @@
+{
+  "name": "@talk2tax/document-db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MongoDB data layer for Talk2Tax: tenant-scoped collections, Decimal128 money, transactions, guards and migrations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "mongodb": "7.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

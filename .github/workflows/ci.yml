@@ -31,6 +31,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://talk2tax:talk2tax@localhost:5432/talk2tax_test?schema=public
       TEST_DATABASE_URL: postgresql://talk2tax:talk2tax@localhost:5432/talk2tax_test?schema=public
+      MONGODB_URL: mongodb://localhost:27017/talk2tax_test?replicaSet=rs0
+      TEST_MONGODB_URL: mongodb://localhost:27017/talk2tax_test?replicaSet=rs0
       JWT_SECRET: ci-only-secret-that-is-at-least-32-characters-long
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +48,14 @@ jobs:
         run: |
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE talk2tax LOGIN PASSWORD 'talk2tax' NOSUPERUSER NOBYPASSRLS NOCREATEROLE"
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE talk2tax_test OWNER talk2tax"
+      # Service containers cannot take arguments, so MongoDB (a one-node replica set, for
+      # transactions) is started here.
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
+          for i in $(seq 1 60); do docker exec mongo mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' >/dev/null 2>&1 && break; sleep 1; done
+          docker exec mongo mongosh --quiet --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })"
+          for i in $(seq 1 60); do docker exec mongo mongosh --quiet --eval 'db.hello().isWritablePrimary' | grep -q true && break; sleep 1; done
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck

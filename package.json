@@ -11,7 +11,7 @@
     "build": "pnpm -r --workspace-concurrency=1 run build",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r --workspace-concurrency=1 run test",
-    "db:migrate": "pnpm --filter @talk2tax/database run migrate:deploy",
+    "db:migrate": "pnpm --filter @talk2tax/database run migrate:deploy && pnpm --filter @talk2tax/api run db:migrate:mongo",
     "db:seed": "pnpm --filter @talk2tax/api run seed",
     "dev:api": "pnpm --filter @talk2tax/api run dev",
     "features:generate": "node scripts/generate-feature-registry.mjs",

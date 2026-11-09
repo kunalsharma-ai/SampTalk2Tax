@@ -1,4 +1,4 @@
-# Local development: `docker compose up -d postgres` gives the database only.
+# Local development: `docker compose up -d postgres mongo` gives the databases only.
 # The whole stack in containers: `docker compose --profile app up --build`
 #   database → migrations (run once, then exit) → API → web app on http://localhost:3000
 # Host ports can be moved with POSTGRES_PORT, API_PORT and WEB_PORT. Images are tagged
@@ -21,6 +21,21 @@ services:
       timeout: 3s
       retries: 20
 
+  # MongoDB as a one-node replica set: transactions need a replica set. The health check
+  # initiates the set on first start (and is a no-op afterwards).
+  mongo:
+    image: mongo:8.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok }"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
   # The release step: applies migrations, then exits. The API waits for it to succeed.
   migrate:
     image: talk2tax-migrate:${IMAGE_TAG:-local}
@@ -32,8 +47,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://talk2tax:talk2tax@postgres:5432/talk2tax?schema=public
+      MONGODB_URL: mongodb://mongo:27017/talk2tax?replicaSet=rs0
     restart: "no"
 
   api:
@@ -50,6 +68,7 @@ services:
         condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://talk2tax:talk2tax@postgres:5432/talk2tax?schema=public
+      MONGODB_URL: mongodb://mongo:27017/talk2tax?replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       PORT: 4000
       APP_URL: http://localhost:${WEB_PORT:-3000}
@@ -76,3 +95,4 @@ services:
 
 volumes:
   pgdata:
+  mongodata:
