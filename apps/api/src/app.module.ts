@@ -40,6 +40,7 @@ import { CountryModulesService } from './country-modules/country-modules.service
 import { TaxRatesService } from './tax-rates/tax-rates.service';
 import { prismaProvider } from './common/prisma.service';
 import { documentStoreProvider } from './common/document-store.service';
+import { PostgresMirrorService } from './db/postgres-mirror.service';
 import { AppConfig, CONFIG } from './config';
 import { GstController } from './gst/gst.controller';
 import { GstService } from './gst/gst.service';
@@ -307,6 +308,7 @@ export class AppModule {
         { provide: CONFIG, useValue: config },
         prismaProvider,
         documentStoreProvider,
+        PostgresMirrorService,
         TokensService,
         AuditService,
         AuthService,

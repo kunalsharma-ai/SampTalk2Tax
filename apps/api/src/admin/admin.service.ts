@@ -3,7 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import type { AuthUser, PlatformRole } from '../auth/decorators';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
+import { SessionsService } from '../auth/sessions.service';
+import { users as usersCollection } from '../db/collections/identity';
+import { PostgresMirrorService } from '../db/postgres-mirror.service';
 
 const DAY_MS = 86_400_000;
 
@@ -19,7 +23,14 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
+    private readonly mirror: PostgresMirrorService,
+    private readonly sessions: SessionsService,
   ) {}
+
+  private get people_() {
+    return this.store.collection(usersCollection);
+  }
 
   /** Organisations and memberships sit behind row-level security; admin reads cross tenants for metadata only. */
   private system<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -28,24 +39,27 @@ export class AdminService {
 
   async overview(now = new Date()) {
     const since = new Date(now.getTime() - 30 * DAY_MS);
-    return this.system(async (tx) => {
-      const [organisations, suspended, demo, newOrganisations, people, inactive, newPeople, signedIn, admins] = await Promise.all([
-        tx.organization.count(),
-        tx.organization.count({ where: { suspendedAt: { not: null } } }),
-        tx.organization.count({ where: { isDemo: true } }),
-        tx.organization.count({ where: { createdAt: { gte: since } } }),
-        tx.user.count(),
-        tx.user.count({ where: { isActive: false } }),
-        tx.user.count({ where: { createdAt: { gte: since } } }),
-        tx.authSession.findMany({ where: { lastUsedAt: { gte: since } }, distinct: ['userId'], select: { userId: true } }),
-        tx.user.findMany({ where: { platformRole: { not: null } }, select: { id: true, name: true, email: true, platformRole: true }, orderBy: { email: 'asc' } }),
-      ]);
-      return {
-        organisations: { total: organisations, suspended, demo, createdLast30Days: newOrganisations },
-        people: { total: people, disabled: inactive, joinedLast30Days: newPeople, signedInLast30Days: signedIn.length },
-        administrators: admins,
-      };
-    });
+    const [orgCounts, people, inactive, newPeople, signedIn, admins] = await Promise.all([
+      this.system((tx) =>
+        Promise.all([
+          tx.organization.count(),
+          tx.organization.count({ where: { suspendedAt: { not: null } } }),
+          tx.organization.count({ where: { isDemo: true } }),
+          tx.organization.count({ where: { createdAt: { gte: since } } }),
+        ]),
+      ),
+      this.people_.count(),
+      this.people_.count({ isActive: false }),
+      this.people_.count({ createdAt: { $gte: since } }),
+      this.sessions.peopleSeenSince(since),
+      this.people_.find({ platformRole: { $ne: null } }, { sort: { email: 1 } }),
+    ]);
+    const [organisations, suspended, demo, newOrganisations] = orgCounts;
+    return {
+      organisations: { total: organisations, suspended, demo, createdLast30Days: newOrganisations },
+      people: { total: people, disabled: inactive, joinedLast30Days: newPeople, signedInLast30Days: signedIn },
+      administrators: admins.map((a) => ({ id: a.id, name: a.name, email: a.email, platformRole: a.platformRole })),
+    };
   }
 
   async organisations(q: string | undefined, status: 'all' | 'active' | 'suspended') {
@@ -123,30 +137,28 @@ export class AdminService {
 
   async people(q: string | undefined) {
     const term = q?.trim().toLowerCase();
-    // Membership counts cross tenants (row-level security), so they are read as the system.
-    const users = await this.system((tx) => tx.user.findMany({
-      where: term ? { OR: [{ email: { contains: term } }, { name: { contains: term, mode: 'insensitive' } }] } : {},
-      select: { id: true, name: true, email: true, isActive: true, platformRole: true, createdAt: true, _count: { select: { memberships: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    }));
+    const pattern = term ? escapeRegex(term) : undefined;
+    const users = await this.people_.find(
+      pattern ? { $or: [{ email: { $regex: pattern } }, { name: { $regex: pattern, $options: 'i' } }] } : {},
+      { sort: { createdAt: -1 }, limit: 200 },
+    );
     const ids = users.map((u) => u.id);
-    const [seen, open] = await Promise.all([
-      this.prisma.authSession.groupBy({ by: ['userId'], where: { userId: { in: ids } }, _max: { lastUsedAt: true } }),
-      this.prisma.authSession.groupBy({ by: ['userId'], where: { userId: { in: ids }, revokedAt: null, expiresAt: { gt: new Date() } }, _count: { _all: true } }),
+    // Membership counts cross tenants (row-level security), so they are read as the system.
+    const [memberships, activity] = await Promise.all([
+      ids.length ? this.system((tx) => tx.membership.groupBy({ by: ['userId'], where: { userId: { in: ids } }, _count: { _all: true } })) : [],
+      this.sessions.activity(ids),
     ]);
-    const last = new Map(seen.map((s) => [s.userId, s._max.lastUsedAt]));
-    const live = new Map(open.map((s) => [s.userId, s._count._all]));
+    const orgCount = new Map(memberships.map((m) => [m.userId, m._count._all]));
     return users.map((u) => ({
       id: u.id,
       name: u.name,
       email: u.email,
       active: u.isActive,
       platformRole: u.platformRole,
-      organisations: u._count.memberships,
+      organisations: orgCount.get(u.id) ?? 0,
       joinedAt: u.createdAt.toISOString(),
-      lastSeenAt: last.get(u.id)?.toISOString() ?? null,
-      openSessions: live.get(u.id) ?? 0,
+      lastSeenAt: activity.get(u.id)?.lastUsedAt.toISOString() ?? null,
+      openSessions: activity.get(u.id)?.open ?? 0,
     }));
   }
 
@@ -155,62 +167,72 @@ export class AdminService {
     const why = reason.trim();
     if (why.length < 5) throw new DomainError('REASON_REQUIRED', 'Say why the person is disabled (at least 5 characters)', HttpStatus.UNPROCESSABLE_ENTITY);
     if (userId === actor.id) throw new DomainError('NOT_YOURSELF', 'You cannot disable yourself', HttpStatus.CONFLICT);
-    return this.prisma.$transaction(async (tx) => {
-      const u = await tx.user.findUnique({ where: { id: userId }, select: { isActive: true, platformRole: true } });
-      if (!u) throw new DomainError('NOT_FOUND', 'Person not found', HttpStatus.NOT_FOUND);
+    const ended = await this.store.transaction(async () => {
+      const u = await this.person(userId);
       if (!u.isActive) throw new DomainError('ALREADY_DISABLED', 'This person is already disabled', HttpStatus.CONFLICT);
-      if (u.platformRole === 'SUPER_ADMIN') await this.keepOneSuperAdmin(tx, userId);
-      await tx.user.update({ where: { id: userId }, data: { isActive: false } });
-      const ended = await this.endSessions(tx, userId);
-      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.user_disabled', entityType: 'user', entityId: userId, data: { reason: why, sessionsEnded: ended } });
-      return { userId, active: false, sessionsEnded: ended };
+      if (u.platformRole === 'SUPER_ADMIN') await this.keepOneSuperAdmin(userId);
+      await this.people_.updateOne({ id: userId }, { $set: { isActive: false, updatedAt: new Date() } });
+      return this.sessions.revokeOthersInStore(userId, null, 'platform_admin');
     });
+    await this.recordInPostgres(userId, { orgId: null, actorId: actor.id, action: 'platform.user_disabled', entityType: 'user', entityId: userId, data: { reason: why, sessionsEnded: ended } });
+    return { userId, active: false, sessionsEnded: ended };
   }
 
   async enable(actor: AuthUser, userId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const u = await tx.user.findUnique({ where: { id: userId }, select: { isActive: true } });
-      if (!u) throw new DomainError('NOT_FOUND', 'Person not found', HttpStatus.NOT_FOUND);
+    await this.store.transaction(async () => {
+      const u = await this.person(userId);
       if (u.isActive) throw new DomainError('ALREADY_ACTIVE', 'This person is already active', HttpStatus.CONFLICT);
-      await tx.user.update({ where: { id: userId }, data: { isActive: true } });
-      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.user_enabled', entityType: 'user', entityId: userId });
-      return { userId, active: true };
+      await this.people_.updateOne({ id: userId }, { $set: { isActive: true, updatedAt: new Date() } });
     });
+    await this.recordInPostgres(userId, { orgId: null, actorId: actor.id, action: 'platform.user_enabled', entityType: 'user', entityId: userId });
+    return { userId, active: true };
   }
 
   /** Signs a person out everywhere (a lost laptop, a suspected compromise). */
   async signOut(actor: AuthUser, userId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      if (!(await tx.user.findUnique({ where: { id: userId }, select: { id: true } }))) throw new DomainError('NOT_FOUND', 'Person not found', HttpStatus.NOT_FOUND);
-      const ended = await this.endSessions(tx, userId);
-      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.user_signed_out', entityType: 'user', entityId: userId, data: { sessionsEnded: ended } });
-      return { userId, sessionsEnded: ended };
-    });
+    await this.person(userId);
+    const ended = await this.sessions.revokeOthersInStore(userId, null, 'platform_admin');
+    await this.prisma.$transaction((tx) => this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.user_signed_out', entityType: 'user', entityId: userId, data: { sessionsEnded: ended } }));
+    return { userId, sessionsEnded: ended };
   }
 
   async setPlatformRole(actor: AuthUser, userId: string, role: PlatformRole | null) {
-    return this.prisma.$transaction(async (tx) => {
-      const u = await tx.user.findUnique({ where: { id: userId }, select: { platformRole: true, isActive: true } });
-      if (!u) throw new DomainError('NOT_FOUND', 'Person not found', HttpStatus.NOT_FOUND);
-      if (u.platformRole === role) return { userId, platformRole: role };
+    const before = await this.store.transaction(async () => {
+      const u = await this.person(userId);
+      if (u.platformRole === role) return undefined;
       if (role && !u.isActive) throw new DomainError('USER_DISABLED', 'Enable the person before giving them a platform role', HttpStatus.CONFLICT);
-      if (u.platformRole === 'SUPER_ADMIN') await this.keepOneSuperAdmin(tx, userId);
-      await tx.user.update({ where: { id: userId }, data: { platformRole: role } });
-      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.role_changed', entityType: 'user', entityId: userId, data: { before: u.platformRole, after: role } });
-      return { userId, platformRole: role };
+      if (u.platformRole === 'SUPER_ADMIN') await this.keepOneSuperAdmin(userId);
+      await this.people_.updateOne({ id: userId }, { $set: { platformRole: role, updatedAt: new Date() } });
+      return { platformRole: u.platformRole };
     });
+    if (before) {
+      await this.recordInPostgres(userId, { orgId: null, actorId: actor.id, action: 'platform.role_changed', entityType: 'user', entityId: userId, data: { before: before.platformRole, after: role } });
+    }
+    return { userId, platformRole: role };
   }
 
   /** Grants a platform role by email, for the first administrator (the admin:grant command). */
   async grant(email: string, role: PlatformRole) {
-    const u = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() }, select: { id: true, isActive: true, platformRole: true } });
+    const u = await this.people_.findOne({ email: email.trim().toLowerCase() });
     if (!u) throw new DomainError('USER_NOT_FOUND', `No registered person has the email ${email}; they register first`, HttpStatus.NOT_FOUND);
     if (!u.isActive) throw new DomainError('USER_DISABLED', 'That person is disabled', HttpStatus.CONFLICT);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.user.update({ where: { id: u.id }, data: { platformRole: role } });
-      await this.audit.append(tx, { orgId: null, actorId: null, action: 'platform.role_changed', entityType: 'user', entityId: u.id, data: { before: u.platformRole, after: role, via: 'admin:grant command' } });
-    });
+    await this.people_.updateOne({ id: u.id }, { $set: { platformRole: role, updatedAt: new Date() } });
+    await this.recordInPostgres(u.id, { orgId: null, actorId: null, action: 'platform.role_changed', entityType: 'user', entityId: u.id, data: { before: u.platformRole, after: role, via: 'admin:grant command' } });
     return { userId: u.id, platformRole: role };
+  }
+
+  private async person(userId: string) {
+    const u = await this.people_.findById(userId);
+    if (!u) throw new DomainError('NOT_FOUND', 'Person not found', HttpStatus.NOT_FOUND);
+    return u;
+  }
+
+  /** Copies the changed person to PostgreSQL and records the change in the audit trail. */
+  private async recordInPostgres(userId: string, event: Parameters<AuditService['append']>[1]) {
+    await this.prisma.$transaction(async (tx) => {
+      await this.mirror.users([userId], tx);
+      await this.audit.append(tx, event);
+    });
   }
 
   // Announcements -----------------------------------------------------------------------------
@@ -256,13 +278,8 @@ export class AdminService {
 
   // -------------------------------------------------------------------------------------------
 
-  private async endSessions(tx: Tx, userId: string) {
-    const res = await tx.authSession.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: 'platform_admin' } });
-    return res.count;
-  }
-
-  private async keepOneSuperAdmin(tx: Tx, leaving: string) {
-    const others = await tx.user.count({ where: { platformRole: 'SUPER_ADMIN', isActive: true, id: { not: leaving } } });
+  private async keepOneSuperAdmin(leaving: string) {
+    const others = await this.people_.count({ platformRole: 'SUPER_ADMIN', isActive: true, id: { $ne: leaving } });
     if (others === 0) throw new DomainError('LAST_SUPER_ADMIN', 'Make someone else a super admin first: the platform must keep one', HttpStatus.CONFLICT);
   }
 }
@@ -306,4 +323,8 @@ async function names(tx: Tx, ids: (string | null)[]) {
 
 function isUuid(s: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

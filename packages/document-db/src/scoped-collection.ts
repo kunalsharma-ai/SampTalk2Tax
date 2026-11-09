@@ -19,6 +19,22 @@ export class TenantAccessError extends Error {
   }
 }
 
+/**
+ * Thrown by a collection guard when a write breaks a rule the database used to enforce
+ * with a trigger. The API answers it like a trigger error (409 with the message).
+ */
+export class GuardViolation extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GuardViolation';
+  }
+}
+
+/** A unique index refused the write (E11000). */
+export function isDuplicateKeyError(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && (e as { code?: unknown }).code === 11000;
+}
+
 export class ImmutableDocumentError extends Error {
   constructor(collection: string, action: string) {
     super(`${collection} is append-only: ${action} is not allowed`);
@@ -142,8 +158,24 @@ export class ScopedCollection<T extends Document> {
     return prepared.map((d) => fromStored<T>(d));
   }
 
-  async updateOne(filter: Filter<Document>, update: Document): Promise<UpdateResult> {
-    return this.update(filter, update, false);
+  /**
+   * Updates one document. With `upsert`, inserts it when nothing matches: the new
+   * document gets the filter's equality fields (an `id` filter sets its id) and, for a
+   * tenant collection, the caller's orgId.
+   */
+  async updateOne(filter: Filter<Document>, update: Document, options: { upsert?: boolean } = {}): Promise<UpdateResult & { upserted?: boolean }> {
+    if (!options.upsert) return this.update(filter, update, false);
+    if (this.def.appendOnly) throw new ImmutableDocumentError(this.def.name, 'update');
+    if (this.def.guards?.afterUpdate || this.def.guards?.beforeInsert) throw new Error(`Upsert is not supported on ${this.def.name}, which has guards`);
+    const prepared = this.prepareUpdate(update);
+    if (this.def.scope === 'tenant') {
+      const ctx = this.rt.context();
+      if (!ctx.orgId) throw new TenantAccessError(`Upserts into ${this.def.name} need an organisation in context`);
+      prepared.$setOnInsert = { ...(prepared.$setOnInsert ?? {}), [TENANT_FIELD]: ctx.orgId };
+    }
+    if (!('id' in filter)) prepared.$setOnInsert = { ...(prepared.$setOnInsert ?? {}), _id: randomUUID() };
+    const r = await this.coll().updateOne(this.filter(filter), prepared, { session: this.rt.session(), upsert: true });
+    return { matched: r.matchedCount, modified: r.modifiedCount, upserted: r.upsertedCount > 0 };
   }
 
   async updateMany(filter: Filter<Document>, update: Document): Promise<UpdateResult> {

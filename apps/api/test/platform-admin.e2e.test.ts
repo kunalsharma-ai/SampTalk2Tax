@@ -17,6 +17,7 @@ beforeAll(async () => {
   owner = await registerUser(ctx, 'Tenant Owner');
   member = await registerUser(ctx, 'Tenant Member');
   // Only this suite's administrators exist on the test database (earlier runs leave theirs).
+  await ctx.db.collection('users').updateMany({ platformRole: { $ne: null } }, { $set: { platformRole: null } });
   await ctx.prisma.user.updateMany({ where: { platformRole: { not: null } }, data: { platformRole: null } });
   const svc = ctx.app.get(AdminService);
   await svc.grant(admin.email, 'SUPER_ADMIN');

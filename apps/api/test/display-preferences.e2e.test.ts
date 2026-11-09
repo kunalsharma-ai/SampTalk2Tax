@@ -35,8 +35,9 @@ describe('my preferences', () => {
     expect(JSON.stringify(bad.body)).toMatch(/Choose a time zone such as Asia\/Kolkata/);
     await ctx.http().put('/v1/auth/me/preferences').set(owner.auth).send({ language: 'en', numberFormat: 'IN', dateFormat: 'DMY', timeZone: null, extra: 1 }).expect(400);
     // The database refuses values the API would never send.
-    await expect(ctx.prisma.user.update({ where: { id: owner.id }, data: { numberFormat: 'XX' } })).rejects.toThrow(/users_number_format_check/);
-    await expect(ctx.prisma.user.update({ where: { id: owner.id }, data: { timeZone: "x'; drop" } })).rejects.toThrow(/users_time_zone_check/);
+    // The collection validator refuses what the API's own checks would (even for raw writes).
+    await expect(ctx.db.collection('users').updateOne({ _id: owner.id as never }, { $set: { numberFormat: 'XX' } })).rejects.toThrow(/validation/i);
+    await expect(ctx.db.collection('users').updateOne({ _id: owner.id as never }, { $set: { timeZone: "x'; drop" } })).rejects.toThrow(/validation/i);
     // Back to the organisation's zone.
     expect((await ctx.http().put('/v1/auth/me/preferences').set(owner.auth).send({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: null }).expect(200)).body.timeZone).toBeNull();
   });

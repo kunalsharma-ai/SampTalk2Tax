@@ -9,7 +9,9 @@ import { ApprovalsService } from '../approvals/approvals.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { BankingService } from '../banking/banking.service';
 import { todayIso } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { users } from '../db/collections/identity';
 import { loadConfig } from '../config';
 import { addDays, D, fiscalYearForDate, spreadEvenly } from '@talk2tax/accounting-engine';
 import { ContactsService } from '../contacts/contacts.service';
@@ -50,7 +52,7 @@ async function main() {
   allowSystemAccessOutsideRequests();
   const app = await NestFactory.createApplicationContext(AppModule.forRoot(config), { logger: ['error', 'warn'] });
   const prisma = app.get(PrismaService);
-  const existing = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
+  const existing = await app.get(DocumentStoreService).collection(users).findOne({ email: DEMO_EMAIL });
   if (existing) {
     console.log(`Demo user ${DEMO_EMAIL} already exists; nothing to do.`);
     await app.close();
@@ -59,7 +61,7 @@ async function main() {
   const password = process.env.DEMO_PASSWORD ?? randomBytes(12).toString('base64url');
   const { user } = await app.get(AuthService).register({ email: DEMO_EMAIL, name: 'Demo Owner', password }, { userAgent: 'demo seed' });
   // Registering signs in; the seed throws that session away, so end it.
-  await app.get(SessionsService).revokeOthers(null, user.id, null, 'signed_out');
+  await app.get(SessionsService).revokeOthers(user.id, null, 'signed_out');
   const orgs = app.get(OrganizationsService);
   const org = await orgs.create(user.id, {
     name: 'Northwind Demo Traders (SYNTHETIC DATA)',
@@ -350,7 +352,7 @@ async function main() {
   // owner's approval (with a receipt), one still a draft. The employee never signs in; the
   // password is random and not shown.
   const employeeUser = (await app.get(AuthService).register({ email: 'field.employee@talk2tax.local', name: 'Field Employee (synthetic)', password: randomBytes(24).toString('base64url') }, { userAgent: 'demo seed' })).user;
-  await app.get(SessionsService).revokeOthers(null, employeeUser.id, null, 'signed_out');
+  await app.get(SessionsService).revokeOthers(employeeUser.id, null, 'signed_out');
   await prisma.membership.create({ data: { orgId: org.id, userId: employeeUser.id, role: 'EMPLOYEE' } });
   const emp = { ...ledgerOrg, role: 'EMPLOYEE' as const };
   const empActor = { id: employeeUser.id };
