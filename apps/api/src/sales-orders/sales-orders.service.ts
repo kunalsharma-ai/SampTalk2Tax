@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { billingIssues, D, dealStageChange, isOpenStage, minorUnits, orderBilling, quoteAllows, quoteState, remainingToBill, SalesOrderError, type QuoteStatus } from '@talk2tax/accounting-engine';
+import { billingIssues, D, dealStageChange, milestoneIssues, progressIssues, shareQuantities, sharesTotal, type BillingMethod, isOpenStage, minorUnits, orderBilling, quoteAllows, quoteState, remainingToBill, SalesOrderError, type QuoteStatus } from '@talk2tax/accounting-engine';
 import { Prisma, SalesOrder, SalesOrderLine, SalesQuote, SalesQuoteLine } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -507,7 +507,7 @@ export class SalesOrdersService {
       const bs = billings.filter((b) => b.documentId === d.id);
       return { id: d.id, number: d.number, status: d.status, issueDate: fromDbDate(d.issueDate), total: this.money(org, d.total), lines: bs.map((b) => ({ lineNo: o.lines.find((l) => l.id === b.orderLineId)!.lineNo, quantity: this.qty(b.quantity) })) };
     });
-    return { ...this.orderOut(org, o, n, live), quote: quote ? { id: quote.id, reference: quoteRef(quote) } : null, invoices, can: { ...this.can(org), cancel: hasPermission(org.role, 'sales.manage') } };
+    return { ...this.orderOut(org, o, n, live), billingMethod: o.billingMethod, ...(await this.projectBilling(org, o)), quote: quote ? { id: quote.id, reference: quoteRef(quote) } : null, invoices, can: { ...this.can(org), cancel: hasPermission(org.role, 'sales.manage') } };
   }
 
   async createOrder(org: SalesOrg, actor: Actor, input: OrderInput) {
@@ -529,7 +529,7 @@ export class SalesOrdersService {
     return this.getOrder(org, id);
   }
 
-  private async lockOrder(tx: Tx, orgId: string, id: string) {
+  async lockOrder(tx: Tx, orgId: string, id: string) {
     await tx.$queryRaw`SELECT id FROM sales_orders WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
     const o = (await tx.salesOrder.findFirst({ where: { id, orgId }, include: this.orderInclude })) as OrderWithLines | null;
     if (!o) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Sales order not found' });
@@ -547,29 +547,210 @@ export class SalesOrdersService {
    */
   async billOrder(org: SalesOrg, actor: Actor, id: string, input: { issueDate: string; dueDate?: string | null; lines?: { orderLineId: string; quantity: string }[] | null }) {
     const docId = await this.prisma.$transaction(async (tx) => {
-      const { o, lines } = await this.lockOrder(tx, org.id, id);
-      if (o.status === 'CANCELLED') this.invalid('This order is cancelled', 'ORDER_CANCELLED');
-      if (input.issueDate < fromDbDate(o.orderDate)) this.invalid('The invoice cannot be dated before the order', 'ORDER_DATE');
-      const request = input.lines?.length ? input.lines : lines.filter((l) => new D(remainingToBill(l)).gt(0)).map((l) => ({ orderLineId: l.id, quantity: remainingToBill(l) }));
-      if (!request.length) this.invalid('Everything on this order is billed', 'ORDER_BILLED');
-      const issues = billingIssues(lines, request);
-      if (issues.length) this.invalid(issues[0]!, 'ORDER_BILLING_INVALID', { issues });
-      const chosen = request.map((r) => ({ r, l: lines.find((x) => x.id === r.orderLineId)!.line }));
-      const doc = await this.documents.createDraftInTx(tx, org, actor, 'SALES', {
-        kind: 'INVOICE',
-        contactId: o.contactId,
-        issueDate: input.issueDate,
-        dueDate: input.dueDate ?? undefined,
-        reference: o.reference ? `${orderRef(o.number)} / ${o.reference}` : orderRef(o.number),
-        memo: o.memo,
-        placeOfSupply: o.placeOfSupply,
-        lines: chosen.map(({ r, l }) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: r.quantity, unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
-      });
-      await tx.salesOrderBilling.createMany({ data: chosen.map(({ r, l }) => ({ orgId: org.id, orderId: o.id, orderLineId: l.id, documentId: doc.id, quantity: new D(r.quantity).toFixed(), createdById: actor.id })) });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_order.billed', entityType: 'sales_order', entityId: o.id, data: { reference: orderRef(o.number), documentId: doc.id, lines: request } });
-      return doc.id;
+      const locked = await this.lockOrder(tx, org.id, id);
+      if (locked.o.billingMethod !== 'DELIVERY') this.invalid(locked.o.billingMethod === 'MILESTONES' ? 'This order is billed by milestones; invoice a milestone instead' : 'This order is billed by progress; make a progress claim instead', 'ORDER_BILLING_METHOD');
+      const request = input.lines?.length ? input.lines : locked.lines.filter((l) => new D(remainingToBill(l)).gt(0)).map((l) => ({ orderLineId: l.id, quantity: remainingToBill(l) }));
+      return this.billInTx(tx, org, actor, locked, { issueDate: input.issueDate, dueDate: input.dueDate, request });
     });
     return { documentId: docId, order: await this.getOrder(org, id) };
+  }
+
+  /** A draft invoice for `request` quantities of a locked order, recorded against its lines. */
+  private async billInTx(
+    tx: Tx,
+    org: SalesOrg,
+    actor: Actor,
+    { o, lines }: Awaited<ReturnType<SalesOrdersService['lockOrder']>>,
+    input: { issueDate: string; dueDate?: string | null; request: { orderLineId: string; quantity: string }[]; memo?: string | null; audit?: Record<string, unknown> },
+  ) {
+    if (o.status === 'CANCELLED') this.invalid('This order is cancelled', 'ORDER_CANCELLED');
+    if (input.issueDate < fromDbDate(o.orderDate)) this.invalid('The invoice cannot be dated before the order', 'ORDER_DATE');
+    const request = input.request;
+    if (!request.length) this.invalid('Everything on this order is billed', 'ORDER_BILLED');
+    const issues = billingIssues(lines, request);
+    if (issues.length) this.invalid(issues[0]!, 'ORDER_BILLING_INVALID', { issues });
+    const chosen = request.map((r) => ({ r, l: lines.find((x) => x.id === r.orderLineId)!.line }));
+    const doc = await this.documents.createDraftInTx(tx, org, actor, 'SALES', {
+      kind: 'INVOICE',
+      contactId: o.contactId,
+      issueDate: input.issueDate,
+      dueDate: input.dueDate ?? undefined,
+      reference: o.reference ? `${orderRef(o.number)} / ${o.reference}` : orderRef(o.number),
+      memo: input.memo ?? o.memo,
+      placeOfSupply: o.placeOfSupply,
+      lines: chosen.map(({ r, l }) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: r.quantity, unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
+    });
+    await tx.salesOrderBilling.createMany({ data: chosen.map(({ r, l }) => ({ orgId: org.id, orderId: o.id, orderLineId: l.id, documentId: doc.id, quantity: new D(r.quantity).toFixed(), createdById: actor.id })) });
+    await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_order.billed', entityType: 'sales_order', entityId: o.id, data: { reference: orderRef(o.number), documentId: doc.id, lines: request, ...(input.audit ?? {}) } });
+    return doc.id;
+  }
+
+  // ------------------------------------------------------- milestones and progress (AR-013, AR-014)
+
+  private async liveIds(db: Pick<Tx, 'document'>, orgId: string, ids: (string | null)[]) {
+    const want = [...new Set(ids.filter((x): x is string => !!x))];
+    const docs = want.length ? await db.document.findMany({ where: { orgId, id: { in: want } }, select: { id: true, status: true, number: true, total: true, issueDate: true } }) : [];
+    return { live: new Set(docs.filter((d) => d.status !== 'VOID').map((d) => d.id)), docs };
+  }
+
+  /** Change how the order is billed. Only while nothing on it is billed on a live invoice. */
+  async setBillingMethod(org: SalesOrg, actor: Actor, id: string, method: BillingMethod) {
+    await this.prisma.$transaction(async (tx) => {
+      const { o, lines } = await this.lockOrder(tx, org.id, id);
+      if (o.status === 'CANCELLED') this.invalid('This order is cancelled', 'ORDER_CANCELLED');
+      if (o.billingMethod === method) return;
+      if (lines.some((l) => new D(l.billed).gt(0))) this.invalid('Part of this order is billed; the billing method can no longer change', 'ORDER_BILLING_METHOD_LOCKED');
+      // Nothing is billed, so no milestone has a live invoice: a plan for another method goes.
+      if (method !== 'MILESTONES') await tx.salesOrderMilestone.deleteMany({ where: { orgId: org.id, orderId: id } });
+      await tx.salesOrder.update({ where: { id }, data: { billingMethod: method } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_order.billing_method_changed', entityType: 'sales_order', entityId: id, data: { reference: orderRef(o.number), from: o.billingMethod, to: method } });
+    });
+    return this.getOrder(org, id);
+  }
+
+  /**
+   * Save the milestone plan. Milestones already invoiced (on an invoice that is not void) keep their
+   * name and share and cannot be removed; the others can be renamed, re-shared, reordered or removed.
+   */
+  async planMilestones(org: SalesOrg, actor: Actor, id: string, plan: { id?: string | null; name: string; percent: string; dueDate?: string | null }[]) {
+    await this.prisma.$transaction(async (tx) => {
+      const { o } = await this.lockOrder(tx, org.id, id);
+      if (o.status === 'CANCELLED') this.invalid('This order is cancelled', 'ORDER_CANCELLED');
+      if (o.billingMethod !== 'MILESTONES') this.invalid('Choose milestone billing for this order first', 'ORDER_BILLING_METHOD');
+      const issues = milestoneIssues(plan);
+      if (issues.length) this.invalid(issues[0]!, 'MILESTONES_INVALID', { issues });
+      const existing = await tx.salesOrderMilestone.findMany({ where: { orgId: org.id, orderId: id } });
+      const { live } = await this.liveIds(tx, org.id, existing.map((m) => m.documentId));
+      const ids = new Set<string>();
+      for (const m of plan) {
+        if (!m.id) continue;
+        const e = existing.find((x) => x.id === m.id);
+        if (!e) this.invalid('A milestone is not on this order', 'MILESTONE_NOT_FOUND');
+        if (ids.has(m.id)) this.invalid('A milestone is entered twice', 'MILESTONES_INVALID');
+        ids.add(m.id);
+        if (e.documentId && live.has(e.documentId) && (e.name !== m.name.trim() || !new D(e.percent.toString()).eq(m.percent))) {
+          this.invalid(`"${e.name}" is invoiced; its name and share can no longer change`, 'MILESTONE_INVOICED');
+        }
+      }
+      const gone = existing.filter((e) => !ids.has(e.id));
+      const lockedGone = gone.find((e) => e.documentId && live.has(e.documentId));
+      if (lockedGone) this.invalid(`"${lockedGone.name}" is invoiced; void or delete its invoice before removing it`, 'MILESTONE_INVOICED');
+      if (gone.length) await tx.salesOrderMilestone.deleteMany({ where: { orgId: org.id, id: { in: gone.map((g) => g.id) } } });
+      // Move the kept ones out of the way first, so reordering never collides on (order, seq).
+      for (const e of existing.filter((x) => ids.has(x.id))) await tx.salesOrderMilestone.update({ where: { id: e.id }, data: { seq: e.seq + 100000 } });
+      let seq = 0;
+      for (const m of plan) {
+        seq += 1;
+        const data = { seq, name: m.name.trim(), percent: new D(m.percent).toFixed(2), dueDate: m.dueDate ? toDbDate(m.dueDate) : null };
+        if (m.id) await tx.salesOrderMilestone.update({ where: { id: m.id }, data });
+        else await tx.salesOrderMilestone.create({ data: { ...data, orgId: org.id, orderId: id } });
+      }
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_order.milestones_planned', entityType: 'sales_order', entityId: id, data: { reference: orderRef(o.number), milestones: plan.map((m) => ({ name: m.name.trim(), percent: new D(m.percent).toFixed(2), dueDate: m.dueDate ?? null })) } });
+    });
+    return this.getOrder(org, id);
+  }
+
+  private async lockMilestone(tx: Tx, org: SalesOrg, orderId: string, mid: string) {
+    const locked = await this.lockOrder(tx, org.id, orderId);
+    const m = await tx.salesOrderMilestone.findFirst({ where: { id: mid, orgId: org.id, orderId } });
+    if (!m) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Milestone not found' });
+    const { live } = await this.liveIds(tx, org.id, [m.documentId]);
+    return { ...locked, m, invoiced: !!m.documentId && live.has(m.documentId) };
+  }
+
+  /** Record that a milestone is reached (or not yet, while it is not invoiced). */
+  async completeMilestone(org: SalesOrg, actor: Actor, orderId: string, mid: string, done: boolean) {
+    await this.prisma.$transaction(async (tx) => {
+      const { o, m, invoiced } = await this.lockMilestone(tx, org, orderId, mid);
+      if (o.status === 'CANCELLED') this.invalid('This order is cancelled', 'ORDER_CANCELLED');
+      if (!done && invoiced) this.invalid(`"${m.name}" is invoiced; void or delete its invoice first`, 'MILESTONE_INVOICED');
+      if (done === !!m.completedAt) return;
+      await tx.salesOrderMilestone.update({ where: { id: mid }, data: done ? { completedAt: new Date(), completedById: actor.id } : { completedAt: null, completedById: null } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: done ? 'sales_order.milestone_completed' : 'sales_order.milestone_reopened', entityType: 'sales_order', entityId: orderId, data: { reference: orderRef(o.number), milestone: m.name } });
+    });
+    return this.getOrder(org, orderId);
+  }
+
+  /**
+   * Invoice a reached milestone: a draft invoice billing its share of every line. The order is
+   * billed up to the shares of all invoiced milestones, so when they reach 100% the last invoice
+   * takes exactly what is left.
+   */
+  async invoiceMilestone(org: SalesOrg, actor: Actor, orderId: string, mid: string, input: { issueDate: string; dueDate?: string | null }) {
+    const docId = await this.prisma.$transaction(async (tx) => {
+      const locked = await this.lockMilestone(tx, org, orderId, mid);
+      const { o, m, invoiced } = locked;
+      if (o.billingMethod !== 'MILESTONES') this.invalid('This order is not billed by milestones', 'ORDER_BILLING_METHOD');
+      if (invoiced) this.invalid(`"${m.name}" is already invoiced`, 'MILESTONE_INVOICED');
+      if (!m.completedAt) this.invalid(`Mark "${m.name}" as reached before invoicing it`, 'MILESTONE_NOT_REACHED');
+      const all = await tx.salesOrderMilestone.findMany({ where: { orgId: org.id, orderId } });
+      const { live } = await this.liveIds(tx, org.id, all.map((x) => x.documentId));
+      const target = all.filter((x) => x.id === mid || (x.documentId && live.has(x.documentId))).reduce((t, x) => t.plus(x.percent.toString()), new D(0)).toFixed();
+      const request = shareQuantities(locked.lines, target);
+      if (!request.length) this.invalid('Nothing is left to bill on this order for this milestone', 'ORDER_BILLED');
+      const id = await this.billInTx(tx, org, actor, locked, { ...input, request, memo: `Milestone: ${m.name} (${new D(m.percent.toString()).toFixed()}%)`, audit: { milestone: m.name, percent: m.percent.toFixed(2) } });
+      await tx.salesOrderMilestone.update({ where: { id: mid }, data: { documentId: id } });
+      return id;
+    });
+    return { documentId: docId, order: await this.getOrder(org, orderId) };
+  }
+
+  /** Claim progress: a draft invoice billing every line up to `percentComplete`, less what earlier claims billed. */
+  async claimProgress(org: SalesOrg, actor: Actor, orderId: string, input: { percentComplete: string; issueDate: string; dueDate?: string | null; note?: string | null }) {
+    const docId = await this.prisma.$transaction(async (tx) => {
+      const locked = await this.lockOrder(tx, org.id, orderId);
+      if (locked.o.billingMethod !== 'PROGRESS') this.invalid('This order is not billed by progress', 'ORDER_BILLING_METHOD');
+      const claims = await tx.salesOrderProgressClaim.findMany({ where: { orgId: org.id, orderId } });
+      const { live } = await this.liveIds(tx, org.id, claims.map((c) => c.documentId));
+      const previous = claims.filter((c) => live.has(c.documentId)).reduce((t, c) => D.max(t, c.percentComplete.toString()), new D(0)).toFixed();
+      const issues = progressIssues(input.percentComplete, previous);
+      if (issues.length) this.invalid(issues[0]!, 'PROGRESS_INVALID', { issues });
+      const request = shareQuantities(locked.lines, input.percentComplete);
+      if (!request.length) this.invalid('Nothing is left to bill on this order', 'ORDER_BILLED');
+      const pct = new D(input.percentComplete).toFixed();
+      const note = clean(input.note);
+      const id = await this.billInTx(tx, org, actor, locked, { ...input, request, memo: `Progress claim: ${pct}% complete${note ? ` (${note})` : ''}`, audit: { percentComplete: pct, previous } });
+      await tx.salesOrderProgressClaim.create({ data: { orgId: org.id, orderId, percentComplete: new D(input.percentComplete).toFixed(2), documentId: id, note, createdById: actor.id } });
+      return id;
+    });
+    return { documentId: docId, order: await this.getOrder(org, orderId) };
+  }
+
+  /** The milestones and progress claims of an order, with their invoices. */
+  private async projectBilling(org: SalesOrg, o: SalesOrder) {
+    const [ms, claims] = await Promise.all([
+      this.prisma.salesOrderMilestone.findMany({ where: { orgId: org.id, orderId: o.id }, orderBy: { seq: 'asc' } }),
+      this.prisma.salesOrderProgressClaim.findMany({ where: { orgId: org.id, orderId: o.id }, orderBy: { createdAt: 'asc' } }),
+    ]);
+    const { live, docs } = await this.liveIds(this.prisma, org.id, [...ms.map((m) => m.documentId), ...claims.map((c) => c.documentId)]);
+    const inv = (docId: string | null) => {
+      const d = docId ? docs.find((x) => x.id === docId) : null;
+      return d ? { id: d.id, number: d.number, status: d.status, total: this.money(org, d.total) } : null;
+    };
+    const scale = this.scale(org);
+    const value = (p: Prisma.Decimal) => new D(o.total.toString()).times(p.toString()).div(100).toDecimalPlaces(scale).toFixed(scale);
+    const milestones = ms.map((m) => ({
+      id: m.id,
+      seq: m.seq,
+      name: m.name,
+      percent: new D(m.percent.toString()).toFixed(),
+      value: value(m.percent),
+      dueDate: m.dueDate ? fromDbDate(m.dueDate) : null,
+      reached: !!m.completedAt,
+      completedAt: m.completedAt?.toISOString() ?? null,
+      invoice: m.documentId && live.has(m.documentId) ? inv(m.documentId) : null,
+      voidInvoice: m.documentId && !live.has(m.documentId) ? inv(m.documentId) : null,
+    }));
+    const liveClaims = claims.filter((c) => live.has(c.documentId));
+    return {
+      milestones,
+      milestonesTotal: sharesTotal(milestones),
+      milestonesInvoiced: sharesTotal(milestones.filter((m) => m.invoice)),
+      progress: {
+        claimed: liveClaims.reduce((t, c) => D.max(t, c.percentComplete.toString()), new D(0)).toFixed(),
+        claims: claims.map((c) => ({ id: c.id, percentComplete: new D(c.percentComplete.toString()).toFixed(), note: c.note, createdAt: c.createdAt.toISOString(), invoice: inv(c.documentId), void: !live.has(c.documentId) })),
+      },
+    };
   }
 
   async cancelOrder(org: SalesOrg, actor: Actor, id: string, reason: string) {
