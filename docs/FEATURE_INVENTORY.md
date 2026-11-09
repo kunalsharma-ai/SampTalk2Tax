@@ -133,7 +133,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-012 |  | capability | Usage-based billing | Not started |
 | AR-013 |  | capability | Milestone billing | Tested |
 | AR-014 |  | capability | Progress billing | Tested |
-| AR-015 |  | capability | Retainer billing | Not started |
+| AR-015 |  | capability | Retainer billing | Tested |
 | AR-016 |  | capability | Credit notes | Tested |
 | AR-017 |  | capability | Debit notes | Tested |
 | AR-018 |  | capability | Payment links | Not started |

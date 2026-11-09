@@ -2841,9 +2841,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/retainers.ts",
+        "packages/accounting-engine/test/retainers.test.ts",
+        "packages/database/prisma/migrations/20261205090000_retainers/migration.sql",
+        "apps/api/src/sales-orders/retainers.service.ts",
+        "apps/api/test/retainers.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/retainers/[retainerId]/page.tsx",
+        "apps/web/e2e/retainers-flow.test.mjs",
+        "docs/RETAINERS.md"
+      ],
+      "notes": "Retainers RT-0001: agreed amount and minimum per customer; held as ordinary unapplied receipts linked to the retainer (recorded into it or added); drawn down onto invoices with ordinary allocations, oldest receipt first, oldest due invoice first by default; top-up due below the minimum; close only when empty; triggers keep links permanent. Functional currency only; no GST on advances; top-up requests not emailed."
     },
     {
       "id": "AR-016",
