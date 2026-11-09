@@ -1,3 +1,6 @@
+import { DocumentStoreService } from '../common/document-store.service';
+import { organizations } from '../db/collections/tenancy';
+import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
   D,
@@ -49,6 +52,8 @@ export class ExpensesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
+    private readonly store: DocumentStoreService,
+    private readonly mirror: PostgresMirrorService,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -325,18 +330,29 @@ export class ExpensesService {
     return computeExpenseClaim(lines, org.functionalCurrency, rates);
   }
 
-  /** The employee reimbursements account; organisations created before it existed get one on first use. */
-  private async claimsAccount(tx: Tx, orgId: string): Promise<string> {
-    await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
-    const o = await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { claimsAccountId: true } });
-    if (o.claimsAccountId) return o.claimsAccountId;
-    const taken = new Set((await tx.account.findMany({ where: { orgId, code: { startsWith: '22' } }, select: { code: true } })).map((a) => a.code));
-    const code = ['2250', '2251', '2252', '2253', '2254', '2255', '2256', '2257', '2258', '2259'].find((x) => !taken.has(x));
-    if (!code) throw new DomainError('NO_CLAIMS_ACCOUNT', 'Could not find a free account code (2250–2259) for employee reimbursements', HttpStatus.CONFLICT);
-    const parent = await tx.account.findFirst({ where: { orgId, code: '2000', type: 'LIABILITY', isPostable: false }, select: { id: true } });
-    const a = await tx.account.create({ data: { orgId, code, name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentId: parent?.id ?? null, isPostable: true } });
-    await tx.organization.update({ where: { id: orgId }, data: { claimsAccountId: a.id } });
-    return a.id;
+  /**
+   * The employee reimbursements account; organisations created before it existed get one on
+   * first use. That set-up commits on its own (the organisation record is in MongoDB), so the
+   * caller's transaction only ever sees an account that exists.
+   */
+  private async claimsAccount(_tx: Tx, orgId: string): Promise<string> {
+    const known = (await this.store.collection(organizations).findById(orgId))?.claimsAccountId;
+    if (known) return known;
+    const created = await this.prisma.$transaction(async (tx) => {
+      // One set-up at a time per organisation.
+      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+      const again = (await this.store.collection(organizations).findById(orgId))?.claimsAccountId;
+      if (again) return again;
+      const taken = new Set((await tx.account.findMany({ where: { orgId, code: { startsWith: '22' } }, select: { code: true } })).map((a) => a.code));
+      const code = ['2250', '2251', '2252', '2253', '2254', '2255', '2256', '2257', '2258', '2259'].find((x) => !taken.has(x));
+      if (!code) throw new DomainError('NO_CLAIMS_ACCOUNT', 'Could not find a free account code (2250–2259) for employee reimbursements', HttpStatus.CONFLICT);
+      const parent = await tx.account.findFirst({ where: { orgId, code: '2000', type: 'LIABILITY', isPostable: false }, select: { id: true } });
+      const a = await tx.account.create({ data: { orgId, code, name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentId: parent?.id ?? null, isPostable: true } });
+      await this.store.collection(organizations).updateOne({ id: orgId, claimsAccountId: null }, { $set: { claimsAccountId: a.id, updatedAt: new Date() } });
+      await this.mirror.organizations([orgId], tx);
+      return a.id;
+    });
+    return created;
   }
 
   private async nextNumber(tx: Tx, orgId: string) {

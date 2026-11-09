@@ -12,8 +12,9 @@ module follows when it moves.
 | Step | Moved to MongoDB | Status |
 | --- | --- | --- |
 | 1 | Data layer, replica set, migrations | Done (#87) |
-| 2 | `users`, `auth_sessions`, `login_throttles` | This step |
-| 3 | Organisations, members, invitations, chart of accounts, fiscal periods | Next |
+| 2 | `users`, `auth_sessions`, `login_throttles` | Done (#89) |
+| 3 | `organizations`, `memberships`, `invitations` | This step |
+| 4 | Chart of accounts, fiscal periods | Next |
 
 ## Why these choices
 
@@ -71,6 +72,11 @@ Modules still on PostgreSQL point at moved records with foreign keys (for exampl
   new sign-up whose audit record cannot be written is removed again). Between the two
   commits a crash could still leave the copy behind. The copy is rewritten on the record's
   next change, and the copying tool below repairs it.
+
+**Nested system access.** `withSystemAccess` restores whatever the transaction had before it,
+so a mirror copy made inside system work leaves the outer bypass on. Audit rows for routes
+without an organisation in their path (accepting an invitation) point the transaction at the
+organisation with `useOrgInTx` first.
 
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the

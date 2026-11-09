@@ -6,6 +6,9 @@ import { PrismaService } from '../common/prisma.service';
 import { allowSystemAccessOutsideRequests } from '../common/tenant-context';
 import { loadConfig } from '../config';
 import { authSessions, loginThrottles, users } from './collections/identity';
+import { invitations, memberships, organizations } from './collections/tenancy';
+import { withSystemAccess } from '../common/prisma.service';
+import { runAsSystem } from '../common/tenant-context';
 
 /**
  * Copies records of the modules already moved to MongoDB out of an existing PostgreSQL
@@ -54,6 +57,45 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   const throttleRows = throttles.filter((t) => newThrottles.has(t.email)).map(({ email, ...t }) => ({ id: email, ...t }));
   await store.collection(loginThrottles).insertMany(throttleRows);
   copied.login_throttles = throttleRows.length;
+
+  // Organisations, then who belongs to them, then invitations. Tenant rows are system work.
+  const allOrgs = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.organization.findMany()));
+  const newOrgs = await missing(organizations, allOrgs.map((o) => o.id));
+  const orgRows = allOrgs.filter((o) => newOrgs.has(o.id)).map((o) => ({
+    id: o.id,
+    name: o.name,
+    legalName: o.legalName,
+    timeZone: o.timeZone,
+    countryCode: o.countryCode,
+    functionalCurrency: o.functionalCurrency,
+    fiscalYearStartMonth: o.fiscalYearStartMonth,
+    isDemo: o.isDemo,
+    dataRegion: o.dataRegion,
+    suspendedAt: o.suspendedAt,
+    suspendedReason: o.suspendedReason,
+    arAccountId: o.arAccountId,
+    apAccountId: o.apAccountId,
+    claimsAccountId: o.claimsAccountId,
+    createdAt: o.createdAt,
+    updatedAt: o.updatedAt,
+  }));
+  await store.collection(organizations).insertMany(orgRows);
+  copied.organizations = orgRows.length;
+
+  const allMembers = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.membership.findMany()));
+  const newMembers = await missing(memberships, allMembers.map((m) => m.id));
+  const memberRows = allMembers.filter((m) => newMembers.has(m.id));
+  // Inserts run no owner check (that guard is on updates and deletes).
+  await runAsSystem(() => store.collection(memberships).insertMany(memberRows));
+  copied.memberships = memberRows.length;
+
+  const allInvites = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.invitation.findMany()));
+  const newInvites = await missing(invitations, allInvites.map((i) => i.id));
+  const inviteRows = allInvites
+    .filter((i) => newInvites.has(i.id))
+    .map((i) => ({ ...i, ...(i.acceptedAt || i.revokedAt ? {} : { openFor: i.email }) }));
+  await runAsSystem(() => store.collection(invitations).insertMany(inviteRows));
+  copied.invitations = inviteRows.length;
 
   log(`Copied to MongoDB: ${Object.entries(copied).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   return copied;

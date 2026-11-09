@@ -4,8 +4,9 @@ import type { Request } from 'express';
 import { DISPLAY_DATE_FORMAT_CODES, isTimeZone, LANGUAGE_CODES, NUMBER_FORMAT_CODES } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { DocumentStoreService } from '../common/document-store.service';
-import { PrismaService } from '../common/prisma.service';
 import { users } from '../db/collections/identity';
+import { memberships as membershipsCollection, organizations } from '../db/collections/tenancy';
+import { runAsSystem } from '../common/tenant-context';
 import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { openApi, ZodPipe } from '../common/zod';
 import { AuthService } from './auth.service';
@@ -41,7 +42,6 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionsService,
-    private readonly prisma: PrismaService,
     private readonly store: DocumentStoreService,
     private readonly mirror: PostgresMirrorService,
   ) {}
@@ -86,11 +86,14 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   async me(@CurrentUser() user: AuthUser) {
-    const memberships = await this.prisma.membership.findMany({
-      where: { userId: user.id },
-      include: { org: { select: { id: true, name: true, isDemo: true, functionalCurrency: true, timeZone: true } } },
-      orderBy: { createdAt: 'asc' },
-    });
+    const mine = await runAsSystem(() => this.store.collection(membershipsCollection).find({ userId: user.id }, { sort: { createdAt: 1 } }));
+    const orgs = new Map((await this.store.collection(organizations).find({ id: { $in: mine.map((m) => m.orgId) } })).map((o) => [o.id, o]));
+    const memberships = mine
+      .filter((m) => orgs.has(m.orgId))
+      .map((m) => {
+        const o = orgs.get(m.orgId)!;
+        return { role: m.role, org: { id: o.id, name: o.name, isDemo: o.isDemo, functionalCurrency: o.functionalCurrency, timeZone: o.timeZone } };
+      });
     const preferences = await this.preferences(user.id);
     return { user, preferences, organizations: memberships.map((m) => ({ ...m.org, role: m.role })) };
   }

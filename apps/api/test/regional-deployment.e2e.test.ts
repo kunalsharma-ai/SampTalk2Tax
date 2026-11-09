@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config';
+import { organizations } from '../src/db/collections/tenancy';
 import { RegionsService } from '../src/regions/regions.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
 
@@ -106,12 +107,16 @@ describe('moving an organisation to another region', () => {
 
 describe('organisations from before regions', () => {
   it('are claimed by the region that serves the database, and a region is never cleared', async () => {
-    const legacy = await india.prisma.organization.create({ data: { name: 'Legacy Region Ltd', countryCode: 'IN', functionalCurrency: 'INR', fiscalYearStartMonth: 4 } });
-    expect(legacy.dataRegion).toBeNull();
+    const now = new Date();
+    const legacy = await india.store.collection(organizations).insertOne({
+      name: 'Legacy Region Ltd', legalName: null, timeZone: 'Asia/Kolkata', countryCode: 'IN', functionalCurrency: 'INR', fiscalYearStartMonth: 4, isDemo: false,
+      dataRegion: null, suspendedAt: null, suspendedReason: null, arAccountId: null, apAccountId: null, claimsAccountId: null, createdAt: now, updatedAt: now,
+    });
     await india.app.get(RegionsService).claimUntagged();
-    const after = await india.prisma.organization.findUniqueOrThrow({ where: { id: legacy.id } });
-    expect(after.dataRegion).not.toBeNull();
-    await expect(india.prisma.organization.update({ where: { id: legacy.id }, data: { dataRegion: null } })).rejects.toThrow(/cannot be cleared/);
-    await expect(india.prisma.organization.update({ where: { id: legacy.id }, data: { dataRegion: 'Not A Region' } })).rejects.toThrow(/data_region_format/);
+    expect((await india.store.collection(organizations).findById(legacy.id))?.dataRegion).not.toBeNull();
+    // Its PostgreSQL copy follows.
+    expect((await india.prisma.organization.findUniqueOrThrow({ where: { id: legacy.id } })).dataRegion).not.toBeNull();
+    await expect(india.store.collection(organizations).updateOne({ id: legacy.id }, { $set: { dataRegion: null } })).rejects.toThrow(/cannot be cleared/);
+    await expect(india.db.collection('organizations').updateOne({ _id: legacy.id as never }, { $set: { dataRegion: 'Not A Region' } })).rejects.toThrow(/validation/i);
   });
 });
