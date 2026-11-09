@@ -170,7 +170,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | AP-001 |  | capability | Supplier management | Tested |
-| AP-002 |  | capability | Vendor onboarding | Not started |
+| AP-002 |  | capability | Vendor onboarding | Tested |
 | AP-003 |  | capability | Purchase invoices | Tested |
 | AP-004 |  | capability | Supplier bills | Tested |
 | AP-005 |  | capability | Recurring bills | Tested |

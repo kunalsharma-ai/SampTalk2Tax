@@ -6268,6 +6268,22 @@
         "docs/CUSTOMER_ONBOARDING.md"
       ],
       "notes": "One onboarding per customer: details read from the customer (email, address with PIN, GSTIN or PAN, proposed credit terms) plus the organisation's own checklist (files where needed, attachments type CUSTOMER_ONBOARDING); submit, second-person approval (self-approved only when nobody else can) sets credit limit and terms, reject with reason, reopen. Optional setting starts onboarding for every new customer (contacts trigger). Invoices to a customer with an unapproved onboarding do not post. Not built: customer self-service portal."
+    },
+    "AP-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-onboarding.ts",
+        "packages/database/prisma/migrations/20261208090000_vendor_onboarding/migration.sql",
+        "apps/api/src/customer-onboarding/customer-onboarding.service.ts",
+        "apps/api/src/customer-onboarding/customer-onboarding.controller.ts",
+        "apps/api/test/vendor-onboarding.e2e.test.ts",
+        "apps/web/src/components/onboarding/onboarding-panel.tsx",
+        "apps/web/src/components/onboarding/onboarding-list.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/onboarding/page.tsx",
+        "apps/web/e2e/vendor-onboarding-flow.test.mjs",
+        "docs/VENDOR_ONBOARDING.md"
+      ],
+      "notes": "One onboarding per vendor (separate from customer onboarding, own setting and checklist): email, address with PIN, GSTIN or PAN, verified bank details and payment terms read from the vendor, plus the checklist with files; submit, second-person approval sets payment terms (no credit limit), reject, reopen. Optional setting starts one for every new vendor. Bills from and payments to a vendor with an unapproved onboarding are refused. Not built: vendor self-service portal."
     }
   }
 }
