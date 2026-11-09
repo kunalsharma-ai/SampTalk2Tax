@@ -240,6 +240,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Enter the keys from the gateway\'s dashboard, choose the currencies and the bank account, save, then Test connection. Add the webhook address shown here at the gateway so payments are confirmed straight away.',
     where: 'Governance. Keys are stored encrypted and never shown again. Each currency is paid through one gateway.',
   },
+  'sales/onboarding': {
+    what: 'Customer onboarding: new customers\' details, documents and credit terms, collected and approved before they are invoiced, with the organisation\'s own checklist.',
+    how: 'Switch on onboarding for new customers and set the checklist at the bottom. Open a customer to tick items off, attach files, propose credit terms and submit; someone with approval rights approves or rejects.',
+    where: 'Sales. Approval sets the customer\'s credit limit and payment terms. Invoices to a customer whose onboarding is not approved cannot be posted.',
+  },
   'sales/retainers': {
     what: 'Retainers: money customers keep on account with you at an agreed level, held as their receipts not yet applied, with what each holds and any top-up due.',
     how: 'New retainer agrees the amount and the minimum. Open one to record a receipt into it, pay invoices from it, or close it once it holds nothing.',
