@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 808 |
+| Not started | 807 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 420 |
+| Tested | 421 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 13 | 30 |
-| Accounts payable | M2 | 36 | 18 | 18 |
+| Accounts payable | M2 | 36 | 17 | 19 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -824,6 +824,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › bills and payments
   - apps/web/src/app/orgs/[orgId]/purchases/vendors
+
+### AP-002 — Vendor onboarding
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: One onboarding per vendor (separate from customer onboarding, own setting and checklist): email, address with PIN, GSTIN or PAN, verified bank details and payment terms read from the vendor, plus the checklist with files; submit, second-person approval sets payment terms (no credit limit), reject, reopen. Optional setting starts one for every new vendor. Bills from and payments to a vendor with an unapproved onboarding are refused. Not built: vendor self-service portal.
+- Evidence:
+  - packages/accounting-engine/src/customer-onboarding.ts
+  - packages/database/prisma/migrations/20261208090000_vendor_onboarding/migration.sql
+  - apps/api/src/customer-onboarding/customer-onboarding.service.ts
+  - apps/api/src/customer-onboarding/customer-onboarding.controller.ts
+  - apps/api/test/vendor-onboarding.e2e.test.ts
+  - apps/web/src/components/onboarding/onboarding-panel.tsx
+  - apps/web/src/components/onboarding/onboarding-list.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/onboarding/page.tsx
+  - apps/web/e2e/vendor-onboarding-flow.test.mjs
+  - docs/VENDOR_ONBOARDING.md
 
 ### AP-003 — Purchase invoices
 

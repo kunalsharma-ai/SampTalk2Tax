@@ -69,6 +69,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
         <Stat label="Balance" value={<Money value={bal.balance} currency={c} signed />} tone="positive" />
       </div>
       {l.ledger === 'SALES' && x.isCustomer ? <OnboardingPanel orgId={orgId} contactId={x.id} currency={c} onChange={() => void qc.invalidateQueries({ queryKey: ['contact', orgId, contactId] })} /> : null}
+      {l.ledger === 'PURCHASES' && x.isVendor ? <OnboardingPanel party="VENDOR" orgId={orgId} contactId={x.id} currency={c} onChange={() => void qc.invalidateQueries({ queryKey: ['contact', orgId, contactId] })} /> : null}
       <Card className="mt-6">
         <CardHeader
           title="Statement"

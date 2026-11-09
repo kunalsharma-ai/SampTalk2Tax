@@ -6,6 +6,9 @@
  * an agreed credit limit and payment terms. Someone with approval rights approves the onboarding,
  * which sets the credit limit and terms on the customer. While an onboarding is not approved, no
  * invoice to that customer can be posted.
+ *
+ * Vendor onboarding (AP-002) is the same process for suppliers: tax details, verified bank details,
+ * documents and payment terms, approved before their bills are posted or they are paid.
  */
 import { D } from './money';
 
@@ -25,6 +28,15 @@ export const DEFAULT_ONBOARDING_REQUIREMENTS: { label: string; needsFile: boolea
   { label: 'Credit check done (references, bureau report or past payment record)', needsFile: false },
 ];
 
+export type OnboardingParty = 'CUSTOMER' | 'VENDOR';
+
+/** A vendor's checklist when the organisation has not set one. */
+export const DEFAULT_VENDOR_ONBOARDING_REQUIREMENTS: { label: string; needsFile: boolean }[] = [
+  { label: 'GST certificate or PAN card', needsFile: true },
+  { label: 'Cancelled cheque or bank letter for the account to pay', needsFile: true },
+  { label: 'MSME (Udyam) status checked and recorded', needsFile: false },
+];
+
 export interface OnboardingContact {
   email: string | null;
   address: string | null;
@@ -35,7 +47,7 @@ export interface OnboardingContact {
 }
 
 export interface DetailCheck {
-  key: 'EMAIL' | 'ADDRESS' | 'TAX_ID' | 'CREDIT_TERMS';
+  key: 'EMAIL' | 'ADDRESS' | 'TAX_ID' | 'CREDIT_TERMS' | 'BANK' | 'PAYMENT_TERMS';
   label: string;
   done: boolean;
   hint: string;
@@ -68,6 +80,21 @@ export function detailChecks(c: OnboardingContact, terms: { creditLimit: string 
       done: terms.creditLimit !== null && terms.paymentTermsDays !== null,
       hint: 'Propose the credit limit (0 for payment in advance) and payment terms.',
     },
+  ];
+}
+
+/**
+ * A vendor's checks from its record: email for remittance advice, address, GSTIN or PAN (TDS
+ * depends on the PAN), bank details verified by a second person, and agreed payment terms.
+ */
+export function vendorDetailChecks(c: OnboardingContact, v: { bankVerified: boolean; paymentTermsDays: number | null }, countryCode: string): DetailCheck[] {
+  const [email, address, tax] = detailChecks(c, { creditLimit: null, paymentTermsDays: null }, countryCode).map((d) => ({ ...d, hint: d.hint.replace('customer', 'vendor') }));
+  return [
+    { ...email!, label: 'Email for remittance advice' },
+    { ...address!, label: address!.label.replace('Billing address', 'Address') },
+    tax!,
+    { key: 'BANK', label: 'Bank details entered and verified', done: v.bankVerified, hint: 'Enter the bank details on the vendor and have someone else verify them.' },
+    { key: 'PAYMENT_TERMS', label: 'Payment terms agreed', done: v.paymentTermsDays !== null, hint: 'Enter the payment terms agreed with the vendor.' },
   ];
 }
 

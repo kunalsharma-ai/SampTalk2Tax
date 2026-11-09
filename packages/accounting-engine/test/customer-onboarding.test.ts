@@ -39,3 +39,14 @@ describe('customer onboarding', () => {
     expect(decisionAllowed('u1', 'u1', 0)).toEqual({ allowed: true, selfApproved: true });
   });
 });
+
+describe('vendor onboarding', () => {
+  it('reads the vendor record, its verified bank details and agreed payment terms', async () => {
+    const { vendorDetailChecks } = await import('../src/customer-onboarding');
+    const none = vendorDetailChecks(blank, { bankVerified: false, paymentTermsDays: null }, 'IN');
+    expect(none.map((d) => [d.key, d.done])).toEqual([['EMAIL', false], ['ADDRESS', false], ['TAX_ID', false], ['BANK', false], ['PAYMENT_TERMS', false]]);
+    expect(none[2]!.hint).toBe('Add the GSTIN, or the PAN of an unregistered vendor.');
+    const all = vendorDetailChecks({ ...blank, email: 'ap@v.test', address: 'Pune', pincode: '411001', pan: 'ABCPE1234F' }, { bankVerified: true, paymentTermsDays: 30 }, 'IN');
+    expect(all.every((d) => d.done)).toBe(true);
+  });
+});

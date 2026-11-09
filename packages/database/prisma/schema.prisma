@@ -5350,11 +5350,14 @@ model PaymentLinkNotice {
 
 /// AR-003: whether customers added from now on must be onboarded before they are invoiced.
 model CustomerOnboardingSettings {
-  orgId       String   @id @map("org_id") @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  /// CUSTOMER or VENDOR (AP-002).
+  party       String   @default("CUSTOMER") @db.VarChar(8)
   required    Boolean  @default(false)
   updatedById String?  @map("updated_by_id") @db.Uuid
   updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
+  @@id([orgId, party])
   @@map("customer_onboarding_settings")
 }
 
@@ -5362,6 +5365,7 @@ model CustomerOnboardingSettings {
 model CustomerOnboardingRequirement {
   id        String   @id @default(uuid()) @db.Uuid
   orgId     String   @map("org_id") @db.Uuid
+  party     String   @default("CUSTOMER") @db.VarChar(8)
   label     String   @db.VarChar(300)
   needsFile Boolean  @default(false) @map("needs_file")
   isActive  Boolean  @default(true) @map("is_active")
@@ -5369,7 +5373,7 @@ model CustomerOnboardingRequirement {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([id, orgId])
-  @@index([orgId, sortOrder])
+  @@index([orgId, party, sortOrder], map: "customer_onboarding_requirements_org_id_idx")
   @@map("customer_onboarding_requirements")
 }
 
@@ -5378,6 +5382,8 @@ model CustomerOnboarding {
   id               String    @id @default(uuid()) @db.Uuid
   orgId            String    @map("org_id") @db.Uuid
   contactId        String    @map("contact_id") @db.Uuid
+  /// CUSTOMER or VENDOR (AP-002); a contact that is both has one of each.
+  party            String    @default("CUSTOMER") @db.VarChar(8)
   status           String    @default("OPEN") @db.VarChar(10)
   creditLimit      Decimal?  @map("credit_limit") @db.Decimal(24, 6)
   paymentTermsDays Int?      @map("payment_terms_days")
@@ -5393,7 +5399,7 @@ model CustomerOnboarding {
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@unique([id, orgId])
-  @@unique([orgId, contactId])
+  @@unique([orgId, contactId, party])
   @@index([orgId, status])
   @@map("customer_onboardings")
 }
