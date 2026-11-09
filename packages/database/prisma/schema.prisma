@@ -5423,3 +5423,24 @@ model CustomerOnboardingCheck {
   @@index([orgId, onboardingId])
   @@map("customer_onboarding_checks")
 }
+
+/// AP-021: the team's own review of a vendor. Never edited or deleted; the author may withdraw it.
+model VendorReview {
+  id             String    @id @default(uuid()) @db.Uuid
+  orgId          String    @map("org_id") @db.Uuid
+  contactId      String    @map("contact_id") @db.Uuid
+  orderId        String?   @map("order_id") @db.Uuid
+  reviewDate     DateTime  @map("review_date") @db.Date
+  aspect         String    @db.VarChar(20)
+  rating         Int       @db.SmallInt
+  note           String?   @db.VarChar(2000)
+  createdById    String    @map("created_by_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  withdrawnById  String?   @map("withdrawn_by_id") @db.Uuid
+  withdrawnAt    DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  withdrawReason String?   @map("withdraw_reason") @db.VarChar(500)
+
+  @@unique([id, orgId])
+  @@index([orgId, contactId, reviewDate])
+  @@map("vendor_reviews")
+}

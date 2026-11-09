@@ -189,7 +189,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-018 |  | capability | Duplicate invoice detection | Tested |
 | AP-019 |  | capability | Supplier tax validation | Not started |
 | AP-020 |  | capability | Expense classification | Not started |
-| AP-021 |  | capability | Vendor performance tracking | Not started |
+| AP-021 |  | capability | Vendor performance tracking | Tested |
 | AP-022 |  | capability | Payment reconciliation | Tested |
 | AP-023 |  | capability | International payment preparation | Not started |
 | AP-024 |  | capability | Vendor risk monitoring | Not started |

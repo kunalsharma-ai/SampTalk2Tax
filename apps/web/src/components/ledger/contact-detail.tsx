@@ -19,6 +19,7 @@ import { CustomerDeals } from '@/components/crm/customer-deals';
 import { Customer360 } from '@/components/crm/customer-360';
 import { VendorBankCard } from '@/components/purchases/vendor-bank-card';
 import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
+import { VendorPerformanceCard } from '@/components/vendor-performance/performance-card';
 
 export function ContactDetail({ l }: { l: LedgerConfig }) {
   const { org, orgId } = useOrg();
@@ -114,6 +115,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
         {docs.data && docs.data.items.length === 0 ? <p className="px-5 py-4 text-sm text-fg-muted">None yet.</p> : <DocumentsTable l={l} orgId={orgId} items={docs.data?.items ?? []} currency={c} showContact={false} />}
       </Card>
       {l.ledger === 'PURCHASES' && x.isVendor ? <VendorBankCard orgId={orgId} contactId={x.id} /> : null}
+      {l.ledger === 'PURCHASES' && x.isVendor ? <VendorPerformanceCard orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer && can(org.role, 'reports.read') ? <Customer360 orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer ? <CustomerDeals orgId={orgId} contactId={x.id} currency={c} /> : null}
       <ContactDialog l={l} draft={draft} setDraft={setDraft} />
