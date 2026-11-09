@@ -33,6 +33,7 @@ import { currentApproval, policyFor } from '../approvals/approval-rules';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { checkLineDimensions } from '../dimensions/check';
+import { CustomerOnboardingService } from '../customer-onboarding/customer-onboarding.service';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
@@ -573,6 +574,8 @@ export class DocumentsService {
     if (doc.kind === 'INVOICE' && doc.contact.creditHold) {
       throw new DomainError('CREDIT_HOLD', `${doc.contact.name} is on credit hold (${doc.contact.creditHoldReason}). Lift the hold on the customer's page to post invoices to them.`, HttpStatus.CONFLICT);
     }
+    // AR-003: a customer being onboarded is invoiced once the onboarding is approved.
+    if (doc.kind === 'INVOICE') await CustomerOnboardingService.assertCanInvoice(tx, org.id, doc.contact);
     if (doc.kind === 'INVOICE' && doc.contact.creditLimit) {
       const bal = (await this.subledger.balances(tx, org.id, 'SALES', '9999-12-31', doc.contactId)).get(doc.contactId);
       const exposure = (bal ? bal.outstanding.minus(bal.unapplied) : new D(0)).plus(toFunctional(computed.total, doc.exchangeRate.toFixed(), org.functionalCurrency));
