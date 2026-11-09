@@ -230,6 +230,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the vendor, dates, terms, matching, tolerances or lines, then save. An issued order cannot change; close it and raise a new one.',
     where: 'Purchases. Opened with Edit on a draft purchase order.',
   },
+  'sales/retainers': {
+    what: 'Retainers: money customers keep on account with you at an agreed level, held as their receipts not yet applied, with what each holds and any top-up due.',
+    how: 'New retainer agrees the amount and the minimum. Open one to record a receipt into it, pay invoices from it, or close it once it holds nothing.',
+    where: 'Sales. Retainer receipts are ordinary receipts, so the customer shows in credit in receivables until the retainer pays their invoices.',
+  },
+  'sales/retainers/[id]': {
+    what: 'One retainer: its terms, the receipts that make it up, the invoices it has paid and the customer\'s open invoices.',
+    how: 'Record receipt… posts a new receipt into it; Pay invoices… applies it to invoices, oldest receipt first. A top-up is due when the balance falls below the minimum.',
+    where: 'Opened from Retainers.',
+  },
   'sales/pro-formas': {
     what: 'Pro forma invoices: what a customer will be billed, sent before the sale to collect an advance or for their approvals. Not a tax invoice; nothing is posted.',
     how: 'New pro forma invoice, or Make pro forma invoice… on a sent or accepted quotation. Issue it, print it, then Make tax invoice… when you supply or are paid.',

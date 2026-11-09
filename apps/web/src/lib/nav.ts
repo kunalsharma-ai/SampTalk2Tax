@@ -20,6 +20,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/sales/quotes', label: 'Quotations' },
       { href: '/sales/orders', label: 'Sales orders' },
       { href: '/sales/pro-formas', label: 'Pro forma invoices' },
+      { href: '/sales/retainers', label: 'Retainers' },
       { href: '/sales/contracts', label: 'Contracts' },
       { href: '/sales/customers', label: 'Customers' },
       { href: '/sales/customer-insights', label: 'Customer insights', perm: 'reports.read' },
