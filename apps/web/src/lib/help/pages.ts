@@ -230,6 +230,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the vendor, dates, terms, matching, tolerances or lines, then save. An issued order cannot change; close it and raise a new one.',
     where: 'Purchases. Opened with Edit on a draft purchase order.',
   },
+  'sales/payment-links': {
+    what: 'Payment links: links customers open to pay an invoice online through your own Razorpay or Stripe account, with what was paid and the receipt each paid link recorded.',
+    how: 'Make a link from a posted invoice with Make payment link. Show open, paid, cancelled or expired links. Open an invoice to copy, check or cancel its link.',
+    where: 'Sales. Set up the gateways under Settings → Payment gateways. A paid link is an ordinary receipt into the gateway\'s bank account.',
+  },
+  'settings/payment-gateways': {
+    what: 'Your organisation\'s own Razorpay and Stripe accounts, used for payment links on invoices: keys, mode, currencies, the bank account payouts go to and the webhook address.',
+    how: 'Enter the keys from the gateway\'s dashboard, choose the currencies and the bank account, save, then Test connection. Add the webhook address shown here at the gateway so payments are confirmed straight away.',
+    where: 'Governance. Keys are stored encrypted and never shown again. Each currency is paid through one gateway.',
+  },
   'sales/retainers': {
     what: 'Retainers: money customers keep on account with you at an agreed level, held as their receipts not yet applied, with what each holds and any top-up due.',
     how: 'New retainer agrees the amount and the minimum. Open one to record a receipt into it, pay invoices from it, or close it once it holds nothing.',
@@ -651,6 +661,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   register: { what: 'Create your Talk2Tax account.', how: 'Enter your name, email and a long password.', where: 'After this you create or join an organisation.' },
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },
   'invite/[id]': { what: 'An invitation to join an organisation.', how: 'Sign in or create an account, then accept.', where: 'After accepting, the organisation appears in your list.' },
+  paid: { what: 'Where a customer lands after paying a payment link: a thank-you with the link reference.', how: 'Nothing to do here. The invoice is marked paid from the gateway\'s own signed notice, not from this page.', where: 'Open to anyone; it shows nothing from the books.' },
   // ---------------------------------------------------------------- platform administration
   admin: {
     what: 'Platform administration: organisations, people, plans, payments, support and system health.',

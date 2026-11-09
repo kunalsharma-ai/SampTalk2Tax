@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 810 |
+| Not started | 809 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 418 |
+| Tested | 419 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 15 | 28 |
+| Accounts receivable | M2 | 43 | 14 | 29 |
 | Accounts payable | M2 | 36 | 18 | 18 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -629,6 +629,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/ledger/new-document.tsx
   - apps/web/e2e/debit-notes-flow.test.mjs
   - docs/DEBIT_NOTES.md
+
+### AR-018 — Payment links
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Payment links PL-0001 on posted INR/USD invoices through the organisation's own Razorpay or Stripe account (keys sealed, set up and tested in Settings → Payment gateways, deposit account, one gateway per currency). Settled by the signed webhook or by checking: an ordinary receipt into the deposit account applied to the invoice up to what is owed. One open link per invoice; trigger keeps links permanent and final. Not built: emailing the link from Talk2Tax, refunds, other currencies.
+- Evidence:
+  - packages/accounting-engine/src/payment-links.ts
+  - packages/accounting-engine/test/payment-links.test.ts
+  - packages/database/prisma/migrations/20261206090000_payment_links/migration.sql
+  - apps/api/src/payment-links/payment-links.service.ts
+  - apps/api/test/payment-links.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/payment-gateways/page.tsx
+  - apps/web/src/components/payment-links/payment-links-panel.tsx
+  - apps/web/e2e/payment-links-flow.test.mjs
+  - docs/PAYMENT_LINKS.md
 
 ### AR-019 — Payment allocation
 

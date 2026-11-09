@@ -6238,6 +6238,21 @@
         "docs/RETAINERS.md"
       ],
       "notes": "Retainers RT-0001: agreed amount and minimum per customer; held as ordinary unapplied receipts linked to the retainer (recorded into it or added); drawn down onto invoices with ordinary allocations, oldest receipt first, oldest due invoice first by default; top-up due below the minimum; close only when empty; triggers keep links permanent. Functional currency only; no GST on advances; top-up requests not emailed."
+    },
+    "AR-018": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-links.ts",
+        "packages/accounting-engine/test/payment-links.test.ts",
+        "packages/database/prisma/migrations/20261206090000_payment_links/migration.sql",
+        "apps/api/src/payment-links/payment-links.service.ts",
+        "apps/api/test/payment-links.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/payment-gateways/page.tsx",
+        "apps/web/src/components/payment-links/payment-links-panel.tsx",
+        "apps/web/e2e/payment-links-flow.test.mjs",
+        "docs/PAYMENT_LINKS.md"
+      ],
+      "notes": "Payment links PL-0001 on posted INR/USD invoices through the organisation's own Razorpay or Stripe account (keys sealed, set up and tested in Settings → Payment gateways, deposit account, one gateway per currency). Settled by the signed webhook or by checking: an ordinary receipt into the deposit account applied to the invoice up to what is owed. One open link per invoice; trigger keeps links permanent and final. Not built: emailing the link from Talk2Tax, refunds, other currencies."
     }
   }
 }

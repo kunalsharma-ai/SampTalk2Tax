@@ -5273,3 +5273,76 @@ model RetainerReceipt {
   @@index([orgId, retainerId])
   @@map("retainer_receipts")
 }
+
+/// An organisation's own Stripe or Razorpay account, for payment links on its invoices (AR-018).
+model OrgPaymentGateway {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  provider         String    @db.VarChar(16)
+  enabled          Boolean   @default(false)
+  mode             String    @default("TEST") @db.VarChar(8)
+  currencies       String[]  @default([])
+  keyId            String?   @map("key_id") @db.VarChar(100)
+  secretCipher     String?   @map("secret_cipher")
+  secretKeyId      String?   @map("secret_key_id") @db.VarChar(16)
+  secretHint       String?   @map("secret_hint") @db.VarChar(16)
+  webhookCipher    String?   @map("webhook_cipher")
+  webhookKeyId     String?   @map("webhook_key_id") @db.VarChar(16)
+  webhookHint      String?   @map("webhook_hint") @db.VarChar(16)
+  depositAccountId String?   @map("deposit_account_id") @db.Uuid
+  lastTestAt       DateTime? @map("last_test_at") @db.Timestamptz(6)
+  lastTestOk       Boolean?  @map("last_test_ok")
+  lastTestMessage  String?   @map("last_test_message") @db.VarChar(500)
+  updatedById      String?   @map("updated_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([orgId, provider])
+  @@map("org_payment_gateways")
+}
+
+/// A link a customer pays an invoice through on the gateway's page, shown as PL-0001.
+model PaymentLink {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  number           Int
+  documentId       String    @map("document_id") @db.Uuid
+  provider         String    @db.VarChar(16)
+  gatewayRef       String    @map("gateway_ref") @db.VarChar(200)
+  url              String    @db.VarChar(1000)
+  currency         String    @db.Char(3)
+  amount           Decimal   @db.Decimal(24, 6)
+  status           String    @default("OPEN") @db.VarChar(10)
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6)
+  paidAt           DateTime? @map("paid_at") @db.Timestamptz(6)
+  paidAmount       Decimal?  @map("paid_amount") @db.Decimal(24, 6)
+  gatewayPaymentId String?   @map("gateway_payment_id") @db.VarChar(200)
+  paymentId        String?   @unique @map("payment_id") @db.Uuid
+  settledBy        String?   @map("settled_by") @db.VarChar(100)
+  cancelledAt      DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  createdById      String    @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([orgId, number])
+  @@unique([provider, gatewayRef])
+  @@index([orgId, documentId])
+  @@map("payment_links")
+}
+
+/// A notice from an organisation's gateway about a payment link.
+model PaymentLinkNotice {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  provider    String   @db.VarChar(16)
+  eventId     String?  @map("event_id") @db.VarChar(200)
+  type        String   @db.VarChar(100)
+  signatureOk Boolean  @map("signature_ok")
+  outcome     String   @db.VarChar(300)
+  linkId      String?  @map("link_id") @db.Uuid
+  receivedAt  DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  @@unique([orgId, provider, eventId])
+  @@index([orgId, receivedAt])
+  @@map("payment_link_notices")
+}
