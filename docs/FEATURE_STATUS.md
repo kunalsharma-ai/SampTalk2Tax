@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 807 |
+| Not started | 806 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 421 |
+| Tested | 422 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 13 | 30 |
-| Accounts payable | M2 | 36 | 17 | 19 |
+| Accounts payable | M2 | 36 | 16 | 20 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1014,6 +1014,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice
   - apps/web/e2e/sales-flow.test.mjs
+
+### AP-021 — Vendor performance tracking
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Scorecard per vendor and period from purchase orders, goods receipts, posted bills and vendor credits: on-time delivery (40), rejected goods by value (30), bills matched without accepted differences (20), team reviews (10), reweighted over what can be measured, grades A-D; overcharge above order price, spend and credits shown. Reviews 1-5 by aspect, optional PO, note needed at 1-2, append-only, withdrawn only by their author. Not built: external risk data.
+- Evidence:
+  - packages/accounting-engine/src/vendor-performance.ts
+  - packages/accounting-engine/test/vendor-performance.test.ts
+  - packages/database/prisma/migrations/20261209090000_vendor_performance/migration.sql
+  - apps/api/src/vendor-performance/vendor-performance.service.ts
+  - apps/api/test/vendor-performance.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-performance/page.tsx
+  - apps/web/src/components/vendor-performance/performance-card.tsx
+  - apps/web/e2e/vendor-performance-flow.test.mjs
+  - docs/VENDOR_PERFORMANCE.md
 
 ### AP-022 — Payment reconciliation
 

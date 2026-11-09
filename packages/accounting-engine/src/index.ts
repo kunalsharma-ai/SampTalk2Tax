@@ -65,3 +65,4 @@ export * from './project-billing';
 export * from './retainers';
 export * from './payment-links';
 export * from './customer-onboarding';
+export * from './vendor-performance';
