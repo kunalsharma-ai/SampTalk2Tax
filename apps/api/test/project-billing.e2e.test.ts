@@ -58,7 +58,7 @@ afterAll(async () => {
 
 describe('milestone billing', () => {
   let o: { id: string; total: string };
-  let ms: { id: string; name: string }[];
+  let ms: { id: string; name: string; percent: string; value: string }[];
   it('is chosen per order and planned in shares of at most 100%', async () => {
     o = await newOrder();
     expect(o.total).toBe('127999.99');
