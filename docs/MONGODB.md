@@ -13,8 +13,9 @@ module follows when it moves.
 | --- | --- | --- |
 | 1 | Data layer, replica set, migrations | Done (#87) |
 | 2 | `users`, `auth_sessions`, `login_throttles` | Done (#89) |
-| 3 | `organizations`, `memberships`, `invitations` | This step |
-| 4 | Chart of accounts, fiscal periods | Next |
+| 3 | `organizations`, `memberships`, `invitations` | Done (#90) |
+| 4 | `accounts`, `fiscal_periods` | This step |
+| 5 | Ledger: journals and lines, reports | Next |
 
 ## Why these choices
 
@@ -72,6 +73,18 @@ Modules still on PostgreSQL point at moved records with foreign keys (for exampl
   new sign-up whose audit record cannot be written is removed again). Between the two
   commits a crash could still leave the copy behind. The copy is rewritten on the record's
   next change, and the copying tool below repairs it.
+
+**Writes from modules that have not moved.** GST, payroll, TDS/TCS, bad debts and expense
+claims set up their own accounts inside their PostgreSQL transactions. They do it through
+`ChartService`, which writes MongoDB and copies the account into the caller's transaction. If
+that transaction rolls back, the account stays in MongoDB without a copy; the next set-up
+finds it by code and copies it, and the account is audited as created in the transaction that
+first copies it.
+
+**Locks that wait for postings.** Locking a period must wait for postings in progress, which
+still hold the period's PostgreSQL copy `FOR SHARE`. So locking runs in a PostgreSQL
+transaction that takes the copy `FOR UPDATE`, changes MongoDB inside it, and reverses that
+change if the transaction fails (`postgresWithMongo`).
 
 **Nested system access.** `withSystemAccess` restores whatever the transaction had before it,
 so a mirror copy made inside system work leaves the outer bypass on. Audit rows for routes

@@ -2,6 +2,7 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AccountsController } from './accounts/accounts.controller';
 import { AccountsService } from './accounts/accounts.service';
+import { ChartService } from './accounts/chart.service';
 import { ApprovalsController } from './approvals/approvals.controller';
 import { ApprovalsService } from './approvals/approvals.service';
 import { AttachmentsController } from './attachments/attachments.controller';
@@ -317,6 +318,7 @@ export class AppModule {
         OrganizationsService,
         InvitationsService,
         AccountsService,
+        ChartService,
         PeriodsService,
         JournalsService,
         ReportsService,

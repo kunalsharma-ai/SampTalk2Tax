@@ -1,3 +1,4 @@
+import { ChartService, type SystemAccountSpec } from '../accounts/chart.service';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { D, dec, Dec } from '@talk2tax/accounting-engine';
 import { Employee, PayComponentKind, PayrollLiability, PayrollSettings, Prisma, PtCategory, SalaryComponent, SalaryStructure } from '@talk2tax/database';
@@ -107,6 +108,7 @@ export class PayrollService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
+    private readonly chart: ChartService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -751,22 +753,9 @@ export class PayrollService {
     return s;
   }
 
-  private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }) {
-    const out = {} as PayrollAccounts;
-    for (const key of ACCOUNT_KEYS) {
-      const spec = DEFAULT_ACCOUNTS[key];
-      const existing = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.code } } });
-      if (existing) {
-        if (existing.name !== spec.name || existing.type !== spec.type) throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} is already used by "${existing.name}". Choose the accounts yourself.`, HttpStatus.CONFLICT);
-        out[key] = existing.id;
-        continue;
-      }
-      const parent = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.parent } } });
-      const a = await tx.account.create({ data: { orgId, code: spec.code, name: spec.name, type: spec.type, subtype: spec.subtype, parentId: parent && !parent.isPostable && parent.type === spec.type ? parent.id : null, isPostable: true } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, reason: 'Payroll setup' } });
-      out[key] = a.id;
-    }
-    return out;
+  private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }): Promise<PayrollAccounts> {
+    const specs = Object.fromEntries(ACCOUNT_KEYS.map((k) => { const d = DEFAULT_ACCOUNTS[k]; return [k, { code: d.code, name: d.name, type: d.type, subtype: d.subtype, parentCode: d.parent }]; })) as Record<AccountKey, SystemAccountSpec>;
+    return this.chart.ensure(tx, orgId, actor.id, specs, 'Payroll setup');
   }
 
   private async checkAccounts(tx: Tx, orgId: string, accounts: PayrollAccounts) {
