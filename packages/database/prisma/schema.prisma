@@ -4273,6 +4273,7 @@ model SalesOrder {
   taxTotal      Decimal             @map("tax_total") @db.Decimal(24, 6)
   total         Decimal             @db.Decimal(24, 6)
   status        SalesOrderStatus    @default(OPEN)
+  billingMethod SalesBillingMethod  @default(DELIVERY) @map("billing_method")
   cancelReason  String?             @map("cancel_reason") @db.VarChar(500)
   cancelledAt   DateTime?           @map("cancelled_at") @db.Timestamptz(6)
   createdById   String              @map("created_by_id") @db.Uuid
@@ -4281,6 +4282,8 @@ model SalesOrder {
   org           Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
   lines         SalesOrderLine[]
   billings      SalesOrderBilling[]
+  milestones    SalesOrderMilestone[]
+  progressClaims SalesOrderProgressClaim[]
 
   @@unique([orgId, number])
   @@unique([id, orgId])
@@ -5187,4 +5190,47 @@ model BillMatchAcceptance {
 
   @@index([orgId, documentId])
   @@map("bill_match_acceptances")
+}
+
+enum SalesBillingMethod {
+  DELIVERY
+  MILESTONES
+  PROGRESS
+}
+
+/// A named share of a sales order's value, billed on its own invoice (AR-013).
+model SalesOrderMilestone {
+  id            String     @id @default(uuid()) @db.Uuid
+  orgId         String     @map("org_id") @db.Uuid
+  orderId       String     @map("order_id") @db.Uuid
+  seq           Int
+  name          String     @db.VarChar(200)
+  percent       Decimal    @db.Decimal(5, 2)
+  dueDate       DateTime?  @map("due_date") @db.Date
+  completedAt   DateTime?  @map("completed_at") @db.Timestamptz(6)
+  completedById String?    @map("completed_by_id") @db.Uuid
+  documentId    String?    @map("document_id") @db.Uuid
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  order         SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, seq])
+  @@unique([id, orgId])
+  @@index([orgId, documentId])
+  @@map("sales_order_milestones")
+}
+
+/// A claim of how complete the work on a sales order is, billed up to that share (AR-014).
+model SalesOrderProgressClaim {
+  id              String     @id @default(uuid()) @db.Uuid
+  orgId           String     @map("org_id") @db.Uuid
+  orderId         String     @map("order_id") @db.Uuid
+  percentComplete Decimal    @map("percent_complete") @db.Decimal(5, 2)
+  documentId      String     @unique @map("document_id") @db.Uuid
+  note            String?    @db.VarChar(500)
+  createdById     String     @map("created_by_id") @db.Uuid
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  order           SalesOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, orderId])
+  @@map("sales_order_progress_claims")
 }
