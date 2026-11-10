@@ -33,6 +33,7 @@ import { currentApproval, policyFor } from '../approvals/approval-rules';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { checkLineDimensions } from '../dimensions/check';
+import { CustomerOnboardingService } from '../customer-onboarding/customer-onboarding.service';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
@@ -442,6 +443,11 @@ export class DocumentsService {
     const kind = ledgerKinds(ledger).payment;
     const { idempotencyKey, hash } = opts;
     await this.checkContact(tx, org.id, ledger, input.contactId);
+    // AP-002: a vendor being onboarded is paid once the onboarding is approved.
+    if (ledger === 'PURCHASES') {
+      const v = await tx.contact.findFirst({ where: { id: input.contactId, orgId: org.id }, select: { id: true, name: true } });
+      if (v) await CustomerOnboardingService.assertCanPayOrBill(tx, org.id, v, 'payments');
+    }
     const bank = await tx.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
     if (!bank || !bank.isPostable || !bank.isActive || !['BANK', 'CASH'].includes(bank.subtype ?? '')) {
       throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
@@ -573,6 +579,9 @@ export class DocumentsService {
     if (doc.kind === 'INVOICE' && doc.contact.creditHold) {
       throw new DomainError('CREDIT_HOLD', `${doc.contact.name} is on credit hold (${doc.contact.creditHoldReason}). Lift the hold on the customer's page to post invoices to them.`, HttpStatus.CONFLICT);
     }
+    // AR-003: a customer being onboarded is invoiced once the onboarding is approved.
+    if (doc.kind === 'INVOICE') await CustomerOnboardingService.assertCanInvoice(tx, org.id, doc.contact);
+    if (doc.kind === 'BILL') await CustomerOnboardingService.assertCanPayOrBill(tx, org.id, doc.contact, 'bills');
     if (doc.kind === 'INVOICE' && doc.contact.creditLimit) {
       const bal = (await this.subledger.balances(tx, org.id, 'SALES', '9999-12-31', doc.contactId)).get(doc.contactId);
       const exposure = (bal ? bal.outstanding.minus(bal.unapplied) : new D(0)).plus(toFunctional(computed.total, doc.exchangeRate.toFixed(), org.functionalCurrency));
@@ -602,7 +611,7 @@ export class DocumentsService {
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.posted', entityType: 'document', entityId: id, data: { number, total: computed.total.toFixed(), journalEntryId: je.id } });
   }
 
-  private async allocateInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, paymentId: string, allocations: { documentId: string; amount: string }[]) {
+  async allocateInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, paymentId: string, allocations: { documentId: string; amount: string }[]) {
     if (!allocations.length) return;
     const ids = allocations.map((a) => a.documentId);
     if (new Set(ids).size !== ids.length) throw new DomainError('INVALID_ALLOCATION', 'Each document can appear only once');
