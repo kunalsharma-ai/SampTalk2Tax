@@ -26,13 +26,16 @@ import {
   ledgerOf,
   minorUnits,
 } from '@talk2tax/accounting-engine';
-import { Contact, Prisma } from '@talk2tax/database';
+import { Allocation, Contact, Document, Payment, Prisma } from '@talk2tax/database';
+import { randomUUID } from 'node:crypto';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { GstCategory, gstHeads, gstSplitter, hsnIssue } from '@talk2tax/tax-engine';
 import { currentApproval, policyFor } from '../approvals/approval-rules';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { checkLineDimensions } from '../dimensions/check';
+import { ALLOCATIONS, DOCUMENTS, newAllocation, newDocument, PAYMENTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { CustomerOnboardingService } from '../customer-onboarding/customer-onboarding.service';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
@@ -136,6 +139,7 @@ export class DocumentsService {
     private readonly subledger: SubledgerService,
     private readonly gst: GstService,
     private readonly withholding: WithholdingService,
+    private readonly moved: MovedTables,
   ) {}
 
   // ------------------------------------------------------------------ reads
@@ -261,28 +265,25 @@ export class DocumentsService {
   async createDraftInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, input: DocumentInput) {
     this.assertKinds(ledger, [input.kind]);
     const prepared = await this.prepare(tx, org, ledger, input);
-    const doc = await tx.document.create({
-      data: {
-        orgId: org.id,
-        kind: input.kind,
-        contactId: input.contactId,
-        issueDate: toDbDate(input.issueDate),
-        dueDate: toDbDate(prepared.dueDate),
-        reference: input.reference || null,
-        memo: input.memo || null,
-        currency: prepared.currency,
-        exchangeRate: prepared.rate,
-        debitNoteForId: prepared.debitNoteFor?.id ?? null,
-        purchaseOrderId: prepared.purchaseOrderId,
-        ...gstColumns(prepared.gst),
-        ...taxColumns(prepared.computed, prepared.withholding),
-        subtotal: prepared.computed.subtotal.toFixed(),
-        taxTotal: prepared.computed.taxTotal.toFixed(),
-        total: prepared.computed.total.toFixed(),
-        createdById: actor.id,
-        lines: { create: lineRows(prepared.computed.lines) },
-      },
-    });
+    const doc = await this.moved.create<Document>(tx, DOCUMENTS, org.id, newDocument({
+      kind: input.kind,
+      contactId: input.contactId,
+      issueDate: toDbDate(input.issueDate),
+      dueDate: toDbDate(prepared.dueDate),
+      reference: input.reference || null,
+      memo: input.memo || null,
+      currency: prepared.currency,
+      exchangeRate: String(prepared.rate),
+      debitNoteForId: prepared.debitNoteFor?.id ?? null,
+      purchaseOrderId: prepared.purchaseOrderId,
+      ...gstColumns(prepared.gst),
+      ...taxColumns(prepared.computed, prepared.withholding),
+      subtotal: prepared.computed.subtotal.toFixed(),
+      taxTotal: prepared.computed.taxTotal.toFixed(),
+      total: prepared.computed.total.toFixed(),
+      createdById: actor.id,
+      lines: lineRows(prepared.computed.lines),
+    }));
     await this.audit.append(tx, {
       orgId: org.id,
       actorId: actor.id,
@@ -317,26 +318,23 @@ export class DocumentsService {
       if (existing.status !== 'DRAFT') throw new DomainError('DOCUMENT_POSTED', 'Posted documents cannot be edited; void and re-issue instead', HttpStatus.CONFLICT);
       if (existing.kind !== input.kind) throw new DomainError('KIND_CHANGE', 'A draft cannot change its document type');
       const prepared = await this.prepare(tx, org, ledger, input, id);
-      await tx.documentLine.deleteMany({ where: { documentId: id, orgId: org.id } });
-      await tx.document.update({
-        where: { id },
-        data: {
-          contactId: input.contactId,
-          issueDate: toDbDate(input.issueDate),
-          dueDate: toDbDate(prepared.dueDate),
-          reference: input.reference || null,
-          memo: input.memo || null,
-          currency: prepared.currency,
-          exchangeRate: prepared.rate,
-          debitNoteForId: prepared.debitNoteFor?.id ?? null,
-          purchaseOrderId: prepared.purchaseOrderId,
-          ...gstColumns(prepared.gst),
-          ...taxColumns(prepared.computed, prepared.withholding),
-          subtotal: prepared.computed.subtotal.toFixed(),
-          taxTotal: prepared.computed.taxTotal.toFixed(),
-          total: prepared.computed.total.toFixed(),
-          lines: { create: lineRows(prepared.computed.lines) },
-        },
+      await this.moved.update(tx, DOCUMENTS, org.id, id, {
+        contactId: input.contactId,
+        issueDate: toDbDate(input.issueDate),
+        dueDate: toDbDate(prepared.dueDate),
+        reference: input.reference || null,
+        memo: input.memo || null,
+        currency: prepared.currency,
+        exchangeRate: String(prepared.rate),
+        debitNoteForId: prepared.debitNoteFor?.id ?? null,
+        purchaseOrderId: prepared.purchaseOrderId,
+        ...gstColumns(prepared.gst),
+        ...taxColumns(prepared.computed, prepared.withholding),
+        subtotal: prepared.computed.subtotal.toFixed(),
+        taxTotal: prepared.computed.taxTotal.toFixed(),
+        total: prepared.computed.total.toFixed(),
+        lines: lineRows(prepared.computed.lines),
+        updatedAt: new Date(),
       });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.draft_updated', entityType: 'document', entityId: id, data: { total: prepared.computed.total.toFixed() } });
       return this.serializeDoc(org, await tx.document.findUniqueOrThrow({ where: { id }, include: DOC_INCLUDE }));
@@ -347,8 +345,7 @@ export class DocumentsService {
     await this.prisma.$transaction(async (tx) => {
       const existing = await this.lockDocument(tx, org.id, ledger, id);
       if (existing.status !== 'DRAFT') throw new DomainError('DOCUMENT_POSTED', 'Posted documents cannot be deleted; void them instead', HttpStatus.CONFLICT);
-      await tx.documentLine.deleteMany({ where: { documentId: id, orgId: org.id } });
-      await tx.document.delete({ where: { id } });
+      await this.moved.remove(tx, DOCUMENTS, org.id, id);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.draft_deleted', entityType: 'document', entityId: id, data: { kind: existing.kind } });
     });
   }
@@ -381,7 +378,7 @@ export class DocumentsService {
       if (ewb) throw new DomainError('HAS_EWAY_BILL', `${doc.number} has live e-way bill ${ewb.number}; record its cancellation on the portal first`, HttpStatus.CONFLICT);
       if (input.date < fromDbDate(doc.issueDate)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the document date');
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, doc.journalEntryId!, { date: input.date, memo: `Void ${doc.number}: ${input.reason}` });
-      await tx.document.update({ where: { id }, data: { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date), voidReason: input.reason } });
+      await this.moved.update(tx, DOCUMENTS, org.id, id, { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date), voidReason: input.reason, updatedAt: new Date() });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.voided', entityType: 'document', entityId: id, data: { number: doc.number, date: input.date, reason: input.reason, reversalEntryId: rev.id } });
       return this.serializeDoc(org, await tx.document.findUniqueOrThrow({ where: { id }, include: DOC_INCLUDE }));
     });
@@ -405,7 +402,7 @@ export class DocumentsService {
       if (issues.length) throw new DomainError('INVALID_ALLOCATION', issues.join('; '));
       const date = [fromDbDate(target.issueDate), fromDbDate(credit.issueDate)].sort()[1];
       const fx = await this.realiseFx(tx, org, actor, ledger, { amount, currency: target.currency, date, targetRate: target.exchangeRate.toFixed(), sourceRate: credit.exchangeRate.toFixed(), memo: `${credit.number} settles ${target.number}` });
-      const al = await tx.allocation.create({ data: { orgId: org.id, targetId: target.id, creditDocumentId: credit.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id, ...fx } });
+      const al = await this.moved.create<Allocation>(tx, ALLOCATIONS, org.id, newAllocation({ targetId: target.id, creditDocumentId: credit.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id, ...fx }));
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.created', entityType: 'allocation', entityId: al.id, data: { targetId: target.id, creditDocumentId: credit.id, amount: amount.toFixed(), ...(fx.fxJournalEntryId ? { fxGain: fx.fxGain, fxJournalEntryId: fx.fxJournalEntryId } : {}) } });
       return this.serializeDoc(org, await tx.document.findUniqueOrThrow({ where: { id: target.id }, include: DOC_INCLUDE }));
     });
@@ -466,24 +463,25 @@ export class DocumentsService {
       reference: number,
       lines,
     });
-    const p = await tx.payment.create({
-      data: {
-        orgId: org.id,
+    const p = await this.moved.create<Payment>(tx, PAYMENTS, org.id, {
+        status: 'POSTED',
         kind,
         number,
         contactId: input.contactId,
         date: toDbDate(input.date),
         bankAccountId: bank.id,
         currency,
-        exchangeRate: rate,
+        exchangeRate: String(rate),
         amount: amount.toFixed(),
         reference: input.reference || null,
         memo: input.memo || null,
         journalEntryId: je.id,
-        idempotencyKey,
-        idempotencyHash: hash,
+        voidJournalEntryId: null,
+        voidDate: null,
+        idempotencyKey: idempotencyKey ?? null,
+        idempotencyHash: hash ?? null,
         createdById: actor.id,
-      },
+        createdAt: new Date(),
     });
     await this.audit.append(tx, {
       orgId: org.id,
@@ -513,7 +511,7 @@ export class DocumentsService {
       if (active > 0) throw new DomainError('HAS_ALLOCATIONS', 'Remove this payment from the documents it settles before voiding it', HttpStatus.CONFLICT);
       if (input.date < fromDbDate(p.date)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the payment date');
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, p.journalEntryId, { date: input.date, memo: `Void ${p.number}: ${input.reason}` });
-      await tx.payment.update({ where: { id }, data: { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date) } });
+      await this.moved.update(tx, PAYMENTS, org.id, id, { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date) });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'payment.voided', entityType: 'payment', entityId: id, data: { number: p.number, date: input.date, reason: input.reason, reversalEntryId: rev.id } });
       return this.serializePayment(org, await tx.payment.findUniqueOrThrow({ where: { id }, include: PAY_INCLUDE }));
     });
@@ -534,7 +532,7 @@ export class DocumentsService {
       const rev = al.fxJournalEntryId
         ? await this.journals.reverseSystemEntry(tx, org, actor, al.fxJournalEntryId, { date: removedOn, memo: `Allocation removed from ${al.target.number}` })
         : null;
-      await tx.allocation.update({ where: { id: allocationId }, data: { removedOn: toDbDate(removedOn), removedById: actor.id, fxReversalJournalEntryId: rev?.id ?? null } });
+      await this.moved.update(tx, ALLOCATIONS, org.id, allocationId, { removedOn: toDbDate(removedOn), removedById: actor.id, fxReversalJournalEntryId: rev?.id ?? null });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.removed', entityType: 'allocation', entityId: allocationId, data: { targetId: al.targetId, amount: al.amount.toFixed(), ...(rev ? { fxReversalJournalEntryId: rev.id } : {}) } });
       return { id: allocationId, removedOn };
     });
@@ -607,7 +605,7 @@ export class DocumentsService {
       lines: atRate(buildDocumentJournal(doc.kind, computed, control, doc.currency), doc.currency, doc.exchangeRate.toFixed(), org.functionalCurrency, doc.currency === org.functionalCurrency ? null : await this.fxAccount(tx, org.id)),
     });
     // The GST facts are taken again as they stand now (for example the customer's GSTIN), so the posted document records what was charged.
-    await tx.document.update({ where: { id }, data: { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date(), ...gstColumns(gst), ...taxColumns(computed, withholding) } });
+    await this.moved.update(tx, DOCUMENTS, org.id, id, { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date(), ...gstColumns(gst), ...taxColumns(computed, withholding), updatedAt: new Date() });
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.posted', entityType: 'document', entityId: id, data: { number, total: computed.total.toFixed(), journalEntryId: je.id } });
   }
 
@@ -631,7 +629,7 @@ export class DocumentsService {
       if (issues.length) throw new DomainError('INVALID_ALLOCATION', `${doc.number}: ${issues.join('; ')}`);
       const date = [fromDbDate(p.date), fromDbDate(doc.issueDate)].sort()[1];
       const fx = await this.realiseFx(tx, org, actor, ledger, { amount, currency: doc.currency, date, targetRate: doc.exchangeRate.toFixed(), sourceRate: p.exchangeRate.toFixed(), memo: `${p.number} settles ${doc.number}` });
-      const al = await tx.allocation.create({ data: { orgId: org.id, targetId: doc.id, paymentId: p.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id, ...fx } });
+      const al = await this.moved.create<Allocation>(tx, ALLOCATIONS, org.id, newAllocation({ targetId: doc.id, paymentId: p.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id, ...fx }));
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.created', entityType: 'allocation', entityId: al.id, data: { targetId: doc.id, paymentId: p.id, amount: amount.toFixed(), ...(fx.fxJournalEntryId ? { fxGain: fx.fxGain, fxJournalEntryId: fx.fxJournalEntryId } : {}) } });
       remaining = remaining.minus(amount);
     }
@@ -1048,6 +1046,7 @@ function paymentStatus(status: string, total: Dec, used: Dec): 'UNPAID' | 'PARTI
 
 function lineRows(lines: ReturnType<typeof computeDocument>['lines']) {
   return lines.map((l) => ({
+    id: randomUUID(),
     lineNo: l.lineNo,
     description: l.description ?? null,
     accountId: l.accountId,

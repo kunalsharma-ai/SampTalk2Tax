@@ -77,6 +77,6 @@ describe('copying records made before the move', () => {
     expect(await ctx.db.collection('users').findOne({ _id: id as never })).toMatchObject({ email, name: 'Before The Move', language: 'en' });
     expect(await ctx.db.collection('auth_sessions').countDocuments({ userId: id })).toBe(1);
     const again = await copyFromPostgres(ctx.prisma, ctx.store, () => undefined);
-    expect(again).toEqual({ users: 0, auth_sessions: 0, login_throttles: 0, organizations: 0, memberships: 0, invitations: 0, accounts: 0, fiscal_periods: 0, journal_entries: 0, contacts: 0 });
+    expect(again).toEqual({ users: 0, auth_sessions: 0, login_throttles: 0, organizations: 0, memberships: 0, invitations: 0, accounts: 0, fiscal_periods: 0, journal_entries: 0, contacts: 0, documents: 0, payments: 0, allocations: 0 });
   });
 });

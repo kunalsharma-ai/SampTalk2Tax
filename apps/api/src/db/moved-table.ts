@@ -28,6 +28,7 @@ export class MovedTables {
     return (await this.copy(tx, table, [id]))[0] as Row;
   }
 
+  /** Deletes the document and its copy (children go with the copy's cascade). */
   async remove(tx: Tx, table: MovedTable, orgId: string, id: string): Promise<void> {
     await runInOrg(orgId, () => this.store.collection(table.def).deleteOne({ id }));
     await withSystemAccess(tx, () => delegate(tx, table).deleteMany({ where: { id } }));
@@ -39,8 +40,23 @@ export class MovedTables {
     const out: unknown[] = [];
     await withSystemAccess(tx, async () => {
       for (const { id, ...rest } of docs) {
+        const kids = table.children;
+        const items = kids ? ((rest[kids.field] as { id: string }[] | undefined) ?? []) : [];
+        if (kids) delete rest[kids.field];
         const data = table.toRow ? table.toRow(rest) : rest;
-        out.push(await delegate(tx, table).upsert({ where: { id }, create: { id, ...data }, update: data }));
+        if (!kids) {
+          out.push(await delegate(tx, table).upsert({ where: { id }, create: { id, ...data }, update: data }));
+          continue;
+        }
+        // Children (a document's lines) are rewritten only when the set changed: they change only
+        // while the parent is a draft, and the copy's triggers refuse touching a posted one's.
+        const child = delegate(tx, { model: kids.model } as MovedTable);
+        const held = (await child.findMany({ where: { [kids.parentKey]: id }, select: { id: true } })) as { id: string }[];
+        const same = held.length === items.length && items.every((c) => held.some((h) => h.id === c.id));
+        if (!same && held.length) await child.deleteMany({ where: { [kids.parentKey]: id } });
+        const row = await delegate(tx, table).upsert({ where: { id }, create: { id, ...data }, update: data });
+        if (!same && items.length) await child.createMany({ data: items.map((c) => ({ ...(kids.toRow ? kids.toRow(c) : c), [kids.parentKey]: id, orgId: data.orgId })) });
+        out.push(row);
       }
     });
     return out;
@@ -54,20 +70,33 @@ export interface MovedTable {
   model: string;
   /** Adjusts a document into the copy's columns, when they differ. */
   toRow?: (doc: Record<string, unknown>) => Record<string, unknown>;
+  /** An array in the document that PostgreSQL keeps as rows of another table (a document's lines). */
+  children?: { field: string; model: string; parentKey: string; toRow?: (item: Record<string, unknown>) => Record<string, unknown> };
 }
 
-function delegate(tx: Tx, table: MovedTable) {
-  return (tx as unknown as Record<string, { upsert: (a: unknown) => Promise<unknown>; deleteMany: (a: unknown) => Promise<unknown> }>)[table.model]!;
+interface Delegate {
+  upsert(a: unknown): Promise<unknown>;
+  deleteMany(a: unknown): Promise<unknown>;
+  findMany(a: unknown): Promise<unknown[]>;
+  createMany(a: unknown): Promise<unknown>;
 }
 
-/** Drops undefined fields and turns decimal objects into the decimal strings MongoDB takes. */
+function delegate(tx: Tx, table: Pick<MovedTable, 'model'>) {
+  return (tx as unknown as Record<string, Delegate>)[table.model]!;
+}
+
+/** Drops undefined fields and turns decimal objects into the decimal strings MongoDB takes (also inside arrays of objects). */
 export function forMongo(data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data)) {
     if (v === undefined) continue;
-    out[k] = isDecimal(v) ? v.toFixed() : v;
+    out[k] = isDecimal(v) ? v.toFixed() : Array.isArray(v) ? v.map((x) => (isPlain(x) ? forMongo(x) : x)) : v;
   }
   return out;
+}
+
+function isPlain(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !(v instanceof Date) && !isDecimal(v) && Object.getPrototypeOf(v) === Object.prototype;
 }
 
 function isDecimal(v: unknown): v is { toFixed(): string } {

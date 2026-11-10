@@ -7,8 +7,9 @@ import { allowSystemAccessOutsideRequests } from '../common/tenant-context';
 import { loadConfig } from '../config';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { Decimal128 } from '@talk2tax/document-db';
+import { Prisma } from '@talk2tax/database';
 import { journalEntries } from './collections/ledger';
-import { contacts } from './collections/sales';
+import { allocations, contacts, documents, payments } from './collections/sales';
 import { authSessions, loginThrottles, users } from './collections/identity';
 import { invitations, memberships, organizations } from './collections/tenancy';
 import { withSystemAccess } from '../common/prisma.service';
@@ -146,6 +147,23 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   const newContacts = await missing(contacts, allContacts.map((c) => c.id));
   await raw(contacts.name, allContacts.filter((c) => newContacts.has(c.id)).map((c) => ({ ...c, creditLimit: c.creditLimit === null ? null : dec(c.creditLimit) })));
   copied.contacts = newContacts.size;
+
+  // Invoices, bills and credits, each with its lines inside it.
+  const docIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.document.findMany({ select: { id: true } })));
+  const newDocs = [...(await missing(documents, docIds.map((x) => x.id)))];
+  const decs = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v instanceof Prisma.Decimal ? dec(v) : v]));
+  for (const ids of chunks(newDocs, 500)) {
+    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.document.findMany({ where: { id: { in: ids } }, include: { lines: { orderBy: { lineNo: 'asc' } } } })));
+    await raw(documents.name, batch.map(({ lines, ...x }) => ({ ...decs(x), id: x.id, lines: lines.map(({ documentId: _d, orgId: _o, ...l }) => decs(l)) })));
+  }
+  copied.documents = newDocs.length;
+
+  for (const [def, model] of [[payments, 'payment'], [allocations, 'allocation']] as const) {
+    const rows = (await prisma.$transaction((tx) => withSystemAccess(tx, () => (tx[model] as unknown as { findMany(): Promise<({ id: string } & Record<string, unknown>)[]> }).findMany()))) as ({ id: string } & Record<string, unknown>)[];
+    const fresh = await missing(def, rows.map((r) => r.id));
+    await raw(def.name, rows.filter((r) => fresh.has(r.id)).map((r) => ({ ...decs(r), id: r.id })));
+    copied[def.name] = fresh.size;
+  }
 
   log(`Copied to MongoDB: ${Object.entries(copied).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   return copied;
