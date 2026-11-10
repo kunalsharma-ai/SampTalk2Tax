@@ -33,6 +33,7 @@ import { ComplianceService } from '../compliance/compliance.service';
 import { KpisService } from '../kpis/kpis.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { TasksService } from '../tasks/tasks.service';
+import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
 
 type Actor = { id: string };
 
@@ -113,6 +114,7 @@ export class AlertsService {
     private readonly kpis: KpisService,
     private readonly budgets: BudgetsService,
     private readonly tasks: TasksService,
+    private readonly vendorRisk: VendorRiskService,
   ) {}
 
   // ------------------------------------------------------------------ notifications
@@ -478,6 +480,33 @@ export class AlertsService {
             },
           };
         });
+      }
+      case 'VENDOR_RISK': {
+        const r = await this.vendorRisk.list(orgId);
+        const why = { NEVER_REVIEWED: 'nobody has reviewed it yet', NEW_RISK: 'something new since the last review', REVIEW_DUE: 'the review date has come' } as const;
+        return r.vendors
+          .filter((v) => v.need && (v.level === 'HIGH' || v.level === 'MEDIUM' || v.need === 'REVIEW_DUE'))
+          .map((v) => {
+            const shown = v.need === 'NEW_RISK' ? v.factors.filter((f) => v.newFactors.includes(f.code)) : v.factors;
+            return {
+              rule: def.key,
+              fingerprint: v.id,
+              severity: v.level === 'HIGH' ? ('CRITICAL' as const) : v.level === 'MEDIUM' ? ('WARNING' as const) : ('INFO' as const),
+              title: `${v.name}: ${v.level.toLowerCase()} vendor risk, ${why[v.need!]}`,
+              summary: `${shown.map((f) => f.title).join('; ')}. Open the vendor's Risk card, look at each factor and record a review with what you decided.`,
+              amount: new D(v.owed).gt(0) ? new D(v.owed) : null,
+              evidence: {
+                facts: [
+                  { label: 'Vendor', value: v.name },
+                  { label: 'Risk', value: v.level.charAt(0) + v.level.slice(1).toLowerCase() },
+                  { label: 'Owed to the vendor', value: o.money(v.owed), kind: 'money' as const },
+                  ...(v.lastReview ? [{ label: 'Last review', value: `${dateLabel(v.lastReview.reviewedOn)}, next due ${dateLabel(v.lastReview.nextReviewOn)}` }] : []),
+                  ...shown.map((f) => ({ label: f.title, value: f.detail })),
+                ],
+                links: [{ kind: 'VENDOR' as const, id: v.id, label: `Open ${v.name}` }, { kind: 'PAGE' as const, path: '/purchases/vendor-risk', label: 'Open vendor risk' }],
+              },
+            };
+          });
       }
       case 'UNUSUAL_JOURNAL': {
         const since = new Date(Date.now() - JOURNAL_WINDOW_DAYS * 86_400_000);
