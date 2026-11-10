@@ -29,6 +29,7 @@ import {
 import { Allocation, Contact, Document, Payment, Prisma } from '@talk2tax/database';
 import { randomUUID } from 'node:crypto';
 import { hasPermission, RoleName } from '@talk2tax/security';
+import { RevenueRecognitionService } from '../revenue-recognition/revenue-recognition.service';
 import { GstCategory, gstHeads, gstSplitter, hsnIssue } from '@talk2tax/tax-engine';
 import { currentApproval, policyFor } from '../approvals/approval-rules';
 import { AuditService } from '../audit/audit.service';
@@ -140,6 +141,7 @@ export class DocumentsService {
     private readonly gst: GstService,
     private readonly withholding: WithholdingService,
     private readonly moved: MovedTables,
+    private readonly recognition: RevenueRecognitionService,
   ) {}
 
   // ------------------------------------------------------------------ reads
@@ -382,6 +384,7 @@ export class DocumentsService {
       if (input.date < fromDbDate(doc.issueDate)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the document date');
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, doc.journalEntryId!, { date: input.date, memo: `Void ${doc.number}: ${input.reason}` });
       await this.moved.update(tx, DOCUMENTS, org.id, id, { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date), voidReason: input.reason, updatedAt: new Date() });
+      if (doc.kind === 'INVOICE') await this.recognition.onVoid(tx, org, actor, { id, number: doc.number! }, input.date);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.voided', entityType: 'document', entityId: id, data: { number: doc.number, date: input.date, reason: input.reason, reversalEntryId: rev.id } });
       return this.serializeDoc(org, await tx.document.findUniqueOrThrow({ where: { id }, include: DOC_INCLUDE }));
     });
@@ -612,16 +615,22 @@ export class DocumentsService {
     const control = await this.controlAccount(tx, org.id, ledger);
     // Debit notes have their own series (GSTR-1 table 13 reports each series).
     const number = debitNoteFor ? debitNoteNumber(await this.nextNumber(tx, org.id, 'DEBIT_NOTE')) : documentNumber(doc.kind, await this.nextNumber(tx, org.id, doc.kind));
+    // AR-028: lines recognised over a service period post to deferred revenue instead.
+    const recognition = doc.kind === 'INVOICE' ? await this.recognition.planForPosting(tx, org.id, id, computed.lines.map((l, i) => ({ lineNo: doc.lines[i]!.lineNo, accountId: l.accountId, netAmount: l.netAmount }))) : null;
+    const journalDoc = recognition
+      ? { ...computed, lines: computed.lines.map((l, i) => (recognition.plan.some((x) => x.lineNo === doc.lines[i]!.lineNo) ? { ...l, accountId: recognition.deferredAccountId } : l)) }
+      : computed;
     const je = await this.journals.postSystemEntry(tx, org, actor, {
       date: fromDbDate(doc.issueDate),
       source: 'DOCUMENT',
       memo: `${number} · ${doc.contact.name}${debitNoteFor ? ` · debit note on ${debitNoteFor.number}` : ''}${doc.reference ? ` · ${doc.reference}` : ''}`,
       reference: number,
-      lines: atRate(buildDocumentJournal(doc.kind, computed, control, doc.currency), doc.currency, doc.exchangeRate.toFixed(), org.functionalCurrency, doc.currency === org.functionalCurrency ? null : await this.fxAccount(tx, org.id)),
+      lines: atRate(buildDocumentJournal(doc.kind, journalDoc, control, doc.currency), doc.currency, doc.exchangeRate.toFixed(), org.functionalCurrency, doc.currency === org.functionalCurrency ? null : await this.fxAccount(tx, org.id)),
     });
     // The GST facts are taken again as they stand now (for example the customer's GSTIN), so the posted document records what was charged.
     await this.moved.update(tx, DOCUMENTS, org.id, id, { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date(), ...gstColumns(gst), ...taxColumns(computed, withholding), updatedAt: new Date() });
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.posted', entityType: 'document', entityId: id, data: { number, total: computed.total.toFixed(), journalEntryId: je.id } });
+    if (recognition) await this.recognition.openSchedules(tx, org, actor, { id, number, contactName: doc.contact.name, exchangeRate: doc.exchangeRate.toFixed(), journalEntryId: je.id }, recognition);
   }
 
   async allocateInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, paymentId: string, allocations: { documentId: string; amount: string }[]) {
