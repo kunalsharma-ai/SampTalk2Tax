@@ -51,7 +51,7 @@ export interface BatchItemCheck {
   /** What is still owed on the bill now. */
   due: string;
   billStatus: string;
-  bank: { hasDetails: boolean; verified: boolean } | null;
+  bank: { hasDetails: boolean; verified: boolean; international?: boolean } | null;
 }
 
 /** Why each item cannot be approved or paid as it stands, by bill number. */
@@ -63,6 +63,7 @@ export function batchItemIssues(items: readonly BatchItemCheck[], currency: stri
     if (i.billStatus !== 'POSTED') out.push({ documentId: i.documentId, number: i.number, issue: `${i.number} is no longer posted` });
     else if (amount.gt(dec(i.due))) out.push({ documentId: i.documentId, number: i.number, issue: `${i.number} now has ${dec(i.due).toFixed(scale)} ${currency} left to pay, less than the ${amount.toFixed(scale)} in the batch` });
     if (!i.bank?.hasDetails) out.push({ documentId: i.documentId, number: i.number, issue: `${i.vendor} has no bank details` });
+    else if (i.bank.international) out.push({ documentId: i.documentId, number: i.number, issue: `${i.vendor} is paid to a bank abroad; pay them with an international payment` });
     else if (!i.bank.verified) out.push({ documentId: i.documentId, number: i.number, issue: `${i.vendor}'s bank details were changed and are not verified yet` });
   }
   return out;
