@@ -180,6 +180,8 @@ export const MIRRORED_MODEL_NAMES = [
   'SupplierGstinCheck',
   'VendorRiskReview',
   'UnbilledRevenueDismissal',
+  'VendorPortalLink',
+  'VendorPortalSubmission',
 ] as const;
 
 export const MIRRORED = mirrorModels(MIRRORED_MODEL_NAMES);
