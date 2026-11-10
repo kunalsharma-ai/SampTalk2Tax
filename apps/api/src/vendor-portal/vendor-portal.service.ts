@@ -20,6 +20,8 @@ import { cleanFileName, MAX_ATTACHMENT_BYTES, sniffContentType } from '../attach
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { ATTACHMENTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { PrismaService, withSystemAccess } from '../common/prisma.service';
 import { enterOrg } from '../common/tenant-context';
 import { SubledgerService } from '../ledgers/subledger.service';
@@ -63,6 +65,7 @@ export class VendorPortalService {
     private readonly orders: PurchaseOrdersService,
     private readonly regions: RegionsService,
     private readonly usage: UsageService,
+    private readonly moved: MovedTables,
   ) {}
 
   // ------------------------------------------------------------------ staff: links
@@ -226,7 +229,22 @@ export class VendorPortalService {
         const same = await tx.attachment.findFirst({ where: { orgId: org.id, entityType: 'DOCUMENT', entityId: bill.id, sha256: s.sha256!, removedAt: null }, select: { id: true } });
         attachmentId =
           same?.id ??
-          (await tx.attachment.create({ data: { orgId: org.id, entityType: 'DOCUMENT', entityId: bill.id, fileName: s.fileName!, contentType: s.contentType!, sizeBytes: s.sizeBytes!, sha256: s.sha256!, content: s.content, uploadedById: actor.id }, select: { id: true } })).id;
+          (
+            await this.moved.create<{ id: string }>(tx, ATTACHMENTS, org.id, {
+              entityType: 'DOCUMENT',
+              entityId: bill.id,
+              fileName: s.fileName!,
+              contentType: s.contentType!,
+              sizeBytes: s.sizeBytes!,
+              sha256: s.sha256!,
+              content: s.content,
+              uploadedById: actor.id,
+              createdAt: new Date(),
+              removedAt: null,
+              removedById: null,
+              removedReason: null,
+            })
+          ).id;
       }
       await this.audit.append(tx, {
         orgId: org.id,
