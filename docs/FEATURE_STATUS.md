@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 800 |
+| Not started | 799 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 428 |
+| Tested | 429 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 10 | 33 |
+| Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 13 | 23 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -867,6 +867,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
   - apps/web/e2e/collections-flow.test.mjs
   - docs/AI_COLLECTIONS.md
+
+### AR-042 — Automated detection of unbilled revenue
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Finds revenue not invoiced from real records: completed milestones without invoice, contract periods due but unbilled (with the runner error), drafts 7+ days old, delivery orders 30+ days with quantity left, expired pro formas without invoice, regular customers missed last month; confidence due now/likely/possible; totals by currency and source. Dismiss/restore with reason (append-only, audited), returns when the amount grows. Not built: an alert check, AI estimation.
+- Evidence:
+  - packages/accounting-engine/src/unbilled-revenue.ts
+  - packages/accounting-engine/test/unbilled-revenue.test.ts
+  - packages/database/prisma/migrations/20261216090000_unbilled_revenue/migration.sql
+  - apps/api/src/unbilled-revenue/unbilled-revenue.service.ts
+  - apps/api/test/unbilled-revenue.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/unbilled-revenue/page.tsx
+  - apps/web/e2e/unbilled-revenue-flow.test.mjs
+  - docs/UNBILLED_REVENUE.md
 
 ### AP-001 — Supplier management
 
