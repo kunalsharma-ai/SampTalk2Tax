@@ -28,6 +28,7 @@ import { tenantStorage } from '../common/tenant-context';
 import { DocumentsService } from '../ledgers/documents.service';
 import { todayIst } from '../tasks/tasks.service';
 import { LineInput, SalesOrg, SalesOrdersService } from './sales-orders.service';
+import { UsageBillingService } from './usage-billing.service';
 
 type Actor = { id: string };
 export interface ContractInput {
@@ -68,6 +69,7 @@ export class ContractsService {
     private readonly sales: SalesOrdersService,
     private readonly documents: DocumentsService,
     private readonly audit: AuditService,
+    private readonly usage: UsageBillingService,
   ) {}
 
   private rule<T>(f: () => T): T {
@@ -273,6 +275,7 @@ export class ContractsService {
           if (input.endDate < last.end) this.sales.invalid(`Periods up to ${last.end} are already billed; the end date cannot be earlier`, 'CONTRACT_END');
         }
       }
+      if (input.timing !== 'ARREARS' && (await this.usage.hasMeters(tx, org.id, id))) this.sales.invalid('This contract has usage charges, which are billed in arrears; keep it billed in arrears or remove the usage charges first', 'METER_NEEDS_ARREARS');
       await this.sales.checkDeal(tx, org.id, input.dealId, input.contactId);
       const c = await this.sales.compute(tx, org, { contactId: input.contactId, date: old.status === 'DRAFT' ? input.startDate : todayIst(), placeOfSupply: input.placeOfSupply, lines: input.lines });
       await tx.salesContractLine.deleteMany({ where: { contractId: id, orgId: org.id } });
@@ -396,8 +399,10 @@ export class ContractsService {
         if (d && d.status !== 'VOID') this.sales.invalid('That period already has an invoice; void or delete it first', 'CONTRACT_PERIOD_BILLED');
       }
       const period = contractPeriod(fromDbDate(c.startDate), c.frequency as ContractFrequency, periodNo, c.timing);
-      const doc = await this.invoice(tx, org, actor, c, period);
+      const u = await this.usage.forPeriod(tx, org.id, id, period);
+      const doc = await this.invoice(tx, org, actor, c, period, u.lines);
       await tx.salesContractPeriod.update({ where: { id: p.id }, data: { documentId: doc.id } });
+      await this.usage.stamp(tx, u.ids, periodNo, doc.id);
       await this.event(tx, c, actor, 'BILLED', `Period ${period.start} to ${period.end} billed again`, { periodNo, documentId: doc.id });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_contract.billed', entityType: 'sales_contract', entityId: id, data: { reference: ref(c.number), periods: [periodNo], documentIds: [doc.id], again: true } });
       return doc.id;
@@ -405,7 +410,7 @@ export class ContractsService {
     return { documentId: docId, contract: await this.get(org, id) };
   }
 
-  private invoice(tx: Tx, org: SalesOrg, actor: Actor, c: Full, p: { start: string; end: string; billDate: string }) {
+  private invoice(tx: Tx, org: SalesOrg, actor: Actor, c: Full, p: { start: string; end: string; billDate: string }, usage: Awaited<ReturnType<UsageBillingService['forPeriod']>>['lines'] = []) {
     const r = `${ref(c.number)} ${periodLabel(p)}`;
     return this.documents.createDraftInTx(tx, org, actor, 'SALES', {
       kind: 'INVOICE',
@@ -415,7 +420,10 @@ export class ContractsService {
       reference: (c.reference ? `${r} / ${c.reference}` : r).slice(0, 100),
       memo: c.title,
       placeOfSupply: c.placeOfSupply,
-      lines: c.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
+      lines: [
+        ...c.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
+        ...usage,
+      ],
     });
   }
 
@@ -454,8 +462,10 @@ export class ContractsService {
         const by = actor ?? { id: c.createdById };
         const docs: string[] = [];
         for (const p of due) {
-          const doc = await this.invoice(tx, org, by, c, p);
+          const u = await this.usage.forPeriod(tx, org.id, id, p);
+          const doc = await this.invoice(tx, org, by, c, p, u.lines);
           await tx.salesContractPeriod.create({ data: { orgId: org.id, contractId: id, periodNo: p.no, periodStart: toDbDate(p.start), periodEnd: toDbDate(p.end), status: 'BILLED', documentId: doc.id } });
+          await this.usage.stamp(tx, u.ids, p.no, doc.id);
           docs.push(doc.id);
         }
         await tx.salesContract.update({ where: { id }, data: { nextPeriodNo: c.nextPeriodNo + due.length, lastError: null, lastErrorAt: null } });
