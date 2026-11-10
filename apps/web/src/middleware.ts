@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const PUBLIC = ['/login', '/register'];
 /** Open to anyone, signed in or not: where a customer lands after paying a payment link. */
 const OPEN = ['/paid'];
-/** The customer portal: the secret in the link is the check (AR-030). */
-const OPEN_PREFIXES = ['/portal/'];
+/** The customer and vendor portals: the secret in the link is the check (AR-030, AP-013). */
+const OPEN_PREFIXES = ['/portal/', '/vendor-portal/'];
 
 /** Redirects signed-out visitors to /login (the API still enforces auth on every call). */
 export function middleware(req: NextRequest) {

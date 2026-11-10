@@ -181,7 +181,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-010 |  | capability | Credit notes | Implemented |
 | AP-011 |  | capability | Supplier statements | Implemented |
 | AP-012 |  | capability | Payables aging | Tested |
-| AP-013 |  | capability | Vendor portals | Not started |
+| AP-013 |  | capability | Vendor portals | Tested |
 | AP-014 |  | capability | Payment batches | Tested |
 | AP-015 |  | capability | Purchase order matching | Tested |
 | AP-016 |  | capability | Goods receipt matching | Tested |
