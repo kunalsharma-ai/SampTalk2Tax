@@ -6315,6 +6315,21 @@
         "docs/INTERNATIONAL_PAYMENTS.md"
       ],
       "notes": "Vendor bank abroad (IBAN mod-97, SWIFT country, ABA checksum, second-person verification); remittance per vendor and currency against posted foreign-currency bills with RBI purpose code, charges OUR/SHA/BEN and Form 15CA part A/B/C/D plus 15CB above Rs 5 lakh per vendor per financial year; approval by another person; CSV remittance instruction marks it sent; recorded at the bank's rate settling the bills. Purpose codes and 15CA rules not reviewed by a banker or CA. Not built: bank API/MT103, section 195 TDS, forwards."
+    },
+    "AR-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/usage-billing.ts",
+        "packages/accounting-engine/test/usage-billing.test.ts",
+        "packages/database/prisma/migrations/20261211090000_usage_billing/migration.sql",
+        "apps/api/src/sales-orders/usage-billing.service.ts",
+        "apps/api/src/sales-orders/contracts.service.ts",
+        "apps/api/test/usage-billing.e2e.test.ts",
+        "apps/web/src/components/contracts/usage-card.tsx",
+        "apps/web/e2e/usage-billing-flow.test.mjs",
+        "docs/USAGE_BILLING.md"
+      ],
+      "notes": "Usage charges (meters) on contracts billed in arrears: per unit, graduated or volume tiers, included units, minimum charge. Usage recorded by hand, CSV import (all or nothing) or API, idempotent by reference, voided not deleted, negative corrections. Each period's invoice gets usage lines next to the fixed lines; billed readings frozen by triggers; bill again re-uses them. Not built: advance+usage mix, API keys for usage feeds, part-period proration."
     }
   }
 }
