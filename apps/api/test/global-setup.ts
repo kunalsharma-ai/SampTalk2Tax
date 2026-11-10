@@ -38,6 +38,8 @@ export default function setup() {
 
   // After every file: what this run wrote to PostgreSQL must be in MongoDB too (db/mirror-writes.ts).
   return async () => {
+    // With PostgreSQL off (T2T_POSTGRES=off) it holds nothing new to compare.
+    if (process.env.T2T_POSTGRES === 'off') return;
     const { checkMirrorSince } = await import('./mirror-check');
     const problems = await checkMirrorSince(startedAt);
     if (problems.length) {

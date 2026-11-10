@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { Prisma } from '@talk2tax/database';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import { lockName } from '../db/locks';
+import { allowedInTx } from '../db/guards/allow';
 
 export interface AuditInput {
   orgId: string | null;
@@ -34,6 +35,8 @@ export class AuditService {
    * advisory lock serialises appends per organisation so the chain cannot fork.
    */
   async append(tx: Tx, input: AuditInput): Promise<void> {
+    // A trial run (a check made by doing the work and undoing it) leaves no trail.
+    if (allowedInTx('trial_run')) return;
     // Events with no organisation form one global chain shared by every user; reading its
     // last link crosses tenants, so it is done with system access for this step only.
     if (input.orgId === null) return withSystemAccess(tx, () => this.appendRow(tx, input));

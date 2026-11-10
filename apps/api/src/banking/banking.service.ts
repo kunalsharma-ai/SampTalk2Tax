@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { postgresOff } from '../db/counters';
 import { createHash } from 'node:crypto';
 import {
   D,
@@ -521,7 +522,7 @@ export class BankingService {
     const ids = [...new Set(journalLineIds)];
     if (!ids.length) throw new DomainError('INVALID_MATCH', 'Choose at least one ledger line');
     // The PostgreSQL copy of the lines is still locked, so two matches of one line wait for each other.
-    await tx.$queryRaw`SELECT jl.id FROM journal_lines jl WHERE jl.org_id = ${org.id}::uuid AND jl.id = ANY(${ids}::uuid[]) FOR UPDATE`;
+    if (!postgresOff()) await tx.$queryRaw`SELECT jl.id FROM journal_lines jl WHERE jl.org_id = ${org.id}::uuid AND jl.id = ANY(${ids}::uuid[]) FOR UPDATE`;
     for (const id of [...ids].sort()) await holdLock(`journal_lines:${id}`);
     const found = await ledgerLines(this.store, org.id, { line: { id: { $in: ids } } });
     const active = await this.activeMatchDates(tx, org.id, ids);

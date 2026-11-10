@@ -1,8 +1,8 @@
 import { Prisma } from '@talk2tax/database';
 import type { AnyCollectionDef, DocumentStore } from '@talk2tax/document-db';
 import { runAsSystem } from '../../common/tenant-context';
-import { checksOf, foreignKeys, type ForeignKey } from './catalog';
-import { parseCheck, passes } from './sql-expr';
+import { checksOf, foreignKeys, uniquesOf, type ForeignKey, type UniqueIndex } from './catalog';
+import { holds, parseCheck, passes, valueOf } from './sql-expr';
 
 type Row = Record<string, unknown>;
 type Store = Pick<DocumentStore, 'collection'>;
@@ -96,3 +96,44 @@ export async function enforceNoReferrers(store: Store, parent: TableInfo, row: R
     }
   }
 }
+
+const PLAIN = /^[a-z_][a-z0-9_]*$/;
+const parsedIndex = new Map<string, { keys: (ReturnType<typeof parseCheck> | string)[]; where: ReturnType<typeof parseCheck> | null }>();
+const parsedOf = (u: UniqueIndex) => {
+  let p = parsedIndex.get(u.name);
+  if (!p) parsedIndex.set(u.name, (p = { keys: u.keys.map((k) => (PLAIN.test(k) ? k : parseCheck(`CHECK (${k})`))), where: u.where ? parseCheck(`CHECK (${u.where})`) : null }));
+  return p;
+};
+const keyText = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v));
+
+/**
+ * The unique indexes MongoDB cannot hold itself: partial ones (one open dispute per invoice),
+ * ones on expressions (codes unique ignoring case), and ones the Prisma schema does not know.
+ * For the record (by column name), each index it falls in gives its key, or null for none.
+ */
+export function uniqueKeys(table: string, row: Row, covered: (columns: string[]) => boolean): { index: UniqueIndex; key: string; plain: Record<string, unknown> }[] {
+  const out: { index: UniqueIndex; key: string; plain: Record<string, unknown> }[] = [];
+  for (const u of uniquesOf(table)) {
+    if (!u.where && u.keys.every((k) => PLAIN.test(k)) && covered(u.keys)) continue;
+    const p = parsedOf(u);
+    if (p.where && !holds(p.where, row)) continue;
+    const values = p.keys.map((k) => (typeof k === 'string' ? row[k] : valueOf(k, row)));
+    // NULLs are distinct in a unique index: a key with one never conflicts.
+    if (values.some((v) => v === null || v === undefined)) continue;
+    const plain = Object.fromEntries(u.keys.filter((k) => PLAIN.test(k)).map((k) => [k, row[k]]));
+    out.push({ index: u, key: values.map(keyText).join('|'), plain });
+  }
+  return out;
+}
+
+/** The key the record has in a unique index, or null when it is not in it. */
+export function keyIn(u: UniqueIndex, row: Row): string | null {
+  const p = parsedOf(u);
+  if (p.where && !holds(p.where, row)) return null;
+  const values = p.keys.map((k) => (typeof k === 'string' ? row[k] : valueOf(k, row)));
+  return values.some((v) => v === null || v === undefined) ? null : values.map(keyText).join('|');
+}
+
+/** As PostgreSQL reports a unique index refusing a row, as Prisma's P2002 naming the index. */
+export const uniqueViolation = (u: UniqueIndex) =>
+  new Prisma.PrismaClientKnownRequestError(`Unique constraint failed on the constraint: \`${u.name}\``, { code: 'P2002', clientVersion: Prisma.prismaVersion.client, meta: { target: u.name, modelName: u.table } });

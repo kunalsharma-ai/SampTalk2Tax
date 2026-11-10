@@ -1,4 +1,4 @@
-import { mirrorClient, mirrorRowsWhere } from '../db/mirror-writes';
+import { mirrorClient, mirrorRowsWhere, useLockStore } from '../db/mirror-writes';
 import '../db/readable-models';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
@@ -171,6 +171,7 @@ export const prismaProvider: Provider = {
   inject: [DocumentStoreService],
   useFactory: (store: DocumentStoreService) => {
     useCounterStore(store);
+    useLockStore(store);
     return createTenantAwarePrisma(new PrismaService(), store);
   },
 };

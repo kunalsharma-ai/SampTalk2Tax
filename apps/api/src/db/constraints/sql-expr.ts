@@ -705,6 +705,21 @@ function cmp(op: string, a: Value, b: Value): Value {
   }
 }
 
+/** An expression's value for a record (an index key such as `lower(name)`). */
+export function valueOf(expr: Node, row: Record<string, unknown>): unknown {
+  return evaluate(expr, row);
+}
+
+/** Whether a predicate is TRUE for the record (a partial index holds only those rows). */
+export function holds(predicate: Node, row: Record<string, unknown>): boolean {
+  try {
+    return evaluate(predicate, row) === true;
+  } catch (e) {
+    if (e instanceof SqlError) return false;
+    throw e;
+  }
+}
+
 /** Whether a record passes a parsed check: TRUE or NULL passes, FALSE (or an evaluation error) fails. */
 export function passes(check: Node, row: Record<string, unknown>): boolean {
   try {

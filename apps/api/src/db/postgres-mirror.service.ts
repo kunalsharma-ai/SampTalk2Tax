@@ -5,7 +5,7 @@ import { runAsSystem } from '../common/tenant-context';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { journalEntries } from './collections/ledger';
 import { users } from './collections/identity';
-import { mirrorParentDeleted, pgOf } from './mirror-writes';
+import { mirrorParentDeleted, pgOf, POSTGRES_OFF } from './mirror-writes';
 import { memberships, organizations } from './collections/tenancy';
 
 /**
@@ -26,6 +26,7 @@ export class PostgresMirrorService {
 
   /** Copies these users, as MongoDB has them now, into PostgreSQL `users`. */
   async users(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (POSTGRES_OFF()) return; // no copies once PostgreSQL is off
     if (!ids.length) return;
     const rows = await this.store.collection(users).find({ id: { $in: [...new Set(ids)] } });
     const write = async (t: Tx) => {
@@ -55,6 +56,7 @@ export class PostgresMirrorService {
    * then its accounts, then the organisation again.
    */
   async organizations(ids: readonly string[], tx?: Tx, opts: { withoutAccounts?: boolean } = {}): Promise<void> {
+    if (POSTGRES_OFF()) return; // no copies once PostgreSQL is off
     if (!ids.length) return;
     const rows = await this.store.collection(organizations).find({ id: { $in: [...new Set(ids)] } });
     await this.inPostgres(tx, async (t) => {
@@ -67,6 +69,7 @@ export class PostgresMirrorService {
 
   /** Copies these accounts into PostgreSQL `accounts`, parents before their children. */
   async accounts(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (POSTGRES_OFF()) return; // no copies once PostgreSQL is off
     if (!ids.length) return;
     const rows = await runAsSystem(() => this.store.collection(accounts).find({ id: { $in: [...new Set(ids)] } }));
     const byId = new Map(rows.map((a) => [a.id, a]));
@@ -89,6 +92,7 @@ export class PostgresMirrorService {
 
   /** Copies these fiscal periods into PostgreSQL `fiscal_periods`. */
   async fiscalPeriods(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (POSTGRES_OFF()) return; // no copies once PostgreSQL is off
     if (!ids.length) return;
     const rows = await runAsSystem(() => this.store.collection(fiscalPeriods).find({ id: { $in: [...new Set(ids)] } }));
     await this.inPostgres(tx, async (t) => {
@@ -100,6 +104,7 @@ export class PostgresMirrorService {
 
   /** Copies these memberships into PostgreSQL `memberships`, and removes the ones MongoDB no longer has. */
   async memberships(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (POSTGRES_OFF()) return; // no copies once PostgreSQL is off
     if (!ids.length) return;
     const unique = [...new Set(ids)];
     const rows = await runAsSystem(() => this.store.collection(memberships).find({ id: { $in: unique } }));
@@ -122,6 +127,7 @@ export class PostgresMirrorService {
    * entry; the deferred balance check then runs at commit.
    */
   async journalEntries(ids: readonly string[], tx: Tx): Promise<void> {
+    if (POSTGRES_OFF()) return; // no copies once PostgreSQL is off
     if (!ids.length) return;
     const rows = await runAsSystem(() => this.store.collection(journalEntries).find({ id: { $in: [...new Set(ids)] } }));
     for (const { id, lines, orgId, ...e } of rows) {
@@ -141,8 +147,10 @@ export class PostgresMirrorService {
 
   /** Removes a draft's copy. */
   async removeJournalEntry(id: string, orgId: string, tx: Tx): Promise<void> {
-    await tx.journalLine.deleteMany({ where: { entryId: id, orgId } });
-    await tx.journalEntry.deleteMany({ where: { id, orgId } });
+    if (!POSTGRES_OFF()) {
+      await tx.journalLine.deleteMany({ where: { entryId: id, orgId } });
+      await tx.journalEntry.deleteMany({ where: { id, orgId } });
+    }
     await mirrorParentDeleted(tx, this.store, 'journal_entries', orgId, [id]);
   }
 
