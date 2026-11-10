@@ -4,6 +4,8 @@ type Document = Record<string, unknown>;
 import type { DocumentStore } from '@talk2tax/document-db';
 import { currentTenantContext, runAsSystem, runInOrg } from '../common/tenant-context';
 import { mongoReadOps } from './mongo-reads';
+import { foreignKeys } from './constraints/catalog';
+import { enforceChecks, enforceNoReferrers, enforceReferences, type TableInfo } from './constraints/enforce';
 import { allowedInTx } from './guards/allow';
 import { changedExcept, strict, type GuardContext, type Reader } from './guards/guard';
 import { asColumns, GUARDS } from './guards';
@@ -116,6 +118,7 @@ function build(name: string): MirrorInfo {
 /** Registers the models whose writes are kept in step, and works out their cascades. */
 export function mirrorModels(names: readonly string[]): MirrorInfo[] {
   for (const n of names) if (!INFOS.has(n)) INFOS.set(n, build(n));
+  TABLES.clear();
   for (const info of INFOS.values()) info.children = [];
   // The catalog's keys are added again on the next delete.
   catalog = undefined;
@@ -133,6 +136,7 @@ export function mirrorModels(names: readonly string[]): MirrorInfo[] {
 }
 
 const READABLE = new Map<string, MirrorInfo>();
+const TABLES = new Map<string, TableInfo>();
 
 /**
  * Registers tables moved by hand (step 6 and before) for reading: their MongoDB documents have
@@ -140,12 +144,25 @@ const READABLE = new Map<string, MirrorInfo>();
  * document name the parent collection, the array and the parent's key.
  */
 export function readableModels(list: { model: string; def: AnyCollectionDef; embedded?: MirrorInfo['embedded'] }[]) {
+  TABLES.clear();
   for (const r of list) {
     const info = { ...build(r.model), def: r.def, embedded: r.embedded, readOnly: true };
     if (r.embedded) info.tenant = r.embedded.parent.scope === 'tenant';
     else info.tenant = r.def.scope === 'tenant';
     READABLE.set(r.model, info);
   }
+}
+
+/** A model's table as the constraints see it (mirrored or moved by hand). */
+function tableInfoOf(info: MirrorInfo): TableInfo {
+  const m = MODELS.get(info.model)!;
+  const table = m.dbName ?? m.name;
+  return { table, def: info.def, field: (c) => info.scalars.find((f) => (f.dbName ?? f.name) === c)?.name, embedded: info.embedded };
+}
+/** The table of this name, if MongoDB holds it. */
+function tableNamed(table: string): TableInfo | undefined {
+  if (!TABLES.size) for (const info of [...READABLE.values(), ...INFOS.values()]) TABLES.set(tableInfoOf(info).table, tableInfoOf(info));
+  return TABLES.get(table);
 }
 
 /** The model of this name as MongoDB holds it: mirrored, or moved by hand. */
@@ -164,16 +181,12 @@ type Child = MirrorInfo['children'][number];
  * journal entries) through `mirrorParentDeleted`.
  */
 
-async function loadForeignKeys(tx: unknown): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function loadForeignKeys(_tx?: unknown): Promise<void> {
   catalog ??= (async () => {
-    const rows = (await (tx as { $queryRawUnsafe: (q: string) => Promise<unknown[]> }).$queryRawUnsafe(`
-      SELECT cl.relname AS child, pl.relname AS parent, c.confdeltype AS action,
-             (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(c.conkey) WITH ORDINALITY k(n, ord)
-                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.n) AS columns,
-             (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(c.confkey) WITH ORDINALITY k(n, ord)
-                JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.n) AS parent_columns
-        FROM pg_constraint c JOIN pg_class cl ON cl.oid = c.conrelid JOIN pg_class pl ON pl.oid = c.confrelid
-       WHERE c.contype = 'f' AND c.confdeltype IN ('c', 'n')`)) as { child: string; parent: string; action: string; columns: string[]; parent_columns: string[] }[];
+    const rows = foreignKeys()
+      .filter((k) => k.onDelete === 'CASCADE' || k.onDelete === 'SET NULL')
+      .map((k) => ({ child: k.table, parent: k.references, action: k.onDelete === 'CASCADE' ? 'c' : 'n', columns: k.columns, parent_columns: k.referencedColumns }));
     const byTable = new Map([...INFOS.values()].map((i) => [i.def.name, i]));
     const fieldOf = (scalars: Field[] | undefined, col: string) => scalars?.find((f) => (f.dbName ?? f.name) === col)?.name ?? (col === 'id' ? 'id' : col === 'org_id' ? 'orgId' : undefined);
     for (const r of rows) {
@@ -244,6 +257,11 @@ async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record
       const before = (await beforeRow(info, store, r)) as Record<string, unknown> | null;
       if (allWritten || !before || changedExcept(before, r, [])) await inContext(info, r.orgId, async () => await guard(before ? 'UPDATE' : 'INSERT', strict(asColumns(info.model, before), info.model), strict(asColumns(info.model, r), info.model), guardContext(store)));
     }
+    // The table's CHECK constraints and foreign keys, as PostgreSQL enforced them.
+    const t = tableInfoOf(info);
+    const cols = asColumns(info.model, r)!;
+    enforceChecks(t.table, cols);
+    await enforceReferences(store, t, cols, tableNamed, asColumns(info.model, (await beforeRow(info, store, r)) as Record<string, unknown> | null));
     await inContext(info, r.orgId, () => store.collection(info.def).updateOne({ id: docId(info, r) }, { $set: forMongo(info, r) }, { upsert: true }));
   }
 }
@@ -286,6 +304,7 @@ async function dropRows(store: Store, info: MirrorInfo, keys: Record<string, unk
     // As in PostgreSQL, a cascade reaches the children after the parent is gone, so their guards no longer see it.
     await inContext(info, k.orgId, () => store.collection(info.def).deleteOne({ id }));
     await applyChildren(store, info.children, k.orgId, parent);
+    await enforceNoReferrers(store, tableInfoOf(info), asColumns(info.model, parent)!, tableNamed);
   }
 }
 
