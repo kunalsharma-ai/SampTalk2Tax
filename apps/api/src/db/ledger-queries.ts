@@ -10,7 +10,8 @@ import { journalEntries } from './collections/ledger';
  *
  * `entry` filters the entries (their own fields: `status`, `date`, `type`, `periodId`, ...),
  * `line` filters the lines (`accountId`, `departmentId`, `projectId`, ...), and `by` names the
- * groups: each key is an output name and its value an entry field or `lines.<field>`.
+ * groups: each key is an output name and its value an entry field or `lines.<field>`. An entry's
+ * own id is `_id` here (MongoDB's key), a line's is `lines.id`.
  */
 export interface LineSumQuery {
   entry?: Document;
