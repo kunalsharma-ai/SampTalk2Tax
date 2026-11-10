@@ -18,7 +18,7 @@ each vendor's page.
 | PAN not valid | High | The PAN fails its format. |
 | GST without a GSTIN | High | Posted bills charge GST but the vendor has no GSTIN. |
 | Wrong tax head | High | A bill has IGST where CGST and SGST apply, or the other way round, for the supplier's state and the place of supply. |
-| Registration not live | High (cancelled, suspended, not found), Medium (inactive) | The latest portal check of the current GSTIN shows it is not active; bills with GST dated from the cancellation or suspension date are listed. |
+| Registration not live | High | The latest portal check of the current GSTIN shows it is not active; bills with GST dated from the cancellation or suspension date are listed. |
 | Composition supplier charged GST | High | The latest check shows a composition taxpayer and their bills charge GST. |
 | State does not match | Medium | The GSTIN's state code differs from the vendor's state. |
 | TDS without a PAN | Medium | The vendor has a TDS section but no PAN, so section 206AA's higher rate applies. |
@@ -36,7 +36,7 @@ issue that is about bills links to them.
 ## Recording a GST portal check
 
 The **GST portal search** link opens the portal's Search Taxpayer page. Someone with
-`purchases.manage` then records what it showed: the status (active, inactive, suspended,
+`purchases.manage` then records what it showed: the status (active, suspended,
 cancelled or not found), the taxpayer type, the legal name, the check date (not in the future),
 the cancellation or suspension date where there is one, and a note. A check belongs to the GSTIN
 it was made for: if the vendor's GSTIN changes, the old checks stay listed as "earlier GSTIN" and
