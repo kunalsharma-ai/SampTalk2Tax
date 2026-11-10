@@ -176,6 +176,8 @@ import { PaymentLinksService } from './payment-links/payment-links.service';
 import { CustomerOnboardingController, VendorOnboardingController } from './customer-onboarding/customer-onboarding.controller';
 import { CustomerOnboardingService } from './customer-onboarding/customer-onboarding.service';
 import { VendorPerformanceController } from './vendor-performance/vendor-performance.controller';
+import { UnbilledRevenueController } from './unbilled-revenue/unbilled-revenue.controller';
+import { UnbilledRevenueService } from './unbilled-revenue/unbilled-revenue.service';
 import { VendorRiskController } from './vendor-risk/vendor-risk.controller';
 import { VendorRiskService } from './vendor-risk/vendor-risk.service';
 import { InternationalPaymentsController } from './international-payments/international-payments.controller';
@@ -295,6 +297,7 @@ export class AppModule {
     CustomerOnboardingController,
     VendorPerformanceController,
     VendorRiskController,
+    UnbilledRevenueController,
     InternationalPaymentsController,
     VendorOnboardingController,
     PaymentLinkWebhooksController,
@@ -406,6 +409,7 @@ export class AppModule {
     CustomerOnboardingService,
     VendorPerformanceService,
     VendorRiskService,
+    UnbilledRevenueService,
     InternationalPaymentsService,
     PurchaseOrdersService,
         JournalTemplatesRunnerService,
