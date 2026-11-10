@@ -58,6 +58,7 @@ export const hi: Record<string, string> = {
   'Purchase orders': 'क्रय आदेश',
   'Payment batches': 'भुगतान बैच',
   'International payments': 'अंतरराष्ट्रीय भुगतान',
+  'Supplier tax checks': 'आपूर्तिकर्ता कर जाँच',
   'Payables ageing': 'देय राशि की आयु',
   // Banking
   'Bank accounts': 'बैंक खाते',
