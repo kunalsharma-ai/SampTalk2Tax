@@ -15,7 +15,8 @@ import { journalEntries } from './collections/ledger';
 export interface LineSumQuery {
   entry?: Document;
   line?: Document;
-  by: Record<string, string>;
+  /** Output name → an entry field, `lines.<field>`, or a MongoDB expression (such as `{ $dateTrunc: ... }`). */
+  by: Record<string, string | Document>;
 }
 
 export interface LineSum {
@@ -41,7 +42,7 @@ export async function lineSums(store: DocumentStoreService, orgId: string, q: Li
   if (q.line && Object.keys(q.line).length) pipeline.push({ $match: prefixed(q.line) });
   pipeline.push({
     $group: {
-      _id: Object.fromEntries(Object.entries(q.by).map(([k, f]) => [k, `$${f}`])),
+      _id: Object.fromEntries(Object.entries(q.by).map(([k, f]) => [k, typeof f === 'string' ? `$${f}` : f])),
       debit: { $sum: '$lines.functionalDebit' },
       credit: { $sum: '$lines.functionalCredit' },
       txDebit: { $sum: '$lines.debit' },
@@ -59,6 +60,9 @@ export async function lineSums(store: DocumentStoreService, orgId: string, q: Li
     lines: r.lines,
   }));
 }
+
+/** Groups by the calendar month of the entry date (UTC midnight dates, so the first of the month). */
+export const entryMonth: Document = { $dateTrunc: { date: '$date', unit: 'month' } };
 
 /** Entry filter for a date range of posted entries (`from` and `to` inclusive, either open). */
 export function postedBetween(from: Date | null, to: Date | null, opts: { excludeClosing?: boolean } = {}): Document {
