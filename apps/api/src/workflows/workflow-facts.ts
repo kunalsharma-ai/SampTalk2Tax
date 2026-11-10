@@ -1,8 +1,8 @@
-import { NOT_DISPUTED } from '../disputes/disputes.service';
 import { alertRule, AlertRuleKey, D, Dec, Facts, minorUnits, WEEKDAYS, WORKFLOW_TRIGGER_DEFS, WorkflowTrigger } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { Tx } from '../common/prisma.service';
+import { disputedIds, openAsOf } from '../db/subledger-queries';
 
 /** What a task or a run links back to. */
 export type LinkType = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL' | 'EXPENSE_CLAIM' | 'ALERT' | 'PERIOD_CLOSE';
@@ -113,35 +113,43 @@ export async function loadEventFacts(tx: Tx, orgId: string, e: AuditEventRow): P
 
 const scaleOf = async (tx: Tx, orgId: string) => minorUnits((await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { functionalCurrency: true } })).functionalCurrency);
 
-/** What is still to pay on posted invoices or bills, as of an India date. */
-const OPEN = (asOf: string) => Prisma.sql`d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a
-  WHERE a.target_id = d.id AND a.date <= ${toDbDate(asOf)}::date AND (a.removed_on IS NULL OR a.removed_on > ${toDbDate(asOf)}::date)), 0)`;
+/** Posted invoices or bills of a kind with something still to pay as of an India date, and no open dispute. */
+async function openUndisputed(tx: Tx, orgId: string, kind: 'INVOICE' | 'BILL', asOf: string, due?: { from: string; to: string }) {
+  const docs = await tx.document.findMany({
+    where: { orgId, kind, status: 'POSTED', ...(due ? { dueDate: { gte: toDbDate(due.from), lte: toDbDate(due.to) } } : {}) },
+    select: { id: true, total: true, dueDate: true },
+  });
+  const disputed = await disputedIds(tx, orgId, docs.map((d) => d.id));
+  return (await openAsOf(tx, orgId, docs.filter((d) => !disputed.has(d.id)), toDbDate(asOf))).filter((d) => d.open.gt(0));
+}
+
+const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 /**
  * Posted invoices (INVOICE_OVERDUE) or bills (BILL_DUE_SOON) with something still to pay,
  * due between two dates, that this workflow has not acted on for these days yet.
  */
 export async function dueDocuments(tx: Tx, orgId: string, p: { kind: 'INVOICE' | 'BILL'; from: string; to: string; asOf: string; workflowId: string; keyPrefix: string; keySuffix: string; limit: number }): Promise<string[]> {
-  const rows = await tx.$queryRaw<{ id: string }[]>`
-    SELECT d.id FROM documents d
-    WHERE d.org_id = ${orgId}::uuid AND d.kind = ${p.kind}::"DocumentKind" AND d.status = 'POSTED'
-      AND d.due_date BETWEEN ${toDbDate(p.from)}::date AND ${toDbDate(p.to)}::date
-      AND ${OPEN(p.asOf)} > 0 AND ${NOT_DISPUTED}
-      AND NOT EXISTS (SELECT 1 FROM workflow_runs r WHERE r.workflow_id = ${p.workflowId}::uuid AND r.status <> 'TEST'
-                      AND r.occurrence_key = ${p.keyPrefix} || d.id::text || ${p.keySuffix})
-    ORDER BY d.due_date, d.id
-    LIMIT ${p.limit}`;
-  return rows.map((r) => r.id);
+  const open = await openUndisputed(tx, orgId, p.kind, p.asOf, p);
+  const keys = open.map((d) => `${p.keyPrefix}${d.id}${p.keySuffix}`);
+  const done = new Set(
+    keys.length ? (await tx.workflowRun.findMany({ where: { orgId, workflowId: p.workflowId, status: { not: 'TEST' }, occurrenceKey: { in: keys } }, select: { occurrenceKey: true } })).map((r) => r.occurrenceKey) : [],
+  );
+  return open
+    .filter((d) => !done.has(`${p.keyPrefix}${d.id}${p.keySuffix}`))
+    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime() || byId(a, b))
+    .slice(0, p.limit)
+    .map((d) => d.id);
 }
 
 /** A document for testing a date trigger: the most recently overdue open invoice, or the next open bill to fall due. */
 export async function sampleDueDocument(tx: Tx, orgId: string, kind: 'INVOICE' | 'BILL', asOf: string): Promise<string | null> {
-  const order = kind === 'INVOICE' ? Prisma.sql`(d.due_date < ${toDbDate(asOf)}::date) DESC, d.due_date DESC` : Prisma.sql`(d.due_date >= ${toDbDate(asOf)}::date) DESC, d.due_date ASC`;
-  const rows = await tx.$queryRaw<{ id: string }[]>`
-    SELECT d.id FROM documents d
-    WHERE d.org_id = ${orgId}::uuid AND d.kind = ${kind}::"DocumentKind" AND d.status = 'POSTED' AND ${OPEN(asOf)} > 0 AND ${NOT_DISPUTED}
-    ORDER BY ${order}, d.id LIMIT 1`;
-  return rows[0]?.id ?? null;
+  const today = toDbDate(asOf).getTime();
+  const open = await openUndisputed(tx, orgId, kind, asOf);
+  // Invoices: overdue first, the most recently due first. Bills: not yet due first, the soonest first.
+  const rank = (d: { dueDate: Date }) => (kind === 'INVOICE' ? (d.dueDate.getTime() < today ? 0 : 1) : d.dueDate.getTime() >= today ? 0 : 1);
+  open.sort((a, b) => rank(a) - rank(b) || (kind === 'INVOICE' ? b.dueDate.getTime() - a.dueDate.getTime() : a.dueDate.getTime() - b.dueDate.getTime()) || byId(a, b));
+  return open[0]?.id ?? null;
 }
 
 /** Facts of an invoice or bill for a date trigger, as of an India date. */
@@ -149,7 +157,7 @@ export async function loadDueDocumentFacts(tx: Tx, orgId: string, trigger: 'INVO
   const scale = await scaleOf(tx, orgId);
   const d = await tx.document.findFirst({ where: { id: documentId, orgId }, include: { contact: { select: { name: true, email: true } } } });
   if (!d) return null;
-  const open = await tx.$queryRaw<{ balance: Prisma.Decimal }[]>`SELECT ${OPEN(asOf)} AS balance FROM documents d WHERE d.id = ${documentId}::uuid`;
+  const open = (await openAsOf(tx, orgId, [d], toDbDate(asOf))).map((x) => ({ balance: x.open }));
   const money = (v: { toString(): string }) => new D(v.toString()).toFixed(scale);
   return {
     trigger,
@@ -173,12 +181,18 @@ export async function loadDueDocumentFacts(tx: Tx, orgId: string, trigger: 'INVO
 /** Facts of a schedule: the date, and receivables and payables as of that India date. */
 export async function loadScheduleFacts(tx: Tx, orgId: string, date: string): Promise<EventFacts> {
   const scale = await scaleOf(tx, orgId);
-  const rows = await tx.$queryRaw<{ kind: string; outstanding: Prisma.Decimal; overdue: Prisma.Decimal }[]>`
-    SELECT x.kind::text AS kind, COALESCE(SUM(x.open), 0) AS outstanding, COALESCE(SUM(x.open) FILTER (WHERE x.due_date < ${toDbDate(date)}::date), 0) AS overdue
-    FROM (SELECT d.kind, d.due_date, ${OPEN(date)} AS open FROM documents d
-          WHERE d.org_id = ${orgId}::uuid AND d.kind IN ('INVOICE', 'BILL') AND d.issue_date <= ${toDbDate(date)}::date
-            AND (d.status = 'POSTED' OR (d.status = 'VOID' AND d.void_date > ${toDbDate(date)}::date))) x
-    GROUP BY x.kind`;
+  const on = toDbDate(date);
+  const docs = await tx.document.findMany({
+    where: { orgId, kind: { in: ['INVOICE', 'BILL'] }, issueDate: { lte: on }, OR: [{ status: 'POSTED' }, { status: 'VOID', voidDate: { gt: on } }] },
+    select: { id: true, kind: true, total: true, dueDate: true },
+  });
+  const rows: { kind: string; outstanding: Prisma.Decimal; overdue: Prisma.Decimal }[] = [];
+  for (const x of await openAsOf(tx, orgId, docs, on)) {
+    let r = rows.find((y) => y.kind === x.kind);
+    if (!r) rows.push((r = { kind: x.kind, outstanding: new Prisma.Decimal(0), overdue: new Prisma.Decimal(0) }));
+    r.outstanding = r.outstanding.plus(x.open);
+    if (x.dueDate < on) r.overdue = r.overdue.plus(x.open);
+  }
   const get = (kind: string, f: 'outstanding' | 'overdue'): string => {
     const r = rows.find((x) => x.kind === kind);
     return (r ? new D(r[f].toString()) : (new D(0) as Dec)).toFixed(scale);

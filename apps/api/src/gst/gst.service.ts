@@ -17,7 +17,9 @@ import {
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 
 export interface GstAccountsInput {
   outputCgstAccountId: string;
@@ -67,6 +69,7 @@ export class GstService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly chart: ChartService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   registration(db: Tx | PrismaService, orgId: string) {
@@ -163,12 +166,7 @@ export class GstService {
    */
   private async ledgerMovements(orgId: string, reg: GstRegistration, from: string, to: string, s: ReturnType<typeof gstr3bSummary>) {
     const ids = ACCOUNT_KEYS.map((k) => reg[k]);
-    const rows = await this.prisma.$queryRaw<{ account_id: string; dr: Prisma.Decimal | null; cr: Prisma.Decimal | null }[]>`
-      SELECT l.account_id, SUM(l.functional_debit) AS dr, SUM(l.functional_credit) AS cr
-      FROM journal_lines l JOIN journal_entries e ON e.id = l.entry_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.date BETWEEN ${toDbDate(from)}::date AND ${toDbDate(to)}::date
-        AND l.account_id IN (${Prisma.join(ids.map((x) => Prisma.sql`${x}::uuid`))})
-      GROUP BY l.account_id`;
+    const rows = (await lineSums(this.store, orgId, { entry: postedBetween(toDbDate(from), toDbDate(to)), line: { accountId: { $in: ids } }, by: { accountId: 'lines.accountId' } })).map((r) => ({ account_id: r.key.accountId as string, dr: r.debit, cr: r.credit }));
     const net = (id: string, credit: boolean) => {
       const r = rows.find((x) => x.account_id === id);
       const dr = new D(r?.dr?.toFixed() ?? '0');

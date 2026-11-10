@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { D, formatAmountText, formatDateText, minorUnits } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { fromDbDate } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { lineSums } from '../db/ledger-queries';
 
 export const GRAPH_NODE_TYPES = ['CONTACT', 'DOCUMENT', 'PAYMENT', 'JOURNAL', 'ACCOUNT', 'PROJECT', 'DEPARTMENT', 'LOAN', 'ASSET', 'ALERT'] as const;
 export type GraphNodeType = (typeof GRAPH_NODE_TYPES)[number];
@@ -49,7 +51,10 @@ const dec = (x: Prisma.Decimal | string | number | null | undefined) => new D((x
  */
 @Injectable()
 export class GraphService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly store: DocumentStoreService,
+  ) {}
 
   private async money(orgId: string) {
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { functionalCurrency: true } });
@@ -93,13 +98,30 @@ export class GraphService {
     const rows = await this.prisma.document.findMany({ where: { orgId, id: { in: ids } }, select: { id: true, total: true } });
     return new Map(rows.map((r) => [r.id, r.total]));
   }
+  /** Journal entries with the sums of their lines that match `line`, from MongoDB. */
+  private async byEntry(orgId: string, entry: Record<string, unknown>, line: Record<string, unknown>) {
+    const sums = await lineSums(this.store, orgId, { entry, line, by: { id: '_id', entryNumber: 'entryNumber', date: 'date', memo: 'memo', source: 'source', status: 'status' } });
+    return sums.map((x) => ({
+      id: x.key.id as string,
+      entry_number: (x.key.entryNumber as number | null) ?? null,
+      date: x.key.date as Date,
+      memo: (x.key.memo as string | null) ?? null,
+      source: x.key.source as string,
+      status: x.key.status as string,
+      debit: new Prisma.Decimal(x.debit.toFixed()),
+      credit: new Prisma.Decimal(x.credit.toFixed()),
+    }));
+  }
+
   /** Alerts whose evidence points at one of these records. */
   private async alertsAbout(orgId: string, ids: string[]): Promise<GraphEdge[]> {
     if (!ids.length) return [];
-    const patterns = ids.map((id) => `%${id}%`);
-    const rows = await this.prisma.$queryRaw<{ id: string; title: string; severity: string; status: string }[]>`
-      SELECT id, title, severity::text AS severity, status::text AS status FROM alerts
-      WHERE org_id = ${orgId}::uuid AND evidence::text LIKE ANY(${patterns}::text[]) ORDER BY last_seen_at DESC LIMIT ${LIMIT}`;
+    // An alert's evidence is free-form JSON, so it is searched as text, as the SQL did.
+    const all = await this.prisma.alert.findMany({ where: { orgId }, orderBy: { lastSeenAt: 'desc' }, select: { id: true, title: true, severity: true, status: true, evidence: true } });
+    const rows = all.filter((a) => {
+      const text = JSON.stringify(a.evidence ?? null);
+      return ids.some((id) => text.includes(id));
+    }).slice(0, LIMIT);
     return rows.map((a) => ({ relation: 'FLAGGED_BY', explanation: `The alert "${a.title}" lists it as evidence (${a.status.toLowerCase()}).`, node: this.alertNode(a) }));
   }
 
@@ -107,33 +129,50 @@ export class GraphService {
   async entrySources(orgId: string, entryIds: string[]): Promise<Map<string, EntrySource>> {
     const out = new Map<string, EntrySource>();
     if (!entryIds.length) return out;
-    const rows = await this.prisma.$queryRaw<{ entry_id: string; type: string; id: string; label: string; path: string | null; role: string }[]>`
-      WITH e(id) AS (SELECT unnest(${entryIds}::uuid[]))
-      SELECT d.journal_entry_id AS entry_id, 'DOCUMENT' AS type, d.id, COALESCE(d.number, 'Draft') AS label, CASE WHEN d.kind IN ('INVOICE','CREDIT_NOTE') THEN '/sales/invoices/' ELSE '/purchases/bills/' END || d.id AS path, 'posts' AS role FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT d.void_journal_entry_id, 'DOCUMENT', d.id, COALESCE(d.number, 'Draft'), CASE WHEN d.kind IN ('INVOICE','CREDIT_NOTE') THEN '/sales/invoices/' ELSE '/purchases/bills/' END || d.id, 'voids' FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.void_journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT p.journal_entry_id, 'PAYMENT', p.id, p.number, CASE WHEN p.kind = 'RECEIPT' THEN '/sales/receipts/' ELSE '/purchases/payments/' END || p.id, 'posts' FROM payments p WHERE p.org_id = ${orgId}::uuid AND p.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT p.void_journal_entry_id, 'PAYMENT', p.id, p.number, CASE WHEN p.kind = 'RECEIPT' THEN '/sales/receipts/' ELSE '/purchases/payments/' END || p.id, 'voids' FROM payments p WHERE p.org_id = ${orgId}::uuid AND p.void_journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.journal_entry_id, 'SOURCE', x.id, 'Expense claim ' || x.number, '/expenses/' || x.id, 'posts' FROM expense_claims x WHERE x.org_id = ${orgId}::uuid AND x.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.reimbursement_journal_entry_id, 'SOURCE', x.id, 'Expense claim ' || x.number, '/expenses/' || x.id, 'pays back' FROM expense_claims x WHERE x.org_id = ${orgId}::uuid AND x.reimbursement_journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.void_journal_entry_id, 'SOURCE', x.id, 'Expense claim ' || x.number, '/expenses/' || x.id, 'voids' FROM expense_claims x WHERE x.org_id = ${orgId}::uuid AND x.void_journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.journal_entry_id, 'SOURCE', x.id, 'TDS/TCS deposit ' || x.number, '/tax/tds-tcs', 'posts' FROM withholding_deposits x WHERE x.org_id = ${orgId}::uuid AND x.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.journal_entry_id, 'SOURCE', x.id, 'Pay run ' || x.number, '/payroll/runs/' || x.id, 'posts' FROM pay_runs x WHERE x.org_id = ${orgId}::uuid AND x.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.void_journal_entry_id, 'SOURCE', x.id, 'Pay run ' || x.number, '/payroll/runs/' || x.id, 'voids' FROM pay_runs x WHERE x.org_id = ${orgId}::uuid AND x.void_journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.journal_entry_id, 'SOURCE', x.id, 'Payroll remittance ' || x.number, '/payroll/runs', 'posts' FROM payroll_remittances x WHERE x.org_id = ${orgId}::uuid AND x.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.acquisition_entry_id, 'ASSET', x.id, 'FA-' || lpad(x.number::text, 4, '0') || ' ' || x.name, '/fixed-assets/' || x.id, 'records the purchase of' FROM fixed_assets x WHERE x.org_id = ${orgId}::uuid AND x.acquisition_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.disposal_entry_id, 'ASSET', x.id, 'FA-' || lpad(x.number::text, 4, '0') || ' ' || x.name, '/fixed-assets/' || x.id, 'disposes of' FROM fixed_assets x WHERE x.org_id = ${orgId}::uuid AND x.disposal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.journal_entry_id, 'SOURCE', x.id, 'Depreciation for ' || x.month, '/fixed-assets/depreciation', 'posts' FROM depreciation_runs x WHERE x.org_id = ${orgId}::uuid AND x.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.reversal_entry_id, 'SOURCE', x.id, 'Depreciation for ' || x.month, '/fixed-assets/depreciation', 'reverses' FROM depreciation_runs x WHERE x.org_id = ${orgId}::uuid AND x.reversal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.initial_entry_id, 'SOURCE', x.id, 'Schedule ' || x.number || ' ' || x.name, '/deferrals/' || x.id, 'records' FROM deferral_schedules x WHERE x.org_id = ${orgId}::uuid AND x.initial_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.journal_entry_id, 'SOURCE', x.id, 'Deferral releases for ' || x.month, '/deferrals/releases', 'posts' FROM deferral_runs x WHERE x.org_id = ${orgId}::uuid AND x.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.entry_id, 'SOURCE', x.id, 'Accrual AC-' || lpad(x.number::text, 4, '0') || ' ' || x.description, '/accruals', 'posts' FROM accruals x WHERE x.org_id = ${orgId}::uuid AND x.entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.reversal_entry_id, 'SOURCE', x.id, 'Accrual AC-' || lpad(x.number::text, 4, '0') || ' ' || x.description, '/accruals', 'reverses' FROM accruals x WHERE x.org_id = ${orgId}::uuid AND x.reversal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.disbursement_entry_id, 'LOAN', x.id, 'LN-' || lpad(x.number::text, 4, '0') || ' ' || x.name, '/loans/' || x.id, 'disburses' FROM loans x WHERE x.org_id = ${orgId}::uuid AND x.disbursement_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT ev.entry_id, 'LOAN', l.id, 'LN-' || lpad(l.number::text, 4, '0') || ' ' || l.name, '/loans/' || l.id, 'records a ' || lower(replace(ev.kind::text, '_', ' ')) || ' on' FROM loan_events ev JOIN loans l ON l.id = ev.loan_id WHERE ev.org_id = ${orgId}::uuid AND ev.entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.journal_entry_id, 'SOURCE', x.id, 'Month-end adjustment', '/close', 'posts' FROM close_adjustments x WHERE x.org_id = ${orgId}::uuid AND x.journal_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.from_entry_id, 'SOURCE', x.id, 'IC-' || lpad(x.number::text, 4, '0') || ' ' || x.description, '/consolidation/' || x.group_id, 'posts' FROM intercompany_transactions x WHERE x.from_org_id = ${orgId}::uuid AND x.from_entry_id IN (SELECT id FROM e)
-      UNION ALL SELECT x.to_entry_id, 'SOURCE', x.id, 'IC-' || lpad(x.number::text, 4, '0') || ' ' || x.description, '/consolidation/' || x.group_id, 'posts' FROM intercompany_transactions x WHERE x.to_org_id = ${orgId}::uuid AND x.to_entry_id IN (SELECT id FROM e)`;
-    for (const r of rows) if (!out.has(r.entry_id)) out.set(r.entry_id, { type: r.type as EntrySource['type'], id: r.id, label: r.label, path: r.path, role: r.role });
+    const p = this.prisma;
+    const ids = { in: entryIds };
+    const pad = (n: number) => String(n).padStart(4, '0');
+    const docPath = (kind: string, id: string) => `${kind === 'INVOICE' || kind === 'CREDIT_NOTE' ? '/sales/invoices/' : '/purchases/bills/'}${id}`;
+    const payPath = (kind: string, id: string) => `${kind === 'RECEIPT' ? '/sales/receipts/' : '/purchases/payments/'}${id}`;
+    type Row = { entry_id: string | null; type: string; id: string; label: string; path: string | null; role: string };
+    // In the order the sources are looked at: the first one found for an entry is the one shown.
+    const sources: (() => Promise<Row[]>)[] = [
+      async () => (await p.document.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, kind: true, number: true, journalEntryId: true } })).map((d) => ({ entry_id: d.journalEntryId, type: 'DOCUMENT', id: d.id, label: d.number ?? 'Draft', path: docPath(d.kind, d.id), role: 'posts' })),
+      async () => (await p.document.findMany({ where: { orgId, voidJournalEntryId: ids }, select: { id: true, kind: true, number: true, voidJournalEntryId: true } })).map((d) => ({ entry_id: d.voidJournalEntryId, type: 'DOCUMENT', id: d.id, label: d.number ?? 'Draft', path: docPath(d.kind, d.id), role: 'voids' })),
+      async () => (await p.payment.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, kind: true, number: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'PAYMENT', id: x.id, label: x.number, path: payPath(x.kind, x.id), role: 'posts' })),
+      async () => (await p.payment.findMany({ where: { orgId, voidJournalEntryId: ids }, select: { id: true, kind: true, number: true, voidJournalEntryId: true } })).map((x) => ({ entry_id: x.voidJournalEntryId, type: 'PAYMENT', id: x.id, label: x.number, path: payPath(x.kind, x.id), role: 'voids' })),
+      async () => (await p.expenseClaim.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, number: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'SOURCE', id: x.id, label: `Expense claim ${x.number}`, path: `/expenses/${x.id}`, role: 'posts' })),
+      async () => (await p.expenseClaim.findMany({ where: { orgId, reimbursementJournalEntryId: ids }, select: { id: true, number: true, reimbursementJournalEntryId: true } })).map((x) => ({ entry_id: x.reimbursementJournalEntryId, type: 'SOURCE', id: x.id, label: `Expense claim ${x.number}`, path: `/expenses/${x.id}`, role: 'pays back' })),
+      async () => (await p.expenseClaim.findMany({ where: { orgId, voidJournalEntryId: ids }, select: { id: true, number: true, voidJournalEntryId: true } })).map((x) => ({ entry_id: x.voidJournalEntryId, type: 'SOURCE', id: x.id, label: `Expense claim ${x.number}`, path: `/expenses/${x.id}`, role: 'voids' })),
+      async () => (await p.withholdingDeposit.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, number: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'SOURCE', id: x.id, label: `TDS/TCS deposit ${x.number}`, path: '/tax/tds-tcs', role: 'posts' })),
+      async () => (await p.payRun.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, number: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'SOURCE', id: x.id, label: `Pay run ${x.number}`, path: `/payroll/runs/${x.id}`, role: 'posts' })),
+      async () => (await p.payRun.findMany({ where: { orgId, voidJournalEntryId: ids }, select: { id: true, number: true, voidJournalEntryId: true } })).map((x) => ({ entry_id: x.voidJournalEntryId, type: 'SOURCE', id: x.id, label: `Pay run ${x.number}`, path: `/payroll/runs/${x.id}`, role: 'voids' })),
+      async () => (await p.payrollRemittance.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, number: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'SOURCE', id: x.id, label: `Payroll remittance ${x.number}`, path: '/payroll/runs', role: 'posts' })),
+      async () => (await p.fixedAsset.findMany({ where: { orgId, acquisitionEntryId: ids }, select: { id: true, number: true, name: true, acquisitionEntryId: true } })).map((x) => ({ entry_id: x.acquisitionEntryId, type: 'ASSET', id: x.id, label: `FA-${pad(x.number)} ${x.name}`, path: `/fixed-assets/${x.id}`, role: 'records the purchase of' })),
+      async () => (await p.fixedAsset.findMany({ where: { orgId, disposalEntryId: ids }, select: { id: true, number: true, name: true, disposalEntryId: true } })).map((x) => ({ entry_id: x.disposalEntryId, type: 'ASSET', id: x.id, label: `FA-${pad(x.number)} ${x.name}`, path: `/fixed-assets/${x.id}`, role: 'disposes of' })),
+      async () => (await p.depreciationRun.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, month: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'SOURCE', id: x.id, label: `Depreciation for ${x.month}`, path: '/fixed-assets/depreciation', role: 'posts' })),
+      async () => (await p.depreciationRun.findMany({ where: { orgId, reversalEntryId: ids }, select: { id: true, month: true, reversalEntryId: true } })).map((x) => ({ entry_id: x.reversalEntryId, type: 'SOURCE', id: x.id, label: `Depreciation for ${x.month}`, path: '/fixed-assets/depreciation', role: 'reverses' })),
+      async () => (await p.deferralSchedule.findMany({ where: { orgId, initialEntryId: ids }, select: { id: true, number: true, name: true, initialEntryId: true } })).map((x) => ({ entry_id: x.initialEntryId, type: 'SOURCE', id: x.id, label: `Schedule ${x.number} ${x.name}`, path: `/deferrals/${x.id}`, role: 'records' })),
+      async () => (await p.deferralRun.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, month: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'SOURCE', id: x.id, label: `Deferral releases for ${x.month}`, path: '/deferrals/releases', role: 'posts' })),
+      async () => (await p.accrual.findMany({ where: { orgId, entryId: ids }, select: { id: true, number: true, description: true, entryId: true } })).map((x) => ({ entry_id: x.entryId, type: 'SOURCE', id: x.id, label: `Accrual AC-${pad(x.number)} ${x.description}`, path: '/accruals', role: 'posts' })),
+      async () => (await p.accrual.findMany({ where: { orgId, reversalEntryId: ids }, select: { id: true, number: true, description: true, reversalEntryId: true } })).map((x) => ({ entry_id: x.reversalEntryId, type: 'SOURCE', id: x.id, label: `Accrual AC-${pad(x.number)} ${x.description}`, path: '/accruals', role: 'reverses' })),
+      async () => (await p.loan.findMany({ where: { orgId, disbursementEntryId: ids }, select: { id: true, number: true, name: true, disbursementEntryId: true } })).map((x) => ({ entry_id: x.disbursementEntryId, type: 'LOAN', id: x.id, label: `LN-${pad(x.number)} ${x.name}`, path: `/loans/${x.id}`, role: 'disburses' })),
+      async () =>
+        (await p.loanEvent.findMany({ where: { orgId, entryId: ids }, select: { entryId: true, kind: true, loan: { select: { id: true, number: true, name: true } } } })).map((x) => ({
+          entry_id: x.entryId,
+          type: 'LOAN',
+          id: x.loan.id,
+          label: `LN-${pad(x.loan.number)} ${x.loan.name}`,
+          path: `/loans/${x.loan.id}`,
+          role: `records a ${String(x.kind).replace(/_/g, ' ').toLowerCase()} on`,
+        })),
+      async () => (await p.closeAdjustment.findMany({ where: { orgId, journalEntryId: ids }, select: { id: true, journalEntryId: true } })).map((x) => ({ entry_id: x.journalEntryId, type: 'SOURCE', id: x.id, label: 'Month-end adjustment', path: '/close', role: 'posts' })),
+      async () => (await p.intercompanyTransaction.findMany({ where: { fromOrgId: orgId, fromEntryId: ids }, select: { id: true, number: true, description: true, groupId: true, fromEntryId: true } })).map((x) => ({ entry_id: x.fromEntryId, type: 'SOURCE', id: x.id, label: `IC-${pad(x.number)} ${x.description}`, path: `/consolidation/${x.groupId}`, role: 'posts' })),
+      async () => (await p.intercompanyTransaction.findMany({ where: { toOrgId: orgId, toEntryId: ids }, select: { id: true, number: true, description: true, groupId: true, toEntryId: true } })).map((x) => ({ entry_id: x.toEntryId, type: 'SOURCE', id: x.id, label: `IC-${pad(x.number)} ${x.description}`, path: `/consolidation/${x.groupId}`, role: 'posts' })),
+    ];
+    const rows: Row[] = [];
+    for (const q of sources) rows.push(...(await q()));
+    for (const r of rows) if (r.entry_id && !out.has(r.entry_id)) out.set(r.entry_id, { type: r.type as EntrySource['type'], id: r.id, label: r.label, path: r.path, role: r.role });
     // Reversals of manual entries point at the entry they reverse.
     const missing = entryIds.filter((id) => !out.has(id));
     if (missing.length) {
@@ -154,9 +193,7 @@ export class GraphService {
     const [contacts, docs, pays, journals, accounts, dims, loans, assets] = await Promise.all([
       this.prisma.contact.findMany({ where: { orgId, name: like }, take: 8, orderBy: { name: 'asc' } }),
       this.prisma.document.findMany({ where: { orgId, OR: [{ number: like }, { reference: like }] }, take: 8, orderBy: { issueDate: 'desc' } }),
-      this.prisma.$queryRaw<{ id: string; kind: string; number: string; status: string; date: Date; amount: Prisma.Decimal; currency: string }[]>`
-        SELECT p.id, p.kind::text AS kind, p.number, p.status::text AS status, p.date, p.currency, p.amount
-        FROM payments p WHERE p.org_id = ${orgId}::uuid AND (p.number ILIKE ${`%${term}%`} OR p.reference ILIKE ${`%${term}%`}) ORDER BY p.date DESC LIMIT 8`,
+      this.prisma.payment.findMany({ where: { orgId, OR: [{ number: like }, { reference: like }] }, orderBy: { date: 'desc' }, take: 8, select: { id: true, kind: true, number: true, status: true, date: true, amount: true, currency: true } }),
       this.prisma.journalEntry.findMany({ where: { orgId, OR: [...(num ? [{ entryNumber: Number(num) }] : []), { memo: like }, { reference: like }] }, take: 8, orderBy: { date: 'desc' } }),
       this.prisma.account.findMany({ where: { orgId, OR: [{ code: { startsWith: term } }, { name: like }] }, take: 8, orderBy: { code: 'asc' } }),
       this.prisma.dimensionValue.findMany({ where: { orgId, OR: [{ code: like }, { name: like }] }, take: 8, orderBy: { code: 'asc' } }),
@@ -202,15 +239,17 @@ export class GraphService {
         const node = this.contactNode(c);
         const docs = await this.prisma.document.findMany({ where: { orgId, contactId: id }, orderBy: [{ issueDate: 'desc' }, { number: 'desc' }], take: LIMIT + 1 });
         const docCount = await this.prisma.document.count({ where: { orgId, contactId: id } });
-        const pays = await this.prisma.$queryRaw<{ id: string; kind: string; number: string; status: string; date: Date; amount: Prisma.Decimal; currency: string }[]>`
-          SELECT p.id, p.kind::text AS kind, p.number, p.status::text AS status, p.date, p.currency, p.amount
-          FROM payments p WHERE p.org_id = ${orgId}::uuid AND p.contact_id = ${id}::uuid ORDER BY p.date DESC LIMIT ${LIMIT}`;
-        const dims = await this.prisma.$queryRaw<{ id: string; type: string; code: string; name: string; lines: number; amount: Prisma.Decimal }[]>`
-          SELECT v.id, v.type::text AS type, v.code, v.name, COUNT(*)::int AS lines, SUM(l.net_amount) AS amount
-          FROM document_lines l JOIN documents d ON d.id = l.document_id AND d.org_id = l.org_id
-          JOIN dimension_values v ON v.org_id = l.org_id AND (v.id = l.project_id OR v.id = l.department_id)
-          WHERE l.org_id = ${orgId}::uuid AND d.contact_id = ${id}::uuid AND d.status = 'POSTED'
-          GROUP BY v.id, v.type, v.code, v.name ORDER BY v.type DESC, v.code`;
+        const pays = await this.prisma.payment.findMany({ where: { orgId, contactId: id }, orderBy: { date: 'desc' }, take: LIMIT, select: { id: true, kind: true, number: true, status: true, date: true, amount: true, currency: true } });
+        const tagged = await this.prisma.documentLine.findMany({ where: { orgId, document: { contactId: id, status: 'POSTED' } }, select: { netAmount: true, projectId: true, departmentId: true } });
+        const perDim = new Map<string, { lines: number; amount: Prisma.Decimal }>();
+        for (const l of tagged)
+          for (const v of new Set([l.projectId, l.departmentId])) {
+            if (!v) continue;
+            const t = perDim.get(v) ?? { lines: 0, amount: new Prisma.Decimal(0) };
+            perDim.set(v, { lines: t.lines + 1, amount: t.amount.plus(l.netAmount) });
+          }
+        const dimValues = perDim.size ? await this.prisma.dimensionValue.findMany({ where: { orgId, id: { in: [...perDim.keys()] } }, orderBy: [{ type: 'desc' }, { code: 'asc' }], select: { id: true, type: true, code: true, name: true } }) : [];
+        const dims = dimValues.map((v) => ({ ...v, ...perDim.get(v.id)! }));
         const edges: GraphEdge[] = [
           ...docs.slice(0, LIMIT).map((d) => ({
             relation: d.kind === 'INVOICE' || d.kind === 'CREDIT_NOTE' ? 'ISSUED_TO' : 'RECEIVED_FROM',
@@ -311,11 +350,9 @@ export class GraphService {
         if (!a) return null;
         const node = this.accountNode(a);
         const total = await this.prisma.journalLine.count({ where: { orgId, accountId: id, entry: { status: 'POSTED' } } });
-        const lines = await this.prisma.$queryRaw<{ id: string; entry_number: number | null; date: Date; memo: string | null; source: string; status: string; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
-          SELECT e.id, e.entry_number, e.date, e.memo, e.source::text AS source, e.status::text AS status, SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-          FROM journal_lines l JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-          WHERE l.org_id = ${orgId}::uuid AND l.account_id = ${id}::uuid AND e.status = 'POSTED'
-          GROUP BY e.id ORDER BY e.date DESC, e.entry_number DESC LIMIT ${LIMIT}`;
+        const lines = (await this.byEntry(orgId, { status: 'POSTED' }, { accountId: id }))
+          .sort((a, b) => b.date.getTime() - a.date.getTime() || (b.entry_number ?? -1) - (a.entry_number ?? -1))
+          .slice(0, LIMIT);
         const [loans, assets] = await Promise.all([
           this.prisma.loan.findMany({ where: { orgId, OR: [{ liabilityAccountId: id }, { interestAccountId: id }, { bankAccountId: id }] } }),
           this.prisma.fixedAsset.findMany({ where: { orgId, OR: [{ assetAccountId: id }, { accumulatedAccountId: id }, { expenseAccountId: id }] }, take: LIMIT }),
@@ -336,16 +373,21 @@ export class GraphService {
         const v = await this.prisma.dimensionValue.findFirst({ where: { orgId, id, type: type } });
         if (!v) return null;
         const node = this.dimNode(v);
-        const col = type === 'PROJECT' ? Prisma.sql`project_id` : Prisma.sql`department_id`;
-        const docs = await this.prisma.$queryRaw<{ id: string; kind: string; number: string | null; status: string; issue_date: Date; total: Prisma.Decimal; currency: string; contact_id: string; lines: number; amount: Prisma.Decimal }[]>`
-          SELECT d.id, d.kind::text AS kind, d.number, d.status::text AS status, d.issue_date, d.total, d.currency, d.contact_id, COUNT(*)::int AS lines, SUM(l.net_amount) AS amount
-          FROM document_lines l JOIN documents d ON d.id = l.document_id AND d.org_id = l.org_id
-          WHERE l.org_id = ${orgId}::uuid AND l.${col} = ${id}::uuid GROUP BY d.id ORDER BY d.issue_date DESC LIMIT ${LIMIT + 1}`;
-        const journals = await this.prisma.$queryRaw<{ id: string; entry_number: number | null; date: Date; memo: string | null; source: string; status: string; amount: Prisma.Decimal }[]>`
-          SELECT e.id, e.entry_number, e.date, e.memo, e.source::text AS source, e.status::text AS status, SUM(l.functional_debit + l.functional_credit) AS amount
-          FROM journal_lines l JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-          WHERE l.org_id = ${orgId}::uuid AND l.${col} = ${id}::uuid AND e.status = 'POSTED' AND e.source NOT IN ('DOCUMENT', 'PAYMENT')
-          GROUP BY e.id ORDER BY e.date DESC LIMIT ${LIMIT}`;
+        const col = type === 'PROJECT' ? 'projectId' : 'departmentId';
+        const own = await this.prisma.documentLine.findMany({ where: { orgId, [col]: id }, select: { documentId: true, netAmount: true } });
+        const perDoc = new Map<string, { lines: number; amount: Prisma.Decimal }>();
+        for (const l of own) {
+          const t = perDoc.get(l.documentId) ?? { lines: 0, amount: new Prisma.Decimal(0) };
+          perDoc.set(l.documentId, { lines: t.lines + 1, amount: t.amount.plus(l.netAmount) });
+        }
+        const docRows = perDoc.size
+          ? await this.prisma.document.findMany({ where: { orgId, id: { in: [...perDoc.keys()] } }, orderBy: { issueDate: 'desc' }, take: LIMIT + 1, select: { id: true, kind: true, number: true, status: true, issueDate: true, total: true, currency: true, contactId: true } })
+          : [];
+        const docs = docRows.map((d) => ({ id: d.id, kind: d.kind as string, number: d.number, status: d.status as string, issue_date: d.issueDate, total: d.total, currency: d.currency, contact_id: d.contactId, ...perDoc.get(d.id)! }));
+        const journals = (await this.byEntry(orgId, { status: 'POSTED', source: { $nin: ['DOCUMENT', 'PAYMENT'] } }, { [col]: id }))
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(0, LIMIT)
+          .map((e) => ({ ...e, amount: e.debit.plus(e.credit) }));
         const contactIds = [...new Set(docs.map((d) => d.contact_id))];
         const contacts = contactIds.length ? await this.prisma.contact.findMany({ where: { orgId, id: { in: contactIds } } }) : [];
         const what = type === 'PROJECT' ? 'project' : 'department';
@@ -383,10 +425,16 @@ export class GraphService {
         const node = this.assetNode(x);
         const accounts = await this.prisma.account.findMany({ where: { orgId, id: { in: [x.assetAccountId, x.accumulatedAccountId, x.expenseAccountId] } } });
         const entries = await this.prisma.journalEntry.findMany({ where: { orgId, id: { in: [x.acquisitionEntryId, x.disposalEntryId].filter((y): y is string => !!y) } } });
-        const runs = await this.prisma.$queryRaw<{ id: string; entry_number: number | null; date: Date; memo: string | null; source: string; status: string; amount: Prisma.Decimal; month: string }[]>`
-          SELECT e.id, e.entry_number, e.date, e.memo, e.source::text AS source, e.status::text AS status, l.amount, r.month
-          FROM depreciation_lines l JOIN depreciation_runs r ON r.id = l.run_id AND r.org_id = l.org_id JOIN journal_entries e ON e.id = r.journal_entry_id
-          WHERE l.org_id = ${orgId}::uuid AND l.asset_id = ${id}::uuid AND r.status = 'POSTED' ORDER BY r.month DESC LIMIT ${LIMIT}`;
+        const depLines = await this.prisma.depreciationLine.findMany({ where: { orgId, assetId: id, run: { status: 'POSTED' } }, select: { amount: true, run: { select: { month: true, journalEntryId: true } } } });
+        depLines.sort((a, b) => (a.run.month < b.run.month ? 1 : a.run.month > b.run.month ? -1 : 0));
+        const runEntries = new Map((await this.prisma.journalEntry.findMany({ where: { orgId, id: { in: depLines.map((l) => l.run.journalEntryId).filter((y): y is string => !!y) } } })).map((e) => [e.id, e]));
+        const runs = depLines
+          .filter((l) => l.run.journalEntryId && runEntries.has(l.run.journalEntryId))
+          .slice(0, LIMIT)
+          .map((l) => {
+            const e = runEntries.get(l.run.journalEntryId!)!;
+            return { id: e.id, entry_number: e.entryNumber, date: e.date, memo: e.memo, source: e.source as string, status: e.status as string, amount: l.amount, month: l.run.month };
+          });
         const role = (a: string) => (a === x.assetAccountId ? 'Its cost is held in' : a === x.accumulatedAccountId ? 'Its accumulated depreciation is held in' : 'Its depreciation is charged to');
         const edges: GraphEdge[] = [
           ...accounts.map((a) => ({ relation: 'USES_ACCOUNT', explanation: `${role(a.id)} ${a.code} ${a.name}.`, node: this.accountNode(a) })),

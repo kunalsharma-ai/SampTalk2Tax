@@ -26,7 +26,9 @@ import { KpiComparator, Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { todayIst } from '../cash-flow/cash-flow.service';
 
 type Actor = { id: string };
@@ -54,6 +56,7 @@ export class KpisService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   private async org(orgId: string) {
@@ -78,15 +81,22 @@ export class KpisService {
    */
   async monthFigures(orgId: string, last: string, lastTo: string, count: number): Promise<MonthFigures[]> {
     const first = shiftMonth(last, -(count - 1));
-    const rows = await this.prisma.$queryRaw<{ month: string | null; type: AccountType; subtype: string | null; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
-      SELECT CASE WHEN e.date >= ${toDbDate(`${first}-01`)}::date THEN to_char(e.date, 'YYYY-MM') END AS month,
-             a.type::text AS type, a.subtype, SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND e.date <= ${toDbDate(lastTo)}::date
-        AND (e.date >= ${toDbDate(`${first}-01`)}::date OR a.type IN ('ASSET', 'LIABILITY'))
-      GROUP BY 1, 2, 3`;
+    const firstDay = toDbDate(`${first}-01`);
+    const accounts = new Map((await this.prisma.account.findMany({ where: { orgId }, select: { id: true, type: true, subtype: true } })).map((a) => [a.id, a]));
+    const sums = await lineSums(this.store, orgId, {
+      entry: postedBetween(null, toDbDate(lastTo), { excludeClosing: true }),
+      by: { month: { $cond: [{ $gte: ['$date', firstDay] }, { $dateToString: { date: '$date', format: '%Y-%m' } }, null] }, accountId: 'lines.accountId' },
+    });
+    const grouped = new Map<string, { month: string | null; type: AccountType; subtype: string | null; debit: Dec; credit: Dec }>();
+    for (const r of sums) {
+      const a = accounts.get(r.key.accountId as string);
+      const month = (r.key.month as string | null) ?? null;
+      if (!a || (month === null && a.type !== 'ASSET' && a.type !== 'LIABILITY')) continue;
+      const k = `${month}|${a.type}|${a.subtype ?? ''}`;
+      const cur = grouped.get(k) ?? { month, type: a.type as AccountType, subtype: a.subtype as string | null, debit: new D(0), credit: new D(0) };
+      grouped.set(k, { ...cur, debit: cur.debit.plus(r.debit), credit: cur.credit.plus(r.credit) });
+    }
+    const rows = [...grouped.values()];
     const key = (r: { type: string; subtype: string | null }) => `${r.type}|${r.subtype ?? ''}`;
     const running = new Map<string, SubtypeTotals>();
     const add = (r: (typeof rows)[number]) => {
@@ -110,16 +120,21 @@ export class KpisService {
 
   /** Revenue by customer from posted invoices and credit notes (their revenue lines), in a date range. */
   async customerRevenue(orgId: string, from: string, to: string, scale: number, top = 5) {
-    const rows = await this.prisma.$queryRaw<{ id: string; name: string; revenue: Prisma.Decimal }[]>`
-      SELECT c.id, c.name, SUM(l.functional_credit - l.functional_debit) AS revenue
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      JOIN documents d ON d.org_id = e.org_id AND (d.journal_entry_id = e.id OR d.void_journal_entry_id = e.id)
-      JOIN contacts c ON c.id = d.contact_id AND c.org_id = d.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND a.type = 'REVENUE' AND a.subtype IS DISTINCT FROM 'OTHER_INCOME'
-        AND d.kind IN ('INVOICE', 'CREDIT_NOTE') AND e.date >= ${toDbDate(from)}::date AND e.date <= ${toDbDate(to)}::date
-      GROUP BY c.id, c.name`;
+    const revenueAccounts = await this.prisma.account.findMany({ where: { orgId, type: 'REVENUE', OR: [{ subtype: null }, { subtype: { not: 'OTHER_INCOME' } }] }, select: { id: true } });
+    const sums = revenueAccounts.length
+      ? await lineSums(this.store, orgId, { entry: postedBetween(toDbDate(from), toDbDate(to)), line: { accountId: { $in: revenueAccounts.map((a) => a.id) } }, by: { entryId: '_id' } })
+      : [];
+    const entryIds = sums.map((r) => r.key.entryId as string);
+    const docs = entryIds.length
+      ? await this.prisma.document.findMany({ where: { orgId, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, OR: [{ journalEntryId: { in: entryIds } }, { voidJournalEntryId: { in: entryIds } }] }, select: { contactId: true, journalEntryId: true, voidJournalEntryId: true } })
+      : [];
+    const perContact = new Map<string, Dec>();
+    for (const r of sums) {
+      const id = r.key.entryId as string;
+      for (const d of docs) if (d.journalEntryId === id || d.voidJournalEntryId === id) perContact.set(d.contactId, (perContact.get(d.contactId) ?? new D(0)).plus(r.credit).minus(r.debit));
+    }
+    const names = new Map((perContact.size ? await this.prisma.contact.findMany({ where: { orgId, id: { in: [...perContact.keys()] } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+    const rows = [...perContact.entries()].map(([id, revenue]) => ({ id, name: names.get(id) ?? '', revenue }));
     return concentration(
       rows.map((r) => ({ id: r.id, name: r.name, revenue: r.revenue.toFixed() })),
       top,
@@ -204,6 +219,18 @@ export class KpisService {
 
   // ------------------------------------------------------------------ management report
 
+  /** A budget's amounts summed by period and account type and subtype. */
+  private async budgetTotals(orgId: string, budgetId: string) {
+    const lines = await this.prisma.budgetLine.findMany({ where: { orgId, budgetId }, select: { periodNo: true, amount: true, account: { select: { type: true, subtype: true } } } });
+    const out = new Map<string, { period_no: number; type: AccountType; subtype: string | null; amount: Prisma.Decimal }>();
+    for (const l of lines) {
+      const k = `${l.periodNo}|${l.account.type}|${l.account.subtype ?? ''}`;
+      const cur = out.get(k);
+      out.set(k, { period_no: l.periodNo, type: l.account.type as AccountType, subtype: l.account.subtype as string | null, amount: (cur?.amount ?? new Prisma.Decimal(0)).plus(l.amount) });
+    }
+    return [...out.values()];
+  }
+
   private async budgetPl(orgId: string, startMonth: number, months: string[]) {
     const out = new Map<string, PlFigures>();
     const byYear = new Map<number, string[]>();
@@ -216,11 +243,7 @@ export class KpisService {
       const b = await this.prisma.budget.findFirst({ where: { orgId, fiscalYear: fy, status: 'APPROVED' }, select: { id: true, version: true, name: true } });
       versions[fy] = b;
       if (!b) continue;
-      const lines = await this.prisma.$queryRaw<{ period_no: number; type: AccountType; subtype: string | null; amount: Prisma.Decimal }[]>`
-        SELECT bl.period_no, a.type::text AS type, a.subtype, SUM(bl.amount) AS amount
-        FROM budget_lines bl JOIN accounts a ON a.id = bl.account_id AND a.org_id = bl.org_id
-        WHERE bl.org_id = ${orgId}::uuid AND bl.budget_id = ${b.id}::uuid
-        GROUP BY 1, 2, 3`;
+      const lines = await this.budgetTotals(orgId, b.id);
       const fyStart = `${startMonth === 1 ? fy : fy - 1}-${String(startMonth).padStart(2, '0')}`;
       for (const m of ms) {
         const periodNo = (+m.slice(0, 4) - +fyStart.slice(0, 4)) * 12 + (+m.slice(5, 7) - +fyStart.slice(5, 7)) + 1;

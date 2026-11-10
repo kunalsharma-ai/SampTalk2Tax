@@ -15,20 +15,11 @@ import {
   Dec,
   minorUnits,
 } from '@talk2tax/accounting-engine';
-import { Prisma } from '@talk2tax/database';
 import { fromDbDate, toDbDate } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { GraphService } from '../graph/graph.service';
-
-interface MovementRow {
-  id: string;
-  code: string;
-  name: string;
-  type: AccountType;
-  subtype: string | null;
-  debit: Prisma.Decimal;
-  credit: Prisma.Decimal;
-}
 
 /** All reports read only POSTED entries; drafts never affect balances. */
 @Injectable()
@@ -36,6 +27,7 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly graph: GraphService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   /**
@@ -46,32 +38,22 @@ export class ReportsService {
     const fromDate = from ? toDbDate(from) : null;
     const dept = dims.departmentId ?? null;
     const project = dims.projectId ?? null;
-    const rows = await this.prisma.$queryRaw<MovementRow[]>`
-      SELECT a.id, a.code, a.name, a.type::text AS type, a.subtype,
-             COALESCE(m.debit, 0) AS debit, COALESCE(m.credit, 0) AS credit
-      FROM accounts a
-      LEFT JOIN (
-        SELECT l.account_id, SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-        FROM journal_lines l
-        JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-        WHERE l.org_id = ${orgId}::uuid
-          AND e.status = 'POSTED'
-          AND (NOT ${profitAndLoss} OR e.type <> 'CLOSING')
-          AND e.date <= ${toDbDate(to)}::date
-          AND (${fromDate}::date IS NULL OR e.date >= ${fromDate}::date)
-          AND (${dept}::uuid IS NULL OR l.department_id = ${dept}::uuid)
-          AND (${project}::uuid IS NULL OR l.project_id = ${project}::uuid)
-        GROUP BY l.account_id
-      ) m ON m.account_id = a.id
-      WHERE a.org_id = ${orgId}::uuid`;
+    const sums = await lineSums(this.store, orgId, {
+      entry: postedBetween(fromDate, toDbDate(to), { excludeClosing: profitAndLoss }),
+      line: { ...(dept ? { departmentId: dept } : {}), ...(project ? { projectId: project } : {}) },
+      by: { accountId: 'lines.accountId' },
+    });
+    const byAccount = new Map(sums.map((x) => [x.key.accountId as string, x]));
+    const accounts = await this.prisma.account.findMany({ where: { orgId }, select: { id: true, code: true, name: true, type: true, subtype: true } });
+    const rows = accounts.map((a) => ({ ...a, debit: byAccount.get(a.id)?.debit ?? new D(0), credit: byAccount.get(a.id)?.credit ?? new D(0) }));
     return rows.map((r) => ({
       accountId: r.id,
       code: r.code,
       name: r.name,
       type: r.type,
       subtype: r.subtype,
-      debit: new D(r.debit.toFixed()),
-      credit: new D(r.credit.toFixed()),
+      debit: r.debit,
+      credit: r.credit,
     }));
   }
 
@@ -234,25 +216,19 @@ export class ReportsService {
     if (!period) throw new NotFoundException({ error: 'NO_FISCAL_PERIOD', message: `No fiscal period covers ${q.asOf}` });
     const periods = await this.prisma.fiscalPeriod.findMany({ where: { orgId, fiscalYear: period.fiscalYear }, orderBy: { periodNo: 'asc' } });
 
-    const rows = await this.prisma.$queryRaw<{ period_id: string | null; bucket: string; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
-      SELECT CASE WHEN e.date >= ${periods[0].startDate}::date THEN e.period_id ELSE NULL END AS period_id,
-             CASE
-               WHEN a.type = 'REVENUE' THEN 'REVENUE'
-               WHEN a.type = 'EXPENSE' THEN 'EXPENSE'
-               WHEN a.subtype IN ('CASH', 'BANK') THEN 'CASH'
-               WHEN a.subtype = 'ACCOUNTS_RECEIVABLE' THEN 'AR'
-               WHEN a.subtype = 'ACCOUNTS_PAYABLE' THEN 'AP'
-               ELSE 'OTHER'
-             END AS bucket,
-             SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND e.date <= ${asOf}::date
-      GROUP BY 1, 2`;
+    const sums = await lineSums(this.store, orgId, { entry: postedBetween(null, asOf, { excludeClosing: true }), by: { periodId: 'periodId', date: 'date', accountId: 'lines.accountId' } });
+    const kinds = new Map((await this.prisma.account.findMany({ where: { orgId }, select: { id: true, type: true, subtype: true } })).map((a) => [a.id, a]));
+    const bucketOf = (a: { type: string; subtype: string | null } | undefined) =>
+      !a ? 'OTHER' : a.type === 'REVENUE' ? 'REVENUE' : a.type === 'EXPENSE' ? 'EXPENSE' : a.subtype === 'CASH' || a.subtype === 'BANK' ? 'CASH' : a.subtype === 'ACCOUNTS_RECEIVABLE' ? 'AR' : a.subtype === 'ACCOUNTS_PAYABLE' ? 'AP' : 'OTHER';
+    const rows = sums.map((x) => ({
+      period_id: (x.key.date as Date) >= periods[0].startDate ? (x.key.periodId as string) : null,
+      bucket: bucketOf(kinds.get(x.key.accountId as string)),
+      debit: x.debit,
+      credit: x.credit,
+    }));
 
     const zero = () => new D(0);
-    const net = (r: { debit: Prisma.Decimal; credit: Prisma.Decimal }) => new D(r.debit.toFixed()).minus(r.credit.toFixed());
+    const net = (r: { debit: Dec; credit: Dec }) => r.debit.minus(r.credit);
     let cash = zero(), ar = zero(), ap = zero();
     let openingCash = zero();
     const perPeriod = new Map<string, { revenue: Dec; expenses: Dec; cash: Dec }>();

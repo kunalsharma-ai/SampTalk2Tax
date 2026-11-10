@@ -21,7 +21,10 @@ import { Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { byCode, daysBetween as daysApart } from '../db/subledger-queries';
 import { SubledgerService } from '../ledgers/subledger.service';
 
 type Actor = { id: string };
@@ -55,6 +58,7 @@ export class CashFlowService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly subledger: SubledgerService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   private async currency(orgId: string) {
@@ -136,15 +140,14 @@ export class CashFlowService {
 
   /** Cash and bank accounts and their balances at the end of `asOf`. */
   private async cashAccounts(orgId: string, asOf: string) {
-    const rows = await this.prisma.$queryRaw<{ id: string; code: string; name: string; balance: Prisma.Decimal }[]>`
-      SELECT a.id, a.code, a.name, COALESCE(SUM(CASE WHEN e.status = 'POSTED' AND e.date <= ${toDbDate(asOf)}::date THEN l.functional_debit - l.functional_credit END), 0) AS balance
-      FROM accounts a
-      LEFT JOIN journal_lines l ON l.account_id = a.id AND l.org_id = a.org_id
-      LEFT JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      WHERE a.org_id = ${orgId}::uuid AND a.subtype IN ('CASH', 'BANK')
-      GROUP BY a.id, a.code, a.name
-      ORDER BY a.code`;
-    return rows.map((r) => ({ id: r.id, code: r.code, name: r.name, balance: new D(r.balance.toFixed()) }));
+    const accounts = (await this.cashAccountList(orgId)).sort(byCode);
+    const sums = accounts.length ? await lineSums(this.store, orgId, { entry: postedBetween(null, toDbDate(asOf)), line: { accountId: { $in: accounts.map((a) => a.id) } }, by: { accountId: 'lines.accountId' } }) : [];
+    const bal = new Map(sums.map((r) => [r.key.accountId as string, r.debit.minus(r.credit)]));
+    return accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, balance: bal.get(a.id) ?? new D(0) }));
+  }
+
+  private cashAccountList(orgId: string) {
+    return this.prisma.account.findMany({ where: { orgId, subtype: { in: ['CASH', 'BANK'] } }, select: { id: true, code: true, name: true } });
   }
 
   /** Closing cash of each day from `from` to `to`, from posted journals. */
@@ -152,15 +155,9 @@ export class CashFlowService {
     const out = new Map<string, Dec>();
     if (to < from) return out;
     const opening = sum((await this.cashAccounts(orgId, addDays(from, -1))).map((a) => a.balance));
-    const rows = await this.prisma.$queryRaw<{ date: Date; net: Prisma.Decimal }[]>`
-      SELECT e.date, SUM(l.functional_debit - l.functional_credit) AS net
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND a.subtype IN ('CASH', 'BANK')
-        AND e.date >= ${toDbDate(from)}::date AND e.date <= ${toDbDate(to)}::date
-      GROUP BY e.date`;
-    const byDate = new Map(rows.map((r) => [fromDbDate(r.date), new D(r.net.toFixed())]));
+    const ids = (await this.cashAccountList(orgId)).map((a) => a.id);
+    const rows = ids.length ? await lineSums(this.store, orgId, { entry: postedBetween(toDbDate(from), toDbDate(to)), line: { accountId: { $in: ids } }, by: { date: 'date' } }) : [];
+    const byDate = new Map(rows.map((r) => [fromDbDate(r.key.date as Date), r.debit.minus(r.credit)]));
     let bal = opening;
     for (let d = from; d <= to; d = addDays(d, 1)) {
       bal = bal.plus(byDate.get(d) ?? 0);
@@ -176,16 +173,23 @@ export class CashFlowService {
   private async delays(orgId: string, ledger: Ledger, asOf: string) {
     const kind = ledger === 'SALES' ? 'INVOICE' : 'BILL';
     const d = toDbDate(asOf);
-    const rows = await this.prisma.$queryRaw<{ contact_id: string; delay: number }[]>`
-      SELECT x.contact_id, (s.settled - x.due_date)::int AS delay
-      FROM documents x
-      JOIN LATERAL (
-        SELECT MAX(a.date) AS settled, SUM(a.amount) AS paid FROM allocations a
-        WHERE a.target_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)
-      ) s ON true
-      WHERE x.org_id = ${orgId}::uuid AND x.kind = ${kind}::"DocumentKind" AND x.due_date IS NOT NULL
-        AND (x.status = 'POSTED' OR (x.status = 'VOID' AND x.void_date > ${d}::date))
-        AND s.paid >= x.total AND s.settled > ${toDbDate(addDays(asOf, -HISTORY_DAYS))}::date`;
+    const since = toDbDate(addDays(asOf, -HISTORY_DAYS));
+    const docs = await this.prisma.document.findMany({
+      where: { orgId, kind, OR: [{ status: 'POSTED' }, { status: 'VOID', voidDate: { gt: d } }] },
+      select: { id: true, contactId: true, dueDate: true, total: true },
+    });
+    const allocs = docs.length
+      ? await this.prisma.allocation.findMany({ where: { orgId, targetId: { in: docs.map((x) => x.id) }, date: { lte: d }, OR: [{ removedOn: null }, { removedOn: { gt: d } }] }, select: { targetId: true, date: true, amount: true } })
+      : [];
+    const paid = new Map<string, { sum: Prisma.Decimal; last: Date }>();
+    for (const a of allocs) {
+      const p = paid.get(a.targetId);
+      paid.set(a.targetId, { sum: (p?.sum ?? new Prisma.Decimal(0)).plus(a.amount), last: p && p.last > a.date ? p.last : a.date });
+    }
+    const rows = docs.flatMap((x) => {
+      const p = paid.get(x.id);
+      return p && p.sum.gte(x.total) && p.last > since ? [{ contact_id: x.contactId, delay: daysApart(x.dueDate!, p.last) }] : [];
+    });
     const byContact = new Map<string, number[]>();
     for (const r of rows) byContact.set(r.contact_id, [...(byContact.get(r.contact_id) ?? []), Number(r.delay)]);
     const all = delayStats(rows.map((r) => Number(r.delay)));

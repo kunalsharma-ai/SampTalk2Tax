@@ -20,7 +20,10 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, todayIso, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { byCode, roundPg, withOpen } from '../db/subledger-queries';
 
 export interface InsightOrg {
   id: string;
@@ -38,6 +41,7 @@ export class CustomerInsightsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly moved: MovedTables,
+    private readonly store: DocumentStoreService,
   ) {}
 
   /** Every customer with history, ranked by lifetime value, and the organisation's retention. */
@@ -118,65 +122,90 @@ export class CustomerInsightsService {
   // ------------------------------------------------------------------ data
 
   private async gather(org: InsightOrg, today: string, contactId?: string) {
-    const only = contactId ? Prisma.sql`AND x.contact_id = ${contactId}::uuid` : Prisma.empty;
+    const only = contactId ? { contactId } : {};
     const asOf = toDbDate(today);
-    const [customers, invoices, revenue, costs, projects, contracts, windows] = await Promise.all([
+    const month = (d: Date) => fromDbDate(d).slice(0, 7);
+    const [customers, contracts, accounts, docs, projectRows] = await Promise.all([
       this.prisma.contact.findMany({
         where: { orgId: org.id, isCustomer: true, ...(contactId ? { id: contactId } : {}) },
         select: { id: true, name: true, creditLimit: true, paymentTermsDays: true, creditHold: true, creditHoldReason: true, creditHoldAt: true, isActive: true },
         orderBy: { name: 'asc' },
       }),
-      // Posted invoices with what has been applied to them, and the day the last of it was applied.
-      this.prisma.$queryRaw<{ id: string; contact_id: string; number: string; issue_date: Date; due_date: Date; total: Prisma.Decimal; applied: Prisma.Decimal; last_applied: Date | null }[]>`
-        SELECT x.id, x.contact_id, x.number, x.issue_date, x.due_date, ROUND(x.total * x.exchange_rate, 2) AS total,
-               ROUND(COALESCE(SUM(a.amount), 0) * x.exchange_rate, 2) AS applied, MAX(a.date) AS last_applied
-        FROM documents x
-        LEFT JOIN allocations a ON a.target_id = x.id AND a.org_id = x.org_id AND a.removed_on IS NULL AND a.date <= ${asOf}::date
-        WHERE x.org_id = ${org.id}::uuid AND x.kind = 'INVOICE' AND x.status = 'POSTED' AND x.issue_date <= ${asOf}::date ${only}
-        GROUP BY x.id`,
-      // Revenue by month: income lines on posted invoices, less posted credit notes.
-      this.prisma.$queryRaw<{ contact_id: string; month: string; revenue: Prisma.Decimal; billed: Prisma.Decimal }[]>`
-        SELECT x.contact_id, to_char(x.issue_date, 'YYYY-MM') AS month,
-               ROUND(SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE -l.net_amount END * x.exchange_rate), 2) AS revenue,
-               ROUND(SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE 0 END * x.exchange_rate), 2) AS billed
-        FROM documents x
-        JOIN document_lines l ON l.document_id = x.id AND l.org_id = x.org_id
-        JOIN accounts acc ON acc.id = l.account_id AND acc.org_id = l.org_id
-        WHERE x.org_id = ${org.id}::uuid AND x.kind IN ('INVOICE', 'CREDIT_NOTE') AND x.status = 'POSTED'
-          AND acc.type = 'REVENUE' AND x.issue_date <= ${asOf}::date ${only}
-        GROUP BY x.contact_id, month`,
-      // Direct costs by month: expenses posted to the customer's projects.
-      this.prisma.$queryRaw<{ contact_id: string; month: string; cost: Prisma.Decimal }[]>`
-        SELECT x.contact_id, to_char(e.date, 'YYYY-MM') AS month, SUM(l.functional_debit - l.functional_credit) AS cost
-        FROM journal_lines l
-        JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-        JOIN accounts acc ON acc.id = l.account_id AND acc.org_id = l.org_id
-        JOIN dimension_values x ON x.id = l.project_id AND x.org_id = l.org_id
-        WHERE l.org_id = ${org.id}::uuid AND e.status = 'POSTED' AND acc.type = 'EXPENSE' AND x.contact_id IS NOT NULL
-          AND e.date <= ${asOf}::date ${only}
-        GROUP BY x.contact_id, month`,
-      this.prisma.$queryRaw<{ id: string; contact_id: string; code: string; name: string; is_active: boolean; cost: Prisma.Decimal }[]>`
-        SELECT x.id, x.contact_id, x.code, x.name, x.is_active,
-               COALESCE((SELECT SUM(l.functional_debit - l.functional_credit)
-                         FROM journal_lines l
-                         JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-                         JOIN accounts acc ON acc.id = l.account_id AND acc.org_id = l.org_id
-                         WHERE l.org_id = x.org_id AND l.project_id = x.id AND e.status = 'POSTED' AND acc.type = 'EXPENSE' AND e.date <= ${asOf}::date), 0) AS cost
-        FROM dimension_values x
-        WHERE x.org_id = ${org.id}::uuid AND x.type = 'PROJECT' AND x.contact_id IS NOT NULL ${only}
-        ORDER BY x.code`,
       this.prisma.salesContract.findMany({
         where: { orgId: org.id, status: { in: ['ACTIVE', 'PAUSED'] }, ...(contactId ? { contactId } : {}) },
         select: { id: true, contactId: true, number: true, title: true, status: true, frequency: true, subtotal: true, endDate: true },
         orderBy: { number: 'asc' },
       }),
-      // Customers billed in the twelve months before last, and in the last twelve months (for retention).
-      this.prisma.$queryRaw<{ contact_id: string; w: number }[]>`
-        SELECT DISTINCT x.contact_id, CASE WHEN x.issue_date > ${toDbDate(addDays(today, -365))}::date THEN 1 ELSE 0 END AS w
-        FROM documents x
-        WHERE x.org_id = ${org.id}::uuid AND x.kind = 'INVOICE' AND x.status = 'POSTED'
-          AND x.issue_date > ${toDbDate(addDays(today, -730))}::date AND x.issue_date <= ${asOf}::date`,
+      this.prisma.account.findMany({ where: { orgId: org.id, type: { in: ['REVENUE', 'EXPENSE'] } }, select: { id: true, type: true } }),
+      this.prisma.document.findMany({
+        where: { orgId: org.id, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { lte: asOf }, ...only },
+        select: { id: true, kind: true, contactId: true, number: true, issueDate: true, dueDate: true, total: true, exchangeRate: true, lines: { select: { accountId: true, netAmount: true } } },
+      }),
+      this.prisma.dimensionValue.findMany({ where: { orgId: org.id, type: 'PROJECT', contactId: { not: null }, ...only }, select: { id: true, contactId: true, code: true, name: true, isActive: true } }),
     ]);
+    const revenueAccounts = new Set(accounts.filter((a) => a.type === 'REVENUE').map((a) => a.id));
+    const expenseAccounts = accounts.filter((a) => a.type === 'EXPENSE').map((a) => a.id);
+
+    // Posted invoices with what has been applied to them up to today, and the day the last of it was applied.
+    const invoices = (await withOpen(this.prisma, org.id, docs.filter((d) => d.kind === 'INVOICE'), asOf)).map((x) => ({
+      id: x.id,
+      contact_id: x.contactId,
+      number: x.number!,
+      issue_date: x.issueDate,
+      due_date: x.dueDate,
+      total: roundPg(x.total.times(x.exchangeRate), 2),
+      applied: roundPg(x.allocated.times(x.exchangeRate), 2),
+      last_applied: x.lastAllocated,
+    }));
+
+    // Revenue by month: income lines on posted invoices, less posted credit notes.
+    const rev = new Map<string, { contact_id: string; month: string; revenue: Prisma.Decimal; billed: Prisma.Decimal }>();
+    for (const d of docs) {
+      const k = `${d.contactId}|${month(d.issueDate)}`;
+      const r = rev.get(k) ?? { contact_id: d.contactId, month: month(d.issueDate), revenue: new Prisma.Decimal(0), billed: new Prisma.Decimal(0) };
+      let any = false;
+      for (const l of d.lines) {
+        if (!revenueAccounts.has(l.accountId)) continue;
+        any = true;
+        const v = l.netAmount.times(d.exchangeRate);
+        r.revenue = d.kind === 'INVOICE' ? r.revenue.plus(v) : r.revenue.minus(v);
+        if (d.kind === 'INVOICE') r.billed = r.billed.plus(v);
+      }
+      if (any) rev.set(k, r);
+    }
+    const revenue = [...rev.values()].map((r) => ({ ...r, revenue: roundPg(r.revenue, 2), billed: roundPg(r.billed, 2) }));
+
+    // Direct costs by month: expenses posted to the customer's projects.
+    const projectContact = new Map(projectRows.map((x) => [x.id, x.contactId!]));
+    const sums =
+      projectRows.length && expenseAccounts.length
+        ? await lineSums(this.store, org.id, {
+            entry: postedBetween(null, asOf),
+            line: { projectId: { $in: projectRows.map((x) => x.id) }, accountId: { $in: expenseAccounts } },
+            by: { projectId: 'lines.projectId', month: { $dateToString: { date: '$date', format: '%Y-%m' } } },
+          })
+        : [];
+    const costMap = new Map<string, { contact_id: string; month: string; cost: Prisma.Decimal }>();
+    const perProject = new Map<string, Prisma.Decimal>();
+    for (const x of sums) {
+      const net = new Prisma.Decimal(x.debit.minus(x.credit).toFixed());
+      const pid = x.key.projectId as string;
+      const c = projectContact.get(pid)!;
+      const k = `${c}|${x.key.month as string}`;
+      costMap.set(k, { contact_id: c, month: x.key.month as string, cost: (costMap.get(k)?.cost ?? new Prisma.Decimal(0)).plus(net) });
+      perProject.set(pid, (perProject.get(pid) ?? new Prisma.Decimal(0)).plus(net));
+    }
+    const costs = [...costMap.values()];
+    const projects = projectRows
+      .map((x) => ({ id: x.id, contact_id: x.contactId!, code: x.code, name: x.name, is_active: x.isActive, cost: perProject.get(x.id) ?? new Prisma.Decimal(0) }))
+      .sort(byCode);
+
+    // Customers billed in the twelve months before last, and in the last twelve months (for retention),
+    // across every customer even when one is asked for.
+    const yearAgo = toDbDate(addDays(today, -365));
+    const twoYearsAgo = toDbDate(addDays(today, -730));
+    const billed = await this.prisma.document.findMany({ where: { orgId: org.id, kind: 'INVOICE', status: 'POSTED', issueDate: { gt: twoYearsAgo, lte: asOf } }, select: { contactId: true, issueDate: true } });
+    const windows = billed.map((d) => ({ contact_id: d.contactId, w: d.issueDate > yearAgo ? 1 : 0 }));
     const prev = new Set(windows.filter((w) => Number(w.w) === 0).map((w) => w.contact_id));
     const last = new Set(windows.filter((w) => Number(w.w) === 1).map((w) => w.contact_id));
     const group = <T extends { contact_id: string }>(rows: T[]) => {

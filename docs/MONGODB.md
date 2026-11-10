@@ -18,7 +18,7 @@ module follows when it moves.
 | 5 | `journal_entries` (lines inside each entry) | Done (#94) |
 | 6 | Sales and purchases: `contacts`, `documents` (lines inside), `payments`, `allocations`, `approval_policies`, `approval_requests`, `attachments`, `expense_claims` (lines inside), `bank_statement_imports`, `bank_statement_lines`, `bank_matches`, `bank_reconciliations` | Writes moved (#98); reads still on the copy |
 | 7 | Every other table (166): tax, payroll, planning, CRM, orders, AI, platform, the latest modules | Writes kept in step (this step); rules and reads still in PostgreSQL |
-| 8 | Reads and reports as MongoDB queries; Prisma, PostgreSQL, RLS and the copies removed | In progress: reads of the step-7 tables come from MongoDB |
+| 8 | Reads and reports as MongoDB queries; Prisma, PostgreSQL, RLS and the copies removed | In progress: every read and report comes from MongoDB; locks, counters and triggers next |
 
 ## Why these choices
 
@@ -173,7 +173,17 @@ the organisation, and JSON `path` + `equals`. The row-level security policies th
 "this organisation" are applied as filters, and with no organisation set a tenant table shows no
 rows. A query that still cannot be translated reads PostgreSQL; run the tests with
 `READ_FALLBACKS_FILE=path` to list them (the full suite lists none). Set `MONGO_READS=off` to
-read PostgreSQL again. The 198 raw SQL reports still read PostgreSQL.
+read PostgreSQL again.
+
+**Reports (step 8d).** The raw SQL reports are rewritten as MongoDB queries. Journal sums use
+`lineSums` and `ledgerLines` (`apps/api/src/db/ledger-queries.ts`): an aggregation over the
+entries with their lines unwound, grouped by any entry or line field. What documents posted to
+some accounts uses `documentEntrySums`. Open amounts, amounts as of a date and disputes use
+`withOpen`, `openAsOf` and `disputedIds` (`apps/api/src/db/subledger-queries.ts`); `roundPg`
+rounds half away from zero as PostgreSQL's `ROUND` does. The SQL left is row locks
+(`FOR UPDATE`, `SKIP LOCKED`, advisory locks), the `org_counters` numbering, work-queue leases,
+`set_config` switches for the database triggers, and the PostgreSQL health pages; step 9 moves
+the locks, counters and trigger rules into the API and step 10 removes PostgreSQL.
 
 * A transaction's MongoDB work runs one call at a time, because MongoDB refuses two
   operations at once in one transaction and PostgreSQL code often reads with `Promise.all`.
