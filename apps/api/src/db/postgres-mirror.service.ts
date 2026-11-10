@@ -3,6 +3,7 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import { runAsSystem } from '../common/tenant-context';
 import { accounts, fiscalPeriods } from './collections/chart';
+import { journalEntries } from './collections/ledger';
 import { users } from './collections/identity';
 import { memberships, organizations } from './collections/tenancy';
 
@@ -110,6 +111,37 @@ export class PostgresMirrorService {
         await t.membership.upsert({ where: { id }, create: { id, ...data }, update: { role: m.role } });
       }
     });
+  }
+
+  /**
+   * Copies these journal entries, with their lines, into PostgreSQL. Only into `tx`: postings
+   * must reach PostgreSQL in the caller's transaction, where documents point at them and the
+   * period's copy is held FOR SHARE. A posted copy is never rewritten (it is immutable there
+   * too). Lines go in while the copy is a draft, because PostgreSQL refuses lines on a posted
+   * entry; the deferred balance check then runs at commit.
+   */
+  async journalEntries(ids: readonly string[], tx: Tx): Promise<void> {
+    if (!ids.length) return;
+    const rows = await runAsSystem(() => this.store.collection(journalEntries).find({ id: { $in: [...new Set(ids)] } }));
+    for (const { id, lines, orgId, ...e } of rows) {
+      const existing = await tx.journalEntry.findFirst({ where: { id, orgId }, select: { status: true } });
+      if (existing?.status === 'POSTED') continue;
+      const header = { ...e, status: 'DRAFT' as const, entryNumber: null, postedAt: null, postedById: null, type: e.type as never, source: e.source as never };
+      if (existing) {
+        await tx.journalLine.deleteMany({ where: { entryId: id, orgId } });
+        await tx.journalEntry.update({ where: { id }, data: header });
+      } else {
+        await tx.journalEntry.create({ data: { id, orgId, ...header } });
+      }
+      await tx.journalLine.createMany({ data: lines.map((l) => ({ ...l, orgId, entryId: id, dimensions: l.dimensions ?? undefined })) });
+      if (e.status === 'POSTED') await tx.journalEntry.update({ where: { id }, data: { status: 'POSTED', entryNumber: e.entryNumber, postedAt: e.postedAt, postedById: e.postedById } });
+    }
+  }
+
+  /** Removes a draft's copy. */
+  async removeJournalEntry(id: string, orgId: string, tx: Tx): Promise<void> {
+    await tx.journalLine.deleteMany({ where: { entryId: id, orgId } });
+    await tx.journalEntry.deleteMany({ where: { id, orgId } });
   }
 
   /** Tenant tables in PostgreSQL sit behind row-level security; the copy is system work. */

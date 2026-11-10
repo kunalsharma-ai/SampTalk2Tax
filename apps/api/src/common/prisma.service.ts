@@ -1,5 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
+import { isTransientTransactionError, type DocumentStore } from '@talk2tax/document-db';
+import { DocumentStoreService } from './document-store.service';
 import { currentTenantContext, TenantContext, tenantStorage } from './tenant-context';
 
 /**
@@ -32,7 +34,7 @@ function settings(ctx: TenantContext): [string, string, string] {
  * A statement issued on the root client from inside a transaction callback (instead of on
  * `tx`) is not given settings, so it sees no tenant rows: that bug fails closed.
  */
-export function createTenantAwarePrisma(base: PrismaService): PrismaService {
+export function createTenantAwarePrisma(base: PrismaService, store?: Pick<DocumentStore, 'hold'>): PrismaService {
   const apply = (ctx: TenantContext) => {
     const [org, user, bypass] = settings(ctx);
     return base.$executeRaw`SELECT set_config('t2t.org_id', ${org}, true), set_config('t2t.user_id', ${user}, true), set_config('t2t.bypass', ${bypass}, true)`;
@@ -48,10 +50,8 @@ export function createTenantAwarePrisma(base: PrismaService): PrismaService {
     },
   });
 
-  const transaction = (arg: unknown, options?: unknown) => {
-    if (typeof arg !== 'function') throw new Error('Batch transactions are not supported; use an interactive transaction');
-    const ctx = currentTenantContext();
-    return (extended.$transaction as (fn: (tx: unknown) => Promise<unknown>, o?: unknown) => Promise<unknown>)(
+  const runOnce = (arg: unknown, options: unknown, ctx: TenantContext) =>
+    (extended.$transaction as (fn: (tx: unknown) => Promise<unknown>, o?: unknown) => Promise<unknown>)(
       (tx) =>
         tenantStorage.run({ ...ctx, inTx: true }, async () => {
           const [org, user, bypass] = settings(ctx);
@@ -60,6 +60,35 @@ export function createTenantAwarePrisma(base: PrismaService): PrismaService {
         }),
       options,
     );
+
+  /**
+   * While both databases run (docs/MONGODB.md), each PostgreSQL transaction owns a MongoDB
+   * transaction: MongoDB work done inside the callback joins it, and it commits right after
+   * PostgreSQL commits (or is abandoned if PostgreSQL fails). A MongoDB write conflict runs
+   * the whole callback again, as the MongoDB driver does for its own transactions.
+   */
+  const transaction = async (arg: unknown, options?: unknown) => {
+    if (typeof arg !== 'function') throw new Error('Batch transactions are not supported; use an interactive transaction');
+    const ctx = currentTenantContext();
+    if (!store) return runOnce(arg, options, ctx);
+    for (let attempt = 1; ; attempt++) {
+      const held = store.hold();
+      let result: unknown;
+      try {
+        result = await held.run(() => runOnce(arg, options, ctx));
+      } catch (e) {
+        await held.abort().catch(() => undefined);
+        if (attempt < 5 && isTransientTransactionError(e)) continue;
+        throw e;
+      }
+      try {
+        await held.commit();
+      } catch (e) {
+        new Logger('Database').error(`PostgreSQL committed but MongoDB did not; run db:copy-to-mongo to repair the copy: ${String(e)}`);
+        throw e;
+      }
+      return result;
+    }
   };
 
   return new Proxy(extended as object, {
@@ -113,5 +142,6 @@ async function connectAndCheckRole(base: PrismaService): Promise<void> {
 
 export const prismaProvider: Provider = {
   provide: PrismaService,
-  useFactory: () => createTenantAwarePrisma(new PrismaService()),
+  inject: [DocumentStoreService],
+  useFactory: (store: DocumentStoreService) => createTenantAwarePrisma(new PrismaService(), store),
 };
