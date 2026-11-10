@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 806 |
+| Not started | 805 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 422 |
+| Tested | 423 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 13 | 30 |
-| Accounts payable | M2 | 36 | 16 | 20 |
+| Accounts payable | M2 | 36 | 15 | 21 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1038,6 +1038,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/banking.e2e.test.ts › records a customer receipt from money in
   - apps/api/test/banking.e2e.test.ts › matching
+
+### AP-023 — International payment preparation
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Vendor bank abroad (IBAN mod-97, SWIFT country, ABA checksum, second-person verification); remittance per vendor and currency against posted foreign-currency bills with RBI purpose code, charges OUR/SHA/BEN and Form 15CA part A/B/C/D plus 15CB above Rs 5 lakh per vendor per financial year; approval by another person; CSV remittance instruction marks it sent; recorded at the bank's rate settling the bills. Purpose codes and 15CA rules not reviewed by a banker or CA. Not built: bank API/MT103, section 195 TDS, forwards.
+- Evidence:
+  - packages/accounting-engine/src/international-payments.ts
+  - packages/accounting-engine/test/international-payments.test.ts
+  - packages/database/prisma/migrations/20261210090000_international_payments/migration.sql
+  - apps/api/src/international-payments/international-payments.service.ts
+  - apps/api/test/international-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/international-payments/page.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/international-payments/[paymentId]/page.tsx
+  - apps/web/src/components/purchases/vendor-bank-card.tsx
+  - apps/web/e2e/international-payments-flow.test.mjs
+  - docs/INTERNATIONAL_PAYMENTS.md
 
 ### AP-027 — Supplier bank-detail change detection
 
