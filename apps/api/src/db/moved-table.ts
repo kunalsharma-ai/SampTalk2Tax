@@ -3,7 +3,7 @@ import type { CollectionDef } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../common/document-store.service';
 import { Tx, withSystemAccess } from '../common/prisma.service';
 import { runAsSystem, runInOrg } from '../common/tenant-context';
-import { mirrorRowsWhere } from './mirror-writes';
+import { mirrorParentDeleted, mirrorRowsWhere } from './mirror-writes';
 
 /**
  * Writes for a table that has moved to MongoDB while its readers have not (docs/MONGODB.md ›
@@ -48,6 +48,7 @@ export class MovedTables {
   async remove(tx: Tx, table: MovedTable, orgId: string, id: string): Promise<void> {
     await runInOrg(orgId, () => this.store.collection(table.def).deleteOne({ id }));
     await withSystemAccess(tx, () => delegate(tx, table).deleteMany({ where: { id } }));
+    await mirrorParentDeleted(tx, this.store, table.def.name, orgId, [id]);
   }
 
   /** Copies these documents into PostgreSQL inside `tx`, and returns the copies. */

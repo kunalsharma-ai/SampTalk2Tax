@@ -84,6 +84,10 @@ function pkOf(m: Model): string[] {
 }
 
 const INFOS = new Map<string, MirrorInfo>();
+/** Children by parent table, from the PostgreSQL catalog (loadForeignKeys). */
+const BY_TABLE = new Map<string, MirrorInfo['children']>();
+let catalog: Promise<void> | undefined;
+
 
 function build(name: string): MirrorInfo {
   const m = MODELS.get(name);
@@ -104,6 +108,9 @@ function build(name: string): MirrorInfo {
 export function mirrorModels(names: readonly string[]): MirrorInfo[] {
   for (const n of names) if (!INFOS.has(n)) INFOS.set(n, build(n));
   for (const info of INFOS.values()) info.children = [];
+  // The catalog's keys are added again on the next delete.
+  catalog = undefined;
+  BY_TABLE.clear();
   for (const child of INFOS.values()) {
     const m = MODELS.get(child.model)!;
     for (const f of m.fields) {
@@ -118,6 +125,48 @@ export function mirrorModels(names: readonly string[]): MirrorInfo[] {
 }
 
 export const mirrorByDelegate = () => new Map([...INFOS.values()].map((i) => [i.delegate, i]));
+
+type Child = MirrorInfo['children'][number];
+
+/**
+ * Many foreign keys were written by hand in the SQL migrations (composite ones with org_id), so
+ * the Prisma schema does not know what PostgreSQL deletes or detaches when a row goes. The
+ * catalog does: it is read once, and its ON DELETE CASCADE and SET NULL keys whose child is a
+ * mirrored table are added to the parents' children, also for parents moved by hand (documents,
+ * journal entries) through `mirrorParentDeleted`.
+ */
+
+async function loadForeignKeys(tx: unknown): Promise<void> {
+  catalog ??= (async () => {
+    const rows = (await (tx as { $queryRawUnsafe: (q: string) => Promise<unknown[]> }).$queryRawUnsafe(`
+      SELECT cl.relname AS child, pl.relname AS parent, c.confdeltype AS action,
+             (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(c.conkey) WITH ORDINALITY k(n, ord)
+                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.n) AS columns
+        FROM pg_constraint c JOIN pg_class cl ON cl.oid = c.conrelid JOIN pg_class pl ON pl.oid = c.confrelid
+       WHERE c.contype = 'f' AND c.confdeltype IN ('c', 'n')`)) as { child: string; parent: string; action: string; columns: string[] }[];
+    const byTable = new Map([...INFOS.values()].map((i) => [i.def.name, i]));
+    for (const r of rows) {
+      const child = byTable.get(r.child);
+      if (!child) continue;
+      const cols = r.columns.filter((c) => c !== 'org_id');
+      const field = child.scalars.find((f) => (f.dbName ?? f.name) === (cols[0] ?? r.columns[0]));
+      if (!field) continue;
+      const entry: Child = { info: () => child, fk: field.name, onDelete: r.action === 'c' ? 'Cascade' : 'SetNull' };
+      const list = byTable.get(r.parent)?.children ?? (BY_TABLE.get(r.parent) ?? BY_TABLE.set(r.parent, []).get(r.parent)!);
+      if (!list.some((x) => x.info() === child && x.fk === entry.fk)) list.push(entry);
+    }
+  })();
+  await catalog;
+}
+
+/**
+ * Applies to MongoDB what PostgreSQL does to mirrored rows when rows of a table moved by hand
+ * are deleted (a draft document's billing links go, a deleted draft journal's run loses its link).
+ */
+export async function mirrorParentDeleted(tx: unknown, store: Store, table: string, orgId: string, ids: string[]) {
+  await loadForeignKeys(tx);
+  for (const id of ids) await applyChildren(store, BY_TABLE.get(table) ?? [], orgId, id);
+}
 
 // ------------------------------------------------------------------ the write path
 
@@ -159,16 +208,20 @@ async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record
 async function dropRows(store: Store, info: MirrorInfo, keys: Record<string, unknown>[]) {
   for (const k of keys) {
     const id = docId(info, k);
-    for (const c of info.children) {
-      const child = c.info();
-      const coll = () => store.collection(child.def);
-      if (c.onDelete === 'SetNull') await inContext(child, k.orgId, () => coll().updateMany({ [c.fk]: id }, { $set: { [c.fk]: null } }));
-      else {
-        const gone = (await inContext(child, k.orgId, () => coll().find({ [c.fk]: id }))) as Record<string, unknown>[];
-        await dropRows(store, child, gone.map((g) => ({ ...g, orgId: g.orgId ?? k.orgId })));
-      }
-    }
+    await applyChildren(store, info.children, k.orgId, id);
     await inContext(info, k.orgId, () => store.collection(info.def).deleteOne({ id }));
+  }
+}
+
+async function applyChildren(store: Store, children: Child[], orgId: unknown, id: string) {
+  for (const c of children) {
+    const child = c.info();
+    const coll = () => store.collection(child.def);
+    if (c.onDelete === 'SetNull') await inContext(child, orgId, () => coll().updateMany({ [c.fk]: id }, { $set: { [c.fk]: null } }));
+    else {
+      const gone = (await inContext(child, orgId, () => coll().find({ [c.fk]: id }))) as Record<string, unknown>[];
+      await dropRows(store, child, gone.map((g) => ({ ...g, orgId: g.orgId ?? orgId })));
+    }
   }
 }
 
@@ -240,6 +293,7 @@ export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx
       return stripKeys(row, strip);
     },
     async delete(args) {
+      await loadForeignKeys(tx);
       const { args: a, strip } = withKeys(info, args);
       const row = (await d.delete(a)) as Record<string, unknown>;
       await dropRows(store, info, [row]);
@@ -269,6 +323,7 @@ export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx
       return r;
     },
     async deleteMany(args) {
+      await loadForeignKeys(tx);
       const keys = (await d.findMany({ where: args?.where, select: pkSelect(info) })) as Record<string, unknown>[];
       const r = await d.deleteMany(args);
       await dropRows(store, info, keys);
@@ -367,8 +422,10 @@ export async function compareMirrored(
     if (v === null || v === undefined) return null;
     if (f.type === 'Decimal') return (Array.isArray(v) ? v : [v]).map((x) => new Prisma.Decimal(typeof x === 'string' ? x : (x as { toFixed(): string }).toFixed()).toFixed()).join(',');
     if (f.type === 'DateTime') return new Date(v as Date).toISOString();
-    if (f.type === 'Bytes') return Buffer.from((v as { buffer?: ArrayBuffer }).buffer ? new Uint8Array((v as { buffer: ArrayBuffer }).buffer) : (v as Uint8Array)).toString('base64');
-    if (typeof v === 'bigint') return Number(v);
+    // A MongoDB Binary holds its bytes in .buffer; a Uint8Array's .buffer is the whole pool it sits in.
+    if (f.type === 'Bytes') return Buffer.from((v as { _bsontype?: string })._bsontype === 'Binary' ? (v as { buffer: Uint8Array }).buffer : (v as Uint8Array)).toString('base64');
+    // PostgreSQL gives a bigint, MongoDB a number or a Long.
+    if (f.type === 'BigInt' || f.type === 'Int') return String(v);
     return JSON.stringify(v);
   };
   for (const info of INFOS.values()) {

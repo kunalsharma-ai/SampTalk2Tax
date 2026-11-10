@@ -172,6 +172,8 @@ export const MIRRORED_MODEL_NAMES = [
   'VendorReview',
   'InternationalPayment',
   'InternationalPaymentItem',
+  'ContractMeter',
+  'UsageRecord',
 ] as const;
 
 export const MIRRORED = mirrorModels(MIRRORED_MODEL_NAMES);
