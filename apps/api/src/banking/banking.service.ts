@@ -18,6 +18,8 @@ import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { BANK_IMPORTS, BANK_LINES, BANK_MATCHES, BANK_RECONCILIATIONS } from '../db/collections/banking';
+import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { DocumentsService } from '../ledgers/documents.service';
@@ -65,6 +67,7 @@ export class BankingService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly documents: DocumentsService,
+    private readonly moved: MovedTables,
   ) {}
 
   // ------------------------------------------------------------- accounts
@@ -148,9 +151,7 @@ export class BankingService {
       }
       if (!r.fresh.length) throw new DomainError('NOTHING_NEW', 'Every line in this file has already been imported', HttpStatus.CONFLICT);
       const dates = r.fresh.map((x) => x.date).sort();
-      const imp = await tx.bankStatementImport.create({
-        data: {
-          orgId: org.id,
+      const imp = await this.moved.create<Prisma.BankStatementImportGetPayload<object>>(tx, BANK_IMPORTS, org.id, {
           accountId,
           fileName: input.fileName.slice(0, 200),
           fileHash: sha(input.csv),
@@ -159,11 +160,9 @@ export class BankingService {
           firstDate: toDbDate(dates[0]),
           lastDate: toDbDate(dates[dates.length - 1]),
           importedById: actor.id,
-        },
+          createdAt: new Date(),
       });
-      await tx.bankStatementLine.createMany({
-        data: r.fresh.map((x) => ({
-          orgId: org.id,
+      await this.moved.createMany(tx, BANK_LINES, org.id, r.fresh.map((x) => ({
           accountId,
           importId: imp.id,
           date: toDbDate(x.date),
@@ -171,8 +170,12 @@ export class BankingService {
           reference: x.reference,
           amount: x.amount.toFixed(),
           fingerprint: x.fingerprint,
+          status: 'UNMATCHED',
+          excludedReason: null,
+          reconciliationId: null,
+          createdAt: new Date(),
         })),
-      });
+      );
       await this.audit.append(tx, {
         orgId: org.id,
         actorId: actor.id,
@@ -271,8 +274,8 @@ export class BankingService {
       if (line.reconciliationId) throw new DomainError('LINE_RECONCILED', 'This line is reconciled; undo the reconciliation first', HttpStatus.CONFLICT);
       const matches = await tx.bankMatch.findMany({ where: { statementLineId: lineId, removedAt: null }, include: { journalLine: true } });
       const now = new Date();
-      await tx.bankMatch.updateMany({ where: { statementLineId: lineId, removedAt: null }, data: { removedAt: now, removedById: actor.id } });
-      await tx.bankStatementLine.update({ where: { id: lineId }, data: { status: 'UNMATCHED' } });
+      await this.moved.updateMany(tx, BANK_MATCHES, org.id, { statementLineId: lineId, removedAt: null }, { removedAt: now, removedById: actor.id });
+      await this.moved.update(tx, BANK_LINES, org.id, lineId, { status: 'UNMATCHED' });
       const reversed: string[] = [];
       // An entry that was created from this line only exists because of it: reverse it too.
       const created = [...new Set(matches.filter((m) => m.origin === 'CREATED_ENTRY').map((m) => m.journalLine.entryId))];
@@ -352,7 +355,7 @@ export class BankingService {
     return this.inTx(async (tx) => {
       const line = await this.lockLine(tx, org.id, lineId);
       this.assertOpen(line);
-      await tx.bankStatementLine.update({ where: { id: lineId }, data: { status: 'EXCLUDED', excludedReason: reason } });
+      await this.moved.update(tx, BANK_LINES, org.id, lineId, { status: 'EXCLUDED', excludedReason: reason });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.line_excluded', entityType: 'bank_statement_line', entityId: lineId, data: { reason } });
       return this.reload(tx, org, lineId);
     });
@@ -363,7 +366,7 @@ export class BankingService {
       const line = await this.lockLine(tx, org.id, lineId);
       if (line.status !== 'EXCLUDED') throw new DomainError('NOT_EXCLUDED', 'This statement line is not excluded', HttpStatus.CONFLICT);
       if (line.reconciliationId) throw new DomainError('LINE_RECONCILED', 'This line is reconciled; undo the reconciliation first', HttpStatus.CONFLICT);
-      await tx.bankStatementLine.update({ where: { id: lineId }, data: { status: 'UNMATCHED', excludedReason: null } });
+      await this.moved.update(tx, BANK_LINES, org.id, lineId, { status: 'UNMATCHED', excludedReason: null });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.line_included', entityType: 'bank_statement_line', entityId: lineId, data: {} });
       return this.reload(tx, org, lineId);
     });
@@ -381,9 +384,7 @@ export class BankingService {
       await this.lockAccount(tx, org.id, accountId);
       const f = await this.figures(tx, org, accountId, input);
       if (f.issues.length) throw new DomainError('RECONCILIATION_FAILED', 'The account does not reconcile yet', HttpStatus.UNPROCESSABLE_ENTITY, { issues: f.issues });
-      const rec = await tx.bankReconciliation.create({
-        data: {
-          orgId: org.id,
+      const rec = await this.moved.create<Prisma.BankReconciliationGetPayload<object>>(tx, BANK_RECONCILIATIONS, org.id, {
           accountId,
           startDate: toDbDate(f.startDate),
           statementDate: toDbDate(f.statementDate),
@@ -392,12 +393,13 @@ export class BankingService {
           ledgerBalance: f.ledgerBalance,
           uncleared: f.uncleared,
           completedById: actor.id,
-        },
+          completedAt: new Date(),
+          status: 'COMPLETED',
+          undoneById: null,
+          undoneAt: null,
+          undoReason: null,
       });
-      const updated = await tx.bankStatementLine.updateMany({
-        where: { orgId: org.id, accountId, reconciliationId: null, date: { gte: toDbDate(f.startDate), lte: toDbDate(f.statementDate) } },
-        data: { reconciliationId: rec.id },
-      });
+      const updated = { count: await this.moved.updateMany(tx, BANK_LINES, org.id, { accountId, reconciliationId: null, date: { $gte: toDbDate(f.startDate), $lte: toDbDate(f.statementDate) } }, { reconciliationId: rec.id }) };
       await this.audit.append(tx, {
         orgId: org.id,
         actorId: actor.id,
@@ -431,8 +433,8 @@ export class BankingService {
       if (rec.status !== 'COMPLETED') throw new DomainError('ALREADY_UNDONE', 'This reconciliation has already been undone', HttpStatus.CONFLICT);
       const later = await tx.bankReconciliation.findFirst({ where: { orgId: org.id, accountId: rec.accountId, status: 'COMPLETED', statementDate: { gt: rec.statementDate } } });
       if (later) throw new DomainError('NOT_LATEST', `Undo the reconciliation to ${fromDbDate(later.statementDate)} first`, HttpStatus.CONFLICT);
-      const released = await tx.bankStatementLine.updateMany({ where: { reconciliationId: id }, data: { reconciliationId: null } });
-      const done = await tx.bankReconciliation.update({ where: { id }, data: { status: 'UNDONE', undoneAt: new Date(), undoneById: actor.id, undoReason: reason } });
+      const released = { count: await this.moved.updateMany(tx, BANK_LINES, org.id, { reconciliationId: id }, { reconciliationId: null }) };
+      const done = (await this.moved.update<Prisma.BankReconciliationGetPayload<object>>(tx, BANK_RECONCILIATIONS, org.id, id, { status: 'UNDONE', undoneAt: new Date(), undoneById: actor.id, undoReason: reason }))!;
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.reconciliation_undone', entityType: 'bank_reconciliation', entityId: id, data: { reason, lines: released.count } });
       return this.serializeReconciliation(org, done, 0);
     });
@@ -539,8 +541,8 @@ export class BankingService {
       issues.push(`The chosen ledger lines add up to ${total.toFixed(2)}, not ${amount.toFixed(2)}`);
     }
     if (issues.length) throw new DomainError('INVALID_MATCH', [...new Set(issues)].join('; '), HttpStatus.UNPROCESSABLE_ENTITY, { issues: [...new Set(issues)] });
-    await tx.bankMatch.createMany({ data: ids.map((journalLineId) => ({ orgId: org.id, statementLineId: line.id, journalLineId, origin, createdById: actor.id })) });
-    await tx.bankStatementLine.update({ where: { id: line.id }, data: { status: 'MATCHED' } });
+    await this.moved.createMany(tx, BANK_MATCHES, org.id, ids.map((journalLineId) => ({ statementLineId: line.id, journalLineId, origin, createdById: actor.id, createdAt: new Date(), removedAt: null, removedById: null })));
+    await this.moved.update(tx, BANK_LINES, org.id, line.id, { status: 'MATCHED' });
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.line_matched', entityType: 'bank_statement_line', entityId: line.id, data: { journalLineIds: ids, origin } });
   }
 

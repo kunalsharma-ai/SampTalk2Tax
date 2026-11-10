@@ -1,3 +1,5 @@
+import { MovedTables } from '../db/moved-table';
+import { CONTACTS, newContact } from '../db/collections/sales';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
   CrmError,
@@ -70,6 +72,7 @@ export class CrmService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly moved: MovedTables,
   ) {}
 
   private scale(org: CrmOrg) {
@@ -332,13 +335,14 @@ export class CrmService {
         if (!c) this.invalid('Choose a contact of this organisation', 'CRM_CUSTOMER_NOT_FOUND');
         if (!c.isActive) this.invalid(`${c.name} is inactive`, 'CRM_CUSTOMER_INACTIVE');
         if (!c.isCustomer) {
-          await tx.contact.update({ where: { id: c.id }, data: { isCustomer: true } });
+          await this.moved.update(tx, CONTACTS, org.id, c.id, { isCustomer: true, updatedAt: new Date() });
           await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'contact.updated', entityType: 'contact', entityId: c.id, data: { isCustomer: true, from: 'crm.lead.converted' } });
         }
         contactId = c.id;
       } else {
         if (!hasPermission(org.role, 'contacts.manage')) this.invalid('Creating a customer needs permission to manage contacts; choose an existing customer instead', 'FORBIDDEN', HttpStatus.FORBIDDEN);
-        const c = await tx.contact.create({ data: { orgId: org.id, name: l.company ?? l.name, email: l.email, phone: l.phone, isCustomer: true } });
+        const now = new Date();
+        const c = await this.moved.create<{ id: string; name: string }>(tx, CONTACTS, org.id, newContact({ name: l.company ?? l.name, email: l.email, phone: l.phone, isCustomer: true }, now));
         await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'contact.created', entityType: 'contact', entityId: c.id, data: { name: c.name, isCustomer: true, isVendor: false, fromLead: leadRef(l.number) } });
         contactId = c.id;
         createdContact = true;

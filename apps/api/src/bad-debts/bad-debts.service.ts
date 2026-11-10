@@ -21,6 +21,8 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { ALLOCATIONS, newAllocation } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { SubledgerService } from '../ledgers/subledger.service';
@@ -56,6 +58,7 @@ export class BadDebtsService {
     private readonly journals: JournalsService,
     private readonly subledger: SubledgerService,
     private readonly chart: ChartService,
+    private readonly moved: MovedTables,
   ) {}
 
   // ---------- reads ----------
@@ -313,7 +316,7 @@ export class BadDebtsService {
           createdById: actor.id,
         },
       });
-      await tx.allocation.create({ data: { orgId: org.id, targetId: doc.id, writeOffId: w.id, amount, date: toDbDate(input.date), createdById: actor.id } });
+      await this.moved.create(tx, ALLOCATIONS, org.id, newAllocation({ targetId: doc.id, writeOffId: w.id, amount: String(amount), date: toDbDate(input.date), createdById: actor.id }));
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bad_debts.written_off', entityType: 'bad_debt_write_off', entityId: w.id, data: { reference: writeOffRef(number), invoice: doc.number, amount, currency: doc.currency, functionalAmount: functional.toFixed(), against: input.against, journalEntryId: je.id } });
       return w.id;
     });
@@ -330,7 +333,7 @@ export class BadDebtsService {
       if (w.status === 'REVERSED') throw new DomainError('WRITE_OFF_REVERSED', 'This write-off was already reversed', HttpStatus.CONFLICT);
       if (input.date < fromDbDate(w.date)) throw new DomainError('INVALID_DATE', 'The reversal cannot be dated before the write-off');
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, w.journalEntryId, { date: input.date, memo: `${writeOffRef(w.number)} reversed: ${input.reason.trim()}` });
-      for (const a of w.allocations) await tx.allocation.update({ where: { id: a.id }, data: { removedOn: toDbDate(input.date), removedById: actor.id } });
+      for (const a of w.allocations) await this.moved.update(tx, ALLOCATIONS, org.id, a.id, { removedOn: toDbDate(input.date), removedById: actor.id });
       await tx.badDebtWriteOff.update({ where: { id }, data: { status: 'REVERSED', reversedOn: toDbDate(input.date), reversalReason: input.reason.trim(), reversalJournalEntryId: rev.id, reversedById: actor.id } });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bad_debts.write_off_reversed', entityType: 'bad_debt_write_off', entityId: id, data: { reference: writeOffRef(w.number), date: input.date, reason: input.reason.trim(), reversalJournalEntryId: rev.id } });
     });

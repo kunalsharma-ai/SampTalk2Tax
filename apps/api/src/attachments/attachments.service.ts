@@ -7,6 +7,8 @@ import { OrgContext } from '../auth/decorators';
 import { ExpensesService } from '../expenses/expenses.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
+import { ATTACHMENTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { UsageService } from '../usage/usage.service';
 
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
@@ -46,6 +48,7 @@ export class AttachmentsService {
     private readonly audit: AuditService,
     private readonly expenses: ExpensesService,
     private readonly usage: UsageService,
+    private readonly moved: MovedTables,
   ) {}
 
   async list(org: Org, actor: { id: string }, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
@@ -78,20 +81,21 @@ export class AttachmentsService {
       if (same) throw new DomainError('DUPLICATE_FILE', 'This file is already attached to this record', HttpStatus.CONFLICT, { attachmentId: same.id });
       // Counted against the plan's uploads for the month (refused past it).
       await this.usage.takeUpload(tx, org.id, input.content.length);
-      const a = await tx.attachment.create({
-        data: {
-          orgId: org.id,
-          entityType: input.entityType,
-          entityId: input.entityId,
-          fileName: cleanFileName(input.fileName),
-          contentType,
-          sizeBytes: input.content.length,
-          sha256,
-          content: new Uint8Array(input.content),
-          uploadedById: actor.id,
-        },
-        select: { id: true, fileName: true, contentType: true, sizeBytes: true, sha256: true, createdAt: true },
+      const row = await this.moved.create<{ id: string; fileName: string; contentType: string; sizeBytes: number; sha256: string; createdAt: Date }>(tx, ATTACHMENTS, org.id, {
+        entityType: input.entityType,
+        entityId: input.entityId,
+        fileName: cleanFileName(input.fileName),
+        contentType,
+        sizeBytes: input.content.length,
+        sha256,
+        content: input.content,
+        uploadedById: actor.id,
+        createdAt: new Date(),
+        removedAt: null,
+        removedById: null,
+        removedReason: null,
       });
+      const a = { id: row.id, fileName: row.fileName, contentType: row.contentType, sizeBytes: row.sizeBytes, sha256: row.sha256, createdAt: row.createdAt };
       await this.audit.append(tx, {
         orgId: org.id,
         actorId: actor.id,
@@ -118,7 +122,7 @@ export class AttachmentsService {
     await this.entity(org, actor, a.entityType, a.entityId, 'manage');
     if (a.removedAt) throw new DomainError('ALREADY_REMOVED', 'This file was already removed', HttpStatus.CONFLICT);
     return this.prisma.$transaction(async (tx) => {
-      await tx.attachment.update({ where: { id }, data: { removedAt: new Date(), removedById: actor.id, removedReason: reason } });
+      await this.moved.update(tx, ATTACHMENTS, org.id, id, { removedAt: new Date(), removedById: actor.id, removedReason: reason });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'attachment.removed', entityType: 'attachment', entityId: id, data: { fileName: a.fileName, reason } });
       return { id, removed: true };
     });

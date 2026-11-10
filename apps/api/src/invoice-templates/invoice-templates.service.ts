@@ -27,6 +27,8 @@ import { createHash } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DOCUMENTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
 
 export interface TemplateOrg {
@@ -71,6 +73,7 @@ export class InvoiceTemplatesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly moved: MovedTables,
   ) {}
 
   private invalid(message: string, details?: unknown): never {
@@ -463,7 +466,7 @@ export class InvoiceTemplatesService {
         const t = await this.find(tx, org.id, templateId);
         if (t.archivedAt) throw new DomainError('TEMPLATE_ARCHIVED', 'That template is archived', HttpStatus.CONFLICT);
       }
-      await tx.document.update({ where: { id: documentId }, data: { templateId } });
+      await this.moved.update(tx, DOCUMENTS, org.id, documentId, { templateId, updatedAt: new Date() });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.template_set', entityType: 'document', entityId: documentId, data: { templateId, before: d.templateId } });
     });
     return this.printData(org, documentId);
