@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 802 |
+| Not started | 801 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 426 |
+| Tested | 427 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 10 | 33 |
-| Accounts payable | M2 | 36 | 15 | 21 |
+| Accounts payable | M2 | 36 | 14 | 22 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1065,6 +1065,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice
   - apps/web/e2e/sales-flow.test.mjs
+
+### AP-019 — Supplier tax validation
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Per active vendor: GSTIN and PAN validity and agreement, state, TDS without PAN, duplicate GSTIN/PAN across vendors, GST bills without GSTIN or under an older GSTIN, wrong tax head, plus GST portal checks recorded by people (append-only, audited) flagging cancelled/suspended/composition suppliers and the bills affected, stale checks and name differences. Not built: automatic GSP lookup (needs keys).
+- Evidence:
+  - packages/tax-engine/src/india/supplier-checks.ts
+  - packages/tax-engine/test/supplier-checks.test.ts
+  - packages/database/prisma/migrations/20261214090000_supplier_tax_checks/migration.sql
+  - apps/api/src/supplier-tax/supplier-tax.service.ts
+  - apps/api/test/supplier-tax.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/supplier-tax/page.tsx
+  - apps/web/src/components/supplier-tax/gstin-checks-card.tsx
+  - apps/web/e2e/supplier-tax-flow.test.mjs
+  - docs/SUPPLIER_TAX_CHECKS.md
 
 ### AP-021 — Vendor performance tracking
 
