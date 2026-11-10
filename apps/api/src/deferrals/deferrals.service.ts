@@ -23,6 +23,8 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
+import { lockName, lockRow } from '../db/locks';
 
 export interface DeferralOrg {
   id: string;
@@ -139,19 +141,16 @@ export class DeferralsService {
   }
 
   private async nextNumber(tx: Tx, orgId: string, key: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${key}, 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, key) }];
     return value;
   }
 
   private lockOrg(tx: Tx, orgId: string) {
-    return tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'deferrals:' + orgId}))`;
+    return lockName(tx, 'deferrals:' + orgId);
   }
 
   private async lockSchedule(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM deferral_schedules WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'deferral_schedules', id, orgId);
     const s = await tx.deferralSchedule.findFirst({ where: { id, orgId } });
     if (!s) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Schedule not found' });
     return s;
@@ -597,7 +596,7 @@ export class DeferralsService {
   async cancelAccrual(org: DeferralOrg, actor: Actor, id: string, note: string) {
     await this.prisma.$transaction(
       async (tx) => {
-        await tx.$queryRaw`SELECT id FROM accruals WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+        await lockRow(tx, 'accruals', id, org.id);
         const a = await tx.accrual.findFirst({ where: { id, orgId: org.id } });
         if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Accrual not found' });
         if (a.status === 'CANCELLED') throw new DomainError('ACCRUAL_CANCELLED', 'This accrual is already cancelled', HttpStatus.CONFLICT);

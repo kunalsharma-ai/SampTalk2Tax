@@ -8,7 +8,9 @@ import { DomainError } from '../../common/errors';
 import { PrismaService, Tx, withSystemAccess } from '../../common/prisma.service';
 import { BillingService, serializePlan } from '../billing.service';
 import { GatewayError, PaymentGateway, PaymentState, Provider, SignatureError } from './gateways';
+import { nextPlatformCounter } from '../../db/counters';
 import { PaymentSettingsService } from './payment-settings.service';
+import { lockRow } from '../../db/locks';
 
 const DAY = 86_400_000;
 const REF_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -305,7 +307,7 @@ export class SubscriptionPaymentsService {
    */
   async markPaid(invoiceId: string, p: { gateway: Provider | 'MANUAL'; paymentId: string | null; amountMinor: number | null; currency: string | null; source: string; actorId?: string | null; reference?: string }, now = new Date()) {
     return this.system(async (tx) => {
-      await tx.$executeRaw`SELECT 1 FROM subscription_invoices WHERE id = ${invoiceId}::uuid FOR UPDATE`;
+      await (lockRow(tx, 'subscription_invoices', invoiceId)).then((r) => r.length);
       const inv = await tx.subscriptionInvoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { plan: true } });
       const actorId = p.actorId ?? null;
       if (inv.status === 'PAID') return { invoice: serializeInvoice(inv), applied: false, problem: null as string | null };
@@ -319,10 +321,7 @@ export class SubscriptionPaymentsService {
         return { invoice: serializeInvoice(inv), applied: false, problem: 'invoice was replaced' };
       }
       const fy = indianFinancialYear(now);
-      const [{ last }] = await tx.$queryRaw<{ last: number }[]>`
-        INSERT INTO subscription_invoice_counters (series, last) VALUES (${fy.label}, 1)
-        ON CONFLICT (series) DO UPDATE SET last = subscription_invoice_counters.last + 1
-        RETURNING last`;
+      const last = await nextPlatformCounter(tx, fy.label);
       const prefix = (await tx.platformBillingProfile.findUnique({ where: { id: 1 }, select: { invoicePrefix: true } }))?.invoicePrefix ?? 'T2T';
       const number = taxInvoiceNumber(prefix, fy.label, last!);
       const paymentRef = (p.reference ?? p.paymentId ?? inv.checkoutRef ?? inv.reference).slice(0, 200);

@@ -7,6 +7,8 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
+import { nextCounter } from '../db/counters';
+import { holdLock, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface BatchOrg {
@@ -116,6 +118,7 @@ export class PaymentBatchesService {
     if (!this.can(org).verifyBankDetails) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Verifying bank details needs approvals.decide' });
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT contact_id FROM vendor_bank_details WHERE contact_id = ${contactId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await holdLock(`vendor_bank_details:${contactId}`);
       const d = await tx.vendorBankDetails.findFirst({ where: { contactId, orgId: org.id } });
       if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'This vendor has no bank details' });
       if (d.verifiedAt) throw new DomainError('ALREADY_VERIFIED', 'These bank details are already verified', HttpStatus.CONFLICT);
@@ -189,9 +192,7 @@ export class PaymentBatchesService {
     this.assert(this.can(org).prepare, 'Preparing a payment batch needs purchases.manage');
     const id = await this.prisma.$transaction(async (tx) => {
       const bank = await this.checkBank(tx, org.id, input.bankAccountId);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'payment_batch', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'payment_batch') }];
       const b = await tx.paymentBatch.create({ data: { orgId: org.id, number, bankAccountId: bank.id, paymentDate: toDbDate(input.paymentDate), currency: org.functionalCurrency, memo: input.memo?.trim() || null, createdById: actor.id } });
       await this.setItems(tx, org, b.id, b.currency, input.items);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'payment_batch.created', entityType: 'payment_batch', entityId: b.id, data: { reference: batchRef(number), items: input.items.length } });
@@ -470,7 +471,7 @@ export class PaymentBatchesService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM payment_batches WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'payment_batches', id, orgId);
     const b = await tx.paymentBatch.findFirst({ where: { id, orgId }, include: BATCH_INCLUDE });
     if (!b) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment batch not found' });
     return b;

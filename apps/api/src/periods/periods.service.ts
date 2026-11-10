@@ -8,6 +8,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { runInOrg } from '../common/tenant-context';
 import { fiscalPeriods, type FiscalPeriodDoc } from '../db/collections/chart';
 import { PostgresMirrorService, postgresWithMongo, thenInPostgres } from '../db/postgres-mirror.service';
+import { lockRow } from '../db/locks';
 
 /**
  * Fiscal years and their periods. MongoDB holds them; each change is copied to PostgreSQL,
@@ -96,7 +97,7 @@ export class PeriodsService {
    */
   async setLocked(orgId: string, periodId: string, actorId: string, locked: boolean) {
     return postgresWithMongo(this.prisma, async (tx, undoLater) => {
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM fiscal_periods WHERE id = ${periodId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+      const rows = await lockRow<{ id: string }>(tx, 'fiscal_periods', periodId, orgId);
       const p = rows[0] ? await this.periods(orgId, (c) => c.findOne({ id: periodId })) : null;
       if (!p) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Period not found' });
       if (p.status === 'CLOSED') throw new ConflictException({ error: 'PERIOD_CLOSED', message: 'Closed periods cannot be changed' });

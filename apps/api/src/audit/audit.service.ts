@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@talk2tax/database';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
+import { lockName } from '../db/locks';
 
 export interface AuditInput {
   orgId: string | null;
@@ -41,7 +42,7 @@ export class AuditService {
 
   private async appendRow(tx: Tx, input: AuditInput): Promise<void> {
     const chainKey = input.orgId ?? 'global';
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'audit:' + chainKey}))`;
+    await lockName(tx, 'audit:' + chainKey);
     const prev = await tx.auditEvent.findFirst({
       where: { orgId: input.orgId },
       orderBy: { id: 'desc' },

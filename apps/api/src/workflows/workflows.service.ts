@@ -36,6 +36,7 @@ import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { checkWebhookUrl, WebhookAddressError } from './webhook';
 import { EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, sampleDueDocument } from './workflow-facts';
 import { Attempt, EmailPreview, WorkflowRunnerService } from './workflow-runner.service';
+import { lockName, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 
@@ -131,7 +132,7 @@ export class WorkflowsService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM workflows WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'workflows', id, orgId);
     const w = await tx.workflow.findFirst({ where: { id, orgId }, include: { versions: { orderBy: { version: 'desc' }, take: 1 } } });
     if (!w) throw new NotFoundException('Workflow not found');
     return w;
@@ -172,7 +173,7 @@ export class WorkflowsService {
       let from: bigint | null = w.activeFromEventId;
       if (enabled) {
         // Taken under the organisation's audit lock, so no event can commit below this point afterwards.
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'audit:' + org.id}))`;
+        await lockName(tx, 'audit:' + org.id);
         from = (await tx.auditEvent.aggregate({ where: { orgId: org.id }, _max: { id: true } }))._max.id ?? 0n;
       }
       await tx.workflow.update({ where: { id }, data: { enabled, activeFromEventId: from, ...(enabled ? { activatedAt: new Date() } : {}) } });
@@ -468,7 +469,7 @@ export class WorkflowsService {
   /** Sends a failed webhook or email once more, now. */
   async retry(org: OrgContext, actor: Actor, runId: string, position: number) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM workflow_runs WHERE id = ${runId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'workflow_runs', runId, org.id);
       const run = await tx.workflowRun.findFirst({ where: { id: runId, orgId: org.id }, include: { actions: { where: { position } } } });
       const a = run?.actions[0];
       if (!run || !a) throw new NotFoundException('Run or action not found');

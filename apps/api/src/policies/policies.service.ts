@@ -25,6 +25,7 @@ import type { CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { loadEventFacts } from '../workflows/workflow-facts';
 import { WorkflowsService } from '../workflows/workflows.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export type PolicyInput = { name: string; statement: string; rules: PolicyRule[]; tests: PolicyTest[]; note?: string | null };
@@ -184,7 +185,7 @@ export class PoliciesService {
     const rules = this.validate(input);
     await this.nameFree(orgId, input.name.trim(), id);
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM policies WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'policies', id, orgId);
       const p = await tx.policy.findFirst({ where: { id, orgId } });
       if (!p) throw new DomainError('NOT_FOUND', 'Policy not found', HttpStatus.NOT_FOUND);
       if (p.version !== input.baseVersion) throw new DomainError('POLICY_CHANGED', `Someone saved version ${p.version} of this policy while you were editing. Reload it and make your change again.`, HttpStatus.CONFLICT);

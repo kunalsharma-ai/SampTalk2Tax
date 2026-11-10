@@ -15,6 +15,7 @@ import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { MailerService } from '../workflows/email';
+import { lockName, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type Member = { orgId: string; role: RoleName };
@@ -248,7 +249,7 @@ export class CollectionsService {
     const today = todayIst();
 
     const created = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'collections:' + orgId}))`;
+      await lockName(tx, 'collections:' + orgId);
       const running = await tx.collectionRun.findFirst({ where: { orgId, status: 'RUNNING' } });
       if (running) {
         if (Date.now() - running.createdAt.getTime() < ABANDONED_AFTER_MS || this.inflight.has(running.id)) {
@@ -377,7 +378,7 @@ export class CollectionsService {
     const { orgId } = member;
     await this.prisma.$transaction(
       async (tx) => {
-        await tx.$queryRaw`SELECT id FROM collection_drafts WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+        await lockRow(tx, 'collection_drafts', id, orgId);
         const d = await tx.collectionDraft.findFirst({ where: { id, orgId } });
         if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Reminder not found' });
         if (d.status !== 'READY' && d.status !== 'SEND_FAILED') throw new DomainError('NOT_SENDABLE', `This reminder is ${d.status.toLowerCase().replace('_', ' ')} and cannot be sent`, HttpStatus.CONFLICT);
@@ -433,7 +434,7 @@ export class CollectionsService {
   async reject(member: Member, actor: Actor, id: string, note: string | null) {
     const { orgId } = member;
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM collection_drafts WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'collection_drafts', id, orgId);
       const d = await tx.collectionDraft.findFirst({ where: { id, orgId } });
       if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Reminder not found' });
       if (d.status !== 'READY') throw new DomainError('NOT_REJECTABLE', 'Only a reminder waiting for review can be rejected', HttpStatus.CONFLICT);

@@ -28,6 +28,7 @@ import { addDays, ROLE_LABELS, TasksService, todayIst } from '../tasks/tasks.ser
 import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { sendWebhook, signPayload, WebhookResult } from './webhook';
 import { dueDocuments, EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, WATCHED_ACTIONS } from './workflow-facts';
+import { lockRow } from '../db/locks';
 
 /** Events read for one organisation in one transaction. */
 const EVENT_BATCH = 200;
@@ -459,7 +460,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
   /** Records one delivery attempt: done, waiting for the next try, or failed for good. */
   private async recordAttempt(id: string, runId: string, attempt: number, res: Omit<Attempt, 'at'>, next: Date | null, now: Date) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM workflow_action_runs WHERE id = ${id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'workflow_action_runs', id);
       const fresh = await tx.workflowActionRun.findUniqueOrThrow({ where: { id } });
       if (fresh.status !== 'PENDING') return;
       const history = [...(((fresh.result as { attempts?: Attempt[] }).attempts ?? []) as Attempt[]), { at: now.toISOString(), ...res }].slice(-HISTORY_KEPT);

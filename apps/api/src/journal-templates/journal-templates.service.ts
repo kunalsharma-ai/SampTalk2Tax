@@ -24,6 +24,8 @@ import { tenantStorage } from '../common/tenant-context';
 import { checkLineDimensions } from '../dimensions/check';
 import { JournalsService } from '../journals/journals.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface TemplateOrg {
@@ -142,10 +144,7 @@ export class JournalTemplatesService {
     this.assertMode(org, input.schedule?.postMode);
     const id = await this.prisma.$transaction(async (tx) => {
       const data = await this.prepare(tx, org, input);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'journal_template', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'journal_template') }];
       const t = await tx.journalTemplate.create({ data: { ...data.header, orgId: org.id, number, createdById: actor.id, lines: { create: data.lines } } });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'journal_template.created', entityType: 'journal_template', entityId: t.id, data: { reference: templateRef(number), name: t.name, schedule: data.header.frequency ?? null } });
       return t.id;
@@ -451,7 +450,7 @@ export class JournalTemplatesService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string): Promise<Full> {
-    await tx.$queryRaw`SELECT id FROM journal_templates WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'journal_templates', id, orgId);
     const t = await tx.journalTemplate.findFirst({ where: { id, orgId }, include: { lines: LINES } });
     if (!t) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Template not found' });
     return t;

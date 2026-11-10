@@ -27,6 +27,8 @@ import { fromDbDate, istDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export interface CrmOrg {
   id: string;
@@ -106,10 +108,7 @@ export class CrmService {
   }
 
   private async nextNumber(tx: Tx, orgId: string, key: 'crm_lead' | 'crm_deal') {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${key}, 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, key) }];
     return value;
   }
 
@@ -129,8 +128,8 @@ export class CrmService {
   }
 
   private async lock(tx: Tx, table: 'crm_leads' | 'crm_deals', orgId: string, id: string) {
-    if (table === 'crm_leads') await tx.$queryRaw`SELECT id FROM crm_leads WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
-    else await tx.$queryRaw`SELECT id FROM crm_deals WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    if (table === 'crm_leads') await lockRow(tx, 'crm_leads', id, orgId);
+    else await lockRow(tx, 'crm_deals', id, orgId);
   }
 
   private async lockLead(tx: Tx, orgId: string, id: string) {

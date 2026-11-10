@@ -16,6 +16,8 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
+import { lockName, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type Db = Tx | PrismaService;
@@ -120,7 +122,7 @@ export class RevenueRecognitionService {
   async setForDocument(org: RecOrg, actor: Actor, documentId: string, lines: LineRecognitionInput[]) {
     if (!this.can(org).manage) throw new DomainError('FORBIDDEN', 'Changing revenue recognition needs sales.manage', HttpStatus.FORBIDDEN);
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM documents WHERE id = ${documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'documents', documentId, org.id);
       const doc = await tx.document.findFirst({ where: { id: documentId, orgId: org.id }, select: { kind: true, status: true, lines: { select: { lineNo: true, netAmount: true, account: { select: { type: true } } } } } });
       if (!doc || doc.kind !== 'INVOICE') throw new NotFoundException({ error: 'NOT_FOUND', message: 'Invoice not found' });
       if (doc.status !== 'DRAFT') this.invalid('Revenue recognition is set while the invoice is a draft', 'NOT_DRAFT');
@@ -179,10 +181,7 @@ export class RevenueRecognitionService {
     const out: string[] = [];
     for (const [i, x] of p.plan.entries()) {
       const amount = useJournal ? new D(credited[i]!.functionalCredit.toFixed()).minus(credited[i]!.functionalDebit.toFixed()).toFixed(scale) : functionalNet(x.net, doc.exchangeRate, scale);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, ${'deferred_revenue'}, 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'deferred_revenue') }];
       const desc = docLines.find((l) => l.lineNo === x.lineNo)?.description;
       const s = await tx.deferralSchedule.create({
         data: {
@@ -216,7 +215,7 @@ export class RevenueRecognitionService {
   async onVoid(tx: Tx, org: RecOrg, actor: Actor, doc: { id: string; number: string }, date: string) {
     const rows = await tx.invoiceLineRecognition.findMany({ where: { orgId: org.id, documentId: doc.id, scheduleId: { not: null } } });
     if (!rows.length) return;
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'deferrals:' + org.id}))`;
+    await lockName(tx, 'deferrals:' + org.id);
     const scale = minorUnits(org.functionalCurrency);
     for (const r of rows) {
       const s = await tx.deferralSchedule.findUniqueOrThrow({ where: { id: r.scheduleId! } });

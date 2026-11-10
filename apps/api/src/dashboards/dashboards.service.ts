@@ -28,6 +28,7 @@ import { AppConfig, CONFIG } from '../config';
 import type { CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { KpisService, monthEnd, shiftMonth } from '../kpis/kpis.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export type DashboardInput = { name: string; description?: string | null; config: unknown };
@@ -174,7 +175,7 @@ export class DashboardsService {
     const config = this.check(input.config);
     await this.nameFree(org.id, input.name.trim(), id);
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM dashboards WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'dashboards', id, org.id);
       const d = await tx.dashboard.findFirst({ where: { id, orgId: org.id } });
       if (!d) throw new DomainError('NOT_FOUND', 'Dashboard not found', HttpStatus.NOT_FOUND);
       if (d.version !== input.baseVersion) throw new DomainError('DASHBOARD_CHANGED', 'Someone changed this dashboard while you were editing. Reload it and make your change again.', HttpStatus.CONFLICT);

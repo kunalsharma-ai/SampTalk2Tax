@@ -192,6 +192,17 @@ the locks, counters and trigger rules into the API and step 10 removes PostgreSQ
 * Raw `INSERT`, `UPDATE` and `DELETE` statements on mirrored tables bring MongoDB in step by
   themselves: rows the transaction wrote are found by `xmin`, deleted ones by comparing ids.
 
+**Numbering and locks (step 9).** Every numbered series (journal entries, documents, orders,
+claims, runs, the platform's tax invoices) takes its next number from a MongoDB counter in
+`_sequences` (`db/counters.ts`), inside the caller's transaction, so a rollback gives the
+number back. Records and names are locked with `lockRow` and `lockName` (`db/locks.ts`), which
+write a lock document in `_row_locks` inside the transaction. While PostgreSQL runs, each still
+takes its PostgreSQL row or advisory lock first, so concurrent work waits instead of failing,
+and a counter that was never copied catches up to `org_counters`. When two MongoDB
+transactions meet on the same counter or lock, the second gets a write conflict and its
+callback runs again after a short random wait (up to 40 tries). Work-queue leases
+(`FOR UPDATE SKIP LOCKED`) move with the writes in step 10.
+
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
 moved tables' rows into MongoDB and leaves records already there alone, so it is safe to

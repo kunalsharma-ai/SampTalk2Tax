@@ -22,6 +22,8 @@ import { byCode } from '../db/subledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { addDays, todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export interface LoanOrg {
   id: string;
@@ -136,15 +138,12 @@ export class LoansService {
   }
 
   private async nextNumber(tx: Tx, orgId: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, 'loan', 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, 'loan') }];
     return value;
   }
 
   private async lockLoan(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM loans WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'loans', id, orgId);
     const loan = await tx.loan.findFirst({ where: { id, orgId } });
     if (!loan) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Loan not found' });
     return loan;

@@ -16,6 +16,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
+import { lockName, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 
@@ -290,7 +291,7 @@ export class BankAiService {
 
     const created = await this.prisma.$transaction(
       async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'bank-ai:' + org.id}))`;
+        await lockName(tx, 'bank-ai:' + org.id);
         const running = await tx.bankAiRun.findFirst({ where: { orgId: org.id, status: 'RUNNING' } });
         if (running) {
           if (Date.now() - running.createdAt.getTime() < ABANDONED_AFTER_MS || this.inflight.has(running.id)) {
@@ -452,7 +453,7 @@ export class BankAiService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM bank_ai_suggestions WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'bank_ai_suggestions', id, orgId);
     const s = await tx.bankAiSuggestion.findFirst({ where: { id, orgId } });
     if (!s) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Suggestion not found' });
     return s;

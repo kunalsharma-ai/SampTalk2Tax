@@ -39,12 +39,14 @@ import { ALLOCATIONS, APPROVAL_REQUESTS, DOCUMENTS, newAllocation, newDocument, 
 import { MovedTables } from '../db/moved-table';
 import { CustomerOnboardingService } from '../customer-onboarding/customer-onboarding.service';
 import { DomainError } from '../common/errors';
+import { nextCounter } from '../db/counters';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
 import { JournalsService } from '../journals/journals.service';
 import { WithholdingFacts, WithholdingService } from '../withholding/withholding.service';
 import { assertBillMatches, checkBillOrder } from '../purchase-orders/matching';
 import { ledgerKinds, SubledgerService } from './subledger.service';
+import { lockRow } from '../db/locks';
 
 export interface LedgerOrg {
   id: string;
@@ -527,7 +529,7 @@ export class DocumentsService {
   /** Take back an allocation. The row stays for history, stamped with the day it was removed. */
   async removeAllocation(org: LedgerOrg, actor: Actor, ledger: Ledger, allocationId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM allocations WHERE id = ${allocationId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      const rows = await lockRow<{ id: string }>(tx, 'allocations', allocationId, org.id);
       if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Allocation not found' });
       const al = await tx.allocation.findUniqueOrThrow({ where: { id: allocationId }, include: { target: true } });
       if (ledgerOf(al.target.kind) !== ledger) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Allocation not found' });
@@ -852,15 +854,11 @@ export class DocumentsService {
   }
 
   private async nextNumber(tx: Tx, orgId: string, kind: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${`doc:${kind}`}, 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
-    return value;
+    return nextCounter(tx, orgId, `doc:${kind}`);
   }
 
   private async lockDocument(tx: Tx, orgId: string, ledger: Ledger, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM documents WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'documents', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
     const d = await tx.document.findUniqueOrThrow({ where: { id } });
     if (ledgerOf(d.kind) !== ledger) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
@@ -868,7 +866,7 @@ export class DocumentsService {
   }
 
   private async lockPayment(tx: Tx, orgId: string, ledger: Ledger, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM payments WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'payments', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });
     const p = await tx.payment.findUniqueOrThrow({ where: { id } });
     if (p.kind !== ledgerKinds(ledger).payment) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });

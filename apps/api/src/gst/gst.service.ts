@@ -20,6 +20,7 @@ import { DomainError } from '../common/errors';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { lineSums, postedBetween } from '../db/ledger-queries';
+import { lockRow } from '../db/locks';
 
 export interface GstAccountsInput {
   outputCgstAccountId: string;
@@ -89,7 +90,7 @@ export class GstService {
     if (!check.valid) throw new DomainError('INVALID_GSTIN', check.issues.join('; '));
     return this.prisma.$transaction(async (tx) => {
       // Serialise registration changes per organisation.
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', orgId);
       const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
       if (org.countryCode !== 'IN' || org.functionalCurrency !== 'INR') {
         throw new DomainError('NOT_INDIA', 'GST registration is available to organisations in India that keep their books in INR');
