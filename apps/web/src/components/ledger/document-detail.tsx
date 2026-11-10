@@ -20,6 +20,7 @@ import { LineDimensionTags } from '@/components/dimensions/line-dimensions';
 import { useDimensions } from '@/lib/dimensions';
 import { DISPUTE_REASON_LABEL, type DisputeList } from '@/lib/disputes';
 import { BillMatchPanel } from '@/components/purchase-orders/bill-match-panel';
+import { PaymentLinksPanel } from '@/components/payment-links/payment-links-panel';
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
 import { DocumentForm } from './document-form';
 import { DocStatus } from './documents-table';
@@ -53,7 +54,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
   const disputes = useQuery({ enabled: disputable, queryKey: ['disputes', orgId, 'invoice', documentId], queryFn: () => api<DisputeList>(`/v1/orgs/${orgId}/sales/disputes?status=open&documentId=${documentId}`) });
   const openDispute = disputable ? disputes.data?.disputes[0] : undefined;
   const refresh = async () => {
-    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill', 'disputes', 'bill-match', 'purchase-orders']) await qc.invalidateQueries({ queryKey: [k, orgId] });
+    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill', 'disputes', 'bill-match', 'purchase-orders', 'payment-links']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
   const post = useMutation({ mutationFn: () => api<FinancialDocument>(`${base}/documents/${documentId}/post`, { method: 'POST', body: { overrideCreditLimit: override } }), onSuccess: refresh });
   const remove = useMutation({
@@ -216,6 +217,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
 
       {l.ledger === 'SALES' && org.countryCode === 'IN' && d.status !== 'DRAFT' && (d.kind === 'INVOICE' || d.kind === 'CREDIT_NOTE') ? <EInvoicePanel orgId={orgId} documentId={d.id} canManage={canManage} onChange={refresh} /> : null}
       {l.ledger === 'SALES' && org.countryCode === 'IN' && d.status !== 'DRAFT' && d.kind === 'INVOICE' ? <EWayBillPanel orgId={orgId} documentId={d.id} issueDate={d.issueDate} canManage={canManage} onChange={refresh} /> : null}
+
+      {l.ledger === 'SALES' && d.kind === 'INVOICE' && d.status === 'POSTED' ? <PaymentLinksPanel orgId={orgId} documentId={d.id} onChange={refresh} /> : null}
 
       <ApprovalCard documentId={d.id} isDraft={d.status === 'DRAFT'} canManage={canManage} currency={c} onChange={refresh} />
 

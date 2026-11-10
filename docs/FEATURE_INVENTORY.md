@@ -121,22 +121,22 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 |---|---|---|---|---|
 | AR-001 |  | rule | Build a comprehensive AR module | Implementing |
 | AR-002 |  | capability | Customer management | Tested |
-| AR-003 |  | capability | Customer onboarding | Not started |
+| AR-003 |  | capability | Customer onboarding | Tested |
 | AR-004 |  | capability | Customer credit limits | Tested |
 | AR-005 |  | capability | Quotations | Tested |
-| AR-006 |  | capability | Estimates | Not started |
+| AR-006 |  | capability | Estimates | Tested |
 | AR-007 |  | capability | Sales orders | Tested |
 | AR-008 |  | capability | Pro forma invoices | Tested |
 | AR-009 |  | capability | Tax invoices | Tested |
 | AR-010 |  | capability | Recurring invoices | Tested |
 | AR-011 |  | capability | Subscription billing | Implementing |
 | AR-012 |  | capability | Usage-based billing | Not started |
-| AR-013 |  | capability | Milestone billing | Not started |
-| AR-014 |  | capability | Progress billing | Not started |
-| AR-015 |  | capability | Retainer billing | Not started |
+| AR-013 |  | capability | Milestone billing | Tested |
+| AR-014 |  | capability | Progress billing | Tested |
+| AR-015 |  | capability | Retainer billing | Tested |
 | AR-016 |  | capability | Credit notes | Tested |
 | AR-017 |  | capability | Debit notes | Tested |
-| AR-018 |  | capability | Payment links | Not started |
+| AR-018 |  | capability | Payment links | Tested |
 | AR-019 |  | capability | Payment allocation | Tested |
 | AR-020 |  | capability | Partial payments | Tested |
 | AR-021 |  | capability | Advance payments | Tested |
@@ -170,7 +170,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | AP-001 |  | capability | Supplier management | Tested |
-| AP-002 |  | capability | Vendor onboarding | Not started |
+| AP-002 |  | capability | Vendor onboarding | Tested |
 | AP-003 |  | capability | Purchase invoices | Tested |
 | AP-004 |  | capability | Supplier bills | Tested |
 | AP-005 |  | capability | Recurring bills | Tested |
@@ -189,7 +189,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-018 |  | capability | Duplicate invoice detection | Tested |
 | AP-019 |  | capability | Supplier tax validation | Not started |
 | AP-020 |  | capability | Expense classification | Not started |
-| AP-021 |  | capability | Vendor performance tracking | Not started |
+| AP-021 |  | capability | Vendor performance tracking | Tested |
 | AP-022 |  | capability | Payment reconciliation | Tested |
 | AP-023 |  | capability | International payment preparation | Not started |
 | AP-024 |  | capability | Vendor risk monitoring | Not started |

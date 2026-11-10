@@ -61,3 +61,8 @@ export * from './customer-insights';
 export * from './revenue-forecast';
 export * from './crm-api';
 export * from './purchase-orders';
+export * from './project-billing';
+export * from './retainers';
+export * from './payment-links';
+export * from './customer-onboarding';
+export * from './vendor-performance';

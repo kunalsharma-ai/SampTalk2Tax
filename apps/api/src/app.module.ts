@@ -162,6 +162,14 @@ import { CrmService } from './crm/crm.service';
 import { SalesOrdersService } from './sales-orders/sales-orders.service';
 import { ProFormaController } from './sales-orders/pro-forma.controller';
 import { ProFormaService } from './sales-orders/pro-forma.service';
+import { RetainersController } from './sales-orders/retainers.controller';
+import { PaymentLinksController, PaymentLinkWebhooksController } from './payment-links/payment-links.controller';
+import { PaymentLinksService } from './payment-links/payment-links.service';
+import { CustomerOnboardingController, VendorOnboardingController } from './customer-onboarding/customer-onboarding.controller';
+import { CustomerOnboardingService } from './customer-onboarding/customer-onboarding.service';
+import { VendorPerformanceController } from './vendor-performance/vendor-performance.controller';
+import { VendorPerformanceService } from './vendor-performance/vendor-performance.service';
+import { RetainersService } from './sales-orders/retainers.service';
 import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
 import { PurchaseOrdersService } from './purchase-orders/purchase-orders.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
@@ -265,6 +273,12 @@ export class AppModule {
         PaymentScheduleController,
         DisputesController,
         ProFormaController,
+    RetainersController,
+    PaymentLinksController,
+    CustomerOnboardingController,
+    VendorPerformanceController,
+    VendorOnboardingController,
+    PaymentLinkWebhooksController,
     PurchaseOrdersController,
     BillMatchController,
         VendorBankDetailsController,
@@ -364,6 +378,10 @@ export class AppModule {
         PaymentScheduleService,
         DisputesService,
         ProFormaService,
+    RetainersService,
+    PaymentLinksService,
+    CustomerOnboardingService,
+    VendorPerformanceService,
     PurchaseOrdersService,
         JournalTemplatesRunnerService,
         RecurringBillsService,

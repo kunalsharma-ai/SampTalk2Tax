@@ -230,6 +230,41 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the vendor, dates, terms, matching, tolerances or lines, then save. An issued order cannot change; close it and raise a new one.',
     where: 'Purchases. Opened with Edit on a draft purchase order.',
   },
+  'sales/payment-links': {
+    what: 'Payment links: links customers open to pay an invoice online through your own Razorpay or Stripe account, with what was paid and the receipt each paid link recorded.',
+    how: 'Make a link from a posted invoice with Make payment link. Show open, paid, cancelled or expired links. Open an invoice to copy, check or cancel its link.',
+    where: 'Sales. Set up the gateways under Settings → Payment gateways. A paid link is an ordinary receipt into the gateway\'s bank account.',
+  },
+  'settings/payment-gateways': {
+    what: 'Your organisation\'s own Razorpay and Stripe accounts, used for payment links on invoices: keys, mode, currencies, the bank account payouts go to and the webhook address.',
+    how: 'Enter the keys from the gateway\'s dashboard, choose the currencies and the bank account, save, then Test connection. Add the webhook address shown here at the gateway so payments are confirmed straight away.',
+    where: 'Governance. Keys are stored encrypted and never shown again. Each currency is paid through one gateway.',
+  },
+  'purchases/vendor-performance': {
+    what: 'Vendor performance: a score and grade for each vendor from their deliveries against expected dates, goods rejected on receipt, bills that needed differences accepted and the team\'s reviews, with what they billed above the order price.',
+    how: 'Pick a period (by default the last twelve months). Open a vendor to see each order\'s delivery and to add or withdraw reviews.',
+    where: 'Purchases. Figures come from purchase orders, goods receipts and posted bills and vendor credits; the rules are listed at the bottom of the page.',
+  },
+  'purchases/onboarding': {
+    what: 'Vendor onboarding: new vendors\' tax details, verified bank account, documents and payment terms, collected and approved before their bills are posted or they are paid, with the organisation\'s own checklist.',
+    how: 'Switch on onboarding for new vendors and set the checklist at the bottom. Open a vendor to tick items off, attach files, verify their bank details, propose payment terms and submit; someone with approval rights approves or rejects.',
+    where: 'Purchases. Approval sets the vendor\'s payment terms. Bills from a vendor whose onboarding is not approved cannot be posted, and they cannot be paid.',
+  },
+  'sales/onboarding': {
+    what: 'Customer onboarding: new customers\' details, documents and credit terms, collected and approved before they are invoiced, with the organisation\'s own checklist.',
+    how: 'Switch on onboarding for new customers and set the checklist at the bottom. Open a customer to tick items off, attach files, propose credit terms and submit; someone with approval rights approves or rejects.',
+    where: 'Sales. Approval sets the customer\'s credit limit and payment terms. Invoices to a customer whose onboarding is not approved cannot be posted.',
+  },
+  'sales/retainers': {
+    what: 'Retainers: money customers keep on account with you at an agreed level, held as their receipts not yet applied, with what each holds and any top-up due.',
+    how: 'New retainer agrees the amount and the minimum. Open one to record a receipt into it, pay invoices from it, or close it once it holds nothing.',
+    where: 'Sales. Retainer receipts are ordinary receipts, so the customer shows in credit in receivables until the retainer pays their invoices.',
+  },
+  'sales/retainers/[id]': {
+    what: 'One retainer: its terms, the receipts that make it up, the invoices it has paid and the customer\'s open invoices.',
+    how: 'Record receipt… posts a new receipt into it; Pay invoices… applies it to invoices, oldest receipt first. A top-up is due when the balance falls below the minimum.',
+    where: 'Opened from Retainers.',
+  },
   'sales/pro-formas': {
     what: 'Pro forma invoices: what a customer will be billed, sent before the sale to collect an advance or for their approvals. Not a tax invoice; nothing is posted.',
     how: 'New pro forma invoice, or Make pro forma invoice… on a sent or accepted quotation. Issue it, print it, then Make tax invoice… when you supply or are paid.',
@@ -641,6 +676,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   register: { what: 'Create your Talk2Tax account.', how: 'Enter your name, email and a long password.', where: 'After this you create or join an organisation.' },
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },
   'invite/[id]': { what: 'An invitation to join an organisation.', how: 'Sign in or create an account, then accept.', where: 'After accepting, the organisation appears in your list.' },
+  paid: { what: 'Where a customer lands after paying a payment link: a thank-you with the link reference.', how: 'Nothing to do here. The invoice is marked paid from the gateway\'s own signed notice, not from this page.', where: 'Open to anyone; it shows nothing from the books.' },
   // ---------------------------------------------------------------- platform administration
   admin: {
     what: 'Platform administration: organisations, people, plans, payments, support and system health.',

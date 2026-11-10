@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 814 |
+| Not started | 806 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 414 |
+| Tested | 422 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,8 +25,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 19 | 24 |
-| Accounts payable | M2 | 36 | 18 | 18 |
+| Accounts receivable | M2 | 43 | 13 | 30 |
+| Accounts payable | M2 | 36 | 16 | 20 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -454,6 +454,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - /v1/orgs/:orgId/contacts
   - apps/web/src/app/orgs/[orgId]/sales/customers
 
+### AR-003 — Customer onboarding
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: One onboarding per customer: details read from the customer (email, address with PIN, GSTIN or PAN, proposed credit terms) plus the organisation's own checklist (files where needed, attachments type CUSTOMER_ONBOARDING); submit, second-person approval (self-approved only when nobody else can) sets credit limit and terms, reject with reason, reopen. Optional setting starts onboarding for every new customer (contacts trigger). Invoices to a customer with an unapproved onboarding do not post. Not built: customer self-service portal.
+- Evidence:
+  - packages/accounting-engine/src/customer-onboarding.ts
+  - packages/accounting-engine/test/customer-onboarding.test.ts
+  - packages/database/prisma/migrations/20261207090000_customer_onboarding/migration.sql
+  - apps/api/src/customer-onboarding/customer-onboarding.service.ts
+  - apps/api/test/customer-onboarding.e2e.test.ts
+  - apps/web/src/components/onboarding/onboarding-panel.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/onboarding/page.tsx
+  - apps/web/e2e/customer-onboarding-flow.test.mjs
+  - docs/CUSTOMER_ONBOARDING.md
+
 ### AR-004 — Customer credit limits
 
 - Module: Accounts receivable
@@ -476,6 +492,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/quotes-orders-flow.test.mjs
   - docs/QUOTES_AND_ORDERS.md
   - apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx
+
+### AR-006 — Estimates
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Estimates are the quotations of CRM slice 2 (QT-0001, revisions -R2): worked out by the invoice rules, sent, revised, declined, expired, accepted into sales orders; pro forma invoices made from them (AR-008).
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/accounting-engine/test/sales-orders.test.ts
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/sales/quotes/[quoteId]/page.tsx
+  - docs/QUOTES_AND_ORDERS.md
 
 ### AR-007 — Sales orders
 
@@ -548,6 +578,51 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/CONTRACTS.md
   - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
 
+### AR-013 — Milestone billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Sales orders billed by milestones: plan named shares (<=100%), mark reached, make a draft invoice for the share of every line (cumulative target; the last takes what is left). Invoiced milestones locked (API + trigger); void frees. Method fixed once anything is billed. Invoices round per line, so totals can differ from the order by a paisa per line and invoice.
+- Evidence:
+  - packages/accounting-engine/src/project-billing.ts
+  - packages/accounting-engine/test/project-billing.test.ts
+  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/project-billing.e2e.test.ts
+  - apps/web/src/components/sales-orders/project-billing.tsx
+  - apps/web/e2e/project-billing-flow.test.mjs
+  - docs/MILESTONE_AND_PROGRESS_BILLING.md
+
+### AR-014 — Progress billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Sales orders billed by progress: each claim (percent complete above the previous live claim, <=100) makes a draft invoice billing every line up to that share less earlier claims; 100% bills the rest. Claims immutable (trigger); voided claims no longer count, deleting the draft removes the claim. Retentions not built.
+- Evidence:
+  - packages/accounting-engine/src/project-billing.ts
+  - packages/accounting-engine/test/project-billing.test.ts
+  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/project-billing.e2e.test.ts
+  - apps/web/src/components/sales-orders/project-billing.tsx
+  - apps/web/e2e/project-billing-flow.test.mjs
+  - docs/MILESTONE_AND_PROGRESS_BILLING.md
+
+### AR-015 — Retainer billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Retainers RT-0001: agreed amount and minimum per customer; held as ordinary unapplied receipts linked to the retainer (recorded into it or added); drawn down onto invoices with ordinary allocations, oldest receipt first, oldest due invoice first by default; top-up due below the minimum; close only when empty; triggers keep links permanent. Functional currency only; no GST on advances; top-up requests not emailed.
+- Evidence:
+  - packages/accounting-engine/src/retainers.ts
+  - packages/accounting-engine/test/retainers.test.ts
+  - packages/database/prisma/migrations/20261205090000_retainers/migration.sql
+  - apps/api/src/sales-orders/retainers.service.ts
+  - apps/api/test/retainers.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/retainers/[retainerId]/page.tsx
+  - apps/web/e2e/retainers-flow.test.mjs
+  - docs/RETAINERS.md
+
 ### AR-016 — Credit notes
 
 - Module: Accounts receivable
@@ -570,6 +645,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/ledger/new-document.tsx
   - apps/web/e2e/debit-notes-flow.test.mjs
   - docs/DEBIT_NOTES.md
+
+### AR-018 — Payment links
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Payment links PL-0001 on posted INR/USD invoices through the organisation's own Razorpay or Stripe account (keys sealed, set up and tested in Settings → Payment gateways, deposit account, one gateway per currency). Settled by the signed webhook or by checking: an ordinary receipt into the deposit account applied to the invoice up to what is owed. One open link per invoice; trigger keeps links permanent and final. Not built: emailing the link from Talk2Tax, refunds, other currencies.
+- Evidence:
+  - packages/accounting-engine/src/payment-links.ts
+  - packages/accounting-engine/test/payment-links.test.ts
+  - packages/database/prisma/migrations/20261206090000_payment_links/migration.sql
+  - apps/api/src/payment-links/payment-links.service.ts
+  - apps/api/test/payment-links.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/payment-gateways/page.tsx
+  - apps/web/src/components/payment-links/payment-links-panel.tsx
+  - apps/web/e2e/payment-links-flow.test.mjs
+  - docs/PAYMENT_LINKS.md
 
 ### AR-019 — Payment allocation
 
@@ -733,6 +824,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › bills and payments
   - apps/web/src/app/orgs/[orgId]/purchases/vendors
+
+### AP-002 — Vendor onboarding
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: One onboarding per vendor (separate from customer onboarding, own setting and checklist): email, address with PIN, GSTIN or PAN, verified bank details and payment terms read from the vendor, plus the checklist with files; submit, second-person approval sets payment terms (no credit limit), reject, reopen. Optional setting starts one for every new vendor. Bills from and payments to a vendor with an unapproved onboarding are refused. Not built: vendor self-service portal.
+- Evidence:
+  - packages/accounting-engine/src/customer-onboarding.ts
+  - packages/database/prisma/migrations/20261208090000_vendor_onboarding/migration.sql
+  - apps/api/src/customer-onboarding/customer-onboarding.service.ts
+  - apps/api/src/customer-onboarding/customer-onboarding.controller.ts
+  - apps/api/test/vendor-onboarding.e2e.test.ts
+  - apps/web/src/components/onboarding/onboarding-panel.tsx
+  - apps/web/src/components/onboarding/onboarding-list.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/onboarding/page.tsx
+  - apps/web/e2e/vendor-onboarding-flow.test.mjs
+  - docs/VENDOR_ONBOARDING.md
 
 ### AP-003 — Purchase invoices
 
@@ -906,6 +1014,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice
   - apps/web/e2e/sales-flow.test.mjs
+
+### AP-021 — Vendor performance tracking
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Scorecard per vendor and period from purchase orders, goods receipts, posted bills and vendor credits: on-time delivery (40), rejected goods by value (30), bills matched without accepted differences (20), team reviews (10), reweighted over what can be measured, grades A-D; overcharge above order price, spend and credits shown. Reviews 1-5 by aspect, optional PO, note needed at 1-2, append-only, withdrawn only by their author. Not built: external risk data.
+- Evidence:
+  - packages/accounting-engine/src/vendor-performance.ts
+  - packages/accounting-engine/test/vendor-performance.test.ts
+  - packages/database/prisma/migrations/20261209090000_vendor_performance/migration.sql
+  - apps/api/src/vendor-performance/vendor-performance.service.ts
+  - apps/api/test/vendor-performance.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-performance/page.tsx
+  - apps/web/src/components/vendor-performance/performance-card.tsx
+  - apps/web/e2e/vendor-performance-flow.test.mjs
+  - docs/VENDOR_PERFORMANCE.md
 
 ### AP-022 — Payment reconciliation
 
