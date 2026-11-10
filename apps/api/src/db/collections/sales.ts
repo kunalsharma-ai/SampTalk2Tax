@@ -653,7 +653,8 @@ export interface AttachmentDoc {
   removedReason: string | null;
 }
 
-const bytesOf = (c: Binary | Buffer) => (Buffer.isBuffer(c) ? c : Buffer.from(c.buffer));
+// A Uint8Array (as Prisma returns Bytes) can be a view on a larger buffer, so it is read by its own offset and length.
+const bytesOf = (c: Binary | Buffer | Uint8Array) => (Buffer.isBuffer(c) ? c : c instanceof Uint8Array ? Buffer.from(c.buffer, c.byteOffset, c.byteLength) : Buffer.from(c.buffer));
 
 /** Were attachments_*_chk. */
 function checkAttachment(a: AttachmentDoc) {
