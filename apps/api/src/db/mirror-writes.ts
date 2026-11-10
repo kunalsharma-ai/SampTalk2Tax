@@ -4,6 +4,10 @@ type Document = Record<string, unknown>;
 import type { DocumentStore } from '@talk2tax/document-db';
 import { currentTenantContext, runAsSystem, runInOrg } from '../common/tenant-context';
 import { mongoReadOps } from './mongo-reads';
+import { allowedInTx } from './guards/allow';
+import { changedExcept, strict, type GuardContext, type Reader } from './guards/guard';
+import { asColumns, GUARDS } from './guards';
+import './guards/rules';
 
 /**
  * Keeps MongoDB in step with every PostgreSQL write to the tables listed in MIRRORED_MODELS
@@ -224,13 +228,49 @@ function inContext<T>(info: MirrorInfo, orgId: unknown, fn: () => Promise<T>): P
   return info.tenant ? runInOrg(String(orgId), fn) : runAsSystem(fn);
 }
 
-/** Writes these PostgreSQL rows (read back in full) into MongoDB. */
-async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record<string, unknown>[]) {
+/**
+ * Writes these PostgreSQL rows (read back in full) into MongoDB. A Prisma write's own rows are
+ * checked even when nothing changed, as a trigger would be. `allWritten` is false where the rows
+ * may include ones the call did not write (the children of a nested write, everything a raw
+ * statement's transaction wrote so far, a catch-up copy); those are checked only when changed.
+ */
+async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record<string, unknown>[], allWritten = true) {
   if (!keys.length) return;
   const rows = (await d.findMany({ where: pkWhere(info, keys) })) as Record<string, unknown>[];
+  // `guards_off` stands in for a test's ALTER TABLE ... DISABLE TRIGGER (moving dates back as time would).
+  const guard = allowedInTx('guards_off') ? undefined : GUARDS[info.model];
   for (const r of rows) {
+    if (guard) {
+      const before = (await beforeRow(info, store, r)) as Record<string, unknown> | null;
+      if (allWritten || !before || changedExcept(before, r, [])) await inContext(info, r.orgId, async () => await guard(before ? 'UPDATE' : 'INSERT', strict(asColumns(info.model, before), info.model), strict(asColumns(info.model, r), info.model), guardContext(store)));
+    }
     await inContext(info, r.orgId, () => store.collection(info.def).updateOne({ id: docId(info, r) }, { $set: forMongo(info, r) }, { upsert: true }));
   }
+}
+
+/**
+ * The record as MongoDB has it, whoever is asking: a trigger is handed OLD, so row policies
+ * narrower than the organisation (a member's own copilot conversations) do not hide it.
+ */
+function beforeRow(info: MirrorInfo, store: Store, key: Record<string, unknown>) {
+  return runAsSystem(() => guardReads(info, store).findFirst({ where: { ...pkWhere(info, [key]), ...(info.tenant ? { orgId: key.orgId } : {}) } }));
+}
+
+/** Reads for guards: straight from MongoDB (they run inside the write, so not through its queue). */
+function guardReads(info: MirrorInfo, store: Store) {
+  const refuse = new Proxy({}, { get: () => () => Promise.reject(new Error(`A guard read of ${info.model} could not be translated`)) }) as Delegate;
+  return mongoReadOps(refuse, info, store) as unknown as { findFirst(a: unknown): Promise<unknown>; findMany(a: unknown): Promise<unknown>; count(a: unknown): Promise<unknown> };
+}
+
+function guardContext(store: Store): GuardContext {
+  const db = new Proxy({} as Reader, {
+    get(_t, prop) {
+      const info = typeof prop === 'string' ? (mirrorByDelegate().get(prop) ?? readableByDelegate().get(prop)) : undefined;
+      if (!info) throw new Error(`Guards cannot read ${String(prop)}`);
+      return guardReads(info, store);
+    },
+  });
+  return { db, allowed: allowedInTx };
 }
 
 async function dropRows(store: Store, info: MirrorInfo, keys: Record<string, unknown>[]) {
@@ -238,8 +278,14 @@ async function dropRows(store: Store, info: MirrorInfo, keys: Record<string, unk
     const id = docId(info, k);
     // The parent as MongoDB still has it: a foreign key may point at columns other than the id.
     const parent = ((await inContext(info, k.orgId, () => store.collection(info.def).findOne({ id }))) as Record<string, unknown> | null) ?? k;
-    await applyChildren(store, info.children, k.orgId, parent);
+    const guard = allowedInTx('guards_off') ? undefined : GUARDS[info.model];
+    if (guard) {
+      const before = (await beforeRow(info, store, k)) as Record<string, unknown> | null;
+      if (before) await inContext(info, k.orgId, async () => await guard('DELETE', strict(asColumns(info.model, before), info.model), null, guardContext(store)));
+    }
+    // As in PostgreSQL, a cascade reaches the children after the parent is gone, so their guards no longer see it.
     await inContext(info, k.orgId, () => store.collection(info.def).deleteOne({ id }));
+    await applyChildren(store, info.children, k.orgId, parent);
   }
 }
 
@@ -282,7 +328,7 @@ async function syncNested(tx: Record<string, Delegate>, store: Store, info: Mirr
     const had = (await inContext(child, row.orgId, () => store.collection(child.def).find({ [fk]: parentKey }))) as Record<string, unknown>[];
     const kept = new Set(keep.map((k) => docId(child, k)));
     await dropRows(store, child, had.filter((h) => !kept.has(String(h.id))).map((h) => ({ ...h, orgId: h.orgId ?? row.orgId })));
-    await putRows(store, cd, child, keep);
+    await putRows(store, cd, child, keep, false);
   }
 }
 
@@ -399,7 +445,7 @@ export async function mirrorRowsWhere(tx: unknown, store: Store, model: string, 
   if (!info) return;
   const d = pgOf((tx as Record<string, Delegate>)[info.delegate]);
   const keys = (await d.findMany({ where, select: pkSelect(info) })) as Record<string, unknown>[];
-  await putRows(store, d, info, keys);
+  await putRows(store, d, info, keys, false);
 }
 
 /**
@@ -505,7 +551,7 @@ async function syncAfterSql(tx: unknown, store: Store, { info, deletes }: { info
       await dropRows(store, info, docs.filter((d) => !kept.has(String(d.id))));
     } else {
       const rows = await q.$queryRawUnsafe<Record<string, unknown>[]>(`${select} WHERE xmin::text = (pg_current_xact_id()::text::bigint % 4294967296)::text`);
-      await putRows(store, pgOf((tx as Record<string, Delegate>)[info.delegate]), info, asKeys(rows).map((k) => castKeys(info, k)));
+      await putRows(store, pgOf((tx as Record<string, Delegate>)[info.delegate]), info, asKeys(rows).map((k) => castKeys(info, k)), false);
     }
   }
   await q.$queryRawUnsafe(`SELECT set_config('t2t.bypass', '${before === 'on' ? 'on' : ''}', true)`);
