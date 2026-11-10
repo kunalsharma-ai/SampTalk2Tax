@@ -11,6 +11,7 @@ import revenueRecognition from './20261212100000_revenue_recognition';
 import customerPortal from './20261213100000_customer_portal';
 import supplierTaxChecks from './20261214100000_supplier_tax_checks';
 import vendorRisk from './20261215100000_vendor_risk';
+import unbilledRevenue from './20261216100000_unbilled_revenue';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue];
