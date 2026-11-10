@@ -1,4 +1,6 @@
 import { fiscalYearForDate } from '@talk2tax/accounting-engine';
+import { mirrorRows } from '../src/common/prisma.service';
+import { tenantStorage } from '../src/common/tenant-context';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
@@ -218,6 +220,8 @@ describe('database guards', () => {
     await expect(raw(`INSERT INTO budget_lines (id, org_id, budget_id, account_id, period_no, amount) VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::uuid, 13, 5)`, org.orgId, id, org.acc['6300'])).rejects.toThrow(/budget_lines_chk/);
     await expect(raw(`UPDATE budgets SET status = 'APPROVED', approved_at = now(), approved_by_id = created_by_id WHERE id = $1::uuid`, id)).rejects.toThrow(/cannot move from DRAFT to APPROVED/);
     await raw(`UPDATE budgets SET status = 'SUBMITTED', submitted_at = now(), submitted_by_id = $2::uuid WHERE id = $1::uuid`, id, owner.id);
+    // Written past the API, so MongoDB is brought in step by hand.
+    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'Budget', { id }));
     await expect(raw(`UPDATE budgets SET status = 'APPROVED', approved_at = now(), approved_by_id = $2::uuid WHERE id = $1::uuid`, id, owner.id)).rejects.toThrow(/budgets_approver_chk/);
     await expect(raw(`UPDATE budgets SET status = 'APPROVED', approved_at = now(), approved_by_id = $2::uuid WHERE id = $1::uuid`, id, approver.id)).rejects.toThrow(/23505/);
   });

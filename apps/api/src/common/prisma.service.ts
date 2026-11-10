@@ -1,3 +1,4 @@
+import { mirrorClient, mirrorRowsWhere } from '../db/mirror-writes';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
 import { isTransientTransactionError, type DocumentStore } from '@talk2tax/document-db';
@@ -34,7 +35,7 @@ function settings(ctx: TenantContext): [string, string, string] {
  * A statement issued on the root client from inside a transaction callback (instead of on
  * `tx`) is not given settings, so it sees no tenant rows: that bug fails closed.
  */
-export function createTenantAwarePrisma(base: PrismaService, store?: Pick<DocumentStore, 'hold'>): PrismaService {
+export function createTenantAwarePrisma(base: PrismaService, store?: Pick<DocumentStore, 'hold' | 'collection'>): PrismaService {
   const apply = (ctx: TenantContext) => {
     const [org, user, bypass] = settings(ctx);
     return base.$executeRaw`SELECT set_config('t2t.org_id', ${org}, true), set_config('t2t.user_id', ${user}, true), set_config('t2t.bypass', ${bypass}, true)`;
@@ -56,7 +57,8 @@ export function createTenantAwarePrisma(base: PrismaService, store?: Pick<Docume
         tenantStorage.run({ ...ctx, inTx: true }, async () => {
           const [org, user, bypass] = settings(ctx);
           await (tx as Tx).$executeRaw`SELECT set_config('t2t.org_id', ${org}, true), set_config('t2t.user_id', ${user}, true), set_config('t2t.bypass', ${bypass}, true)`;
-          return (arg as (tx: unknown) => Promise<unknown>)(tx);
+          // Writes to tables kept in step also go to MongoDB (db/mirror-writes.ts).
+          return (arg as (tx: unknown) => Promise<unknown>)(store ? mirrorClient(tx as object, store) : tx);
         }),
       options,
     );
@@ -91,14 +93,24 @@ export function createTenantAwarePrisma(base: PrismaService, store?: Pick<Docume
     }
   };
 
-  return new Proxy(extended as object, {
+  const outer = store ? mirrorClient(extended as object, store, (fn) => transaction(fn)) : (extended as object);
+  return new Proxy(outer, {
     get(target, prop, receiver) {
       if (prop === '$transaction') return transaction;
+      if (prop === '$mirrorRows') return (model: string, where: Record<string, unknown>) => (store ? transaction((tx: unknown) => mirrorRowsWhere(tx, store, model, where)) : Promise.resolve());
       if (prop === 'onModuleInit') return () => connectAndCheckRole(base);
       if (prop === 'onModuleDestroy') return () => base.$disconnect();
       return Reflect.get(target, prop, receiver);
     },
   }) as PrismaService;
+}
+
+/**
+ * Copies rows that raw SQL changed (outside the Prisma model API) into MongoDB
+ * (db/mirror-writes.ts). Inside a transaction, use mirrorRowsWhere with the transaction.
+ */
+export function mirrorRows(prisma: PrismaService, model: string, where: Record<string, unknown>): Promise<unknown> {
+  return (prisma as unknown as { $mirrorRows(m: string, w: Record<string, unknown>): Promise<unknown> }).$mirrorRows(model, where);
 }
 
 /**

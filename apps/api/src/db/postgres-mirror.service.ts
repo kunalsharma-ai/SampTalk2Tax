@@ -5,6 +5,7 @@ import { runAsSystem } from '../common/tenant-context';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { journalEntries } from './collections/ledger';
 import { users } from './collections/identity';
+import { mirrorParentDeleted } from './mirror-writes';
 import { memberships, organizations } from './collections/tenancy';
 
 /**
@@ -142,6 +143,7 @@ export class PostgresMirrorService {
   async removeJournalEntry(id: string, orgId: string, tx: Tx): Promise<void> {
     await tx.journalLine.deleteMany({ where: { entryId: id, orgId } });
     await tx.journalEntry.deleteMany({ where: { id, orgId } });
+    await mirrorParentDeleted(tx, this.store, 'journal_entries', orgId, [id]);
   }
 
   /** Tenant tables in PostgreSQL sit behind row-level security; the copy is system work. */

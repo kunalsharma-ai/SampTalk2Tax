@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { mirrorRows } from '../src/common/prisma.service';
+import { tenantStorage } from '../src/common/tenant-context';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
@@ -358,6 +360,8 @@ describe('one answer at a time, privacy and guards', () => {
     await settle();
     await raw(`INSERT INTO copilot_messages (id, org_id, conversation_id, seq, role, status, text, api_messages, created_at) VALUES (gen_random_uuid(), $1::uuid, $2::uuid, 3, 'USER', 'COMPLETE', 'Lost question', '[]', now() - interval '20 minutes')`, org.orgId, c.id);
     await raw(`INSERT INTO copilot_messages (id, org_id, conversation_id, seq, role, status, created_at) VALUES (gen_random_uuid(), $1::uuid, $2::uuid, 4, 'ASSISTANT', 'PENDING', now() - interval '20 minutes')`, org.orgId, c.id);
+    // Written past the API, so MongoDB is brought in step by hand.
+    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'CopilotMessage', { conversationId: c.id }));
     model.steps.push(() => reply([text('After.')], 'end_turn'));
     await follow(c.id, 'After the restart');
     await settle();
@@ -394,6 +398,8 @@ describe('one answer at a time, privacy and guards', () => {
   it('closes a conversation started with another model or tool set', async () => {
     const id = randomUUID();
     await raw(`INSERT INTO copilot_conversations (id, org_id, user_id, title, model, toolset_version, system_prompt) VALUES ($1::uuid, $2::uuid, $3::uuid, 'Old', 'claude-old-model', $4, 'Old instructions')`, id, org.orgId, owner.id, TOOLSET_VERSION);
+    // Written past the API, so MongoDB is brought in step by hand.
+    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'CopilotConversation', { id }));
     expect((await read(id)).closed).toBe(true);
     expect((await ctx.http().post(`${C}/conversations/${id}/messages`).set(owner.auth).send({ question: 'More' }).expect(409)).body.error).toBe('CONVERSATION_CLOSED');
   });
@@ -407,6 +413,7 @@ describe('one answer at a time, privacy and guards', () => {
       c.id,
       QUESTIONS_PER_HOUR,
     );
+    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'CopilotMessage', { conversationId: c.id }));
     expect((await ctx.http().post(`${C}/conversations`).set(approver.auth).send({ question: 'One more' }).expect(429)).body.error).toBe('COPILOT_LIMIT');
     // Other members are not affected.
     model.steps.push(() => reply([text('Still fine.')], 'end_turn'));

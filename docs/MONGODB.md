@@ -16,8 +16,8 @@ module follows when it moves.
 | 3 | `organizations`, `memberships`, `invitations` | Done (#90) |
 | 4 | `accounts`, `fiscal_periods` | Done (#91) |
 | 5 | `journal_entries` (lines inside each entry) | Done (#94) |
-| 6 | Sales and purchases: `contacts`, `documents` (lines inside), `payments`, `allocations`, `approval_policies`, `approval_requests`, `attachments`, `expense_claims` (lines inside), `bank_statement_imports`, `bank_statement_lines`, `bank_matches`, `bank_reconciliations` | Writes moved (this step); reads still on the copy |
-| 7 | Tax, planning, CRM and the latest modules | Next |
+| 6 | Sales and purchases: `contacts`, `documents` (lines inside), `payments`, `allocations`, `approval_policies`, `approval_requests`, `attachments`, `expense_claims` (lines inside), `bank_statement_imports`, `bank_statement_lines`, `bank_matches`, `bank_reconciliations` | Writes moved (#98); reads still on the copy |
+| 7 | Every other table (166): tax, payroll, planning, CRM, orders, AI, platform, the latest modules | Writes kept in step (this step); rules and reads still in PostgreSQL |
 | 8 | Reads and reports as MongoDB queries; Prisma, PostgreSQL, RLS and the copies removed | After 7 |
 
 ## Why these choices
@@ -139,6 +139,25 @@ purchase orders, bad-debt write-offs, dimensions) stay there until those tables 
 changed now runs in `DocumentsService` before the draft is saved, so the copy's trigger finds
 nothing left to cancel. Deleting a draft clears `documentId` on its requests first, as the
 copy's foreign key did.
+
+**Writes kept in step (step 7).** The remaining 166 tables (`MIRRORED_MODEL_NAMES` in
+`apps/api/src/db/mirrored-models.ts`) are not moved by hand. Their Prisma delegates are
+wrapped (`apps/api/src/db/mirror-writes.ts`): the PostgreSQL write runs as before, with its
+triggers and constraints, then the rows it left are read back in full and written to MongoDB
+in the same held transaction. Collections come from the Prisma schema: table name, decimals,
+unique keys (partial where a column is nullable) and a type validator. Nested writes are
+synced by their foreign key. Deletes apply to MongoDB what PostgreSQL's foreign keys do
+(`ON DELETE CASCADE` and `SET NULL`), read from the PostgreSQL catalog because many keys were
+written by hand in SQL; deletes of hand-moved records (draft documents, draft journals) do the
+same through `mirrorParentDeleted`. Rows written by raw SQL or by triggers are synced with
+`mirrorRows` after the statement. A new feature table needs only its model name added to that
+list and a migration creating its collection. The rules stay in the PostgreSQL triggers until
+step 8 turns them into guards, together with the reads.
+
+**Checking they agree.** After every test run, `test/mirror-check.ts` compares each mirrored
+table's rows from the organisations made in that run with MongoDB, field by field, and fails
+the run with the list in `apps/api/mirror-differences.txt`. Tests that write PostgreSQL
+directly (to simulate a change made past the API) sync the rows with `mirrorRows` afterwards.
 
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
