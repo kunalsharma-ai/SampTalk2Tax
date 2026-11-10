@@ -20,6 +20,7 @@ import { Customer360 } from '@/components/crm/customer-360';
 import { VendorBankCard } from '@/components/purchases/vendor-bank-card';
 import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
 import { PortalLinksCard } from '@/components/customer-portal/portal-links-card';
+import { GstinChecksCard } from '@/components/supplier-tax/gstin-checks-card';
 import { VendorPerformanceCard } from '@/components/vendor-performance/performance-card';
 
 export function ContactDetail({ l }: { l: LedgerConfig }) {
@@ -116,6 +117,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
         {docs.data && docs.data.items.length === 0 ? <p className="px-5 py-4 text-sm text-fg-muted">None yet.</p> : <DocumentsTable l={l} orgId={orgId} items={docs.data?.items ?? []} currency={c} showContact={false} />}
       </Card>
       {l.ledger === 'PURCHASES' && x.isVendor ? <VendorBankCard orgId={orgId} contactId={x.id} /> : null}
+      {l.ledger === 'PURCHASES' && x.isVendor && x.isActive ? <GstinChecksCard orgId={orgId} contactId={x.id} canManage={canManage} /> : null}
       {l.ledger === 'PURCHASES' && x.isVendor ? <VendorPerformanceCard orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer && can(org.role, 'reports.read') ? <Customer360 orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer ? <PortalLinksCard orgId={orgId} contactId={x.id} customerName={x.name} canManage={can(org.role, 'sales.manage')} active={x.isActive} /> : null}
