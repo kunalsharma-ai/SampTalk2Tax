@@ -1,5 +1,5 @@
 import { ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { bankDetailIssues, batchItemIssues, D, dec, maskAccountNumber, minorUnits, normaliseAccountNumber, paymentFileCsv, paymentsByVendor } from '@talk2tax/accounting-engine';
+import { bankDetailIssues, batchItemIssues, D, dec, internationalBankIssues, maskAccountNumber, minorUnits, normaliseAccountNumber, paymentFileCsv, paymentsByVendor, type InternationalBankInput } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -66,14 +66,40 @@ export class PaymentBatchesService {
     if (!this.can(org).editBankDetails) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Changing bank details needs contacts.manage' });
     const issues = bankDetailIssues(input);
     if (issues.length) throw new DomainError('BANK_DETAILS_INVALID', issues[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { issues });
-    const next = { accountName: input.accountName.trim(), accountNumber: normaliseAccountNumber(input.accountNumber), ifsc: input.ifsc.trim().toUpperCase(), bankName: input.bankName?.trim() || null };
+    const next = { kind: 'DOMESTIC', accountName: input.accountName.trim(), accountNumber: normaliseAccountNumber(input.accountNumber), ifsc: input.ifsc.trim().toUpperCase(), bankName: input.bankName?.trim() || null, swiftBic: null, bankCountry: null, bankAddress: null, routingCode: null, intermediarySwift: null };
+    return this.writeDetails(org, actor, contactId, next);
+  }
+
+  /** Save a vendor's bank account abroad (AP-023): SWIFT/BIC, IBAN or account number, bank country. */
+  async saveInternationalBankDetails(org: BatchOrg, actor: Actor, contactId: string, input: InternationalBankInput) {
+    if (!this.can(org).editBankDetails) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Changing bank details needs contacts.manage' });
+    const home = (await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { countryCode: true } })).countryCode;
+    const issues = internationalBankIssues(input, home);
+    if (issues.length) throw new DomainError('BANK_DETAILS_INVALID', issues[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+    const clean = (s: string | null | undefined) => (s?.trim() ? s.trim() : null);
+    const next = {
+      kind: 'INTERNATIONAL',
+      accountName: input.accountName.trim(),
+      accountNumber: normaliseAccountNumber(input.accountNumber),
+      ifsc: null,
+      bankName: clean(input.bankName),
+      swiftBic: input.swiftBic.replace(/\s/g, '').toUpperCase(),
+      bankCountry: input.bankCountry.trim().toUpperCase(),
+      bankAddress: clean(input.bankAddress),
+      routingCode: clean(input.routingCode)?.replace(/[\s-]/g, '') ?? null,
+      intermediarySwift: clean(input.intermediarySwift)?.replace(/\s/g, '').toUpperCase() ?? null,
+    };
+    return this.writeDetails(org, actor, contactId, next);
+  }
+
+  private async writeDetails(org: BatchOrg, actor: Actor, contactId: string, next: { kind: string; accountName: string; accountNumber: string; ifsc: string | null; bankName: string | null; swiftBic: string | null; bankCountry: string | null; bankAddress: string | null; routingCode: string | null; intermediarySwift: string | null }) {
     await this.prisma.$transaction(async (tx) => {
       const contact = await tx.contact.findFirst({ where: { id: contactId, orgId: org.id } });
       if (!contact) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Contact not found' });
       if (!contact.isVendor) throw new DomainError('NOT_A_VENDOR', `${contact.name} is not a vendor`);
       const before = await tx.vendorBankDetails.findUnique({ where: { contactId } });
-      if (before && before.accountName === next.accountName && before.accountNumber === next.accountNumber && before.ifsc === next.ifsc && before.bankName === next.bankName) return;
-      const describe = (d: { accountName: string; accountNumber: string; ifsc: string }) => `${d.accountName} · ${maskAccountNumber(d.accountNumber)} · ${d.ifsc}`;
+      if (before && (Object.keys(next) as (keyof typeof next)[]).every((k) => before[k] === next[k])) return;
+      const describe = (d: { accountName: string; accountNumber: string; ifsc: string | null; swiftBic: string | null; bankCountry: string | null }) => `${d.accountName} · ${maskAccountNumber(d.accountNumber)} · ${d.ifsc ?? `${d.swiftBic} (${d.bankCountry})`}`;
       if (before) {
         await tx.vendorBankDetails.update({ where: { contactId }, data: { ...next, changedById: actor.id, changedAt: new Date() } });
       } else {
@@ -243,7 +269,7 @@ export class PaymentBatchesService {
           vendor: c.get(g.contactId)!.name,
           accountName: d.get(g.contactId)!.accountName,
           accountNumber: d.get(g.contactId)!.accountNumber,
-          ifsc: d.get(g.contactId)!.ifsc,
+          ifsc: d.get(g.contactId)!.ifsc ?? '',
           amount: g.amount,
           // Banks keep about 30 characters of a reference: the bill numbers when they fit, else a count.
           reference: ((full) => (full.length <= 30 ? full : `${batchRef(b.number)} ${g.items.length} bills`))(`${batchRef(b.number)} ${g.items.map((i) => n.get(i.documentId)).join(' ')}`),
@@ -393,12 +419,18 @@ export class PaymentBatchesService {
     };
   }
 
-  private serializeDetails(d: { accountName: string; accountNumber: string; ifsc: string; bankName: string | null; changedById: string; changedAt: Date; verifiedById: string | null; verifiedAt: Date | null; verificationNote: string | null }, names: Map<string, string>) {
+  private serializeDetails(d: { kind: string; accountName: string; accountNumber: string; ifsc: string | null; bankName: string | null; swiftBic: string | null; bankCountry: string | null; bankAddress: string | null; routingCode: string | null; intermediarySwift: string | null; changedById: string; changedAt: Date; verifiedById: string | null; verifiedAt: Date | null; verificationNote: string | null }, names: Map<string, string>) {
     return {
       accountName: d.accountName,
       accountNumberMasked: maskAccountNumber(d.accountNumber),
       ifsc: d.ifsc,
       bankName: d.bankName,
+      kind: d.kind,
+      swiftBic: d.swiftBic,
+      bankCountry: d.bankCountry,
+      bankAddress: d.bankAddress,
+      routingCode: d.routingCode,
+      intermediarySwift: d.intermediarySwift,
       changedBy: names.get(d.changedById) ?? null,
       changedById: d.changedById,
       changedAt: d.changedAt.toISOString(),
@@ -411,7 +443,7 @@ export class PaymentBatchesService {
 
   private async bankState(db: Tx | PrismaService, orgId: string, contactIds: string[]) {
     const rows = await db.vendorBankDetails.findMany({ where: { orgId, contactId: { in: [...new Set(contactIds)] } } });
-    return new Map(rows.map((r) => [r.contactId, { hasDetails: true, verified: !!r.verifiedAt, accountNumberMasked: maskAccountNumber(r.accountNumber), ifsc: r.ifsc, changedAt: r.changedAt.toISOString() }]));
+    return new Map(rows.map((r) => [r.contactId, { hasDetails: true, verified: !!r.verifiedAt, international: r.kind === 'INTERNATIONAL', accountNumberMasked: maskAccountNumber(r.accountNumber), ifsc: r.ifsc, changedAt: r.changedAt.toISOString() }]));
   }
 
   private async dueOf(db: Tx | PrismaService, docs: { id: string; total: Prisma.Decimal }[]) {
