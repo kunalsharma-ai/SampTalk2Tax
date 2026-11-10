@@ -5511,3 +5511,63 @@ model InternationalPaymentItem {
   @@index([orgId, documentId], map: "international_payment_items_org_id_idx")
   @@map("international_payment_items")
 }
+
+enum UsagePricing {
+  PER_UNIT
+  GRADUATED
+  VOLUME
+}
+
+/// AR-012: a metered charge on a customer contract, billed in arrears from recorded usage.
+model ContractMeter {
+  id               String       @id @default(uuid()) @db.Uuid
+  orgId            String       @map("org_id") @db.Uuid
+  contractId       String       @map("contract_id") @db.Uuid
+  code             String       @db.VarChar(40)
+  name             String       @db.VarChar(120)
+  unit             String       @db.VarChar(30)
+  accountId        String       @map("account_id") @db.Uuid
+  taxRateId        String?      @map("tax_rate_id") @db.Uuid
+  hsnCode          String?      @map("hsn_code")
+  pricing          UsagePricing
+  /// [{ upTo: string | null, unitPrice: string }]
+  tiers            Json
+  includedQuantity Decimal      @default(0) @map("included_quantity") @db.Decimal(24, 6)
+  minimumCharge    Decimal?     @map("minimum_charge") @db.Decimal(24, 6)
+  active           Boolean      @default(true)
+  createdById      String       @map("created_by_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  usage            UsageRecord[]
+
+  @@unique([contractId, code])
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("contract_meters")
+}
+
+/// AR-012: one usage reading against a meter. Voided, never edited or deleted.
+model UsageRecord {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  contractId  String        @map("contract_id") @db.Uuid
+  meterId     String        @map("meter_id") @db.Uuid
+  usageDate   DateTime      @map("usage_date") @db.Date
+  quantity    Decimal       @db.Decimal(24, 6)
+  reference   String?       @db.VarChar(100)
+  note        String?       @db.VarChar(500)
+  source      String        @db.VarChar(10)
+  periodNo    Int?          @map("period_no")
+  documentId  String?       @map("document_id") @db.Uuid
+  voidedAt    DateTime?     @map("voided_at") @db.Timestamptz(6)
+  voidedById  String?       @map("voided_by_id") @db.Uuid
+  voidReason  String?       @map("void_reason") @db.VarChar(500)
+  createdById String        @map("created_by_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  meter       ContractMeter @relation(fields: [meterId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@index([meterId, usageDate], map: "usage_records_meter_date_idx")
+  @@index([contractId, periodNo], map: "usage_records_contract_period_idx")
+  @@index([orgId])
+  @@map("usage_records")
+}
