@@ -21,6 +21,7 @@ import { useDimensions } from '@/lib/dimensions';
 import { DISPUTE_REASON_LABEL, type DisputeList } from '@/lib/disputes';
 import { BillMatchPanel } from '@/components/purchase-orders/bill-match-panel';
 import { PaymentLinksPanel } from '@/components/payment-links/payment-links-panel';
+import { RecognitionCard } from '@/components/revenue-recognition/recognition-card';
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
 import { DocumentForm } from './document-form';
 import { DocStatus } from './documents-table';
@@ -54,7 +55,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
   const disputes = useQuery({ enabled: disputable, queryKey: ['disputes', orgId, 'invoice', documentId], queryFn: () => api<DisputeList>(`/v1/orgs/${orgId}/sales/disputes?status=open&documentId=${documentId}`) });
   const openDispute = disputable ? disputes.data?.disputes[0] : undefined;
   const refresh = async () => {
-    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill', 'disputes', 'bill-match', 'purchase-orders', 'payment-links']) await qc.invalidateQueries({ queryKey: [k, orgId] });
+    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill', 'disputes', 'bill-match', 'purchase-orders', 'payment-links', 'invoice-recognition', 'revenue-recognition']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
   const post = useMutation({ mutationFn: () => api<FinancialDocument>(`${base}/documents/${documentId}/post`, { method: 'POST', body: { overrideCreditLimit: override } }), onSuccess: refresh });
   const remove = useMutation({
@@ -282,6 +283,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           </tfoot>
         </Table>
       </Card>
+
+      {l.ledger === 'SALES' && d.kind === 'INVOICE' ? <RecognitionCard orgId={orgId} documentId={d.id} status={d.status} issueDate={d.issueDate} currency={c} functionalCurrency={d.functionalCurrency} onChange={refresh} /> : null}
 
       <Card className="mt-6">
         <CardHeader title={isCharge ? 'Payments and credits applied' : `Applied to ${l.charge.plural.toLowerCase()}`} description={c !== d.functionalCurrency ? `Removing an application keeps a record of it, reopens the amount and reverses its exchange difference. Each amount settled at a rate other than this ${label.toLowerCase()}'s ${d.exchangeRate} posts a realised exchange gain or loss in ${d.functionalCurrency}.` : 'Removing an application keeps a record of it and reopens the amount.'} />
