@@ -64,12 +64,7 @@ export class UsageService {
     if (limit !== null) {
       const used = await this.count(tx, orgId, 'UPLOAD');
       if (!allowsOneMore(used, limit)) {
-        throw new DomainError(
-          UPLOAD_LIMIT_REACHED,
-          `This organisation has used the ${limit.toLocaleString('en-IN')} uploads in its ${p!.plan} plan for this month. They start again on the 1st, or choose a larger plan under Settings → Subscription.`,
-          HttpStatus.TOO_MANY_REQUESTS,
-          { limit, used },
-        );
+        throw new DomainError(UPLOAD_LIMIT_REACHED, `This organisation has used the ${limit.toLocaleString('en-IN')} uploads in its ${p!.plan} plan for this month. They start again on the 1st, or choose a larger plan under Settings → Subscription.`, HttpStatus.TOO_MANY_REQUESTS, { limit, used });
       }
     }
     await tx.usageEvent.create({ data: { orgId, kind: 'UPLOAD', bytes } });
@@ -82,19 +77,17 @@ export class UsageService {
     const since = usageMonthRange(months[months.length - 1]!).start;
     const [p, rows] = await Promise.all([
       this.limits(orgId),
-      this.prisma.usageEvent
-        .findMany({ where: { orgId, createdAt: { gte: since } }, select: { kind: true, source: true, inputTokens: true, outputTokens: true, bytes: true, createdAt: true } })
-        .then((events) => {
-          // Grouped by India month and day, kind and source.
-          const out = new Map<string, { month: string; day: string; kind: string; source: string | null; n: number; input: number; output: number; bytes: number }>();
-          for (const e of events) {
-            const day = new Date(e.createdAt.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
-            const k = `${day}|${e.kind}|${e.source ?? ''}`;
-            const r = out.get(k) ?? { month: day.slice(0, 7), day, kind: e.kind, source: e.source, n: 0, input: 0, output: 0, bytes: 0 };
-            out.set(k, { ...r, n: r.n + 1, input: r.input + e.inputTokens, output: r.output + e.outputTokens, bytes: r.bytes + e.bytes });
-          }
-          return [...out.values()];
-        }),
+      this.prisma.usageEvent.findMany({ where: { orgId, createdAt: { gte: since } }, select: { kind: true, source: true, inputTokens: true, outputTokens: true, bytes: true, createdAt: true } }).then((events) => {
+        // Grouped by India month and day, kind and source.
+        const out = new Map<string, { month: string; day: string; kind: string; source: string | null; n: number; input: number; output: number; bytes: number }>();
+        for (const e of events) {
+          const day = new Date(e.createdAt.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+          const k = `${day}|${e.kind}|${e.source ?? ''}`;
+          const r = out.get(k) ?? { month: day.slice(0, 7), day, kind: e.kind, source: e.source, n: 0, input: 0, output: 0, bytes: 0 };
+          out.set(k, { ...r, n: r.n + 1, input: r.input + e.inputTokens, output: r.output + e.outputTokens, bytes: r.bytes + e.bytes });
+        }
+        return [...out.values()];
+      }),
     ]);
     const sum = (f: (r: (typeof rows)[number]) => boolean, k: 'n' | 'input' | 'output' | 'bytes') => rows.filter(f).reduce((a, r) => a + Number(r[k]), 0);
     const ai = (m: string) => (r: (typeof rows)[number]) => r.kind === 'AI_CALL' && r.month === m;
@@ -122,43 +115,42 @@ export class UsageService {
   /** Every organisation's use in a month against its plan, the fullest first (platform administration). */
   async platform(month = usageMonth(new Date())) {
     const { start, end } = usageMonthRange(month);
-    return this.prisma.$transaction(
-      async (tx) =>
-        withSystemAccess(tx, async () => {
-          const [rows, orgs] = await Promise.all([
-            tx.usageEvent.groupBy({ by: ['orgId', 'kind'], where: { createdAt: { gte: start, lt: end } }, _count: { _all: true }, _sum: { inputTokens: true, outputTokens: true, bytes: true } }),
-            tx.organization.findMany({ select: { id: true, name: true, countryCode: true, isDemo: true, subscription: { select: { status: true, plan: { select: { name: true, limits: true } } } } } }),
-          ]);
-          const of = (orgId: string, kind: string) => rows.find((r) => r.orgId === orgId && r.kind === kind);
-          const list = orgs
-            .map((o) => {
-              const limits = (o.subscription?.plan.limits ?? null) as PlanLimits | null;
-              const a = of(o.id, 'AI_CALL');
-              const u = of(o.id, 'UPLOAD');
-              return {
-                org: { id: o.id, name: o.name, countryCode: o.countryCode, isDemo: o.isDemo },
-                plan: o.subscription ? { name: o.subscription.plan.name, status: o.subscription.status } : null,
-                ai: { ...usageLevel(a?._count._all ?? 0, limits?.aiCreditsPerMonth ?? null), tokens: (a?._sum.inputTokens ?? 0) + (a?._sum.outputTokens ?? 0) },
-                uploads: { ...usageLevel(u?._count._all ?? 0, limits?.documentUploadsPerMonth ?? null), bytes: u?._sum.bytes ?? 0 },
-              };
-            })
-            .filter((r) => r.ai.used > 0 || r.uploads.used > 0)
-            .sort((x, y) => Math.max(y.ai.percent ?? 0, y.uploads.percent ?? 0) - Math.max(x.ai.percent ?? 0, x.uploads.percent ?? 0) || y.ai.used - x.ai.used);
-          const total = (kind: string) => rows.filter((r) => r.kind === kind);
-          return {
-            month,
-            months: recentMonths(usageMonth(new Date()), 12),
-            totals: {
-              aiCalls: total('AI_CALL').reduce((s, r) => s + r._count._all, 0),
-              tokens: total('AI_CALL').reduce((s, r) => s + (r._sum.inputTokens ?? 0) + (r._sum.outputTokens ?? 0), 0),
-              uploads: total('UPLOAD').reduce((s, r) => s + r._count._all, 0),
-              bytes: total('UPLOAD').reduce((s, r) => s + (r._sum.bytes ?? 0), 0),
-              atLimit: list.filter((r) => r.ai.state === 'REACHED' || r.uploads.state === 'REACHED').length,
-              nearLimit: list.filter((r) => r.ai.state === 'NEAR' || r.uploads.state === 'NEAR').length,
-            },
-            organisations: list,
-          };
-        }),
+    return this.prisma.$transaction(async (tx) =>
+      withSystemAccess(tx, async () => {
+        const [rows, orgs] = await Promise.all([
+          tx.usageEvent.groupBy({ by: ['orgId', 'kind'], where: { createdAt: { gte: start, lt: end } }, _count: { _all: true }, _sum: { inputTokens: true, outputTokens: true, bytes: true } }),
+          tx.organization.findMany({ select: { id: true, name: true, countryCode: true, isDemo: true, subscription: { select: { status: true, plan: { select: { name: true, limits: true } } } } } }),
+        ]);
+        const of = (orgId: string, kind: string) => rows.find((r) => r.orgId === orgId && r.kind === kind);
+        const list = orgs
+          .map((o) => {
+            const limits = (o.subscription?.plan.limits ?? null) as PlanLimits | null;
+            const a = of(o.id, 'AI_CALL');
+            const u = of(o.id, 'UPLOAD');
+            return {
+              org: { id: o.id, name: o.name, countryCode: o.countryCode, isDemo: o.isDemo },
+              plan: o.subscription ? { name: o.subscription.plan.name, status: o.subscription.status } : null,
+              ai: { ...usageLevel(a?._count._all ?? 0, limits?.aiCreditsPerMonth ?? null), tokens: (a?._sum.inputTokens ?? 0) + (a?._sum.outputTokens ?? 0) },
+              uploads: { ...usageLevel(u?._count._all ?? 0, limits?.documentUploadsPerMonth ?? null), bytes: u?._sum.bytes ?? 0 },
+            };
+          })
+          .filter((r) => r.ai.used > 0 || r.uploads.used > 0)
+          .sort((x, y) => Math.max(y.ai.percent ?? 0, y.uploads.percent ?? 0) - Math.max(x.ai.percent ?? 0, x.uploads.percent ?? 0) || y.ai.used - x.ai.used);
+        const total = (kind: string) => rows.filter((r) => r.kind === kind);
+        return {
+          month,
+          months: recentMonths(usageMonth(new Date()), 12),
+          totals: {
+            aiCalls: total('AI_CALL').reduce((s, r) => s + r._count._all, 0),
+            tokens: total('AI_CALL').reduce((s, r) => s + (r._sum.inputTokens ?? 0) + (r._sum.outputTokens ?? 0), 0),
+            uploads: total('UPLOAD').reduce((s, r) => s + r._count._all, 0),
+            bytes: total('UPLOAD').reduce((s, r) => s + (r._sum.bytes ?? 0), 0),
+            atLimit: list.filter((r) => r.ai.state === 'REACHED' || r.uploads.state === 'REACHED').length,
+            nearLimit: list.filter((r) => r.ai.state === 'NEAR' || r.uploads.state === 'NEAR').length,
+          },
+          organisations: list,
+        };
+      }),
       // Every organisation on the platform: more than the default 5 seconds once there are many.
       { timeout: 30_000 },
     );
