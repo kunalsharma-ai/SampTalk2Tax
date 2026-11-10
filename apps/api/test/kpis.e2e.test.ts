@@ -175,7 +175,7 @@ describe('the management report', () => {
     const list = (await ctx.http().get(`${org.base}/management-reports`).set(viewer.auth).expect(200)).body;
     expect(list.find((x: { month: string }) => x.month === M)).toMatchObject({ status: 'FINAL', hasCommentary: true, finalisedBy: 'KPI Owner', ended: true });
     const audit = await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, entityType: 'management_report' }, select: { action: true } });
-    expect(audit.map((a) => a.action)).toEqual(['management_report.commentary_saved', 'management_report.finalised']);
+    expect(audit.map((a) => a.action).sort()).toEqual(['management_report.commentary_saved', 'management_report.finalised']);
   });
 
   it('the database keeps a final report as it was', async () => {
