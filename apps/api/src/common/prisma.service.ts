@@ -117,12 +117,12 @@ export async function withSystemAccess<T>(tx: Tx, fn: () => Promise<T>): Promise
   // Restores what the transaction had before, so a nested call leaves an outer bypass on.
   const [{ before }] = await tx.$queryRaw<{ before: string | null }[]>`SELECT current_setting('t2t.bypass', true) AS before`;
   await tx.$executeRaw`SELECT set_config('t2t.bypass', 'on', true)`;
-  try {
-    return await fn();
-  } finally {
-    const ctx = currentTenantContext();
-    await tx.$executeRaw`SELECT set_config('t2t.bypass', ${before === 'on' || ctx.bypass ? 'on' : ''}, true)`;
-  }
+  // No reset when fn fails: the transaction is aborted and rolls back, bypass and all, and a
+  // reset would fail too and hide what went wrong.
+  const out = await fn();
+  const ctx = currentTenantContext();
+  await tx.$executeRaw`SELECT set_config('t2t.bypass', ${before === 'on' || ctx.bypass ? 'on' : ''}, true)`;
+  return out;
 }
 
 /**

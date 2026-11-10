@@ -2,6 +2,9 @@ import { ChartService } from '../accounts/chart.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { organizations } from '../db/collections/tenancy';
 import { PostgresMirrorService } from '../db/postgres-mirror.service';
+import { EXPENSE_CLAIMS } from '../db/collections/expenses';
+import { MovedTables } from '../db/moved-table';
+import { randomUUID } from 'node:crypto';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
   D,
@@ -34,6 +37,23 @@ export interface ClaimInput {
 const CLAIM_INCLUDE = {
   lines: { orderBy: { lineNo: 'asc' }, include: { account: { select: { code: true, name: true } }, tax: { select: { name: true } } } },
 } as const;
+const CLAIM_DEFAULTS = {
+  status: 'DRAFT',
+  submittedAt: null,
+  decidedById: null,
+  decidedAt: null,
+  decisionNote: null,
+  journalEntryId: null,
+  postingDate: null,
+  reimbursementJournalEntryId: null,
+  reimbursedOn: null,
+  reimbursedById: null,
+  bankAccountId: null,
+  reimbursementReference: null,
+  voidJournalEntryId: null,
+  voidDate: null,
+  voidReason: null,
+};
 type ClaimRow = Prisma.ExpenseClaimGetPayload<{ include: typeof CLAIM_INCLUDE }>;
 
 const EDITABLE: ExpenseClaimStatus[] = ['DRAFT', 'REJECTED'];
@@ -56,6 +76,7 @@ export class ExpensesService {
     private readonly store: DocumentStoreService,
     private readonly mirror: PostgresMirrorService,
     private readonly chart: ChartService,
+    private readonly moved: MovedTables,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -112,20 +133,21 @@ export class ExpensesService {
     return this.prisma.$transaction(async (tx) => {
       const computed = await this.prepare(tx, org, input.lines);
       const n = await this.nextNumber(tx, org.id);
-      const c = await tx.expenseClaim.create({
-        data: {
-          orgId: org.id,
-          number: `EXP-${String(n).padStart(6, '0')}`,
-          claimantId: actor.id,
-          title: input.title.trim(),
-          currency: org.functionalCurrency,
-          netTotal: computed.netTotal.toFixed(),
-          taxTotal: computed.taxTotal.toFixed(),
-          total: computed.total.toFixed(),
-          lines: { create: lineRows(computed) },
-        },
-        include: CLAIM_INCLUDE,
+      const now = new Date();
+      const created = await this.moved.create<{ id: string }>(tx, EXPENSE_CLAIMS, org.id, {
+        ...CLAIM_DEFAULTS,
+        number: `EXP-${String(n).padStart(6, '0')}`,
+        claimantId: actor.id,
+        title: input.title.trim(),
+        currency: org.functionalCurrency,
+        netTotal: computed.netTotal.toFixed(),
+        taxTotal: computed.taxTotal.toFixed(),
+        total: computed.total.toFixed(),
+        lines: lineRows(computed),
+        createdAt: now,
+        updatedAt: now,
       });
+      const c = await tx.expenseClaim.findUniqueOrThrow({ where: { id: created.id }, include: CLAIM_INCLUDE });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'expense_claim.created', entityType: 'expense_claim', entityId: c.id, data: { number: c.number, total: c.total.toFixed() } });
       return this.serialize(org, actor, c, tx);
     });
@@ -137,19 +159,16 @@ export class ExpensesService {
       const c = await this.lockOwn(tx, org, actor, id);
       if (!EDITABLE.includes(c.status)) throw new DomainError('NOT_EDITABLE', `A ${c.status.toLowerCase()} claim cannot be edited${c.status === 'SUBMITTED' ? '; withdraw it first' : ''}`, HttpStatus.CONFLICT);
       const computed = await this.prepare(tx, org, input.lines);
-      await tx.expenseClaimLine.deleteMany({ where: { claimId: id, orgId: org.id } });
-      const out = await tx.expenseClaim.update({
-        where: { id },
-        data: {
-          title: input.title.trim(),
-          status: 'DRAFT',
-          netTotal: computed.netTotal.toFixed(),
-          taxTotal: computed.taxTotal.toFixed(),
-          total: computed.total.toFixed(),
-          lines: { create: lineRows(computed) },
-        },
-        include: CLAIM_INCLUDE,
+      await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, {
+        title: input.title.trim(),
+        status: 'DRAFT',
+        netTotal: computed.netTotal.toFixed(),
+        taxTotal: computed.taxTotal.toFixed(),
+        total: computed.total.toFixed(),
+        lines: lineRows(computed),
+        updatedAt: new Date(),
       });
+      const out = await tx.expenseClaim.findUniqueOrThrow({ where: { id }, include: CLAIM_INCLUDE });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'expense_claim.updated', entityType: 'expense_claim', entityId: id, data: { total: out.total.toFixed() } });
       return this.serialize(org, actor, out, tx);
     });
@@ -159,8 +178,7 @@ export class ExpensesService {
     await this.prisma.$transaction(async (tx) => {
       const c = await this.lockOwn(tx, org, actor, id);
       if (c.status !== 'DRAFT') throw new DomainError('NOT_DRAFT', 'Only drafts can be deleted', HttpStatus.CONFLICT);
-      await tx.expenseClaimLine.deleteMany({ where: { claimId: id, orgId: org.id } });
-      await tx.expenseClaim.delete({ where: { id } });
+      await this.moved.remove(tx, EXPENSE_CLAIMS, org.id, id);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'expense_claim.deleted', entityType: 'expense_claim', entityId: id, data: { number: c.number } });
     });
   }
@@ -168,7 +186,7 @@ export class ExpensesService {
   async submit(org: OrgContext, actor: Actor, id: string) {
     return this.transition(org, actor, id, 'own', async (tx, c) => {
       if (!EDITABLE.includes(c.status)) throw new DomainError('NOT_EDITABLE', `This claim is already ${c.status.toLowerCase()}`, HttpStatus.CONFLICT);
-      await tx.expenseClaim.update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date(), decidedById: null, decidedAt: null, decisionNote: null } });
+      await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'SUBMITTED', submittedAt: new Date(), decidedById: null, decidedAt: null, decisionNote: null }, updatedAt: new Date() });
       return { action: 'expense_claim.submitted', data: { total: c.total.toFixed() } };
     });
   }
@@ -176,7 +194,7 @@ export class ExpensesService {
   async withdraw(org: OrgContext, actor: Actor, id: string) {
     return this.transition(org, actor, id, 'own', async (tx, c) => {
       if (c.status !== 'SUBMITTED') throw new DomainError('NOT_SUBMITTED', 'Only a submitted claim can be withdrawn', HttpStatus.CONFLICT);
-      await tx.expenseClaim.update({ where: { id }, data: { status: 'DRAFT' } });
+      await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'DRAFT' }, updatedAt: new Date() });
       return { action: 'expense_claim.withdrawn', data: {} };
     });
   }
@@ -206,7 +224,7 @@ export class ExpensesService {
         reference: c.number,
         lines: buildExpenseClaimJournal(computed, payable, org.functionalCurrency),
       });
-      await tx.expenseClaim.update({ where: { id }, data: { status: 'APPROVED', decidedById: actor.id, decidedAt: new Date(), decisionNote: input.note || null, journalEntryId: je.id, postingDate: toDbDate(date) } });
+      await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'APPROVED', decidedById: actor.id, decidedAt: new Date(), decisionNote: input.note || null, journalEntryId: je.id, postingDate: toDbDate(date) }, updatedAt: new Date() });
       return { action: 'expense_claim.approved', data: { journalEntryId: je.id, date, total: c.total.toFixed(), note: input.note ?? null } };
     });
   }
@@ -216,7 +234,7 @@ export class ExpensesService {
     return this.transition(org, actor, id, 'decide', async (tx, c) => {
       if (c.status !== 'SUBMITTED') throw new DomainError('NOT_SUBMITTED', `This claim is ${c.status.toLowerCase()}, not waiting for approval`, HttpStatus.CONFLICT);
       if (c.claimantId === actor.id) throw new DomainError('SAME_PERSON', 'You cannot decide on your own expense claim', HttpStatus.FORBIDDEN);
-      await tx.expenseClaim.update({ where: { id }, data: { status: 'REJECTED', decidedById: actor.id, decidedAt: new Date(), decisionNote: note } });
+      await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'REJECTED', decidedById: actor.id, decidedAt: new Date(), decisionNote: note }, updatedAt: new Date() });
       return { action: 'expense_claim.rejected', data: { note } };
     });
   }
@@ -239,10 +257,7 @@ export class ExpensesService {
         reference: c.number,
         lines: buildReimbursementJournal(new D(c.total.toFixed()), bank.id, payable, org.functionalCurrency),
       });
-      await tx.expenseClaim.update({
-        where: { id },
-        data: { status: 'REIMBURSED', reimbursementJournalEntryId: je.id, reimbursedOn: toDbDate(input.date), reimbursedById: actor.id, bankAccountId: bank.id, reimbursementReference: input.reference || null },
-      });
+      await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { status: 'REIMBURSED', reimbursementJournalEntryId: je.id, reimbursedOn: toDbDate(input.date), reimbursedById: actor.id, bankAccountId: bank.id, reimbursementReference: input.reference || null, updatedAt: new Date() });
       return { action: 'expense_claim.reimbursed', data: { journalEntryId: je.id, bankAccountId: bank.id, date: input.date } };
     });
   }
@@ -253,7 +268,7 @@ export class ExpensesService {
     return this.transition(org, actor, id, 'any', async (tx, c) => {
       if (c.status !== 'APPROVED') throw new DomainError('NOT_APPROVED', c.status === 'REIMBURSED' ? 'A reimbursed claim cannot be voided' : 'Only approved claims can be voided', HttpStatus.CONFLICT);
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, c.journalEntryId!, { date: input.date, memo: `Void ${c.number}: ${input.reason}` });
-      await tx.expenseClaim.update({ where: { id }, data: { status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date), voidReason: input.reason } });
+      await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'VOID', voidJournalEntryId: rev.id, voidDate: toDbDate(input.date), voidReason: input.reason }, updatedAt: new Date() });
       return { action: 'expense_claim.voided', data: { reason: input.reason, reversalEntryId: rev.id } };
     });
   }
@@ -447,6 +462,7 @@ export class ExpensesService {
 
 function lineRows(computed: ReturnType<typeof computeExpenseClaim>) {
   return computed.lines.map((l) => ({
+    id: randomUUID(),
     lineNo: l.lineNo,
     date: toDbDate(l.date),
     accountId: l.accountId,

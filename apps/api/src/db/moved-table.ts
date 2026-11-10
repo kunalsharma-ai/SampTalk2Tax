@@ -20,6 +20,21 @@ export class MovedTables {
     return (await this.copy(tx, table, [doc.id as string]))[0] as Row;
   }
 
+  async createMany<Row>(tx: Tx, table: MovedTable, orgId: string, rows: Record<string, unknown>[]): Promise<Row[]> {
+    if (!rows.length) return [];
+    const docs = await runInOrg(orgId, () => this.store.collection(table.def).insertMany(rows.map((r) => forMongo(r)) as never));
+    return (await this.copy(tx, table, docs.map((d) => d.id as string))) as Row[];
+  }
+
+  /** Sets these fields on every document the filter matches; returns how many matched. */
+  async updateMany(tx: Tx, table: MovedTable, orgId: string, filter: Record<string, unknown>, data: Record<string, unknown>): Promise<number> {
+    const ids = (await runInOrg(orgId, () => this.store.collection(table.def).find(filter, { projection: { id: 1 } }))).map((d) => d.id as string);
+    if (!ids.length) return 0;
+    await runInOrg(orgId, () => this.store.collection(table.def).updateMany({ id: { $in: ids } }, { $set: forMongo(data) }));
+    await this.copy(tx, table, ids);
+    return ids.length;
+  }
+
   /** Sets these fields (undefined ones are left alone). Returns the row, or null if none matched. */
   async update<Row>(tx: Tx, table: MovedTable, orgId: string, id: string, data: Record<string, unknown>): Promise<Row | null> {
     const set = forMongo(data);
@@ -45,7 +60,7 @@ export class MovedTables {
         if (kids) delete rest[kids.field];
         const data = table.toRow ? table.toRow(rest) : rest;
         if (!kids) {
-          out.push(await delegate(tx, table).upsert({ where: { id }, create: { id, ...data }, update: data }));
+          out.push(await write(tx, table, id, data));
           continue;
         }
         // Children (a document's lines) are rewritten only when the set changed: they change only
@@ -54,7 +69,7 @@ export class MovedTables {
         const held = (await child.findMany({ where: { [kids.parentKey]: id }, select: { id: true } })) as { id: string }[];
         const same = held.length === items.length && items.every((c) => held.some((h) => h.id === c.id));
         if (!same && held.length) await child.deleteMany({ where: { [kids.parentKey]: id } });
-        const row = await delegate(tx, table).upsert({ where: { id }, create: { id, ...data }, update: data });
+        const row = await write(tx, table, id, data);
         if (!same && items.length) await child.createMany({ data: items.map((c) => ({ ...(kids.toRow ? kids.toRow(c) : c), [kids.parentKey]: id, orgId: data.orgId })) });
         out.push(row);
       }
@@ -74,8 +89,19 @@ export interface MovedTable {
   children?: { field: string; model: string; parentKey: string; toRow?: (item: Record<string, unknown>) => Record<string, unknown> };
 }
 
+/**
+ * Update or insert the copy. Not an upsert: PostgreSQL runs BEFORE INSERT triggers for
+ * INSERT ... ON CONFLICT even when the row exists, and some refuse a row that is not new.
+ */
+async function write(tx: Tx, table: Pick<MovedTable, 'model'>, id: string, data: Record<string, unknown>) {
+  const d = delegate(tx, table);
+  const exists = (await d.findMany({ where: { id }, select: { id: true } })).length > 0;
+  return exists ? d.update({ where: { id }, data }) : d.create({ data: { id, ...data } });
+}
+
 interface Delegate {
-  upsert(a: unknown): Promise<unknown>;
+  update(a: unknown): Promise<unknown>;
+  create(a: unknown): Promise<unknown>;
   deleteMany(a: unknown): Promise<unknown>;
   findMany(a: unknown): Promise<unknown[]>;
   createMany(a: unknown): Promise<unknown>;

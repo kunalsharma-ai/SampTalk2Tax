@@ -34,7 +34,7 @@ import { currentApproval, policyFor } from '../approvals/approval-rules';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { checkLineDimensions } from '../dimensions/check';
-import { ALLOCATIONS, DOCUMENTS, newAllocation, newDocument, PAYMENTS } from '../db/collections/sales';
+import { ALLOCATIONS, APPROVAL_REQUESTS, DOCUMENTS, newAllocation, newDocument, PAYMENTS } from '../db/collections/sales';
 import { MovedTables } from '../db/moved-table';
 import { CustomerOnboardingService } from '../customer-onboarding/customer-onboarding.service';
 import { DomainError } from '../common/errors';
@@ -318,6 +318,7 @@ export class DocumentsService {
       if (existing.status !== 'DRAFT') throw new DomainError('DOCUMENT_POSTED', 'Posted documents cannot be edited; void and re-issue instead', HttpStatus.CONFLICT);
       if (existing.kind !== input.kind) throw new DomainError('KIND_CHANGE', 'A draft cannot change its document type');
       const prepared = await this.prepare(tx, org, ledger, input, id);
+      await this.cancelApprovals(tx, org.id, id);
       await this.moved.update(tx, DOCUMENTS, org.id, id, {
         contactId: input.contactId,
         issueDate: toDbDate(input.issueDate),
@@ -345,6 +346,8 @@ export class DocumentsService {
     await this.prisma.$transaction(async (tx) => {
       const existing = await this.lockDocument(tx, org.id, ledger, id);
       if (existing.status !== 'DRAFT') throw new DomainError('DOCUMENT_POSTED', 'Posted documents cannot be deleted; void them instead', HttpStatus.CONFLICT);
+      // Its approval requests stay on record without the draft (the copy's foreign key did this).
+      await this.moved.updateMany(tx, APPROVAL_REQUESTS, org.id, { documentId: id }, { documentId: null });
       await this.moved.remove(tx, DOCUMENTS, org.id, id);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.draft_deleted', entityType: 'document', entityId: id, data: { kind: existing.kind } });
     });
@@ -539,6 +542,18 @@ export class DocumentsService {
   }
 
   // ------------------------------------------------------------------ internals
+
+  /**
+   * Any change to a draft cancels its open approval, so what was approved is what posts (was
+   * t2t_invalidate_approval). Runs before the draft is saved, so the copy's trigger finds
+   * nothing left to cancel.
+   */
+  private async cancelApprovals(tx: Tx, orgId: string, documentId: string) {
+    const open = await tx.approvalRequest.findMany({ where: { orgId, documentId, status: { in: ['PENDING', 'APPROVED'] } }, select: { id: true, decidedAt: true, decisionNote: true } });
+    for (const r of open) {
+      await this.moved.update(tx, APPROVAL_REQUESTS, orgId, r.id, { status: 'CANCELLED', decidedAt: r.decidedAt ?? new Date(), decisionNote: `${r.decisionNote ? `${r.decisionNote} · ` : ''}Cancelled because the draft was changed` });
+    }
+  }
 
   private async postInTx(tx: Tx, org: LedgerOrg, actor: Actor, id: string, overrideCreditLimit: boolean) {
     const doc = await tx.document.findUniqueOrThrow({ where: { id }, include: { lines: { orderBy: { lineNo: 'asc' } }, contact: true } });

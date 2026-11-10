@@ -1,5 +1,6 @@
 import { Prisma } from '@talk2tax/database';
 import { defineCollection, GuardViolation, type GuardContext } from '@talk2tax/document-db';
+import type { Binary } from '@talk2tax/document-db';
 import type { MovedTable } from '../moved-table';
 
 /** Customers and vendors. */
@@ -290,6 +291,7 @@ export const documents = defineCollection<DocumentDoc>({
       } else if (after.status === 'VOID') throw new GuardViolation('Drafts are deleted, not voided');
       if (after.orgId !== before.orgId || after.createdById !== before.createdById) throw new GuardViolation('A document keeps its organisation and author');
       checkDocument(after);
+      if (before.status === 'DRAFT' && after.status === 'POSTED') await checkApprovedToPost(after, ctx);
       if (after.contactId !== before.contactId && !(await ctx.collection(contacts).findOne({ id: after.contactId, orgId: after.orgId }))) throw new GuardViolation('The contact does not exist in this organisation');
     },
     beforeDelete(x) {
@@ -509,3 +511,186 @@ export const ALLOCATIONS: MovedTable = { def: allocations, model: 'allocation' }
 export function newAllocation(a: Pick<AllocationDoc, 'targetId' | 'amount' | 'date' | 'createdById'> & Partial<AllocationDoc>, now = new Date()): Omit<AllocationDoc, 'id' | 'orgId'> {
   return { paymentId: null, creditDocumentId: null, writeOffId: null, createdAt: now, removedOn: null, removedById: null, fxGain: '0', fxJournalEntryId: null, fxReversalJournalEntryId: null, ...a };
 }
+
+// ------------------------------------------------------------------ approvals
+
+export interface ApprovalPolicyDoc {
+  id: string;
+  orgId: string;
+  documentKind: DocumentKindName;
+  minAmount: string;
+  requireDifferentApprover: boolean;
+  isActive: boolean;
+  updatedById: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const approvalPolicies = defineCollection<ApprovalPolicyDoc>({
+  name: 'approval_policies',
+  scope: 'tenant',
+  decimals: ['minAmount'],
+  schema: {
+    bsonType: 'object',
+    required: ['documentKind', 'minAmount', 'requireDifferentApprover', 'isActive', 'updatedById', 'createdAt', 'updatedAt'],
+    properties: { documentKind: { enum: ['INVOICE', 'CREDIT_NOTE', 'BILL', 'VENDOR_CREDIT'] }, minAmount: { bsonType: 'decimal' }, isActive: { bsonType: 'bool' } },
+  },
+  indexes: [{ key: { orgId: 1, documentKind: 1 }, name: 'org_kind', unique: true }],
+  guards: {
+    beforeInsert(p) {
+      if (n(p.minAmount).isNeg()) throw new GuardViolation('The minimum amount cannot be negative');
+    },
+    afterUpdate(before, after) {
+      if (n(after.minAmount).isNeg()) throw new GuardViolation('The minimum amount cannot be negative');
+      if (after.documentKind !== before.documentKind || after.orgId !== before.orgId) throw new GuardViolation('A policy keeps its document type');
+    },
+  },
+});
+
+export const APPROVAL_POLICIES: MovedTable = { def: approvalPolicies, model: 'approvalPolicy' };
+
+export type ApprovalStatusName = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface ApprovalRequestDoc {
+  id: string;
+  orgId: string;
+  documentId: string | null;
+  documentKind: DocumentKindName;
+  contactName: string;
+  total: string;
+  status: ApprovalStatusName;
+  note: string | null;
+  requestedById: string;
+  requestedAt: Date;
+  decidedById: string | null;
+  decidedAt: Date | null;
+  decisionNote: string | null;
+}
+
+/** Were approval_requests_total_chk and approval_requests_decided_chk. */
+function checkRequest(r: ApprovalRequestDoc) {
+  if (!n(r.total).gt(0)) throw new GuardViolation('An approval request total must be above zero');
+  if ((r.status === 'PENDING') !== (r.decidedAt === null)) throw new GuardViolation('A decided request has its decision time, and only a decided one does');
+}
+
+export const approvalRequests = defineCollection<ApprovalRequestDoc>({
+  name: 'approval_requests',
+  scope: 'tenant',
+  decimals: ['total'],
+  schema: {
+    bsonType: 'object',
+    required: ['documentKind', 'contactName', 'total', 'status', 'requestedById', 'requestedAt'],
+    properties: { status: { enum: ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] }, total: { bsonType: 'decimal' } },
+  },
+  indexes: [
+    { key: { orgId: 1, status: 1 }, name: 'org_status' },
+    { key: { documentId: 1 }, name: 'document' },
+  ],
+  // Was t2t_guard_approval_request.
+  guards: {
+    async beforeInsert(r, ctx) {
+      const d = r.documentId ? await ctx.collection(documents).findOne({ id: r.documentId, orgId: r.orgId }) : null;
+      if (!d || d.status !== 'DRAFT' || r.status !== 'PENDING') throw new GuardViolation('Approval can only be requested for a draft in the same organisation');
+      checkRequest(r);
+      // Was approval_requests_open_uniq: at most one open (pending or approved) request per document.
+      if (await ctx.collection(approvalRequests).exists({ documentId: r.documentId, status: { $in: ['PENDING', 'APPROVED'] } })) throw new GuardViolation('This document already has an open approval request');
+    },
+    async afterUpdate(before, after, ctx) {
+      // Deleting the draft clears documentId; nothing else may change on that path.
+      if (after.documentId !== before.documentId && !(after.documentId === null && after.status === before.status)) throw new GuardViolation('An approval request cannot be moved to another document');
+      if (after.orgId !== before.orgId || !n(after.total).eq(before.total) || after.requestedById !== before.requestedById || after.documentKind !== before.documentKind) throw new GuardViolation('An approval request cannot be changed');
+      if (after.status !== before.status) {
+        const ok = (before.status === 'PENDING' && ['APPROVED', 'REJECTED', 'CANCELLED'].includes(after.status)) || (before.status === 'APPROVED' && after.status === 'CANCELLED');
+        if (!ok) throw new GuardViolation(`An approval request cannot go from ${before.status} to ${after.status}`);
+        if (after.status === 'APPROVED') {
+          const d = after.documentId ? await ctx.collection(documents).findOne({ id: after.documentId, orgId: after.orgId }) : null;
+          if (!d || d.status !== 'DRAFT') throw new GuardViolation('The request is for a document that is no longer a draft');
+          const p = await ctx.collection(approvalPolicies).findOne({ orgId: after.orgId, documentKind: after.documentKind });
+          if ((p?.requireDifferentApprover ?? true) && (after.decidedById === after.requestedById || after.decidedById === d.createdById)) throw new GuardViolation('The request must be approved by someone other than its author and requester');
+        }
+      } else if (before.status !== 'PENDING' && (after.decidedById !== before.decidedById || +(after.decidedAt ?? 0) !== +(before.decidedAt ?? 0) || after.decisionNote !== before.decisionNote)) {
+        throw new GuardViolation('An approval decision cannot be changed');
+      }
+      checkRequest(after);
+    },
+    beforeDelete() {
+      throw new GuardViolation('Approval requests are kept');
+    },
+  },
+});
+
+export const APPROVAL_REQUESTS: MovedTable = { def: approvalRequests, model: 'approvalRequest' };
+
+/** Was t2t_check_document_approval: a document covered by an active policy posts only with an approval for exactly its total. */
+async function checkApprovedToPost(x: DocumentDoc, ctx: GuardContext) {
+  const p = await ctx.collection(approvalPolicies).findOne({ orgId: x.orgId, documentKind: x.kind, isActive: true });
+  if (!p || n(x.total).lt(p.minAmount)) return;
+  const approved = await ctx.collection(approvalRequests).find({ orgId: x.orgId, documentId: x.id, status: 'APPROVED' });
+  if (!approved.some((r) => n(r.total).eq(x.total))) throw new GuardViolation('This document needs an approval before it can post');
+}
+
+// ------------------------------------------------------------------ attachments
+
+export type AttachmentEntityName = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING';
+export const ATTACHMENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
+
+export interface AttachmentDoc {
+  id: string;
+  orgId: string;
+  entityType: AttachmentEntityName;
+  entityId: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  /** The file's bytes (BSON binary; files are at most 5 MB). */
+  content: Binary | Buffer;
+  uploadedById: string;
+  createdAt: Date;
+  removedAt: Date | null;
+  removedById: string | null;
+  removedReason: string | null;
+}
+
+const bytesOf = (c: Binary | Buffer) => (Buffer.isBuffer(c) ? c : Buffer.from(c.buffer));
+
+/** Were attachments_*_chk. */
+function checkAttachment(a: AttachmentDoc) {
+  const size = bytesOf(a.content).length;
+  if (a.sizeBytes <= 0 || a.sizeBytes > 5 * 1024 * 1024 || a.sizeBytes !== size) throw new GuardViolation('An attachment is 1 byte to 5 MB, and its size is its content');
+  if ((a.removedAt === null) !== (a.removedReason === null)) throw new GuardViolation('A removed attachment says why');
+}
+
+export const attachments = defineCollection<AttachmentDoc>({
+  name: 'attachments',
+  scope: 'tenant',
+  schema: {
+    bsonType: 'object',
+    required: ['entityType', 'entityId', 'fileName', 'contentType', 'sizeBytes', 'sha256', 'content', 'uploadedById', 'createdAt'],
+    properties: {
+      entityType: { enum: ['DOCUMENT', 'PAYMENT', 'JOURNAL_ENTRY', 'BANK_STATEMENT_LINE', 'EXPENSE_CLAIM', 'CUSTOMER_ONBOARDING'] },
+      contentType: { enum: ATTACHMENT_TYPES },
+      sha256: { bsonType: 'string', pattern: '^[0-9a-f]{64}$' },
+      sizeBytes: { bsonType: ['int', 'long'] },
+      content: { bsonType: 'binData' },
+    },
+  },
+  indexes: [{ key: { orgId: 1, entityType: 1, entityId: 1 }, name: 'org_entity' }],
+  // Was t2t_guard_attachment: the bytes never change, and removal happens once.
+  guards: {
+    beforeInsert(a) {
+      checkAttachment(a);
+    },
+    afterUpdate(before, after) {
+      const fixed = (['sha256', 'sizeBytes', 'fileName', 'contentType', 'entityType', 'entityId', 'orgId'] as const).some((k) => after[k] !== before[k]);
+      const removedAgain = before.removedAt !== null && (+before.removedAt !== +(after.removedAt ?? 0) || after.removedReason !== before.removedReason);
+      if (fixed || !bytesOf(after.content).equals(bytesOf(before.content)) || removedAgain) throw new GuardViolation('An attachment cannot be changed');
+      checkAttachment(after);
+    },
+    beforeDelete() {
+      throw new GuardViolation('An attachment cannot be deleted; remove it instead');
+    },
+  },
+});
+
+export const ATTACHMENTS: MovedTable = { def: attachments, model: 'attachment', toRow: (d) => ({ ...d, content: new Uint8Array(bytesOf(d.content as Binary | Buffer)) }) };

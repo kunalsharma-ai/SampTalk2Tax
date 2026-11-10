@@ -85,4 +85,27 @@ describe('sales and purchases live in MongoDB', () => {
     await expect(runInOrg(org.orgId, () => ctx.store.collection(payments).updateOne({ id: recId }, { $set: { amount: '1' } }))).rejects.toThrow(/immutable/);
     await expect(runInOrg(org.orgId, () => ctx.store.collection(contacts).updateOne({ id: customer.id }, { $set: { isCustomer: false, isVendor: false } }))).rejects.toThrow(/customer, a vendor or both/);
   });
+
+  it('expense claims, attachments and bank statement lines are written to MongoDB first', async () => {
+    const claim = (await ctx.http().post(`${org.base}/expense-claims`).set(owner.auth).send({ title: 'Taxi (synthetic)', lines: [{ date: today(), accountId: org.acc['6600'], amount: '420.00' }] }).expect(201)).body;
+    const stored = await ctx.db.collection('expense_claims').findOne({ _id: claim.id });
+    expect(stored?.lines).toHaveLength(1);
+    expect(stored?.total.toString()).toBe('420');
+    const copy = await ctx.prisma.expenseClaim.findUniqueOrThrow({ where: { id: claim.id }, include: { lines: true } });
+    expect(copy.lines.map((l) => l.id)).toEqual((stored!.lines as { id: string }[]).map((l) => l.id));
+
+    const pdf = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n');
+    const att = (await ctx.http().post(`${org.base}/attachments?entityType=EXPENSE_CLAIM&entityId=${claim.id}&fileName=taxi.pdf`).set(owner.auth).set('Content-Type', 'application/pdf').send(pdf).expect(201)).body;
+    const file = await ctx.db.collection('attachments').findOne({ _id: att.id });
+    expect(Buffer.from(file!.content.buffer).equals(pdf)).toBe(true);
+    expect(Buffer.from((await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: att.id } })).content).equals(pdf)).toBe(true);
+
+    const csv = ['Date,Narration,Ref,Amount', `${today().split('-').reverse().join('/')},Coffee beans,CB1,-250.00`].join('\n');
+    await ctx.http().post(`${org.base}/banking/accounts/${org.acc['1120']}/imports`).set(owner.auth).send({ fileName: 'nov.csv', csv, mapping: { date: 0, description: 1, reference: 2, amount: 3, dateFormat: 'DD/MM/YYYY', hasHeader: true } }).expect(201);
+    const line = await ctx.db.collection('bank_statement_lines').findOne({ orgId: org.orgId, description: 'Coffee beans' });
+    expect(line?.amount.toString()).toBe('-250');
+    await ctx.http().post(`${org.base}/banking/lines/${line!._id}/exclude`).set(owner.auth).send({ reason: 'Personal' }).expect((r) => expect([200, 201]).toContain(r.status));
+    expect((await ctx.db.collection('bank_statement_lines').findOne({ _id: line!._id }))?.status).toBe('EXCLUDED');
+    expect((await ctx.prisma.bankStatementLine.findUniqueOrThrow({ where: { id: line!._id as unknown as string } })).status).toBe('EXCLUDED');
+  });
 });
