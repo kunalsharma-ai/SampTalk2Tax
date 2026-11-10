@@ -146,7 +146,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-025 |  | capability | Dispute management | Tested |
 | AR-026 |  | capability | Bad debt provisions | Tested |
 | AR-027 |  | capability | Write-offs | Tested |
-| AR-028 |  | capability | Revenue recognition support | Not started |
+| AR-028 |  | capability | Revenue recognition support | Tested |
 | AR-029 |  | capability | Contract billing | Tested |
 | AR-030 |  | capability | Customer portals | Not started |
 | AR-031 |  | capability | Multi-currency invoices | Tested |
