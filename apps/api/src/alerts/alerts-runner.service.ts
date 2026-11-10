@@ -50,18 +50,29 @@ export class AlertsRunnerService implements OnApplicationBootstrap, OnModuleDest
     return this.inFlight;
   }
 
+  /** Organisations with books whose last alert scan is stale (or that were never scanned), the oldest first. */
+  private async dueOrgs(only: string[] | null, now: Date) {
+    const orgs = await this.prisma.organization.findMany({ where: only === null ? {} : { id: { in: only } }, select: { id: true } });
+    const scans = await this.prisma.alertScan.groupBy({ by: ['orgId'], _max: { finishedAt: true } });
+    const last = new Map(scans.map((s) => [s.orgId, s._max.finishedAt]));
+    const stale = now.getTime() - STALE_AFTER_MINUTES * 60_000;
+    const candidates = orgs
+      .map((o) => ({ org_id: o.id, last: last.get(o.id) ?? null }))
+      .filter((o) => o.last === null || o.last.getTime() < stale)
+      .sort((a, b) => (a.last === null ? (b.last === null ? 0 : -1) : b.last === null ? 1 : a.last.getTime() - b.last.getTime()));
+    const out: { org_id: string }[] = [];
+    for (const o of candidates) {
+      if (out.length >= ALERTS_RUNNER_BATCH) break;
+      const books = await tenantStorage.run({ orgId: o.org_id }, async () => await this.prisma.journalEntry.findFirst({ where: { orgId: o.org_id }, select: { id: true } }));
+      if (books) out.push({ org_id: o.org_id });
+    }
+    return out;
+  }
+
   private async pass(only: string[] | null, now: Date) {
     // A Prisma query runs when awaited, so it is awaited inside the context it needs.
     const due = await tenantStorage.run({ bypass: true }, async () =>
-      await this.prisma.$queryRaw<{ org_id: string }[]>`
-        SELECT o.id AS org_id
-        FROM organizations o
-        LEFT JOIN LATERAL (SELECT MAX(s.finished_at) AS last FROM alert_scans s WHERE s.org_id = o.id) s ON true
-        WHERE EXISTS (SELECT 1 FROM journal_entries e WHERE e.org_id = o.id)
-          AND (${only === null} OR o.id::text = ANY(${only ?? []}::text[]))
-          AND (s.last IS NULL OR s.last < ${now}::timestamptz - make_interval(mins => ${STALE_AFTER_MINUTES}::int))
-        ORDER BY s.last ASC NULLS FIRST
-        LIMIT ${ALERTS_RUNNER_BATCH}`,
+      await this.dueOrgs(only, now),
     );
     let checked = 0;
     let failed = 0;

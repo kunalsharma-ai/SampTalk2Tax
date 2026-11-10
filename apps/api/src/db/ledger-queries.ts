@@ -126,17 +126,17 @@ export async function ledgerLines(store: DocumentStoreService, orgId: string, q:
 
 /**
  * Sums of the journal lines that documents posted, by document and account, limited to accounts
- * of one type. Replaces the SQL that joined documents to journal_lines on `journal_entry_id`.
+ * of one type (or to the accounts given). Replaces the SQL that joined documents to journal_lines on `journal_entry_id`.
  */
 export async function documentEntrySums(
   db: Tx | PrismaService,
   store: DocumentStoreService,
   orgId: string,
   where: Prisma.DocumentWhereInput,
-  accountType: 'REVENUE' | 'EXPENSE',
+  accountType: 'REVENUE' | 'EXPENSE' | string[],
 ): Promise<{ documentId: string; contactId: string; issueDate: Date; accountId: string; debit: Dec; credit: Dec }[]> {
   const docs = await db.document.findMany({ where: { AND: [where, { orgId, journalEntryId: { not: null } }] }, select: { id: true, contactId: true, issueDate: true, journalEntryId: true } });
-  const accounts = (await db.account.findMany({ where: { orgId, type: accountType }, select: { id: true } })).map((a) => a.id);
+  const accounts = Array.isArray(accountType) ? accountType : (await db.account.findMany({ where: { orgId, type: accountType }, select: { id: true } })).map((a) => a.id);
   if (!docs.length || !accounts.length) return [];
   const sums = await lineSums(store, orgId, { entry: { _id: { $in: docs.map((d) => d.journalEntryId!) } }, line: { accountId: { $in: accounts } }, by: { entryId: '_id', accountId: 'lines.accountId' } });
   const byEntry = new Map<string, LineSum[]>();
