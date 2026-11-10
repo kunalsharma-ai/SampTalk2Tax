@@ -76,12 +76,17 @@ export class UsageService {
     const since = usageMonthRange(months[months.length - 1]!).start;
     const [p, rows] = await Promise.all([
       this.limits(orgId),
-      this.prisma.$queryRaw<{ month: string; day: string; kind: string; source: string | null; n: bigint; input: bigint; output: bigint; bytes: bigint }[]>`
-        SELECT to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM') AS month,
-               to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS day,
-               kind, source, count(*) AS n, sum(input_tokens) AS input, sum(output_tokens) AS output, sum(bytes) AS bytes
-        FROM usage_events WHERE org_id = ${orgId}::uuid AND created_at >= ${since}
-        GROUP BY 1, 2, 3, 4`,
+      this.prisma.usageEvent.findMany({ where: { orgId, createdAt: { gte: since } }, select: { kind: true, source: true, inputTokens: true, outputTokens: true, bytes: true, createdAt: true } }).then((events) => {
+        // Grouped by India month and day, kind and source.
+        const out = new Map<string, { month: string; day: string; kind: string; source: string | null; n: number; input: number; output: number; bytes: number }>();
+        for (const e of events) {
+          const day = new Date(e.createdAt.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+          const k = `${day}|${e.kind}|${e.source ?? ''}`;
+          const r = out.get(k) ?? { month: day.slice(0, 7), day, kind: e.kind, source: e.source, n: 0, input: 0, output: 0, bytes: 0 };
+          out.set(k, { ...r, n: r.n + 1, input: r.input + e.inputTokens, output: r.output + e.outputTokens, bytes: r.bytes + e.bytes });
+        }
+        return [...out.values()];
+      }),
     ]);
     const sum = (f: (r: (typeof rows)[number]) => boolean, k: 'n' | 'input' | 'output' | 'bytes') => rows.filter(f).reduce((a, r) => a + Number(r[k]), 0);
     const ai = (m: string) => (r: (typeof rows)[number]) => r.kind === 'AI_CALL' && r.month === m;
