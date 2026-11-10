@@ -19,6 +19,7 @@ import { CustomerDeals } from '@/components/crm/customer-deals';
 import { Customer360 } from '@/components/crm/customer-360';
 import { VendorBankCard } from '@/components/purchases/vendor-bank-card';
 import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
+import { PortalLinksCard } from '@/components/customer-portal/portal-links-card';
 import { VendorPerformanceCard } from '@/components/vendor-performance/performance-card';
 
 export function ContactDetail({ l }: { l: LedgerConfig }) {
@@ -117,6 +118,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
       {l.ledger === 'PURCHASES' && x.isVendor ? <VendorBankCard orgId={orgId} contactId={x.id} /> : null}
       {l.ledger === 'PURCHASES' && x.isVendor ? <VendorPerformanceCard orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer && can(org.role, 'reports.read') ? <Customer360 orgId={orgId} contactId={x.id} currency={c} /> : null}
+      {l.ledger === 'SALES' && x.isCustomer ? <PortalLinksCard orgId={orgId} contactId={x.id} customerName={x.name} canManage={can(org.role, 'sales.manage')} active={x.isActive} /> : null}
       {l.ledger === 'SALES' && x.isCustomer ? <CustomerDeals orgId={orgId} contactId={x.id} currency={c} /> : null}
       <ContactDialog l={l} draft={draft} setDraft={setDraft} />
     </>
