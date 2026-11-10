@@ -20,12 +20,15 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/sales/quotes', label: 'Quotations' },
       { href: '/sales/orders', label: 'Sales orders' },
       { href: '/sales/pro-formas', label: 'Pro forma invoices' },
+      { href: '/sales/retainers', label: 'Retainers' },
       { href: '/sales/contracts', label: 'Contracts' },
       { href: '/sales/customers', label: 'Customers' },
+      { href: '/sales/onboarding', label: 'Customer onboarding' },
       { href: '/sales/customer-insights', label: 'Customer insights', perm: 'reports.read' },
       { href: '/sales/revenue-forecast', label: 'Revenue forecast', perm: 'reports.read' },
       { href: '/sales/invoices', label: 'Invoices' },
       { href: '/sales/receipts', label: 'Receipts' },
+      { href: '/sales/payment-links', label: 'Payment links' },
       { href: '/sales/ageing', label: 'Receivables ageing' },
       { href: '/sales/disputes', label: 'Disputes' },
       { href: '/sales/bad-debts', label: 'Bad debts' },
@@ -38,6 +41,8 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Purchases',
     items: [
       { href: '/purchases/vendors', label: 'Vendors' },
+      { href: '/purchases/onboarding', label: 'Vendor onboarding' },
+      { href: '/purchases/vendor-performance', label: 'Vendor performance' },
       { href: '/purchases/orders', label: 'Purchase orders' },
       { href: '/purchases/bills', label: 'Bills' },
       { href: '/purchases/payments', label: 'Payments' },
@@ -114,7 +119,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     ],
   },
   { group: 'Planning', items: [{ href: '/cfo', label: 'Virtual CFO' }, { href: '/benchmarking', label: 'Benchmarking', flag: 'benchmarking' }, { href: '/decisions', label: 'Decision memory' }, { href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }, { href: '/planning/twin', label: 'Digital twin' }, { href: '/planning/recovery', label: 'Recovery planner' }, { href: '/planning/forecast-lab', label: 'Forecast lab', flag: 'forecast-lab' }, { href: '/planning/disasters', label: 'Disaster simulation', flag: 'disaster-simulation' }, { href: '/planning/impact', label: 'Business impact' }, { href: '/planning/opportunities', label: 'Growth opportunities', flag: 'opportunities' }] },
-  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/ai-control', label: 'AI control center', perm: 'audit.read' }, { href: '/ai-activity', label: 'AI activity', perm: 'audit.read' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/subscription', label: 'Subscription' }, { href: '/settings/usage', label: 'Usage' }, { href: '/settings/integrations', label: 'Integrations', perm: 'org.manage' }, { href: '/settings/approvals', label: 'Approval rules' }, { href: '/automations', label: 'Automations', perm: 'workflows.manage' }, { href: '/governance/policies', label: 'Policy studio' }, { href: '/guide', label: 'Feature guide' }, { href: '/support', label: 'Help and support' }] },
+  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/ai-control', label: 'AI control center', perm: 'audit.read' }, { href: '/ai-activity', label: 'AI activity', perm: 'audit.read' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/subscription', label: 'Subscription' }, { href: '/settings/usage', label: 'Usage' }, { href: '/settings/integrations', label: 'Integrations', perm: 'org.manage' }, { href: '/settings/payment-gateways', label: 'Payment gateways', perm: 'org.manage' }, { href: '/settings/approvals', label: 'Approval rules' }, { href: '/automations', label: 'Automations', perm: 'workflows.manage' }, { href: '/governance/policies', label: 'Policy studio' }, { href: '/guide', label: 'Feature guide' }, { href: '/support', label: 'Help and support' }] },
 ];
 
 /** Employees only claim expenses; the rest of the books is not theirs to see. */
