@@ -2,8 +2,10 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { findOpportunities, OPPORTUNITY_INFO, OPPORTUNITY_KINDS, shiftYm, TwinError, type OpportunityCustomer, type OpportunityInput, type OpportunitySettings } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { todayIst } from '../cash-flow/cash-flow.service';
-import { toDbDate } from '../common/dates';
+import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { lineSums } from '../db/ledger-queries';
 import { PrismaService } from '../common/prisma.service';
 import { DimensionsService, type DimOrg } from '../dimensions/dimensions.service';
 import { ImpactService } from '../impact/impact.service';
@@ -30,6 +32,7 @@ export class OpportunitiesService {
     private readonly twin: TwinService,
     private readonly dimensions: DimensionsService,
     private readonly impact: ImpactService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   private async input(org: DimOrg, q: OpportunityQuery): Promise<OpportunityInput> {
@@ -42,14 +45,21 @@ export class OpportunitiesService {
     const cashBuffer = await this.twin.buffer(org.id);
 
     // Net sales before tax: revenue lines of posted invoices less credit notes, by customer, month and account.
-    const rows = await this.prisma.$queryRaw<{ contact_id: string; name: string; month: string; account_id: string; amount: Prisma.Decimal }[]>`
-      SELECT d.contact_id, c.name, to_char(d.issue_date, 'YYYY-MM') AS month, a.id AS account_id, SUM(l.functional_credit - l.functional_debit) AS amount
-      FROM documents d
-      JOIN contacts c ON c.id = d.contact_id AND c.org_id = d.org_id
-      JOIN journal_lines l ON l.entry_id = d.journal_entry_id AND l.org_id = d.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id AND a.type = 'REVENUE'
-      WHERE d.org_id = ${org.id}::uuid AND d.kind IN ('INVOICE', 'CREDIT_NOTE') AND d.status = 'POSTED' AND d.issue_date BETWEEN ${toDbDate(from)}::date AND ${toDbDate(to)}::date
-      GROUP BY d.contact_id, c.name, month, a.id`;
+    const docs = await this.prisma.document.findMany({ where: { orgId: org.id, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { gte: toDbDate(from), lte: toDbDate(to) }, journalEntryId: { not: null } }, select: { contactId: true, issueDate: true, journalEntryId: true } });
+    const revenue = (await this.prisma.account.findMany({ where: { orgId: org.id, type: 'REVENUE' }, select: { id: true } })).map((a) => a.id);
+    const sums = docs.length && revenue.length ? await lineSums(this.store, org.id, { entry: { _id: { $in: docs.map((d) => d.journalEntryId!) } }, line: { accountId: { $in: revenue } }, by: { entryId: '_id', accountId: 'lines.accountId' } }) : [];
+    const names = new Map((docs.length ? await this.prisma.contact.findMany({ where: { orgId: org.id, id: { in: [...new Set(docs.map((d) => d.contactId))] } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+    const grouped = new Map<string, { contact_id: string; name: string; month: string; account_id: string; amount: Prisma.Decimal }>();
+    for (const d of docs) {
+      const month = fromDbDate(d.issueDate).slice(0, 7);
+      for (const r of sums.filter((x) => x.key.entryId === d.journalEntryId)) {
+        const accountId = r.key.accountId as string;
+        const k = `${d.contactId}|${month}|${accountId}`;
+        const cur = grouped.get(k);
+        grouped.set(k, { contact_id: d.contactId, name: names.get(d.contactId) ?? '', month, account_id: accountId, amount: (cur?.amount ?? new Prisma.Decimal(0)).plus(r.credit.minus(r.debit).toFixed()) });
+      }
+    }
+    const rows = [...grouped.values()];
     const customers = new Map<string, { contactId: string; name: string; byMonth: Prisma.Decimal[]; byLine: Map<string, Prisma.Decimal> }>();
     for (const r of rows) {
       const c = customers.get(r.contact_id) ?? { contactId: r.contact_id, name: r.name, byMonth: months.map(() => new Prisma.Decimal(0)), byLine: new Map() };

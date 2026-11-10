@@ -16,6 +16,9 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { byCode } from '../db/subledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { addDays, todayIst } from '../tasks/tasks.service';
@@ -106,6 +109,7 @@ export class LoansService {
     private readonly prisma: PrismaService,
     private readonly journals: JournalsService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   private invalid(errors: string[], code = 'LOAN_INVALID'): never {
@@ -622,15 +626,11 @@ export class LoansService {
   async treasury(org: LoanOrg) {
     const scale = this.scale(org);
     const today = todayIst();
-    const balances = await this.prisma.$queryRaw<{ id: string; code: string; name: string; subtype: string | null; balance: Prisma.Decimal | null }[]>`
-      SELECT a.id, a.code, a.name, a.subtype::text AS subtype,
-             SUM(l.functional_debit - l.functional_credit) AS balance
-      FROM accounts a
-      LEFT JOIN journal_lines l ON l.account_id = a.id AND l.org_id = a.org_id
-        AND EXISTS (SELECT 1 FROM journal_entries e WHERE e.id = l.entry_id AND e.org_id = l.org_id AND e.status = 'POSTED' AND e.date <= ${toDbDate(today)}::date)
-      WHERE a.org_id = ${org.id}::uuid AND (a.subtype IN ('BANK', 'CASH') OR a.id IN (SELECT liability_account_id FROM loans WHERE org_id = ${org.id}::uuid))
-      GROUP BY a.id, a.code, a.name, a.subtype
-      ORDER BY a.code`;
+    const loanAccounts = (await this.prisma.loan.findMany({ where: { orgId: org.id }, select: { liabilityAccountId: true } })).map((l) => l.liabilityAccountId);
+    const accounts = (await this.prisma.account.findMany({ where: { orgId: org.id, OR: [{ subtype: { in: ['BANK', 'CASH'] } }, { id: { in: loanAccounts } }] }, select: { id: true, code: true, name: true, subtype: true } })).sort(byCode);
+    const sums = accounts.length ? await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(today)), line: { accountId: { $in: accounts.map((a) => a.id) } }, by: { accountId: 'lines.accountId' } }) : [];
+    const net = new Map(sums.map((r) => [r.key.accountId as string, new Prisma.Decimal(r.debit.minus(r.credit).toFixed())]));
+    const balances = accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, subtype: a.subtype as string | null, balance: net.get(a.id) ?? null }));
     const bal = (b: Prisma.Decimal | null) => new D(b?.toString() ?? '0');
     const cashAccounts = balances.filter((b) => b.subtype === 'BANK' || b.subtype === 'CASH').map((b) => ({ id: b.id, code: b.code, name: b.name, kind: b.subtype as 'BANK' | 'CASH', balance: bal(b.balance).toFixed(scale) }));
     const cash = cashAccounts.reduce((t, a) => t.plus(a.balance), new D(0));
