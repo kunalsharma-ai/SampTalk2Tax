@@ -4,11 +4,12 @@ import type { PrismaService, Tx } from '../common/prisma.service';
 /**
  * What is still open on documents: their total less the allocations not removed, with the date of
  * the last allocation. Replaces the SQL subqueries over allocations (target_id = d.id AND
- * removed_on IS NULL); the reads go to MongoDB through Prisma.
+ * removed_on IS NULL), counting only allocations up to `asOf` when given; the reads go to MongoDB
+ * through Prisma.
  */
-export async function withOpen<T extends { id: string; total: Prisma.Decimal }>(db: Tx | PrismaService, orgId: string, docs: T[]): Promise<(T & { allocated: Prisma.Decimal; open: Prisma.Decimal; lastAllocated: Date | null })[]> {
+export async function withOpen<T extends { id: string; total: Prisma.Decimal }>(db: Tx | PrismaService, orgId: string, docs: T[], asOf?: Date): Promise<(T & { allocated: Prisma.Decimal; open: Prisma.Decimal; lastAllocated: Date | null })[]> {
   if (!docs.length) return [];
-  const allocs = await db.allocation.findMany({ where: { orgId, targetId: { in: docs.map((d) => d.id) }, removedOn: null }, select: { targetId: true, amount: true, date: true } });
+  const allocs = await db.allocation.findMany({ where: { orgId, targetId: { in: docs.map((d) => d.id) }, removedOn: null, ...(asOf ? { date: { lte: asOf } } : {}) }, select: { targetId: true, amount: true, date: true } });
   const by = new Map<string, { allocated: Prisma.Decimal; last: Date | null }>();
   for (const a of allocs) {
     const t = by.get(a.targetId) ?? { allocated: new Prisma.Decimal(0), last: null };
