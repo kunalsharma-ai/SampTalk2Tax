@@ -1,12 +1,14 @@
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { writeFileSync } from 'node:fs';
 
 /**
  * Applies pending migrations to the dedicated test database. Nothing is dropped:
  * every test creates its own users and organizations, so runs are isolated by tenant.
  */
 export default function setup() {
+  const startedAt = new Date();
   const envFile = resolve(__dirname, '../../../.env');
   if (existsSync(envFile)) {
     for (const line of readFileSync(envFile, 'utf8').split('\n')) {
@@ -33,4 +35,14 @@ export default function setup() {
   execSync('node dist/db/migrate.js', { cwd: resolve(__dirname, '..'), env: { ...process.env, MONGODB_URL: mongoUrl }, stdio: 'pipe' });
   process.env.MONGODB_URL = mongoUrl;
   process.env.JWT_SECRET ??= 'test-secret-that-is-long-enough-for-hs256-signing';
+
+  // After every file: what this run wrote to PostgreSQL must be in MongoDB too (db/mirror-writes.ts).
+  return async () => {
+    const { checkMirrorSince } = await import('./mirror-check');
+    const problems = await checkMirrorSince(startedAt);
+    if (problems.length) {
+      writeFileSync(resolve(__dirname, '../mirror-differences.txt'), problems.join('\n'));
+      throw new Error(`${problems.length} differences between PostgreSQL and MongoDB (first: ${problems[0]}); all in apps/api/mirror-differences.txt`);
+    }
+  };
 }

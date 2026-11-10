@@ -80,7 +80,8 @@ export const contacts = defineCollection<ContactDoc>({
   },
 });
 
-export const CONTACTS: MovedTable = { def: contacts, model: 'contact' };
+// contacts_start_customer_onboarding opens an onboarding for a new customer or vendor.
+export const CONTACTS: MovedTable = { def: contacts, model: 'contact', triggers: [{ model: 'CustomerOnboarding', key: 'contactId' }] };
 
 /** A new contact with every field set, as the PostgreSQL defaults set them. */
 export function newContact(c: Partial<ContactDoc> & { name: string }, now = new Date()): Omit<ContactDoc, 'id' | 'orgId'> {

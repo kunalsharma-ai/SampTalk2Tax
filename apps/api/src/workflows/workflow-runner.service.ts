@@ -20,7 +20,7 @@ import {
 } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { DomainError } from '../common/errors';
-import { PrismaService, Tx } from '../common/prisma.service';
+import { PrismaService, Tx, mirrorRows } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { HeartbeatsService } from '../operations/heartbeats.service';
@@ -418,6 +418,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
           RETURNING id, org_id`,
       ),
     );
+    if (claimed.length) await tenantStorage.run({ bypass: true }, () => mirrorRows(this.prisma, 'WorkflowActionRun', { id: { in: claimed.map((c) => c.id) } }));
     for (const c of claimed) {
       try {
         await tenantStorage.run({ orgId: c.org_id }, () => this.deliverOne(c.org_id, c.id));

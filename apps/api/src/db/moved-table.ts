@@ -3,6 +3,7 @@ import type { CollectionDef } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../common/document-store.service';
 import { Tx, withSystemAccess } from '../common/prisma.service';
 import { runAsSystem, runInOrg } from '../common/tenant-context';
+import { mirrorRowsWhere } from './mirror-writes';
 
 /**
  * Writes for a table that has moved to MongoDB while its readers have not (docs/MONGODB.md ›
@@ -74,6 +75,7 @@ export class MovedTables {
         out.push(row);
       }
     });
+    for (const t of table.triggers ?? []) await withSystemAccess(tx, () => mirrorRowsWhere(tx, this.store, t.model, { [t.key]: { in: ids } }));
     return out;
   }
 }
@@ -87,6 +89,8 @@ export interface MovedTable {
   toRow?: (doc: Record<string, unknown>) => Record<string, unknown>;
   /** An array in the document that PostgreSQL keeps as rows of another table (a document's lines). */
   children?: { field: string; model: string; parentKey: string; toRow?: (item: Record<string, unknown>) => Record<string, unknown> };
+  /** Rows a PostgreSQL trigger writes when the copy changes (a new customer's onboarding), kept in step in MongoDB. */
+  triggers?: { model: string; key: string }[];
 }
 
 /**

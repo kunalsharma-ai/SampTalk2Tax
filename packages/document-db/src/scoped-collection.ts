@@ -260,7 +260,9 @@ export class ScopedCollection<T extends Document> {
       const fields = body as Record<string, unknown>;
       for (const field of Object.keys(fields)) {
         const top = field.split('.')[0];
-        if (PROTECTED_FIELDS.has(top) || (op === '$rename' && PROTECTED_FIELDS.has(String(fields[field])))) {
+        // In a global collection orgId is an ordinary field (for example, which organisation an error came from).
+        const guarded = (f: string) => PROTECTED_FIELDS.has(f) && (f !== TENANT_FIELD || this.def.scope === 'tenant');
+        if (guarded(top) || (op === '$rename' && guarded(String(fields[field])))) {
           throw new TenantAccessError(`${field} cannot be changed`);
         }
       }
