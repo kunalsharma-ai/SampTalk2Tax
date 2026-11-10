@@ -174,6 +174,8 @@ export const MIRRORED_MODEL_NAMES = [
   'InternationalPaymentItem',
   'ContractMeter',
   'UsageRecord',
+  'RevenueRecognitionSettings',
+  'InvoiceLineRecognition',
 ] as const;
 
 export const MIRRORED = mirrorModels(MIRRORED_MODEL_NAMES);

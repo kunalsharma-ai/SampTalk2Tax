@@ -7,6 +7,7 @@ import ledger from './20261109130000_ledger';
 import sales from './20261110090000_sales';
 import mirrored from './20261110100000_mirrored';
 import usageBilling from './20261211100000_usage_billing';
+import revenueRecognition from './20261212100000_revenue_recognition';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition];
