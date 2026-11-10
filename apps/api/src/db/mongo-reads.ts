@@ -503,6 +503,106 @@ function pick(info: MirrorInfo, row: Doc, select: Doc): Doc {
   return out;
 }
 
+// ------------------------------------------------------------------ groupBy and aggregate
+
+const AGGS = ['_count', '_sum', '_avg', '_min', '_max'] as const;
+
+/** Sums, averages, minimums and maximums of `rows` as Prisma returns them for each field type. */
+function aggregateRows(info: MirrorInfo, rows: Doc[], spec: Doc): Doc {
+  const out: Doc = {};
+  const field = (n: string) => info.scalars.find((f) => f.name === n) ?? no(`aggregate of ${n}`);
+  for (const agg of AGGS) {
+    const want = spec[agg];
+    if (!want) continue;
+    if (agg === '_count') {
+      if (want === true) {
+        out._count = rows.length;
+        continue;
+      }
+      const c: Doc = {};
+      for (const [k, v] of Object.entries(want as Doc)) if (v) c[k] = k === '_all' ? rows.length : rows.filter((r) => r[field(k).name] !== null).length;
+      out._count = c;
+      continue;
+    }
+    const res: Doc = {};
+    for (const [k, v] of Object.entries(want as Doc)) {
+      if (!v) continue;
+      const f = field(k);
+      const vals = rows.map((r) => r[k]).filter((x) => x !== null && x !== undefined);
+      if (f.type !== 'Decimal' && f.type !== 'Int' && f.type !== 'Float' && f.type !== 'BigInt' && (agg === '_sum' || agg === '_avg')) no(`${agg} of ${f.type}`);
+      if (!vals.length) {
+        res[k] = null;
+        continue;
+      }
+      if (agg === '_min' || agg === '_max') {
+        const cmp = (a: unknown, b: unknown) => (Prisma.Decimal.isDecimal(a) ? (a as Prisma.Decimal).cmp(b as Prisma.Decimal) : a instanceof Date ? a.getTime() - (b as Date).getTime() : a! < b! ? -1 : a! > b! ? 1 : 0);
+        res[k] = vals.reduce((m, x) => ((agg === '_min' ? cmp(x, m) < 0 : cmp(x, m) > 0) ? x : m));
+        continue;
+      }
+      if (f.type === 'Decimal') {
+        const sum = vals.reduce((t: Prisma.Decimal, x) => t.plus(x as Prisma.Decimal), new Prisma.Decimal(0));
+        res[k] = agg === '_sum' ? sum : sum.div(vals.length);
+      } else if (f.type === 'BigInt') {
+        const sum = vals.reduce((t: bigint, x) => t + (x as bigint), 0n);
+        res[k] = agg === '_sum' ? sum : Number(sum) / vals.length;
+      } else {
+        const sum = vals.reduce((t: number, x) => t + (x as number), 0);
+        res[k] = agg === '_sum' ? sum : sum / vals.length;
+      }
+    }
+    out[agg] = res;
+  }
+  return out;
+}
+
+async function groupRows(store: Store, info: MirrorInfo, args: Doc): Promise<Doc[]> {
+  if (args.having) no('groupBy having');
+  const by = (Array.isArray(args.by) ? args.by : [args.by]) as string[];
+  if (by.some((k) => !info.scalars.some((f) => f.name === k))) no('groupBy on an unknown field');
+  const filter = await toFilter(store, info, args.where);
+  const rows = (await read(store, info, filter)).map((d) => toRow(info, d));
+  const groups = new Map<string, Doc[]>();
+  const keyOf = (r: Doc) => JSON.stringify(by.map((k) => (r[k] === null ? null : r[k] instanceof Date ? (r[k] as Date).toISOString() : String(r[k]))));
+  for (const r of rows) {
+    const k = keyOf(r);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k)!.push(r);
+  }
+  let out = [...groups.values()].map((g) => ({ ...Object.fromEntries(by.map((k) => [k, g[0][k]])), ...aggregateRows(info, g, args) }));
+  if (args.orderBy) {
+    const list = (Array.isArray(args.orderBy) ? args.orderBy : [args.orderBy]) as Doc[];
+    const keys: { get: (r: Doc) => unknown; dir: 1 | -1 }[] = [];
+    for (const o of list)
+      for (const [k, d] of Object.entries(o)) {
+        if ((AGGS as readonly string[]).includes(k)) {
+          for (const [f, dd] of Object.entries(d as Doc)) keys.push({ get: (r) => (k === '_count' && typeof r._count === 'number' ? r._count : (r[k] as Doc)?.[f]), dir: dd === 'desc' ? -1 : 1 });
+        } else if (by.includes(k) && (d === 'asc' || d === 'desc')) keys.push({ get: (r) => r[k], dir: d === 'desc' ? -1 : 1 });
+        else no('groupBy ordering');
+      }
+    const cmp = (a: unknown, b: unknown): number => {
+      const an = a === null || a === undefined;
+      const bn = b === null || b === undefined;
+      if (an || bn) return an && bn ? 0 : an ? 1 : -1;
+      if (Prisma.Decimal.isDecimal(a)) return (a as Prisma.Decimal).cmp(b as Prisma.Decimal);
+      if (a instanceof Date) return a.getTime() - (b as Date).getTime();
+      return a! < b! ? -1 : a! > b! ? 1 : 0;
+    };
+    out = out.sort((x, y) => {
+      for (const k of keys) {
+        const a = k.get(x);
+        const b = k.get(y);
+        const nulls = (a === null || a === undefined) !== (b === null || b === undefined);
+        // PostgreSQL: NULLs last going up, first going down.
+        const c = nulls ? cmp(a, b) : cmp(a, b) * k.dir;
+        if (c) return nulls && k.dir === -1 ? -c : c;
+      }
+      return 0;
+    });
+  }
+  const skip = (args.skip as number | undefined) ?? 0;
+  return out.slice(skip, args.take === undefined ? undefined : skip + (args.take as number));
+}
+
 // ------------------------------------------------------------------ the delegate
 
 type Delegate = Record<string, (args?: unknown) => Promise<unknown>>;
@@ -539,6 +639,14 @@ export function mongoReadOps(pg: Delegate, info: MirrorInfo, store: Store): Reco
         const r = await first(args);
         if (!r) throw notFound(info.model);
         return r;
+      }),
+    groupBy: (args) => attempt('groupBy', args, () => groupRows(store, info, args)),
+    aggregate: (args) =>
+      attempt('aggregate', args, async () => {
+        if (args?.orderBy || args?.cursor || args?.skip || args?.take) no('aggregate with options');
+        const filter = await toFilter(store, info, args?.where);
+        const rows = (await read(store, info, filter)).map((d) => toRow(info, d));
+        return aggregateRows(info, rows, args ?? {});
       }),
     count: (args) =>
       attempt('count', args, async () => {
