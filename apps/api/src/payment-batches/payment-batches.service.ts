@@ -7,6 +7,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
+import { nextCounter } from '../db/counters';
 
 type Actor = { id: string };
 export interface BatchOrg {
@@ -189,9 +190,7 @@ export class PaymentBatchesService {
     this.assert(this.can(org).prepare, 'Preparing a payment batch needs purchases.manage');
     const id = await this.prisma.$transaction(async (tx) => {
       const bank = await this.checkBank(tx, org.id, input.bankAccountId);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'payment_batch', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'payment_batch') }];
       const b = await tx.paymentBatch.create({ data: { orgId: org.id, number, bankAccountId: bank.id, paymentDate: toDbDate(input.paymentDate), currency: org.functionalCurrency, memo: input.memo?.trim() || null, createdById: actor.id } });
       await this.setItems(tx, org, b.id, b.currency, input.items);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'payment_batch.created', entityType: 'payment_batch', entityId: b.id, data: { reference: batchRef(number), items: input.items.length } });

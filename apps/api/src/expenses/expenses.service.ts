@@ -24,6 +24,7 @@ import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
 
 interface Actor {
   id: string;
@@ -368,10 +369,7 @@ export class ExpensesService {
   }
 
   private async nextNumber(tx: Tx, orgId: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, 'doc:EXPENSE_CLAIM', 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, 'doc:EXPENSE_CLAIM') }];
     return value;
   }
 

@@ -22,6 +22,7 @@ import { byCode } from '../db/subledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { addDays, todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
 
 export interface LoanOrg {
   id: string;
@@ -136,10 +137,7 @@ export class LoansService {
   }
 
   private async nextNumber(tx: Tx, orgId: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, 'loan', 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, 'loan') }];
     return value;
   }
 

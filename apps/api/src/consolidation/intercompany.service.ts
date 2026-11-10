@@ -9,6 +9,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx, useOrgInTx } from '../common/prisma.service';
 import { currentTenantContext, tenantStorage } from '../common/tenant-context';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
 
 type Actor = { id: string };
 
@@ -328,10 +329,7 @@ export class IntercompanyService {
   }
 
   private async nextNumber(tx: Tx, orgId: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, 'intercompany', 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, 'intercompany') }];
     return value;
   }
 }

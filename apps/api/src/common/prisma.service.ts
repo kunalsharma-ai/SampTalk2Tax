@@ -3,6 +3,7 @@ import '../db/readable-models';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
 import { isTransientTransactionError, type DocumentStore } from '@talk2tax/document-db';
+import { useCounterStore } from '../db/counters';
 import { DocumentStoreService } from './document-store.service';
 import { currentTenantContext, TenantContext, tenantStorage } from './tenant-context';
 
@@ -160,5 +161,8 @@ async function connectAndCheckRole(base: PrismaService): Promise<void> {
 export const prismaProvider: Provider = {
   provide: PrismaService,
   inject: [DocumentStoreService],
-  useFactory: (store: DocumentStoreService) => createTenantAwarePrisma(new PrismaService(), store),
+  useFactory: (store: DocumentStoreService) => {
+    useCounterStore(store);
+    return createTenantAwarePrisma(new PrismaService(), store);
+  },
 };

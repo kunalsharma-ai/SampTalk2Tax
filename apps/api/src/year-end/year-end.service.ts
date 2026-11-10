@@ -10,6 +10,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { lineSums, postedBetween } from '../db/ledger-queries';
 import { byCode } from '../db/subledger-queries';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
 
 type Actor = { id: string };
 export interface YearEndOrg {
@@ -128,9 +129,7 @@ export class YearEndService {
       const label = fiscalYearLabel(year.startDate, org.fiscalYearStartMonth);
       const closing = this.closing(rows, re.id, label, org.functionalCurrency);
       if (closing.lines.length === 0) throw new DomainError('NOTHING_TO_CLOSE', `${label} has nothing left in its revenue and expense accounts`, HttpStatus.CONFLICT);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'year_end_close', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'year_end_close') }];
       const again = (await tx.yearEndClose.count({ where: { orgId: org.id, fiscalYear, status: 'ACTIVE' } })) > 0;
       const je = await this.journals.postSystemEntry(tx, org, actor, {
         date: year.endDate,

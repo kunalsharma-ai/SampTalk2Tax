@@ -11,6 +11,7 @@ import { PrismaService, Tx, useOrgInTx, withSystemAccess } from '../common/prism
 import { AppConfig, CONFIG } from '../config';
 import { SecretBox, secretHint } from '../integrations/secret-box';
 import { DocumentsService } from '../ledgers/documents.service';
+import { nextCounter } from '../db/counters';
 
 export interface LinkOrg {
   id: string;
@@ -284,10 +285,7 @@ export class PaymentLinksService {
     if (existing) await this.prisma.paymentLink.update({ where: { id: existing.id }, data: { status: 'EXPIRED' } });
     const provider = row.provider as Provider;
     const number = await this.prisma.$transaction(async (tx) => {
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'payment_link', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'payment_link') }];
       return value;
     });
     const back = `${this.config.APP_URL.replace(/\/$/, '')}/paid?ref=${encodeURIComponent(paymentLinkRef(number))}`;

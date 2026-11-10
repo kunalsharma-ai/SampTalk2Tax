@@ -39,6 +39,7 @@ import { ALLOCATIONS, APPROVAL_REQUESTS, DOCUMENTS, newAllocation, newDocument, 
 import { MovedTables } from '../db/moved-table';
 import { CustomerOnboardingService } from '../customer-onboarding/customer-onboarding.service';
 import { DomainError } from '../common/errors';
+import { nextCounter } from '../db/counters';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
 import { JournalsService } from '../journals/journals.service';
@@ -852,11 +853,7 @@ export class DocumentsService {
   }
 
   private async nextNumber(tx: Tx, orgId: string, kind: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${`doc:${kind}`}, 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
-    return value;
+    return nextCounter(tx, orgId, `doc:${kind}`);
   }
 
   private async lockDocument(tx: Tx, orgId: string, ledger: Ledger, id: string) {

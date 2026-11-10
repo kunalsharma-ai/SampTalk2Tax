@@ -8,6 +8,7 @@ import { DomainError } from '../../common/errors';
 import { PrismaService, Tx, withSystemAccess } from '../../common/prisma.service';
 import { BillingService, serializePlan } from '../billing.service';
 import { GatewayError, PaymentGateway, PaymentState, Provider, SignatureError } from './gateways';
+import { nextPlatformCounter } from '../../db/counters';
 import { PaymentSettingsService } from './payment-settings.service';
 
 const DAY = 86_400_000;
@@ -319,10 +320,7 @@ export class SubscriptionPaymentsService {
         return { invoice: serializeInvoice(inv), applied: false, problem: 'invoice was replaced' };
       }
       const fy = indianFinancialYear(now);
-      const [{ last }] = await tx.$queryRaw<{ last: number }[]>`
-        INSERT INTO subscription_invoice_counters (series, last) VALUES (${fy.label}, 1)
-        ON CONFLICT (series) DO UPDATE SET last = subscription_invoice_counters.last + 1
-        RETURNING last`;
+      const last = await nextPlatformCounter(tx, fy.label);
       const prefix = (await tx.platformBillingProfile.findUnique({ where: { id: 1 }, select: { invoicePrefix: true } }))?.invoicePrefix ?? 'T2T';
       const number = taxInvoiceNumber(prefix, fy.label, last!);
       const paymentRef = (p.reference ?? p.paymentId ?? inv.checkoutRef ?? inv.reference).slice(0, 200);

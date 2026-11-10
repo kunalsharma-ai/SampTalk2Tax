@@ -8,6 +8,7 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
 
 type Org = { id: string; functionalCurrency: string };
 type Actor = { id: string };
@@ -141,10 +142,7 @@ export class FxService {
       if (!lines) this.invalid(plan.lines.length ? 'Nothing to post: the balances are already at these rates.' : `No foreign-currency monetary balances on ${input.date}.`, 'FX_NOTHING', HttpStatus.CONFLICT);
       const reversalDate = nextDay(input.date);
       const used = Object.fromEntries(currencies.map((c) => [c, { rate: rates[c], date: input.rates?.[c] !== undefined ? null : (recorded[c]?.date ?? null) }]));
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'fx_revaluation', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'fx_revaluation') }];
       const reference = `FXR-${String(number).padStart(4, '0')}`;
       const je = await this.journals.postSystemEntry(tx, org, actor, { date: input.date, source: 'FX_REVALUATION', memo: `Revaluation of foreign-currency balances at ${input.date}`, reference, lines });
       const rev = await this.journals.reverseSystemEntry(tx, org, actor, je.id, { date: reversalDate, memo: `Reversal of ${reference} (unrealised exchange differences restart from the entries)` });

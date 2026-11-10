@@ -25,6 +25,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { DocumentInput, DocumentsService } from '../ledgers/documents.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
 
 type Actor = { id: string };
 export interface BillOrg {
@@ -149,10 +150,7 @@ export class RecurringBillsService {
     const id = await this.prisma.$transaction(async (tx) => {
       const data = this.prepare(org, input);
       await this.assertVendor(tx, org.id, input.contactId);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'recurring_bill', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'recurring_bill') }];
       const b = await tx.recurringBill.create({ data: { ...data.header, orgId: org.id, number, createdById: actor.id, lines: { create: data.lines(org.id) } }, include: INCLUDE });
       await this.check(tx, org, actor, b, data.header.startDate);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'recurring_bill.created', entityType: 'recurring_bill', entityId: b.id, data: { reference: recurringBillRef(number), name: b.name, contactId: b.contactId, frequency: b.frequency, postMode: b.postMode } });

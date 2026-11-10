@@ -9,6 +9,7 @@ import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
 import { lineSums, postedBetween } from '../db/ledger-queries';
+import { nextCounter } from '../db/counters';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 
@@ -336,9 +337,7 @@ export class WithholdingService {
       }
       const tax = docs.reduce((s, d) => s.plus(d.withholdingAmount.toFixed()), new D(0));
       const payable = input.kind === 'TDS' ? settings.tdsPayableAccountId : settings.tcsPayableAccountId;
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, ${`doc:${input.kind}_DEPOSIT`}, 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const value = await nextCounter(tx, org.id, `doc:${input.kind}_DEPOSIT`);
       const number = `${input.kind}D-${String(value).padStart(6, '0')}`;
       const c = org.functionalCurrency;
       const lines = [

@@ -19,6 +19,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
 
 type Actor = { id: string };
 export interface DisputeOrg {
@@ -122,9 +123,7 @@ export class DisputesService {
       const amount = input.amount ? dec(input.amount).toFixed() : open.toFixed(scale);
       this.check({ ...input, amount }, open.toFixed(scale), doc.currency, today);
       await this.assertMember(tx, org.id, input.ownerId);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'invoice_dispute', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'invoice_dispute') }];
       const d = await tx.invoiceDispute.create({
         data: {
           orgId: org.id,

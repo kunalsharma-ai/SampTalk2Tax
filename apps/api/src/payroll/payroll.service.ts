@@ -23,6 +23,7 @@ import { fromDbDate, todayIso, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
 
 export interface PayrollOrg {
   id: string;
@@ -242,9 +243,7 @@ export class PayrollService {
       await this.requireSettings(tx, org.id);
       const live = await tx.payRun.findFirst({ where: { orgId: org.id, period: input.period, status: { not: 'VOID' } } });
       if (live) throw new DomainError('PAY_RUN_EXISTS', `${live.number} already covers ${input.period}`, HttpStatus.CONFLICT);
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'doc:PAY_RUN', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'doc:PAY_RUN') }];
       const run = await tx.payRun.create({ data: { orgId: org.id, number: `PAY-${String(value).padStart(6, '0')}`, period: input.period, payDate: toDbDate(input.payDate), createdById: actor.id } });
       const skipped = await this.syncPayslips(tx, org.id, run.id, input.period, new Map());
       await this.updateTotals(tx, run.id);
@@ -371,9 +370,7 @@ export class PayrollService {
       const bank = await tx.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
       if (!bank || !bank.isPostable || !bank.isActive || !['BANK', 'CASH'].includes(bank.subtype ?? '')) throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
       const settings = await this.requireSettings(tx, org.id);
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'doc:PAYROLL_PAYMENT', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'doc:PAYROLL_PAYMENT') }];
       const number = `PAYP-${String(value).padStart(6, '0')}`;
       const c = org.functionalCurrency;
       const je = await this.journals.postSystemEntry(tx, org, actor, {

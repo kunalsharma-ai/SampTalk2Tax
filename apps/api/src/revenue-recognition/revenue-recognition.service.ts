@@ -16,6 +16,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
 
 type Actor = { id: string };
 type Db = Tx | PrismaService;
@@ -179,10 +180,7 @@ export class RevenueRecognitionService {
     const out: string[] = [];
     for (const [i, x] of p.plan.entries()) {
       const amount = useJournal ? new D(credited[i]!.functionalCredit.toFixed()).minus(credited[i]!.functionalDebit.toFixed()).toFixed(scale) : functionalNet(x.net, doc.exchangeRate, scale);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, ${'deferred_revenue'}, 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'deferred_revenue') }];
       const desc = docLines.find((l) => l.lineNo === x.lineNo)?.description;
       const s = await tx.deferralSchedule.create({
         data: {

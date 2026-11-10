@@ -27,6 +27,7 @@ import { fromDbDate, istDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
 
 export interface CrmOrg {
   id: string;
@@ -106,10 +107,7 @@ export class CrmService {
   }
 
   private async nextNumber(tx: Tx, orgId: string, key: 'crm_lead' | 'crm_deal') {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${key}, 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, key) }];
     return value;
   }
 
