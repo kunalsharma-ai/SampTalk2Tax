@@ -69,3 +69,4 @@ export * from './payment-links';
 export * from './customer-onboarding';
 export * from './vendor-performance';
 export * from './international-payments';
+export * from './customer-portal';
