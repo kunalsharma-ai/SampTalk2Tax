@@ -187,7 +187,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-016 |  | capability | Goods receipt matching | Tested |
 | AP-017 |  | capability | Three-way matching | Tested |
 | AP-018 |  | capability | Duplicate invoice detection | Tested |
-| AP-019 |  | capability | Supplier tax validation | Not started |
+| AP-019 |  | capability | Supplier tax validation | Tested |
 | AP-020 |  | capability | Expense classification | Not started |
 | AP-021 |  | capability | Vendor performance tracking | Tested |
 | AP-022 |  | capability | Payment reconciliation | Tested |
