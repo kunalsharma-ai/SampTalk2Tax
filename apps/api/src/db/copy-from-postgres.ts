@@ -8,6 +8,7 @@ import { loadConfig } from '../config';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { Decimal128 } from '@talk2tax/document-db';
 import { journalEntries } from './collections/ledger';
+import { contacts } from './collections/sales';
 import { authSessions, loginThrottles, users } from './collections/identity';
 import { invitations, memberships, organizations } from './collections/tenancy';
 import { withSystemAccess } from '../common/prisma.service';
@@ -140,6 +141,11 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
     );
   }
   copied.journal_entries = newEntries.length;
+
+  const allContacts = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.contact.findMany()));
+  const newContacts = await missing(contacts, allContacts.map((c) => c.id));
+  await raw(contacts.name, allContacts.filter((c) => newContacts.has(c.id)).map((c) => ({ ...c, creditLimit: c.creditLimit === null ? null : dec(c.creditLimit) })));
+  copied.contacts = newContacts.size;
 
   log(`Copied to MongoDB: ${Object.entries(copied).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   return copied;

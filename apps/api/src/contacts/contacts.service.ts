@@ -1,3 +1,5 @@
+import { MovedTables } from '../db/moved-table';
+import { CONTACTS } from '../db/collections/sales';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { D, dec, minorUnits } from '@talk2tax/accounting-engine';
 import { Contact } from '@talk2tax/database';
@@ -34,6 +36,7 @@ export class ContactsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly subledger: SubledgerService,
+    private readonly moved: MovedTables,
   ) {}
 
   async list(org: OrgRef, q: { role?: 'customer' | 'vendor'; q?: string; includeInactive: boolean }) {
@@ -74,9 +77,8 @@ export class ContactsService {
     const data = this.validate(org, input);
     return this.prisma.$transaction(async (tx) => {
       if (input.withholdingSectionId) await this.checkSection(tx, org.id, input.withholdingSectionId);
-      const c = await tx.contact.create({
-        data: {
-          orgId: org.id,
+      const now = new Date();
+      const c = await this.moved.create<Contact>(tx, CONTACTS, org.id, {
           name: input.name,
           email: input.email ?? null,
           phone: input.phone ?? null,
@@ -92,7 +94,13 @@ export class ContactsService {
           isVendor: input.isVendor ?? false,
           paymentTermsDays: input.paymentTermsDays ?? 30,
           creditLimit: data.creditLimit,
-        },
+          creditHold: false,
+          creditHoldReason: null,
+          creditHoldAt: null,
+          creditHoldById: null,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
       });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'contact.created', entityType: 'contact', entityId: c.id, data: { name: c.name, isCustomer: c.isCustomer, isVendor: c.isVendor } });
       return this.serialize(org, c);
@@ -120,9 +128,7 @@ export class ContactsService {
         });
         if (used > 0) throw new DomainError('CONTACT_IN_USE', 'This contact already has documents in that role', HttpStatus.CONFLICT);
       }
-      const c = await tx.contact.update({
-        where: { id },
-        data: {
+      const c = (await this.moved.update<Contact>(tx, CONTACTS, org.id, id, {
           name: input.name,
           email: input.email,
           phone: input.phone,
@@ -139,8 +145,8 @@ export class ContactsService {
           paymentTermsDays: input.paymentTermsDays,
           creditLimit: input.creditLimit === undefined ? undefined : data.creditLimit,
           isActive: input.isActive,
-        },
-      });
+          updatedAt: new Date(),
+      }))!;
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'contact.updated', entityType: 'contact', entityId: id, data: { ...input } });
       return this.serialize(org, c);
     });

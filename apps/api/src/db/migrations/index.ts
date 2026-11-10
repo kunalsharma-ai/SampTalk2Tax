@@ -4,6 +4,7 @@ import identity from './20261109100000_identity';
 import tenancy from './20261109110000_tenancy';
 import chart from './20261109120000_chart';
 import ledger from './20261109130000_ledger';
+import sales from './20261110090000_sales';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales];
