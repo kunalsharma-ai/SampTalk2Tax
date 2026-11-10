@@ -3,7 +3,9 @@ import { defineCollection, type AnyCollectionDef } from '@talk2tax/document-db';
 type Document = Record<string, unknown>;
 import type { DocumentStore } from '@talk2tax/document-db';
 import { currentTenantContext, runAsSystem, runInOrg } from '../common/tenant-context';
+import { appendFileSync } from 'node:fs';
 import { mongoReadOps } from './mongo-reads';
+import { differences, flatWhere, FROM_SEQUENCE, fromSequence, hasAutoincrement, planCreate, planUpdate, useAutoincrement, type PlannedRow } from './mongo-writes';
 import { foreignKeys } from './constraints/catalog';
 import { enforceChecks, enforceNoReferrers, enforceReferences, type TableInfo } from './constraints/enforce';
 import { allowedInTx } from './guards/allow';
@@ -382,25 +384,97 @@ export function oneAtATime() {
 }
 type Serial = ReturnType<typeof oneAtATime>;
 
+// ------------------------------------------------------------------ planned writes, checked
+
+/**
+ * With T2T_PLAN_CHECK=1, every write is also worked out as MongoDB alone will do it
+ * (mongo-writes.ts) and the plan is compared with what PostgreSQL stored. Differences go to
+ * plan-differences.txt (or PLAN_DIFFERENCES_FILE).
+ */
+const PLAN_CHECK = () => process.env.T2T_PLAN_CHECK === '1';
+type Row = Record<string, unknown>;
+
+async function tryPlan(label: string, fn: () => Promise<PlannedRow[]>): Promise<PlannedRow[] | null> {
+  if (!hasAutoincrement()) useAutoincrement(async () => FROM_SEQUENCE);
+  try {
+    return await fn();
+  } catch (e) {
+    reportPlan([`${label}: could not plan: ${(e as Error).message}`]);
+    return null;
+  }
+}
+
+function reportPlan(lines: string[]) {
+  if (lines.length) appendFileSync(process.env.PLAN_DIFFERENCES_FILE ?? 'plan-differences.txt', `${lines.join('\n')}\n`);
+}
+
+async function comparePlans(tx: Record<string, Delegate>, label: string, plans: PlannedRow[] | null, returned?: Row) {
+  if (!plans) return;
+  // A check only: whatever goes wrong in it is reported, never the write's failure.
+  await comparing(tx, label, plans, returned).catch((e) => reportPlan([`${label}: could not compare: ${(e as Error).message}`]));
+}
+
+const keyText = (where: Row) => JSON.stringify(where, (_, v) => (typeof v === 'bigint' ? `${v}n` : v));
+
+async function comparing(tx: Record<string, Delegate>, label: string, plans: PlannedRow[], returned?: Row) {
+  const lines: string[] = [];
+  // The values PostgreSQL's sequences gave the record itself are known from what it returned.
+  if (returned && plans[0]) for (const [k, v] of Object.entries(plans[0].row)) if (fromSequence(v) && k in returned) plans[0].row[k] = returned[k];
+  for (const p of plans) {
+    const info = modelInfo(p.model);
+    if (!info) continue;
+    if (info.pk.some((k) => fromSequence(p.row[k]))) continue; // a key only PostgreSQL's sequence knows
+    const where = Object.fromEntries(info.pk.map((k) => [k, p.row[k]]));
+    if (info.pk.some((k) => p.row[k] === null || p.row[k] === undefined)) {
+      lines.push(`${label}: ${p.model} planned without its key`);
+      continue;
+    }
+    const stored = (await pgOf(tx[info.delegate]).findFirst({ where })) as Row | null;
+    if (!stored) lines.push(`${label}: ${p.model} ${keyText(where)} planned but not stored`);
+    else lines.push(...differences(p.model, p.row, stored).map((x) => `${label}: ${x}`));
+  }
+  reportPlan(lines);
+}
+
+const updatePlans = async (model: string, before: Row | null, data: Row): Promise<PlannedRow[]> => {
+  if (!before) return [];
+  const u = await planUpdate(model, before, data, new Date(), true);
+  return [{ model, row: u.row, before }, ...u.children];
+};
+
 export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx: Record<string, Delegate>, serial: Serial = oneAtATime()): Delegate {
+  const label = (op: string) => `${info.model}.${op}`;
   const ops: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
     async create(args) {
+      const plans = PLAN_CHECK() ? await tryPlan(label('create'), () => planCreate(info.model, args.data as Row, new Date(), true)) : null;
       const { args: a, strip } = withKeys(info, args);
       const row = (await d.create(a)) as Record<string, unknown>;
+      await comparePlans(tx, label('create'), plans, row);
       await putRows(store, d, info, [row]);
       await syncNested(tx, store, info, args.data, row);
       return stripKeys(row, strip);
     },
     async update(args) {
+      const plans = PLAN_CHECK()
+        ? await tryPlan(label('update'), async () => updatePlans(info.model, (await d.findFirst({ where: flatWhere(info.model, args.where as Row) })) as Row | null, args.data as Row))
+        : null;
       const { args: a, strip } = withKeys(info, args);
       const row = (await d.update(a)) as Record<string, unknown>;
+      await comparePlans(tx, label('update'), plans);
       await putRows(store, d, info, [row]);
       await syncNested(tx, store, info, args.data, row);
       return stripKeys(row, strip);
     },
     async upsert(args) {
+      const plans = PLAN_CHECK()
+        ? await tryPlan(label('upsert'), async () => {
+            const before = (await d.findFirst({ where: flatWhere(info.model, args.where as Row) })) as Row | null;
+            return before ? updatePlans(info.model, before, args.update as Row) : planCreate(info.model, args.create as Row, new Date(), true);
+          })
+        : null;
       const { args: a, strip } = withKeys(info, args);
       const row = (await d.upsert(a)) as Record<string, unknown>;
+      await comparePlans(tx, label('upsert'), plans, row);
       await putRows(store, d, info, [row]);
       await syncNested(tx, store, info, args.create, row);
       await syncNested(tx, store, info, args.update, row);
@@ -414,25 +488,43 @@ export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx
       return stripKeys(row, strip);
     },
     async createMany(args) {
+      const plans = PLAN_CHECK()
+        ? await tryPlan(label('createMany'), async () => (await Promise.all(([] as Row[]).concat(args.data as Row[]).map((x) => planCreate(info.model, x, new Date(), true)))).flat())
+        : null;
       const rows = (await d.createManyAndReturn({ ...args, select: pkSelect(info) })) as Record<string, unknown>[];
+      await comparePlans(tx, label('createMany'), plans);
       await putRows(store, d, info, rows);
       return { count: rows.length };
     },
     async createManyAndReturn(args) {
+      const plans = PLAN_CHECK()
+        ? await tryPlan(label('createManyAndReturn'), async () => (await Promise.all(([] as Row[]).concat(args.data as Row[]).map((x) => planCreate(info.model, x, new Date(), true)))).flat())
+        : null;
       const { args: a, strip } = withKeys(info, args);
       const rows = (await d.createManyAndReturn(a)) as Record<string, unknown>[];
+      await comparePlans(tx, label('createManyAndReturn'), plans);
       await putRows(store, d, info, rows);
       return rows.map((r) => stripKeys(r, strip));
     },
     async updateMany(args) {
+      const plans = PLAN_CHECK()
+        ? await tryPlan(label('updateMany'), async () => (await Promise.all(((await d.findMany({ where: args.where })) as Row[]).map((b) => updatePlans(info.model, b, args.data as Row)))).flat())
+        : null;
       const keys = (await d.findMany({ where: args.where, select: pkSelect(info) })) as Record<string, unknown>[];
       const r = await d.updateMany(args);
+      await comparePlans(tx, label('updateMany'), plans);
       await putRows(store, d, info, keys);
       return r;
     },
     async updateManyAndReturn(args) {
+      const plans = PLAN_CHECK()
+        ? await tryPlan(label('updateManyAndReturn'), async () =>
+            (await Promise.all(((await d.findMany({ where: args.where })) as Row[]).map((b) => updatePlans(info.model, b, args.data as Row)))).flat(),
+          )
+        : null;
       const keys = (await d.findMany({ where: args.where, select: pkSelect(info) })) as Record<string, unknown>[];
       const r = await d.updateManyAndReturn(args);
+      await comparePlans(tx, label('updateManyAndReturn'), plans);
       await putRows(store, d, info, keys);
       return r;
     },
