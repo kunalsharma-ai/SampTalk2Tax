@@ -9,6 +9,14 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  /**
+   * MongoDB, which is replacing PostgreSQL module by module (docs/MONGODB.md). Must be a
+   * replica set (one node is enough) because postings use multi-document transactions.
+   */
+  MONGODB_URL: z
+    .string()
+    .min(1, 'MONGODB_URL is required')
+    .refine((u) => /^mongodb(\+srv)?:\/\//.test(u), 'MONGODB_URL must start with mongodb:// or mongodb+srv://'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   /** Access token lifetime. Short, because a refresh token renews it. */
   JWT_TTL_SECONDS: z.coerce.number().int().positive().max(86400).default(900),

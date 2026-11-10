@@ -35,6 +35,7 @@ export async function bootApp(overrides: Record<string, string> = {}, opts: { co
     WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true',
     NODE_ENV: 'test',
     DATABASE_URL: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL,
+    MONGODB_URL: process.env.TEST_MONGODB_URL ?? process.env.MONGODB_URL,
     JWT_SECRET: process.env.JWT_SECRET ?? 'test-secret-that-is-long-enough-for-hs256-signing',
     ...overrides,
   });
