@@ -83,5 +83,6 @@ describe('copying records made before the move', () => {
     const again = await copyFromPostgres(ctx.prisma, ctx.store, () => undefined);
     expect(again).toMatchObject({ users: 0, journal_entries: 0, documents: 0, expense_claims: 0, tax_rates: 0, pay_runs: 0, crm_leads: 0 });
     expect(Object.entries(again).filter(([, n]) => n !== 0)).toEqual([]);
-  });
+    // The copy runs over the whole shared test database, which grows with every run.
+  }, 120_000);
 });
