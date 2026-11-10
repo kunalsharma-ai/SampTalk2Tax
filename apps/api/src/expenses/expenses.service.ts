@@ -1,3 +1,4 @@
+import { ChartService } from '../accounts/chart.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { organizations } from '../db/collections/tenancy';
 import { PostgresMirrorService } from '../db/postgres-mirror.service';
@@ -54,6 +55,7 @@ export class ExpensesService {
     private readonly journals: JournalsService,
     private readonly store: DocumentStoreService,
     private readonly mirror: PostgresMirrorService,
+    private readonly chart: ChartService,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -195,7 +197,7 @@ export class ExpensesService {
       if (!computed.total.eq(c.total.toFixed()) || !computed.taxTotal.eq(c.taxTotal.toFixed())) {
         throw new DomainError('TOTAL_CHANGED', 'A tax rate used on this claim changed since it was submitted. Reject it so the claimant can save it again.', HttpStatus.CONFLICT);
       }
-      const payable = await this.claimsAccount(tx, org.id);
+      const payable = await this.claimsAccount(org.id, actor.id);
       const claimant = (await this.names([c.claimantId])).get(c.claimantId) ?? 'employee';
       const je = await this.journals.postSystemEntry(tx, org, actor, {
         date,
@@ -228,7 +230,7 @@ export class ExpensesService {
       if (!bank || !bank.isActive || !bank.isPostable || (bank.subtype !== 'BANK' && bank.subtype !== 'CASH')) {
         throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
       }
-      const payable = await this.claimsAccount(tx, org.id);
+      const payable = await this.claimsAccount(org.id, actor.id);
       const claimant = (await this.names([c.claimantId])).get(c.claimantId) ?? 'employee';
       const je = await this.journals.postSystemEntry(tx, org, actor, {
         date: input.date,
@@ -335,7 +337,7 @@ export class ExpensesService {
    * first use. That set-up commits on its own (the organisation record is in MongoDB), so the
    * caller's transaction only ever sees an account that exists.
    */
-  private async claimsAccount(_tx: Tx, orgId: string): Promise<string> {
+  private async claimsAccount(orgId: string, actorId: string): Promise<string> {
     const known = (await this.store.collection(organizations).findById(orgId))?.claimsAccountId;
     if (known) return known;
     const created = await this.prisma.$transaction(async (tx) => {
@@ -343,11 +345,11 @@ export class ExpensesService {
       await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
       const again = (await this.store.collection(organizations).findById(orgId))?.claimsAccountId;
       if (again) return again;
-      const taken = new Set((await tx.account.findMany({ where: { orgId, code: { startsWith: '22' } }, select: { code: true } })).map((a) => a.code));
-      const code = ['2250', '2251', '2252', '2253', '2254', '2255', '2256', '2257', '2258', '2259'].find((x) => !taken.has(x));
+      const candidates = ['2250', '2251', '2252', '2253', '2254', '2255', '2256', '2257', '2258', '2259'];
+      const taken = new Set((await this.chart.find(orgId, { code: { $in: candidates } })).map((a) => a.code));
+      const code = candidates.find((x) => !taken.has(x));
       if (!code) throw new DomainError('NO_CLAIMS_ACCOUNT', 'Could not find a free account code (2250–2259) for employee reimbursements', HttpStatus.CONFLICT);
-      const parent = await tx.account.findFirst({ where: { orgId, code: '2000', type: 'LIABILITY', isPostable: false }, select: { id: true } });
-      const a = await tx.account.create({ data: { orgId, code, name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentId: parent?.id ?? null, isPostable: true } });
+      const a = { id: await this.chart.create(tx, orgId, actorId, { code, name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentCode: '2000' }, 'Employee expense claims') };
       await this.store.collection(organizations).updateOne({ id: orgId, claimsAccountId: null }, { $set: { claimsAccountId: a.id, updatedAt: new Date() } });
       await this.mirror.organizations([orgId], tx);
       return a.id;

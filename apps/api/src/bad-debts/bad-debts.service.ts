@@ -1,3 +1,4 @@
+import { ChartService } from '../accounts/chart.service';
 import { ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
   AGEING_BUCKETS,
@@ -54,6 +55,7 @@ export class BadDebtsService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly subledger: SubledgerService,
+    private readonly chart: ChartService,
   ) {}
 
   // ---------- reads ----------
@@ -140,18 +142,15 @@ export class BadDebtsService {
       const out: Record<'allowance' | 'expense', string> = { allowance: '', expense: '' };
       for (const key of ['allowance', 'expense'] as const) {
         const d = DEFAULT_ACCOUNTS[key];
-        const same = await tx.account.findFirst({ where: { orgId: org.id, name: d.name, type: d.type, isPostable: true, isActive: true } });
+        const same = (await this.chart.find(org.id, { name: d.name, type: d.type, isPostable: true, isActive: true }))[0];
         if (same) {
           out[key] = same.id;
           continue;
         }
-        const taken = new Set((await tx.account.findMany({ where: { orgId: org.id, code: { in: d.codes } }, select: { code: true } })).map((a) => a.code));
+        const taken = new Set((await this.chart.find(org.id, { code: { $in: d.codes } })).map((a) => a.code));
         const code = d.codes.find((c) => !taken.has(c));
         if (!code) throw new DomainError('BAD_DEBT_ACCOUNTS', `Codes ${d.codes.join(', ')} are all taken. Add a "${d.name}" account in the chart of accounts and choose it here.`);
-        const parent = await tx.account.findFirst({ where: { orgId: org.id, code: d.parent, type: d.type, isPostable: false } });
-        const a = await tx.account.create({ data: { orgId: org.id, code, name: d.name, type: d.type, subtype: d.subtype, description: d.description, parentId: parent?.id ?? null } });
-        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'account.created', entityType: 'account', entityId: a.id, data: { code, name: d.name, type: d.type, subtype: d.subtype, by: 'bad_debts' } });
-        out[key] = a.id;
+        out[key] = await this.chart.create(tx, org.id, actor.id, { code, name: d.name, type: d.type, subtype: d.subtype, description: d.description, parentCode: d.parent }, 'Bad debts setup');
       }
       return out;
     });

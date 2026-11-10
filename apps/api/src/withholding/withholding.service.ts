@@ -1,3 +1,4 @@
+import { ChartService } from '../accounts/chart.service';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { D, dec, minorUnits } from '@talk2tax/accounting-engine';
 import { Contact, Prisma, ThresholdBasis, ThresholdWindow, WithholdingKind, WithholdingSection, WithholdingSettings } from '@talk2tax/database';
@@ -67,6 +68,7 @@ export class WithholdingService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
+    private readonly chart: ChartService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -435,21 +437,8 @@ export class WithholdingService {
   }
 
   private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }) {
-    const out = {} as { tdsPayableAccountId: string; tcsPayableAccountId: string };
-    for (const key of ['tdsPayableAccountId', 'tcsPayableAccountId'] as const) {
-      const spec = DEFAULT_ACCOUNTS[key];
-      const existing = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.code } } });
-      if (existing) {
-        if (existing.name !== spec.name || existing.type !== 'LIABILITY') throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} is already used by "${existing.name}". Choose the accounts yourself.`, HttpStatus.CONFLICT);
-        out[key] = existing.id;
-        continue;
-      }
-      const parent = await tx.account.findUnique({ where: { orgId_code: { orgId, code: '2000' } } });
-      const a = await tx.account.create({ data: { orgId, code: spec.code, name: spec.name, type: 'LIABILITY', subtype: spec.subtype, parentId: parent && !parent.isPostable && parent.type === 'LIABILITY' ? parent.id : null, isPostable: true } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, reason: 'TDS and TCS setup' } });
-      out[key] = a.id;
-    }
-    return out;
+    const spec = (k: keyof typeof DEFAULT_ACCOUNTS) => ({ ...DEFAULT_ACCOUNTS[k], type: 'LIABILITY' as const, parentCode: '2000' });
+    return this.chart.ensure(tx, orgId, actor.id, { tdsPayableAccountId: spec('tdsPayableAccountId'), tcsPayableAccountId: spec('tcsPayableAccountId') }, 'TDS and TCS setup');
   }
 
   private async checkAccounts(tx: Tx, orgId: string, accounts: { tdsPayableAccountId: string; tcsPayableAccountId: string }) {

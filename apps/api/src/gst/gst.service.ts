@@ -1,3 +1,4 @@
+import { ChartService } from '../accounts/chart.service';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { D, Ledger, toFunctional } from '@talk2tax/accounting-engine';
 import { Contact, GstRegistration, Prisma } from '@talk2tax/database';
@@ -65,6 +66,7 @@ export class GstService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly chart: ChartService,
   ) {}
 
   registration(db: Tx | PrismaService, orgId: string) {
@@ -233,25 +235,7 @@ export class GstService {
   // ------------------------------------------------------------------ helpers
 
   private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }): Promise<GstAccountsInput> {
-    const out = {} as GstAccountsInput;
-    for (const key of ACCOUNT_KEYS) {
-      const spec = DEFAULT_ACCOUNTS[key];
-      const existing = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.code } } });
-      if (existing) {
-        if (existing.name !== spec.name || existing.type !== spec.type) {
-          throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} is already used by "${existing.name}". Choose the GST accounts yourself.`, HttpStatus.CONFLICT);
-        }
-        out[key] = existing.id;
-        continue;
-      }
-      const parent = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.parentCode } } });
-      const a = await tx.account.create({
-        data: { orgId, code: spec.code, name: spec.name, type: spec.type, subtype: spec.subtype, parentId: parent && !parent.isPostable && parent.type === spec.type ? parent.id : null, isPostable: true },
-      });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, reason: 'GST registration' } });
-      out[key] = a.id;
-    }
-    return out;
+    return this.chart.ensure(tx, orgId, actor.id, DEFAULT_ACCOUNTS, 'GST registration');
   }
 
   private async checkAccounts(tx: Tx, orgId: string, accounts: GstAccountsInput) {
