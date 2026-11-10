@@ -9,6 +9,7 @@ import mirrored from './20261110100000_mirrored';
 import usageBilling from './20261211100000_usage_billing';
 import revenueRecognition from './20261212100000_revenue_recognition';
 import customerPortal from './20261213100000_customer_portal';
+import supplierTaxChecks from './20261214100000_supplier_tax_checks';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks];
