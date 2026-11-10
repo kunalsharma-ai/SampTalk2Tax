@@ -58,6 +58,7 @@ export * from './crm';
 export * from './sales-orders';
 export * from './contracts';
 export * from './usage-billing';
+export * from './revenue-recognition';
 export * from './customer-insights';
 export * from './revenue-forecast';
 export * from './crm-api';

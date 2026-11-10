@@ -321,6 +321,9 @@ export class DeferralsService {
       const termsChanged =
         !new D(input.amount).eq(s.amount.toString()) || input.startDate !== fromDbDate(s.startDate) || input.months !== s.months || input.method !== s.method || input.balanceAccountId !== s.balanceAccountId || input.pnlAccountId !== s.pnlAccountId;
       if (termsChanged) {
+        const fromInvoice = await tx.invoiceLineRecognition.findFirst({ where: { orgId: org.id, scheduleId: id }, select: { documentId: true } });
+        const invoiceNo = fromInvoice && (await tx.document.findUnique({ where: { id: fromInvoice.documentId }, select: { number: true } }))?.number;
+        if (fromInvoice) throw new DomainError('SCHEDULE_TERMS_FIXED', `This schedule comes from invoice ${invoiceNo}, so its terms follow the invoice. Void the invoice and issue a new one to change them.`, HttpStatus.CONFLICT);
         if (await tx.deferralLine.count({ where: { orgId: org.id, scheduleId: id } })) throw new DomainError('SCHEDULE_TERMS_FIXED', 'A release has been posted for this schedule, so its amount, dates, accounts and method are fixed. Reverse the release runs first to change them.', HttpStatus.CONFLICT);
         if (s.initialEntryId && (!new D(input.amount).eq(s.amount.toString()) || input.balanceAccountId !== s.balanceAccountId)) throw new DomainError('SCHEDULE_TERMS_FIXED', 'The payment or receipt for this schedule was posted here, so its amount and balance sheet account are fixed', HttpStatus.CONFLICT);
         this.validate(org, { ...input, kind: s.kind });
