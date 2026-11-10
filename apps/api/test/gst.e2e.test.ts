@@ -1,6 +1,7 @@
 import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { Decimal128 } from '@talk2tax/document-db';
 
 // Synthetic, format-valid GSTINs (made-up PANs, check character computed). Karnataka (29) is the organisation's state.
 const synthetic = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
@@ -177,6 +178,8 @@ describe('GST documents', () => {
     expect(draft.body.gst).toMatchObject({ supplyNature: 'INTRA', cgst: '9.00' });
     // The stored draft is tampered with so it no longer matches what GST says now.
     await ctx.prisma.$executeRawUnsafe(`UPDATE document_lines SET cgst_amount = 0, sgst_amount = 0, igst_amount = 18 WHERE document_id = '${draft.body.id}'`);
+    // MongoDB holds the record, so the tampering is done there too.
+    await ctx.db.collection('documents').updateOne({ _id: draft.body.id }, { $set: { 'lines.$[].cgstAmount': Decimal128.fromString('0'), 'lines.$[].sgstAmount': Decimal128.fromString('0'), 'lines.$[].igstAmount': Decimal128.fromString('18') } });
     const r = await ctx.http().post(`${org.base}/sales/documents/${draft.body.id}/post`).set(owner.auth).send({}).expect(409);
     expect(r.body.error).toBe('TOTAL_CHANGED');
     await ctx.http().delete(`${org.base}/sales/documents/${draft.body.id}`).set(owner.auth).expect(204);

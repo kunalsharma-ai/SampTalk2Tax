@@ -1,7 +1,7 @@
 import { Prisma } from '@talk2tax/database';
 import type { DocumentStore } from '@talk2tax/document-db';
 import { Binary, Decimal128, Long } from '@talk2tax/document-db';
-import { currentTenantContext } from '../common/tenant-context';
+import { currentTenantContext, runAsSystem } from '../common/tenant-context';
 import { modelInfo, type MirrorInfo } from './mirror-writes';
 
 /**
@@ -230,12 +230,64 @@ function sortStages(info: MirrorInfo, order: [string, 1 | -1][]): Doc[] {
 
 // ------------------------------------------------------------------ reading
 
+/**
+ * The row-level security policies that are wider or narrower than "this organisation"
+ * (docs/SECURITY.md › Row-level security), as filters. `cross` policies see past the current
+ * organisation, so they run as the system with the filter as the only limit.
+ */
+const POLICIES: Record<string, { cross: boolean; filter: (store: Store, ctx: { orgId?: string; userId?: string }) => Promise<Doc> }> = {
+  // Your own memberships in every organisation, and everyone's inside the current one.
+  Membership: { cross: true, filter: async (_s, c) => ({ $or: [...(c.orgId ? [{ orgId: c.orgId }] : []), ...(c.userId ? [{ userId: c.userId }] : []), { _id: { $exists: false } }] }) },
+  // The current organisation and every organisation you belong to.
+  Organization: { cross: true, filter: async (s, c) => ({ _id: { $in: [...(c.orgId ? [c.orgId] : []), ...(await myOrgs(s, c.userId))] } }) },
+  Subscription: { cross: true, filter: async (s, c) => ({ orgId: { $in: [...(c.orgId ? [c.orgId] : []), ...(await myOrgs(s, c.userId))] } }) },
+  // A copilot conversation is its member's alone, even inside the organisation.
+  CopilotConversation: { cross: false, filter: async (_s, c) => ({ userId: c.userId ?? null }) },
+  CopilotMessage: {
+    cross: false,
+    filter: async (s, c) => {
+      const conv = modelInfo('CopilotConversation')!;
+      const mine = await read(s, conv, { userId: c.userId ?? null }, { projection: { _id: 1 } });
+      return { conversationId: { $in: mine.map((m) => m.id) } };
+    },
+  },
+  // Benchmark contributions are pooled across organisations and read only by system work.
+  BenchmarkContribution: { cross: false, filter: async () => ({ _id: { $exists: false } }) },
+};
+
+async function myOrgs(store: Store, userId: string | undefined): Promise<string[]> {
+  if (!userId) return [];
+  const m = modelInfo('Membership');
+  if (!m) return [];
+  const rows = (await runAsSystem(() => store.collection(m.def).find({ userId }, { projection: { orgId: 1 } }))) as Doc[];
+  return rows.map((r) => String(r.orgId));
+}
+
 /** Runs a filter against the collection the way RLS would see it: the request's organisation, or all for system work. */
 async function read(store: Store, info: MirrorInfo, filter: Doc, opts: { order?: [string, 1 | -1][]; skip?: number; take?: number; projection?: Doc } = {}): Promise<Doc[]> {
   const ctx = currentTenantContext();
+  const policy = ctx.bypass ? undefined : POLICIES[info.model];
+  if (policy) {
+    const extra = await policy.filter(store, ctx);
+    const narrowed = { $and: [filter, extra] };
+    if (policy.cross) return runAsSystem(() => read(store, info, narrowed, opts));
+    filter = narrowed;
+  }
   if (info.tenant && !ctx.orgId && !ctx.bypass) no('no organisation in context');
-  const coll = store.collection(info.def);
-  const pipeline: Doc[] = [{ $match: mapId(filter) }, ...sortStages(info, opts.order ?? [])];
+  const e = info.embedded;
+  const coll = store.collection(e ? e.parent : info.def);
+  const pipeline: Doc[] = [];
+  if (e) {
+    // Lines live inside their parent: narrow to the parents first when the filter names them.
+    const parent = filter[e.parentKey];
+    if (parent !== undefined) pipeline.push({ $match: { _id: parent } });
+    pipeline.push(
+      { $unwind: `$${e.path}` },
+      { $replaceRoot: { newRoot: { $mergeObjects: [`$${e.path}`, { [e.parentKey]: '$_id', orgId: '$orgId' }] } } },
+      { $addFields: { _id: '$id' } },
+    );
+  }
+  pipeline.push({ $match: mapId(filter) }, ...sortStages(info, opts.order ?? []));
   if (opts.skip) pipeline.push({ $skip: opts.skip });
   if (opts.take !== undefined) pipeline.push({ $limit: opts.take });
   if (opts.projection) pipeline.push({ $project: { ...mapId(opts.projection), ...(info.tenant ? { orgId: 1 } : {}) } });

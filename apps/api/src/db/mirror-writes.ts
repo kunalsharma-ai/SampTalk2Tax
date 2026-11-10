@@ -2,7 +2,7 @@ import { Prisma } from '@talk2tax/database';
 import { defineCollection, type AnyCollectionDef } from '@talk2tax/document-db';
 type Document = Record<string, unknown>;
 import type { DocumentStore } from '@talk2tax/document-db';
-import { runAsSystem, runInOrg } from '../common/tenant-context';
+import { currentTenantContext, runAsSystem, runInOrg } from '../common/tenant-context';
 import { mongoReadOps } from './mongo-reads';
 
 /**
@@ -29,6 +29,10 @@ export interface MirrorInfo {
   pk: string[];
   scalars: Field[];
   tenant: boolean;
+  /** For lines kept inside their parent's document (document lines, journal lines). */
+  embedded?: { parent: AnyCollectionDef; path: string; parentKey: string };
+  /** Moved by hand (MovedTables, the ledger): only reads go through here, writes stay as they are. */
+  readOnly?: boolean;
   /** Mirrored models whose rows PostgreSQL deletes or detaches when one of these is deleted. */
   children: { info: () => MirrorInfo; local: string[]; remote: string[]; onDelete: 'Cascade' | 'SetNull' }[];
 }
@@ -124,8 +128,25 @@ export function mirrorModels(names: readonly string[]): MirrorInfo[] {
   return names.map((n) => INFOS.get(n)!);
 }
 
-/** The mirrored model of this name, if it is mirrored. */
-export const modelInfo = (name: string): MirrorInfo | undefined => INFOS.get(name);
+const READABLE = new Map<string, MirrorInfo>();
+
+/**
+ * Registers tables moved by hand (step 6 and before) for reading: their MongoDB documents have
+ * the Prisma model's fields, so the same reader serves them. Lines kept inside a parent
+ * document name the parent collection, the array and the parent's key.
+ */
+export function readableModels(list: { model: string; def: AnyCollectionDef; embedded?: MirrorInfo['embedded'] }[]) {
+  for (const r of list) {
+    const info = { ...build(r.model), def: r.def, embedded: r.embedded, readOnly: true };
+    if (r.embedded) info.tenant = r.embedded.parent.scope === 'tenant';
+    else info.tenant = r.def.scope === 'tenant';
+    READABLE.set(r.model, info);
+  }
+}
+
+/** The model of this name as MongoDB holds it: mirrored, or moved by hand. */
+export const modelInfo = (name: string): MirrorInfo | undefined => INFOS.get(name) ?? READABLE.get(name);
+const readableByDelegate = () => new Map([...READABLE.values()].map((i) => [i.delegate, i]));
 
 export const mirrorByDelegate = () => new Map([...INFOS.values()].map((i) => [i.delegate, i]));
 
@@ -388,6 +409,7 @@ export async function mirrorRowsWhere(tx: unknown, store: Store, model: string, 
  */
 export function mirrorClient<T extends object>(client: T, store: Store, runInTx?: (fn: (tx: unknown) => Promise<unknown>) => Promise<unknown>): T {
   const byDelegate = mirrorByDelegate();
+  const readable = readableByDelegate();
   const cache = new Map<string, unknown>();
   const serial = oneAtATime();
   return new Proxy(client, {
@@ -407,6 +429,23 @@ export function mirrorClient<T extends object>(client: T, store: Store, runInTx?
           });
         };
       }
+      if (typeof prop === 'string' && !byDelegate.has(prop) && MONGO_READS()) {
+        const ro = readable.get(prop);
+        if (ro) {
+          if (!cache.has(prop)) {
+            const pg = value as Delegate;
+            const reads = mongoReadOps(pg, ro, store);
+            cache.set(prop, new Proxy(pg, {
+              get(t, op, r) {
+                if (op === PG) return t;
+                if (typeof op === 'string' && op in reads) return (args: Record<string, unknown>) => (runInTx ? (strayInTx() ? (t as Delegate)[op](args) : reads[op](args)) : serial(() => reads[op](args)));
+                return Reflect.get(t, op, r);
+              },
+            }));
+          }
+          return cache.get(prop);
+        }
+      }
       if (typeof prop !== 'string' || !byDelegate.has(prop)) return value;
       if (!cache.has(prop)) {
         const info = byDelegate.get(prop)!;
@@ -418,7 +457,7 @@ export function mirrorClient<T extends object>(client: T, store: Store, runInTx?
             get(t, op, r) {
               if (op === PG) return t;
               if (typeof op === 'string' && WRITES.has(op)) return (args: unknown) => runInTx((tx) => ((tx as Record<string, Delegate>)[prop] as Delegate)[op](args));
-              if (typeof op === 'string' && op in reads) return reads[op];
+              if (typeof op === 'string' && op in reads) return (args: unknown) => (strayInTx() ? (t as Delegate)[op](args) : reads[op](args));
               return Reflect.get(t, op, r);
             },
           }));
@@ -486,7 +525,22 @@ function castKeys(info: MirrorInfo, k: Record<string, unknown>) {
 
 /** The PostgreSQL delegate behind a wrapped one: reading back what PostgreSQL holds must not go to MongoDB. */
 const PG = Symbol('postgres delegate');
+/** A client whose model delegates all read PostgreSQL (the copying tool reads what PostgreSQL holds). */
+export const postgresOnly = <C>(client: C): C =>
+  new Proxy(client as object, {
+    get(t, p, r) {
+      const v = Reflect.get(t, p, r);
+      return v && typeof v === 'object' ? pgOf(v as Delegate) : v;
+    },
+  }) as C;
+
 export const pgOf = (d: Delegate): Delegate => ((d as unknown as Record<symbol, Delegate>)[PG] ?? d);
+
+/**
+ * A call on the root client from inside a transaction's callback. PostgreSQL answers it with no
+ * tenant settings, so it sees nothing; it still goes there, so it keeps seeing nothing.
+ */
+const strayInTx = () => !!currentTenantContext().inTx;
 
 /** Reads of mirrored tables come from MongoDB unless MONGO_READS=off (step 8). */
 const MONGO_READS = () => process.env.MONGO_READS !== 'off';

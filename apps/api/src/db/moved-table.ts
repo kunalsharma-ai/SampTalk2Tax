@@ -3,7 +3,7 @@ import type { CollectionDef } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../common/document-store.service';
 import { Tx, withSystemAccess } from '../common/prisma.service';
 import { runAsSystem, runInOrg } from '../common/tenant-context';
-import { mirrorParentDeleted, mirrorRowsWhere } from './mirror-writes';
+import { mirrorParentDeleted, mirrorRowsWhere, pgOf } from './mirror-writes';
 
 /**
  * Writes for a table that has moved to MongoDB while its readers have not (docs/MONGODB.md ›
@@ -112,8 +112,9 @@ interface Delegate {
   createMany(a: unknown): Promise<unknown>;
 }
 
+/** The PostgreSQL delegate: the copy is compared with what PostgreSQL holds, never with MongoDB. */
 function delegate(tx: Tx, table: Pick<MovedTable, 'model'>) {
-  return (tx as unknown as Record<string, Delegate>)[table.model]!;
+  return pgOf((tx as unknown as Record<string, Parameters<typeof pgOf>[0]>)[table.model]!) as unknown as Delegate;
 }
 
 /** Drops undefined fields and turns decimal objects into the decimal strings MongoDB takes (also inside arrays of objects). */
