@@ -72,3 +72,52 @@ export function postedBetween(from: Date | null, to: Date | null, opts: { exclud
   if (to) date.$lte = to;
   return { status: 'POSTED', ...(Object.keys(date).length ? { date } : {}), ...(opts.excludeClosing ? { type: { $ne: 'CLOSING' } } : {}) };
 }
+
+/** One journal line with its entry's fields, as the SQL joins of journal_lines and journal_entries returned them. */
+export interface LedgerLine {
+  id: string;
+  entry_id: string;
+  entry_number: number | null;
+  date: Date;
+  memo: string | null;
+  reference: string | null;
+  description: string | null;
+  source: string;
+  status: string;
+  reverses_entry_id: string | null;
+  account_id: string;
+  /** Functional debit less credit. */
+  net: Dec;
+}
+
+/** Journal lines matching `line` on entries matching `entry`, ordered by entry date and number (PostgreSQL's NULLs last). */
+export async function ledgerLines(store: DocumentStoreService, orgId: string, q: { entry?: Document; line?: Document }): Promise<LedgerLine[]> {
+  const pipeline: Document[] = [];
+  const entryMatch: Document = { ...(q.entry ?? {}) };
+  if (q.line && Object.keys(q.line).length) entryMatch.lines = { $elemMatch: q.line };
+  if (Object.keys(entryMatch).length) pipeline.push({ $match: entryMatch });
+  pipeline.push({ $unwind: '$lines' });
+  if (q.line && Object.keys(q.line).length) pipeline.push({ $match: prefixed(q.line) });
+  pipeline.push({
+    $project: {
+      _id: 0,
+      id: '$lines.id',
+      entry_id: '$_id',
+      entry_number: '$entryNumber',
+      date: 1,
+      memo: 1,
+      reference: 1,
+      description: '$lines.description',
+      source: 1,
+      status: 1,
+      reverses_entry_id: '$reversesEntryId',
+      account_id: '$lines.accountId',
+      debit: '$lines.functionalDebit',
+      credit: '$lines.functionalCredit',
+    },
+  });
+  const rows = await runInOrg(orgId, () => store.collection(journalEntries).aggregate<Omit<LedgerLine, 'net'> & { debit: string; credit: string }>(pipeline));
+  return rows
+    .map(({ debit, credit, ...r }) => ({ ...r, entry_number: r.entry_number ?? null, memo: r.memo ?? null, reference: r.reference ?? null, description: r.description ?? null, reverses_entry_id: r.reverses_entry_id ?? null, net: new D(String(debit)).minus(String(credit)) }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime() || (a.entry_number ?? Infinity) - (b.entry_number ?? Infinity));
+}
