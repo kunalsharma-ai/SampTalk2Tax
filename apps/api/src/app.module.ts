@@ -108,6 +108,8 @@ import { ContractsController } from './sales-orders/contracts.controller';
 import { UsageBillingController } from './sales-orders/usage-billing.controller';
 import { CustomerPortalController, CustomerPortalLinksController } from './customer-portal/customer-portal.controller';
 import { CustomerPortalService } from './customer-portal/customer-portal.service';
+import { VendorInvoicesController, VendorPortalController, VendorPortalLinksController } from './vendor-portal/vendor-portal.controller';
+import { VendorPortalService } from './vendor-portal/vendor-portal.service';
 import { SupplierTaxController } from './supplier-tax/supplier-tax.controller';
 import { SupplierTaxService } from './supplier-tax/supplier-tax.service';
 import { RevenueRecognitionController } from './revenue-recognition/revenue-recognition.controller';
@@ -283,6 +285,9 @@ export class AppModule {
         RevenueRecognitionController,
         CustomerPortalLinksController,
         CustomerPortalController,
+        VendorPortalLinksController,
+        VendorInvoicesController,
+        VendorPortalController,
         SupplierTaxController,
         JournalTemplatesController,
         RecurringBillsController,
@@ -395,6 +400,7 @@ export class AppModule {
         UsageBillingService,
         RevenueRecognitionService,
         CustomerPortalService,
+        VendorPortalService,
         SupplierTaxService,
         ContractsRunnerService,
         JournalTemplatesService,
