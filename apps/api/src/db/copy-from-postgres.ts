@@ -8,7 +8,7 @@ import { loadConfig } from '../config';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { Decimal128 } from '@talk2tax/document-db';
 import { Prisma } from '@talk2tax/database';
-import { copyMirroredTables } from './mirror-writes';
+import { copyMirroredTables, pgOf } from './mirror-writes';
 import './mirrored-models';
 import { journalEntries } from './collections/ledger';
 import { allocations, approvalPolicies, approvalRequests, attachments, contacts, documents, payments } from './collections/sales';
@@ -193,7 +193,7 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   Object.assign(
     copied,
     await copyMirroredTables(
-      (model, page) => prisma.$transaction((tx) => withSystemAccess(tx, () => (tx as unknown as Record<string, { findMany(a: unknown): Promise<Record<string, unknown>[]> }>)[model].findMany(page))),
+      (model, page) => prisma.$transaction((tx) => withSystemAccess(tx, () => pgOf((tx as unknown as Record<string, Parameters<typeof pgOf>[0]>)[model]).findMany(page) as Promise<Record<string, unknown>[]>)),
       store,
     ),
   );

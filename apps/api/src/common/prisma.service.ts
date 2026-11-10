@@ -131,7 +131,8 @@ export async function withSystemAccess<T>(tx: Tx, fn: () => Promise<T>): Promise
   await tx.$executeRaw`SELECT set_config('t2t.bypass', 'on', true)`;
   // No reset when fn fails: the transaction is aborted and rolls back, bypass and all, and a
   // reset would fail too and hide what went wrong.
-  const out = await fn();
+  // MongoDB reads see what the PostgreSQL bypass lets this work see: every organisation.
+  const out = await tenantStorage.run({ ...currentTenantContext(), bypass: true }, fn);
   const ctx = currentTenantContext();
   await tx.$executeRaw`SELECT set_config('t2t.bypass', ${before === 'on' || ctx.bypass ? 'on' : ''}, true)`;
   return out;

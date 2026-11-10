@@ -1,4 +1,4 @@
-export { Binary, Decimal128 } from 'mongodb';
+export { Binary, Decimal128, Long } from 'mongodb';
 export type { Db } from 'mongodb';
 export * from './decimal';
 export * from './collection';
