@@ -83,6 +83,7 @@ enum AttachmentEntity {
   JOURNAL_ENTRY
   BANK_STATEMENT_LINE
   EXPENSE_CLAIM
+  CUSTOMER_ONBOARDING
 }
 
 enum ApprovalStatus {
@@ -4273,6 +4274,7 @@ model SalesOrder {
   taxTotal      Decimal             @map("tax_total") @db.Decimal(24, 6)
   total         Decimal             @db.Decimal(24, 6)
   status        SalesOrderStatus    @default(OPEN)
+  billingMethod SalesBillingMethod  @default(DELIVERY) @map("billing_method")
   cancelReason  String?             @map("cancel_reason") @db.VarChar(500)
   cancelledAt   DateTime?           @map("cancelled_at") @db.Timestamptz(6)
   createdById   String              @map("created_by_id") @db.Uuid
@@ -4281,6 +4283,8 @@ model SalesOrder {
   org           Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
   lines         SalesOrderLine[]
   billings      SalesOrderBilling[]
+  milestones    SalesOrderMilestone[]
+  progressClaims SalesOrderProgressClaim[]
 
   @@unique([orgId, number])
   @@unique([id, orgId])
@@ -5187,4 +5191,256 @@ model BillMatchAcceptance {
 
   @@index([orgId, documentId])
   @@map("bill_match_acceptances")
+}
+
+enum SalesBillingMethod {
+  DELIVERY
+  MILESTONES
+  PROGRESS
+}
+
+/// A named share of a sales order's value, billed on its own invoice (AR-013).
+model SalesOrderMilestone {
+  id            String     @id @default(uuid()) @db.Uuid
+  orgId         String     @map("org_id") @db.Uuid
+  orderId       String     @map("order_id") @db.Uuid
+  seq           Int
+  name          String     @db.VarChar(200)
+  percent       Decimal    @db.Decimal(5, 2)
+  dueDate       DateTime?  @map("due_date") @db.Date
+  completedAt   DateTime?  @map("completed_at") @db.Timestamptz(6)
+  completedById String?    @map("completed_by_id") @db.Uuid
+  documentId    String?    @map("document_id") @db.Uuid
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  order         SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, seq])
+  @@unique([id, orgId])
+  @@index([orgId, documentId])
+  @@map("sales_order_milestones")
+}
+
+/// A claim of how complete the work on a sales order is, billed up to that share (AR-014).
+model SalesOrderProgressClaim {
+  id              String     @id @default(uuid()) @db.Uuid
+  orgId           String     @map("org_id") @db.Uuid
+  orderId         String     @map("order_id") @db.Uuid
+  percentComplete Decimal    @map("percent_complete") @db.Decimal(5, 2)
+  documentId      String     @unique @map("document_id") @db.Uuid
+  note            String?    @db.VarChar(500)
+  createdById     String     @map("created_by_id") @db.Uuid
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  order           SalesOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, orderId])
+  @@map("sales_order_progress_claims")
+}
+
+/// Money a customer keeps on account at an agreed level (AR-015), shown as RT-0001.
+model Retainer {
+  id             String            @id @default(uuid()) @db.Uuid
+  orgId          String            @map("org_id") @db.Uuid
+  number         Int
+  contactId      String            @map("contact_id") @db.Uuid
+  name           String            @db.VarChar(200)
+  amount         Decimal           @db.Decimal(24, 6)
+  minimumBalance Decimal           @default(0) @map("minimum_balance") @db.Decimal(24, 6)
+  startDate      DateTime          @map("start_date") @db.Date
+  terms          String?           @db.VarChar(2000)
+  status         String            @default("ACTIVE") @db.VarChar(10)
+  closedAt       DateTime?         @map("closed_at") @db.Timestamptz(6)
+  closeReason    String?           @map("close_reason") @db.VarChar(500)
+  createdById    String            @map("created_by_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  receipts       RetainerReceipt[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, contactId])
+  @@map("retainers")
+}
+
+/// A customer receipt that makes up part of a retainer.
+model RetainerReceipt {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  retainerId  String   @map("retainer_id") @db.Uuid
+  paymentId   String   @unique @map("payment_id") @db.Uuid
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  retainer    Retainer @relation(fields: [retainerId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, retainerId])
+  @@map("retainer_receipts")
+}
+
+/// An organisation's own Stripe or Razorpay account, for payment links on its invoices (AR-018).
+model OrgPaymentGateway {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  provider         String    @db.VarChar(16)
+  enabled          Boolean   @default(false)
+  mode             String    @default("TEST") @db.VarChar(8)
+  currencies       String[]  @default([])
+  keyId            String?   @map("key_id") @db.VarChar(100)
+  secretCipher     String?   @map("secret_cipher")
+  secretKeyId      String?   @map("secret_key_id") @db.VarChar(16)
+  secretHint       String?   @map("secret_hint") @db.VarChar(16)
+  webhookCipher    String?   @map("webhook_cipher")
+  webhookKeyId     String?   @map("webhook_key_id") @db.VarChar(16)
+  webhookHint      String?   @map("webhook_hint") @db.VarChar(16)
+  depositAccountId String?   @map("deposit_account_id") @db.Uuid
+  lastTestAt       DateTime? @map("last_test_at") @db.Timestamptz(6)
+  lastTestOk       Boolean?  @map("last_test_ok")
+  lastTestMessage  String?   @map("last_test_message") @db.VarChar(500)
+  updatedById      String?   @map("updated_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([orgId, provider])
+  @@map("org_payment_gateways")
+}
+
+/// A link a customer pays an invoice through on the gateway's page, shown as PL-0001.
+model PaymentLink {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  number           Int
+  documentId       String    @map("document_id") @db.Uuid
+  provider         String    @db.VarChar(16)
+  gatewayRef       String    @map("gateway_ref") @db.VarChar(200)
+  url              String    @db.VarChar(1000)
+  currency         String    @db.Char(3)
+  amount           Decimal   @db.Decimal(24, 6)
+  status           String    @default("OPEN") @db.VarChar(10)
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6)
+  paidAt           DateTime? @map("paid_at") @db.Timestamptz(6)
+  paidAmount       Decimal?  @map("paid_amount") @db.Decimal(24, 6)
+  gatewayPaymentId String?   @map("gateway_payment_id") @db.VarChar(200)
+  paymentId        String?   @unique @map("payment_id") @db.Uuid
+  settledBy        String?   @map("settled_by") @db.VarChar(100)
+  cancelledAt      DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  createdById      String    @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([orgId, number])
+  @@unique([provider, gatewayRef])
+  @@index([orgId, documentId])
+  @@map("payment_links")
+}
+
+/// A notice from an organisation's gateway about a payment link.
+model PaymentLinkNotice {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  provider    String   @db.VarChar(16)
+  eventId     String?  @map("event_id") @db.VarChar(200)
+  type        String   @db.VarChar(100)
+  signatureOk Boolean  @map("signature_ok")
+  outcome     String   @db.VarChar(300)
+  linkId      String?  @map("link_id") @db.Uuid
+  receivedAt  DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  @@unique([orgId, provider, eventId])
+  @@index([orgId, receivedAt])
+  @@map("payment_link_notices")
+}
+
+/// AR-003: whether customers added from now on must be onboarded before they are invoiced.
+model CustomerOnboardingSettings {
+  orgId       String   @map("org_id") @db.Uuid
+  /// CUSTOMER or VENDOR (AP-002).
+  party       String   @default("CUSTOMER") @db.VarChar(8)
+  required    Boolean  @default(false)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@id([orgId, party])
+  @@map("customer_onboarding_settings")
+}
+
+/// AR-003: the organisation's own onboarding checklist.
+model CustomerOnboardingRequirement {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  party     String   @default("CUSTOMER") @db.VarChar(8)
+  label     String   @db.VarChar(300)
+  needsFile Boolean  @default(false) @map("needs_file")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@index([orgId, party, sortOrder], map: "customer_onboarding_requirements_org_id_idx")
+  @@map("customer_onboarding_requirements")
+}
+
+/// AR-003: one onboarding per customer; invoices to the customer post only once it is approved.
+model CustomerOnboarding {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  contactId        String    @map("contact_id") @db.Uuid
+  /// CUSTOMER or VENDOR (AP-002); a contact that is both has one of each.
+  party            String    @default("CUSTOMER") @db.VarChar(8)
+  status           String    @default("OPEN") @db.VarChar(10)
+  creditLimit      Decimal?  @map("credit_limit") @db.Decimal(24, 6)
+  paymentTermsDays Int?      @map("payment_terms_days")
+  notes            String?   @db.VarChar(2000)
+  submittedById    String?   @map("submitted_by_id") @db.Uuid
+  submittedAt      DateTime? @map("submitted_at") @db.Timestamptz(6)
+  decidedById      String?   @map("decided_by_id") @db.Uuid
+  decidedAt        DateTime? @map("decided_at") @db.Timestamptz(6)
+  decisionNote     String?   @map("decision_note") @db.VarChar(1000)
+  selfApproved     Boolean   @default(false) @map("self_approved")
+  createdById      String?   @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@unique([orgId, contactId, party])
+  @@index([orgId, status])
+  @@map("customer_onboardings")
+}
+
+/// AR-003: a checklist item of one onboarding, copied from the organisation's checklist.
+model CustomerOnboardingCheck {
+  id            String    @id @default(uuid()) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  onboardingId  String    @map("onboarding_id") @db.Uuid
+  requirementId String?   @map("requirement_id") @db.Uuid
+  label         String    @db.VarChar(300)
+  needsFile     Boolean   @default(false) @map("needs_file")
+  sortOrder     Int       @default(0) @map("sort_order")
+  done          Boolean   @default(false)
+  doneById      String?   @map("done_by_id") @db.Uuid
+  doneAt        DateTime? @map("done_at") @db.Timestamptz(6)
+  note          String?   @db.VarChar(1000)
+  attachmentId  String?   @map("attachment_id") @db.Uuid
+
+  @@unique([onboardingId, requirementId], map: "customer_onboarding_checks_onboarding_requirement_key")
+  @@index([orgId, onboardingId])
+  @@map("customer_onboarding_checks")
+}
+
+/// AP-021: the team's own review of a vendor. Never edited or deleted; the author may withdraw it.
+model VendorReview {
+  id             String    @id @default(uuid()) @db.Uuid
+  orgId          String    @map("org_id") @db.Uuid
+  contactId      String    @map("contact_id") @db.Uuid
+  orderId        String?   @map("order_id") @db.Uuid
+  reviewDate     DateTime  @map("review_date") @db.Date
+  aspect         String    @db.VarChar(20)
+  rating         Int       @db.SmallInt
+  note           String?   @db.VarChar(2000)
+  createdById    String    @map("created_by_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  withdrawnById  String?   @map("withdrawn_by_id") @db.Uuid
+  withdrawnAt    DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  withdrawReason String?   @map("withdraw_reason") @db.VarChar(500)
+
+  @@unique([id, orgId])
+  @@index([orgId, contactId, reviewDate])
+  @@map("vendor_reviews")
 }

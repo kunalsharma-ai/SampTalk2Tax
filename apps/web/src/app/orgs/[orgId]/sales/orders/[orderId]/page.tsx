@@ -9,6 +9,7 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { OrderBadge } from '@/components/sales-orders/badges';
 import { SalesLinesTable } from '@/components/sales-orders/lines-table';
+import { ProjectBilling } from '@/components/sales-orders/project-billing';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date, dateTime, today } from '@/lib/format';
@@ -76,7 +77,7 @@ export default function OrderPage() {
           o.can.manage && open ? (
             <>
               {!anyBilled ? <Button variant="ghost" onClick={() => setCancelling(true)}>Cancel order</Button> : null}
-              <Button onClick={startBilling}>Bill this order</Button>
+              {o.billingMethod === 'DELIVERY' ? <Button onClick={startBilling}>Bill this order</Button> : null}
             </>
           ) : null
         }
@@ -120,6 +121,9 @@ export default function OrderPage() {
             )}
           </Card>
         </div>
+      </div>
+      <div className="mt-4 flex flex-col gap-4">
+        <ProjectBilling orgId={orgId} o={o} onChanged={() => qc.invalidateQueries({ queryKey: key })} />
       </div>
       <Dialog open={billing} onOpenChange={setBilling} title={`Bill ${o.reference}`} description="Makes a draft invoice at the order's prices and tax. Lower a quantity to bill part of a line now and the rest later.">
         <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); bill.mutate(); }}>
