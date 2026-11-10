@@ -20,6 +20,7 @@ import { Customer360 } from '@/components/crm/customer-360';
 import { VendorBankCard } from '@/components/purchases/vendor-bank-card';
 import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
 import { PortalLinksCard } from '@/components/customer-portal/portal-links-card';
+import { VendorPortalCard } from '@/components/vendor-portal/vendor-portal-card';
 import { GstinChecksCard } from '@/components/supplier-tax/gstin-checks-card';
 import { VendorPerformanceCard } from '@/components/vendor-performance/performance-card';
 import { VendorRiskCard } from '@/components/vendor-risk/risk-card';
@@ -120,6 +121,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
       {l.ledger === 'PURCHASES' && x.isVendor ? <VendorBankCard orgId={orgId} contactId={x.id} /> : null}
       {l.ledger === 'PURCHASES' && x.isVendor && x.isActive ? <VendorRiskCard orgId={orgId} contactId={x.id} canManage={canManage} /> : null}
       {l.ledger === 'PURCHASES' && x.isVendor && x.isActive ? <GstinChecksCard orgId={orgId} contactId={x.id} canManage={canManage} /> : null}
+      {l.ledger === 'PURCHASES' && x.isVendor ? <VendorPortalCard orgId={orgId} contactId={x.id} vendorName={x.name} canManage={can(org.role, 'purchases.manage')} active={x.isActive} /> : null}
       {l.ledger === 'PURCHASES' && x.isVendor ? <VendorPerformanceCard orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer && can(org.role, 'reports.read') ? <Customer360 orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer ? <PortalLinksCard orgId={orgId} contactId={x.id} customerName={x.name} canManage={can(org.role, 'sales.manage')} active={x.isActive} /> : null}

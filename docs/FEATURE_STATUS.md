@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 799 |
+| Not started | 798 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 429 |
+| Tested | 430 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
-| Accounts payable | M2 | 36 | 13 | 23 |
+| Accounts payable | M2 | 36 | 12 | 24 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1008,6 +1008,25 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/ledgers/subledger.service.ts
   - apps/api/test/sales-purchases.e2e.test.ts
   - apps/api/src/seed/seed-demo.ts
+
+### AP-013 — Vendor portals
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Private link per vendor (t2tv_ token, SHA-256 stored, shown once; expiry or until revoked). Portal without sign-in: owed/due now by currency, posted bills and credits with due dates, TDS and status, payments with bank reference, issued purchase orders with amount still to invoice, statement. Vendor sends an invoice (number, date, total, PO, note) plus a PDF/image file (sniffed, 5 MB, once within an hour); duplicates by normalised number refused against waiting, recorded and existing bills. Purchases > Vendor invoices: record against a bill of the same vendor (file attached to the bill) or turn down with a reason the vendor sees. Append-only, audited. Not built: sign-in accounts, emailing links, auto-creating bills/reading PDFs (needs AI keys), bank detail changes via portal (deliberately).
+- Evidence:
+  - packages/accounting-engine/src/vendor-portal.ts
+  - packages/accounting-engine/test/vendor-portal.test.ts
+  - packages/database/prisma/migrations/20261217090000_vendor_portal/migration.sql
+  - apps/api/src/vendor-portal/vendor-portal.service.ts
+  - apps/api/src/vendor-portal/vendor-portal.controller.ts
+  - apps/api/test/vendor-portal.e2e.test.ts
+  - apps/web/src/app/vendor-portal/[token]/page.tsx
+  - apps/web/src/app/api/vendor-portal/[...path]/route.ts
+  - apps/web/src/components/vendor-portal/vendor-portal-card.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-invoices/page.tsx
+  - apps/web/e2e/vendor-portal-flow.test.mjs
+  - docs/VENDOR_PORTAL.md
 
 ### AP-014 — Payment batches
 
