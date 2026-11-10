@@ -1,4 +1,6 @@
 import { D, type Dec } from '@talk2tax/accounting-engine';
+import type { Prisma } from '@talk2tax/database';
+import type { PrismaService, Tx } from '../common/prisma.service';
 type Document = Record<string, unknown>;
 import type { DocumentStoreService } from '../common/document-store.service';
 import { runInOrg } from '../common/tenant-context';
@@ -120,4 +122,31 @@ export async function ledgerLines(store: DocumentStoreService, orgId: string, q:
   return rows
     .map(({ debit, credit, ...r }) => ({ ...r, entry_number: r.entry_number ?? null, memo: r.memo ?? null, reference: r.reference ?? null, description: r.description ?? null, reverses_entry_id: r.reverses_entry_id ?? null, net: new D(String(debit)).minus(String(credit)) }))
     .sort((a, b) => a.date.getTime() - b.date.getTime() || (a.entry_number ?? Infinity) - (b.entry_number ?? Infinity));
+}
+
+/**
+ * Sums of the journal lines that documents posted, by document and account, limited to accounts
+ * of one type. Replaces the SQL that joined documents to journal_lines on `journal_entry_id`.
+ */
+export async function documentEntrySums(
+  db: Tx | PrismaService,
+  store: DocumentStoreService,
+  orgId: string,
+  where: Prisma.DocumentWhereInput,
+  accountType: 'REVENUE' | 'EXPENSE',
+): Promise<{ documentId: string; contactId: string; issueDate: Date; accountId: string; debit: Dec; credit: Dec }[]> {
+  const docs = await db.document.findMany({ where: { AND: [where, { orgId, journalEntryId: { not: null } }] }, select: { id: true, contactId: true, issueDate: true, journalEntryId: true } });
+  const accounts = (await db.account.findMany({ where: { orgId, type: accountType }, select: { id: true } })).map((a) => a.id);
+  if (!docs.length || !accounts.length) return [];
+  const sums = await lineSums(store, orgId, { entry: { _id: { $in: docs.map((d) => d.journalEntryId!) } }, line: { accountId: { $in: accounts } }, by: { entryId: '_id', accountId: 'lines.accountId' } });
+  const byEntry = new Map<string, LineSum[]>();
+  for (const s of sums) byEntry.set(s.key.entryId as string, [...(byEntry.get(s.key.entryId as string) ?? []), s]);
+  return docs.flatMap((d) => (byEntry.get(d.journalEntryId!) ?? []).map((s) => ({ documentId: d.id, contactId: d.contactId, issueDate: d.issueDate, accountId: s.key.accountId as string, debit: s.debit, credit: s.credit })));
+}
+
+/** Contact names by id. */
+export async function contactNames(db: Tx | PrismaService, orgId: string, ids: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids)];
+  if (!unique.length) return new Map();
+  return new Map((await db.contact.findMany({ where: { orgId, id: { in: unique } }, select: { id: true, name: true } })).map((c) => [c.id, c.name]));
 }

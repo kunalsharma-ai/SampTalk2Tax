@@ -5,6 +5,8 @@ import { AuditService } from '../audit/audit.service';
 import { todayIst } from '../cash-flow/cash-flow.service';
 import { toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { contactNames, documentEntrySums } from '../db/ledger-queries';
 import { PrismaService } from '../common/prisma.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { TwinService } from '../twin/twin.service';
@@ -31,6 +33,7 @@ export class DisastersService {
     private readonly audit: AuditService,
     private readonly twin: TwinService,
     private readonly subledger: SubledgerService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   /** The baseline, the minimum cash balance, and customers and suppliers from the books. */
@@ -46,14 +49,7 @@ export class DisastersService {
     const per = (v: Prisma.Decimal | string) => new Prisma.Decimal(v).div(q.baselineMonths).toFixed(scale);
 
     // Sales to each customer: revenue lines of posted invoices less credit notes, before tax.
-    const sales = await this.prisma.$queryRaw<{ contact_id: string; name: string; amount: Prisma.Decimal }[]>`
-      SELECT d.contact_id, c.name, SUM(l.functional_credit - l.functional_debit) AS amount
-      FROM documents d
-      JOIN contacts c ON c.id = d.contact_id AND c.org_id = d.org_id
-      JOIN journal_lines l ON l.entry_id = d.journal_entry_id AND l.org_id = d.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id AND a.type = 'REVENUE'
-      WHERE d.org_id = ${orgId}::uuid AND d.kind IN ('INVOICE', 'CREDIT_NOTE') AND d.status = 'POSTED' AND d.issue_date BETWEEN ${from}::date AND ${to}::date
-      GROUP BY d.contact_id, c.name`;
+    const sales = await this.byContact(orgId, { kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { gte: from, lte: to } }, 'REVENUE');
     const ar = await this.subledger.ageing(org, 'SALES', today);
     const customers = new Map<string, DisasterCustomer>();
     for (const s of sales) customers.set(s.contact_id, { contactId: s.contact_id, name: s.name, monthlyRevenue: per(s.amount), balance: (0).toFixed(scale) });
@@ -65,14 +61,7 @@ export class DisastersService {
     }
 
     // Bills from each supplier, before tax: the expense and asset lines of posted bills less vendor credits.
-    const spend = await this.prisma.$queryRaw<{ contact_id: string; name: string; amount: Prisma.Decimal }[]>`
-      SELECT d.contact_id, c.name, SUM(l.functional_debit - l.functional_credit) AS amount
-      FROM documents d
-      JOIN contacts c ON c.id = d.contact_id AND c.org_id = d.org_id
-      JOIN journal_lines l ON l.entry_id = d.journal_entry_id AND l.org_id = d.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id AND a.type = 'EXPENSE'
-      WHERE d.org_id = ${orgId}::uuid AND d.kind IN ('BILL', 'VENDOR_CREDIT') AND d.status = 'POSTED' AND d.issue_date BETWEEN ${from}::date AND ${to}::date
-      GROUP BY d.contact_id, c.name`;
+    const spend = await this.byContact(orgId, { kind: { in: ['BILL', 'VENDOR_CREDIT'] }, status: 'POSTED', issueDate: { gte: from, lte: to } }, 'EXPENSE');
     const suppliers: DisasterSupplier[] = spend.filter((s) => new Prisma.Decimal(s.amount).gt(0)).map((s) => ({ contactId: s.contact_id, name: s.name, monthlySpend: per(s.amount) }));
     const byValue = (a: DisasterCustomer, b: DisasterCustomer) => new Prisma.Decimal(b.monthlyRevenue).plus(b.balance).comparedTo(new Prisma.Decimal(a.monthlyRevenue).plus(a.balance)) || a.name.localeCompare(b.name);
     return {
@@ -82,6 +71,15 @@ export class DisastersService {
       customers: [...customers.values()].sort(byValue),
       suppliers: suppliers.sort((a, b) => new Prisma.Decimal(b.monthlySpend).comparedTo(a.monthlySpend) || a.name.localeCompare(b.name)),
     };
+  }
+
+  /** Net of the documents' journal lines on accounts of a type, per contact: credit less debit for revenue, debit less credit for expense. */
+  private async byContact(orgId: string, where: Prisma.DocumentWhereInput, type: 'REVENUE' | 'EXPENSE') {
+    const lines = await documentEntrySums(this.prisma, this.store, orgId, where, type);
+    const names = await contactNames(this.prisma, orgId, lines.map((l) => l.contactId));
+    const per = new Map<string, Prisma.Decimal>();
+    for (const l of lines) per.set(l.contactId, (per.get(l.contactId) ?? new Prisma.Decimal(0)).plus((type === 'REVENUE' ? l.credit.minus(l.debit) : l.debit.minus(l.credit)).toFixed()));
+    return [...per.entries()].map(([id, amount]) => ({ contact_id: id, name: names.get(id) ?? '', amount }));
   }
 
   private wrap<T>(fn: () => T): T {

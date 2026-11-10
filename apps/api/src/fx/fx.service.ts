@@ -4,6 +4,8 @@ import { Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 
@@ -21,6 +23,7 @@ export class FxService {
     private readonly prisma: PrismaService,
     private readonly journals: JournalsService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   private invalid(message: string, code = 'FX_INVALID', status = HttpStatus.UNPROCESSABLE_ENTITY): never {
@@ -65,14 +68,12 @@ export class FxService {
 
   /** Posted balances by account and foreign currency at the end of a date. */
   private async balances(db: Tx | PrismaService, orgId: string, functionalCurrency: string, asOf: string): Promise<ForeignBalance[]> {
-    const rows = await db.$queryRaw<{ id: string; code: string; name: string; type: AccountType; subtype: string | null; currency: string; foreign: Prisma.Decimal; carried: Prisma.Decimal }[]>`
-      SELECT a.id, a.code, a.name, a.type::text AS type, a.subtype, l.currency,
-             SUM(l.debit - l.credit) AS foreign, SUM(l.functional_debit - l.functional_credit) AS carried
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.date <= ${toDbDate(asOf)}::date AND l.currency <> ${functionalCurrency}
-      GROUP BY a.id, a.code, a.name, a.type, a.subtype, l.currency`;
+    const sums = await lineSums(this.store, orgId, { entry: postedBetween(null, toDbDate(asOf)), line: { currency: { $ne: functionalCurrency } }, by: { accountId: 'lines.accountId', currency: 'lines.currency' } });
+    const accounts = new Map((sums.length ? await db.account.findMany({ where: { orgId, id: { in: [...new Set(sums.map((r) => r.key.accountId as string))] } }, select: { id: true, code: true, name: true, type: true, subtype: true } }) : []).map((a) => [a.id, a]));
+    const rows = sums.flatMap((r) => {
+      const a = accounts.get(r.key.accountId as string);
+      return a ? [{ id: a.id, code: a.code, name: a.name, type: a.type as AccountType, subtype: a.subtype as string | null, currency: String(r.key.currency), foreign: r.txDebit.minus(r.txCredit), carried: r.debit.minus(r.credit) }] : [];
+    });
     return rows.map((r) => ({ accountId: r.id, code: r.code, name: r.name, type: r.type, subtype: r.subtype, currency: r.currency.trim(), foreign: r.foreign.toFixed(), carried: r.carried.toFixed() }));
   }
 
