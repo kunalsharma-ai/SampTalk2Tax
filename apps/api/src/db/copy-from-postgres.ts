@@ -8,7 +8,7 @@ import { loadConfig } from '../config';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { Decimal128 } from '@talk2tax/document-db';
 import { Prisma } from '@talk2tax/database';
-import { copyMirroredTables, pgOf } from './mirror-writes';
+import { copyMirroredTables, pgOf, postgresOnly } from './mirror-writes';
 import './mirrored-models';
 import { journalEntries } from './collections/ledger';
 import { allocations, approvalPolicies, approvalRequests, attachments, contacts, documents, payments } from './collections/sales';
@@ -35,7 +35,7 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
     return new Set(ids.filter((id) => !have.has(id)));
   };
 
-  const people = await prisma.user.findMany();
+  const people = await postgresOnly(prisma).user.findMany();
   const newPeople = await missing(users, people.map((u) => u.id));
   const userRows = people.filter((u) => newPeople.has(u.id)).map((u) => ({
     id: u.id,
@@ -54,21 +54,21 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   await store.collection(users).insertMany(userRows);
   copied.users = userRows.length;
 
-  const sessions = await prisma.authSession.findMany();
+  const sessions = await postgresOnly(prisma).authSession.findMany();
   const newSessions = await missing(authSessions, sessions.map((s) => s.id));
   const sessionRows = sessions.filter((s) => newSessions.has(s.id));
   // A session's guard checks its expiry is after its start, which PostgreSQL also required.
   await store.collection(authSessions).insertMany(sessionRows);
   copied.auth_sessions = sessionRows.length;
 
-  const throttles = await prisma.loginThrottle.findMany();
+  const throttles = await postgresOnly(prisma).loginThrottle.findMany();
   const newThrottles = await missing(loginThrottles, throttles.map((t) => t.email));
   const throttleRows = throttles.filter((t) => newThrottles.has(t.email)).map(({ email, ...t }) => ({ id: email, ...t }));
   await store.collection(loginThrottles).insertMany(throttleRows);
   copied.login_throttles = throttleRows.length;
 
   // Organisations, then who belongs to them, then invitations. Tenant rows are system work.
-  const allOrgs = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.organization.findMany()));
+  const allOrgs = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).organization.findMany()));
   const newOrgs = await missing(organizations, allOrgs.map((o) => o.id));
   const orgRows = allOrgs.filter((o) => newOrgs.has(o.id)).map((o) => ({
     id: o.id,
@@ -91,14 +91,14 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   await store.collection(organizations).insertMany(orgRows);
   copied.organizations = orgRows.length;
 
-  const allMembers = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.membership.findMany()));
+  const allMembers = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).membership.findMany()));
   const newMembers = await missing(memberships, allMembers.map((m) => m.id));
   const memberRows = allMembers.filter((m) => newMembers.has(m.id));
   // Inserts run no owner check (that guard is on updates and deletes).
   await runAsSystem(() => store.collection(memberships).insertMany(memberRows));
   copied.memberships = memberRows.length;
 
-  const allInvites = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.invitation.findMany()));
+  const allInvites = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).invitation.findMany()));
   const newInvites = await missing(invitations, allInvites.map((i) => i.id));
   const inviteRows = allInvites
     .filter((i) => newInvites.has(i.id))
@@ -112,22 +112,22 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   const raw = async (name: string, rows: ({ id: string } & Record<string, unknown>)[]) => {
     for (const chunk of chunks(rows, 1000)) await store.systemDb().collection(name).insertMany(chunk.map(({ id, ...r }) => ({ _id: id as never, ...r })));
   };
-  const allAccounts = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.account.findMany()));
+  const allAccounts = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).account.findMany()));
   const newAccounts = await missing(accounts, allAccounts.map((a) => a.id));
   await raw(accounts.name, allAccounts.filter((a) => newAccounts.has(a.id)));
   copied.accounts = newAccounts.size;
 
-  const allPeriods = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.fiscalPeriod.findMany()));
+  const allPeriods = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).fiscalPeriod.findMany()));
   const newPeriods = await missing(fiscalPeriods, allPeriods.map((p) => p.id));
   await raw(fiscalPeriods.name, allPeriods.filter((p) => newPeriods.has(p.id)));
   copied.fiscal_periods = newPeriods.size;
 
   // Journal entries, each with its lines inside it, in batches.
-  const entryIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.journalEntry.findMany({ select: { id: true } })));
+  const entryIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).journalEntry.findMany({ select: { id: true } })));
   const newEntries = [...(await missing(journalEntries, entryIds.map((e) => e.id)))];
   const dec = (v: { toFixed(): string }) => Decimal128.fromString(v.toFixed());
   for (const ids of chunks(newEntries, 500)) {
-    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.journalEntry.findMany({ where: { id: { in: ids } }, include: { lines: true } })));
+    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).journalEntry.findMany({ where: { id: { in: ids } }, include: { lines: true } })));
     await raw(
       journalEntries.name,
       batch.map(({ lines, totalDebit, totalCredit, ...e }) => ({
@@ -147,17 +147,17 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   }
   copied.journal_entries = newEntries.length;
 
-  const allContacts = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.contact.findMany()));
+  const allContacts = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).contact.findMany()));
   const newContacts = await missing(contacts, allContacts.map((c) => c.id));
   await raw(contacts.name, allContacts.filter((c) => newContacts.has(c.id)).map((c) => ({ ...c, creditLimit: c.creditLimit === null ? null : dec(c.creditLimit) })));
   copied.contacts = newContacts.size;
 
   // Invoices, bills and credits, each with its lines inside it.
-  const docIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.document.findMany({ select: { id: true } })));
+  const docIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).document.findMany({ select: { id: true } })));
   const newDocs = [...(await missing(documents, docIds.map((x) => x.id)))];
   const decs = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v instanceof Prisma.Decimal ? dec(v) : v]));
   for (const ids of chunks(newDocs, 500)) {
-    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.document.findMany({ where: { id: { in: ids } }, include: { lines: { orderBy: { lineNo: 'asc' } } } })));
+    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).document.findMany({ where: { id: { in: ids } }, include: { lines: { orderBy: { lineNo: 'asc' } } } })));
     await raw(documents.name, batch.map(({ lines, ...x }) => ({ ...decs(x), id: x.id, lines: lines.map(({ documentId: _d, orgId: _o, ...l }) => decs(l)) })));
   }
   copied.documents = newDocs.length;
@@ -181,10 +181,10 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   }
 
   // Expense claims, each with its lines inside it.
-  const claimIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.expenseClaim.findMany({ select: { id: true } })));
+  const claimIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).expenseClaim.findMany({ select: { id: true } })));
   const newClaims = [...(await missing(expenseClaims, claimIds.map((x) => x.id)))];
   for (const ids of chunks(newClaims, 500)) {
-    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.expenseClaim.findMany({ where: { id: { in: ids } }, include: { lines: { orderBy: { lineNo: 'asc' } } } })));
+    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => postgresOnly(tx).expenseClaim.findMany({ where: { id: { in: ids } }, include: { lines: { orderBy: { lineNo: 'asc' } } } })));
     await raw(expenseClaims.name, batch.map(({ lines, ...x }) => ({ ...decs(x), id: x.id, lines: lines.map(({ claimId: _c, orgId: _o, ...l }) => decs(l)) })));
   }
   copied.expense_claims = newClaims.length;
