@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 801 |
+| Not started | 800 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 427 |
+| Tested | 428 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 10 | 33 |
-| Accounts payable | M2 | 36 | 14 | 22 |
+| Accounts payable | M2 | 36 | 13 | 23 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1122,6 +1122,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/purchases/vendor-bank-card.tsx
   - apps/web/e2e/international-payments-flow.test.mjs
   - docs/INTERNATIONAL_PAYMENTS.md
+
+### AP-024 — Vendor risk monitoring
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Risk per active vendor from bank details (shared account, changed/unverified), supplier tax problems, performance grade, share of purchases, new vendor growing fast, onboarding not approved and late payment; level = worst factor. Reviews (decision, note, next review date) append-only and audited; new factor, higher level or due date asks again. VENDOR_RISK alert check. Not built: outside credit/sanctions data, blocking orders on a stop decision.
+- Evidence:
+  - packages/accounting-engine/src/vendor-risk.ts
+  - packages/accounting-engine/test/vendor-risk.test.ts
+  - packages/database/prisma/migrations/20261215090000_vendor_risk/migration.sql
+  - apps/api/src/vendor-risk/vendor-risk.service.ts
+  - apps/api/test/vendor-risk.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-risk/page.tsx
+  - apps/web/src/components/vendor-risk/risk-card.tsx
+  - apps/web/e2e/vendor-risk-flow.test.mjs
+  - docs/VENDOR_RISK.md
 
 ### AP-027 — Supplier bank-detail change detection
 
