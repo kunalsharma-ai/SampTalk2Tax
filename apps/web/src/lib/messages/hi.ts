@@ -34,6 +34,7 @@ export const hi: Record<string, string> = {
   Customers: 'ग्राहक',
   'Customer insights': 'ग्राहक विश्लेषण',
   'Revenue forecast': 'राजस्व पूर्वानुमान',
+  'Revenue recognition': 'राजस्व मान्यता',
   Invoices: 'इनवॉइस',
   Receipts: 'प्राप्तियाँ',
   'Receivables ageing': 'प्राप्य राशि की आयु',
