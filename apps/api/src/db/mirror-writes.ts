@@ -554,9 +554,11 @@ const WRITES = new Set(['create', 'update', 'upsert', 'delete', 'createMany', 'c
 export async function copyMirroredTables(
   read: (model: string, page: { skip: number; take: number; orderBy: Record<string, 'asc'>[] }) => Promise<Record<string, unknown>[]>,
   store: Store,
+  only?: readonly string[],
 ): Promise<Record<string, number>> {
   const copied: Record<string, number> = {};
   for (const info of INFOS.values()) {
+    if (only && !only.includes(info.model)) continue;
     let n = 0;
     for (let skip = 0; ; skip += 1000) {
       const rows = await read(info.delegate, { skip, take: 1000, orderBy: info.pk.map((k) => ({ [k]: 'asc' as const })) });

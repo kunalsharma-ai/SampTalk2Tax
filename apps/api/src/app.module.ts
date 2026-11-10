@@ -43,6 +43,7 @@ import { prismaProvider } from './common/prisma.service';
 import { documentStoreProvider } from './common/document-store.service';
 import { PostgresMirrorService } from './db/postgres-mirror.service';
 import { MovedTables } from './db/moved-table';
+import { SeedSyncService } from './db/seed-sync.service';
 import { AppConfig, CONFIG } from './config';
 import { GstController } from './gst/gst.controller';
 import { GstService } from './gst/gst.service';
@@ -345,6 +346,7 @@ export class AppModule {
         documentStoreProvider,
         PostgresMirrorService,
         MovedTables,
+        SeedSyncService,
         TokensService,
         AuditService,
         AuthService,
