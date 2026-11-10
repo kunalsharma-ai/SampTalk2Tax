@@ -61,6 +61,7 @@ export const hi: Record<string, string> = {
   'International payments': 'अंतरराष्ट्रीय भुगतान',
   'Supplier tax checks': 'आपूर्तिकर्ता कर जाँच',
   'Vendor risk': 'विक्रेता जोखिम',
+  'Vendor invoices': 'विक्रेता चालान',
   'Payables ageing': 'देय राशि की आयु',
   // Banking
   'Bank accounts': 'बैंक खाते',
