@@ -237,7 +237,7 @@ export class VendorPortalService {
               contentType: s.contentType!,
               sizeBytes: s.sizeBytes!,
               sha256: s.sha256!,
-              content: s.content,
+              content: Buffer.from(s.content),
               uploadedById: actor.id,
               createdAt: new Date(),
               removedAt: null,
