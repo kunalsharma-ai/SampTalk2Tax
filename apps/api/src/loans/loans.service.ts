@@ -23,6 +23,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { addDays, todayIst } from '../tasks/tasks.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export interface LoanOrg {
   id: string;
@@ -142,7 +143,7 @@ export class LoansService {
   }
 
   private async lockLoan(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM loans WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'loans', id, orgId);
     const loan = await tx.loan.findFirst({ where: { id, orgId } });
     if (!loan) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Loan not found' });
     return loan;

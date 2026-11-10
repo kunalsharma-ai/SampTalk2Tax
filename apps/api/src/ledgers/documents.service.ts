@@ -46,6 +46,7 @@ import { JournalsService } from '../journals/journals.service';
 import { WithholdingFacts, WithholdingService } from '../withholding/withholding.service';
 import { assertBillMatches, checkBillOrder } from '../purchase-orders/matching';
 import { ledgerKinds, SubledgerService } from './subledger.service';
+import { lockRow } from '../db/locks';
 
 export interface LedgerOrg {
   id: string;
@@ -528,7 +529,7 @@ export class DocumentsService {
   /** Take back an allocation. The row stays for history, stamped with the day it was removed. */
   async removeAllocation(org: LedgerOrg, actor: Actor, ledger: Ledger, allocationId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM allocations WHERE id = ${allocationId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      const rows = await lockRow<{ id: string }>(tx, 'allocations', allocationId, org.id);
       if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Allocation not found' });
       const al = await tx.allocation.findUniqueOrThrow({ where: { id: allocationId }, include: { target: true } });
       if (ledgerOf(al.target.kind) !== ledger) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Allocation not found' });
@@ -857,7 +858,7 @@ export class DocumentsService {
   }
 
   private async lockDocument(tx: Tx, orgId: string, ledger: Ledger, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM documents WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'documents', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
     const d = await tx.document.findUniqueOrThrow({ where: { id } });
     if (ledgerOf(d.kind) !== ledger) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
@@ -865,7 +866,7 @@ export class DocumentsService {
   }
 
   private async lockPayment(tx: Tx, orgId: string, ledger: Ledger, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM payments WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'payments', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });
     const p = await tx.payment.findUniqueOrThrow({ where: { id } });
     if (p.kind !== ledgerKinds(ledger).payment) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });

@@ -25,6 +25,7 @@ import { checkLineDimensions } from '../dimensions/check';
 import { JournalsService } from '../journals/journals.service';
 import { todayIst } from '../tasks/tasks.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface TemplateOrg {
@@ -449,7 +450,7 @@ export class JournalTemplatesService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string): Promise<Full> {
-    await tx.$queryRaw`SELECT id FROM journal_templates WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'journal_templates', id, orgId);
     const t = await tx.journalTemplate.findFirst({ where: { id, orgId }, include: { lines: LINES } });
     if (!t) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Template not found' });
     return t;

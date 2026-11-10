@@ -25,6 +25,7 @@ import { ledgerLines, lineSums, postedBetween, type LedgerLine } from '../db/led
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { DocumentsService } from '../ledgers/documents.service';
+import { holdLock, lockRow } from '../db/locks';
 
 export interface BankOrg {
   id: string;
@@ -521,6 +522,7 @@ export class BankingService {
     if (!ids.length) throw new DomainError('INVALID_MATCH', 'Choose at least one ledger line');
     // The PostgreSQL copy of the lines is still locked, so two matches of one line wait for each other.
     await tx.$queryRaw`SELECT jl.id FROM journal_lines jl WHERE jl.org_id = ${org.id}::uuid AND jl.id = ANY(${ids}::uuid[]) FOR UPDATE`;
+    for (const id of [...ids].sort()) await holdLock(`journal_lines:${id}`);
     const found = await ledgerLines(this.store, org.id, { line: { id: { $in: ids } } });
     const active = await this.activeMatchDates(tx, org.id, ids);
     const rows = found.map((l) => ({ id: l.id, account_id: l.account_id, status: l.status, net: l.net, matched: (active.get(l.id) ?? []).length > 0 }));
@@ -696,7 +698,7 @@ export class BankingService {
 
   /** Serialises imports, auto-matching and reconciliation per bank account. */
   private async lockAccount(tx: Tx, orgId: string, accountId: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM accounts WHERE id = ${accountId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'accounts', accountId, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Bank account not found' });
     return this.bankAccount(tx, orgId, accountId);
   }
@@ -708,7 +710,7 @@ export class BankingService {
   }
 
   private async lockLine(tx: Tx, orgId: string, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM bank_statement_lines WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'bank_statement_lines', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Statement line not found' });
     return tx.bankStatementLine.findUniqueOrThrow({ where: { id } });
   }

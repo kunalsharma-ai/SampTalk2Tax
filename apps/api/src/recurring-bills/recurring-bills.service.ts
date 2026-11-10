@@ -26,6 +26,7 @@ import { tenantStorage } from '../common/tenant-context';
 import { DocumentInput, DocumentsService } from '../ledgers/documents.service';
 import { todayIst } from '../tasks/tasks.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface BillOrg {
@@ -414,7 +415,7 @@ export class RecurringBillsService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string): Promise<Full> {
-    await tx.$queryRaw`SELECT id FROM recurring_bills WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'recurring_bills', id, orgId);
     const t = await tx.recurringBill.findFirst({ where: { id, orgId }, include: INCLUDE });
     if (!t) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Recurring bill not found' });
     const [full] = await this.withAccounts(orgId, [t], tx);

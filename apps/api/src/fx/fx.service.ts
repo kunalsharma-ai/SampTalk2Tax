@@ -9,6 +9,7 @@ import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 type Org = { id: string; functionalCurrency: string };
 type Actor = { id: string };
@@ -120,7 +121,7 @@ export class FxService {
   /** Posts the revaluation at a date and its reversal the next day. */
   async revalue(org: Org, actor: Actor, input: { date: string; rates?: Record<string, string> }) {
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', org.id);
       const last = await tx.fxRevaluation.findFirst({ where: { orgId: org.id }, orderBy: { date: 'desc' } });
       if (last && input.date <= fromDbDate(last.date)) {
         this.invalid(`Revaluation ${last.number} is dated ${fromDbDate(last.date)}. A new one must be dated after it.`, 'FX_ORDER', HttpStatus.CONFLICT);

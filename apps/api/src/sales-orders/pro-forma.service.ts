@@ -11,6 +11,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
 import { todayIst } from '../tasks/tasks.service';
 import { LineInput, SalesOrg, SalesOrdersService } from './sales-orders.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type WithLines = ProFormaInvoice & { lines: ProFormaInvoiceLine[] };
@@ -167,7 +168,7 @@ export class ProFormaService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string): Promise<{ p: WithLines; state: ProFormaState; invoice: { id: string; number: string | null; status: string } | null }> {
-    await tx.$queryRaw`SELECT id FROM pro_forma_invoices WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'pro_forma_invoices', id, orgId);
     const p = await tx.proFormaInvoice.findFirst({ where: { id, orgId }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
     if (!p) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Pro forma invoice not found' });
     const invoice = p.invoiceId ? await tx.document.findFirst({ where: { id: p.invoiceId, orgId }, select: { id: true, number: true, status: true } }) : null;

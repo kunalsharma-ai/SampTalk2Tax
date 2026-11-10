@@ -8,6 +8,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
 import { nextCounter } from '../db/counters';
+import { holdLock, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface BatchOrg {
@@ -117,6 +118,7 @@ export class PaymentBatchesService {
     if (!this.can(org).verifyBankDetails) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Verifying bank details needs approvals.decide' });
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT contact_id FROM vendor_bank_details WHERE contact_id = ${contactId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await holdLock(`vendor_bank_details:${contactId}`);
       const d = await tx.vendorBankDetails.findFirst({ where: { contactId, orgId: org.id } });
       if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'This vendor has no bank details' });
       if (d.verifiedAt) throw new DomainError('ALREADY_VERIFIED', 'These bank details are already verified', HttpStatus.CONFLICT);
@@ -469,7 +471,7 @@ export class PaymentBatchesService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM payment_batches WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'payment_batches', id, orgId);
     const b = await tx.paymentBatch.findFirst({ where: { id, orgId }, include: BATCH_INCLUDE });
     if (!b) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment batch not found' });
     return b;

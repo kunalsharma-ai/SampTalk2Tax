@@ -1,10 +1,14 @@
 import type { DocumentStore } from '@talk2tax/document-db';
 import type { Tx } from '../common/prisma.service';
 
-let store: Pick<DocumentStore, 'nextSequence' | 'raiseSequence'> | undefined;
+type Coordination = Pick<DocumentStore, 'nextSequence' | 'raiseSequence' | 'lock'>;
+let store: Coordination | undefined;
 
-/** Set once at start-up (prisma.service.ts), so numbering can reach MongoDB from any transaction. */
-export function useCounterStore(s: Pick<DocumentStore, 'nextSequence' | 'raiseSequence'>): void {
+/** The MongoDB store numbering and locks use (none in unit tests without MongoDB). */
+export const coordinationStore = (): Coordination | undefined => store;
+
+/** Set once at start-up (prisma.service.ts), so numbering and locks can reach MongoDB from any transaction. */
+export function useCounterStore(s: Coordination): void {
   store = s;
 }
 

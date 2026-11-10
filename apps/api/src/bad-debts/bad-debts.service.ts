@@ -27,6 +27,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { nextCounter } from '../db/counters';
+import { holdLock, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface BadDebtOrg {
@@ -172,6 +173,7 @@ export class BadDebtsService {
     const id = await this.prisma.$transaction(async (tx) => {
       // One provision run at a time per organisation.
       await tx.$queryRaw`SELECT org_id FROM bad_debt_settings WHERE org_id = ${org.id}::uuid FOR UPDATE`;
+      await holdLock(`bad_debt_settings:${org.id}`);
       const { result } = await this.preview(org, input.asOf, rates, tx);
       const carried = await this.allowanceBalance(tx, org.id, settings.allowanceAccountId, input.asOf);
       if (carried.isNegative()) {
@@ -260,7 +262,7 @@ export class BadDebtsService {
     this.assertManage(org);
     const settings = await this.requireSettings(org.id);
     const id = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM documents WHERE id = ${input.documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'documents', input.documentId, org.id);
       const doc = await tx.document.findFirst({ where: { id: input.documentId, orgId: org.id }, include: { contact: { select: { name: true } } } });
       if (!doc || doc.kind !== 'INVOICE') throw new NotFoundException({ error: 'NOT_FOUND', message: 'Invoice not found' });
       if (doc.status !== 'POSTED') throw new DomainError('NOT_POSTED', 'Only a posted invoice can be written off', HttpStatus.CONFLICT);
@@ -278,6 +280,7 @@ export class BadDebtsService {
       if (input.against === 'ALLOWANCE') {
         // The allowance is a credit balance; charging more than it holds would turn it into a debit.
         await tx.$queryRaw`SELECT org_id FROM bad_debt_settings WHERE org_id = ${org.id}::uuid FOR UPDATE`;
+      await holdLock(`bad_debt_settings:${org.id}`);
         const held = await this.allowanceBalance(tx, org.id, settings.allowanceAccountId, input.date);
         if (functional.gt(held)) {
           throw new DomainError('ALLOWANCE_SHORT', `The allowance holds ${held.toFixed(2)} ${org.functionalCurrency} on ${input.date}, less than this write-off. Charge it to the bad-debt expense, or write off the provided part against the allowance and the rest against the expense.`, HttpStatus.CONFLICT);
@@ -324,7 +327,7 @@ export class BadDebtsService {
   async reverseWriteOff(org: BadDebtOrg, actor: Actor, id: string, input: { date: string; reason: string }) {
     this.assertManage(org);
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM bad_debt_write_offs WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'bad_debt_write_offs', id, org.id);
       const w = await tx.badDebtWriteOff.findFirst({ where: { id, orgId: org.id }, include: { allocations: { where: { removedOn: null } } } });
       if (!w) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Write-off not found' });
       if (w.status === 'REVERSED') throw new DomainError('WRITE_OFF_REVERSED', 'This write-off was already reversed', HttpStatus.CONFLICT);

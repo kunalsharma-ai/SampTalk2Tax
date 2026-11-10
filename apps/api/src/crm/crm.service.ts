@@ -28,6 +28,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export interface CrmOrg {
   id: string;
@@ -127,8 +128,8 @@ export class CrmService {
   }
 
   private async lock(tx: Tx, table: 'crm_leads' | 'crm_deals', orgId: string, id: string) {
-    if (table === 'crm_leads') await tx.$queryRaw`SELECT id FROM crm_leads WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
-    else await tx.$queryRaw`SELECT id FROM crm_deals WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    if (table === 'crm_leads') await lockRow(tx, 'crm_leads', id, orgId);
+    else await lockRow(tx, 'crm_deals', id, orgId);
   }
 
   private async lockLead(tx: Tx, orgId: string, id: string) {

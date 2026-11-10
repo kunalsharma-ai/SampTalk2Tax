@@ -12,6 +12,7 @@ import { lineSums, postedBetween } from '../db/ledger-queries';
 import { nextCounter } from '../db/counters';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { lockRow } from '../db/locks';
 
 export interface WithholdingOrg {
   id: string;
@@ -92,7 +93,7 @@ export class WithholdingService {
     const issue = tanIssue(tan);
     if (issue) throw new DomainError('INVALID_TAN', issue);
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', orgId);
       const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
       if (org.countryCode !== 'IN' || org.functionalCurrency !== 'INR') throw new DomainError('NOT_INDIA', 'TDS and TCS are available to organisations in India that keep their books in INR');
       const before = await tx.withholdingSettings.findUnique({ where: { orgId } });
@@ -196,7 +197,7 @@ export class WithholdingService {
 
   /** Serialise posting for one contact so two documents cannot both miss a threshold crossing. */
   async lockContact(tx: Tx, orgId: string, contactId: string) {
-    await tx.$queryRaw`SELECT id FROM contacts WHERE id = ${contactId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'contacts', contactId, orgId);
   }
 
   async preview(orgId: string, input: { documentKind: 'BILL' | 'INVOICE'; contactId: string; sectionId: string; issueDate: string; amount: string; documentId?: string }) {
@@ -316,7 +317,7 @@ export class WithholdingService {
     return this.prisma.$transaction(async (tx) => {
       const settings = await this.settings(tx, org.id);
       if (!settings) throw new DomainError('WITHHOLDING_NOT_CONFIGURED', 'Set up TDS and TCS first (Settings → TDS and TCS)', HttpStatus.CONFLICT);
-      for (const id of [...ids].sort()) await tx.$queryRaw`SELECT id FROM documents WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      for (const id of [...ids].sort()) await lockRow(tx, 'documents', id, org.id);
       const docs = await tx.document.findMany({ where: { orgId: org.id, id: { in: ids } }, include: { depositItems: { where: { active: true } } } });
       const issues: string[] = [];
       for (const id of ids) {
@@ -371,7 +372,7 @@ export class WithholdingService {
   async voidDeposit(org: WithholdingOrg, actor: { id: string }, id: string, input: { date: string; reason: string }) {
     if (!hasPermission(org.role, 'journals.reverse')) throw new DomainError('FORBIDDEN', `Your role (${org.role}) cannot void deposits; it needs journals.reverse`, HttpStatus.FORBIDDEN);
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM withholding_deposits WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      const rows = await lockRow<{ id: string }>(tx, 'withholding_deposits', id, org.id);
       if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Deposit not found' });
       const dep = await tx.withholdingDeposit.findUniqueOrThrow({ where: { id } });
       if (dep.status !== 'POSTED') throw new DomainError('ALREADY_VOID', 'Deposit is already void', HttpStatus.CONFLICT);

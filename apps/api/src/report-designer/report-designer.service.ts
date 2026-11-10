@@ -26,6 +26,7 @@ import { AppConfig, CONFIG } from '../config';
 import type { CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { DashboardsService } from '../dashboards/dashboards.service';
 import { IntegrationsService } from '../integrations/integrations.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export type ChatTurn = { role: 'user' | 'assistant'; text: string };
@@ -147,7 +148,7 @@ export class ReportDesignerService {
     const layout = this.check(input.layout);
     await this.nameFree(orgId, input.name.trim(), id);
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM report_designs WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'report_designs', id, orgId);
       const d = await tx.reportDesign.findFirst({ where: { id, orgId } });
       if (!d) throw new DomainError('NOT_FOUND', 'Report design not found', HttpStatus.NOT_FOUND);
       if (d.version !== input.baseVersion) throw new DomainError('DESIGN_CHANGED', 'Someone changed this design while you were editing. Reload it and make your change again.', HttpStatus.CONFLICT);
@@ -234,7 +235,7 @@ export class ReportDesignerService {
   }
 
   private async lockDraft(tx: Prisma.TransactionClient, orgId: string, id: string, baseVersion: number) {
-    await tx.$queryRaw`SELECT id FROM report_runs WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'report_runs', id, orgId);
     const r = await tx.reportRun.findFirst({ where: { id, orgId } });
     if (!r) throw new DomainError('NOT_FOUND', 'Report not found', HttpStatus.NOT_FOUND);
     if (r.status === 'FINAL') throw new DomainError('REPORT_FINAL', 'This report is final and cannot be changed', HttpStatus.CONFLICT);

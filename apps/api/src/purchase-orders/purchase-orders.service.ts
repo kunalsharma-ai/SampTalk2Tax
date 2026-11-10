@@ -26,6 +26,7 @@ import { DocumentsService } from '../ledgers/documents.service';
 import { LineInput, SalesOrg, SalesOrdersService } from '../sales-orders/sales-orders.service';
 import { todayIst } from '../tasks/tasks.service';
 import { lineProgress, matchDocument } from './matching';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type WithLines = PurchaseOrder & { lines: PurchaseOrderLine[] };
@@ -282,7 +283,7 @@ export class PurchaseOrdersService {
   // ------------------------------------------------------------------ orders
 
   private async lock(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM purchase_orders WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'purchase_orders', id, orgId);
     const o = (await tx.purchaseOrder.findFirst({ where: { id, orgId }, include: { lines: { orderBy: { lineNo: 'asc' } } } })) as WithLines | null;
     if (!o) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Purchase order not found' });
     const p = await lineProgress(tx, orgId, o.lines.map((l) => l.id));
@@ -465,7 +466,7 @@ export class PurchaseOrdersService {
    */
   async acceptDifferences(org: SalesOrg, actor: Actor, documentId: string, reason: string) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM documents WHERE id = ${documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'documents', documentId, org.id);
       const doc = await tx.document.findFirst({ where: { id: documentId, orgId: org.id, kind: 'BILL' }, select: { id: true, status: true } });
       if (!doc) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Bill not found' });
       if (doc.status !== 'DRAFT') this.invalid('Only a draft bill’s differences can be accepted', 'BILL_NOT_DRAFT');

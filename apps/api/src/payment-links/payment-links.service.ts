@@ -12,6 +12,7 @@ import { AppConfig, CONFIG } from '../config';
 import { SecretBox, secretHint } from '../integrations/secret-box';
 import { DocumentsService } from '../ledgers/documents.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export interface LinkOrg {
   id: string;
@@ -379,7 +380,7 @@ export class PaymentLinksService {
         // commit, after system access is switched off, so the transaction is pointed at the org.
         await useOrgInTx(tx, orgId);
         return withSystemAccess(tx, async () => {
-          await tx.$queryRaw`SELECT id FROM payment_links WHERE id = ${linkId}::uuid FOR UPDATE`;
+          await lockRow(tx, 'payment_links', linkId);
           const l = await tx.paymentLink.findUniqueOrThrow({ where: { id: linkId } });
           if (l.status === 'PAID') return { settled: false };
           if (state.currency && state.currency.toUpperCase() !== l.currency) return { settled: false, problem: `Paid in ${state.currency.toUpperCase()}, not ${l.currency}` };

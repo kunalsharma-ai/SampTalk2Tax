@@ -10,6 +10,7 @@ import { BillingService, serializePlan } from '../billing.service';
 import { GatewayError, PaymentGateway, PaymentState, Provider, SignatureError } from './gateways';
 import { nextPlatformCounter } from '../../db/counters';
 import { PaymentSettingsService } from './payment-settings.service';
+import { lockRow } from '../../db/locks';
 
 const DAY = 86_400_000;
 const REF_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -306,7 +307,7 @@ export class SubscriptionPaymentsService {
    */
   async markPaid(invoiceId: string, p: { gateway: Provider | 'MANUAL'; paymentId: string | null; amountMinor: number | null; currency: string | null; source: string; actorId?: string | null; reference?: string }, now = new Date()) {
     return this.system(async (tx) => {
-      await tx.$executeRaw`SELECT 1 FROM subscription_invoices WHERE id = ${invoiceId}::uuid FOR UPDATE`;
+      await (lockRow(tx, 'subscription_invoices', invoiceId)).then((r) => r.length);
       const inv = await tx.subscriptionInvoice.findUniqueOrThrow({ where: { id: invoiceId }, include: { plan: true } });
       const actorId = p.actorId ?? null;
       if (inv.status === 'PAID') return { invoice: serializeInvoice(inv), applied: false, problem: null as string | null };

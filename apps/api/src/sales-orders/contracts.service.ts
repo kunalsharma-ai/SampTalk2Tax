@@ -29,6 +29,7 @@ import { DocumentsService } from '../ledgers/documents.service';
 import { todayIst } from '../tasks/tasks.service';
 import { LineInput, SalesOrg, SalesOrdersService } from './sales-orders.service';
 import { UsageBillingService } from './usage-billing.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface ContractInput {
@@ -86,7 +87,7 @@ export class ContractsService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string): Promise<Full> {
-    await tx.$queryRaw`SELECT id FROM sales_contracts WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'sales_contracts', id, orgId);
     const c = await tx.salesContract.findFirst({ where: { id, orgId }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
     if (!c) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Contract not found' });
     return c;

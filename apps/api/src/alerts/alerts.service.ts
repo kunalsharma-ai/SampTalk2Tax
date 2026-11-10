@@ -34,6 +34,7 @@ import { KpisService } from '../kpis/kpis.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { TasksService } from '../tasks/tasks.service';
 import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
+import { lockName } from '../db/locks';
 
 type Actor = { id: string };
 
@@ -591,7 +592,7 @@ export class AlertsService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`t2t.alerts:${orgId}`}))`;
+      await lockName(tx, `t2t.alerts:${orgId}`);
       if (!actor) {
         const newer = await tx.alertScan.findFirst({ where: { orgId, finishedAt: { gte: startedAt } }, select: { id: true } });
         if (newer) return null;

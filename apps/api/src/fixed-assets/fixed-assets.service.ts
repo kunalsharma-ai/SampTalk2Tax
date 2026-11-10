@@ -21,6 +21,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { todayIst } from '../tasks/tasks.service';
 import { nextCounter } from '../db/counters';
+import { lockName, lockRow } from '../db/locks';
 
 export interface AssetOrg {
   id: string;
@@ -145,7 +146,7 @@ export class FixedAssetsService {
   }
 
   private async lockAsset(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM fixed_assets WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'fixed_assets', id, orgId);
     const a = await tx.fixedAsset.findFirst({ where: { id, orgId } });
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Asset not found' });
     return a;
@@ -158,7 +159,7 @@ export class FixedAssetsService {
   }
 
   private lockOrg(tx: Tx, orgId: string) {
-    return tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'fixed-assets:' + orgId}))`;
+    return lockName(tx, 'fixed-assets:' + orgId);
   }
 
   // ------------------------------------------------------------------ register

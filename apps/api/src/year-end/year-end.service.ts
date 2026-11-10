@@ -11,6 +11,7 @@ import { lineSums, postedBetween } from '../db/ledger-queries';
 import { byCode } from '../db/subledger-queries';
 import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface YearEndOrg {
@@ -249,7 +250,7 @@ export class YearEndService {
     const ps = await db.fiscalPeriod.findMany({ where: { orgId, fiscalYear }, orderBy: { startDate: 'asc' } });
     if (ps.length === 0) throw new NotFoundException({ error: 'NOT_FOUND', message: `No fiscal year ${fiscalYear}` });
     const last = ps[ps.length - 1]!;
-    if (lock) await db.$queryRaw`SELECT id FROM fiscal_periods WHERE id = ${last.id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    if (lock) await lockRow(db, 'fiscal_periods', last.id, orgId);
     return { startDate: fromDbDate(ps[0]!.startDate), endDate: fromDbDate(last.endDate), lastPeriod: last };
   }
 

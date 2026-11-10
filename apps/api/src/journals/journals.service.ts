@@ -15,6 +15,7 @@ import { accounts as accountsColl } from '../db/collections/chart';
 import { journalEntries, type JournalEntryDoc } from '../db/collections/ledger';
 import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export type CreatableJournalType = 'STANDARD' | 'ADJUSTING' | 'OPENING' | 'CLOSING' | 'RECURRING';
 
@@ -442,7 +443,7 @@ export class JournalsService {
 
   /** Holds the entry's PostgreSQL copy FOR UPDATE (one change at a time), then reads the entry from MongoDB. */
   private async lockEntry(tx: Tx, orgId: string, id: string): Promise<JournalEntryDoc> {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM journal_entries WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'journal_entries', id, orgId);
     const e = rows[0] ? await this.entries(orgId, (c) => c.findOne({ id })) : null;
     if (!e) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Journal entry not found' });
     return e;
