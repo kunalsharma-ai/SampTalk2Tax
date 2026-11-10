@@ -106,6 +106,8 @@ import { CrmWebhooksRunnerService } from './crm-api/crm-webhooks-runner.service'
 import { CrmWebhooksService } from './crm-api/crm-webhooks.service';
 import { ContractsController } from './sales-orders/contracts.controller';
 import { UsageBillingController } from './sales-orders/usage-billing.controller';
+import { CustomerPortalController, CustomerPortalLinksController } from './customer-portal/customer-portal.controller';
+import { CustomerPortalService } from './customer-portal/customer-portal.service';
 import { RevenueRecognitionController } from './revenue-recognition/revenue-recognition.controller';
 import { RevenueRecognitionService } from './revenue-recognition/revenue-recognition.service';
 import { UsageBillingService } from './sales-orders/usage-billing.service';
@@ -273,6 +275,8 @@ export class AppModule {
         ContractsController,
         UsageBillingController,
         RevenueRecognitionController,
+        CustomerPortalLinksController,
+        CustomerPortalController,
         JournalTemplatesController,
         RecurringBillsController,
         BadDebtsController,
@@ -381,6 +385,7 @@ export class AppModule {
         ContractsService,
         UsageBillingService,
         RevenueRecognitionService,
+        CustomerPortalService,
         ContractsRunnerService,
         JournalTemplatesService,
         BadDebtsService,
