@@ -103,6 +103,16 @@ export class VendorPerformanceService {
     return { ...s, orders: v.orders.filter((o) => !['PRICE_ONLY', 'DRAFT', 'CANCELLED'].includes(o.status)).length };
   }
 
+  /** Grade and spend of every vendor with activity in the twelve months to today (for vendor risk, AP-024). */
+  async gradesAndSpend(orgId: string): Promise<Map<string, { grade: VendorScorecard['grade']; spend: string }>> {
+    const { from, to, today } = this.period({});
+    const byVendor = await this.facts(orgId, null, from, to);
+    return new Map([...byVendor].map(([id, v]) => {
+      const s = this.score(v, today);
+      return [id, { grade: s.grade, spend: s.billing.spend }];
+    }));
+  }
+
   /** Every vendor with orders, bills or reviews in the period, best score first. */
   async list(org: OrgContext, p: Period) {
     const { from, to, today } = this.period(p);
