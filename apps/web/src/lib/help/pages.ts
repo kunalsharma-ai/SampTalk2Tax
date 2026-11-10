@@ -180,6 +180,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose New batch, pick the bank account, the date and the bills. Someone else approves it. Download the bank file, upload it to your bank, and record the payments once the bank has paid.',
     where: 'Purchases. Recording a batch posts one payment per vendor with the batch reference, which settles the bills and shows on bank reconciliation.',
   },
+  'purchases/supplier-tax': {
+    what: 'Every active vendor\'s GSTIN and PAN checked: against each other, against other vendors, against the GST on their bills of the last twelve months, and against what the GST portal showed when someone looked the GSTIN up.',
+    how: 'Start with the serious problems. Open a vendor to fix their details or record a GST portal check: look the GSTIN up on the portal\'s Search Taxpayer page and record its status, type and legal name.',
+    where: 'Purchases. Talk2Tax does not query the GST portal itself; registration status comes from the checks people record. Nothing here changes the books.',
+  },
   'purchases/international-payments': {
     what: 'Payments to vendors abroad in their currency (outward remittances): the bills, the RBI purpose code, who pays the bank charges and, from India, which part of Form 15CA is needed and whether a Form 15CB is.',
     how: 'Choose a vendor and currency, tick the bills and the purpose, then prepare the payment. Someone else approves it. Download the bank instruction, give it to the bank with the forms, and record the payment at the bank\'s rate once paid.',
@@ -691,6 +696,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   register: { what: 'Create your Talk2Tax account.', how: 'Enter your name, email and a long password.', where: 'After this you create or join an organisation.' },
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },
   'invite/[id]': { what: 'An invitation to join an organisation.', how: 'Sign in or create an account, then accept.', where: 'After accepting, the organisation appears in your list.' },
+  'portal/[id]': { what: 'The customer portal: what a customer sees when they open the private link you sent them. Their balance, invoices, payments received and statement, with invoices to open or print and a Pay button where there is a payment link.', how: 'Make the link on the customer\'s page under Customer portal and send it to them. Revoke it there if it reaches the wrong person.', where: 'Open to anyone with the link, without signing in. Read-only: nothing here changes the books.' },
   paid: { what: 'Where a customer lands after paying a payment link: a thank-you with the link reference.', how: 'Nothing to do here. The invoice is marked paid from the gateway\'s own signed notice, not from this page.', where: 'Open to anyone; it shows nothing from the books.' },
   // ---------------------------------------------------------------- platform administration
   admin: {

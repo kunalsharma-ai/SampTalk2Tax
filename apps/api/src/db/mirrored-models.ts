@@ -176,6 +176,8 @@ export const MIRRORED_MODEL_NAMES = [
   'UsageRecord',
   'RevenueRecognitionSettings',
   'InvoiceLineRecognition',
+  'CustomerPortalLink',
+  'SupplierGstinCheck',
 ] as const;
 
 export const MIRRORED = mirrorModels(MIRRORED_MODEL_NAMES);

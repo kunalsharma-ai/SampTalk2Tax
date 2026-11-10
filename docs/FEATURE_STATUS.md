@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 803 |
+| Not started | 801 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 425 |
+| Tested | 427 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,8 +25,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 11 | 32 |
-| Accounts payable | M2 | 36 | 15 | 21 |
+| Accounts receivable | M2 | 43 | 10 | 33 |
+| Accounts payable | M2 | 36 | 14 | 22 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -806,6 +806,24 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/CONTRACTS.md
   - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
 
+### AR-030 — Customer portals
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Private link per customer (t2tp_ token, SHA-256 stored, shown once; 30/90/180/365 days or until revoked; revoke; view count and last opened). Portal without sign-in: balance, overdue and unused credits by currency, posted invoices and credit notes with state, payment-link Pay button, receipts, statement with running balance, invoice opened with the business's print template. Per-IP rate limited, no-referrer, noindex, RLS-scoped after the link lookup. Not built: customer sign-in accounts, emailing the link from the app, uploading remittances or raising disputes from the portal, branding/custom domain.
+- Evidence:
+  - packages/accounting-engine/src/customer-portal.ts
+  - packages/accounting-engine/test/customer-portal.test.ts
+  - packages/database/prisma/migrations/20261213090000_customer_portal/migration.sql
+  - apps/api/src/customer-portal/customer-portal.service.ts
+  - apps/api/src/customer-portal/customer-portal.controller.ts
+  - apps/api/test/customer-portal.e2e.test.ts
+  - apps/web/src/app/portal/[token]/page.tsx
+  - apps/web/src/app/api/portal/[...path]/route.ts
+  - apps/web/src/components/customer-portal/portal-links-card.tsx
+  - apps/web/e2e/customer-portal-flow.test.mjs
+  - docs/CUSTOMER_PORTAL.md
+
 ### AR-031 — Multi-currency invoices
 
 - Module: Accounts receivable
@@ -1047,6 +1065,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice
   - apps/web/e2e/sales-flow.test.mjs
+
+### AP-019 — Supplier tax validation
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Per active vendor: GSTIN and PAN validity and agreement, state, TDS without PAN, duplicate GSTIN/PAN across vendors, GST bills without GSTIN or under an older GSTIN, wrong tax head, plus GST portal checks recorded by people (append-only, audited) flagging cancelled/suspended/composition suppliers and the bills affected, stale checks and name differences. Not built: automatic GSP lookup (needs keys).
+- Evidence:
+  - packages/tax-engine/src/india/supplier-checks.ts
+  - packages/tax-engine/test/supplier-checks.test.ts
+  - packages/database/prisma/migrations/20261214090000_supplier_tax_checks/migration.sql
+  - apps/api/src/supplier-tax/supplier-tax.service.ts
+  - apps/api/test/supplier-tax.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/supplier-tax/page.tsx
+  - apps/web/src/components/supplier-tax/gstin-checks-card.tsx
+  - apps/web/e2e/supplier-tax-flow.test.mjs
+  - docs/SUPPLIER_TAX_CHECKS.md
 
 ### AP-021 — Vendor performance tracking
 

@@ -5600,3 +5600,46 @@ model InvoiceLineRecognition {
   @@index([orgId])
   @@map("invoice_line_recognition")
 }
+
+/// AR-030: a private link a customer opens to see their invoices, statement and payment links
+/// without signing in. Only the SHA-256 of the secret is kept; never deleted, only revoked.
+model CustomerPortalLink {
+  id          String    @id @default(uuid()) @db.Uuid
+  orgId       String    @map("org_id") @db.Uuid
+  contactId   String    @map("contact_id") @db.Uuid
+  prefix      String    @db.VarChar(12)
+  tokenHash   String    @unique @map("token_hash") @db.Char(64)
+  note        String?   @db.VarChar(200)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdById String    @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime? @map("last_seen_at") @db.Timestamptz(6)
+  viewCount   Int       @default(0) @map("view_count")
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedById String?   @map("revoked_by_id") @db.Uuid
+
+  @@unique([id, orgId])
+  @@index([orgId, contactId])
+  @@map("customer_portal_links")
+}
+
+/// AP-019: what a person saw when they looked a vendor's GSTIN up on the GST portal. Append-only.
+model SupplierGstinCheck {
+  id            String    @id @default(uuid()) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  contactId     String    @map("contact_id") @db.Uuid
+  gstin         String    @db.Char(15)
+  /// ACTIVE, CANCELLED, SUSPENDED or NOT_FOUND.
+  status        String    @db.VarChar(12)
+  taxpayerType  String?   @map("taxpayer_type") @db.VarChar(14)
+  legalName     String?   @map("legal_name") @db.VarChar(200)
+  /// From when a cancellation or suspension applies, as the portal shows it.
+  effectiveDate DateTime? @map("effective_date") @db.Date
+  checkedOn     DateTime  @map("checked_on") @db.Date
+  note          String?   @db.VarChar(500)
+  recordedById  String    @map("recorded_by_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, contactId, checkedOn])
+  @@map("supplier_gstin_checks")
+}
