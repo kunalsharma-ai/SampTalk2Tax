@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * CRM slice 1 against the real API and database: leads through their statuses, duplicates by
@@ -20,11 +21,7 @@ let other: Awaited<ReturnType<typeof createOrg>>;
 let customerId: string;
 let vendorId: string;
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 
 beforeAll(async () => {
   ctx = await bootApp();

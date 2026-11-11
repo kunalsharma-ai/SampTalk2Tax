@@ -1,5 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
+import { randomUUID } from 'node:crypto';
+import { runInOrg } from '../src/common/tenant-context';
+import { postgresOff } from '../src/db/counters';
+import { journalEntries } from '../src/db/collections/ledger';
 
 let ctx: Ctx;
 let owner: TestUser;
@@ -112,14 +117,28 @@ describe('immutability and reversal', () => {
   it('blocks any direct change to posted entries at the database level', async () => {
     const res = await ctx.http().post(`${org.base}/journals`).set(owner.auth).send(je(org.acc, '6400', '1120', '999.00')).expect(201);
     const id = res.body.id;
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE journal_lines SET debit = 1, functional_debit = 1 WHERE entry_id = '${id}' AND line_no = 1`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE journal_entries SET memo = 'tampered' WHERE id = '${id}'`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM journal_lines WHERE entry_id = '${id}'`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM journal_entries WHERE id = '${id}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE journal_lines SET debit = 1, functional_debit = 1 WHERE entry_id = '${id}' AND line_no = 1`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `UPDATE journal_entries SET memo = 'tampered' WHERE id = '${id}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `DELETE FROM journal_lines WHERE entry_id = '${id}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `DELETE FROM journal_entries WHERE id = '${id}'`)).rejects.toThrow(/cannot be deleted/);
   });
 
   it('refuses an unbalanced posted entry even if inserted directly in SQL', async () => {
     const period = await ctx.prisma.fiscalPeriod.findFirstOrThrow({ where: { orgId: org.orgId, status: 'OPEN', startDate: { lte: new Date(today()) }, endDate: { gte: new Date(today()) } } });
+    if (postgresOff()) {
+      // Written straight to the ledger's collection: the store's guard refuses it.
+      const line = (lineNo: number, accountId: string, debit: string, credit: string) => ({
+        id: randomUUID(), lineNo, accountId, currency: 'INR', exchangeRate: '1', debit, credit, functionalDebit: debit, functionalCredit: credit, description: null, dimensions: null, departmentId: null, projectId: null,
+      });
+      const now = new Date();
+      const entry = {
+        entryNumber: 999999, date: new Date(today()), periodId: period.id, type: 'STANDARD', source: 'MANUAL', status: 'POSTED', memo: null, reference: null, functionalCurrency: 'INR', totalDebit: '10', totalCredit: '10',
+        idempotencyKey: null, idempotencyHash: null, reversesEntryId: null, createdById: owner.id, postedById: owner.id, postedAt: now, createdAt: now, updatedAt: now,
+        lines: [line(1, org.acc['1120'], '10', '0'), line(2, org.acc['4100'], '0', '9')],
+      };
+      await expect(runInOrg(org.orgId, () => ctx.store.collection(journalEntries).insertOne(entry as never))).rejects.toThrow(/does not balance/);
+      return;
+    }
     await expect(
       ctx.prisma.$transaction(async (tx) => {
         const e = await tx.journalEntry.create({
@@ -290,7 +309,7 @@ describe('audit trail', () => {
     const verify = await ctx.http().get(`${org.base}/audit-events/verify`).set(owner.auth).expect(200);
     expect(verify.body.valid).toBe(true);
     expect(verify.body.checked).toBe(events.body.length);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE audit_events SET action = 'x' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/append-only/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM audit_events WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/append-only/);
+    await expect(sqlWrite(ctx, `UPDATE audit_events SET action = 'x' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/append-only/);
+    await expect(sqlWrite(ctx, `DELETE FROM audit_events WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/append-only/);
   });
 });

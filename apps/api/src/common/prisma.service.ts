@@ -1,4 +1,4 @@
-import { mirrorClient, mirrorRowsWhere, useLockStore } from '../db/mirror-writes';
+import { mirrorClient, mirrorRowsWhere, POSTGRES_OFF, useLockStore } from '../db/mirror-writes';
 import '../db/readable-models';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
@@ -120,6 +120,8 @@ export function createTenantAwarePrisma(base: PrismaService, store?: Pick<Docume
  * (db/mirror-writes.ts). Inside a transaction, use mirrorRowsWhere with the transaction.
  */
 export function mirrorRows(prisma: PrismaService, model: string, where: Record<string, unknown>): Promise<unknown> {
+  // With PostgreSQL off there is nothing to copy: the write went to MongoDB.
+  if (POSTGRES_OFF()) return Promise.resolve();
   return (prisma as unknown as { $mirrorRows(m: string, w: Record<string, unknown>): Promise<unknown> }).$mirrorRows(model, where);
 }
 

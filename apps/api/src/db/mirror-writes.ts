@@ -322,7 +322,9 @@ async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record
  * and foreign keys. `insert` refuses a record whose key is already there, as an INSERT would.
  */
 async function storeRow(store: Store, info: MirrorInfo, r: Record<string, unknown>, mode: 'checked' | 'changed' | 'insert', guard = allowedInTx('guards_off') ? undefined : GUARDS[info.model]) {
+  if (POSTGRES_OFF()) writePolicy(info, r);
   const before = (await beforeRow(info, store, r)) as Record<string, unknown> | null;
+  if (info.readOnly) return storeMoved(store, info, r, mode === 'insert' || !before);
   if (mode === 'insert' && before) throw duplicateKey(info, info.pk);
   if (guard && (mode !== 'changed' || !before || changedExcept(before, r, []))) {
     await inContext(info, r.orgId, async () => await guard(before ? 'UPDATE' : 'INSERT', strict(asColumns(info.model, before), info.model), strict(asColumns(info.model, r), info.model), guardContext(store)));
@@ -340,6 +342,42 @@ async function storeRow(store: Store, info: MirrorInfo, r: Record<string, unknow
     const pattern = Object.keys((e as { keyPattern?: Record<string, unknown> }).keyPattern ?? {});
     throw duplicateKey(info, pattern.map((x) => (x === 'id' ? info.pk : [x])).flat());
   }
+}
+
+/**
+ * A record of a table moved by hand, written through its collection (whose guards are its
+ * rules). Only with PostgreSQL off: before that its writes go through MovedTables.
+ */
+async function storeMoved(store: Store, info: MirrorInfo, r: Record<string, unknown>, insert: boolean) {
+  if (info.embedded) throw new Error(`${info.model} is written with its ${info.embedded.parent.name} record`);
+  const doc: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(r)) if (v !== undefined) doc[k] = Prisma.Decimal.isDecimal(v) ? (v as Prisma.Decimal).toFixed() : v;
+  try {
+    if (insert) await inContext(info, r.orgId, () => store.collection(info.def).insertOne(doc as never));
+    else {
+      const { id, orgId: _org, ...set } = doc;
+      await inContext(info, r.orgId, () => store.collection(info.def).updateOne({ id } as never, { $set: set } as never));
+    }
+  } catch (e) {
+    if (!isDuplicateKeyError(e)) throw e;
+    const pattern = Object.keys((e as { keyPattern?: Record<string, unknown> }).keyPattern ?? {});
+    throw duplicateKey(info, pattern.map((x) => (x === 'id' ? info.pk : [x])).flat());
+  }
+}
+
+/**
+ * Row-level security's WITH CHECK, for writes with PostgreSQL off (docs/SECURITY.md ›
+ * Row-level security): outside system work a record must belong to the current organisation,
+ * a copilot conversation to the current member, and the benchmark pool is the system's alone.
+ */
+function writePolicy(info: MirrorInfo, r: Record<string, unknown>) {
+  const c = currentTenantContext();
+  if (c.bypass) return;
+  const ok =
+    info.model === 'BenchmarkContribution'
+      ? false
+      : (!(info.tenant || ['AuditEvent', 'ErrorEvent'].includes(info.model)) || (!!c.orgId && r.orgId === c.orgId)) && (info.model !== 'CopilotConversation' || (!!c.userId && r.userId === c.userId));
+  if (!ok) throw new Error(`new row violates row-level security policy for table "${info.def.name}"`);
 }
 
 /**
@@ -838,9 +876,14 @@ export function mirrorClient<T extends object>(client: T, store: Store, runInTx?
           if (!cache.has(prop)) {
             const pg = value as Delegate;
             const reads = mongoReadOps(pg, ro, store);
+            // With PostgreSQL off, writes to a table moved by hand go to its collection.
+            const writes = POSTGRES_OFF() && !ro.embedded ? mongoOnlyOps(ro, store, reads as Ops) : {};
             cache.set(prop, new Proxy(pg, {
               get(t, op, r) {
                 if (op === PG) return t;
+                if (typeof op === 'string' && op in writes) {
+                  return (args: Record<string, unknown>) => (runInTx ? runInTx((tx) => ((tx as Record<string, Delegate>)[prop] as Delegate)[op](args)) : serial(() => writes[op](args ?? {})));
+                }
                 if (typeof op === 'string' && op in reads) return (args: Record<string, unknown>) => (runInTx ? (strayInTx() ? (t as Delegate)[op](args) : reads[op](args)) : serial(() => reads[op](args)));
                 return Reflect.get(t, op, r);
               },

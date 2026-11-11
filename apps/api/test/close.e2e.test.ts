@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CloseService } from '../src/close/close.service';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Month-end close against the real API and database: the checklist worked out from the books,
@@ -88,11 +89,7 @@ interface CloseView {
 }
 
 const settle = () => Promise.all([...ctx.app.get(CloseService).inflight.values()]);
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const view = async (who: TestUser = owner) => (await ctx.http().get(C).set(who.auth).expect(200)).body as CloseView;
 const check = (v: CloseView, key: string) => v.checks.find((c) => c.key === key)!;
 const adj = (v: CloseView, text: string) => v.adjustments.find((a) => a.description.includes(text))!;

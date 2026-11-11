@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
+import { tenantStorage } from '../src/common/tenant-context';
 
 /**
  * AR-013 milestone billing and AR-014 progress billing of sales orders against the real API and
@@ -18,11 +20,7 @@ let other: Awaited<ReturnType<typeof createOrg>>;
 let customer: { id: string };
 let tax18: { id: string };
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const newOrder = async () =>
   (
     await ctx
@@ -172,9 +170,10 @@ describe('isolation and guards', () => {
   });
 
   it('the database refuses changing an invoiced milestone or a progress claim', async () => {
-    const [m] = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      return tx.$queryRawUnsafe<{ id: string }[]>(`SELECT m.id FROM sales_order_milestones m JOIN documents d ON d.id = m.document_id WHERE m.org_id = '${org.orgId}' AND d.status <> 'VOID' LIMIT 1`);
+    const [m] = await tenantStorage.run({ bypass: true }, async () => {
+      const billed = await ctx.prisma.salesOrderMilestone.findMany({ where: { orgId: org.orgId, documentId: { not: null } }, select: { id: true, documentId: true } });
+      const live = await ctx.prisma.document.findMany({ where: { id: { in: billed.map((b) => b.documentId!) }, status: { not: 'VOID' } }, select: { id: true } });
+      return billed.filter((b) => live.some((d) => d.id === b.documentId));
     });
     await expect(raw(`UPDATE sales_order_milestones SET percent = 1 WHERE id = '${m!.id}'`)).rejects.toThrow(/milestone is invoiced/);
     await expect(raw(`DELETE FROM sales_order_milestones WHERE id = '${m!.id}'`)).rejects.toThrow(/milestone is invoiced/);

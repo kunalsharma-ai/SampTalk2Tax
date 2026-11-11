@@ -3,6 +3,7 @@ import { runInOrg } from '../src/common/tenant-context';
 import { journalEntries } from '../src/db/collections/ledger';
 import { bootApp, createOrg, Ctx, registerUser, today } from './helpers';
 import { postgresOnly } from '../src/db/mirror-writes';
+import { postgresOff } from '../src/db/counters';
 
 /** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
 const pg = () => postgresOnly(ctx.prisma);
@@ -25,7 +26,8 @@ const je = (acc: Record<string, string>, debit: string, credit: string, amount: 
   ...extra,
 });
 
-describe('the ledger lives in MongoDB', () => {
+// These check the PostgreSQL copy kept while both databases run, so only while PostgreSQL does.
+describe.skipIf(postgresOff())('the ledger lives in MongoDB', () => {
   it('a posted journal is stored in MongoDB with decimal amounts, and copied to PostgreSQL with the same line ids', async () => {
     const owner = await registerUser(ctx, 'Ledger Owner');
     const org = await createOrg(ctx, owner);

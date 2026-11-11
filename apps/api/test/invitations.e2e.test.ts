@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runInOrg } from '../src/common/tenant-context';
 import { invitations, memberships } from '../src/db/collections/tenancy';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 let ctx: Ctx;
 beforeAll(async () => {
@@ -172,7 +173,7 @@ describe('member roles and removal', () => {
       await expect(ctx.store.collection(memberships).updateMany({ role: 'OWNER' }, { $set: { role: 'VIEWER' } })).rejects.toThrow(/at least one owner/);
     });
     // The PostgreSQL copy keeps its own trigger meanwhile.
-    await expect(ctx.prisma.$executeRaw`DELETE FROM memberships WHERE org_id = ${t.orgId}::uuid AND role = 'OWNER'`).rejects.toThrow(/at least one owner/);
+    await expect(sqlWrite(ctx, `DELETE FROM memberships WHERE org_id = $1::uuid AND role = 'OWNER'`, [t.orgId])).rejects.toThrow(/at least one owner/);
     // With a second owner, the first can step down.
     await ctx.http().put(`${t.base}/members/${t.admin.id}`).set(t.owner.auth).send({ role: 'OWNER' }).expect(200);
     await ctx.http().put(`${t.base}/members/${t.owner.id}`).set(t.owner.auth).send({ role: 'ADMIN' }).expect(200);

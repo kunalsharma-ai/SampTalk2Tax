@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AR-026 / AR-027 against the real API and database: setting up the accounts; the provision
@@ -20,11 +21,7 @@ const d0 = today();
 const y = Number(d0.slice(0, 4));
 const fyStart = d0.slice(5) >= '04-01' ? `${y}-04-01` : `${y - 1}-04-01`;
 const day = (n: number) => { const d = new Date(`${fyStart}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const invoice = async (date: string, price: string, extra: Record<string, unknown> = {}) => {
   const d = (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: customer.id, issueDate: date, lines: [{ accountId: org.acc['4100'], description: 'Goods', quantity: '1', unitPrice: price }], ...extra }).expect(201)).body;
   return (await ctx.http().post(`${org.base}/sales/documents/${d.id}/post`).set(owner.auth).send({}).expect(200)).body as { id: string; number: string };

@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
+import { postgresOff } from '../src/db/counters';
 
 /**
  * AP-014 payment batches and AP-027 vendor bank-detail control against the real API and database:
@@ -22,11 +24,7 @@ const T = today();
 let cedar: string;
 let granite: string;
 const bills: Record<string, { id: string; number: string }> = {};
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const bill = async (vendor: string, amount: string) =>
   (await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId: vendor, issueDate: T, post: true, lines: [{ accountId: org.acc['6600'], quantity: '1', unitPrice: amount }] }).expect(201)).body as { id: string; number: string };
 const B = () => `${org.base}/purchases/payment-batches`;
@@ -162,8 +160,10 @@ describe('records', () => {
     await expect(raw(`DELETE FROM vendor_bank_details WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be deleted/);
     await expect(raw(`UPDATE payment_batches SET memo = 'x' WHERE org_id = '${org.orgId}' AND status = 'PAID'`)).rejects.toThrow(/final/);
     await expect(raw(`UPDATE payment_batch_items SET amount = 1 WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/only while the batch is a draft/);
-    // Changing the details by any route clears the verification.
-    await raw(`UPDATE vendor_bank_details SET account_number = '111122223333' WHERE contact_id = '${granite}'`);
+    // Changing the details by any route clears the verification: PostgreSQL's trigger cleared it,
+    // MongoDB's guard refuses a change that does not.
+    if (postgresOff()) await expect(raw(`UPDATE vendor_bank_details SET account_number = '111122223333' WHERE contact_id = '${granite}'`)).rejects.toThrow(/never verified by the same write/);
+    await raw(`UPDATE vendor_bank_details SET account_number = '111122223333', verified_by_id = NULL, verified_at = NULL, verification_note = NULL WHERE contact_id = '${granite}'`);
     // Written past the API, so MongoDB is brought in step by hand.
     await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'VendorBankDetails', { contactId: granite }));
     expect((await ctx.http().get(bank(granite)).set(viewer.auth).expect(200)).body.details.verified).toBe(false);

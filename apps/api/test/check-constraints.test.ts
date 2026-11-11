@@ -30,7 +30,8 @@ describe('CHECK constraints', () => {
     expect(failed).toEqual([]);
   });
 
-  it('agree with PostgreSQL on existing and edited records', async () => {
+  // A comparison with PostgreSQL itself, so only while it runs.
+  it.skipIf(process.env.T2T_POSTGRES === 'off')('agree with PostgreSQL on existing and edited records', async () => {
     let compared = 0;
     const mismatches: string[] = [];
     for (const [table, list] of Object.entries(checks)) {

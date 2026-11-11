@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Financial dimensions against the real API and database: departments and projects, journal and
@@ -18,11 +19,7 @@ let org: Awaited<ReturnType<typeof createOrg>>;
 let F: string;
 const id: Record<string, string> = {};
 
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const journal = (lines: Record<string, unknown>[], memo = 'Test') => ({ date: T, memo, post: true, lines });
 const profit = async (type: string) => (await ctx.http().get(`${F}/profit?type=${type}&from=${FROM}&to=${T}`).set(viewer.auth).expect(200)).body;
 

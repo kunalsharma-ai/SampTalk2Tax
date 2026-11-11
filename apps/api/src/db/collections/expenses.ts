@@ -124,7 +124,7 @@ export const expenseClaims = defineCollection<ExpenseClaimDoc>({
     afterUpdate(before, after) {
       if (after.orgId !== before.orgId || after.number !== before.number || after.claimantId !== before.claimantId || after.currency !== before.currency) throw new GuardViolation(`Expense claim ${before.number} cannot be moved or renumbered`);
       if (!EDITABLE.includes(before.status) && (after.title !== before.title || after.total !== before.total || after.netTotal !== before.netTotal || after.taxTotal !== before.taxTotal || !same(after.lines, before.lines))) {
-        throw new GuardViolation(`Expense claim ${before.number} can only be edited as a draft`);
+        throw new GuardViolation(`Expense claim ${before.number} can only be edited as a draft; once submitted it cannot be changed`);
       }
       if (after.status !== before.status) {
         if (!MOVES[before.status].includes(after.status)) throw new GuardViolation(`Expense claim ${before.number} cannot go from ${before.status} to ${after.status}`);

@@ -4,6 +4,7 @@ import { CfoService } from '../src/cfo/cfo.service';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { CopilotTools } from '../src/copilot/copilot.tools';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * The virtual CFO against the real API and database: the assessment and the nine questions worked
@@ -224,12 +225,7 @@ describe('board packs and investor updates', () => {
       () => ctx.http().delete(`${org.base}/cfo/reports/${boardId}`).set(owner.auth),
     ]) expect((await call().expect(409)).body.error).toBe('REPORT_FINAL');
     // The database refuses too.
-    await expect(
-      ctx.prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-        await tx.$executeRawUnsafe(`UPDATE cfo_reports SET commentary = 'x' WHERE id = $1::uuid`, boardId);
-      }),
-    ).rejects.toThrow(/cannot be changed/);
+    await expect(sqlWrite(ctx, `UPDATE cfo_reports SET commentary = 'x' WHERE id = $1::uuid`, [boardId], { bypass: true })).rejects.toThrow(/cannot be changed/);
   });
 
   it('shows the CFO agent and its use in the AI control center', async () => {

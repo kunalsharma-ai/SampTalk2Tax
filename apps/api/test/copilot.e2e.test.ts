@@ -9,6 +9,8 @@ import { CopilotService, QUESTIONS_PER_HOUR } from '../src/copilot/copilot.servi
 import { TOOLSET_VERSION } from '../src/copilot/copilot.tools';
 import { startAnthropicStandIn } from '../../../test-support/anthropic-stand-in.mjs';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
+import { postgresOff } from '../src/db/counters';
 
 /**
  * The AI copilot against the real API and database. The language model is a scripted
@@ -86,11 +88,7 @@ const start = async (question: string, auth = owner.auth, expectStatus = 201) =>
 const follow = async (id: string, question: string, auth = owner.auth, expectStatus = 201) => (await ctx.http().post(`${C}/conversations/${id}/messages`).set(auth).send({ question }).expect(expectStatus)).body as Conversation;
 const read = async (id: string, auth = owner.auth) => (await ctx.http().get(`${C}/conversations/${id}`).set(auth).expect(200)).body as Conversation;
 const lastAnswer = (c: Conversation) => c.messages[c.messages.length - 1];
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 
 beforeAll(async () => {
   ctx = await bootApp({ COPILOT_MAX_TOOL_ROUNDS: '3' }, { copilotModel: model });
@@ -378,17 +376,19 @@ describe('one answer at a time, privacy and guards', () => {
     await ctx.http().post(`${C}/conversations/${mine[0].id}/messages`).set(viewer.auth).send({ question: 'Peek' }).expect(404);
     await ctx.http().delete(`${C}/conversations/${mine[0].id}`).set(viewer.auth).expect(404);
     await ctx.http().get(`${C}/conversations/${mine[0].id}`).set(stranger.auth).expect(404);
-    // Row-level security hides them from another member even inside the organisation (PostgreSQL's own check, until it goes).
-    const seen = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', '', true), set_config('t2t.org_id', $1, true), set_config('t2t.user_id', $2, true)`, org.orgId, viewer.id);
-      return [await pgOf(tx.copilotConversation as never).count(), await pgOf(tx.copilotMessage as never).count()];
-    });
+    // The data layer's row policy hides them from another member even inside the organisation.
+    const seen = await tenantStorage.run({ orgId: org.orgId, userId: viewer.id }, async () => [await ctx.prisma.copilotConversation.count(), await ctx.prisma.copilotMessage.count()]);
     expect(seen).toEqual([0, 0]);
-    const own = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', '', true), set_config('t2t.org_id', $1, true), set_config('t2t.user_id', $2, true)`, org.orgId, owner.id);
-      return pgOf(tx.copilotConversation as never).count();
-    });
+    const own = await tenantStorage.run({ orgId: org.orgId, userId: owner.id }, async () => await ctx.prisma.copilotConversation.count());
     expect(own).toBe(mine.length);
+    // PostgreSQL's own policy too, while it runs.
+    if (!postgresOff()) {
+      const pg = await ctx.prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', '', true), set_config('t2t.org_id', $1, true), set_config('t2t.user_id', $2, true)`, org.orgId, viewer.id);
+        return [await pgOf(tx.copilotConversation as never).count(), await pgOf(tx.copilotMessage as never).count()];
+      });
+      expect(pg).toEqual([0, 0]);
+    }
     // A viewer can use it too, and the tools respect what a viewer may see.
     model.steps.push(() => reply([toolUse('tu_v', 'get_ageing', { ledger: 'payables', as_of: null })], 'tool_use'), () => reply([text('Payables.')], 'end_turn'));
     const v = await start('What do we owe?', viewer.auth);

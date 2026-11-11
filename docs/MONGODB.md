@@ -257,9 +257,21 @@ PostgreSQL:
   customer's onboarding) runs in the API.
 - The audit trail and workflow cursors are mirrored too. A read MongoDB cannot answer is an
   error rather than a PostgreSQL fallback, and so is a raw SQL write to a mirrored table.
+- Row-level security's WITH CHECK is kept by the data layer: outside system work a record must
+  belong to the current organisation (a copilot conversation to the current member), and the
+  benchmark pool is the system's alone. Prisma writes to the tables moved by hand go to their
+  collections, whose guards are their rules.
 
-The API suite runs both ways. With PostgreSQL off, the tests still failing are the ones that
-check database rules with raw SQL; step 10c rewrites them against the data layer.
+**Tests with PostgreSQL off (step 10c).** Tests that tamper with a table directly do it with
+`sqlWrite` (test/sql-writes.ts): the same SQL runs against PostgreSQL while it runs, and with it
+off is carried out through the data layer (the WHERE clause evaluated on each record, then each
+change or delete made as the API would, so guards and checks apply). It takes INSERT (VALUES or
+SELECT), UPDATE and DELETE, with `IN (SELECT ...)` and scalar subqueries. Where the two
+databases word a refusal differently, the guard's message carries PostgreSQL's words, and
+guards run their checks in the order PostgreSQL's triggers did (by name, CHECKs last). Tests of
+PostgreSQL itself (its copies, its catalog, its connection settings) are skipped with it off.
+
+The API suite runs both ways: 815 of 815 with PostgreSQL on, and 792 with it off (23 skipped).
 
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the

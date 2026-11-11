@@ -1,6 +1,8 @@
 import { addDays, fiscalYearForDate } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
+import { tenantStorage } from '../src/common/tenant-context';
 
 /**
  * CRM slice 4 (Customer 360) against the real API and database: revenue net of credit notes, direct
@@ -18,11 +20,7 @@ let other: Awaited<ReturnType<typeof createOrg>>;
 const c: Record<string, string> = {};
 let projectId: string;
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const invoice = async (who: string, issueDate: string, amount: string, extra: Record<string, unknown> = {}) => {
   const r = await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: c[who], issueDate, dueDate: addDays(issueDate, 30), post: true, lines: [{ accountId: org.acc['4100'], quantity: '1', unitPrice: amount }], ...extra });
   expect(r.status, JSON.stringify(r.body)).toBe(201);
@@ -147,10 +145,7 @@ describe('credit hold', () => {
 
     await ctx.http().put(url).set(owner.auth).send({ hold: false, reason: 'Paid in part, plan agreed' }).expect(200);
     await ctx.http().post(`${org.base}/sales/documents/${draft.id}/post`).set(owner.auth).send({ overrideCreditLimit: true }).expect(200);
-    const audit = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      return tx.auditEvent.findMany({ where: { orgId: org.orgId, entityId: c['Banyan Retail'], action: { startsWith: 'contact.credit_hold' } }, orderBy: { createdAt: 'asc' } });
-    });
+    const audit = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, entityId: c['Banyan Retail'], action: { startsWith: 'contact.credit_hold' } }, orderBy: { createdAt: 'asc' } }));
     expect(audit.map((a) => a.action)).toEqual(['contact.credit_hold_set', 'contact.credit_hold_lifted']);
   });
 

@@ -3,6 +3,7 @@ import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
 import { allowInTx } from '../src/db/guards/allow';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Customer portal (AR-030) against the real API and database: staff make, list and revoke
@@ -26,11 +27,7 @@ const portal = (t = token, path = '') => ctx.http().get(`/v1/portal/${t}${path}`
 const T = today();
 const addDays = (d: string, n: number) => new Date(Date.parse(d) + n * 86_400_000).toISOString().slice(0, 10);
 
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 async function invoice(contactId: string, amount: string, issueDate: string, post = true) {
   const d = (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId, issueDate, dueDate: addDays(issueDate, 15), lines: [{ accountId: org.acc['4100'], description: 'Consulting', quantity: '1', unitPrice: amount }] }).expect(201)).body;
   if (post) return (await ctx.http().post(`${org.base}/sales/documents/${d.id}/post`).set(owner.auth).send({}).expect(200)).body;
@@ -57,7 +54,7 @@ beforeAll(async () => {
   // 4,000 received against the old invoice.
   await ctx.http().post(`${org.base}/sales/payments`).set(owner.auth).send({ contactId: customer.id, date: T, bankAccountId: org.acc['1120'], amount: '4000.00', reference: 'NEFT 8812', allocations: [{ documentId: old.id, amount: '4000.00' }] }).expect(201);
   // An open payment link on the recent invoice.
-  const [{ id: me }] = await ctx.prisma.$queryRawUnsafe<{ id: string }[]>(`SELECT id::text FROM users WHERE email = $1`, owner.email);
+  const { id: me } = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.user.findUniqueOrThrow({ where: { email: owner.email } }));
   await raw(`INSERT INTO payment_links (id, org_id, number, document_id, provider, gateway_ref, url, currency, amount, created_by_id, updated_at) VALUES (gen_random_uuid(), $1::uuid, 1, $2::uuid, 'RAZORPAY', $4, 'https://rzp.example.test/pay/' || $4, 'INR', 6000, $3::uuid, now())`, org.orgId, recent.id, me, `plink_${recent.id.slice(0, 8)}`);
   ids.plink = `plink_${recent.id.slice(0, 8)}`;
   // Written past the API, so MongoDB is brought in step by hand.
@@ -85,9 +82,9 @@ describe('customer portal links', () => {
     expect(list[0]).toMatchObject({ id: linkId, prefix: r.prefix, note: 'Sent to accounts@sunrise', state: 'ACTIVE', createdBy: 'Portal Owner', viewCount: 0, lastSeenAt: null });
     expect(JSON.stringify(list)).not.toContain(token);
     // Neither the table nor the audit trail holds the secret.
-    const rows = await ctx.prisma.$queryRawUnsafe<{ token_hash: string }[]>(`SELECT token_hash FROM customer_portal_links WHERE id = $1::uuid`, linkId).catch(() => []);
-    for (const x of rows) expect(x.token_hash).not.toContain(token.slice(5));
-    const audit = await ctx.prisma.$queryRawUnsafe<{ data: unknown }[]>(`SELECT data FROM audit_events WHERE entity_id = $1::uuid`, linkId).catch(() => []);
+    const rows = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.customerPortalLink.findMany({ where: { id: linkId } }));
+    for (const x of rows) expect(x.tokenHash).not.toContain(token.slice(5));
+    const audit = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.auditEvent.findMany({ where: { entityId: linkId }, select: { data: true } }));
     expect(JSON.stringify(audit)).not.toContain(token.slice(5));
   });
 });
