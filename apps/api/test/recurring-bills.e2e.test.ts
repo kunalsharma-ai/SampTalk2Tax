@@ -11,6 +11,7 @@ import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RecurringBillsService } from '../src/recurring-bills/recurring-bills.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 const synthetic = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
 const OWN = synthetic('29', 'ZZZCZ0201Z');
@@ -30,11 +31,7 @@ let g18: string;
 let landlord: string;
 let cloud: string;
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const R = () => `${org.base}/purchases/recurring-bills`;
 const rent = (extra: Record<string, unknown> = {}) => ({
   name: 'Office rent',

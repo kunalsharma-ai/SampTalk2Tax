@@ -2,6 +2,7 @@ import { addMonthsAnchored } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ContractsService } from '../src/sales-orders/contracts.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * CRM slice 3 against the real API and database: contracts billed every period into draft
@@ -26,11 +27,7 @@ let otherCustomer: { id: string };
 let tax18: { id: string };
 let dealId: string;
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const body = (extra: Record<string, unknown> = {}) => ({
   contactId: customer.id,
   title: 'Monthly bookkeeping and GST returns',

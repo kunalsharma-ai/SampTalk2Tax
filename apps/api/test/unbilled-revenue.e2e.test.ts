@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Unbilled revenue detection (AR-042) against the real API and database: each source found from
@@ -25,11 +26,7 @@ let org: Awaited<ReturnType<typeof createOrg>>;
 const c: Record<string, { id: string }> = {};
 const ids: Record<string, string> = {};
 const U = () => `${org.base}/sales/unbilled-revenue`;
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const line = (unitPrice: string, quantity = '1') => ({ accountId: org.acc['4100'], description: 'Services', quantity, unitPrice });
 const report = async () => (await ctx.http().get(U()).set(viewer.auth).expect(200)).body;
 const find = (r: { findings: { source: string; refId: string }[] }, source: string, refId: string) => r.findings.find((f) => f.source === source && f.refId === refId) as Record<string, unknown> | undefined;
@@ -137,10 +134,7 @@ describe('unbilled revenue', () => {
 
     const back = (await ctx.http().post(D).set(owner.auth).send({ fingerprint: fp, action: 'RESTORE', reason: 'Customer released the hold' }).expect(200)).body;
     expect(find(back, 'ORDER', ids.order!)!.dismissed).toBeNull();
-    const audit = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      return tx.auditEvent.findMany({ where: { orgId: org.orgId, action: { startsWith: 'unbilled_revenue.' } }, orderBy: { createdAt: 'asc' } });
-    });
+    const audit = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, action: { startsWith: 'unbilled_revenue.' } }, orderBy: { createdAt: 'asc' } }));
     expect(audit.map((a) => a.action)).toEqual(['unbilled_revenue.dismissed', 'unbilled_revenue.dismissed', 'unbilled_revenue.restored']);
   });
 

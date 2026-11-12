@@ -2,6 +2,7 @@ import { addMonthsAnchored } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ContractsService } from '../src/sales-orders/contracts.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AR-012 usage-based billing against the real API and database: meters on a contract billed in
@@ -23,11 +24,7 @@ let id: string;
 let calls: { id: string };
 let storage: { id: string };
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const contract = (extra: Record<string, unknown> = {}) => ({
   contactId: customer.id,
   title: 'Analytics platform',

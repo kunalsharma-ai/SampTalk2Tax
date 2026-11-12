@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
+import { tenantStorage } from '../src/common/tenant-context';
 
 /**
  * Vendor portal (AP-013) against the real API and database: staff make and revoke a private link
@@ -61,9 +63,9 @@ describe('vendor portal', () => {
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({ prefix: token.slice(5, 13), state: 'ACTIVE', note: 'Sent to accounts@kestrel', createdBy: 'Vendor Portal Owner' });
     expect(JSON.stringify(list)).not.toContain(token);
-    const [row] = await ctx.prisma.$queryRawUnsafe<{ token_hash: string }[]>(`SELECT token_hash FROM vendor_portal_links WHERE id = $1::uuid`, linkId);
-    expect(row!.token_hash).toBe(createHash('sha256').update(token).digest('hex'));
-    const audit = await ctx.prisma.$queryRawUnsafe<{ data: unknown }[]>(`SELECT data FROM audit_events WHERE entity_id = $1`, linkId);
+    const row = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.vendorPortalLink.findUniqueOrThrow({ where: { id: linkId } }));
+    expect(row.tokenHash).toBe(createHash('sha256').update(token).digest('hex'));
+    const audit = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.auditEvent.findMany({ where: { entityId: linkId }, select: { data: true } }));
     expect(JSON.stringify(audit)).not.toContain(token.slice(13));
     // A customer link token never opens the vendor portal, and a customer cannot get a vendor link.
     const cust = (await ctx.http().post(`${org.base}/contacts`).set(owner.auth).send({ name: 'Only A Customer', isCustomer: true }).expect(201)).body;
@@ -114,9 +116,9 @@ describe('vendor portal', () => {
     ids.sent2 = (await send({ invoiceNumber: 'KP/1004', invoiceDate: T, amount: '1500.50', currency: 'INR' }).expect(201)).body.id;
     // Another vendor's invoice cannot be reached through this link.
     await ctx.http().put(`/v1/vendor-portal/${token}/invoices/00000000-0000-4000-8000-000000000000/file?fileName=a.pdf`).set('content-type', 'application/pdf').send(PDF).expect(404);
-    const audit = await ctx.prisma.$queryRawUnsafe<{ action: string; actor_id: string | null }[]>(`SELECT action, actor_id FROM audit_events WHERE entity_id = $1 ORDER BY id`, sent.id);
+    const audit = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.auditEvent.findMany({ where: { entityId: sent.id }, orderBy: { id: 'asc' }, select: { action: true, actorId: true } }));
     expect(audit.map((a) => a.action)).toEqual(['vendor_portal.invoice_sent', 'vendor_portal.file_sent']);
-    expect(audit.every((a) => a.actor_id === null)).toBe(true);
+    expect(audit.every((a) => a.actorId === null)).toBe(true);
   });
 
   it('staff record one against a bill (its file goes on the bill) and turn the other down', async () => {
@@ -147,8 +149,8 @@ describe('vendor portal', () => {
     await send({ invoiceNumber: 'KP/1004', invoiceDate: T, amount: '1500.50', currency: 'INR', purchaseOrderId: ids.po }).expect(201);
     expect((await send({ invoiceNumber: 'KP/1003', invoiceDate: T, amount: '1.00', currency: 'INR' }).expect(409)).body.message).toBe('Invoice KP/1003 is already recorded by Harbour Buying Co');
     // Sent invoices stay as sent.
-    await expect(ctx.prisma.$transaction(async (tx) => { await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass','on',true)`); await tx.$executeRawUnsafe(`UPDATE vendor_portal_submissions SET amount = 1 WHERE id = $1::uuid`, ids.sent); })).rejects.toThrow(/stays as it was sent/);
-    await expect(ctx.prisma.$transaction(async (tx) => { await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass','on',true)`); await tx.$executeRawUnsafe(`DELETE FROM vendor_portal_submissions WHERE id = $1::uuid`, ids.sent2); })).rejects.toThrow(/never deleted/);
+    await expect(sqlWrite(ctx, `UPDATE vendor_portal_submissions SET amount = 1 WHERE id = $1::uuid`, [ids.sent], { bypass: true })).rejects.toThrow(/stays as it was sent/);
+    await expect(sqlWrite(ctx, `DELETE FROM vendor_portal_submissions WHERE id = $1::uuid`, [ids.sent2], { bypass: true })).rejects.toThrow(/never deleted/);
   });
 
   it('refuses revoked and made-up links', async () => {

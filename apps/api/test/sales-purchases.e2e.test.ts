@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 let ctx: Ctx;
 let owner: TestUser;
@@ -107,7 +108,8 @@ describe('invoices', () => {
     expect(res.body.error).toBe('CONTROL_ACCOUNT');
     const draft = await ctx.http().post(`${org.base}/journals`).set(owner.auth).send({ date: today(), lines: [{ accountId: org.acc['1120'], debit: '5.00' }, { accountId: org.acc['4100'], credit: '5.00' }] }).expect(201);
     await expect(
-      ctx.prisma.$executeRawUnsafe(
+      sqlWrite(
+        ctx,
         `INSERT INTO journal_lines (id, org_id, entry_id, line_no, account_id, currency, exchange_rate, debit, credit, functional_debit, functional_credit)
          VALUES (gen_random_uuid(), '${org.orgId}', '${draft.body.id}', 3, '${org.acc['1200']}', 'INR', 1, 5, 0, 5, 0)`,
       ),
@@ -121,9 +123,9 @@ describe('invoices', () => {
   });
 
   it('blocks direct changes to posted documents at the database level', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE documents SET total = 1 WHERE id = '${invId}'`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE document_lines SET unit_price = 1 WHERE document_id = '${invId}'`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM documents WHERE id = '${invId}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE documents SET total = 1 WHERE id = '${invId}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `UPDATE document_lines SET unit_price = 1 WHERE document_id = '${invId}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `DELETE FROM documents WHERE id = '${invId}'`)).rejects.toThrow(/cannot be deleted/);
   });
 });
 
@@ -225,7 +227,8 @@ describe('receipts, credits and ageing', () => {
     const big = (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send(invoice({ post: true })).expect(201)).body;
     const pay = (await receipt('100.00').expect(201)).body;
     await expect(
-      ctx.prisma.$executeRawUnsafe(
+      sqlWrite(
+        ctx,
         `INSERT INTO allocations (id, org_id, target_id, payment_id, amount, date, created_by_id) VALUES (gen_random_uuid(), '${org.orgId}', '${big.id}', '${pay.id}', 500, CURRENT_DATE, '${owner.id}')`,
       ),
     ).rejects.toThrow(/exceed the source amount/);

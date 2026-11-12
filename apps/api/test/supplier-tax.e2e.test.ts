@@ -1,6 +1,7 @@
 import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Supplier tax validation (AP-019) against the real API and database: the vendor report, GST
@@ -24,11 +25,7 @@ let g18: { id: string };
 const v: Record<string, { id: string; name: string }> = {};
 const bills: Record<string, { id: string; number: string }> = {};
 const S = () => `${org.base}/purchases/supplier-tax`;
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 async function bill(contactId: string, amount: string, issueDate = T) {
   return (await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId, issueDate, lines: [{ accountId: org.acc['1300'], description: 'Stock', quantity: '1', unitPrice: amount, taxRateId: g18.id, hsnCode: '7208' }], post: true }).expect(201)).body;
 }

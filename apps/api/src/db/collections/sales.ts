@@ -39,7 +39,7 @@ function checkContact(c: ContactDoc) {
   if (!c.isCustomer && !c.isVendor) throw new GuardViolation('A contact must be a customer, a vendor or both');
   if (c.gstin !== null && c.stateCode !== c.gstin.slice(0, 2)) throw new GuardViolation("A registered contact's state is its GSTIN's first two digits");
   if (c.pan !== null && c.gstin !== null && c.gstin.slice(2, 12) !== c.pan) throw new GuardViolation('The PAN must match the GSTIN');
-  if (c.creditHold && (!c.creditHoldReason || !c.creditHoldAt || !c.creditHoldById)) throw new GuardViolation('A credit hold needs its reason, time and who placed it');
+  if (c.creditHold && (!c.creditHoldReason || !c.creditHoldAt || !c.creditHoldById)) throw new GuardViolation('A credit hold needs its reason, time and who placed it (contacts_credit_hold_check)');
 }
 
 export const contacts = defineCollection<ContactDoc>({
@@ -304,16 +304,22 @@ export const documents = defineCollection<DocumentDoc>({
     },
     async afterUpdate(before, after, ctx) {
       if (before.status === 'VOID') throw new GuardViolation('A void document is immutable');
+      // The links first, as PostgreSQL's documents_* triggers ran in name order before its guard.
+      await checkDocumentLinks(before, after, ctx);
       if (before.status === 'POSTED') {
         const changed = POSTED_FIXED.find((k) => !same(before[k], after[k]));
         if (changed || (after.status !== 'POSTED' && after.status !== 'VOID')) throw new GuardViolation('A posted document is immutable; void it and issue a new one');
-        if (after.status === 'POSTED' && (after.voidDate !== before.voidDate || after.voidReason !== before.voidReason)) throw new GuardViolation('A posted document is immutable; void it and issue a new one');
+        // Staying posted, only the template may change (t2t_guard_document).
+        const free = new Set(['templateId', 'updatedAt']);
+        if (after.status === 'POSTED' && Object.keys({ ...before, ...after }).some((k) => !free.has(k) && !same(before[k as keyof DocumentDoc], after[k as keyof DocumentDoc]))) {
+          throw new GuardViolation('A posted document is immutable; void it and issue a new one');
+        }
       } else if (after.status === 'VOID') throw new GuardViolation('Drafts are deleted, not voided');
       if (after.orgId !== before.orgId || after.createdById !== before.createdById) throw new GuardViolation('A document keeps its organisation and author');
-      checkDocument(after);
       if (before.status === 'DRAFT' && after.status === 'POSTED') await checkApprovedToPost(after, ctx);
       if (after.contactId !== before.contactId && !(await ctx.collection(contacts).findOne({ id: after.contactId, orgId: after.orgId }))) throw new GuardViolation('The contact does not exist in this organisation');
-      await checkDocumentLinks(before, after, ctx);
+      // The checks last, as PostgreSQL ran its triggers before its CHECK constraints.
+      checkDocument(after);
     },
     beforeDelete(x) {
       if (x.status !== 'DRAFT') throw new GuardViolation('A posted document cannot be deleted; void it instead');
@@ -637,7 +643,7 @@ export const approvalRequests = defineCollection<ApprovalRequestDoc>({
       checkRequest(after);
     },
     beforeDelete() {
-      throw new GuardViolation('Approval requests are kept');
+      throw new GuardViolation('Approval requests are kept: they cannot be deleted');
     },
   },
 });

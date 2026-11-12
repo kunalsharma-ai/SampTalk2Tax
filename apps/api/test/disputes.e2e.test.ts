@@ -8,6 +8,7 @@
 import { addDays } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 let ctx: Ctx;
 let owner: TestUser;
@@ -19,11 +20,7 @@ const T = today();
 const c: Record<string, string> = {};
 const inv: Record<string, { id: string; number: string }> = {};
 const S = () => `${org.base}/sales/disputes`;
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const doc = async (kind: 'INVOICE' | 'CREDIT_NOTE', who: string, amount: string, post = true) =>
   (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind, contactId: c[who], issueDate: addDays(T, -20), dueDate: addDays(T, -5), post, lines: [{ accountId: org.acc['4100'], quantity: '1', unitPrice: amount }] }).expect(201)).body as { id: string; number: string };
 

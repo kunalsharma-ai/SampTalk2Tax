@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { thenInPostgres } from '../src/db/postgres-mirror.service';
 import { bootApp, Ctx, registerUser } from './helpers';
 import { postgresOnly } from '../src/db/mirror-writes';
+import { postgresOff } from '../src/db/counters';
 
 /** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
 const pg = () => postgresOnly(ctx.prisma);
@@ -16,7 +17,8 @@ afterAll(async () => {
   await ctx.app.close();
 });
 
-describe('people and sessions live in MongoDB', () => {
+// These check the PostgreSQL copy kept while both databases run, so only while PostgreSQL does.
+describe.skipIf(postgresOff())('people and sessions live in MongoDB', () => {
   it('a registered person is stored in MongoDB, with a copy in PostgreSQL that follows changes', async () => {
     const u = await registerUser(ctx, 'Mongo Person');
     const doc = await ctx.db.collection('users').findOne({ _id: u.id as never });
@@ -68,7 +70,8 @@ describe('people and sessions live in MongoDB', () => {
   });
 });
 
-describe('copying records made before the move', () => {
+// A copy from PostgreSQL, so only while it runs.
+describe.skipIf(postgresOff())('copying records made before the move', () => {
   it('copies people and sessions that exist only in PostgreSQL, once', async () => {
     const { copyFromPostgres } = await import('../src/db/copy-from-postgres');
     const id = randomUUID();

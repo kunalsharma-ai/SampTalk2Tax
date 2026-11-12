@@ -1,6 +1,7 @@
 import { addDays } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Cash-flow forecasting against the real API and database: payment history sets the expected
@@ -182,11 +183,7 @@ describe('saved forecasts and backtests', () => {
   });
 
   it('the database refuses to change or delete a saved forecast, or to mislabel one', async () => {
-    const raw = (sql: string, ...args: unknown[]) =>
-      ctx.prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-        return tx.$executeRawUnsafe(sql, ...args);
-      });
+    const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
     await expect(raw(`UPDATE cash_forecasts SET closing_base = 1 WHERE id = $1::uuid`, saved)).rejects.toThrow(/immutable/);
     await expect(raw(`DELETE FROM cash_forecasts WHERE id = $1::uuid`, backtest)).rejects.toThrow(/cannot be deleted/);
     await expect(
