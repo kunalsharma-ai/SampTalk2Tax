@@ -2,6 +2,7 @@ import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 import { Decimal128 } from '@talk2tax/document-db';
+import { sqlWrite } from './sql-writes';
 
 // Synthetic, format-valid GSTINs (made-up PANs, check character computed). Karnataka (29) is the organisation's state.
 const synthetic = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
@@ -86,7 +87,7 @@ describe('GST registration', () => {
   });
 
   it('keeps a GST rate from changing kind in the database', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE tax_rates SET kind = 'SIMPLE', gst_category = NULL WHERE id = '${rates.g18.id}'`)).rejects.toThrow(/cannot change/);
+    await expect(sqlWrite(ctx, `UPDATE tax_rates SET kind = 'SIMPLE', gst_category = NULL WHERE id = '${rates.g18.id}'`)).rejects.toThrow(/cannot change/);
   });
 });
 
@@ -170,14 +171,14 @@ describe('GST documents', () => {
   it('nets a credit note and keeps posted GST facts immutable', async () => {
     const cn = await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ ...doc('CREDIT_NOTE', contacts.ka.id, [line('g18', '1000.00')]), post: true }).expect(201);
     expect(cn.body.gst).toMatchObject({ cgst: '90.00', sgst: '90.00' });
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE documents SET place_of_supply = '27', supply_nature = 'INTER' WHERE id = '${intra.id}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `UPDATE documents SET place_of_supply = '27', supply_nature = 'INTER' WHERE id = '${intra.id}'`)).rejects.toThrow(/immutable/);
   });
 
   it('re-checks a draft when it posts', async () => {
     const draft = await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send(doc('INVOICE', contacts.ka.id, [line('g18', '100.00')])).expect(201);
     expect(draft.body.gst).toMatchObject({ supplyNature: 'INTRA', cgst: '9.00' });
     // The stored draft is tampered with so it no longer matches what GST says now.
-    await ctx.prisma.$executeRawUnsafe(`UPDATE document_lines SET cgst_amount = 0, sgst_amount = 0, igst_amount = 18 WHERE document_id = '${draft.body.id}'`);
+    await sqlWrite(ctx, `UPDATE document_lines SET cgst_amount = 0, sgst_amount = 0, igst_amount = 18 WHERE document_id = '${draft.body.id}'`);
     // MongoDB holds the record, so the tampering is done there too.
     await ctx.db.collection('documents').updateOne({ _id: draft.body.id }, { $set: { 'lines.$[].cgstAmount': Decimal128.fromString('0'), 'lines.$[].sgstAmount': Decimal128.fromString('0'), 'lines.$[].igstAmount': Decimal128.fromString('18') } });
     const r = await ctx.http().post(`${org.base}/sales/documents/${draft.body.id}/post`).set(owner.auth).send({}).expect(409);

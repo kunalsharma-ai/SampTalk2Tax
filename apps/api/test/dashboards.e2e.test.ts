@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Dashboards against the real API and database: a configuration checked by the engine, figures
@@ -112,7 +113,7 @@ describe('dashboards', () => {
     const changed = (await ctx.http().put(`${D()}/${dashboardId}`).set(owner.auth).send({ name: 'Monthly board view', config: { widgets: config.widgets.slice(0, 2) }, baseVersion: 1 }).expect(200)).body;
     expect(changed).toMatchObject({ version: 2, updatedBy: 'Dash Owner' });
     expect((await ctx.http().put(`${D()}/${dashboardId}`).set(accountant.auth).send({ name: 'x', config, baseVersion: 1 }).expect(409)).body.error).toBe('DASHBOARD_CHANGED');
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE dashboards SET config = '{"widgets": []}' WHERE id = '${dashboardId}'`)).rejects.toThrow(/dashboards_config_check/);
+    await expect(sqlWrite(ctx, `UPDATE dashboards SET config = '{"widgets": []}' WHERE id = '${dashboardId}'`)).rejects.toThrow(/dashboards_config_check/);
     const list = (await ctx.http().get(D()).set(viewer.auth).expect(200)).body.items;
     expect(list.map((x: { number: string; descriptions: string[] }) => [x.number, x.descriptions.length])).toEqual([['DB-0001', 2]]);
     const temp = (await ctx.http().post(D()).set(owner.auth).send({ name: 'Scratch', config }).expect(201)).body;

@@ -1,6 +1,7 @@
 import { fiscalYearForDate } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * GL-011 year-end close against the real API and database: the year's profit closed to retained
@@ -20,11 +21,7 @@ const fy = fiscalYearForDate(T, 4);
 const prev = fy - 1;
 let prevStart: string;
 let prevEnd: string;
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const journalPost = (date: string, debit: string, credit: string, amount: string, memo: string) =>
   ctx.http().post(`${org.base}/journals`).set(owner.auth).send({ date, post: true, memo, lines: [{ accountId: org.acc[debit], debit: amount }, { accountId: org.acc[credit], credit: amount }] }).expect(201);
 const overview = async () => (await ctx.http().get(`${org.base}/year-end`).set(owner.auth).expect(200)).body;

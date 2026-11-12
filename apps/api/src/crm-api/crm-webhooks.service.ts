@@ -1,4 +1,6 @@
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { postgresOff, withLease } from '../db/counters';
+import { claimRecords } from '../db/mirror-writes';
 import { crmActionsFor, crmEventFor, CRM_WEBHOOK_EVENT_NAMES, CRM_WEBHOOK_EVENTS, nextWebhookAttempt, type CrmWebhookEvent } from '@talk2tax/accounting-engine';
 import type { CrmWebhook } from '@talk2tax/database';
 import type { RoleName } from '@talk2tax/security';
@@ -215,13 +217,16 @@ export class CrmWebhooksService {
         this.logger.error(`CRM webhook ${h.id} failed to read events: ${(e as Error).message}`);
       }
     }
-    const due = await tenantStorage.run({ bypass: true }, async () =>
+    const now = new Date();
+    const due = postgresOff()
+      ? await claimRecords(this.prisma, 'CrmWebhookDelivery', { status: 'PENDING', nextAttemptAt: { $lte: now } }, 'nextAttemptAt', DELIVERY_BATCH, { nextAttemptAt: new Date(now.getTime() + LEASE_SECONDS * 1000) })
+      : await tenantStorage.run({ bypass: true }, async () =>
       await this.prisma.$queryRaw<{ id: string; org_id: string }[]>`
         UPDATE crm_webhook_deliveries SET next_attempt_at = now() + make_interval(secs => ${LEASE_SECONDS})
         WHERE id IN (SELECT id FROM crm_webhook_deliveries WHERE status = 'PENDING' AND next_attempt_at <= now() ORDER BY next_attempt_at LIMIT ${DELIVERY_BATCH} FOR UPDATE SKIP LOCKED)
         RETURNING id, org_id`,
     );
-    if (due.length) await tenantStorage.run({ bypass: true }, () => mirrorRows(this.prisma, 'CrmWebhookDelivery', { id: { in: due.map((d) => d.id) } }));
+    if (due.length && !postgresOff()) await tenantStorage.run({ bypass: true }, () => mirrorRows(this.prisma, 'CrmWebhookDelivery', { id: { in: due.map((d) => d.id) } }));
     let sent = 0;
     for (const d of due) {
       try {
@@ -238,9 +243,12 @@ export class CrmWebhooksService {
   private async collect(orgId: string, webhookId: string): Promise<number> {
     let queued = 0;
     for (;;) {
-      const r = await this.prisma.$transaction(
+      const batch = () => this.prisma.$transaction(
         async (tx) => {
-          const cur = await tx.$queryRaw<{ last_event_id: bigint; events: string[]; enabled: boolean }[]>`SELECT last_event_id, events, enabled FROM crm_webhooks WHERE id = ${webhookId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE SKIP LOCKED`;
+          // One process at a time reads a webhook's feed: a lease once PostgreSQL is off.
+          const cur = postgresOff()
+            ? await tx.crmWebhook.findMany({ where: { id: webhookId, orgId }, select: { lastEventId: true, events: true, enabled: true } }).then((r) => r.map((w) => ({ last_event_id: w.lastEventId, events: w.events, enabled: w.enabled })))
+            : await tx.$queryRaw<{ last_event_id: bigint; events: string[]; enabled: boolean }[]>`SELECT last_event_id, events, enabled FROM crm_webhooks WHERE id = ${webhookId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE SKIP LOCKED`;
           if (!cur.length || !cur[0]!.enabled) return { n: 0, more: false };
           const from = cur[0]!.last_event_id;
           // Audit ids are committed in order within an organisation, so all up to the highest visible id are visible.
@@ -268,6 +276,7 @@ export class CrmWebhooksService {
         },
         { timeout: 60_000 },
       );
+      const r = postgresOff() ? await withLease(`crm-webhook:${webhookId}`, 120, { n: 0, more: false }, batch) : await batch();
       queued += r.n;
       if (!r.more) return queued;
     }

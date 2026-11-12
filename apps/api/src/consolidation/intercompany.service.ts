@@ -10,7 +10,7 @@ import { PrismaService, Tx, useOrgInTx } from '../common/prisma.service';
 import { currentTenantContext, tenantStorage } from '../common/tenant-context';
 import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
-import { holdLock } from '../db/locks';
+import { holdLock, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 
@@ -302,9 +302,9 @@ export class IntercompanyService {
     const reference = `IC-${String(t.number).padStart(4, '0')}`;
     const done = await this.prisma.$transaction(async (tx) => {
       // Lock the row so two reversals cannot both pass the check above.
-      const [locked] = await tx.$queryRaw<{ reversed_on: Date | null }[]>`SELECT reversed_on FROM intercompany_transactions WHERE id = ${t.id}::uuid FOR UPDATE`;
-      await holdLock(`intercompany_transactions:${t.id}`);
-      if (locked?.reversed_on) throw new DomainError('ALREADY_REVERSED', 'This transaction is already reversed', HttpStatus.CONFLICT);
+      await lockRow(tx, 'intercompany_transactions', t.id);
+      const locked = await tx.intercompanyTransaction.findFirst({ where: { id: t.id }, select: { reversedOn: true } });
+      if (locked?.reversedOn) throw new DomainError('ALREADY_REVERSED', 'This transaction is already reversed', HttpStatus.CONFLICT);
       await useOrgInTx(tx, fromOrg.id);
       const fr = await this.journals.reverseSystemEntry(tx, { id: fromOrg.id, functionalCurrency: fromOrg.functionalCurrency }, actor, t.fromEntryId, { date: input.date, memo: `Reversal of ${reference}` });
       await checkNow(tx);

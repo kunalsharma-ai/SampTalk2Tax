@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { CopilotService } from '../src/copilot/copilot.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * The voice assistant and its confirmations against the real API and database: questions asked by
@@ -71,11 +72,7 @@ const follow = async (id: string, question: string, auth = owner.auth) => {
   return read(id, auth);
 };
 const read = async (id: string, auth = owner.auth) => (await ctx.http().get(`${C}/conversations/${id}`).set(auth).expect(200)).body as Conversation;
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const audit = async (action: string) => (await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, action }, orderBy: { createdAt: 'desc' } })).map((a) => ({ data: a.data as Record<string, unknown> }));
 const toolResult = (req: CopilotRequest) => {
   const last = req.messages[req.messages.length - 1] as { content: { type: string; content?: string }[] };

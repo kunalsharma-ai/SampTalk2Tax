@@ -2,6 +2,7 @@ import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startPaymentsStandIn, type PaymentsStandIn } from '../../../test-support/payments-stand-in.mjs';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AR-018 payment links against the real API and database, with the real Razorpay and Stripe
@@ -23,11 +24,7 @@ let org: Awaited<ReturnType<typeof createOrg>>;
 let other: Awaited<ReturnType<typeof createOrg>>;
 let customer: { id: string };
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const invoice = async (amount: string, opts: { post?: boolean; currency?: string } = {}) => {
   const d = (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: customer.id, issueDate: T, dueDate: T, ...(opts.currency ? { currency: opts.currency, exchangeRate: '83' } : {}), lines: [{ accountId: org.acc['4100'], description: 'Consulting', quantity: '1', unitPrice: amount }] }).expect(201)).body;
   if (opts.post === false) return d;

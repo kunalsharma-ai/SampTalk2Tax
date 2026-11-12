@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /** Evidence files and approval rules, against a real database. */
 let ctx: Ctx;
@@ -130,9 +131,9 @@ describe('attachments', () => {
     expect(all.find((a: { id: string }) => a.id === fileId)).toMatchObject({ removedReason: 'Wrong receipt' });
     // The same file can be attached again once the old copy is removed.
     await upload(accountant, 'DOCUMENT', billId, PDF).expect(201);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE attachments SET content = 'x'::bytea WHERE id = '${fileId}'`)).rejects.toThrow(/cannot be changed/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM attachments WHERE id = '${fileId}'`)).rejects.toThrow(/cannot be deleted/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE attachments SET removed_reason = 'changed' WHERE id = '${fileId}'`)).rejects.toThrow(/cannot be changed/);
+    await expect(sqlWrite(ctx, `UPDATE attachments SET content = 'x'::bytea WHERE id = '${fileId}'`)).rejects.toThrow(/cannot be changed/);
+    await expect(sqlWrite(ctx, `DELETE FROM attachments WHERE id = '${fileId}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE attachments SET removed_reason = 'changed' WHERE id = '${fileId}'`)).rejects.toThrow(/cannot be changed/);
     const audit = (await ctx.http().get(`${org.base}/audit-events?entityType=attachment&entityId=${fileId}`).set(owner.auth).expect(200)).body;
     const actions = (audit.items ?? audit).map((e: { action: string }) => e.action);
     expect(actions).toEqual(expect.arrayContaining(['attachment.added', 'attachment.removed']));
@@ -186,7 +187,7 @@ describe('approvals', () => {
     expect((await ctx.http().post(`${org.base}/approvals/${r.id}/approve`).set(owner.auth).send({}).expect(403)).body.error).toBe('SAME_PERSON');
     // The database refuses the same thing if the service is bypassed.
     await expect(
-      ctx.prisma.$executeRawUnsafe(`UPDATE approval_requests SET status = 'APPROVED', decided_by_id = '${owner.id}', decided_at = now() WHERE id = '${r.id}'`),
+      sqlWrite(ctx, `UPDATE approval_requests SET status = 'APPROVED', decided_by_id = '${owner.id}', decided_at = now() WHERE id = '${r.id}'`),
     ).rejects.toThrow(/someone other than/);
     // With the rule switched off, the author may approve their own bill.
     await ctx.http().put(`${org.base}/approval-policies/BILL`).set(owner.auth).send({ minAmount: '5000', requireDifferentApprover: false }).expect(200);
@@ -210,7 +211,7 @@ describe('approvals', () => {
     expect(state.requests[0]).toMatchObject({ status: 'CANCELLED', decisionNote: 'Cancelled because the draft was changed' });
     expect((await ctx.http().post(`${org.base}/purchases/documents/${b.id}/post`).set(owner.auth).send({}).expect(409)).body.error).toBe('APPROVAL_REQUIRED');
     // Even a direct status change in the database cannot post it.
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE documents SET status = 'POSTED' WHERE id = '${b.id}'`)).rejects.toThrow(/needs an approval/);
+    await expect(sqlWrite(ctx, `UPDATE documents SET status = 'POSTED' WHERE id = '${b.id}'`)).rejects.toThrow(/needs an approval/);
   });
 
   it('rejects with a reason, lets the preparer withdraw, and keeps the history after a draft is deleted', async () => {
@@ -229,7 +230,7 @@ describe('approvals', () => {
         ['CANCELLED', null, '9000.00'],
       ]),
     );
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM approval_requests WHERE id = '${r1.id}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `DELETE FROM approval_requests WHERE id = '${r1.id}'`)).rejects.toThrow(/cannot be deleted/);
   });
 
   it('reports a posting problem after approving instead of undoing the approval', async () => {

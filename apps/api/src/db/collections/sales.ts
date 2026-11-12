@@ -2,6 +2,7 @@ import { Prisma } from '@talk2tax/database';
 import { defineCollection, GuardViolation, type GuardContext } from '@talk2tax/document-db';
 import type { Binary } from '@talk2tax/document-db';
 import type { MovedTable } from '../moved-table';
+import type { Tx } from '../../common/prisma.service';
 import { checkLineDimensions, eInvoicesRef, eWayBillsRef, invoiceTemplatesRef, purchaseOrderLinesRef, purchaseOrdersRef, withholdingDepositItemsRef } from './mirrored-refs';
 
 /** Customers and vendors. */
@@ -38,7 +39,7 @@ function checkContact(c: ContactDoc) {
   if (!c.isCustomer && !c.isVendor) throw new GuardViolation('A contact must be a customer, a vendor or both');
   if (c.gstin !== null && c.stateCode !== c.gstin.slice(0, 2)) throw new GuardViolation("A registered contact's state is its GSTIN's first two digits");
   if (c.pan !== null && c.gstin !== null && c.gstin.slice(2, 12) !== c.pan) throw new GuardViolation('The PAN must match the GSTIN');
-  if (c.creditHold && (!c.creditHoldReason || !c.creditHoldAt || !c.creditHoldById)) throw new GuardViolation('A credit hold needs its reason, time and who placed it');
+  if (c.creditHold && (!c.creditHoldReason || !c.creditHoldAt || !c.creditHoldById)) throw new GuardViolation('A credit hold needs its reason, time and who placed it (contacts_credit_hold_check)');
 }
 
 export const contacts = defineCollection<ContactDoc>({
@@ -82,7 +83,23 @@ export const contacts = defineCollection<ContactDoc>({
 });
 
 // contacts_start_customer_onboarding opens an onboarding for a new customer or vendor.
-export const CONTACTS: MovedTable = { def: contacts, model: 'contact', triggers: [{ model: 'CustomerOnboarding', key: 'contactId' }] };
+export const CONTACTS: MovedTable = { def: contacts, model: 'contact', triggers: [{ model: 'CustomerOnboarding', key: 'contactId' }], afterWrite: startOnboardings };
+
+/**
+ * A customer (or vendor) opens an onboarding when the organisation requires one for that party
+ * and the contact has none yet, as contacts_start_customer_onboarding did.
+ */
+async function startOnboardings(tx: Tx, rows: Record<string, unknown>[]) {
+  for (const c of rows) {
+    for (const [party, flag] of [['CUSTOMER', c.isCustomer], ['VENDOR', c.isVendor]] as const) {
+      if (!flag) continue;
+      const orgId = String(c.orgId);
+      if (!(await tx.customerOnboardingSettings.findFirst({ where: { orgId, party, required: true }, select: { orgId: true } }))) continue;
+      if (await tx.customerOnboarding.findFirst({ where: { orgId, contactId: String(c.id), party }, select: { id: true } })) continue;
+      await tx.customerOnboarding.create({ data: { orgId, contactId: String(c.id), party, status: 'OPEN' } });
+    }
+  }
+}
 
 /** A new contact with every field set, as the PostgreSQL defaults set them. */
 export function newContact(c: Partial<ContactDoc> & { name: string }, now = new Date()): Omit<ContactDoc, 'id' | 'orgId'> {
@@ -287,16 +304,22 @@ export const documents = defineCollection<DocumentDoc>({
     },
     async afterUpdate(before, after, ctx) {
       if (before.status === 'VOID') throw new GuardViolation('A void document is immutable');
+      // The links first, as PostgreSQL's documents_* triggers ran in name order before its guard.
+      await checkDocumentLinks(before, after, ctx);
       if (before.status === 'POSTED') {
         const changed = POSTED_FIXED.find((k) => !same(before[k], after[k]));
         if (changed || (after.status !== 'POSTED' && after.status !== 'VOID')) throw new GuardViolation('A posted document is immutable; void it and issue a new one');
-        if (after.status === 'POSTED' && (after.voidDate !== before.voidDate || after.voidReason !== before.voidReason)) throw new GuardViolation('A posted document is immutable; void it and issue a new one');
+        // Staying posted, only the template may change (t2t_guard_document).
+        const free = new Set(['templateId', 'updatedAt']);
+        if (after.status === 'POSTED' && Object.keys({ ...before, ...after }).some((k) => !free.has(k) && !same(before[k as keyof DocumentDoc], after[k as keyof DocumentDoc]))) {
+          throw new GuardViolation('A posted document is immutable; void it and issue a new one');
+        }
       } else if (after.status === 'VOID') throw new GuardViolation('Drafts are deleted, not voided');
       if (after.orgId !== before.orgId || after.createdById !== before.createdById) throw new GuardViolation('A document keeps its organisation and author');
-      checkDocument(after);
       if (before.status === 'DRAFT' && after.status === 'POSTED') await checkApprovedToPost(after, ctx);
       if (after.contactId !== before.contactId && !(await ctx.collection(contacts).findOne({ id: after.contactId, orgId: after.orgId }))) throw new GuardViolation('The contact does not exist in this organisation');
-      await checkDocumentLinks(before, after, ctx);
+      // The checks last, as PostgreSQL ran its triggers before its CHECK constraints.
+      checkDocument(after);
     },
     beforeDelete(x) {
       if (x.status !== 'DRAFT') throw new GuardViolation('A posted document cannot be deleted; void it instead');
@@ -620,7 +643,7 @@ export const approvalRequests = defineCollection<ApprovalRequestDoc>({
       checkRequest(after);
     },
     beforeDelete() {
-      throw new GuardViolation('Approval requests are kept');
+      throw new GuardViolation('Approval requests are kept: they cannot be deleted');
     },
   },
 });

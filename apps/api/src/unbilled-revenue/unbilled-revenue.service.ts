@@ -21,7 +21,7 @@ import {
   type UnbilledSource,
 } from '@talk2tax/accounting-engine';
 import { AuditService } from '../audit/audit.service';
-import { fromDbDate } from '../common/dates';
+import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
@@ -175,12 +175,21 @@ export class UnbilledRevenueService {
 
     // Customers invoiced every month who were not invoiced last month.
     const month = shiftMonth(today.slice(0, 7), -1);
-    const rows = await this.prisma.$queryRaw<{ contact_id: string; month: string; amount: { toString(): string } }[]>`
-      SELECT d.contact_id, to_char(d.issue_date, 'YYYY-MM') AS month, SUM(CASE WHEN d.kind = 'INVOICE' THEN d.subtotal * d.exchange_rate ELSE -d.subtotal * d.exchange_rate END) AS amount
-      FROM documents d
-      WHERE d.org_id = ${orgId}::uuid AND d.kind IN ('INVOICE', 'CREDIT_NOTE') AND d.status = 'POSTED'
-        AND d.issue_date >= ${`${shiftMonth(month, -REGULAR_LOOKBACK)}-01`}::date AND d.issue_date < ${`${shiftMonth(month, 1)}-01`}::date
-      GROUP BY 1, 2`;
+    // Posted invoices less credit notes, per customer and month, in the functional currency.
+    const posted = await this.prisma.document.findMany({
+      where: { orgId, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { gte: toDbDate(`${shiftMonth(month, -REGULAR_LOOKBACK)}-01`), lt: toDbDate(`${shiftMonth(month, 1)}-01`) } },
+      select: { contactId: true, kind: true, issueDate: true, subtotal: true, exchangeRate: true },
+    });
+    const sums = new Map<string, { contact_id: string; month: string; amount: InstanceType<typeof D> }>();
+    for (const d of posted) {
+      const m = fromDbDate(d.issueDate).slice(0, 7);
+      const k = `${d.contactId}|${m}`;
+      const v = new D(d.subtotal.toString()).times(d.exchangeRate.toString());
+      const r = sums.get(k) ?? { contact_id: d.contactId, month: m, amount: new D(0) };
+      r.amount = d.kind === 'INVOICE' ? r.amount.plus(v) : r.amount.minus(v);
+      sums.set(k, r);
+    }
+    const rows = [...sums.values()];
     const flagged = new Set(out.map((f) => f.contactId));
     for (const m of missedRecurringBilling(rows.map((r) => ({ contactId: r.contact_id, month: r.month, amount: r.amount.toString() })), month, REGULAR_LOOKBACK)) {
       // A customer with a draft or contract period already flagged is covered there.

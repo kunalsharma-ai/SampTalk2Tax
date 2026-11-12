@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { allowInTx } from '../src/db/guards/allow';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * CRM slice 2 against the real API and database: quotations worked out by the invoice rules,
@@ -22,11 +23,7 @@ let otherCustomer: { id: string };
 let tax18: { id: string };
 let dealId: string;
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const quote = (extra: Record<string, unknown> = {}) => ({
   contactId: customer.id,
   issueDate: T,
@@ -109,12 +106,11 @@ describe('quotations', () => {
     await ctx.http().post(`${org.base}/sales/quotes/${rv.id}/send`).set(owner.auth).expect(200);
     expect((await ctx.http().get(`${org.base}/sales/quotes/${d.id}`).set(owner.auth).expect(200)).body).toMatchObject({ state: 'SUPERSEDED', declineReason: 'Too expensive' });
     // Expiry: a sent quotation past its date (dates moved back with the guard off, as time passing would).
-    await allowInTx('guards_off', () => ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      await tx.$executeRawUnsafe('ALTER TABLE sales_quotes DISABLE TRIGGER sales_quotes_guard');
-      await tx.$executeRawUnsafe(`UPDATE sales_quotes SET issue_date = DATE '${plus(-20)}', valid_until = DATE '${plus(-1)}' WHERE id = '${rv.id}'`);
-      await tx.$executeRawUnsafe('ALTER TABLE sales_quotes ENABLE TRIGGER sales_quotes_guard');
-    }));
+    await allowInTx('guards_off', async () => {
+      await raw('ALTER TABLE sales_quotes DISABLE TRIGGER sales_quotes_guard');
+      await raw(`UPDATE sales_quotes SET issue_date = DATE '${plus(-20)}', valid_until = DATE '${plus(-1)}' WHERE id = '${rv.id}'`);
+      await raw('ALTER TABLE sales_quotes ENABLE TRIGGER sales_quotes_guard');
+    });
     expect((await ctx.http().get(`${org.base}/sales/quotes/${rv.id}`).set(owner.auth).expect(200)).body.state).toBe('EXPIRED');
     expect((await ctx.http().post(`${org.base}/sales/quotes/${rv.id}/accept`).set(owner.auth).send({}).expect(422)).body.error).toBe('QUOTE_EXPIRED');
     expect((await ctx.http().post(`${org.base}/sales/quotes/${rv.id}/decline`).set(owner.auth).send({ reason: 'Lapsed' }).expect(200)).body.state).toBe('DECLINED');

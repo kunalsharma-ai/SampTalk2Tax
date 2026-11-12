@@ -1,6 +1,7 @@
 import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 // Synthetic, format-valid identifiers (made-up PANs). Maharashtra (27) is the organisation's state.
 const gstin = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
@@ -70,7 +71,7 @@ describe('setup', () => {
     await ctx.http().post(`${org.base}/withholding/sections`).set(owner.auth).send({ template: '393(1)-6(i)' }).expect(409);
     const bad = await ctx.http().post(`${org.base}/withholding/sections`).set(owner.auth).send({ kind: 'TDS', code: 'X', name: 'X', rate: '0', rateNoPan: '20', thresholdWindow: 'TAX_YEAR', thresholdBasis: 'EXCESS', validFrom: '2026-04-01' }).expect(422);
     expect(bad.body.details.issues.join(' ')).toMatch(/Rate must be above 0.*excess needs an aggregate/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE withholding_sections SET rate = 5 WHERE id = '${sections.professional.id}'`)).rejects.toThrow(/cannot change/);
+    await expect(sqlWrite(ctx, `UPDATE withholding_sections SET rate = 5 WHERE id = '${sections.professional.id}'`)).rejects.toThrow(/cannot change/);
     await ctx.http().patch(`${org.base}/withholding/sections/${sections.professional.id}`).set(owner.auth).send({ name: 'Professional fees' }).expect(200);
   });
 
@@ -226,7 +227,7 @@ describe('register and deposits', () => {
   it('will not void a bill whose TDS is deposited until the deposit is voided', async () => {
     const r = await ctx.http().post(`${org.base}/purchases/documents/${docs.legal.id}/void`).set(owner.auth).send({ reason: 'Entered twice' }).expect(409);
     expect(r.body.error).toBe('TAX_DEPOSITED');
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE withholding_deposit_items SET active = false WHERE document_id = '${docs.legal.id}'`)).rejects.toThrow(/only change when their deposit is voided/);
+    await expect(sqlWrite(ctx, `UPDATE withholding_deposit_items SET active = false WHERE document_id = '${docs.legal.id}'`)).rejects.toThrow(/only change when their deposit is voided/);
     const v = await ctx.http().post(`${org.base}/withholding/deposits/${deposit.id}/void`).set(owner.auth).send({ reason: 'Wrong challan' }).expect(200);
     expect(v.body).toMatchObject({ status: 'VOID', voidReason: 'Wrong challan' });
     await ctx.http().post(`${org.base}/purchases/documents/${docs.legal.id}/void`).set(owner.auth).send({ reason: 'Entered twice' }).expect(200);
@@ -237,7 +238,7 @@ describe('register and deposits', () => {
   });
 
   it('keeps posted withholding facts immutable and tenants apart', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE documents SET withholding_amount = 0, total = total + 6000 WHERE id = '${docs.fee2.id}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `UPDATE documents SET withholding_amount = 0, total = total + 6000 WHERE id = '${docs.fee2.id}'`)).rejects.toThrow(/immutable/);
     const other = await registerUser(ctx, 'Other');
     const otherOrg = await createOrg(ctx, other);
     await ctx.http().get(`${org.base}/withholding/register?kind=TDS&from=${today()}&to=${today()}`).set(other.auth).expect(404);

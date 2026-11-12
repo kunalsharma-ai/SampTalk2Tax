@@ -8,6 +8,7 @@
 import { addDays } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 let ctx: Ctx;
 let owner: TestUser;
@@ -19,11 +20,7 @@ const T = today();
 let vendor: string;
 const bills: Record<string, { id: string; number: string }> = {};
 const S = () => `${org.base}/purchases/payment-schedule`;
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const bill = async (amount: string, dueDate: string, issueDate = T) =>
   (await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId: vendor, issueDate, dueDate, post: true, lines: [{ accountId: org.acc['6600'], quantity: '1', unitPrice: amount }] }).expect(201)).body as { id: string; number: string };
 const find = (s: { bills: { id: string }[] }, id: string) => s.bills.find((b) => b.id === id) as any;

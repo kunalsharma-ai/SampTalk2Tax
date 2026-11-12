@@ -1,6 +1,7 @@
 import { addMonth, fiscalYearForDate, monthEnd } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Revenue recognition (AR-028) against the real API and database: the deferred revenue account,
@@ -23,11 +24,7 @@ let invId: string;
 const R = () => `${org.base}/sales/revenue-recognition`;
 const rec = (id = invId) => `${org.base}/sales/documents/${id}/recognition`;
 
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const entryById = async (id: string) => (await ctx.http().get(`${org.base}/journals/${id}`).set(owner.auth).expect(200)).body;
 const entryByNumber = async (n: number) => {
   const list = (await ctx.http().get(`${org.base}/journals?limit=200`).set(owner.auth).expect(200)).body;
