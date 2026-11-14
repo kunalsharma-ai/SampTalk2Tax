@@ -5,12 +5,19 @@ import { createApp } from '../src/bootstrap';
 import type { CopilotModel } from '../src/copilot/copilot.model';
 import { allowSystemAccessOutsideRequests } from '../src/common/tenant-context';
 import { loadConfig } from '../src/config';
+import type { Db } from '@talk2tax/document-db';
+import { DocumentStoreService } from '../src/common/document-store.service';
 import { PrismaService } from '../src/common/prisma.service';
+import { PostgresMirrorService } from '../src/db/postgres-mirror.service';
 
 export interface Ctx {
   app: INestApplication;
   http: () => ReturnType<typeof request>;
   prisma: PrismaService;
+  /** The data layer, as the API uses it (scoping and guards apply). */
+  store: DocumentStoreService;
+  /** Raw MongoDB, for setting up a state the API would never produce (guards do not run). */
+  db: Db;
 }
 
 /** Tests read and tamper with the database directly, as the system. */
@@ -41,7 +48,8 @@ export async function bootApp(overrides: Record<string, string> = {}, opts: { co
   });
   const app = await createApp(config, { logger: process.env.TEST_LOGS === '1', copilotModel: 'copilotModel' in opts ? opts.copilotModel : null });
   await app.init();
-  return { app, http: () => request(app.getHttpServer()), prisma: app.get(PrismaService) };
+  const store = app.get(DocumentStoreService);
+  return { app, http: () => request(app.getHttpServer()), prisma: app.get(PrismaService), store, db: store.systemDb() };
 }
 
 export interface TestUser {
@@ -74,4 +82,13 @@ export async function createOrg(ctx: Ctx, user: TestUser, overrides: Record<stri
 /** A date inside the fiscal year created at onboarding (the current one). */
 export function today(): string {
   return new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/**
+ * Changes an organisation record directly, as a test set-up step: in MongoDB (the record)
+ * and in its PostgreSQL copy, as the app would. Guards do not run.
+ */
+export async function setOrgFields(ctx: Ctx, orgId: string, fields: Record<string, unknown>) {
+  await ctx.db.collection('organizations').updateOne({ _id: orgId as never }, { $set: fields });
+  await ctx.app.get(PostgresMirrorService).organizations([orgId]);
 }

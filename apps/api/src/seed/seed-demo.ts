@@ -9,7 +9,13 @@ import { ApprovalsService } from '../approvals/approvals.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import { BankingService } from '../banking/banking.service';
 import { todayIso } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { users } from '../db/collections/identity';
+import { memberships } from '../db/collections/tenancy';
+import { PostgresMirrorService } from '../db/postgres-mirror.service';
+import { runInOrg } from '../common/tenant-context';
+import type { INestApplicationContext } from '@nestjs/common';
 import { loadConfig } from '../config';
 import { addDays, D, fiscalYearForDate, spreadEvenly } from '@talk2tax/accounting-engine';
 import { ContactsService } from '../contacts/contacts.service';
@@ -43,6 +49,12 @@ function rng(seed: number) {
   return () => (s = (s * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
 }
 
+/** Adds a synthetic person to the demo organisation (MongoDB, with the PostgreSQL copy). */
+async function addMember(app: INestApplicationContext, orgId: string, userId: string, role: 'EMPLOYEE' | 'APPROVER') {
+  const m = await runInOrg(orgId, () => app.get(DocumentStoreService).collection(memberships).insertOne({ userId, role, createdAt: new Date() }));
+  await app.get(PostgresMirrorService).memberships([m.id]);
+}
+
 async function main() {
   const config = loadConfig();
   if (config.NODE_ENV === 'production') throw new Error('Refusing to seed demo data in production');
@@ -50,7 +62,7 @@ async function main() {
   allowSystemAccessOutsideRequests();
   const app = await NestFactory.createApplicationContext(AppModule.forRoot(config), { logger: ['error', 'warn'] });
   const prisma = app.get(PrismaService);
-  const existing = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
+  const existing = await app.get(DocumentStoreService).collection(users).findOne({ email: DEMO_EMAIL });
   if (existing) {
     console.log(`Demo user ${DEMO_EMAIL} already exists; nothing to do.`);
     await app.close();
@@ -59,7 +71,7 @@ async function main() {
   const password = process.env.DEMO_PASSWORD ?? randomBytes(12).toString('base64url');
   const { user } = await app.get(AuthService).register({ email: DEMO_EMAIL, name: 'Demo Owner', password }, { userAgent: 'demo seed' });
   // Registering signs in; the seed throws that session away, so end it.
-  await app.get(SessionsService).revokeOthers(null, user.id, null, 'signed_out');
+  await app.get(SessionsService).revokeOthers(user.id, null, 'signed_out');
   const orgs = app.get(OrganizationsService);
   const org = await orgs.create(user.id, {
     name: 'Northwind Demo Traders (SYNTHETIC DATA)',
@@ -350,8 +362,8 @@ async function main() {
   // owner's approval (with a receipt), one still a draft. The employee never signs in; the
   // password is random and not shown.
   const employeeUser = (await app.get(AuthService).register({ email: 'field.employee@talk2tax.local', name: 'Field Employee (synthetic)', password: randomBytes(24).toString('base64url') }, { userAgent: 'demo seed' })).user;
-  await app.get(SessionsService).revokeOthers(null, employeeUser.id, null, 'signed_out');
-  await prisma.membership.create({ data: { orgId: org.id, userId: employeeUser.id, role: 'EMPLOYEE' } });
+  await app.get(SessionsService).revokeOthers(employeeUser.id, null, 'signed_out');
+  await addMember(app, org.id, employeeUser.id, 'EMPLOYEE');
   const emp = { ...ledgerOrg, role: 'EMPLOYEE' as const };
   const empActor = { id: employeeUser.id };
   const expenses = app.get(ExpensesService);
@@ -492,7 +504,7 @@ async function main() {
   // synthetic approver) and a draft revision, so budget vs actual has something to compare.
   const budgets = app.get(BudgetsService);
   const approverUser = (await app.get(AuthService).register({ email: 'finance.approver@talk2tax.local', name: 'Finance Approver (synthetic)', password: randomBytes(24).toString('base64url') }, { userAgent: 'demo seed' })).user;
-  await prisma.membership.create({ data: { orgId: org.id, userId: approverUser.id, role: 'APPROVER' } });
+  await addMember(app, org.id, approverUser.id, 'APPROVER');
   const budgetYear = fiscalYearForDate(today, 4);
   const acc = Object.fromEntries((await prisma.account.findMany({ where: { orgId: org.id } })).map((x) => [x.code, x.id]));
   const plan: [string, string][] = [['4100', '5000000'], ['4200', '4200000'], ['5000', '3000000'], ['6100', '6600000'], ['6110', '90000'], ['6200', '540000'], ['6300', '96000'], ['6400', '300000'], ['6500', '240000']];

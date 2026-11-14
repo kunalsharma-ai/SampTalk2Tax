@@ -3,7 +3,11 @@ import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { DISPLAY_DATE_FORMAT_CODES, isTimeZone, LANGUAGE_CODES, NUMBER_FORMAT_CODES } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
-import { PrismaService } from '../common/prisma.service';
+import { DocumentStoreService } from '../common/document-store.service';
+import { users } from '../db/collections/identity';
+import { memberships as membershipsCollection, organizations } from '../db/collections/tenancy';
+import { runAsSystem } from '../common/tenant-context';
+import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { openApi, ZodPipe } from '../common/zod';
 import { AuthService } from './auth.service';
 import { AuthUser, CurrentSession, CurrentUser, Public } from './decorators';
@@ -38,7 +42,8 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionsService,
-    private readonly prisma: PrismaService,
+    private readonly store: DocumentStoreService,
+    private readonly mirror: PostgresMirrorService,
   ) {}
 
   @Public()
@@ -81,18 +86,22 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   async me(@CurrentUser() user: AuthUser) {
-    const memberships = await this.prisma.membership.findMany({
-      where: { userId: user.id },
-      include: { org: { select: { id: true, name: true, isDemo: true, functionalCurrency: true, timeZone: true } } },
-      orderBy: { createdAt: 'asc' },
-    });
+    const mine = await runAsSystem(() => this.store.collection(membershipsCollection).find({ userId: user.id }, { sort: { createdAt: 1 } }));
+    const orgs = new Map((await this.store.collection(organizations).find({ id: { $in: mine.map((m) => m.orgId) } })).map((o) => [o.id, o]));
+    const memberships = mine
+      .filter((m) => orgs.has(m.orgId))
+      .map((m) => {
+        const o = orgs.get(m.orgId)!;
+        return { role: m.role, org: { id: o.id, name: o.name, isDemo: o.isDemo, functionalCurrency: o.functionalCurrency, timeZone: o.timeZone } };
+      });
     const preferences = await this.preferences(user.id);
     return { user, preferences, organizations: memberships.map((m) => ({ ...m.org, role: m.role })) };
   }
 
   private async preferences(userId: string) {
-    const u = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { language: true, numberFormat: true, dateFormat: true, timeZone: true } });
-    return u;
+    const u = await this.store.collection(users).findById(userId);
+    if (!u) throw new Error(`User ${userId} not found`);
+    return { language: u.language, numberFormat: u.numberFormat, dateFormat: u.dateFormat, timeZone: u.timeZone };
   }
 
   /** My interface language and how numbers, dates and times are shown to me. Time zone null = each organisation's own. */
@@ -100,7 +109,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiBody({ schema: openApi(PreferencesBody) })
   async savePreferences(@CurrentUser() user: AuthUser, @Body(new ZodPipe(PreferencesBody)) body: z.infer<typeof PreferencesBody>) {
-    await this.prisma.user.update({ where: { id: user.id }, data: body });
+    await this.store.collection(users).updateOne({ id: user.id }, { $set: { ...body, updatedAt: new Date() } });
+    await this.mirror.users([user.id]);
     return this.preferences(user.id);
   }
 
@@ -129,7 +139,7 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(200)
   async revokeOthers(@CurrentUser() user: AuthUser, @CurrentSession() sid: string) {
-    return { signedOut: await this.sessions.revokeOthers(null, user.id, sid, 'signed_out_elsewhere') };
+    return { signedOut: await this.sessions.revokeOthers(user.id, sid, 'signed_out_elsewhere') };
   }
 
   @Put('password')

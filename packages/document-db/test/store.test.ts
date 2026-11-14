@@ -325,3 +325,20 @@ describe('validators', () => {
     ).resolves.toBe('2.00');
   });
 });
+
+describe('upserts', () => {
+  it('insert with a string id, then update; tenant upserts get the orgId', async () => {
+    const throttles = store.collection(plans);
+    const first = await throttles.updateOne({ id: 'pro' }, { $set: { code: 'PRO', price: '10.00' } }, { upsert: true });
+    expect(first.upserted).toBe(true);
+    await throttles.updateOne({ id: 'pro' }, { $inc: { price: '5.00' } }, { upsert: true });
+    expect((await throttles.findById('pro'))?.price).toBe('15.00');
+    await throttles.updateOne({ code: 'NOID' }, { $set: { price: '1.00' } }, { upsert: true });
+    expect((await throttles.findOne({ code: 'NOID' }))?.id).toMatch(/^[0-9a-f-]{36}$/);
+    await as({ orgId: ORG_B }, async () => {
+      await store.collection(accounts).updateOne({ code: '8000' }, { $set: { name: 'Upserted' } }, { upsert: true });
+      expect((await store.collection(accounts).findOne({ code: '8000' }))?.orgId).toBe(ORG_B);
+    });
+    expect(await as({ orgId: ORG_A }, () => store.collection(accounts).count({ code: '8000' }))).toBe(0);
+  });
+});

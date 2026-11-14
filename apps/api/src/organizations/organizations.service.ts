@@ -9,8 +9,14 @@ import { startSubscription } from '../billing/start';
 import { AppConfig, CONFIG } from '../config';
 import { AuditService } from '../audit/audit.service';
 import { toDbDate, todayIso } from '../common/dates';
-import { PrismaService, Tx, useOrgInTx } from '../common/prisma.service';
+import { isDuplicateKeyError } from '@talk2tax/document-db';
+import { DocumentStoreService } from '../common/document-store.service';
+import { PrismaService, Tx, useOrgInTx, withSystemAccess } from '../common/prisma.service';
 import { DomainError } from '../common/errors';
+import { runAsSystem, runInOrg } from '../common/tenant-context';
+import { users } from '../db/collections/identity';
+import { memberships, organizations, type OrganizationDoc } from '../db/collections/tenancy';
+import { PostgresMirrorService, thenInPostgres } from '../db/postgres-mirror.service';
 
 export interface CreateOrgInput {
   name: string;
@@ -28,6 +34,8 @@ export class OrganizationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly regions: RegionsService,
+    private readonly store: DocumentStoreService,
+    private readonly mirror: PostgresMirrorService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -35,41 +43,73 @@ export class OrganizationsService {
     return this.config.PLAN_TRIAL_DAYS;
   }
 
+  /**
+   * The organisation and its first owner are created in MongoDB. Its subscription, chart of
+   * accounts, fiscal year and audit record follow in PostgreSQL (those modules have not
+   * moved yet); if that part fails, the organisation is removed from MongoDB again.
+   */
   async create(userId: string, input: CreateOrgInput, today = todayIso()) {
     const id = randomUUID();
-    return this.prisma.$transaction(async (tx) => {
-      // The new organisation is the tenant for the rest of this transaction (row-level security).
-      await useOrgInTx(tx, id);
-      const org = await tx.organization.create({
-        data: {
-          id,
-          name: input.name,
-          legalName: input.legalName,
-          countryCode: input.countryCode,
-          functionalCurrency: input.functionalCurrency,
-          fiscalYearStartMonth: input.fiscalYearStartMonth,
-          isDemo: input.isDemo ?? false,
-          dataRegion: this.regions.current,
-        },
+    const now = new Date();
+    const { org, ownerId } = await this.store.transaction(async () => {
+      const org = await this.store.collection(organizations).insertOne({
+        id,
+        name: input.name,
+        legalName: input.legalName ?? null,
+        timeZone: 'Asia/Kolkata',
+        countryCode: input.countryCode,
+        functionalCurrency: input.functionalCurrency,
+        fiscalYearStartMonth: input.fiscalYearStartMonth,
+        isDemo: input.isDemo ?? false,
+        dataRegion: this.regions.current,
+        suspendedAt: null,
+        suspendedReason: null,
+        arAccountId: null,
+        apAccountId: null,
+        claimsAccountId: null,
+        createdAt: now,
+        updatedAt: now,
       });
-      await tx.membership.create({ data: { orgId: org.id, userId, role: 'OWNER' } });
-      await startSubscription(tx, org, userId, this.trialDays);
-      if (input.chartTemplate === 'GENERIC_SMB') {
-        const ids = await this.applyGenericChart(tx, org.id);
-        await tx.organization.update({ where: { id: org.id }, data: { arAccountId: ids.get('1200'), apAccountId: ids.get('2100'), claimsAccountId: ids.get('2250') } });
-      }
-      const fy = fiscalYearForDate(today, input.fiscalYearStartMonth);
-      await this.createFiscalYear(tx, org.id, fy, input.fiscalYearStartMonth);
-      await this.audit.append(tx, {
-        orgId: org.id,
-        actorId: userId,
-        action: 'organization.created',
-        entityType: 'organization',
-        entityId: org.id,
-        data: { ...input, initialFiscalYear: fy, dataRegion: this.regions.current },
-      });
-      return org;
+      const owner = await runInOrg(id, () => this.store.collection(memberships).insertOne({ userId, role: 'OWNER', createdAt: now }));
+      return { org, ownerId: owner.id };
     });
+    return thenInPostgres(
+      org,
+      async () => {
+        await this.prisma.$transaction(async (tx) => {
+          // The new organisation is the tenant for the rest of this transaction (row-level security).
+          await useOrgInTx(tx, id);
+          await this.mirror.organizations([id], tx);
+          await this.mirror.memberships([ownerId], tx);
+          await startSubscription(tx, org, userId, this.trialDays);
+          if (input.chartTemplate === 'GENERIC_SMB') {
+            const ids = await this.applyGenericChart(tx, org.id);
+            await this.store.collection(organizations).updateOne(
+              { id },
+              { $set: { arAccountId: ids.get('1200') ?? null, apAccountId: ids.get('2100') ?? null, claimsAccountId: ids.get('2250') ?? null, updatedAt: new Date() } },
+            );
+            await this.mirror.organizations([id], tx);
+          }
+          const fy = fiscalYearForDate(today, input.fiscalYearStartMonth);
+          await this.createFiscalYear(tx, org.id, fy, input.fiscalYearStartMonth);
+          await this.audit.append(tx, {
+            orgId: org.id,
+            actorId: userId,
+            action: 'organization.created',
+            entityType: 'organization',
+            entityId: org.id,
+            data: { ...input, initialFiscalYear: fy, dataRegion: this.regions.current },
+          });
+        });
+        Object.assign(org, await this.store.collection(organizations).findById(id));
+      },
+      () =>
+        runInOrg(id, async () => {
+          // The organisation goes first, so removing its only owner is allowed.
+          await this.store.collection(organizations).deleteOne({ id });
+          await this.store.collection(memberships).deleteOne({ id: ownerId });
+        }),
+    );
   }
 
   async applyGenericChart(tx: Tx, orgId: string) {
@@ -106,54 +146,78 @@ export class OrganizationsService {
     return periods;
   }
 
-  listForUser(userId: string) {
-    return this.prisma.membership
-      .findMany({ where: { userId }, include: { org: { include: { subscription: { include: { plan: true } } } } }, orderBy: { createdAt: 'asc' } })
-      .then((ms) => ms.map((m) => ({ ...serializeOrg(m.org), dataRegion: this.regions.describe(m.org.dataRegion), subscription: subscriptionSummary(m.org.subscription), role: m.role })));
+  /** The organisations a person belongs to, oldest membership first. */
+  async listForUser(userId: string) {
+    const ms = await runAsSystem(() => this.store.collection(memberships).find({ userId }, { sort: { createdAt: 1 } }));
+    const orgs = new Map((await this.store.collection(organizations).find({ id: { $in: ms.map((m) => m.orgId) } })).map((o) => [o.id, o]));
+    const subs = new Map(
+      (
+        await this.prisma.$transaction((tx) => withSystemAccess(tx, () => tx.subscription.findMany({ where: { orgId: { in: ms.map((m) => m.orgId) } }, include: { plan: true } })))
+      ).map((s) => [s.orgId, s]),
+    );
+    return ms
+      .filter((m) => orgs.has(m.orgId))
+      .map((m) => {
+        const org = orgs.get(m.orgId)!;
+        return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(subs.get(m.orgId) ?? null), role: m.role };
+      });
   }
 
   async get(orgId: string) {
-    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, include: { subscription: { include: { plan: true } } } });
-    return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(org.subscription) };
+    const org = await this.store.collection(organizations).findById(orgId);
+    if (!org) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
+    const sub = await this.prisma.subscription.findUnique({ where: { orgId }, include: { plan: true } });
+    return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(sub) };
   }
 
   /** The time zone moments are shown in for this organisation (display only). */
   async setTimeZone(orgId: string, actorId: string, timeZone: string) {
     if (!isTimeZone(timeZone)) throw new DomainError('INVALID_TIME_ZONE', 'Choose a time zone such as Asia/Kolkata or Europe/London', HttpStatus.UNPROCESSABLE_ENTITY);
+    const before = await this.store.collection(organizations).findById(orgId);
+    if (!before) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
+    await this.store.collection(organizations).updateOne({ id: orgId }, { $set: { timeZone, updatedAt: new Date() } });
     await this.prisma.$transaction(async (tx) => {
-      const before = await tx.organization.findUniqueOrThrow({ where: { id: orgId }, select: { timeZone: true } });
-      await tx.organization.update({ where: { id: orgId }, data: { timeZone } });
+      await this.mirror.organizations([orgId], tx);
       await this.audit.append(tx, { orgId, actorId, action: 'org.time_zone_changed', entityType: 'organization', entityId: orgId, data: { before: before.timeZone, after: timeZone } });
     });
     return this.get(orgId);
   }
 
   async listMembers(orgId: string) {
-    const ms = await this.prisma.membership.findMany({
-      where: { orgId },
-      include: { user: { select: { id: true, email: true, name: true } } },
-      orderBy: { createdAt: 'asc' },
-    });
-    return ms.map((m) => ({ userId: m.user.id, email: m.user.email, name: m.user.name, role: m.role, since: m.createdAt.toISOString() }));
+    const ms = await runInOrg(orgId, () => this.store.collection(memberships).find({}, { sort: { createdAt: 1 } }));
+    const people = new Map((await this.store.collection(users).find({ id: { $in: ms.map((m) => m.userId) } })).map((u) => [u.id, u]));
+    return ms
+      .filter((m) => people.has(m.userId))
+      .map((m) => {
+        const u = people.get(m.userId)!;
+        return { userId: u.id, email: u.email, name: u.name, role: m.role, since: m.createdAt.toISOString() };
+      });
   }
 
-  /** Add an already-registered user to the organisation. Invitations by email are a later milestone. */
+/** Add an already-registered user to the organisation. Invitations by email are a later milestone. */
   async addMember(orgId: string, actor: { id: string; role: RoleName }, email: string, role: RoleName) {
     if (!canAssignRole(actor.role, role)) throw new ForbiddenException({ error: 'FORBIDDEN', message: `A ${actor.role} cannot grant ${role}` });
-    const user = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+    const user = await this.store.collection(users).findOne({ email: email.trim().toLowerCase() });
     if (!user) throw new NotFoundException({ error: 'USER_NOT_FOUND', message: 'No registered user has that email' });
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.membership.findUnique({ where: { orgId_userId: { orgId, userId: user.id } } });
-      if (existing) throw new ConflictException({ error: 'ALREADY_MEMBER', message: 'User is already a member' });
-      await assertMemberRoom(tx, orgId, { countOpenInvitations: true });
-      const m = await tx.membership.create({ data: { orgId, userId: user.id, role: role as Role } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'member.added', entityType: 'membership', entityId: m.id, data: { userId: user.id, role } });
-      return { userId: user.id, email: user.email, name: user.name, role: m.role };
+    const members = this.store.collection(memberships);
+    if (await runInOrg(orgId, () => members.exists({ userId: user.id }))) throw new ConflictException({ error: 'ALREADY_MEMBER', message: 'User is already a member' });
+    await this.prisma.$transaction((tx) => assertMemberRoom(tx, this.store, orgId, { countOpenInvitations: true }));
+    const m = await runInOrg(orgId, () => members.insertOne({ userId: user.id, role: role as Role, createdAt: new Date() })).catch((e: unknown) => {
+      throw isDuplicateKeyError(e) ? new ConflictException({ error: 'ALREADY_MEMBER', message: 'User is already a member' }) : e;
     });
+    return thenInPostgres(
+      { userId: user.id, email: user.email, name: user.name, role: m.role },
+      () =>
+        this.prisma.$transaction(async (tx) => {
+          await this.mirror.memberships([m.id], tx);
+          await this.audit.append(tx, { orgId, actorId: actor.id, action: 'member.added', entityType: 'membership', entityId: m.id, data: { userId: user.id, role } });
+        }),
+      () => runInOrg(orgId, async () => void (await members.deleteOne({ id: m.id }))),
+    );
   }
 }
 
-function serializeOrg(o: {
+function serializeOrg(o: Pick<OrganizationDoc, 'id' | 'name' | 'legalName' | 'countryCode' | 'functionalCurrency' | 'fiscalYearStartMonth' | 'isDemo' | 'arAccountId' | 'apAccountId' | 'claimsAccountId' | 'timeZone' | 'createdAt' | 'suspendedAt' | 'suspendedReason'> | {
   id: string;
   name: string;
   legalName: string | null;
