@@ -1,3 +1,6 @@
+import type { DocumentStoreService } from '../common/document-store.service';
+import { runInOrg } from '../common/tenant-context';
+import { invitations, memberships } from '../db/collections/tenancy';
 import { HttpStatus } from '@nestjs/common';
 import { PlanLimits, subscriptionAccess, SubscriptionStatus } from '@talk2tax/accounting-engine';
 import { DomainError } from '../common/errors';
@@ -13,12 +16,16 @@ export async function planLimits(tx: Tx, orgId: string): Promise<{ plan: string;
  * Refuses another member (or an invitation that would become one) beyond the plan's limit.
  * Open invitations count, so a plan cannot be exceeded by inviting first and accepting later.
  */
-export async function assertMemberRoom(tx: Tx, orgId: string, opts: { countOpenInvitations: boolean }) {
+export async function assertMemberRoom(tx: Tx, store: DocumentStoreService, orgId: string, opts: { countOpenInvitations: boolean }) {
   const p = await planLimits(tx, orgId);
   const max = p?.limits.members ?? null;
   if (max === null) return;
-  const members = await tx.membership.count({ where: { orgId } });
-  const invites = opts.countOpenInvitations ? await tx.invitation.count({ where: { orgId, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } } }) : 0;
+  const [members, invites] = await runInOrg(orgId, () =>
+    Promise.all([
+      store.collection(memberships).count({}),
+      opts.countOpenInvitations ? store.collection(invitations).count({ openFor: { $exists: true }, expiresAt: { $gt: new Date() } }) : Promise.resolve(0),
+    ]),
+  );
   if (members + invites >= max) {
     throw new DomainError(
       'PLAN_LIMIT',

@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DocumentStoreService } from '../common/document-store.service';
-import { PrismaService, Tx } from '../common/prisma.service';
+import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
+import { runAsSystem } from '../common/tenant-context';
 import { users } from './collections/identity';
+import { memberships, organizations } from './collections/tenancy';
 
 /**
  * Transitional, for the move to MongoDB (docs/MONGODB.md › While both databases run).
@@ -42,6 +44,39 @@ export class PostgresMirrorService {
       }
     };
     await (tx ? write(tx) : this.prisma.$transaction(write));
+  }
+
+  /** Copies these organisations into PostgreSQL `organizations`. */
+  async organizations(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (!ids.length) return;
+    const rows = await this.store.collection(organizations).find({ id: { $in: [...new Set(ids)] } });
+    await this.inPostgres(tx, async (t) => {
+      for (const { id, ownerChanges: _ignored, ...o } of rows) {
+        await t.organization.upsert({ where: { id }, create: { id, ...o }, update: o });
+      }
+    });
+  }
+
+  /** Copies these memberships into PostgreSQL `memberships`, and removes the ones MongoDB no longer has. */
+  async memberships(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (!ids.length) return;
+    const unique = [...new Set(ids)];
+    const rows = await runAsSystem(() => this.store.collection(memberships).find({ id: { $in: unique } }));
+    const present = new Set(rows.map((m) => m.id));
+    await this.inPostgres(tx, async (t) => {
+      // Removals first, then upserts: an owner handover keeps one owner in PostgreSQL throughout.
+      for (const id of unique.filter((i) => !present.has(i))) await t.membership.deleteMany({ where: { id } });
+      for (const { id, ...m } of rows) {
+        const data = { orgId: m.orgId, userId: m.userId, role: m.role, createdAt: m.createdAt };
+        await t.membership.upsert({ where: { id }, create: { id, ...data }, update: { role: m.role } });
+      }
+    });
+  }
+
+  /** Tenant tables in PostgreSQL sit behind row-level security; the copy is system work. */
+  private async inPostgres(tx: Tx | undefined, fn: (t: Tx) => Promise<void>) {
+    if (tx) return withSystemAccess(tx, () => fn(tx));
+    await this.prisma.$transaction((t) => withSystemAccess(t, () => fn(t)));
   }
 }
 

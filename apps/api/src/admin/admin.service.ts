@@ -7,6 +7,7 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import { SessionsService } from '../auth/sessions.service';
 import { users as usersCollection } from '../db/collections/identity';
+import { organizations } from '../db/collections/tenancy';
 import { PostgresMirrorService } from '../db/postgres-mirror.service';
 
 const DAY_MS = 86_400_000;
@@ -113,23 +114,29 @@ export class AdminService {
   async suspend(actor: AuthUser, id: string, reason: string) {
     const why = reason.trim();
     if (why.length < 5) throw new DomainError('REASON_REQUIRED', 'Say why the organisation is suspended (at least 5 characters); its members see it', HttpStatus.UNPROCESSABLE_ENTITY);
+    const orgs = this.store.collection(organizations);
+    const o = await orgs.findById(id);
+    if (!o) throw new DomainError('NOT_FOUND', 'Organisation not found', HttpStatus.NOT_FOUND);
+    if (o.suspendedAt) throw new DomainError('ALREADY_SUSPENDED', 'The organisation is already suspended', HttpStatus.CONFLICT);
+    const r = await orgs.updateOne({ id, suspendedAt: null }, { $set: { suspendedAt: new Date(), suspendedReason: why, updatedAt: new Date() } });
+    if (r.modified === 0) throw new DomainError('ALREADY_SUSPENDED', 'The organisation is already suspended', HttpStatus.CONFLICT);
+    // In the organisation's own audit trail too, so its members can see who did it and why.
     await this.system(async (tx) => {
-      const o = await tx.organization.findUnique({ where: { id }, select: { suspendedAt: true } });
-      if (!o) throw new DomainError('NOT_FOUND', 'Organisation not found', HttpStatus.NOT_FOUND);
-      if (o.suspendedAt) throw new DomainError('ALREADY_SUSPENDED', 'The organisation is already suspended', HttpStatus.CONFLICT);
-      await tx.organization.update({ where: { id }, data: { suspendedAt: new Date(), suspendedReason: why } });
-      // In the organisation's own audit trail too, so its members can see who did it and why.
+      await this.mirror.organizations([id], tx);
       await this.audit.append(tx, { orgId: id, actorId: actor.id, action: 'platform.org_suspended', entityType: 'organization', entityId: id, data: { reason: why } });
     });
     return this.organisation(id);
   }
 
   async reinstate(actor: AuthUser, id: string, note: string | undefined) {
+    const orgs = this.store.collection(organizations);
+    const o = await orgs.findById(id);
+    if (!o) throw new DomainError('NOT_FOUND', 'Organisation not found', HttpStatus.NOT_FOUND);
+    if (!o.suspendedAt) throw new DomainError('NOT_SUSPENDED', 'The organisation is not suspended', HttpStatus.CONFLICT);
+    const r = await orgs.updateOne({ id, suspendedAt: { $ne: null } }, { $set: { suspendedAt: null, suspendedReason: null, updatedAt: new Date() } });
+    if (r.modified === 0) throw new DomainError('NOT_SUSPENDED', 'The organisation is not suspended', HttpStatus.CONFLICT);
     await this.system(async (tx) => {
-      const o = await tx.organization.findUnique({ where: { id }, select: { suspendedAt: true, suspendedReason: true } });
-      if (!o) throw new DomainError('NOT_FOUND', 'Organisation not found', HttpStatus.NOT_FOUND);
-      if (!o.suspendedAt) throw new DomainError('NOT_SUSPENDED', 'The organisation is not suspended', HttpStatus.CONFLICT);
-      await tx.organization.update({ where: { id }, data: { suspendedAt: null, suspendedReason: null } });
+      await this.mirror.organizations([id], tx);
       await this.audit.append(tx, { orgId: id, actorId: actor.id, action: 'platform.org_reinstated', entityType: 'organization', entityId: id, data: { note: note?.trim() || null, suspendedFor: o.suspendedReason } });
     });
     return this.organisation(id);
