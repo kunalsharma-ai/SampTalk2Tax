@@ -11,6 +11,10 @@ const Fields = {
   email: z.email().max(320).nullable().optional(),
   phone: optionalText(50),
   taxId: optionalText(50),
+  /** India GST: GSTIN (the state is taken from it). */
+  gstin: z.string().trim().max(20).nullable().optional(),
+  /** India GST state code for an unregistered contact (default place of supply). */
+  stateCode: z.string().regex(/^\d{2}$/).nullable().optional(),
   address: optionalText(1000),
   isCustomer: z.boolean().optional(),
   isVendor: z.boolean().optional(),

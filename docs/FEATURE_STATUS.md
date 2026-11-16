@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1179 |
+| Not started | 1166 |
 | Designed | 0 |
-| Implementing | 29 |
+| Implementing | 31 |
 | Implemented | 28 |
-| Tested | 107 |
+| Tested | 118 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 33 | 10 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
-| Global taxation engine | M3 | 54 | 53 | 1 |
+| Global taxation engine | M3 | 54 | 40 | 14 |
 | Payroll and workforce finance | M3 | 34 | 33 | 1 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
@@ -625,6 +625,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/banking
   - apps/web/e2e/banking-flow.test.mjs
 
+### TAX-001 — Create a modular, jurisdiction-aware taxation architecture
+
+- Module: Global taxation engine
+- Status: **Implementing**
+- Notes: India GST is the first jurisdiction module. Other countries are not started.
+- Evidence:
+  - packages/tax-engine (pure rules, no framework)
+  - TaxRate.kind SIMPLE | GST; TaxSplitter hook in packages/accounting-engine computeDocument
+
 ### TAX-002 — Do not hard-code global tax rates
 
 - Module: Global taxation engine
@@ -633,6 +642,121 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/tax-rates
   - apps/web/e2e/sales-flow.test.mjs
+
+### TAX-004 — Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements
+
+- Module: Global taxation engine
+- Status: **Implementing**
+- Notes: India GST documents its rules, limitations, sources, tests and maintenance. No other country module exists yet.
+- Evidence:
+  - docs/TAX_ENGINE_INDIA_GST.md
+
+### TAX-005 — GST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Registration (GSTIN format + check character), GST rates with categories (taxable, nil-rated, exempt, non-GST), place of supply on every GST document. GSTINs are not verified against the GST portal.
+- Evidence:
+  - packages/tax-engine/test
+  - apps/api/test/gst.e2e.test.ts
+  - apps/web/e2e/tax-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/settings/gst
+
+### TAX-006 — CGST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Intra-state supplies: half the rate, rounded on its own, posted to Output/Input CGST.
+- Evidence:
+  - packages/tax-engine/test/gst.test.ts
+  - apps/api/test/gst.e2e.test.ts
+  - packages/tax-engine/src/india
+
+### TAX-007 — SGST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Intra-state supplies in states: posted to Output/Input SGST/UTGST.
+- Evidence:
+  - packages/tax-engine/test/gst.test.ts
+  - apps/api/test/gst.e2e.test.ts
+  - packages/tax-engine/src/india
+
+### TAX-008 — IGST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Inter-state supplies and exports (with payment of IGST): full rate to Output/Input IGST.
+- Evidence:
+  - packages/tax-engine/test/gst.test.ts
+  - apps/api/test/gst.e2e.test.ts
+  - packages/tax-engine/src/india
+
+### TAX-009 — UTGST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Charged instead of SGST in union territories without a legislature (04, 26, 31, 35, 38, 97); shares the SGST/UTGST account.
+- Evidence:
+  - packages/tax-engine/test/gst.test.ts
+  - apps/api/test/gst.e2e.test.ts
+  - packages/tax-engine/src/india
+
+### TAX-010 — GST invoicing
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Invoices, credit notes, bills and vendor credits carry place of supply, supplier state, buyer/supplier GSTIN and tax by head; posted GST facts are immutable (DB trigger). No PDF tax invoice layout or e-invoice IRN yet.
+- Evidence:
+  - apps/api/test/gst.e2e.test.ts
+  - apps/web/e2e/tax-flow.test.mjs
+  - apps/web/src/components/ledger/document-form.tsx
+
+### TAX-011 — HSN/SAC
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: 4, 6 or 8 digits, required on every GST line except non-GST. No HSN master or rate lookup; units of measure (UQC) are not tracked.
+- Evidence:
+  - apps/api/test/gst.e2e.test.ts
+  - apps/web/e2e/tax-flow.test.mjs
+
+### TAX-012 — Input tax credit
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: ITC from bills less vendor credits, set off per CGST Act s.49/49A and rule 88A. Blocked credits (s.17(5)), reversals, ITC brought forward and GSTR-2B matching are not modelled.
+- Evidence:
+  - packages/tax-engine/test/returns.test.ts
+  - apps/api/test/gst.e2e.test.ts
+
+### TAX-013 — GST reconciliation
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: GSTR-3B compares document totals with the movement on the six GST ledger accounts. Reconciliation with GSTR-2B is not built.
+- Evidence:
+  - apps/api/test/gst.e2e.test.ts › flags a manual journal on a GST account as a ledger difference
+  - apps/web/src/app/orgs/[orgId]/tax/gst-returns
+
+### TAX-014 — GSTR-related reporting
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: GSTR-1 (B2B, B2CL, exports, B2CS, CDNR/CDNUR, nil/exempt, HSN B2B/B2C, documents issued) and GSTR-3B (3.1, 3.2, 4, 5, 6.1) working papers. Not the GSTN JSON format; nothing is filed.
+- Evidence:
+  - packages/tax-engine/test/returns.test.ts
+  - apps/api/test/gst.e2e.test.ts
+  - apps/web/e2e/tax-flow.test.mjs
+
+### TAX-053 — Tax calculations must be performed by deterministic, tested rules
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Decimal-only arithmetic; the web form runs the same engine as the API.
+- Evidence:
+  - packages/tax-engine/test
+  - packages/accounting-engine/test
 
 ### PAY-009 — Reimbursements
 

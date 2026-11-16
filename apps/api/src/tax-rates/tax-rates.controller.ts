@@ -9,6 +9,9 @@ const rate = z.string().regex(/^\d{1,3}(\.\d{1,6})?$/, 'Percentage as a decimal 
 const CreateBody = z.object({
   name: z.string().trim().min(1).max(100),
   rate,
+  /** GST rates split into CGST + SGST/UTGST or IGST and post to the GST registration's accounts. */
+  kind: z.enum(['SIMPLE', 'GST']).default('SIMPLE'),
+  gstCategory: z.enum(['TAXABLE', 'NIL_RATED', 'EXEMPT', 'NON_GST']).optional(),
   salesAccountId: z.uuid().nullable().optional(),
   purchaseAccountId: z.uuid().nullable().optional(),
 });

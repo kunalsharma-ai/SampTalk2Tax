@@ -1,6 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { D } from '@talk2tax/accounting-engine';
+import { placeOfSupplyName } from '@talk2tax/tax-engine';
 import { Alert, Button, Card, CardHeader, Dialog, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -10,7 +11,7 @@ import { AttachmentsPanel } from '@/components/attachments';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
-import { date, today } from '@/lib/format';
+import { date, money, today } from '@/lib/format';
 import { kindLabel, type LedgerConfig } from '@/lib/ledgers';
 import { useOrg } from '@/lib/org';
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
@@ -158,6 +159,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
         </p>
       ) : null}
 
+      {d.gst ? <GstSummary gst={d.gst} currency={c} isSales={l.ledger === 'SALES'} contactName={d.contact.name} /> : null}
+
       <ApprovalCard documentId={d.id} isDraft={d.status === 'DRAFT'} canManage={canManage} currency={c} onChange={refresh} />
 
       <Card className="mt-6">
@@ -168,6 +171,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
               <Th>#</Th>
               <Th>Description</Th>
               <Th>Account</Th>
+              {d.gst ? <Th>HSN/SAC</Th> : null}
               <Th numeric>Qty</Th>
               <Th numeric>Unit price</Th>
               <Th>Tax</Th>
@@ -181,22 +185,27 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                 <Td className="text-fg-muted">{x.lineNo}</Td>
                 <Td>{x.description}</Td>
                 <Td className="text-fg-muted"><span className="num">{x.accountCode}</span> {x.accountName}</Td>
+                {d.gst ? <Td className="num text-fg-muted">{x.hsnCode ?? '—'}</Td> : null}
                 <Td numeric className="num">{x.quantity}</Td>
                 <Td numeric className="num">{x.unitPrice}</Td>
                 <Td className="text-fg-muted">{x.taxName ? `${x.taxName}` : '—'}</Td>
                 <Td numeric><Money value={x.netAmount} currency={c} /></Td>
-                <Td numeric><Money value={x.taxAmount} currency={c} /></Td>
+                <Td numeric>
+                  <Money value={x.taxAmount} currency={c} />
+                  {x.cgstAmount !== '0.00' ? <p className="text-xs text-fg-muted">CGST {money(x.cgstAmount, c)} · SGST {money(x.sgstAmount, c)}</p> : null}
+                  {x.igstAmount !== '0.00' ? <p className="text-xs text-fg-muted">IGST</p> : null}
+                </Td>
               </Tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <Td colSpan={6} className="text-right text-fg-muted">Subtotal and tax</Td>
+              <Td colSpan={d.gst ? 7 : 6} className="text-right text-fg-muted">Subtotal and tax</Td>
               <Td numeric><Money value={d.subtotal} currency={c} /></Td>
               <Td numeric><Money value={d.taxTotal} currency={c} /></Td>
             </tr>
             <tr>
-              <Td colSpan={7} className="text-right font-semibold">Total</Td>
+              <Td colSpan={d.gst ? 8 : 7} className="text-right font-semibold">Total</Td>
               <Td numeric className="font-semibold"><Money value={d.total} currency={c} /></Td>
             </tr>
           </tfoot>
@@ -280,5 +289,31 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
         </form>
       </Dialog>
     </>
+  );
+}
+
+function GstSummary({ gst, currency, isSales, contactName }: { gst: NonNullable<FinancialDocument['gst']>; currency: string; isSales: boolean; contactName: string }) {
+  const intra = gst.supplyNature === 'INTRA';
+  return (
+    <Card className="mt-4 grid gap-4 p-4 sm:grid-cols-4" aria-label="GST details">
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">Place of supply</p>
+        <p className="mt-1 text-sm">{gst.placeOfSupply} · {placeOfSupplyName(gst.placeOfSupply)}</p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">Supply</p>
+        <p className="mt-1 text-sm">{gst.placeOfSupply === '96' ? 'Export (IGST paid)' : intra ? 'Intra-state' : 'Inter-state'} <span className="text-fg-muted">· supplier in {placeOfSupplyName(gst.supplierState)}</span></p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">{isSales ? 'Buyer' : 'Supplier'} GSTIN</p>
+        <p className="num mt-1 text-sm">{gst.counterpartyGstin ?? <span className="font-sans text-fg-muted">{contactName} is unregistered</span>}</p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-fg-muted">{isSales ? 'Output' : 'Input'} tax</p>
+        <p className="mt-1 text-sm">
+          {intra ? <>CGST {money(gst.cgst, currency)} · SGST/UTGST {money(gst.sgst, currency)}</> : <>IGST {money(gst.igst, currency)}</>}
+        </p>
+      </div>
+    </Card>
   );
 }

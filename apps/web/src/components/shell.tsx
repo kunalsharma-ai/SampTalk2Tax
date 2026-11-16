@@ -46,7 +46,15 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
       { href: '/reports/general-ledger', label: 'General ledger' },
     ],
   },
-  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/tax-rates', label: 'Tax rates' }, { href: '/settings/approvals', label: 'Approval rules' }] },
+  {
+    group: 'Tax',
+    items: [
+      { href: '/tax/gst-returns', label: 'GST returns' },
+      { href: '/settings/gst', label: 'GST settings' },
+      { href: '/settings/tax-rates', label: 'Tax rates' },
+    ],
+  },
+  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/approvals', label: 'Approval rules' }] },
 ];
 
 /** Employees only claim expenses; the rest of the books is not theirs to see. */

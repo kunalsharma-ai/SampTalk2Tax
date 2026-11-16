@@ -1,13 +1,14 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { checkGstin, placeOfSupplyName } from '@talk2tax/tax-engine';
+import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
 import type { LedgerConfig } from '@/lib/ledgers';
-import { useContacts, useOrg } from '@/lib/org';
+import { useContacts, useGstStates, useOrg } from '@/lib/org';
 import { can, type Contact } from '@/lib/types';
 
 export interface ContactDraft {
@@ -16,6 +17,8 @@ export interface ContactDraft {
   email: string;
   phone: string;
   taxId: string;
+  gstin: string;
+  stateCode: string;
   address: string;
   isCustomer: boolean;
   isVendor: boolean;
@@ -26,13 +29,16 @@ export interface ContactDraft {
 
 export function draftFrom(c: Contact | null, l: LedgerConfig): ContactDraft {
   return c
-    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', address: c.address ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
-    : { name: '', email: '', phone: '', taxId: '', address: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
+    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', gstin: c.gstin ?? '', stateCode: c.stateCode ?? '', address: c.address ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
+    : { name: '', email: '', phone: '', taxId: '', gstin: '', stateCode: '', address: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
 }
 
 export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig; draft: ContactDraft | null; setDraft: (d: ContactDraft | null) => void; onSaved?: (c: Contact) => void }) {
-  const { orgId } = useOrg();
+  const { org, orgId } = useOrg();
+  const india = org?.countryCode === 'IN';
+  const states = useGstStates();
   const qc = useQueryClient();
+  const gstin = draft?.gstin.trim() ? checkGstin(draft.gstin) : null;
   const save = useMutation({
     mutationFn: (d: ContactDraft) => {
       const body = {
@@ -40,6 +46,7 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
         email: d.email || null,
         phone: d.phone || null,
         taxId: d.taxId || null,
+        ...(india ? { gstin: d.gstin.trim() || null, stateCode: d.gstin.trim() ? undefined : d.stateCode || null } : {}),
         address: d.address || null,
         isCustomer: d.isCustomer,
         isVendor: d.isVendor,
@@ -67,6 +74,21 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
           </div>
           <Field label="Email">{(p) => <Input {...p} type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />}</Field>
           <Field label="Phone">{(p) => <Input {...p} value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} />}</Field>
+          {india ? (
+            <>
+              <Field label="GSTIN" error={gstin && !gstin.valid ? gstin.issues[0] : undefined} hint={gstin?.valid ? `Registered in ${placeOfSupplyName(gstin.stateCode!)}. Format and check character verified; not looked up on the GST portal.` : 'Leave empty if unregistered.'}>
+                {(p) => <Input {...p} className="num uppercase" maxLength={15} value={draft.gstin} onChange={(e) => setDraft({ ...draft, gstin: e.target.value.toUpperCase() })} />}
+              </Field>
+              <Field label="State" hint={gstin?.valid ? 'Taken from the GSTIN.' : 'The default place of supply for an unregistered contact.'}>
+                {(p) => (
+                  <Select {...p} disabled={!!gstin?.valid} value={gstin?.valid ? gstin.stateCode : draft.stateCode} onChange={(e) => setDraft({ ...draft, stateCode: e.target.value })}>
+                    <option value="">Not set</option>
+                    {(states.data ?? []).filter((s) => s.code !== '96').map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}
+                  </Select>
+                )}
+              </Field>
+            </>
+          ) : null}
           <Field label="Tax ID" hint="Stored as entered. Not validated against any tax authority.">{(p) => <Input {...p} value={draft.taxId} onChange={(e) => setDraft({ ...draft, taxId: e.target.value })} />}</Field>
           <Field label="Payment terms (days)">{(p) => <Input {...p} inputMode="numeric" value={draft.paymentTermsDays} onChange={(e) => /^\d{0,4}$/.test(e.target.value) && setDraft({ ...draft, paymentTermsDays: e.target.value })} />}</Field>
           {draft.isCustomer ? (
@@ -85,7 +107,7 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
           </fieldset>
           <div className="flex justify-end gap-2 sm:col-span-2">
             <Button type="button" variant="ghost" onClick={() => setDraft(null)}>Cancel</Button>
-            <Button type="submit" loading={save.isPending} disabled={!draft.isCustomer && !draft.isVendor}>Save {l.contact.toLowerCase()}</Button>
+            <Button type="submit" loading={save.isPending} disabled={(!draft.isCustomer && !draft.isVendor) || (!!gstin && !gstin.valid)}>Save {l.contact.toLowerCase()}</Button>
           </div>
         </form>
       ) : null}
@@ -140,6 +162,7 @@ export function ContactsPage({ l }: { l: LedgerConfig }) {
                     <Link className="text-accent hover:underline" href={`/orgs/${orgId}/${l.contactsPath}/${x.id}`}>{x.name}</Link>
                     {!x.isActive ? <Badge className="ml-2">Inactive</Badge> : null}
                     {x.isCustomer && x.isVendor ? <Badge className="ml-2" tone="violet">Customer and vendor</Badge> : null}
+                    {x.gstin ? <p className="num text-xs text-fg-muted">GSTIN {x.gstin}</p> : null}
                   </Td>
                   <Td className="text-fg-muted">{x.email}</Td>
                   <Td numeric className="text-fg-muted">{x.paymentTermsDays} days</Td>

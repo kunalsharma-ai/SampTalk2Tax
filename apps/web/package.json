@@ -14,6 +14,7 @@
   "dependencies": {
     "@hookform/resolvers": "5.9.2",
     "@talk2tax/accounting-engine": "workspace:*",
+    "@talk2tax/tax-engine": "workspace:*",
     "@talk2tax/design-system": "workspace:*",
     "@talk2tax/ui": "workspace:*",
     "@tanstack/react-query": "5.105.0",

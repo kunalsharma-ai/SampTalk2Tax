@@ -17,6 +17,7 @@
     "@nestjs/platform-express": "11.2.8",
     "@nestjs/swagger": "11.4.7",
     "@talk2tax/accounting-engine": "workspace:*",
+    "@talk2tax/tax-engine": "workspace:*",
     "@talk2tax/database": "workspace:*",
     "@talk2tax/security": "workspace:*",
     "helmet": "8.3.0",

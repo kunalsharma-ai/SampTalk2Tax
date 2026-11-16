@@ -17,13 +17,15 @@ import {
   ledgerOf,
   minorUnits,
 } from '@talk2tax/accounting-engine';
-import { Prisma } from '@talk2tax/database';
+import { Contact, Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
+import { GstCategory, gstHeads, gstSplitter, hsnIssue } from '@talk2tax/tax-engine';
 import { currentApproval, policyFor } from '../approvals/approval-rules';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { GstService, SupplyFacts } from '../gst/gst.service';
 import { JournalsService } from '../journals/journals.service';
 import { ledgerKinds, SubledgerService } from './subledger.service';
 
@@ -44,6 +46,8 @@ export interface DocumentInput {
   dueDate?: string;
   reference?: string | null;
   memo?: string | null;
+  /** India GST place of supply; see GstService.supplyFacts for the defaults. */
+  placeOfSupply?: string | null;
   lines: DocumentLineInput[];
 }
 
@@ -59,7 +63,7 @@ export interface PaymentInput {
 
 const DOC_INCLUDE = {
   contact: { select: { id: true, name: true, email: true } },
-  lines: { orderBy: { lineNo: 'asc' }, include: { account: { select: { code: true, name: true } }, tax: { select: { name: true } } } },
+  lines: { orderBy: { lineNo: 'asc' }, include: { account: { select: { code: true, name: true } }, tax: { select: { name: true, kind: true, gstCategory: true } } } },
   allocationsIn: {
     where: { removedOn: null },
     orderBy: { createdAt: 'asc' },
@@ -97,6 +101,7 @@ export class DocumentsService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly subledger: SubledgerService,
+    private readonly gst: GstService,
   ) {}
 
   // ------------------------------------------------------------------ reads
@@ -217,6 +222,7 @@ export class DocumentsService {
             reference: input.reference || null,
             memo: input.memo || null,
             currency: org.functionalCurrency,
+            ...gstColumns(prepared.gst),
             subtotal: prepared.computed.subtotal.toFixed(),
             taxTotal: prepared.computed.taxTotal.toFixed(),
             total: prepared.computed.total.toFixed(),
@@ -253,6 +259,7 @@ export class DocumentsService {
           dueDate: toDbDate(prepared.dueDate),
           reference: input.reference || null,
           memo: input.memo || null,
+          ...gstColumns(prepared.gst),
           subtotal: prepared.computed.subtotal.toFixed(),
           taxTotal: prepared.computed.taxTotal.toFixed(),
           total: prepared.computed.total.toFixed(),
@@ -452,10 +459,11 @@ export class DocumentsService {
       contactId: doc.contactId,
       issueDate: fromDbDate(doc.issueDate),
       dueDate: fromDbDate(doc.dueDate),
-      lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId })),
+      placeOfSupply: doc.placeOfSupply,
+      lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
     };
-    const { computed } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
-    if (!computed.total.eq(doc.total.toFixed())) {
+    const { computed, gst } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
+    if (!computed.total.eq(doc.total.toFixed()) || !sameGstTax(computed.lines, doc.lines)) {
       throw new DomainError('TOTAL_CHANGED', 'A tax rate on this draft changed since it was saved. Open and save the draft again to review the new total.', HttpStatus.CONFLICT);
     }
     if ((await policyFor(tx, org.id, doc.kind, doc.total.toFixed())) && !(await currentApproval(tx, id, doc.total.toFixed()))) {
@@ -485,7 +493,8 @@ export class DocumentsService {
       reference: number,
       lines: buildDocumentJournal(doc.kind, computed, control, org.functionalCurrency),
     });
-    await tx.document.update({ where: { id }, data: { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date() } });
+    // The GST facts are taken again as they stand now (for example the customer's GSTIN), so the posted document records what was charged.
+    await tx.document.update({ where: { id }, data: { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date(), ...gstColumns(gst) } });
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.posted', entityType: 'document', entityId: id, data: { number, total: computed.total.toFixed(), journalEntryId: je.id } });
   }
 
@@ -529,9 +538,10 @@ export class DocumentsService {
     const taxIds = [...new Set(input.lines.map((l) => l.taxRateId).filter((x): x is string => !!x))];
     const taxes = await tx.taxRate.findMany({ where: { orgId: org.id, id: { in: taxIds }, isActive: true } });
     const taxMap = new Map<string, TaxRateInfo>(
-      taxes.map((t) => [t.id, { id: t.id, name: t.name, rate: t.rate.toFixed(), accountId: ledger === 'SALES' ? t.salesAccountId : t.purchaseAccountId }]),
+      taxes.map((t) => [t.id, { id: t.id, name: t.name, rate: t.rate.toFixed(), accountId: ledger === 'SALES' ? t.salesAccountId : t.purchaseAccountId, kind: t.kind }]),
     );
-    const computed = computeDocument(input.lines, org.functionalCurrency, taxMap);
+    const { gst, splitter } = await this.prepareGst(tx, org, ledger, contact, input, taxes);
+    const computed = computeDocument(input.lines, org.functionalCurrency, taxMap, splitter);
     const isCharge = input.kind === 'INVOICE' || input.kind === 'BILL';
     const dueDate = !isCharge ? input.issueDate : (input.dueDate ?? addDays(input.issueDate, contact.paymentTermsDays));
     if (dueDate < input.issueDate) throw new DomainError('INVALID_DATE', 'The due date cannot be before the issue date');
@@ -544,7 +554,52 @@ export class DocumentsService {
         throw new DomainError('DUPLICATE_BILL', `This vendor's invoice "${input.reference}" is already entered${dup[0].number ? ` as ${dup[0].number}` : ' as a draft'}`, HttpStatus.CONFLICT);
       }
     }
-    return { computed, dueDate };
+    return { computed, dueDate, gst };
+  }
+
+  /**
+   * India GST. Once an organisation is registered, every line of a document dated
+   * on or after the effective date must use a GST rate (nil-rated, exempt and
+   * non-GST rates exist for lines without tax), so each supply lands in the
+   * right place in the returns. GST rates cannot be used before that date or
+   * without a registration.
+   */
+  private async prepareGst(tx: Tx, org: LedgerOrg, ledger: Ledger, contact: Contact, input: DocumentInput, taxes: { id: string; name: string; kind: string; gstCategory: GstCategory | null; rate: Prisma.Decimal }[]) {
+    const reg = await this.gst.registration(tx, org.id);
+    const gstIds = new Set(taxes.filter((t) => t.kind === 'GST').map((t) => t.id));
+    const usesGst = input.lines.some((l) => l.taxRateId && gstIds.has(l.taxRateId));
+    const inForce = !!reg && input.issueDate >= fromDbDate(reg.effectiveFrom);
+    const issues: string[] = [];
+    if (usesGst && !reg) issues.push('GST rates need a GST registration (Settings → GST)');
+    else if (usesGst && !inForce) issues.push(`GST rates apply from ${fromDbDate(reg!.effectiveFrom)}, the registration's effective date`);
+    if (!inForce || !reg) {
+      if (issues.length) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+      return { gst: null, splitter: undefined };
+    }
+    const categories = new Map(taxes.filter((t) => t.kind === 'GST').map((t) => [t.id, t.gstCategory as GstCategory]));
+    input.lines.forEach((l, i) => {
+      if (!l.taxRateId || !gstIds.has(l.taxRateId)) {
+        issues.push(`Line ${i + 1}: choose a GST rate (use the nil-rated, exempt or non-GST rate where no GST applies)`);
+        return;
+      }
+      if (categories.get(l.taxRateId) !== 'NON_GST') {
+        const h = hsnIssue(l.hsnCode);
+        if (h) issues.push(`Line ${i + 1}: ${h}`);
+      }
+    });
+    if (ledger === 'PURCHASES' && !contact.gstin) {
+      const charged = input.lines.some((l) => l.taxRateId && categories.get(l.taxRateId) === 'TAXABLE' && !taxes.find((t) => t.id === l.taxRateId)!.rate.isZero());
+      if (charged) issues.push(`${contact.name} has no GSTIN, so their bill cannot carry GST. Add their GSTIN, or record the purchase as nil-rated, exempt or non-GST (reverse charge is not supported yet).`);
+    }
+    if (issues.length) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+    const facts = this.gst.supplyFacts(reg, ledger, contact, input.placeOfSupply);
+    const splitter = gstSplitter({
+      nature: facts.supplyNature,
+      stateCode: facts.placeOfSupply,
+      accounts: this.gst.accountsFor(reg, ledger),
+      categories,
+    });
+    return { gst: facts, splitter };
   }
 
   private async checkContact(tx: Tx, orgId: string, ledger: Ledger, contactId: string) {
@@ -655,6 +710,17 @@ export class DocumentsService {
       reference: d.reference,
       memo: d.memo,
       currency: d.currency,
+      gst: d.placeOfSupply
+        ? {
+            placeOfSupply: d.placeOfSupply,
+            supplierState: d.supplierState,
+            supplyNature: d.supplyNature,
+            counterpartyGstin: d.counterpartyGstin,
+            cgst: sumOf(d.lines.map((l) => l.cgstAmount)).toFixed(scale),
+            sgst: sumOf(d.lines.map((l) => l.sgstAmount)).toFixed(scale),
+            igst: sumOf(d.lines.map((l) => l.igstAmount)).toFixed(scale),
+          }
+        : null,
       subtotal: d.subtotal.toFixed(scale),
       taxTotal: d.taxTotal.toFixed(scale),
       total: total.toFixed(scale),
@@ -678,6 +744,12 @@ export class DocumentsService {
         unitPrice: l.unitPrice.toFixed(),
         taxRateId: l.taxRateId,
         taxName: l.tax?.name ?? null,
+        taxKind: l.tax?.kind ?? null,
+        gstCategory: l.tax?.gstCategory ?? null,
+        hsnCode: l.hsnCode,
+        cgstAmount: l.cgstAmount.toFixed(scale),
+        sgstAmount: l.sgstAmount.toFixed(scale),
+        igstAmount: l.igstAmount.toFixed(scale),
         taxRate: l.taxRate.toFixed(),
         netAmount: l.netAmount.toFixed(scale),
         taxAmount: l.taxAmount.toFixed(scale),
@@ -722,6 +794,10 @@ export class DocumentsService {
   }
 }
 
+function sumOf(values: Prisma.Decimal[]) {
+  return values.reduce((s, v) => s.plus(v.toFixed()), new D(0));
+}
+
 function paymentStatus(status: string, total: Dec, used: Dec): 'UNPAID' | 'PARTIAL' | 'PAID' | null {
   if (status !== 'POSTED') return null;
   if (used.isZero()) return 'UNPAID';
@@ -739,5 +815,24 @@ function lineRows(lines: ReturnType<typeof computeDocument>['lines']) {
     taxRate: l.taxRate.toFixed(),
     netAmount: l.netAmount.toFixed(),
     taxAmount: l.taxAmount.toFixed(),
+    ...gstLineColumns(l),
   }));
+}
+
+function gstLineColumns(l: ReturnType<typeof computeDocument>['lines'][number]) {
+  const h = gstHeads(l.taxComponents);
+  return { hsnCode: l.hsnCode, cgstAmount: h.cgst.toFixed(), sgstAmount: h.sgst.toFixed(), igstAmount: h.igst.toFixed() };
+}
+
+function gstColumns(f: SupplyFacts | null) {
+  return { placeOfSupply: f?.placeOfSupply ?? null, supplierState: f?.supplierState ?? null, supplyNature: f?.supplyNature ?? null, counterpartyGstin: f?.counterpartyGstin ?? null };
+}
+
+/** Whether recomputed GST heads still match what the draft stored (the total alone can hide a CGST/SGST to IGST swap). */
+function sameGstTax(computed: ReturnType<typeof computeDocument>['lines'], stored: { cgstAmount: Prisma.Decimal; sgstAmount: Prisma.Decimal; igstAmount: Prisma.Decimal }[]) {
+  return computed.every((l, i) => {
+    const c = gstLineColumns(l);
+    const s = stored[i];
+    return !!s && new D(c.cgstAmount).eq(s.cgstAmount.toFixed()) && new D(c.sgstAmount).eq(s.sgstAmount.toFixed()) && new D(c.igstAmount).eq(s.igstAmount.toFixed());
+  });
 }

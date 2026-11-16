@@ -104,6 +104,10 @@ export interface Contact {
   email: string | null;
   phone: string | null;
   taxId: string | null;
+  /** India GST registration number; null = unregistered. */
+  gstin: string | null;
+  /** India GST state code (from the GSTIN when registered). */
+  stateCode: string | null;
   address: string | null;
   isCustomer: boolean;
   isVendor: boolean;
@@ -118,9 +122,99 @@ export interface TaxRate {
   id: string;
   name: string;
   rate: string;
+  kind: 'SIMPLE' | 'GST';
+  gstCategory: GstCategory | null;
   salesAccountId: string | null;
   purchaseAccountId: string | null;
   isActive: boolean;
+}
+
+export type GstCategory = 'TAXABLE' | 'NIL_RATED' | 'EXEMPT' | 'NON_GST';
+
+export interface GstState {
+  code: string;
+  name: string;
+  levies: 'SGST' | 'UTGST' | null;
+}
+
+export interface GstAccountRef {
+  id: string;
+  code: string;
+  name: string;
+}
+
+export type GstRegistration =
+  | { registered: false }
+  | {
+      registered: true;
+      gstin: string;
+      legalName: string | null;
+      stateCode: string;
+      stateName: string;
+      effectiveFrom: string;
+      firstDocumentDate: string | null;
+      accounts: Record<'outputCgst' | 'outputSgst' | 'outputIgst' | 'inputCgst' | 'inputSgst' | 'inputIgst', GstAccountRef>;
+    };
+
+export interface TaxHeads {
+  taxable: string;
+  igst: string;
+  cgst: string;
+  sgst: string;
+}
+export interface Heads {
+  igst: string;
+  cgst: string;
+  sgst: string;
+}
+
+export interface Gstr1DocumentRow {
+  id: string;
+  number: string;
+  date: string;
+  name: string;
+  gstin: string | null;
+  placeOfSupply: string;
+  value: string;
+  rates: (TaxHeads & { rate: string })[];
+}
+export interface HsnRow extends TaxHeads {
+  hsnCode: string;
+  rate: string;
+  quantity: string;
+}
+
+export interface Gstr1 {
+  gstin: string;
+  from: string;
+  to: string;
+  b2b: Gstr1DocumentRow[];
+  b2cl: Gstr1DocumentRow[];
+  exp: Gstr1DocumentRow[];
+  b2cs: (TaxHeads & { placeOfSupply: string; nature: 'INTRA' | 'INTER'; rate: string })[];
+  cdnr: Gstr1DocumentRow[];
+  cdnur: Gstr1DocumentRow[];
+  nil: { nature: 'INTRA' | 'INTER'; registered: boolean; nilRated: string; exempt: string; nonGst: string }[];
+  hsn: { b2b: HsnRow[]; b2c: HsnRow[] };
+  documents: { kind: 'INVOICE' | 'CREDIT_NOTE'; from: string; to: string; issued: number; cancelled: number }[];
+  totals: TaxHeads;
+}
+
+export interface Gstr3b {
+  gstin: string;
+  from: string;
+  to: string;
+  outwardTaxable: TaxHeads;
+  outwardZeroRated: { taxable: string; igst: string };
+  outwardNilExempt: string;
+  outwardNonGst: string;
+  interStateUnregistered: { placeOfSupply: string; taxable: string; igst: string }[];
+  itc: Heads;
+  inwardExempt: { inter: string; intra: string };
+  inwardNonGst: { inter: string; intra: string };
+  setOff: { liability: Heads; credit: Heads; used: { igst: Heads; cgst: Heads; sgst: Heads }; cash: Heads; carryForward: Heads };
+  warnings: string[];
+  ledger: { output: Heads; input: Heads; agrees: boolean };
 }
 
 export interface DocumentSummary {
@@ -152,6 +246,12 @@ export interface DocumentLine {
   unitPrice: string;
   taxRateId: string | null;
   taxName: string | null;
+  taxKind: 'SIMPLE' | 'GST' | null;
+  gstCategory: GstCategory | null;
+  hsnCode: string | null;
+  cgstAmount: string;
+  sgstAmount: string;
+  igstAmount: string;
   taxRate: string;
   netAmount: string;
   taxAmount: string;
@@ -159,6 +259,15 @@ export interface DocumentLine {
 
 export interface FinancialDocument extends DocumentSummary {
   memo: string | null;
+  gst: {
+    placeOfSupply: string;
+    supplierState: string;
+    supplyNature: 'INTRA' | 'INTER';
+    counterpartyGstin: string | null;
+    cgst: string;
+    sgst: string;
+    igst: string;
+  } | null;
   journalEntryId: string | null;
   voidJournalEntryId: string | null;
   voidDate: string | null;

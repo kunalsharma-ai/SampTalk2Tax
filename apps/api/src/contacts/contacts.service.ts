@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { D, dec, minorUnits } from '@talk2tax/accounting-engine';
 import { Contact } from '@talk2tax/database';
+import { checkGstin, isPlaceOfSupply } from '@talk2tax/tax-engine';
 import { AuditService } from '../audit/audit.service';
 import { todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
@@ -12,6 +13,8 @@ export interface ContactInput {
   email?: string | null;
   phone?: string | null;
   taxId?: string | null;
+  gstin?: string | null;
+  stateCode?: string | null;
   address?: string | null;
   isCustomer?: boolean;
   isVendor?: boolean;
@@ -72,6 +75,8 @@ export class ContactsService {
           email: input.email ?? null,
           phone: input.phone ?? null,
           taxId: input.taxId ?? null,
+          gstin: data.gstin ?? null,
+          stateCode: data.stateCode ?? null,
           address: input.address ?? null,
           isCustomer: input.isCustomer ?? false,
           isVendor: input.isVendor ?? false,
@@ -89,6 +94,9 @@ export class ContactsService {
     return this.prisma.$transaction(async (tx) => {
       const before = await tx.contact.findFirst({ where: { id, orgId: org.id } });
       if (!before) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Contact not found' });
+      if (input.gstin === undefined && before.gstin && data.stateCode !== undefined && data.stateCode !== before.gstin.slice(0, 2)) {
+        throw new DomainError('INVALID_STATE', `${before.name}'s GSTIN is registered in state ${before.gstin.slice(0, 2)}; change the GSTIN to change the state`);
+      }
       const isCustomer = input.isCustomer ?? before.isCustomer;
       const isVendor = input.isVendor ?? before.isVendor;
       if (!isCustomer && !isVendor) throw new DomainError('INVALID_CONTACT', 'A contact must be a customer, a vendor or both');
@@ -105,6 +113,8 @@ export class ContactsService {
           email: input.email,
           phone: input.phone,
           taxId: input.taxId,
+          gstin: data.gstin,
+          stateCode: data.stateCode,
           address: input.address,
           isCustomer: input.isCustomer,
           isVendor: input.isVendor,
@@ -125,7 +135,20 @@ export class ContactsService {
       if (v.decimalPlaces() > minorUnits(org.functionalCurrency)) throw new DomainError('INVALID_AMOUNT', 'Credit limit has too many decimal places');
       creditLimit = v.toFixed();
     }
-    return { creditLimit };
+    // GSTIN and state travel together: the state is the GSTIN's first two digits.
+    let gstin: string | null | undefined = input.gstin === undefined ? undefined : null;
+    let stateCode: string | null | undefined = input.stateCode === undefined ? undefined : (input.stateCode ?? null);
+    if (input.gstin) {
+      const check = checkGstin(input.gstin);
+      if (!check.valid) throw new DomainError('INVALID_GSTIN', check.issues.join('; '));
+      if (input.stateCode && input.stateCode !== check.stateCode) throw new DomainError('INVALID_STATE', `The GSTIN is registered in state ${check.stateCode}, not ${input.stateCode}`);
+      gstin = check.gstin;
+      stateCode = check.stateCode;
+    } else if (input.gstin === null && input.stateCode === undefined) {
+      stateCode = undefined;
+    }
+    if (stateCode && !isPlaceOfSupply(stateCode)) throw new DomainError('INVALID_STATE', `${stateCode} is not a GST state code`);
+    return { creditLimit, gstin, stateCode };
   }
 
   private async find(orgId: string, id: string) {
@@ -145,6 +168,8 @@ export class ContactsService {
       email: c.email,
       phone: c.phone,
       taxId: c.taxId,
+      gstin: c.gstin,
+      stateCode: c.stateCode,
       address: c.address,
       isCustomer: c.isCustomer,
       isVendor: c.isVendor,

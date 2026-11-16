@@ -101,6 +101,12 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `POST …/expense-claims/:id/reject` | approvals.decide, not the claimant | Reject with a reason |
 | `POST …/expense-claims/:id/reimburse` | expenses.reimburse | Pay back from a bank or cash account (`bankAccountId`, `date`, `reference`) |
 | `POST …/expense-claims/:id/void` | journals.reverse | Void an approved, unpaid claim; reverses its posting |
+| `GET /v1/orgs/:orgId/gst/registration` | accounts.read | `{ registered: false }` or GSTIN, state, effective date, the six GST accounts and the first GST document date |
+| `PUT /v1/orgs/:orgId/gst/registration` | accounts.manage | `gstin`, `legalName`, `effectiveFrom`, optional `accounts` (six account ids); without them the standard accounts 2310–2312 and 1451–1453 are created or reused. GSTIN and accounts are frozen once documents carry them |
+| `GET /v1/orgs/:orgId/gst/states` | contacts.read | GST state codes, whether each levies SGST or UTGST, and 96 for exports |
+| `POST /v1/orgs/:orgId/gst/check-gstin` | contacts.read | Format and check character of a GSTIN (no portal lookup) |
+| `GET /v1/orgs/:orgId/gst/returns/gstr-1?from=&to=` | reports.read | GSTR-1 working paper (B2B, B2CL, exports, B2CS, credit notes, nil/exempt, HSN, documents issued) |
+| `GET /v1/orgs/:orgId/gst/returns/gstr-3b?from=&to=` | reports.read | GSTR-3B working paper with ITC set-off and a comparison with the GST ledger accounts |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 

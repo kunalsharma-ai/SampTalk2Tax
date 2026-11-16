@@ -1,14 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { dec } from '@talk2tax/accounting-engine';
-import { TaxRate } from '@talk2tax/database';
+import { GstCategory, TaxRate, TaxRateKind } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 
 /**
- * Tenant-configured percentage tax rates. These are a calculation aid only: they do
- * not implement any jurisdiction's tax rules (place of supply, reverse charge,
- * thresholds, filings). See KNOWN_LIMITATIONS.md.
+ * Tenant-configured tax rates. SIMPLE rates are a calculation aid: one percentage
+ * posted to one account per ledger. GST rates follow India GST rules
+ * (packages/tax-engine): they need a GST registration, carry a category, and
+ * post to the registration's CGST, SGST/UTGST and IGST accounts.
  */
 @Injectable()
 export class TaxRatesService {
@@ -22,13 +23,29 @@ export class TaxRatesService {
     return rows.map(serialize);
   }
 
-  async create(orgId: string, actor: { id: string }, input: { name: string; rate: string; salesAccountId?: string | null; purchaseAccountId?: string | null }) {
+  async create(
+    orgId: string,
+    actor: { id: string },
+    input: { name: string; rate: string; kind?: TaxRateKind; gstCategory?: GstCategory; salesAccountId?: string | null; purchaseAccountId?: string | null },
+  ) {
     const rate = dec(input.rate);
     if (rate.gt(100)) throw new DomainError('INVALID_RATE', 'A tax rate cannot exceed 100%');
+    const kind = input.kind ?? 'SIMPLE';
     return this.prisma.$transaction(async (tx) => {
-      await this.checkAccounts(tx, orgId, input, rate.gt(0));
-      const t = await tx.taxRate.create({ data: { orgId, name: input.name, rate: rate.toFixed(), salesAccountId: input.salesAccountId ?? null, purchaseAccountId: input.purchaseAccountId ?? null } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'tax_rate.created', entityType: 'tax_rate', entityId: t.id, data: { name: t.name, rate: t.rate.toFixed() } });
+      let gstCategory: GstCategory | null = null;
+      if (kind === 'GST') {
+        if (!(await tx.gstRegistration.findUnique({ where: { orgId } }))) throw new DomainError('GST_NOT_REGISTERED', 'Set up the GST registration first (Settings → GST)', HttpStatus.CONFLICT);
+        gstCategory = input.gstCategory ?? 'TAXABLE';
+        if (gstCategory !== 'TAXABLE' && !rate.isZero()) throw new DomainError('INVALID_RATE', 'Nil-rated, exempt and non-GST rates are 0%');
+        if (input.salesAccountId || input.purchaseAccountId) throw new DomainError('INVALID_ACCOUNT', 'GST rates post to the accounts on the GST registration');
+      } else {
+        if (input.gstCategory) throw new DomainError('INVALID_RATE', 'Only GST rates have a GST category');
+        await this.checkAccounts(tx, orgId, input, rate.gt(0));
+      }
+      const t = await tx.taxRate.create({
+        data: { orgId, name: input.name, rate: rate.toFixed(), kind, gstCategory, salesAccountId: kind === 'GST' ? null : (input.salesAccountId ?? null), purchaseAccountId: kind === 'GST' ? null : (input.purchaseAccountId ?? null) },
+      });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'tax_rate.created', entityType: 'tax_rate', entityId: t.id, data: { name: t.name, rate: t.rate.toFixed(), kind, gstCategory } });
       return serialize(t);
     });
   }
@@ -37,6 +54,7 @@ export class TaxRatesService {
     return this.prisma.$transaction(async (tx) => {
       const before = await tx.taxRate.findFirst({ where: { id, orgId } });
       if (!before) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Tax rate not found' });
+      if (before.kind === 'GST' && (input.salesAccountId || input.purchaseAccountId)) throw new DomainError('INVALID_ACCOUNT', 'GST rates post to the accounts on the GST registration');
       await this.checkAccounts(tx, orgId, input, false);
       const t = await tx.taxRate.update({ where: { id }, data: input });
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'tax_rate.updated', entityType: 'tax_rate', entityId: id, data: input });
@@ -56,5 +74,5 @@ export class TaxRatesService {
 }
 
 function serialize(t: TaxRate) {
-  return { id: t.id, name: t.name, rate: t.rate.toFixed(), salesAccountId: t.salesAccountId, purchaseAccountId: t.purchaseAccountId, isActive: t.isActive };
+  return { id: t.id, name: t.name, rate: t.rate.toFixed(), kind: t.kind, gstCategory: t.gstCategory, salesAccountId: t.salesAccountId, purchaseAccountId: t.purchaseAccountId, isActive: t.isActive };
 }
