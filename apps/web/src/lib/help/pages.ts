@@ -109,6 +109,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Sort by the figure you care about and filter by risk or credit hold. Open a customer for the full workings.',
     where: 'Sales. Figures come from posted invoices, receipts and costs on projects linked to each customer.',
   },
+  'sales/unbilled-revenue': {
+    what: 'Revenue earned or agreed but not yet invoiced, found in your records: milestones marked complete without an invoice, contract periods due but not invoiced, draft invoices left more than a week, delivery orders still unbilled a month on, pro forma invoices that ran out without a tax invoice, and customers billed every month who were not billed last month.',
+    how: 'Start with Due now. Open each finding to bill it from its order, contract or draft. If something should not be billed, dismiss it with the reason; it comes back by itself if the amount grows.',
+    where: 'Sales. Amounts are before tax in the record\'s currency. Nothing here posts or changes the books; billing happens on the order, contract or invoice.',
+  },
   'sales/revenue-recognition': {
     what: 'Revenue invoiced for services delivered over time (a year of support, a subscription billed up front), held as deferred revenue and recognised month by month, with a waterfall of what each month recognises.',
     how: 'Choose the deferred revenue account once. On a draft invoice, tick the lines delivered over time and give the service start, the months and whether to spread by days or evenly. Post the invoice, then run the monthly release under Prepaid and deferred.',

@@ -5663,3 +5663,21 @@ model VendorRiskReview {
   @@index([orgId, contactId, reviewedOn])
   @@map("vendor_risk_reviews")
 }
+
+/// AR-042: a finding of unbilled revenue dismissed (with the amount then) or brought back. Append-only; the latest row decides.
+model UnbilledRevenueDismissal {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  /// SOURCE:record id, such as ORDER:<sales order id>.
+  fingerprint String   @db.VarChar(80)
+  /// DISMISS or RESTORE.
+  action      String   @db.VarChar(7)
+  amount      Decimal? @db.Decimal(24, 6)
+  currency    String   @db.Char(3)
+  reason      String   @db.VarChar(500)
+  byId        String   @map("by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, fingerprint, createdAt])
+  @@map("unbilled_revenue_dismissals")
+}
