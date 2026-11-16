@@ -85,6 +85,12 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Not yet run against the live Claude API: no `ANTHROPIC_API_KEY` has been provided. The full path up to the HTTP call is tested with the official SDK against a local stand-in. Answers appear whole when finished (no streaming of text). Read-only questions only: no drafting of journals, invoices, reminders or filings, no document reading, no web search, no payroll. No platform screen for the model or spend; per-member hourly limit only. Answers come from tool results but a language model can still misread or miscalculate, so the screen asks members to check the linked reports. English only. See [`AI_COPILOT.md`](AI_COPILOT.md).
 
+## AI collections agent (M5, slice 3)
+
+* Not yet run against the live Claude API or a real mail provider; tested with the official SDK against a local stand-in and a local SMTP server.
+* A person starts each drafting run and approves each reminder: no sequences, escalation, scheduled runs or reply tracking; no links, attachments, payment links, opt-outs or tone settings; plain-text English email only; up to 20 customers per run.
+* The risk level is the model's assessment, not a credit score. See [`AI_COLLECTIONS.md`](AI_COLLECTIONS.md).
+
 ## Workflow automations and tasks (M5, slices 1 and 2)
 
 * Triggers are events, a schedule (daily, weekly, monthly at a time in India time), an invoice N days overdue and a bill due in N days. No balance or "became true" triggers beyond these (use "An alert opens"), no branches, waits or parallel paths.

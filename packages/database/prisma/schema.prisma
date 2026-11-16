@@ -234,6 +234,8 @@ model Organization {
   workflowActionRuns   WorkflowActionRun[]
   workflowCursor       WorkflowCursor?
   tasks                Task[]
+  collectionRuns       CollectionRun[]
+  collectionDrafts     CollectionDraft[]
 
   @@map("organizations")
 }
@@ -416,35 +418,36 @@ model AuditEvent {
 
 /// Customers and vendors. One contact can be both.
 model Contact {
-  id                   String       @id @default(uuid()) @db.Uuid
-  orgId                String       @map("org_id") @db.Uuid
+  id                   String            @id @default(uuid()) @db.Uuid
+  orgId                String            @map("org_id") @db.Uuid
   name                 String
   email                String?
   phone                String?
-  taxId                String?      @map("tax_id")
+  taxId                String?           @map("tax_id")
   /// India GST: the contact's GSTIN (upper case, check character verified). Null = unregistered.
   gstin                String?
   /// India GST state code: from the GSTIN when registered; otherwise where the contact is (default place of supply).
-  stateCode            String?      @map("state_code") @db.Char(2)
+  stateCode            String?           @map("state_code") @db.Char(2)
   /// India: the contact's PAN (from the GSTIN when registered). Decides TDS/TCS rates (no PAN, individual or HUF).
-  pan                  String?      @db.Char(10)
+  pan                  String?           @db.Char(10)
   /// Default TDS (vendors) or TCS (customers) section for new documents.
-  withholdingSectionId String?      @map("withholding_section_id") @db.Uuid
+  withholdingSectionId String?           @map("withholding_section_id") @db.Uuid
   address              String?
   /// City or locality (e-invoice Loc).
   city                 String?
   /// Six-digit PIN code (e-invoice Pin).
-  pincode              String?      @db.Char(6)
-  isCustomer           Boolean      @default(false) @map("is_customer")
-  isVendor             Boolean      @default(false) @map("is_vendor")
-  paymentTermsDays     Int          @default(30) @map("payment_terms_days")
-  creditLimit          Decimal?     @map("credit_limit") @db.Decimal(24, 6)
-  isActive             Boolean      @default(true) @map("is_active")
-  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org                  Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  pincode              String?           @db.Char(6)
+  isCustomer           Boolean           @default(false) @map("is_customer")
+  isVendor             Boolean           @default(false) @map("is_vendor")
+  paymentTermsDays     Int               @default(30) @map("payment_terms_days")
+  creditLimit          Decimal?          @map("credit_limit") @db.Decimal(24, 6)
+  isActive             Boolean           @default(true) @map("is_active")
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                  Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
   documents            Document[]
   payments             Payment[]
+  collectionDrafts     CollectionDraft[]
 
   @@unique([id, orgId])
   @@index([orgId, name])
@@ -1950,4 +1953,90 @@ model Task {
   @@index([orgId, status])
   @@index([orgId, assigneeUserId, status])
   @@map("tasks")
+}
+
+// ---------------------------------------------------------------- collections (M5 slice 3)
+
+enum CollectionRunStatus {
+  RUNNING
+  DONE
+}
+
+enum CollectionDraftStatus {
+  /// The AI model is writing it.
+  DRAFTING
+  /// Written and checked; waiting for a person to send, edit or reject it.
+  READY
+  /// Approved by a person and accepted by the mail server.
+  SENT
+  /// Approved by a person, but the mail server did not accept it. It can be sent again.
+  SEND_FAILED
+  /// A person decided not to send it.
+  REJECTED
+  /// The AI model could not write it.
+  FAILED
+}
+
+/// One press of "Draft reminders": which customers were looked at, drafted for or skipped and why.
+model CollectionRun {
+  id          String              @id @default(uuid()) @db.Uuid
+  orgId       String              @map("org_id") @db.Uuid
+  status      CollectionRunStatus @default(RUNNING)
+  startedById String              @map("started_by_id") @db.Uuid
+  /// Customers with overdue invoices left out, each with the reason: [{contactId, name, reason}].
+  skipped     Json                @default("[]")
+  model       String              @db.VarChar(100)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt  DateTime?           @map("finished_at") @db.Timestamptz(6)
+  org         Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  drafts      CollectionDraft[]
+
+  @@unique([id, orgId])
+  @@index([orgId, createdAt])
+  @@map("collection_runs")
+}
+
+/// A payment reminder for one customer: the facts from the books it was written from, what
+/// the AI model wrote and why, the checks against the books, and what a person decided.
+model CollectionDraft {
+  id           String                @id @default(uuid()) @db.Uuid
+  orgId        String                @map("org_id") @db.Uuid
+  runId        String                @map("run_id") @db.Uuid
+  contactId    String                @map("contact_id") @db.Uuid
+  status       CollectionDraftStatus @default(DRAFTING)
+  toEmail      String                @map("to_email") @db.VarChar(320)
+  /// The facts the draft was written from (open invoices, payment history, earlier reminders), as given to the model.
+  facts        Json
+  risk         String?               @db.VarChar(10)
+  riskReasons  Json                  @default("[]") @map("risk_reasons")
+  /// What the model wrote, kept as written even when a person edits the email.
+  aiSubject    String?               @map("ai_subject") @db.VarChar(300)
+  aiBody       String?               @map("ai_body")
+  /// The email as it is (or was) sent: the model's words, or a person's edit.
+  subject      String?               @db.VarChar(300)
+  body         String?
+  edited       Boolean               @default(false)
+  checks       Json                  @default("[]")
+  model        String                @db.VarChar(100)
+  servedModel  String?               @map("served_model") @db.VarChar(100)
+  inputTokens  Int?                  @map("input_tokens")
+  outputTokens Int?                  @map("output_tokens")
+  errorCode    String?               @map("error_code") @db.VarChar(40)
+  errorMessage String?               @map("error_message") @db.VarChar(1000)
+  decidedById  String?               @map("decided_by_id") @db.Uuid
+  decidedAt    DateTime?             @map("decided_at") @db.Timestamptz(6)
+  decisionNote String?               @map("decision_note") @db.VarChar(500)
+  sendAttempts Int                   @default(0) @map("send_attempts")
+  /// Each send attempt: when, the SMTP answer and any error.
+  sendLog      Json                  @default("[]") @map("send_log")
+  sentAt       DateTime?             @map("sent_at") @db.Timestamptz(6)
+  createdAt    DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org          Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  run          CollectionRun         @relation(fields: [runId, orgId], references: [id, orgId], onDelete: Restrict)
+  contact      Contact               @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, status, createdAt])
+  @@index([orgId, contactId, createdAt])
+  @@map("collection_drafts")
 }

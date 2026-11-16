@@ -2054,9 +2054,69 @@
       "evidence": [
         "apps/api/test/workflow-schedules.e2e.test.ts",
         "apps/web/e2e/automations-schedule-email.test.mjs",
-        "docs/WORKFLOW_AUTOMATIONS.md"
+        "docs/WORKFLOW_AUTOMATIONS.md",
+        "apps/api/test/collections.e2e.test.ts",
+        "apps/web/e2e/collections-flow.test.mjs"
       ],
-      "notes": "Collection reminders as an automation: \"An invoice is overdue\" (N days after the due date, still not fully paid) can email the customer and give a task, once per invoice. Waiting on a real SMTP server for a live check. No reminder sequences, escalation by age or tracking of replies yet."
+      "notes": "Collection reminders as an automation: \"An invoice is overdue\" (N days after the due date, still not fully paid) can email the customer and give a task, once per invoice. Waiting on a real SMTP server for a live check. Also AI-drafted reminders with human approval on the Collections page (AR-035). No reminder sequences, escalation by age or tracking of replies yet."
+    },
+    "AR-035": {
+      "status": "Integration pending",
+      "evidence": [
+        "packages/accounting-engine/src/collections.ts",
+        "packages/accounting-engine/test/collections.test.ts",
+        "apps/api/src/collections/collections.service.ts",
+        "apps/api/test/collections.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/collections/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx",
+        "apps/web/e2e/collections-flow.test.mjs",
+        "docs/AI_COLLECTIONS.md"
+      ],
+      "notes": "The AI model (Anthropic Claude through the copilot model) drafts one plain-text reminder per customer with overdue invoices, from facts worked out from posted invoices, allocations, receipts and earlier reminders. Every amount and invoice number in a draft (or an edit) is checked against those facts, and every overdue invoice must be mentioned; a person must approve and send each one, after the balances are checked again. Tested with a scripted model and a local Messages API stand-in; waiting on ANTHROPIC_API_KEY and a real SMTP server for a live check."
+    },
+    "AGENT-024": {
+      "status": "Integration pending",
+      "evidence": [
+        "apps/api/src/collections/collections.service.ts",
+        "apps/api/test/collections.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/collections/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx",
+        "apps/web/e2e/collections-flow.test.mjs",
+        "docs/AI_COLLECTIONS.md"
+      ],
+      "notes": "Collections agent: drafting runs (up to 20 customers, most overdue first; customers with no email, a reminder waiting or one sent in the last 7 days are listed as left out), a risk level with reasons per customer, review, edit, reject or send with human approval, delivery retries, and an audit event for every step. It never sends on its own. Waiting on ANTHROPIC_API_KEY and real SMTP for a live check."
+    },
+    "WFLOW-019": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/collections/collections.service.ts",
+        "apps/api/test/collections.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/collections/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx",
+        "apps/web/e2e/collections-flow.test.mjs",
+        "docs/AI_COLLECTIONS.md"
+      ],
+      "notes": "Built: overdue invoices → AI risk assessment → drafted reminder → checks against the books → sent only once a person approves. Not built: tracking replies and a collections dashboard beyond the queue; the AI step is waiting on a live key."
+    },
+    "AUDIT-019": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/collections/collections.service.ts",
+        "apps/api/test/collections.e2e.test.ts",
+        "apps/web/e2e/collections-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx"
+      ],
+      "notes": "AI activity page (Governance): every copilot answer and reminder draft shows the model asked and the model that answered, from the provider response."
+    },
+    "AUDIT-026": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/collections/collections.service.ts",
+        "apps/api/test/collections.e2e.test.ts",
+        "apps/web/e2e/collections-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx"
+      ],
+      "notes": "AI activity page: the outcome of each AI call (answered, declined, failed, drafted) with tokens used, and for reminders what a person decided (sent, sent with edits, rejected, not delivered)."
     }
   }
 }

@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1098 |
+| Not started | 1093 |
 | Designed | 0 |
-| Implementing | 47 |
+| Implementing | 48 |
 | Implemented | 30 |
-| Tested | 165 |
-| Integration pending | 3 |
+| Tested | 167 |
+| Integration pending | 5 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 16 | 28 |
-| Accounts receivable | M2 | 43 | 31 | 12 |
+| Accounts receivable | M2 | 43 | 30 | 13 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
 | Global taxation engine | M3 | 54 | 31 | 23 |
@@ -36,14 +36,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
-| Multi-agent AI finance workforce | M5 | 60 | 59 | 1 |
-| Autonomous financial workflows | M5 | 22 | 9 | 13 |
+| Multi-agent AI finance workforce | M5 | 60 | 58 | 2 |
+| Autonomous financial workflows | M5 | 22 | 8 | 14 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 22 | 8 |
+| Continuous audit and governance | M6 | 30 | 20 | 10 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 38 | 3 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -403,11 +403,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Accounts receivable
 - Status: **Integration pending**
-- Notes: Collection reminders as an automation: "An invoice is overdue" (N days after the due date, still not fully paid) can email the customer and give a task, once per invoice. Waiting on a real SMTP server for a live check. No reminder sequences, escalation by age or tracking of replies yet.
+- Notes: Collection reminders as an automation: "An invoice is overdue" (N days after the due date, still not fully paid) can email the customer and give a task, once per invoice. Waiting on a real SMTP server for a live check. Also AI-drafted reminders with human approval on the Collections page (AR-035). No reminder sequences, escalation by age or tracking of replies yet.
 - Evidence:
   - apps/api/test/workflow-schedules.e2e.test.ts
   - apps/web/e2e/automations-schedule-email.test.mjs
   - docs/WORKFLOW_AUTOMATIONS.md
+  - apps/api/test/collections.e2e.test.ts
+  - apps/web/e2e/collections-flow.test.mjs
 
 ### AR-032 — Revenue leakage detection
 
@@ -421,6 +423,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/alerts.e2e.test.ts
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
+
+### AR-035 — Automated reminder drafting
+
+- Module: Accounts receivable
+- Status: **Integration pending**
+- Notes: The AI model (Anthropic Claude through the copilot model) drafts one plain-text reminder per customer with overdue invoices, from facts worked out from posted invoices, allocations, receipts and earlier reminders. Every amount and invoice number in a draft (or an edit) is checked against those facts, and every overdue invoice must be mentioned; a person must approve and send each one, after the balances are checked again. Tested with a scripted model and a local Messages API stand-in; waiting on ANTHROPIC_API_KEY and a real SMTP server for a live check.
+- Evidence:
+  - packages/accounting-engine/src/collections.ts
+  - packages/accounting-engine/test/collections.test.ts
+  - apps/api/src/collections/collections.service.ts
+  - apps/api/test/collections.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/collections/page.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
+  - apps/web/e2e/collections-flow.test.mjs
+  - docs/AI_COLLECTIONS.md
 
 ### AP-001 — Supplier management
 
@@ -1252,6 +1269,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/cash-flow-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/cash-flow
 
+### AGENT-024 — Collections Agent
+
+- Module: Multi-agent AI finance workforce
+- Status: **Integration pending**
+- Notes: Collections agent: drafting runs (up to 20 customers, most overdue first; customers with no email, a reminder waiting or one sent in the last 7 days are listed as left out), a risk level with reasons per customer, review, edit, reject or send with human approval, delivery retries, and an audit event for every step. It never sends on its own. Waiting on ANTHROPIC_API_KEY and real SMTP for a live check.
+- Evidence:
+  - apps/api/src/collections/collections.service.ts
+  - apps/api/test/collections.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/collections/page.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
+  - apps/web/e2e/collections-flow.test.mjs
+  - docs/AI_COLLECTIONS.md
+
 ### AGENT-060 — Provide an emergency stop and tenant-wide AI disable controls
 
 - Module: Multi-agent AI finance workforce
@@ -1405,6 +1435,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/workflows.e2e.test.ts
   - apps/web/e2e/automations-flow.test.mjs
 
+### WFLOW-019 — Invoice becomes overdue → AI assesses risk → Drafts reminder → Checks communication policy → Sends approved reminder → Monitors response → Updates collections dashboard
+
+- Module: Autonomous financial workflows
+- Status: **Implementing**
+- Notes: Built: overdue invoices → AI risk assessment → drafted reminder → checks against the books → sent only once a person approves. Not built: tracking replies and a collections dashboard beyond the queue; the AI step is waiting on a live key.
+- Evidence:
+  - apps/api/src/collections/collections.service.ts
+  - apps/api/test/collections.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/collections/page.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
+  - apps/web/e2e/collections-flow.test.mjs
+  - docs/AI_COLLECTIONS.md
+
 ### RISK-001 — Duplicate invoice detection
 
 - Module: Financial fraud and risk intelligence
@@ -1522,6 +1565,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/copilot
   - packages/database/prisma/migrations/20261102090000_ai_copilot
 
+### AUDIT-019 — Model version
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: AI activity page (Governance): every copilot answer and reminder draft shows the model asked and the model that answered, from the provider response.
+- Evidence:
+  - apps/api/src/collections/collections.service.ts
+  - apps/api/test/collections.e2e.test.ts
+  - apps/web/e2e/collections-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx
+
 ### AUDIT-024 — Approval status
 
 - Module: Continuous audit and governance
@@ -1538,6 +1592,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts
   - apps/web/e2e/approvals-flow.test.mjs
+
+### AUDIT-026 — Execution result
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: AI activity page: the outcome of each AI call (answered, declined, failed, drafted) with tokens used, and for reminders what a person decided (sent, sent with edits, rejected, not delivered).
+- Evidence:
+  - apps/api/src/collections/collections.service.ts
+  - apps/api/test/collections.e2e.test.ts
+  - apps/web/e2e/collections-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx
 
 ### AUDIT-028 — Relevant evidence references
 

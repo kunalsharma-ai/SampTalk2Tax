@@ -12,3 +12,4 @@ export * from './cashflow';
 export * from './kpis';
 export * from './alerts';
 export * from './workflows';
+export * from './collections';
