@@ -2,7 +2,7 @@
 # Build from the repository root: docker build -f apps/web/Dockerfile .
 # The web app has no database access; it reaches the API at T2T_API_URL, read when it starts.
 # Behind a TLS-inspecting proxy, pass its CA as an optional build secret: --secret id=extra_ca,src=<ca.pem>
-FROM node:22-bookworm AS build
+FROM node:26-bookworm AS build
 RUN corepack enable
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
