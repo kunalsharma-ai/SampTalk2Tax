@@ -4880,6 +4880,20 @@
         "docs/MULTI_CURRENCY.md"
       ],
       "notes": "Exchange rates page shows foreign-currency balances by account and currency at any date, carried and at a chosen rate, and the gain or loss a revaluation would post. No sensitivity ranges or hedging."
+    },
+    "PERF-007": {
+      "status": "Implemented",
+      "evidence": [
+        "packages/database/prisma/migrations/20261110090000_data_regions/migration.sql",
+        "apps/api/src/regions/regions.service.ts",
+        "apps/api/src/regions/move-org.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/test/regional-deployment.e2e.test.ts",
+        "apps/web/src/components/data-region.tsx",
+        "apps/web/e2e/regional-deployment-flow.test.mjs",
+        "docs/REGIONAL_DEPLOYMENT.md"
+      ],
+      "notes": "One deployment per region (DEPLOYMENT_REGION); organisations tagged with their data region at creation and served only there (421 WRONG_REGION elsewhere, with a link to the home region); audited operator move command. Implemented, not Production ready: no second region is running, and the data copy during a move is a manual database step."
     }
   }
 }

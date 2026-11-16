@@ -117,3 +117,7 @@ Until a security contact is published, report privately to the repository owner 
 ## Integration secrets
 
 API keys and SMTP passwords that owners and admins enter in Settings → Integrations are encrypted with AES-256-GCM before storage (key from `INTEGRATIONS_ENCRYPTION_KEY`, or derived from `JWT_SECRET` with HKDF-SHA256 under its own label), in a tenant table with forced row-level security. They are never returned to the browser or written to the audit trail (only whether they changed and their last four characters). Only `org.manage` can see or change integrations. On a public server, mail servers on private, loopback or link-local addresses and unencrypted SMTP are refused, and the connection goes to the address checked. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+## Data residency
+
+Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).

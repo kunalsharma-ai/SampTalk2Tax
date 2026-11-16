@@ -36,6 +36,8 @@ import { AppConfig, CONFIG } from './config';
 import { GstController } from './gst/gst.controller';
 import { GstService } from './gst/gst.service';
 import { HealthController } from './health/health.controller';
+import { RegionsController } from './regions/regions.controller';
+import { RegionsService } from './regions/regions.service';
 import { JournalsController } from './journals/journals.controller';
 import { JournalsService } from './journals/journals.service';
 import { InvitationLinksController, OrganizationsController } from './organizations/organizations.controller';
@@ -138,6 +140,7 @@ export class AppModule {
       module: AppModule,
       controllers: [
         HealthController,
+        RegionsController,
         AuthController,
         OrganizationsController,
         InvitationLinksController,
@@ -199,6 +202,7 @@ export class AppModule {
         TasksController,
       ],
       providers: [
+        RegionsService,
         { provide: CONFIG, useValue: config },
         prismaProvider,
         TokensService,

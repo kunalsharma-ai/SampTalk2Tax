@@ -67,6 +67,8 @@ docker compose --profile app up --build   # API + Postgres
 | `SMTP_TIMEOUT_SECONDS` | no | Longest one SMTP delivery may take. Default 20 |
 | `INTEGRATIONS_ENCRYPTION_KEY` | no | Encrypts the API keys and SMTP passwords organisations enter in Settings → Integrations (AES-256-GCM). Unset: a key derived from `JWT_SECRET`. Changing either means those secrets must be entered again (the page says so) |
 | `APP_URL` | no | The web app's public address, for links in emails to members. Default `http://localhost:3000` |
+| `DEPLOYMENT_REGION`, `DEPLOYMENT_REGION_NAME` | no | The region this deployment serves (default `local`, `Local server`). Organisations are tagged with it; see [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md) |
+| `REGION_DIRECTORY` | no | JSON of the other regions and their web addresses, used to point people to an organisation's home region |
 | `TEST_DATABASE_URL` | tests | Must contain "test" |
 | `DEMO_PASSWORD` | no | Fixed password for the seeded demo user |
 | `T2T_API_URL` | web | API base URL used by the web app's server-side proxy. Default `http://localhost:4000` |

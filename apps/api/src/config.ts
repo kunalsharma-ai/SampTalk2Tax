@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const RegionDirectory = z.record(
+  z.string().regex(/^[a-z0-9-]{2,32}$/, 'region codes are 2-32 lowercase letters, digits or dashes'),
+  z.object({ name: z.string().trim().min(1).max(80), appUrl: z.string().url().refine((u) => /^https?:\/\//.test(u), 'must be http(s)') }).strict(),
+);
+
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
@@ -93,6 +98,37 @@ const schema = z.object({
     .pipe(z.string().min(32, 'INTEGRATIONS_ENCRYPTION_KEY must be at least 32 characters').optional()),
   /** The web app's address, used for links in emails to members. */
   APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
+  /**
+   * Regional deployment. Each deployment (this API and its database) serves one region, and
+   * every organisation's data lives in the region it was created in. A short code such as
+   * "in-mumbai" or "eu-frankfurt".
+   */
+  DEPLOYMENT_REGION: z.string().trim().regex(/^[a-z0-9-]{2,32}$/, 'DEPLOYMENT_REGION must be 2-32 lowercase letters, digits or dashes').default('local'),
+  /** The region's name as people read it, such as "India (Mumbai)". */
+  DEPLOYMENT_REGION_NAME: z.string().trim().min(1).max(80).default('Local server'),
+  /**
+   * The other regions, as JSON: {"eu-frankfurt":{"name":"European Union (Frankfurt)","appUrl":"https://eu.example.com"}}.
+   * People whose organisation lives elsewhere are pointed to its region's app.
+   */
+  REGION_DIRECTORY: z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (!v || !v.trim()) return {} as Record<string, { name: string; appUrl: string }>;
+      let raw: unknown;
+      try {
+        raw = JSON.parse(v);
+      } catch {
+        ctx.addIssue({ code: 'custom', message: 'REGION_DIRECTORY must be JSON' });
+        return z.NEVER;
+      }
+      const parsed = RegionDirectory.safeParse(raw);
+      if (!parsed.success) {
+        ctx.addIssue({ code: 'custom', message: `REGION_DIRECTORY: ${parsed.error.issues.map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}` });
+        return z.NEVER;
+      }
+      return parsed.data;
+    }),
 }).superRefine((c, ctx) => {
   if (c.SMTP_URL && !c.EMAIL_FROM) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM is required when SMTP_URL is set' });
 });

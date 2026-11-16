@@ -247,3 +247,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Opportunity intelligence
 
 * Four fixed kinds of opportunity; take-up rates are the user's estimates; lines are revenue accounts, not products; segment margins include only tagged costs; the total of all opportunities ignores overlap. See [`OPPORTUNITY_INTELLIGENCE.md`](OPPORTUNITY_INTELLIGENCE.md).
+
+## Regional deployment
+
+* Moving an organisation between regions is an operator command plus a manual database copy; there is no automated copy or in-app request. Sign-in accounts are per region. No cloud regions are provisioned by the repository. See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).

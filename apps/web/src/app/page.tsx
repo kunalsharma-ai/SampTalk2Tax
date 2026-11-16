@@ -11,7 +11,8 @@ export default function Home() {
   const orgs = useQuery({ queryKey: ['orgs'], queryFn: () => api<Org[]>('/v1/orgs') });
   useEffect(() => {
     if (!orgs.data) return;
-    router.replace(orgs.data.length ? `/orgs/${orgs.data[0].id}` : '/onboarding');
+    const first = orgs.data.find((o) => o.dataRegion?.here !== false) ?? orgs.data[0];
+    router.replace(first ? `/orgs/${first.id}` : '/onboarding');
   }, [orgs.data, router]);
   return (
     <main id="main" className="grid min-h-screen place-items-center text-sm text-fg-muted">

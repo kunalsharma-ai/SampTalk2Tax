@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Field, Input, Table, Td, Th, Tr } from '@talk2tax/ui';
 import { useState } from 'react';
+import { DataRegionCard } from '@/components/data-region';
 import { OrganisationTimeZoneCard, PreferencesCard } from '@/components/preferences';
 import { PageHeader } from '@/components/shell';
 import { useT } from '@/lib/i18n';
@@ -35,6 +36,7 @@ export default function AccountSecurityPage() {
       <PageHeader title={t('Account and preferences')} description={t("Your language and formats, where you are signed in, and your password. These settings are for your own account and apply in every organisation, except the organisation's time zone.")} />
       <PreferencesCard />
       <OrganisationTimeZoneCard />
+      <DataRegionCard />
       <Card className="mb-6">
         <CardHeader
           title="Where you're signed in"

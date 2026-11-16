@@ -4,6 +4,7 @@ import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { z } from 'zod';
 import { PrismaService } from '../common/prisma.service';
 import { enterOrg, enterUser } from '../common/tenant-context';
+import { RegionsService } from '../regions/regions.service';
 import { IS_PUBLIC, PERMISSION } from './decorators';
 import { SessionsService } from './sessions.service';
 import { TokensService } from './tokens.service';
@@ -16,6 +17,7 @@ export class AuthGuard implements CanActivate {
     private readonly tokens: TokensService,
     private readonly prisma: PrismaService,
     private readonly sessions: SessionsService,
+    private readonly regions: RegionsService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -42,10 +44,12 @@ export class AuthGuard implements CanActivate {
       if (!z.uuid().safeParse(orgId).success) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
       const membership = await this.prisma.membership.findUnique({
         where: { orgId_userId: { orgId, userId: user.id } },
-        include: { org: { select: { functionalCurrency: true, fiscalYearStartMonth: true } } },
+        include: { org: { select: { functionalCurrency: true, fiscalYearStartMonth: true, dataRegion: true } } },
       });
       // Non-members get 404, not 403, so organization ids cannot be probed.
       if (!membership) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
+      // An organisation is served only in the region its data lives in.
+      this.regions.assertHere(membership.org.dataRegion);
       const role = membership.role as RoleName;
       if (!permission) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Route has no permission declared' });
       if (!hasPermission(role, permission)) {
