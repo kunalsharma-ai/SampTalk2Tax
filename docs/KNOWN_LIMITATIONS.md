@@ -254,7 +254,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Platform administration
 
-* Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Usage metering and monitoring are later M9 slices. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+* Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Monitoring is a later M9 slice; usage metering is in [`USAGE_METERING.md`](USAGE_METERING.md). See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
 
 ## Plans and subscriptions
 

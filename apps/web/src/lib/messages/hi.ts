@@ -150,6 +150,7 @@ export const hi: Record<string, string> = {
   'Not saved': 'सहेजा नहीं गया',
   'Organisation time zone': 'संगठन का समय क्षेत्र',
   'Where your data is kept': 'आपका डेटा कहाँ रखा जाता है',
+  Usage: 'उपयोग',
   'Help and support': 'सहायता और समर्थन',
   Help: 'मदद',
   'You are reading {name} through its support access, until {until}. Nothing can be changed, and the organisation sees every page you open.': 'आप {name} को उसकी सहायता पहुँच के ज़रिए {until} तक पढ़ रहे हैं। कुछ भी बदला नहीं जा सकता, और संगठन आपके खोले हर पेज को देखता है।',

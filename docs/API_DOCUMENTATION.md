@@ -297,6 +297,7 @@ Content-Type: application/json
 | 409 | `PAYMENTS_NOT_SET_UP`, `BILLING_PROFILE_MISSING`: no gateway takes the currency, or the seller details are missing |
 | 502 | `GATEWAY_ERROR`: the payment gateway refused or did not answer |
 | 403 | `SUPPORT_READ_ONLY`: support staff reading under the organisation's support access tried to change something |
+| 429 | `AI_CREDITS_USED_UP`, `UPLOAD_LIMIT_REACHED`: the plan's AI requests or uploads for the month are used up |
 | 409 | `TICKET_CLOSED`, `TICKET_NOT_RESOLVED`, `TICKET_ALREADY_RESOLVED`, `SUPPORT_ACCESS_ACTIVE`, `SUPPORT_ACCESS_ENDED` |
 | 421 | `WRONG_REGION` (with `region`, `regionName`, `appUrl`): the organisation's data lives in another region |
 | 429 | `RATE_LIMITED`, `TOO_MANY_ATTEMPTS` (both with `Retry-After`) |
@@ -343,3 +344,12 @@ See [`SUPPORT.md`](SUPPORT.md). The organisation's routes work while the books a
 | PUT | `/v1/admin/support/tickets/:id` | platform.support | `{priority?, assigneeId?, action?: RESOLVE\|CLOSE\|REOPEN}` |
 
 `GET /v1/orgs/:orgId` now also returns `role` and `viaSupport` (`{expiresAt}` when read under support access, otherwise null).
+
+## Usage
+
+See [`USAGE_METERING.md`](USAGE_METERING.md).
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/orgs/:orgId/usage` | members | This month's AI requests and uploads against the plan, by day, and six months of history |
+| GET | `/v1/admin/usage?month=YYYY-MM` | platform.read | Every organisation's use in a month against its plan |

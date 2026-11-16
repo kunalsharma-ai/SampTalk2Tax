@@ -29707,9 +29707,22 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/usage.ts",
+        "packages/accounting-engine/test/usage.test.ts",
+        "packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/usage/usage.controller.ts",
+        "apps/api/test/usage.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx",
+        "apps/web/src/app/admin/usage/page.tsx",
+        "apps/web/e2e/usage-flow.test.mjs",
+        "docs/USAGE_METERING.md",
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/ai-control/ai-control.service.ts"
+      ],
+      "notes": "Each plan's monthly AI requests are metered (one per answered model call, any agent, own key or Talk2Tax's) and enforced before every model call (429 AI_CREDITS_USED_UP). Buying extra credits beyond the plan is not built."
     },
     {
       "id": "SUBS-019",
@@ -29731,9 +29744,21 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/usage.ts",
+        "packages/accounting-engine/test/usage.test.ts",
+        "packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/usage/usage.controller.ts",
+        "apps/api/test/usage.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx",
+        "apps/web/src/app/admin/usage/page.tsx",
+        "apps/web/e2e/usage-flow.test.mjs",
+        "docs/USAGE_METERING.md",
+        "apps/api/src/attachments/attachments.service.ts"
+      ],
+      "notes": "Each plan's monthly uploads are counted per stored attachment and enforced inside the upload's transaction under a per-organisation lock (429 UPLOAD_LIMIT_REACHED); refused and duplicate files are not counted."
     },
     {
       "id": "SUBS-020",
@@ -30400,9 +30425,20 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/usage.ts",
+        "packages/accounting-engine/test/usage.test.ts",
+        "packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/usage/usage.controller.ts",
+        "apps/api/test/usage.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx",
+        "apps/web/src/app/admin/usage/page.tsx",
+        "apps/web/e2e/usage-flow.test.mjs",
+        "docs/USAGE_METERING.md"
+      ],
+      "notes": "Platform admin → Usage: AI requests and tokens and uploads per organisation per month against each plan, fullest first, with totals and organisations at or near a limit."
     },
     {
       "id": "ADMIN-009",

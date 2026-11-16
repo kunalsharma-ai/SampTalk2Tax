@@ -7,6 +7,7 @@ import { OrgContext } from '../auth/decorators';
 import { ExpensesService } from '../expenses/expenses.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
+import { UsageService } from '../usage/usage.service';
 
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_PER_RECORD = 20;
@@ -44,6 +45,7 @@ export class AttachmentsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly expenses: ExpensesService,
+    private readonly usage: UsageService,
   ) {}
 
   async list(org: Org, actor: { id: string }, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
@@ -74,6 +76,8 @@ export class AttachmentsService {
       if (count >= MAX_PER_RECORD) throw new DomainError('TOO_MANY_FILES', `A record can have at most ${MAX_PER_RECORD} files`, HttpStatus.CONFLICT);
       const same = await tx.attachment.findFirst({ where: { orgId: org.id, entityType: input.entityType, entityId: input.entityId, sha256, removedAt: null }, select: { id: true } });
       if (same) throw new DomainError('DUPLICATE_FILE', 'This file is already attached to this record', HttpStatus.CONFLICT, { attachmentId: same.id });
+      // Counted against the plan's uploads for the month (refused past it).
+      await this.usage.takeUpload(tx, org.id, input.content.length);
       const a = await tx.attachment.create({
         data: {
           orgId: org.id,
