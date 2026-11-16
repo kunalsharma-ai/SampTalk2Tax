@@ -32548,9 +32548,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/disaster.ts",
+        "packages/accounting-engine/test/disaster.test.ts",
+        "packages/database/prisma/migrations/20261105180000_disaster_simulation/migration.sql",
+        "apps/api/src/disasters",
+        "apps/api/test/disasters.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/disasters",
+        "apps/web/e2e/disaster-simulation-flow.test.mjs",
+        "docs/DISASTER_SIMULATION.md"
+      ],
+      "notes": "Customer default (write-off of the customer's balance and loss of its share of sales), supplier failure (lost sales until replaced, then a share-weighted cost rise), liquidity shock (frozen cash, withdrawn credit, late payers), operational disruption (lost sales, recovery cost, insurance) and demand collapse, built from the organisation's own customers, suppliers and cash and played through the digital twin; each shock also measured alone; seven standard stress tests ranked worst first; saved simulations re-run on the latest books and can be copied into a twin scenario."
     },
     {
       "id": "INNOV-011",

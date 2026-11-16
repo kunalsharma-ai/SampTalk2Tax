@@ -276,6 +276,7 @@ model Organization {
   closeAiReviews         CloseAiReview[]
   closeAdjustments       CloseAdjustment[]
   forecastLabRuns        ForecastLabRun[]
+  disasterSimulations    DisasterSimulation[]
 
   @@map("organizations")
 }
@@ -3282,4 +3283,27 @@ model ForecastLabRun {
   @@unique([orgId, number])
   @@index([orgId, baseMonth])
   @@map("forecast_lab_runs")
+}
+
+/// A saved disaster simulation: the shocks only. Every run reads the baseline afresh from the
+/// posted books and plays the shocks through the digital twin. Never writes to the ledger.
+model DisasterSimulation {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  number         Int
+  name           String       @db.VarChar(120)
+  description    String?      @db.VarChar(1000)
+  baselineMonths Int          @map("baseline_months")
+  horizonMonths  Int          @map("horizon_months")
+  /// [{ kind, ... }] as checked by the engine's checkShock
+  shocks         Json
+  createdById    String       @map("created_by_id") @db.Uuid
+  updatedById    String       @map("updated_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([orgId, name])
+  @@map("disaster_simulations")
 }

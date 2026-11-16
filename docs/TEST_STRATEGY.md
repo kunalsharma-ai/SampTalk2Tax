@@ -123,6 +123,8 @@ Decision memory (M7 slice 7): `packages/accounting-engine/test/decisions.test.ts
 
 Forecast evaluation lab: `packages/accounting-engine/test/forecast-lab.test.ts` (4) covers each method, the accuracy measures, the rolling origin and ranking; `apps/api/test/forecast-lab.e2e.test.ts` (3) covers backtests on twelve months of books, saving a run, measuring an older run against the books, the database lock on saved runs, audit, permissions and tenant isolation; `apps/web/e2e/forecast-lab-flow.test.mjs` runs the lab and saves a run in the browser.
 
+Disaster simulation: `packages/accounting-engine/test/disaster.test.ts` (6) checks each shock's figures by hand, shocks together, validation and the standard stress tests; `apps/api/test/disasters.e2e.test.ts` (5) covers figures from posted invoices and bills, simulation, validation, stress tests, saving, copying to the twin, audit, no postings, permissions and tenant isolation; `apps/web/e2e/disaster-simulation-flow.test.mjs` runs, saves, extends, copies and deletes a simulation in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

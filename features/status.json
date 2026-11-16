@@ -4452,6 +4452,20 @@
         "docs/FORECAST_LAB.md"
       ],
       "notes": "Eight forecasting methods (last month, 3/6/12-month averages, same month last year, last month plus trend, straight-line trend, exponential smoothing) backtested with a rolling origin over 6, 12 or 18 months on revenue, cost of sales, operating expenses, net income and net cash flow; ranked by WAPE with MAE, bias, within-10% and error by months ahead; saved runs are immutable and their forecasts are measured against the books once each month is over."
+    },
+    "INNOV-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/disaster.ts",
+        "packages/accounting-engine/test/disaster.test.ts",
+        "packages/database/prisma/migrations/20261105180000_disaster_simulation/migration.sql",
+        "apps/api/src/disasters",
+        "apps/api/test/disasters.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/disasters",
+        "apps/web/e2e/disaster-simulation-flow.test.mjs",
+        "docs/DISASTER_SIMULATION.md"
+      ],
+      "notes": "Customer default (write-off of the customer's balance and loss of its share of sales), supplier failure (lost sales until replaced, then a share-weighted cost rise), liquidity shock (frozen cash, withdrawn credit, late payers), operational disruption (lost sales, recovery cost, insurance) and demand collapse, built from the organisation's own customers, suppliers and cash and played through the digital twin; each shock also measured alone; seven standard stress tests ranked worst first; saved simulations re-run on the latest books and can be copied into a twin scenario."
     }
   }
 }

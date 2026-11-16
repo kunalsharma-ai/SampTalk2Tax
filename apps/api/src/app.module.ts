@@ -76,6 +76,8 @@ import { BenchmarkingService } from './benchmarking/benchmarking.service';
 import { GraphController } from './graph/graph.controller';
 import { GraphService } from './graph/graph.service';
 import { DecisionsController } from './decisions/decisions.controller';
+import { DisastersController } from './disasters/disasters.controller';
+import { DisastersService } from './disasters/disasters.service';
 import { DecisionsService } from './decisions/decisions.service';
 import { ForecastLabController } from './forecast-lab/forecast-lab.controller';
 import { ForecastLabService } from './forecast-lab/forecast-lab.service';
@@ -162,6 +164,7 @@ export class AppModule {
         BenchmarkingController,
         GraphController,
         DecisionsController,
+    DisastersController,
         ForecastLabController,
         IntegrationsController,
         SignaturesController,
@@ -220,6 +223,7 @@ export class AppModule {
         BenchmarkingService,
         GraphService,
         DecisionsService,
+    DisastersService,
         ForecastLabService,
         IntegrationsService,
         DimensionsService,
