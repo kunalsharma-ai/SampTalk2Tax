@@ -259,12 +259,12 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-014 | India Module | capability | GSTR-related reporting | Tested |
 | TAX-015 | India Module | capability | E-invoicing | Not started |
 | TAX-016 | India Module | capability | E-way bill workflows | Not started |
-| TAX-017 | India Module | capability | TDS | Not started |
-| TAX-018 | India Module | capability | TCS | Not started |
+| TAX-017 | India Module | capability | TDS | Tested |
+| TAX-018 | India Module | capability | TCS | Tested |
 | TAX-019 | India Module | capability | Income tax preparation support | Not started |
 | TAX-020 | India Module | capability | Corporate tax support | Not started |
 | TAX-021 | India Module | capability | Advance tax calculations | Not started |
-| TAX-022 | India Module | capability | Tax payment tracking | Not started |
+| TAX-022 | India Module | capability | Tax payment tracking | Implementing |
 | TAX-023 | India Module | capability | Statutory deadline calendars | Not started |
 | TAX-024 | India Module | capability | Tax notices | Not started |
 | TAX-025 | India Module | capability | Compliance document management | Not started |
@@ -279,7 +279,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-034 | Global Tax Modules | capability | Canadian GST/HST | Not started |
 | TAX-035 | Global Tax Modules | capability | Australian GST | Not started |
 | TAX-036 | Global Tax Modules | capability | Singapore GST | Not started |
-| TAX-037 | Global Tax Modules | capability | Withholding taxes | Not started |
+| TAX-037 | Global Tax Modules | capability | Withholding taxes | Implementing |
 | TAX-038 | Global Tax Modules | capability | Cross-border tax reporting | Not started |
 | TAX-039 | Global Tax Modules | capability | Country-specific invoice formats | Not started |
 | TAX-040 | Global Tax Modules | capability | Electronic invoicing requirements | Not started |

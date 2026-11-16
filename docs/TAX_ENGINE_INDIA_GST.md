@@ -21,9 +21,11 @@ invoice form run the same code, so the tax shown while typing is the tax that po
 | ITC set-off | CGST Act s.49(5), s.49A and rule 88A: IGST credit first (IGST, then CGST and SGST/UTGST, giving first to the head whose own credit falls short), then CGST credit (CGST, then IGST) and SGST/UTGST credit (SGST/UTGST, then IGST). CGST never pays SGST and the reverse | `setOffItc` |
 | Ledger check | GSTR-3B compares the document totals with the month's movement on the six GST accounts and flags any difference (for example a manual journal on a GST account) | `GstService.ledgerMovements` |
 
+Reverse charge on purchases and import of services, and TDS/TCS, are described in [`TAX_ENGINE_INDIA_TDS_TCS.md`](TAX_ENGINE_INDIA_TDS_TCS.md).
+
 ## Not supported yet (do not rely on these)
 
-* Reverse charge (s.9(3)/9(4)), imports of goods or services, SEZ supplies, deemed exports, exports under LUT/bond without IGST, composition scheme, input service distributor, TCS by e-commerce operators.
+* Imports of goods, SEZ supplies, deemed exports, exports under LUT/bond without IGST, composition scheme, input service distributor, TCS by e-commerce operators.
 * Blocked credits (s.17(5)), ITC reversals (rule 42/43, 180 days), ITC brought forward between months, GSTR-2A/2B matching, interest and late fees.
 * E-invoicing (IRN/QR), e-way bills, GSTN JSON export and any filing. Talk2Tax does not connect to the GST portal (TAX-027).
 * Units of measure (UQC) for the HSN summary, an HSN master or rate lookup, cess, multiple GSTINs per organisation, amendments of earlier periods.

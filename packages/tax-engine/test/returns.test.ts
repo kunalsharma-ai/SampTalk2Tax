@@ -125,4 +125,25 @@ describe('GSTR-3B', () => {
     expect(r.setOff.cash).toEqual({ igst: '738.00', cgst: '810.00', sgst: '810.00' });
     expect(r.warnings).toEqual([]);
   });
+
+  it('reports reverse-charge purchases in 3.1(d) and 4(A)(2)/(3), and pays their tax in cash', () => {
+    const docs = [
+      doc({ kind: 'INVOICE', total: '11800.00', lines: [line('10000.00', '18', { cgst: '900.00', sgst: '900.00' })] }),
+      // Legal services from an advocate (reverse charge, intra-state).
+      doc({ kind: 'BILL', reverseCharge: true, supplierState: '29', total: '20000.00', lines: [line('20000.00', '18', { cgst: '1800.00', sgst: '1800.00' }, { hsnCode: '998211' })] }),
+      // Software subscription from a supplier outside India (import of services).
+      doc({ kind: 'BILL', reverseCharge: true, supplierState: '96', nature: 'INTER', total: '5000.00', lines: [line('5000.00', '18', { igst: '900.00' }, { hsnCode: '997331' })] }),
+      doc({ kind: 'BILL', gstin: '29ZZZCZ0001Z1ZX', total: '1180.00', lines: [line('1000.00', '18', { cgst: '90.00', sgst: '90.00' })] }),
+    ];
+    const r = gstr3bSummary(docs);
+    expect(r.inwardReverseCharge).toEqual({ taxable: '25000.00', igst: '900.00', cgst: '1800.00', sgst: '1800.00' });
+    expect(r.itcImportServices).toEqual({ igst: '900.00', cgst: '0.00', sgst: '0.00' });
+    expect(r.itcReverseCharge).toEqual({ igst: '0.00', cgst: '1800.00', sgst: '1800.00' });
+    expect(r.itc).toEqual({ igst: '0.00', cgst: '90.00', sgst: '90.00' });
+    expect(r.itcTotal).toEqual({ igst: '900.00', cgst: '1890.00', sgst: '1890.00' });
+    expect(r.reverseChargeCash).toEqual({ igst: '900.00', cgst: '1800.00', sgst: '1800.00' });
+    // Forward-charge 900/900 is fully covered by credit (IGST credit is used first, rule 88A); the rest carries forward.
+    expect(r.setOff.cash).toEqual({ igst: '0.00', cgst: '0.00', sgst: '0.00' });
+    expect(r.setOff.carryForward).toEqual({ igst: '0.00', cgst: '1890.00', sgst: '990.00' });
+  });
 });

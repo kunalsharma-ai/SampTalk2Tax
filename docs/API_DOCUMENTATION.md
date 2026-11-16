@@ -106,7 +106,15 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/orgs/:orgId/gst/states` | contacts.read | GST state codes, whether each levies SGST or UTGST, and 96 for exports |
 | `POST /v1/orgs/:orgId/gst/check-gstin` | contacts.read | Format and check character of a GSTIN (no portal lookup) |
 | `GET /v1/orgs/:orgId/gst/returns/gstr-1?from=&to=` | reports.read | GSTR-1 working paper (B2B, B2CL, exports, B2CS, credit notes, nil/exempt, HSN, documents issued) |
-| `GET /v1/orgs/:orgId/gst/returns/gstr-3b?from=&to=` | reports.read | GSTR-3B working paper with ITC set-off and a comparison with the GST ledger accounts |
+| `GET /v1/orgs/:orgId/gst/returns/gstr-3b?from=&to=` | reports.read | GSTR-3B working paper with ITC set-off, reverse charge (3.1(d), 4(A)(2), 4(A)(3)) and a comparison with the GST ledger accounts |
+| `GET` / `PUT /v1/orgs/:orgId/withholding/settings` | accounts.read / accounts.manage | TAN and the TDS and TCS payable accounts (`tan`, optional `tdsPayableAccountId`, `tcsPayableAccountId`; created as 2320/2321 otherwise). India and INR only; accounts frozen once tax is withheld |
+| `GET /v1/orgs/:orgId/withholding/templates` | accounts.read | Income-tax Act 2025 s.393(1) section templates |
+| `GET` / `POST /v1/orgs/:orgId/withholding/sections` | contacts.read / accounts.manage | List sections; create one from `{ template }` or a full rule (`kind`, `code`, `name`, rates, thresholds, `thresholdWindow`, `thresholdBasis`, `validFrom`) |
+| `PATCH /v1/orgs/:orgId/withholding/sections/:id` | accounts.manage | Rename or (de)activate; the rule itself never changes |
+| `POST /v1/orgs/:orgId/withholding/preview` | contacts.read | TDS/TCS for a draft (`documentKind`, `contactId`, `sectionId`, `issueDate`, `amount`, optional `documentId`): subject amount, base, rate, amount and the reason |
+| `GET /v1/orgs/:orgId/withholding/register?kind=&from=&to=` | reports.read | Register rows, totals by section, to deposit with due dates and overdue, and the payable account check (period of a year or less) |
+| `GET` / `POST /v1/orgs/:orgId/withholding/deposits` | reports.read / journals.post | List challans; record one (`kind`, `documentIds`, `depositDate`, `bankAccountId`, `challanReference`, optional `interestAmount` and `interestAccountId`), posting Dr payable, Cr bank |
+| `POST /v1/orgs/:orgId/withholding/deposits/:id/void` | journals.reverse | Void a challan (`reason`); reverses its journal |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 

@@ -41,6 +41,8 @@ import { PeriodsController } from './periods/periods.controller';
 import { PeriodsService } from './periods/periods.service';
 import { ReportsController } from './reports/reports.controller';
 import { ReportsService } from './reports/reports.service';
+import { WithholdingController } from './withholding/withholding.controller';
+import { WithholdingService } from './withholding/withholding.service';
 
 /**
  * Modular monolith root. Domains are separated by folder and service boundary so they
@@ -70,6 +72,7 @@ export class AppModule {
         ApprovalsController,
         ExpensesController,
         GstController,
+        WithholdingController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -94,6 +97,7 @@ export class AppModule {
         ApprovalsService,
         ExpensesService,
         GstService,
+        WithholdingService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },

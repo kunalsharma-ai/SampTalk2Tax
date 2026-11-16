@@ -58,7 +58,7 @@ export interface Journal {
   displayNumber: string | null;
   date: string;
   type: string;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX';
   status: 'DRAFT' | 'POSTED';
   memo: string | null;
   reference: string | null;
@@ -108,6 +108,10 @@ export interface Contact {
   gstin: string | null;
   /** India GST state code (from the GSTIN when registered). */
   stateCode: string | null;
+  /** India PAN (from the GSTIN when registered); decides TDS/TCS rates. */
+  pan: string | null;
+  /** Default TDS (vendor) or TCS (customer) section. */
+  withholdingSectionId: string | null;
   address: string | null;
   isCustomer: boolean;
   isVendor: boolean;
@@ -209,7 +213,12 @@ export interface Gstr3b {
   outwardNilExempt: string;
   outwardNonGst: string;
   interStateUnregistered: { placeOfSupply: string; taxable: string; igst: string }[];
+  inwardReverseCharge: TaxHeads;
+  itcImportServices: Heads;
+  itcReverseCharge: Heads;
   itc: Heads;
+  itcTotal: Heads;
+  reverseChargeCash: Heads;
   inwardExempt: { inter: string; intra: string };
   inwardNonGst: { inter: string; intra: string };
   setOff: { liability: Heads; credit: Heads; used: { igst: Heads; cgst: Heads; sgst: Heads }; cash: Heads; carryForward: Heads };
@@ -259,6 +268,18 @@ export interface DocumentLine {
 
 export interface FinancialDocument extends DocumentSummary {
   memo: string | null;
+  reverseCharge: boolean;
+  reverseChargeTax: string;
+  withholding: {
+    kind: WithholdingKind;
+    section: { id: string; code: string; name: string };
+    subject: string;
+    base: string;
+    rate: string;
+    amount: string;
+    pan: string | null;
+    deposit: { id: string; number: string; date: string; challanReference: string } | null;
+  } | null;
   gst: {
     placeOfSupply: string;
     supplierState: string;
@@ -367,7 +388,7 @@ export interface LedgerLink {
   date: string;
   memo: string | null;
   reference: string | null;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX';
   amount: string;
   payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
 }
@@ -600,4 +621,92 @@ export interface InvitationPreview {
   expiresAt: string;
   forYou: boolean;
   alreadyMember: boolean;
+}
+
+// ---------------------------------------------------------------- India TDS / TCS
+
+export type WithholdingKind = 'TDS' | 'TCS';
+
+export type WithholdingSettings =
+  | { configured: false }
+  | { configured: true; tan: string; accounts: { tdsPayable: { id: string; code: string; name: string }; tcsPayable: { id: string; code: string; name: string } } };
+
+export interface WithholdingSection {
+  id: string;
+  kind: WithholdingKind;
+  code: string;
+  name: string;
+  rate: string;
+  rateIndividualHuf: string | null;
+  rateNoPan: string;
+  singleThreshold: string | null;
+  aggregateThreshold: string | null;
+  thresholdWindow: 'TAX_YEAR' | 'MONTH';
+  thresholdBasis: 'WHOLE' | 'EXCESS';
+  validFrom: string;
+  source: string | null;
+  isActive: boolean;
+}
+
+export interface WithholdingTemplate extends Omit<WithholdingSection, 'id' | 'isActive' | 'thresholdWindow' | 'thresholdBasis'> {
+  window: 'TAX_YEAR' | 'MONTH';
+  basis: 'WHOLE' | 'EXCESS';
+}
+
+export interface WithholdingPreview {
+  kind: WithholdingKind;
+  section: { id: string; code: string; name: string };
+  pan: string | null;
+  subject: string;
+  base: string;
+  rate: string;
+  amount: string;
+  reason: string;
+}
+
+export interface WithholdingRegisterRow {
+  documentId: string;
+  kind: DocumentKind;
+  number: string;
+  status: 'POSTED' | 'VOID';
+  date: string;
+  contact: { id: string; name: string };
+  pan: string | null;
+  section: { id: string; code: string; name: string };
+  subject: string;
+  base: string;
+  rate: string;
+  amount: string;
+  dueDate: string;
+  deposit: { id: string; number: string; date: string; challanReference: string } | null;
+  overdue: boolean;
+}
+
+export interface WithholdingRegister {
+  kind: WithholdingKind;
+  tan: string;
+  from: string;
+  to: string;
+  rows: WithholdingRegisterRow[];
+  sections: { section: { id: string; code: string; name: string }; count: number; base: string; amount: string; deposited: string; pending: string }[];
+  totals: { withheld: string; deposited: string; pending: string; overdue: string };
+  ledger: { asOf: string; account: { id: string; code: string; name: string }; balance: string; expected: string; agrees: boolean };
+}
+
+export interface WithholdingDeposit {
+  id: string;
+  kind: WithholdingKind;
+  number: string;
+  status: 'POSTED' | 'VOID';
+  depositDate: string;
+  challanReference: string;
+  bankAccount: { id: string; code: string; name: string };
+  taxAmount: string;
+  interestAmount: string;
+  memo: string | null;
+  journalEntryId: string;
+  voidJournalEntryId: string | null;
+  voidDate: string | null;
+  voidReason: string | null;
+  items: { documentId: string; number: string; date: string; contactName: string; amount: string }[];
 }

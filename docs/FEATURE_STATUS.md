@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1166 |
+| Not started | 1162 |
 | Designed | 0 |
-| Implementing | 31 |
+| Implementing | 33 |
 | Implemented | 28 |
-| Tested | 118 |
+| Tested | 120 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 33 | 10 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
-| Global taxation engine | M3 | 54 | 40 | 14 |
+| Global taxation engine | M3 | 54 | 36 | 18 |
 | Payroll and workforce finance | M3 | 34 | 33 | 1 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
@@ -706,11 +706,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Global taxation engine
 - Status: **Tested**
-- Notes: Invoices, credit notes, bills and vendor credits carry place of supply, supplier state, buyer/supplier GSTIN and tax by head; posted GST facts are immutable (DB trigger). No PDF tax invoice layout or e-invoice IRN yet.
+- Notes: Invoices, credit notes, bills and vendor credits carry place of supply, supplier state, buyer/supplier GSTIN and tax by head; posted GST facts are immutable (DB trigger). Bills and vendor credits can be under reverse charge (the vendor is owed the amount without GST; the tax posts as output liability and input credit), including import of services from a vendor outside India (IGST). No PDF tax invoice layout or e-invoice IRN yet.
 - Evidence:
   - apps/api/test/gst.e2e.test.ts
   - apps/web/e2e/tax-flow.test.mjs
   - apps/web/src/components/ledger/document-form.tsx
+  - apps/web/e2e/withholding-flow.test.mjs
 
 ### TAX-011 — HSN/SAC
 
@@ -725,7 +726,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Global taxation engine
 - Status: **Tested**
-- Notes: ITC from bills less vendor credits, set off per CGST Act s.49/49A and rule 88A. Blocked credits (s.17(5)), reversals, ITC brought forward and GSTR-2B matching are not modelled.
+- Notes: ITC from bills less vendor credits, including reverse-charge tax and import of services (GSTR-3B 4(A)(2), 4(A)(3), 4(A)(5)), set off per CGST Act s.49/49A and rule 88A; reverse-charge tax is paid in cash (s.49(4)). Blocked credits (s.17(5)), reversals, ITC brought forward and GSTR-2B matching are not modelled.
 - Evidence:
   - packages/tax-engine/test/returns.test.ts
   - apps/api/test/gst.e2e.test.ts
@@ -748,6 +749,48 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/tax-engine/test/returns.test.ts
   - apps/api/test/gst.e2e.test.ts
   - apps/web/e2e/tax-flow.test.mjs
+
+### TAX-017 — TDS
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Income-tax Act 2025 s.393(1) templates (contractors, technical and professional fees, commission, rent, purchase of goods) or tenant-defined sections; single-document and aggregate thresholds per tax year or month, whole-amount catch-up or excess-only; PAN-based rates (individual/HUF, no-PAN). TDS on bills is worked out on the amount before GST, previewed in the form, posted to TDS payable and cuts what the vendor is owed. Register by quarter, challans (Dr TDS payable, Cr bank, optional interest) with void, and a ledger check. No lower-deduction certificates, no TDS on vendor credits or advances, no Form 26Q/140 file and nothing is filed.
+- Evidence:
+  - packages/tax-engine/src/india/withholding.ts
+  - packages/tax-engine/test/withholding.test.ts
+  - apps/api/test/withholding.e2e.test.ts
+  - apps/web/e2e/withholding-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/tax/tds-tcs
+  - apps/web/src/app/orgs/[orgId]/settings/tds-tcs
+
+### TAX-018 — TCS
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Tenant-defined TCS sections on invoices, worked out on the invoice value including GST and added to what the customer pays (TCS payable). Same register, challans and ledger check as TDS. No built-in TCS templates, no TCS on receipts, no Form 27EQ file.
+- Evidence:
+  - packages/tax-engine/test/withholding.test.ts
+  - apps/api/test/withholding.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/tds-tcs
+
+### TAX-022 — Tax payment tracking
+
+- Module: Global taxation engine
+- Status: **Implementing**
+- Notes: TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet.
+- Evidence:
+  - apps/api/src/withholding/withholding.service.ts
+  - apps/api/test/withholding.e2e.test.ts
+  - apps/web/e2e/withholding-flow.test.mjs
+
+### TAX-037 — Withholding taxes
+
+- Module: Global taxation engine
+- Status: **Implementing**
+- Notes: The engine supports one withholding (deduct or collect) per document with its own payable account; India TDS/TCS is the only jurisdiction configured.
+- Evidence:
+  - packages/tax-engine/src/india/withholding.ts
+  - packages/accounting-engine/src/documents.ts
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 

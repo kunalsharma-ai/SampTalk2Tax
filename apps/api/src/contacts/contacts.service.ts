@@ -7,6 +7,7 @@ import { todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { OrgRef, SubledgerService } from '../ledgers/subledger.service';
+import { normalizePan } from '../withholding/withholding.service';
 
 export interface ContactInput {
   name?: string;
@@ -15,6 +16,8 @@ export interface ContactInput {
   taxId?: string | null;
   gstin?: string | null;
   stateCode?: string | null;
+  pan?: string | null;
+  withholdingSectionId?: string | null;
   address?: string | null;
   isCustomer?: boolean;
   isVendor?: boolean;
@@ -68,6 +71,7 @@ export class ContactsService {
   async create(org: OrgRef, actor: { id: string }, input: ContactInput & { name: string }) {
     const data = this.validate(org, input);
     return this.prisma.$transaction(async (tx) => {
+      if (input.withholdingSectionId) await this.checkSection(tx, org.id, input.withholdingSectionId);
       const c = await tx.contact.create({
         data: {
           orgId: org.id,
@@ -77,6 +81,8 @@ export class ContactsService {
           taxId: input.taxId ?? null,
           gstin: data.gstin ?? null,
           stateCode: data.stateCode ?? null,
+          pan: normalizePan(input.pan, data.gstin) ?? null,
+          withholdingSectionId: input.withholdingSectionId ?? null,
           address: input.address ?? null,
           isCustomer: input.isCustomer ?? false,
           isVendor: input.isVendor ?? false,
@@ -97,6 +103,10 @@ export class ContactsService {
       if (input.gstin === undefined && before.gstin && data.stateCode !== undefined && data.stateCode !== before.gstin.slice(0, 2)) {
         throw new DomainError('INVALID_STATE', `${before.name}'s GSTIN is registered in state ${before.gstin.slice(0, 2)}; change the GSTIN to change the state`);
       }
+      if (input.withholdingSectionId) await this.checkSection(tx, org.id, input.withholdingSectionId);
+      // A new GSTIN brings its PAN; a PAN edit must agree with the GSTIN that stays.
+      const gstinAfter = data.gstin === undefined ? before.gstin : data.gstin;
+      const pan = input.pan !== undefined || data.gstin ? normalizePan(input.pan === undefined ? (data.gstin ? null : before.pan) : input.pan, gstinAfter) : undefined;
       const isCustomer = input.isCustomer ?? before.isCustomer;
       const isVendor = input.isVendor ?? before.isVendor;
       if (!isCustomer && !isVendor) throw new DomainError('INVALID_CONTACT', 'A contact must be a customer, a vendor or both');
@@ -115,6 +125,8 @@ export class ContactsService {
           taxId: input.taxId,
           gstin: data.gstin,
           stateCode: data.stateCode,
+          pan,
+          withholdingSectionId: input.withholdingSectionId,
           address: input.address,
           isCustomer: input.isCustomer,
           isVendor: input.isVendor,
@@ -151,6 +163,11 @@ export class ContactsService {
     return { creditLimit, gstin, stateCode };
   }
 
+  private async checkSection(tx: { withholdingSection: PrismaService['withholdingSection'] }, orgId: string, id: string) {
+    const s = await tx.withholdingSection.findFirst({ where: { id, orgId, isActive: true } });
+    if (!s) throw new DomainError('SECTION_NOT_FOUND', 'TDS/TCS section not found or inactive');
+  }
+
   private async find(orgId: string, id: string) {
     const c = await this.prisma.contact.findFirst({ where: { id, orgId } });
     if (!c) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Contact not found' });
@@ -170,6 +187,8 @@ export class ContactsService {
       taxId: c.taxId,
       gstin: c.gstin,
       stateCode: c.stateCode,
+      pan: c.pan,
+      withholdingSectionId: c.withholdingSectionId,
       address: c.address,
       isCustomer: c.isCustomer,
       isVendor: c.isVendor,

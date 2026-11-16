@@ -1,6 +1,6 @@
 'use client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addDays, computeDocument, DocumentValidationError, type TaxRateInfo } from '@talk2tax/accounting-engine';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { addDays, applyReverseCharge, computeDocument, DocumentValidationError, type TaxRateInfo } from '@talk2tax/accounting-engine';
 import { gstHeads, gstSplitter, hsnIssue, placeOfSupplyName, supplyNature, type GstCategory } from '@talk2tax/tax-engine';
 import { Alert, Button, Card, CardHeader, Input, Select, Table, Td, Th } from '@talk2tax/ui';
 import { useRouter } from 'next/navigation';
@@ -8,8 +8,8 @@ import { useMemo, useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { money, today } from '@/lib/format';
 import type { LedgerConfig } from '@/lib/ledgers';
-import { useAccounts, useContacts, useGstRegistration, useGstStates, useOrg, useTaxRates } from '@/lib/org';
-import { can, type AccountType, type DocumentKind, type FinancialDocument } from '@/lib/types';
+import { useAccounts, useContacts, useGstRegistration, useGstStates, useOrg, useTaxRates, useWithholdingSections, useWithholdingSettings } from '@/lib/org';
+import { can, type AccountType, type DocumentKind, type FinancialDocument, type WithholdingPreview } from '@/lib/types';
 import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
 
 interface LineState {
@@ -24,6 +24,8 @@ interface LineState {
 
 const QTY = /^\d{0,12}(\.\d{0,6})?$/;
 const TYPE_ORDER: AccountType[] = ['REVENUE', 'EXPENSE', 'ASSET', 'LIABILITY', 'EQUITY'];
+/** Reverse charge in the form: input-tax placeholders pair with output-tax placeholders. */
+const RCM_ACCOUNTS = new Map([['cgst', 'out-cgst'], ['sgst', 'out-sgst'], ['igst', 'out-igst']]);
 
 export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string }) {
   const { org, orgId } = useOrg();
@@ -32,6 +34,8 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const taxRates = useTaxRates();
   const gstReg = useGstRegistration();
   const states = useGstStates();
+  const wSettings = useWithholdingSettings();
+  const wSections = useWithholdingSections();
   const router = useRouter();
   const qc = useQueryClient();
   const c = org?.functionalCurrency ?? 'INR';
@@ -51,6 +55,9 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
       : [blank(1)],
   );
   const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? '');
+  const [reverseCharge, setReverseCharge] = useState(existing?.reverseCharge ?? false);
+  const [sectionId, setSectionId] = useState(existing?.withholding?.section.id ?? (contactId ? '' : ''));
+  const [sectionTouched, setSectionTouched] = useState(!!existing);
   const [newContact, setNewContact] = useState<ContactDraft | null>(null);
   const [override, setOverride] = useState(false);
 
@@ -66,6 +73,11 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
     [taxRates.data, l.ledger],
   );
   const selectedContact = contacts.data?.find((x) => x.id === contact);
+  // TDS on bills, TCS on invoices; the contact's default section applies until one is chosen here.
+  const wKind = kind === 'BILL' ? 'TDS' : kind === 'INVOICE' ? 'TCS' : null;
+  const wOptions = wKind && wSettings.data?.configured ? (wSections.data ?? []).filter((x) => x.kind === wKind) : [];
+  const defaultSection = !sectionTouched && selectedContact?.withholdingSectionId && wOptions.some((x) => x.id === selectedContact.withholdingSectionId) ? selectedContact.withholdingSectionId : '';
+  const section = sectionTouched ? sectionId : defaultSection;
 
   // India GST: from the registration's effective date every line uses a GST rate, split by place of supply.
   const reg = gstReg.data?.registered ? gstReg.data : null;
@@ -99,22 +111,48 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
           if (h) issues.push(`Line ${i + 1}: ${h}`);
         }
       });
-      if (l.ledger === 'PURCHASES' && selectedContact && !selectedContact.gstin && payloadLines.some((x) => x.taxRateId && gstCategories.get(x.taxRateId) === 'TAXABLE' && taxMap.get(x.taxRateId)?.rate !== '0')) {
-        issues.push(`${selectedContact.name} has no GSTIN, so their bill cannot carry GST`);
+      const charged = payloadLines.some((x) => x.taxRateId && gstCategories.get(x.taxRateId) === 'TAXABLE' && taxMap.get(x.taxRateId)?.rate !== '0');
+      if (l.ledger === 'PURCHASES' && selectedContact && charged && !reverseCharge) {
+        if (selectedContact.stateCode === '96') issues.push(`${selectedContact.name} is outside India: services from abroad are under reverse charge (tick Reverse charge)`);
+        else if (!selectedContact.gstin) issues.push(`${selectedContact.name} has no GSTIN, so their bill cannot carry GST. Tick Reverse charge if you pay the GST.`);
       }
+      if (reverseCharge && !charged && payloadLines.length) issues.push('A reverse-charge document needs at least one line with a GST rate above 0%');
     }
     try {
-      const d = computeDocument(payloadLines, c, taxMap, splitter);
+      let d = computeDocument(payloadLines, c, taxMap, splitter);
+      if (gstMode && reverseCharge) d = applyReverseCharge(d, RCM_ACCOUNTS);
       const heads = gstHeads(d.lines.flatMap((x) => x.taxComponents));
-      return { ok: issues.length === 0, issues, lines: d.lines, subtotal: d.subtotal.toFixed(2), tax: d.taxTotal.toFixed(2), total: d.total.toFixed(2), heads };
+      return { ok: issues.length === 0, issues, lines: d.lines, subtotal: d.subtotal.toFixed(2), tax: d.taxTotal.toFixed(2), total: d.total.toFixed(2), rcmTax: d.reverseCharge?.tax.toFixed(2) ?? null, heads };
     } catch (e) {
-      return { ok: false, issues: [...issues, ...(e instanceof DocumentValidationError ? e.issues : [(e as Error).message])], lines: [], subtotal: null, tax: null, total: null, heads: null };
+      return { ok: false, issues: [...issues, ...(e instanceof DocumentValidationError ? e.issues : [(e as Error).message])], lines: [], subtotal: null, tax: null, total: null, rcmTax: null, heads: null };
     }
-  }, [payloadLines, c, taxMap, contact, l.contact, l.ledger, gstMode, pos, supplierState, selectedContact, gstCategories, splitter]);
+  }, [payloadLines, c, taxMap, contact, l.contact, l.ledger, gstMode, pos, supplierState, selectedContact, gstCategories, splitter, reverseCharge]);
+
+  // The tax to withhold depends on the contact's posted documents, so the server works it out.
+  const wAmount = calc.subtotal === null ? null : wKind === 'TDS' ? calc.subtotal : (Number(calc.subtotal) + Number(calc.tax)).toFixed(2);
+  const preview = useQuery({
+    queryKey: ['withholding-preview', orgId, contact, section, issueDate, wAmount, existing?.id],
+    enabled: !!section && !!contact && !!issueDate && wAmount !== null && !!wKind,
+    queryFn: () => api<WithholdingPreview>(`/v1/orgs/${orgId}/withholding/preview`, { method: 'POST', body: { documentKind: kind, contactId: contact, sectionId: section, issueDate, amount: wAmount, documentId: existing?.id } }),
+    retry: false,
+  });
+  const wTax = section && preview.data ? preview.data.amount : '0.00';
+  const settle = calc.total === null ? null : (Number(calc.total) + (wKind === 'TCS' ? 1 : -1) * Number(wTax)).toFixed(2);
 
   const save = useMutation({
     mutationFn: (post: boolean) => {
-      const body = { kind, contactId: contact, issueDate, dueDate: isCharge && dueDate ? dueDate : undefined, reference: reference || null, memo: memo || null, placeOfSupply: gstMode ? pos || null : null, lines: payloadLines };
+      const body = {
+        kind,
+        contactId: contact,
+        issueDate,
+        dueDate: isCharge && dueDate ? dueDate : undefined,
+        reference: reference || null,
+        memo: memo || null,
+        placeOfSupply: gstMode ? pos || null : null,
+        reverseCharge: gstMode && l.ledger === 'PURCHASES' ? reverseCharge : undefined,
+        withholdingSectionId: wKind ? section || null : undefined,
+        lines: payloadLines,
+      };
       const base = `/v1/orgs/${orgId}/${l.api}/documents`;
       return existing
         ? api<FinancialDocument>(`${base}/${existing.id}`, { method: 'PUT', body }).then((d) => (post ? api<FinancialDocument>(`${base}/${d.id}/post`, { method: 'POST', body: { overrideCreditLimit: override } }) : d))
@@ -140,7 +178,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label htmlFor="doc-contact" className="text-xs font-medium uppercase tracking-wide text-fg-muted">{l.contact}</label>
           <div className="flex gap-2">
-            <Select id="doc-contact" value={contact} onChange={(e) => setContact(e.target.value)}>
+            <Select id="doc-contact" value={contact} onChange={(e) => { setContact(e.target.value); if (!existing) setSectionTouched(false); }}>
               <option value="">Choose a {l.contact.toLowerCase()}…</option>
               {(contacts.data ?? []).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
             </Select>
@@ -184,11 +222,41 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
                 <p>
                   <span className="font-medium">{nature === 'INTRA' ? `Intra-state: CGST + ${stateLabel}` : pos === '96' ? 'Export: IGST (with payment)' : 'Inter-state: IGST'}</span>
                   <span className="block text-xs text-fg-muted">
-                    Supplier in {placeOfSupplyName(supplierState!)}, supply in {placeOfSupplyName(pos)}.
+                    Supplier in {supplierState === '96' ? 'outside India' : placeOfSupplyName(supplierState!)}, supply in {placeOfSupplyName(pos)}.
                     {l.ledger === 'SALES' ? (selectedContact ? (selectedContact.gstin ? ` Buyer GSTIN ${selectedContact.gstin}.` : ' Unregistered buyer (B2C).') : '') : selectedContact?.gstin ? ` Supplier GSTIN ${selectedContact.gstin}.` : ''}
                   </span>
                 </p>
               ) : <p className="text-fg-faint">Choose the {l.contact.toLowerCase()} and place of supply.</p>}
+            </div>
+            {l.ledger === 'PURCHASES' ? (
+              <label className="flex items-start gap-2 text-sm sm:col-span-4">
+                <input type="checkbox" className="mt-0.5 accent-[var(--t2t-accent)]" checked={reverseCharge} onChange={(e) => setReverseCharge(e.target.checked)} />
+                <span>
+                  <span className="font-medium">Reverse charge</span>
+                  <span className="block text-xs text-fg-muted">You pay the GST instead of the supplier (for example legal services, goods transport, or services from abroad). The vendor is owed the amount without GST; the GST posts as a liability you pay in cash and as input tax credit.</span>
+                </span>
+              </label>
+            ) : null}
+          </div>
+        ) : null}
+        {wKind && wOptions.length ? (
+          <div className="grid gap-4 rounded-lg border border-line bg-surface-raised p-4 sm:col-span-4 sm:grid-cols-4" aria-label={wKind}>
+            <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted sm:col-span-2">
+              {wKind === 'TDS' ? 'TDS section' : 'TCS section'}
+              <Select value={section} onChange={(e) => { setSectionTouched(true); setSectionId(e.target.value); }}>
+                <option value="">No {wKind}</option>
+                {wOptions.map((x) => <option key={x.id} value={x.id}>{x.code} · {x.name} ({x.rate}%)</option>)}
+              </Select>
+              {defaultSection ? <span className="normal-case tracking-normal text-fg-faint">The {l.contact.toLowerCase()}&apos;s default section.</span> : null}
+            </label>
+            <div className="flex flex-col gap-1 text-sm sm:col-span-2" aria-live="polite">
+              <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">{wKind === 'TDS' ? 'Tax to deduct' : 'Tax to collect'}</span>
+              {!section ? <p className="text-fg-faint">None.</p> : preview.error ? <p className="text-warning">{(preview.error as Error).message}</p> : preview.data ? (
+                <p>
+                  <span className="font-medium">{wKind} {preview.data.rate}% on {money(preview.data.base, c)} = {money(preview.data.amount, c)}</span>
+                  <span className="block text-xs text-fg-muted">{preview.data.reason ? `${preview.data.reason.charAt(0).toUpperCase()}${preview.data.reason.slice(1)}.` : ''} {preview.data.pan ? `PAN ${preview.data.pan}.` : 'No PAN on file.'}</span>
+                </p>
+              ) : <p className="text-fg-faint">{contact ? 'Working it out…' : `Choose the ${l.contact.toLowerCase()}.`}</p>}
             </div>
           </div>
         ) : null}
@@ -257,22 +325,24 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
           </tbody>
           <tfoot>
             <tr>
-              <Td colSpan={gstMode ? 5 : 4}>
+              <Td colSpan={gstMode ? 4 : 3}>
                 <Button type="button" variant="secondary" size="sm" onClick={() => setLines((ls) => [...ls, blank(nextKey.current++)])}>+ Add line</Button>
               </Td>
-              <Td className="text-right text-sm text-fg-muted">
+              <Td colSpan={2} className="whitespace-nowrap text-right text-sm text-fg-muted">
                 <p>{gstMode ? 'Taxable value' : 'Subtotal'}</p>
                 {gstMode && calc.heads ? (
-                  nature === 'INTRA' ? (<><p>CGST</p><p>{stateLabel}</p></>) : <p>IGST</p>
+                  nature === 'INTRA' ? (<><p>CGST{reverseCharge ? ' (reverse charge)' : ''}</p><p>{stateLabel}{reverseCharge ? ' (reverse charge)' : ''}</p></>) : <p>IGST{reverseCharge ? ' (reverse charge)' : ''}</p>
                 ) : <p>Tax</p>}
                 <p className="font-semibold text-fg">Total</p>
+                {Number(wTax) > 0 ? <><p>{wKind === 'TDS' ? 'Less TDS' : 'Add TCS'}</p><p className="font-semibold text-fg">{wKind === 'TDS' ? 'Payable to vendor' : 'Customer pays'}</p></> : null}
               </Td>
               <Td numeric className="text-sm">
                 <p className="num">{money(calc.subtotal, c)}</p>
                 {gstMode && calc.heads ? (
-                  nature === 'INTRA' ? (<><p className="num">{money(calc.heads.cgst.toFixed(2), c)}</p><p className="num">{money(calc.heads.sgst.toFixed(2), c)}</p></>) : <p className="num">{money(calc.heads.igst.toFixed(2), c)}</p>
+                  nature === 'INTRA' ? (<><p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.cgst.toFixed(2), c)}</p><p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.sgst.toFixed(2), c)}</p></>) : <p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.igst.toFixed(2), c)}</p>
                 ) : <p className="num">{money(calc.tax, c)}</p>}
                 <p className="num font-semibold">{money(calc.total, c)}</p>
+                {Number(wTax) > 0 ? <><p className="num">{wKind === 'TDS' ? '−' : '+'} {money(wTax, c)}</p><p className="num font-semibold">{money(settle, c)}</p></> : null}
               </Td>
               <Td />
             </tr>
@@ -302,9 +372,9 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
 
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button>
-        <Button type="button" variant="secondary" loading={save.isPending && save.variables === false} disabled={!calc.ok || save.isPending} onClick={() => save.mutate(false)}>Save as draft</Button>
+        <Button type="button" variant="secondary" loading={save.isPending && save.variables === false} disabled={!calc.ok || save.isPending || (!!section && !preview.data)} onClick={() => save.mutate(false)}>Save as draft</Button>
         {can(org.role, 'journals.post') ? (
-          <Button type="button" loading={save.isPending && save.variables === true} disabled={!calc.ok || save.isPending || (creditLimitHit && !override)} onClick={() => save.mutate(true)}>
+          <Button type="button" loading={save.isPending && save.variables === true} disabled={!calc.ok || save.isPending || (creditLimitHit && !override) || (!!section && !preview.data)} onClick={() => save.mutate(true)}>
             {existing ? 'Save and post' : `Post ${label.toLowerCase()}`}
           </Button>
         ) : null}

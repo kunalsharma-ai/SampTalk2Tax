@@ -31,6 +31,10 @@ function schemas(ledger: Ledger) {
     memo: z.string().max(1000).nullable().optional(),
     /** India GST: state code of the place of supply (96 = outside India). Defaults from the contact (sales) or the registration (purchases). */
     placeOfSupply: z.string().regex(/^\d{2}$/).nullable().optional(),
+    /** India GST reverse charge (purchases only): the organisation pays the GST, not the supplier. */
+    reverseCharge: z.boolean().optional(),
+    /** TDS section (bills) or TCS section (invoices). */
+    withholdingSectionId: z.uuid().nullable().optional(),
     lines: z.array(Line).min(1).max(500),
   });
   return {

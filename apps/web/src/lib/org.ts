@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { api } from './api';
-import type { Account, Contact, GstRegistration, GstState, Org, Period, TaxRate } from './types';
+import type { Account, Contact, GstRegistration, GstState, Org, Period, TaxRate, WithholdingSection, WithholdingSettings } from './types';
 
 export function useOrgId(): string {
   return useParams<{ orgId: string }>().orgId;
@@ -52,4 +52,14 @@ export function useGstRegistration() {
 export function useGstStates() {
   const orgId = useOrgId();
   return useQuery({ queryKey: ['gst-states'], queryFn: () => api<GstState[]>(`/v1/orgs/${orgId}/gst/states`), staleTime: Infinity });
+}
+
+export function useWithholdingSettings() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['withholding-settings', orgId], queryFn: () => api<WithholdingSettings>(`/v1/orgs/${orgId}/withholding/settings`) });
+}
+
+export function useWithholdingSections(includeInactive = false) {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['withholding-sections', orgId, includeInactive], queryFn: () => api<WithholdingSection[]>(`/v1/orgs/${orgId}/withholding/sections?includeInactive=${includeInactive}`) });
 }
