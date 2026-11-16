@@ -9,7 +9,7 @@ import { useT } from '@/lib/i18n';
 import { useOrg, useOrgs } from '@/lib/org';
 import { Logo } from './brand';
 import { navFor } from '@/lib/nav';
-import type { DataRegion } from '@/lib/types';
+import type { DataRegion, SubscriptionAccess } from '@/lib/types';
 import { useAnnouncements, useMeWithRole } from '@/lib/admin';
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -47,6 +47,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     )}
                   >
                     {t(i.label)}
+                    {i.locked ? <span className="ml-auto rounded-full border border-accent/40 px-1.5 text-[10px] font-medium text-accent">{t('Upgrade')}</span> : null}
                   </Link>
                 </li>
               );
@@ -111,6 +112,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {a.message}
           </p>
         ))}
+        {org?.subscription ? <PlanBanner orgId={org.id} access={org.subscription.access} /> : null}
         {org?.suspended ? (
           <p role="alert" className="border-b border-negative/30 bg-negative/10 px-4 py-2 text-center text-sm text-negative print:hidden" data-testid="suspended-banner">
             {t('This organisation is suspended: {reason}. You can read and export its records, but nothing can be changed.', { reason: org.suspended.reason })}
@@ -123,6 +125,21 @@ export function Shell({ children }: { children: ReactNode }) {
       </div>
     </div>
   );
+}
+
+/** A trial running out, a grace week, or books that are read-only until a plan is chosen. */
+function PlanBanner({ orgId, access }: { orgId: string; access: SubscriptionAccess }) {
+  const t = useT();
+  const link = <Link className="font-medium underline" href={`/orgs/${orgId}/settings/subscription`}>{t('Choose a plan')}</Link>;
+  if (access.level === 'READ_ONLY') {
+    const why = access.state === 'TRIAL_ENDED' ? t('The free trial has ended.') : access.state === 'CANCELLED' ? t('The subscription was cancelled.') : t('The subscription has lapsed.');
+    return <p role="alert" data-testid="plan-banner" className="border-b border-negative/30 bg-negative/10 px-4 py-2 text-center text-sm text-negative print:hidden">{why} {t('Your records can be read and exported, but nothing can be changed.')} {link}</p>;
+  }
+  if ((access.state === 'TRIAL' && (access.daysLeft ?? 99) <= 5) || access.state === 'GRACE' || access.state === 'CANCELLING') {
+    const text = access.state === 'TRIAL' ? t('The free trial ends in {n} days.', { n: access.daysLeft ?? 0 }) : access.state === 'GRACE' ? t('Payment is due: the books become read-only in {n} days.', { n: access.daysLeft ?? 0 }) : t('The subscription ends in {n} days.', { n: access.daysLeft ?? 0 });
+    return <p role="status" data-testid="plan-banner" className="border-b border-warning/30 bg-warning/10 px-4 py-2 text-center text-sm text-warning print:hidden">{text} {link}</p>;
+  }
+  return null;
 }
 
 /** An organisation whose data lives in another region is served only there. */

@@ -274,6 +274,10 @@ Content-Type: application/json
 
 `/v1/admin/...` for people with a platform role (`SUPER_ADMIN`, `SUPPORT`), and `GET /v1/announcements` for everyone signed in. Never an organisation's books. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
 
+## Plans and subscriptions
+
+`GET /v1/orgs/:orgId/subscription`, `POST|DELETE /v1/orgs/:orgId/subscription/request`, and `/v1/admin/plans`, `/v1/admin/subscriptions/...` for platform administrators. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
+
 ## Errors
 
 `{ "error": "<CODE>", "message": "…", ... }`
@@ -286,6 +290,9 @@ Content-Type: application/json
 | 404 | `NOT_FOUND`, `USER_NOT_FOUND` |
 | 409 | `PERIOD_NOT_OPEN`, `ALREADY_POSTED`, `ENTRY_POSTED`, `ALREADY_REVERSED`, `IS_REVERSAL`, `NOT_POSTED`, `SYSTEM_ENTRY`, `DOCUMENT_POSTED`, `ALREADY_VOID`, `HAS_ALLOCATIONS`, `CREDIT_LIMIT_EXCEEDED`, `DUPLICATE_BILL`, `TOTAL_CHANGED`, `CONTACT_IN_USE`, `ALREADY_REMOVED`, `BANK_MATCHED`, `ALREADY_MATCHED`, `NOT_MATCHED`, `LINE_RECONCILED`, `LINE_EXCLUDED`, `NOTHING_NEW`, `PERIOD_RECONCILED`, `NOT_LATEST`, `ALREADY_UNDONE`, `ACCOUNT_IN_USE`, `NON_ZERO_BALANCE`, `HAS_CHILDREN`, `CONFLICT`, `FISCAL_YEAR_EXISTS`, `LEDGER_INTEGRITY` |
 | 422 | `JOURNAL_INVALID` / `DOCUMENT_INVALID` / `STATEMENT_INVALID` / `RECONCILIATION_FAILED` (with `issues[]`), `INVALID_MATCH`, `OPENING_REQUIRED`, `OPENING_MISMATCH`, `CONTROL_ACCOUNT`, `INVALID_ALLOCATION`, `INVALID_BANK_ACCOUNT`, `TAX_ACCOUNT_REQUIRED`, `NOT_A_CUSTOMER`, `NOT_A_VENDOR`, `CONTACT_INACTIVE`, `NO_FISCAL_PERIOD`, `IDEMPOTENCY_KEY_REUSED`, `INVALID_PARENT`, `INVALID_SUBTYPE`, `WEAK_PASSWORD`, `WRONG_PASSWORD`, `SAME_PASSWORD`, `INVALID_DATE` |
+| 403 | `FEATURE_NOT_IN_PLAN` (with `feature`): the plan does not include the module |
+| 409 | `PLAN_LIMIT`: the plan's member limit is reached |
 | 423 | `ORG_SUSPENDED`: the organisation is suspended by the platform (reads still work) |
+| 402 | `PLAN_REQUIRED` (with `state`): the trial or plan has run out; reads still work |
 | 421 | `WRONG_REGION` (with `region`, `regionName`, `appUrl`): the organisation's data lives in another region |
 | 429 | `RATE_LIMITED`, `TOO_MANY_ATTEMPTS` (both with `Retry-After`) |

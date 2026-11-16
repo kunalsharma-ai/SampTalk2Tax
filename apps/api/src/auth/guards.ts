@@ -5,7 +5,8 @@ import { z } from 'zod';
 import { PrismaService } from '../common/prisma.service';
 import { enterOrg, enterUser } from '../common/tenant-context';
 import { RegionsService } from '../regions/regions.service';
-import { IS_PUBLIC, PERMISSION, PLATFORM_PERMISSION, PLATFORM_PERMISSIONS, PlatformPermission } from './decorators';
+import { accessOf } from '../billing/limits';
+import { ALLOW_READ_ONLY, IS_PUBLIC, PERMISSION, PLAN_FEATURE, PLATFORM_PERMISSION, PLATFORM_PERMISSIONS, PlatformPermission } from './decorators';
 import { SessionsService } from './sessions.service';
 import { TokensService } from './tokens.service';
 
@@ -53,16 +54,31 @@ export class AuthGuard implements CanActivate {
       if (!z.uuid().safeParse(orgId).success) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
       const membership = await this.prisma.membership.findUnique({
         where: { orgId_userId: { orgId, userId: user.id } },
-        include: { org: { select: { functionalCurrency: true, fiscalYearStartMonth: true, dataRegion: true, suspendedAt: true, suspendedReason: true } } },
+        include: { org: { select: { functionalCurrency: true, fiscalYearStartMonth: true, dataRegion: true, suspendedAt: true, suspendedReason: true, subscription: { select: { status: true, trialEndsAt: true, currentPeriodEnd: true, plan: { select: { name: true, features: true } } } } } } },
       });
       // Non-members get 404, not 403, so organization ids cannot be probed.
       if (!membership) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
       // An organisation is served only in the region its data lives in.
       this.regions.assertHere(membership.org.dataRegion);
       const role = membership.role as RoleName;
+      const writes = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+      const allowReadOnly = this.reflector.getAllAndOverride<boolean>(ALLOW_READ_ONLY, targets) === true;
       // A suspended organisation stays readable to its members, but nothing in it can change.
-      if (membership.org.suspendedAt && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      if (membership.org.suspendedAt && writes && !allowReadOnly) {
         throw new HttpException({ error: 'ORG_SUSPENDED', message: `This organisation is suspended: ${membership.org.suspendedReason}. Its records can be read and exported but not changed.` }, HttpStatus.LOCKED);
+      }
+      // A trial or plan that has run out keeps every record readable; changes wait for a plan.
+      const sub = membership.org.subscription;
+      if (sub && writes && !allowReadOnly) {
+        const access = accessOf(sub);
+        if (access.level === 'READ_ONLY') {
+          const why = access.state === 'TRIAL_ENDED' ? 'The free trial has ended' : access.state === 'CANCELLED' ? 'The subscription was cancelled' : 'The subscription has lapsed';
+          throw new HttpException({ error: 'PLAN_REQUIRED', message: `${why}. Your records can be read and exported; choose a plan under Settings → Subscription to make changes again.`, state: access.state }, HttpStatus.PAYMENT_REQUIRED);
+        }
+        const feature = this.reflector.getAllAndOverride<string | undefined>(PLAN_FEATURE, targets);
+        if (feature && !sub.plan.features.includes(feature)) {
+          throw new ForbiddenException({ error: 'FEATURE_NOT_IN_PLAN', message: `The ${sub.plan.name} plan does not include this module. Choose a plan that does under Settings → Subscription.`, feature });
+        }
       }
       if (!permission) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Route has no permission declared' });
       if (!hasPermission(role, permission)) {

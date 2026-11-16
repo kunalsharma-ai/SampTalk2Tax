@@ -255,3 +255,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Platform administration
 
 * No controlled support access to an organisation's data yet (ADMIN-022): an administrator who needs the books must be invited as a member. Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Plans, billing, support tickets, usage and monitoring are later M9 slices. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+
+## Plans and subscriptions
+
+* No online payment yet: a requested plan is activated by a platform administrator with the payment reference. No renewals, dunning, invoices, tax on subscriptions, coupons or add-ons yet. AI and upload limits are shown but not yet counted. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).

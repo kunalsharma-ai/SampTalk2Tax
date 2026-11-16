@@ -1,3 +1,4 @@
+import { assertMemberRoom } from '../billing/limits';
 import { ConflictException, ForbiddenException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
 import { Role } from '@talk2tax/database';
 import { canAssignRole, RoleName } from '@talk2tax/security';
@@ -73,6 +74,7 @@ export class InvitationsService {
         throw new ConflictException({ error: 'INVITE_EXISTS', message: 'There is already an open invitation for this email. Create a new link for it or revoke it.' });
       }
       if (open) await tx.invitation.update({ where: { id: open.id }, data: { revokedAt: new Date(), revokedById: actor.id } });
+      await assertMemberRoom(tx, orgId, { countOpenInvitations: true });
       const { token, tokenHash } = this.newToken();
       const inv = await tx.invitation.create({ data: { orgId, email, role: input.role as Role, tokenHash, invitedById: actor.id, expiresAt: new Date(Date.now() + INVITE_TTL_MS) } });
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'invitation.created', entityType: 'invitation', entityId: inv.id, data: { email, role: input.role } });
@@ -154,6 +156,7 @@ export class InvitationsService {
       await useOrgInTx(tx, inv.orgId);
       const existing = await tx.membership.findUnique({ where: { orgId_userId: { orgId: inv.orgId, userId: user.id } } });
       if (existing) throw new ConflictException({ error: 'ALREADY_MEMBER', message: 'You are already a member of this organisation' });
+      await assertMemberRoom(tx, inv.orgId, { countOpenInvitations: false });
       const accepted = await tx.invitation.updateMany({ where: { id: inv.id, acceptedAt: null, revokedAt: null }, data: { acceptedAt: new Date(), acceptedById: user.id } });
       if (accepted.count === 0) throw new GoneException({ error: 'INVITE_CLOSED', message: 'This invitation is no longer open' });
       const m = await tx.membership.create({ data: { orgId: inv.orgId, userId: user.id, role: inv.role } });

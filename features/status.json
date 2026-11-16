@@ -4971,6 +4971,339 @@
         "docs/PLATFORM_ADMINISTRATION.md"
       ],
       "notes": "Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals."
+    },
+    "SUBS-001": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Plans, subscriptions, trials, enforcement and admin activation are built and tested; online payment, renewals, invoices and dunning are later slices."
+    },
+    "SUBS-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price ₹499/month (proposed launch price), editable in Platform administration → Plans."
+    },
+    "SUBS-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price ₹1499/month (proposed launch price), editable in Platform administration → Plans."
+    },
+    "SUBS-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price ₹3499/month (proposed launch price), editable in Platform administration → Plans."
+    },
+    "SUBS-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price ₹8999/month (proposed launch price), editable in Platform administration → Plans."
+    },
+    "SUBS-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price $9/month for organisations outside India (proposed launch price), editable."
+    },
+    "SUBS-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price $25/month for organisations outside India (proposed launch price), editable."
+    },
+    "SUBS-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price $59/month for organisations outside India (proposed launch price), editable."
+    },
+    "SUBS-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Seeded plan price $149/month for organisations outside India (proposed launch price), editable."
+    },
+    "SUBS-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Shown on the subscription page and the admin plans page: proposed launch prices, not final."
+    },
+    "SUBS-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md",
+        "apps/web/src/app/admin/plans/page.tsx"
+      ],
+      "notes": "Plans (prices per currency and interval, limits, modules, offered flag, order) edited by super admins, validated and audited."
+    },
+    "SUBS-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Monthly billing periods (calendar month, end of month kept)."
+    },
+    "SUBS-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Annual billing periods at ten months' price."
+    },
+    "SUBS-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "14-day trial (PLAN_TRIAL_DAYS) of every module for new organisations; admins extend trials; read-only (not locked) when it ends."
+    },
+    "SUBS-015": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Upgrades by request and activation on payment; proration (upgradeCharge) built in the engine, not yet charged online."
+    },
+    "SUBS-016": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Downgrades by request, refused while members exceed the smaller plan; applied on activation (no scheduled change at period end yet)."
+    },
+    "SUBS-020": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Member limits per plan, counting open invitations, on adding, inviting and accepting."
+    },
+    "SUBS-023": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Enterprise contracts activated by an administrator with the contract reference; no contract terms or custom prices yet."
+    },
+    "SUBS-026": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "INR prices for organisations in India and USD elsewhere, per plan."
+    },
+    "SUBS-032": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+      ],
+      "notes": "Subscriptions in their own tables and history, never posted to an organisation's books; the page says so."
+    },
+    "ADMIN-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md",
+        "apps/web/src/app/admin/subscriptions/page.tsx"
+      ],
+      "notes": "Subscriptions in Platform administration: filter, activate with payment reference, extend trials, cancel, complimentary."
+    },
+    "ADMIN-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/plans.ts",
+        "packages/accounting-engine/test/plans.test.ts",
+        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/billing/billing.service.ts",
+        "apps/api/src/billing/platform-billing.service.ts",
+        "apps/api/test/plans-subscriptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-flow.test.mjs",
+        "docs/PLANS_AND_SUBSCRIPTIONS.md",
+        "apps/web/src/app/admin/plans/page.tsx"
+      ],
+      "notes": "Plan management in Platform administration."
     }
   }
 }

@@ -18,6 +18,8 @@ export interface Org {
   dataRegion: DataRegion;
   /** Suspended by the platform: readable, not changeable. */
   suspended: { at: string; reason: string } | null;
+  /** The organisation's Talk2Tax plan and whether its books can change. */
+  subscription: OrgSubscription | null;
   role: Role;
 }
 
@@ -1014,3 +1016,13 @@ export interface EWayBillRegister {
 }
 
 export type EWayBillDocument = { configured: false; documentId: string } | (EWayBillRow & { configured: true; history: EWayBillRecord[] });
+
+export type SubscriptionAccess =
+  | { level: 'FULL'; state: 'TRIAL' | 'ACTIVE' | 'GRACE' | 'CANCELLING' | 'COMPLIMENTARY'; until: string | null; daysLeft: number | null }
+  | { level: 'READ_ONLY'; state: 'TRIAL_ENDED' | 'LAPSED' | 'CANCELLED'; since: string | null };
+
+export interface OrgSubscription {
+  plan: { code: string; name: string; features: string[] };
+  status: 'TRIALING' | 'ACTIVE' | 'CANCELLED' | 'COMPLIMENTARY';
+  access: SubscriptionAccess;
+}

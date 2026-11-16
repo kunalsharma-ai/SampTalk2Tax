@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 892 |
+| Not started | 870 |
 | Designed | 0 |
-| Implementing | 62 |
+| Implementing | 66 |
 | Implemented | 33 |
-| Tested | 344 |
+| Tested | 362 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -57,8 +57,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
-| Subscription and monetization engine | M9 | 32 | 32 | 0 |
-| Platform super admin | M9 | 22 | 16 | 6 |
+| Subscription and monetization engine | M9 | 32 | 12 | 20 |
+| Platform super admin | M9 | 22 | 14 | 8 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
@@ -4675,6 +4675,327 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/approvals
   - apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule
 
+### SUBS-001 — Create a flexible SaaS billing platform
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Plans, subscriptions, trials, enforcement and admin activation are built and tested; online payment, renewals, invoices and dunning are later slices.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-002 — India: ₹499/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹499/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-003 — Global: $9/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $9/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-004 — India: ₹1,499/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹1499/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-005 — Global: $25/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $25/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-006 — India: ₹3,499/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹3499/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-007 — Global: $59/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $59/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-008 — India: ₹8,999/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹8999/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-009 — Global: $149/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $149/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-010 — These are proposed launch prices, not final validated commercial rates
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Shown on the subscription page and the admin plans page: proposed launch prices, not final.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-011 — Build an admin-configurable pricing system
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Plans (prices per currency and interval, limits, modules, offered flag, order) edited by super admins, validated and audited.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - apps/web/src/app/admin/plans/page.tsx
+
+### SUBS-012 — Monthly subscriptions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Monthly billing periods (calendar month, end of month kept).
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-013 — Annual subscriptions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Annual billing periods at ten months' price.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-014 — Free trials
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: 14-day trial (PLAN_TRIAL_DAYS) of every module for new organisations; admins extend trials; read-only (not locked) when it ends.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-015 — Plan upgrades
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Upgrades by request and activation on payment; proration (upgradeCharge) built in the engine, not yet charged online.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-016 — Plan downgrades
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Downgrades by request, refused while members exceed the smaller plan; applied on activation (no scheduled change at period end yet).
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-020 — User-based licensing
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Member limits per plan, counting open invitations, on adding, inviting and accepting.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-023 — Enterprise contracts
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Enterprise contracts activated by an administrator with the contract reference; no contract terms or custom prices yet.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-026 — Regional pricing
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: INR prices for organisations in India and USD elsewhere, per plan.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-032 — Maintain clear distinctions between platform subscription billing and customers' own accounting transactions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Subscriptions in their own tables and history, never posted to an organisation's books; the page says so.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
 ### ADMIN-001 — Create a dedicated SaaS administration application
 
 - Module: Platform super admin
@@ -4736,6 +5057,40 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/admin/admin.service.ts
   - apps/web/src/app/admin/people/page.tsx
   - apps/web/e2e/platform-admin-flow.test.mjs
+
+### ADMIN-005 — Subscription management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Subscriptions in Platform administration: filter, activate with payment reference, extend trials, cancel, complimentary.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - apps/web/src/app/admin/subscriptions/page.tsx
+
+### ADMIN-006 — Plan management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Plan management in Platform administration.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - apps/web/src/app/admin/plans/page.tsx
 
 ### ADMIN-019 — System announcements
 

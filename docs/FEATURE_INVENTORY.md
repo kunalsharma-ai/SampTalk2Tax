@@ -1328,38 +1328,38 @@ Part 38 · M9 · priority P2 · depends on: SEC
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| SUBS-001 |  | rule | Create a flexible SaaS billing platform | Not started |
-| SUBS-002 | Starter | rule | India: ₹499/month | Not started |
-| SUBS-003 | Starter | rule | Global: $9/month | Not started |
-| SUBS-004 | Professional | rule | India: ₹1,499/month | Not started |
-| SUBS-005 | Professional | rule | Global: $25/month | Not started |
-| SUBS-006 | Business AI | rule | India: ₹3,499/month | Not started |
-| SUBS-007 | Business AI | rule | Global: $59/month | Not started |
-| SUBS-008 | Enterprise AI | rule | India: ₹8,999/month | Not started |
-| SUBS-009 | Enterprise AI | rule | Global: $149/month | Not started |
-| SUBS-010 | Corporate Global | rule | These are proposed launch prices, not final validated commercial rates | Not started |
-| SUBS-011 | Corporate Global | rule | Build an admin-configurable pricing system | Not started |
-| SUBS-012 | Billing Capabilities | capability | Monthly subscriptions | Not started |
-| SUBS-013 | Billing Capabilities | capability | Annual subscriptions | Not started |
-| SUBS-014 | Billing Capabilities | capability | Free trials | Not started |
-| SUBS-015 | Billing Capabilities | capability | Plan upgrades | Not started |
-| SUBS-016 | Billing Capabilities | capability | Plan downgrades | Not started |
+| SUBS-001 |  | rule | Create a flexible SaaS billing platform | Implementing |
+| SUBS-002 | Starter | rule | India: ₹499/month | Tested |
+| SUBS-003 | Starter | rule | Global: $9/month | Tested |
+| SUBS-004 | Professional | rule | India: ₹1,499/month | Tested |
+| SUBS-005 | Professional | rule | Global: $25/month | Tested |
+| SUBS-006 | Business AI | rule | India: ₹3,499/month | Tested |
+| SUBS-007 | Business AI | rule | Global: $59/month | Tested |
+| SUBS-008 | Enterprise AI | rule | India: ₹8,999/month | Tested |
+| SUBS-009 | Enterprise AI | rule | Global: $149/month | Tested |
+| SUBS-010 | Corporate Global | rule | These are proposed launch prices, not final validated commercial rates | Tested |
+| SUBS-011 | Corporate Global | rule | Build an admin-configurable pricing system | Tested |
+| SUBS-012 | Billing Capabilities | capability | Monthly subscriptions | Tested |
+| SUBS-013 | Billing Capabilities | capability | Annual subscriptions | Tested |
+| SUBS-014 | Billing Capabilities | capability | Free trials | Tested |
+| SUBS-015 | Billing Capabilities | capability | Plan upgrades | Implementing |
+| SUBS-016 | Billing Capabilities | capability | Plan downgrades | Implementing |
 | SUBS-017 | Billing Capabilities | capability | Add-on modules | Not started |
 | SUBS-018 | Billing Capabilities | capability | Usage-based AI credits | Not started |
 | SUBS-019 | Billing Capabilities | capability | Document processing quotas | Not started |
-| SUBS-020 | Billing Capabilities | capability | User-based licensing | Not started |
+| SUBS-020 | Billing Capabilities | capability | User-based licensing | Tested |
 | SUBS-021 | Billing Capabilities | capability | Multi-entity add-ons | Not started |
 | SUBS-022 | Billing Capabilities | capability | API usage plans | Not started |
-| SUBS-023 | Billing Capabilities | capability | Enterprise contracts | Not started |
+| SUBS-023 | Billing Capabilities | capability | Enterprise contracts | Implementing |
 | SUBS-024 | Billing Capabilities | capability | Coupons | Not started |
 | SUBS-025 | Billing Capabilities | capability | Promotional pricing | Not started |
-| SUBS-026 | Billing Capabilities | capability | Regional pricing | Not started |
+| SUBS-026 | Billing Capabilities | capability | Regional pricing | Tested |
 | SUBS-027 | Billing Capabilities | capability | Tax on subscriptions | Not started |
 | SUBS-028 | Billing Capabilities | capability | Automated renewals | Not started |
 | SUBS-029 | Billing Capabilities | capability | Payment failure handling | Not started |
 | SUBS-030 | Billing Capabilities | capability | Dunning workflows | Not started |
 | SUBS-031 | Billing Capabilities | capability | Subscription invoices | Not started |
-| SUBS-032 | Billing Capabilities | rule | Maintain clear distinctions between platform subscription billing and customers' own accounting transactions | Not started |
+| SUBS-032 | Billing Capabilities | rule | Maintain clear distinctions between platform subscription billing and customers' own accounting transactions | Tested |
 
 ## Platform super admin
 
@@ -1371,8 +1371,8 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-002 |  | capability | Tenant management | Tested |
 | ADMIN-003 |  | capability | Organization management | Tested |
 | ADMIN-004 |  | capability | User management | Tested |
-| ADMIN-005 |  | capability | Subscription management | Not started |
-| ADMIN-006 |  | capability | Plan management | Not started |
+| ADMIN-005 |  | capability | Subscription management | Tested |
+| ADMIN-006 |  | capability | Plan management | Tested |
 | ADMIN-007 |  | capability | Feature flags | Not started |
 | ADMIN-008 |  | capability | AI usage monitoring | Not started |
 | ADMIN-009 |  | capability | AI model configuration | Not started |

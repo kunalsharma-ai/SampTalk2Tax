@@ -6,9 +6,11 @@ import { can, type Org } from './types';
  * perm: shown only to roles that have it (a hint; the API enforces the real check).
  * needs: shown only where the organisation's country module supports it (the API refuses too).
  */
-export interface NavItem { href: string; label: string; perm?: string; needs?: CapabilityKey }
+export type PlanFeature = 'AI' | 'PAYROLL' | 'MULTI_CURRENCY' | 'CONSOLIDATION';
+/** plan: a module the organisation's plan must include to use it (shown with "Upgrade" otherwise; past records stay readable). */
+export interface NavItem { href: string; label: string; perm?: string; needs?: CapabilityKey; plan?: PlanFeature; locked?: boolean }
 export const NAV: { group: string; items: NavItem[] }[] = [
-  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }, { href: '/tasks', label: 'My tasks' }] },
+  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot', plan: 'AI' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }, { href: '/tasks', label: 'My tasks' }] },
   {
     group: 'Sales',
     items: [
@@ -16,7 +18,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/sales/invoices', label: 'Invoices' },
       { href: '/sales/receipts', label: 'Receipts' },
       { href: '/sales/ageing', label: 'Receivables ageing' },
-      { href: '/sales/collections', label: 'Collections', perm: 'collections.manage' },
+      { href: '/sales/collections', label: 'Collections', perm: 'collections.manage', plan: 'AI' },
       { href: '/settings/invoice-templates', label: 'Invoice templates' },
       { href: '/settings/signature', label: 'My signature', perm: 'documents.sign' },
     ],
@@ -42,9 +44,9 @@ export const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: 'Payroll',
     items: [
-      { href: '/payroll/runs', label: 'Pay runs', needs: 'PAYROLL' },
-      { href: '/payroll/employees', label: 'Employees', needs: 'PAYROLL' },
-      { href: '/settings/payroll', label: 'Payroll settings', needs: 'PAYROLL' },
+      { href: '/payroll/runs', label: 'Pay runs', needs: 'PAYROLL', plan: 'PAYROLL' },
+      { href: '/payroll/employees', label: 'Employees', needs: 'PAYROLL', plan: 'PAYROLL' },
+      { href: '/settings/payroll', label: 'Payroll settings', needs: 'PAYROLL', plan: 'PAYROLL' },
     ],
   },
   {
@@ -58,7 +60,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/dimensions', label: 'Departments and projects' },
       { href: '/close', label: 'Month-end close' },
       { href: '/periods', label: 'Fiscal periods' },
-      { href: '/fx', label: 'Exchange rates' },
+      { href: '/fx', label: 'Exchange rates', plan: 'MULTI_CURRENCY' },
     ],
   },
   {
@@ -75,7 +77,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/reports/kpis', label: 'KPIs' },
       { href: '/reports/management', label: 'Management reports' },
       { href: '/reports/designer', label: 'Report designer' },
-      { href: '/consolidation', label: 'Group consolidation' },
+      { href: '/consolidation', label: 'Group consolidation', plan: 'CONSOLIDATION' },
     ],
   },
   {
@@ -95,7 +97,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     ],
   },
   { group: 'Planning', items: [{ href: '/cfo', label: 'Virtual CFO' }, { href: '/benchmarking', label: 'Benchmarking' }, { href: '/decisions', label: 'Decision memory' }, { href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }, { href: '/planning/twin', label: 'Digital twin' }, { href: '/planning/recovery', label: 'Recovery planner' }, { href: '/planning/forecast-lab', label: 'Forecast lab' }, { href: '/planning/disasters', label: 'Disaster simulation' }, { href: '/planning/impact', label: 'Business impact' }, { href: '/planning/opportunities', label: 'Growth opportunities' }] },
-  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/ai-control', label: 'AI control center', perm: 'audit.read' }, { href: '/ai-activity', label: 'AI activity', perm: 'audit.read' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/integrations', label: 'Integrations', perm: 'org.manage' }, { href: '/settings/approvals', label: 'Approval rules' }, { href: '/automations', label: 'Automations', perm: 'workflows.manage' }, { href: '/governance/policies', label: 'Policy studio' }] },
+  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/ai-control', label: 'AI control center', perm: 'audit.read' }, { href: '/ai-activity', label: 'AI activity', perm: 'audit.read' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/subscription', label: 'Subscription' }, { href: '/settings/integrations', label: 'Integrations', perm: 'org.manage' }, { href: '/settings/approvals', label: 'Approval rules' }, { href: '/automations', label: 'Automations', perm: 'workflows.manage' }, { href: '/governance/policies', label: 'Policy studio' }] },
 ];
 
 /** Employees only claim expenses; the rest of the books is not theirs to see. */
@@ -103,9 +105,15 @@ export const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/
 
 
 /** The navigation an organisation sees: its role's items, in its country, without empty groups. */
-export function navFor(org: Pick<Org, 'role' | 'countryCode'> | undefined) {
+export function navFor(org: (Pick<Org, 'role' | 'countryCode'> & { subscription?: Org['subscription'] }) | undefined) {
   if (org?.role === 'EMPLOYEE') return EMPLOYEE_NAV;
+  const features = org?.subscription?.plan.features;
   return NAV.filter((g) => g.group !== 'Payroll' || can(org?.role, 'payroll.read'))
-    .map((g) => ({ ...g, items: g.items.filter((i) => (!i.perm || can(org?.role, i.perm)) && (!i.needs || (!!org && countrySupports(org.countryCode, i.needs)))) }))
+    .map((g) => ({
+      ...g,
+      items: g.items
+        .filter((i) => (!i.perm || can(org?.role, i.perm)) && (!i.needs || (!!org && countrySupports(org.countryCode, i.needs))))
+        .map((i) => (i.plan && features && !features.includes(i.plan) ? { ...i, locked: true } : i)),
+    }))
     .filter((g) => g.items.length > 0);
 }

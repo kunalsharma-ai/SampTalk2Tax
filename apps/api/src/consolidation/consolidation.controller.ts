@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Pu
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { z } from 'zod';
-import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFeature } from '../auth/decorators';
 import { isoDate, openApi, ZodPipe } from '../common/zod';
 import { parseExportFormat } from '../report-exports/report-exports.service';
 import { ConsolidationService } from './consolidation.service';
@@ -44,6 +44,7 @@ const ExportQuery = PeriodQuery.extend({ format: z.string().optional() }).strict
  */
 @ApiTags('consolidation')
 @ApiBearerAuth()
+@RequireFeature('CONSOLIDATION')
 @Controller('v1/orgs/:orgId/consolidation/groups')
 export class ConsolidationController {
   constructor(
