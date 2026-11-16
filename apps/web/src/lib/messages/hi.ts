@@ -28,6 +28,8 @@ export const hi: Record<string, string> = {
   // Sales
   Leads: 'लीड',
   Pipeline: 'बिक्री पाइपलाइन',
+  Quotations: 'कोटेशन',
+  'Sales orders': 'बिक्री ऑर्डर',
   Customers: 'ग्राहक',
   Invoices: 'इनवॉइस',
   Receipts: 'प्राप्तियाँ',

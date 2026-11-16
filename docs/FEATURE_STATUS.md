@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 847 |
+| Not started | 844 |
 | Designed | 0 |
 | Implementing | 65 |
 | Implemented | 34 |
-| Tested | 383 |
+| Tested | 386 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -41,7 +41,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Enterprise financial management | M6 | 29 | 14 | 15 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
-| CRM and finance integration | M6 | 13 | 10 | 3 |
+| CRM and finance integration | M6 | 13 | 7 | 6 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
@@ -3000,6 +3000,48 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/crm-pipeline-flow.test.mjs
   - docs/CRM_PIPELINE.md
   - apps/web/src/app/orgs/[orgId]/sales/pipeline/page.tsx
+
+### CRM-005 — Quotations
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Quotations QT-0001 with the invoice tax rules (tax rates, GST place of supply, HSN/SAC); draft (editable, deletable) -> sent (frozen by a trigger) -> accepted or declined (reason); expired past valid-until; revisions QT-0001-R2 supersede the previous one when sent; linked to a deal, which is won on acceptance; acceptance rate on the list. No PDF or e-mail of a quotation yet.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx
+
+### CRM-007 — Sales orders
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/orders/[orderId]/page.tsx
+
+### CRM-008 — Billing
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Bill an order in full or by chosen quantities into a draft invoice (reference SO-0001 / customer PO) built by the normal invoice rules; billed quantities count while the invoice is draft or posted and are freed when it is voided or the draft deleted; over-billing refused under a row lock.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/api/src/ledgers/documents.service.ts
 
 ### RISK-001 — Duplicate invoice detection
 

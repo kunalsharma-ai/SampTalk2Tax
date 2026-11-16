@@ -93,6 +93,7 @@ import { InvoicePrintController, InvoiceTemplatesController, SignaturesControlle
 import { InvoiceTemplatesService } from './invoice-templates/invoice-templates.service';
 import { LoansController } from './loans/loans.controller';
 import { CrmController } from './crm/crm.controller';
+import { SalesOrdersController } from './sales-orders/sales-orders.controller';
 import { ReportExportsController } from './report-exports/report-exports.controller';
 import { ConsolidationController } from './consolidation/consolidation.controller';
 import { ConsolidationService } from './consolidation/consolidation.service';
@@ -128,6 +129,7 @@ import { TwinService } from './twin/twin.service';
 import { ReportExportService } from './report-exports/report-exports.service';
 import { LoansService } from './loans/loans.service';
 import { CrmService } from './crm/crm.service';
+import { SalesOrdersService } from './sales-orders/sales-orders.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
 import { DimensionsService } from './dimensions/dimensions.service';
 import { CloseService } from './close/close.service';
@@ -215,6 +217,7 @@ export class AppModule {
         DeferralsController,
         LoansController,
         CrmController,
+        SalesOrdersController,
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
@@ -294,6 +297,7 @@ export class AppModule {
         DeferralsService,
         LoansService,
         CrmService,
+        SalesOrdersService,
         InvoiceTemplatesService,
         ReportExportService,
         ConsolidationService,

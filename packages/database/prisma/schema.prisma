@@ -283,6 +283,8 @@ model Organization {
   crmLeads                 CrmLead[]
   crmDeals                 CrmDeal[]
   crmActivities            CrmActivity[]
+  salesQuotes              SalesQuote[]
+  salesOrders              SalesOrder[]
   loanEvents               LoanEvent[]
   dimensionValues          DimensionValue[]
   copilotConversations     CopilotConversation[]
@@ -4130,4 +4132,147 @@ model CrmActivity {
   @@index([orgId, leadId, createdAt])
   @@index([orgId, dealId, createdAt])
   @@map("crm_activities")
+}
+
+enum SalesQuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  SUPERSEDED
+}
+
+enum SalesOrderStatus {
+  OPEN
+  CANCELLED
+}
+
+/// A quotation offered to a customer, valid until a date. Revisions keep the number with a higher revision.
+model SalesQuote {
+  id            String           @id @default(uuid()) @db.Uuid
+  orgId         String           @map("org_id") @db.Uuid
+  /// Shown as QT-0001 (revision 2 as QT-0001-R2).
+  number        Int
+  revision      Int              @default(1)
+  previousId    String?          @map("previous_id") @db.Uuid
+  contactId     String           @map("contact_id") @db.Uuid
+  dealId        String?          @map("deal_id") @db.Uuid
+  status        SalesQuoteStatus @default(DRAFT)
+  issueDate     DateTime         @map("issue_date") @db.Date
+  validUntil    DateTime         @map("valid_until") @db.Date
+  placeOfSupply String?          @map("place_of_supply") @db.Char(2)
+  reference     String?          @db.VarChar(100)
+  terms         String?          @db.VarChar(4000)
+  memo          String?          @db.VarChar(1000)
+  currency      String           @db.Char(3)
+  subtotal      Decimal          @db.Decimal(24, 6)
+  taxTotal      Decimal          @map("tax_total") @db.Decimal(24, 6)
+  total         Decimal          @db.Decimal(24, 6)
+  sentAt        DateTime?        @map("sent_at") @db.Timestamptz(6)
+  decidedAt     DateTime?        @map("decided_at") @db.Timestamptz(6)
+  declineReason String?          @map("decline_reason") @db.VarChar(500)
+  orderId       String?          @map("order_id") @db.Uuid
+  createdById   String           @map("created_by_id") @db.Uuid
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org           Organization     @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines         SalesQuoteLine[]
+
+  @@unique([orgId, number, revision])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("sales_quotes")
+}
+
+model SalesQuoteLine {
+  id          String     @id @default(uuid()) @db.Uuid
+  orgId       String     @map("org_id") @db.Uuid
+  quoteId     String     @map("quote_id") @db.Uuid
+  lineNo      Int        @map("line_no")
+  description String?    @db.VarChar(500)
+  accountId   String     @map("account_id") @db.Uuid
+  quantity    Decimal    @db.Decimal(24, 6)
+  unitPrice   Decimal    @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?    @map("tax_rate_id") @db.Uuid
+  hsnCode     String?    @map("hsn_code")
+  netAmount   Decimal    @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal    @map("tax_amount") @db.Decimal(24, 6)
+  quote       SalesQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@unique([quoteId, lineNo])
+  @@map("sales_quote_lines")
+}
+
+/// A customer's confirmed order, from an accepted quotation or entered directly, billed by invoices.
+model SalesOrder {
+  id            String              @id @default(uuid()) @db.Uuid
+  orgId         String              @map("org_id") @db.Uuid
+  /// Shown as SO-0001.
+  number        Int
+  contactId     String              @map("contact_id") @db.Uuid
+  quoteId       String?             @unique @map("quote_id") @db.Uuid
+  dealId        String?             @map("deal_id") @db.Uuid
+  orderDate     DateTime            @map("order_date") @db.Date
+  placeOfSupply String?             @map("place_of_supply") @db.Char(2)
+  /// The customer's purchase order number.
+  reference     String?             @db.VarChar(100)
+  memo          String?             @db.VarChar(1000)
+  currency      String              @db.Char(3)
+  subtotal      Decimal             @db.Decimal(24, 6)
+  taxTotal      Decimal             @map("tax_total") @db.Decimal(24, 6)
+  total         Decimal             @db.Decimal(24, 6)
+  status        SalesOrderStatus    @default(OPEN)
+  cancelReason  String?             @map("cancel_reason") @db.VarChar(500)
+  cancelledAt   DateTime?           @map("cancelled_at") @db.Timestamptz(6)
+  createdById   String              @map("created_by_id") @db.Uuid
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org           Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines         SalesOrderLine[]
+  billings      SalesOrderBilling[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("sales_orders")
+}
+
+model SalesOrderLine {
+  id          String              @id @default(uuid()) @db.Uuid
+  orgId       String              @map("org_id") @db.Uuid
+  orderId     String              @map("order_id") @db.Uuid
+  lineNo      Int                 @map("line_no")
+  description String?             @db.VarChar(500)
+  accountId   String              @map("account_id") @db.Uuid
+  quantity    Decimal             @db.Decimal(24, 6)
+  unitPrice   Decimal             @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?             @map("tax_rate_id") @db.Uuid
+  hsnCode     String?             @map("hsn_code")
+  netAmount   Decimal             @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal             @map("tax_amount") @db.Decimal(24, 6)
+  order       SalesOrder          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  billings    SalesOrderBilling[]
+
+  @@unique([orderId, lineNo])
+  @@map("sales_order_lines")
+}
+
+/// A quantity of an order line sent to an invoice. Removed with a deleted draft invoice; ignored once the invoice is void.
+model SalesOrderBilling {
+  id          String         @id @default(uuid()) @db.Uuid
+  orgId       String         @map("org_id") @db.Uuid
+  orderId     String         @map("order_id") @db.Uuid
+  orderLineId String         @map("order_line_id") @db.Uuid
+  documentId  String         @map("document_id") @db.Uuid
+  quantity    Decimal        @db.Decimal(24, 6)
+  createdById String         @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  order       SalesOrder     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  line        SalesOrderLine @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, documentId])
+  @@index([orderLineId])
+  @@map("sales_order_billings")
 }
