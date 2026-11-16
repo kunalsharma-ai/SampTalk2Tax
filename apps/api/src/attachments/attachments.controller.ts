@@ -6,7 +6,7 @@ import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from
 import { openApi, ZodPipe } from '../common/zod';
 import { AttachmentsService } from './attachments.service';
 
-const ENTITIES = ['DOCUMENT', 'PAYMENT', 'JOURNAL_ENTRY', 'BANK_STATEMENT_LINE'] as const;
+const ENTITIES = ['DOCUMENT', 'PAYMENT', 'JOURNAL_ENTRY', 'BANK_STATEMENT_LINE', 'EXPENSE_CLAIM'] as const;
 const ListQuery = z.object({
   entityType: z.enum(ENTITIES),
   entityId: z.uuid(),
@@ -28,8 +28,8 @@ export class AttachmentsController {
 
   @Get()
   @RequirePermission('org.read')
-  list(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(ListQuery)) q: z.infer<typeof ListQuery>) {
-    return this.attachments.list(org, q.entityType, q.entityId, q.includeRemoved);
+  list(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Query(new ZodPipe(ListQuery)) q: z.infer<typeof ListQuery>) {
+    return this.attachments.list(org, user, q.entityType, q.entityId, q.includeRemoved);
   }
 
   /** Send the file's bytes as the body (Content-Type: application/pdf, image/png, image/jpeg, image/webp or application/octet-stream). */
@@ -42,8 +42,8 @@ export class AttachmentsController {
 
   @Get(':attachmentId/content')
   @RequirePermission('org.read')
-  async content(@CurrentOrg() org: OrgContext, @Param('attachmentId', ParseUUIDPipe) id: string, @Query('inline') inline: string | undefined, @Res() res: Response) {
-    const a = await this.attachments.content(org, id);
+  async content(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('attachmentId', ParseUUIDPipe) id: string, @Query('inline') inline: string | undefined, @Res() res: Response) {
+    const a = await this.attachments.content(org, user, id);
     res.setHeader('Content-Type', a.contentType);
     res.setHeader('Content-Length', String(a.sizeBytes));
     res.setHeader('Content-Disposition', `${inline === '1' ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(a.fileName)}`);

@@ -312,7 +312,7 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 | PAY-006 |  | capability | Deductions | Not started |
 | PAY-007 |  | capability | Bonuses | Not started |
 | PAY-008 |  | capability | Commissions | Not started |
-| PAY-009 |  | capability | Reimbursements | Not started |
+| PAY-009 |  | capability | Reimbursements | Implementing |
 | PAY-010 |  | capability | Overtime | Not started |
 | PAY-011 |  | capability | Leave-related adjustments | Not started |
 | PAY-012 |  | capability | Attendance integration | Not started |
@@ -383,26 +383,26 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | EXP-001 |  | rule | Build a Ramp-style modern expense experience while maintaining original design and implementation | Not started |
-| EXP-002 |  | capability | Employee expense submissions | Not started |
-| EXP-003 |  | capability | Mobile receipt capture | Not started |
+| EXP-002 |  | capability | Employee expense submissions | Tested |
+| EXP-003 |  | capability | Mobile receipt capture | Implementing |
 | EXP-004 |  | capability | OCR | Not started |
-| EXP-005 |  | capability | Expense categories | Not started |
+| EXP-005 |  | capability | Expense categories | Implemented |
 | EXP-006 |  | capability | Mileage claims | Not started |
 | EXP-007 |  | capability | Travel expenses | Not started |
 | EXP-008 |  | capability | Per diem | Not started |
-| EXP-009 |  | capability | Reimbursements | Not started |
-| EXP-010 |  | capability | Expense approval workflows | Not started |
+| EXP-009 |  | capability | Reimbursements | Tested |
+| EXP-010 |  | capability | Expense approval workflows | Tested |
 | EXP-011 |  | capability | Corporate card integration architecture | Not started |
 | EXP-012 |  | capability | Virtual card integration architecture | Not started |
 | EXP-013 |  | capability | Spending limits | Not started |
 | EXP-014 |  | capability | Department budgets | Not started |
 | EXP-015 |  | capability | Policy enforcement | Not started |
 | EXP-016 |  | capability | Expense reconciliation | Not started |
-| EXP-017 |  | capability | Expense reporting | Not started |
-| EXP-018 |  | capability | Duplicate expense detection | Not started |
+| EXP-017 |  | capability | Expense reporting | Implementing |
+| EXP-018 |  | capability | Duplicate expense detection | Implemented |
 | EXP-019 |  | capability | Receipt-to-transaction matching | Not started |
 | EXP-020 | AI Expense Features | capability | Automatic expense categorization | Not started |
-| EXP-021 | AI Expense Features | capability | Missing receipt detection | Not started |
+| EXP-021 | AI Expense Features | capability | Missing receipt detection | Implemented |
 | EXP-022 | AI Expense Features | capability | Policy violation detection | Not started |
 | EXP-023 | AI Expense Features | capability | Unusual expense alerts | Not started |
 | EXP-024 | AI Expense Features | capability | Fraud risk indicators | Not started |
@@ -1402,7 +1402,7 @@ Part 40 · M8 · priority P3 · depends on: DS
 | MOB-004 |  | capability | Invoice creation | Not started |
 | MOB-005 |  | capability | Receipt capture | Not started |
 | MOB-006 |  | capability | Expense submission | Not started |
-| MOB-007 |  | capability | Approval management | Not started |
+| MOB-007 |  | capability | Approval management | Implementing |
 | MOB-008 |  | capability | Payment status | Not started |
 | MOB-009 |  | capability | Financial alerts | Not started |
 | MOB-010 |  | capability | AI assistant | Not started |

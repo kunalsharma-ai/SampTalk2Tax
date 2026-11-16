@@ -33,7 +33,7 @@ export default function TaxRatesPage() {
     },
   });
   if (!org) return null;
-  const control = new Set([org.arAccountId, org.apAccountId]);
+  const control = new Set([org.arAccountId, org.apAccountId, org.claimsAccountId]);
   const liability = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && !control.has(a.id) && a.type === 'LIABILITY');
   const asset = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && !control.has(a.id) && a.type === 'ASSET');
   const name = (id: string | null) => (accounts.data ?? []).find((a) => a.id === id);

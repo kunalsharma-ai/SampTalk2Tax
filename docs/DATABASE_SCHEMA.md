@@ -33,6 +33,8 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `attachments` | Evidence files on a document, payment, journal entry or bank statement line: bytes (`bytea`), detected content type, size, SHA-256, uploader; removal sets `removed_at` and a reason | size 1 byte–5 MB and equal to the stored bytes; SHA-256 format; PDF/PNG/JPEG/WebP only; removed ⇔ reason |
 | `approval_policies` | One rule per org and document type: minimum total, separate approver required, active | unique `(org_id, document_kind)`; minimum ≥ 0 |
 | `approval_requests` | One request to approve one draft: snapshot of kind, contact name and total; PENDING → APPROVED / REJECTED / CANCELLED; requester, decider, notes. The document link becomes NULL if the draft is deleted | **one open (pending or approved) request per document** (partial unique index); total > 0; decided ⇔ not pending |
+| `expense_claims` | One person's claim: number, claimant, title, totals; DRAFT → SUBMITTED → APPROVED → REIMBURSED (or REJECTED, VOID); approver, posting, reimbursement and void journals | total = net + tax; status consistent with its journals and decision (CHECK); unique `(org_id, number)` |
+| `expense_claim_lines` | Date, expense account, merchant, description, amount paid (tax included), tax rate and the net/tax split | amount > 0 and = net + tax; FKs `(claim_id, org_id)`, `(account_id, org_id)`, `(tax_rate_id, org_id)` |
 | `audit_events` | Append-only, hash-chained audit trail | UPDATE/DELETE blocked by trigger |
 
 ## Integrity triggers
@@ -44,7 +46,7 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `journal_entries_balanced` (DEFERRED constraint trigger) | At commit, a posted entry has ≥ 2 lines, functional debits = credits, and header totals match the lines |
 | `journal_lines_account_check` (BEFORE) | Lines may only reference postable, active accounts |
 | `audit_events_append_only` (BEFORE) | Audit events cannot be updated or deleted |
-| `journal_lines_control_account_check` (BEFORE) | Manual journals cannot touch the receivables / payables control accounts (`organizations.ar_account_id`, `ap_account_id`); only document and payment postings can |
+| `journal_lines_control_account_check` (BEFORE) | Manual and bank-entry journals cannot touch the receivables / payables control accounts (`organizations.ar_account_id`, `ap_account_id`) or employee reimbursements payable (`claims_account_id`); only document, payment and expense-claim postings can |
 | `documents_guard`, `document_lines_guard` (BEFORE) | Posted documents and their lines are immutable; the only allowed change is a single transition to VOID with its void journal |
 | `payments_guard` (BEFORE) | Same for payments |
 | `allocations_guard` (BEFORE) | Allocations cannot be deleted or changed, except setting `removed_on` once |
@@ -54,6 +56,8 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `bank_matches_guard` (BEFORE) | Matches are never deleted, only removed once, and not while their line is reconciled |
 | `bank_matches_checked`, `bank_statement_lines_checked` (DEFERRED constraint triggers) | At commit: a MATCHED line's active matches are posted lines on the same bank account whose net equals the statement amount; other lines have no active matches |
 | `bank_reconciliations_guard` (BEFORE) | Reconciliations are never deleted; figures never change; a completed one can be undone once |
+| `expense_claims_guard` (BEFORE) | Only drafts can be deleted; claimant, number and org never change; content changes only while draft or rejected; allowed status moves only; a submitted claim must add up to its lines; the approver is never the claimant |
+| `expense_claim_lines_guard` (BEFORE) | Lines change only while the claim is a draft or rejected |
 | `attachments_guard` (BEFORE) | Attachments are never deleted; the bytes, name, type and record never change; removal happens once |
 | `approval_requests_guard` (BEFORE) | Requests are never deleted and only for drafts in the same org; status moves only PENDING → APPROVED/REJECTED/CANCELLED or APPROVED → CANCELLED; an approval must come from someone other than the requester and the document's creator unless the rule allows it |
 | `documents_invalidate_approval`, `document_lines_invalidate_approval` (AFTER) | Any change to a draft or its lines cancels its open request |
@@ -61,7 +65,7 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 
 The control-account trigger also refuses bank-entry journals (`source = BANK`) on the receivables / payables accounts; money from customers and to vendors is recorded as a receipt or payment instead.
 
-All are exercised by `apps/api/test/ledger.e2e.test.ts` and `apps/api/test/sales-purchases.e2e.test.ts`, including direct-SQL tampering attempts. The M2 triggers are in migrations `20261031171500_sales_purchases` and `20261031180000_banking` (exercised by `apps/api/test/banking.e2e.test.ts`) and `20261031190000_attachments_approvals` (exercised by `apps/api/test/attachments-approvals.e2e.test.ts`).
+All are exercised by `apps/api/test/ledger.e2e.test.ts` and `apps/api/test/sales-purchases.e2e.test.ts`, including direct-SQL tampering attempts. The M2 triggers are in migrations `20261031171500_sales_purchases` and `20261031180000_banking` (exercised by `apps/api/test/banking.e2e.test.ts`) `20261031190000_attachments_approvals` (exercised by `apps/api/test/attachments-approvals.e2e.test.ts`) and `20261031200000_expense_claims` (exercised by `apps/api/test/expenses.e2e.test.ts`).
 
 ## Entity relationships
 

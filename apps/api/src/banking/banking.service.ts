@@ -303,8 +303,8 @@ export class BankingService {
       const line = await this.lockLine(tx, org.id, lineId);
       this.assertOpen(line);
       if (input.accountId === line.accountId) throw new DomainError('INVALID_ACCOUNT', 'Choose the account on the other side of the bank line, not the bank account itself');
-      const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true } });
-      if (input.accountId === o.arAccountId || input.accountId === o.apAccountId) {
+      const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
+      if (input.accountId === o.arAccountId || input.accountId === o.apAccountId || input.accountId === o.claimsAccountId) {
         throw new DomainError('CONTROL_ACCOUNT', 'Money from customers or to vendors goes through "Record a receipt / payment" so it reaches the right invoice or bill');
       }
       const amount = new D(line.amount.toString());

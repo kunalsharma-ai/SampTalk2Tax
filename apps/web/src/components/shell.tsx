@@ -28,6 +28,7 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
     ],
   },
   { group: 'Banking', items: [{ href: '/banking', label: 'Bank accounts' }] },
+  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }] },
   {
     group: 'Accounting',
     items: [
@@ -48,6 +49,9 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
   { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/tax-rates', label: 'Tax rates' }, { href: '/settings/approvals', label: 'Approval rules' }] },
 ];
 
+/** Employees only claim expenses; the rest of the books is not theirs to see. */
+const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/expenses', label: 'My expense claims' }] }];
+
 export function Shell({ children }: { children: ReactNode }) {
   const { org, orgId, isLoading } = useOrg();
   const orgs = useOrgs();
@@ -58,7 +62,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const nav = (
     <nav aria-label="Main" className="flex flex-col gap-6">
-      {NAV.map((g) => (
+      {(org?.role === 'EMPLOYEE' ? EMPLOYEE_NAV : NAV).map((g) => (
         <div key={g.group}>
           <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{g.group}</p>
           <ul className="mt-2 flex flex-col gap-0.5">

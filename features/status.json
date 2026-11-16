@@ -1105,6 +1105,81 @@
       "evidence": [
         "apps/web/src/components/approvals/approval-card.tsx"
       ]
+    },
+    "EXP-002": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts",
+        "apps/web/e2e/expenses-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/expenses"
+      ],
+      "notes": "Employees (new EMPLOYEE role) and other staff create, edit, submit and withdraw their own claims; tax-inclusive amounts with tax split out."
+    },
+    "EXP-005": {
+      "status": "Implemented",
+      "evidence": [
+        "apps/api/src/expenses/expenses.service.ts › options"
+      ],
+      "notes": "Categories are the organisation's active expense accounts; no separate category list or per-category limits."
+    },
+    "EXP-009": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts › is reimbursed from a bank account, which clears what is owed",
+        "apps/web/e2e/expenses-flow.test.mjs"
+      ],
+      "notes": "One claim at a time, recorded from a bank or cash account (Dr employee reimbursements payable / Cr bank). No batch payouts or bank file generation."
+    },
+    "PAY-009": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts"
+      ],
+      "notes": "Expense reimbursements only; no payroll."
+    },
+    "EXP-010": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts",
+        "apps/web/e2e/expenses-flow.test.mjs"
+      ],
+      "notes": "Single-step approval by anyone with approvals.decide other than the claimant (service and database trigger); approval posts the expense."
+    },
+    "EXP-018": {
+      "status": "Implemented",
+      "evidence": [
+        "packages/accounting-engine/test/expenses.test.ts",
+        "apps/api/test/expenses.e2e.test.ts › flags a receipt that looks claimed twice"
+      ],
+      "notes": "Warns when another live claim by the same person has a line with the same date and amount. Does not block; no receipt-image comparison."
+    },
+    "EXP-021": {
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src/components/expenses/claim-detail.tsx"
+      ],
+      "notes": "Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy."
+    },
+    "EXP-003": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/e2e/expenses-flow.test.mjs"
+      ],
+      "notes": "Receipts (photo or PDF) upload from the browser, including on a phone; there is no native mobile app or camera capture flow."
+    },
+    "EXP-017": {
+      "status": "Implementing",
+      "evidence": [
+        "GET /v1/orgs/:orgId/expense-claims (summary by status)"
+      ],
+      "notes": "Totals by status for a person or the organisation; no expense reports by category or period yet beyond the general ledger."
+    },
+    "MOB-007": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/components/expenses/claims-list.tsx"
+      ],
+      "notes": "Approvals work in the responsive web app at phone width; no mobile app."
     }
   }
 }

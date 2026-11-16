@@ -6729,9 +6729,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts"
+      ],
+      "notes": "Expense reimbursements only; no payroll."
     },
     {
       "id": "PAY-010",
@@ -8181,9 +8183,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts",
+        "apps/web/e2e/expenses-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/expenses"
+      ],
+      "notes": "Employees (new EMPLOYEE role) and other staff create, edit, submit and withdraw their own claims; tax-inclusive amounts with tax split out."
     },
     {
       "id": "EXP-003",
@@ -8207,9 +8213,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/e2e/expenses-flow.test.mjs"
+      ],
+      "notes": "Receipts (photo or PDF) upload from the browser, including on a phone; there is no native mobile app or camera capture flow."
     },
     {
       "id": "EXP-004",
@@ -8259,9 +8267,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/api/src/expenses/expenses.service.ts › options"
+      ],
+      "notes": "Categories are the organisation's active expense accounts; no separate category list or per-category limits."
     },
     {
       "id": "EXP-006",
@@ -8363,9 +8373,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts › is reimbursed from a bank account, which clears what is owed",
+        "apps/web/e2e/expenses-flow.test.mjs"
+      ],
+      "notes": "One claim at a time, recorded from a bank or cash account (Dr employee reimbursements payable / Cr bank). No batch payouts or bank file generation."
     },
     {
       "id": "EXP-010",
@@ -8389,9 +8402,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/expenses.e2e.test.ts",
+        "apps/web/e2e/expenses-flow.test.mjs"
+      ],
+      "notes": "Single-step approval by anyone with approvals.decide other than the claimant (service and database trigger); approval posts the expense."
     },
     {
       "id": "EXP-011",
@@ -8571,9 +8587,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "GET /v1/orgs/:orgId/expense-claims (summary by status)"
+      ],
+      "notes": "Totals by status for a person or the organisation; no expense reports by category or period yet beyond the general ledger."
     },
     {
       "id": "EXP-018",
@@ -8597,9 +8615,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "packages/accounting-engine/test/expenses.test.ts",
+        "apps/api/test/expenses.e2e.test.ts › flags a receipt that looks claimed twice"
+      ],
+      "notes": "Warns when another live claim by the same person has a line with the same date and amount. Does not block; no receipt-image comparison."
     },
     {
       "id": "EXP-019",
@@ -8675,9 +8696,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src/components/expenses/claim-detail.tsx"
+      ],
+      "notes": "Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy."
     },
     {
       "id": "EXP-022",
@@ -28433,9 +28456,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/components/expenses/claims-list.tsx"
+      ],
+      "notes": "Approvals work in the responsive web app at phone width; no mobile app."
     },
     {
       "id": "MOB-008",

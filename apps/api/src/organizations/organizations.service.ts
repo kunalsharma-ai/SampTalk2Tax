@@ -38,7 +38,7 @@ export class OrganizationsService {
       await tx.membership.create({ data: { orgId: org.id, userId, role: 'OWNER' } });
       if (input.chartTemplate === 'GENERIC_SMB') {
         const ids = await this.applyGenericChart(tx, org.id);
-        await tx.organization.update({ where: { id: org.id }, data: { arAccountId: ids.get('1200'), apAccountId: ids.get('2100') } });
+        await tx.organization.update({ where: { id: org.id }, data: { arAccountId: ids.get('1200'), apAccountId: ids.get('2100'), claimsAccountId: ids.get('2250') } });
       }
       const fy = fiscalYearForDate(today, input.fiscalYearStartMonth);
       await this.createFiscalYear(tx, org.id, fy, input.fiscalYearStartMonth);
@@ -133,6 +133,7 @@ function serializeOrg(o: {
   isDemo: boolean;
   arAccountId: string | null;
   apAccountId: string | null;
+  claimsAccountId: string | null;
   createdAt: Date;
 }) {
   return {
@@ -145,6 +146,7 @@ function serializeOrg(o: {
     isDemo: o.isDemo,
     arAccountId: o.arAccountId,
     apAccountId: o.apAccountId,
+    claimsAccountId: o.claimsAccountId,
     createdAt: o.createdAt.toISOString(),
   };
 }

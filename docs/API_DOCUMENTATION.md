@@ -65,7 +65,7 @@ All org routes need `Authorization: Bearer <token>` and membership in the organi
 | `POST …/banking/accounts/:id/reconciliations` | banking.reconcile | Complete; locks the lines it covers |
 | `GET …/banking/accounts/:id/reconciliations` | banking.read | History, including undone ones |
 | `POST …/banking/reconciliations/:id/undo` | banking.reconcile + periods.lock | Undo the latest reconciliation of an account (reason required) |
-| `GET /v1/orgs/:orgId/attachments?entityType=&entityId=&includeRemoved=` | read permission of the record | Files on a document, payment, journal entry or bank statement line |
+| `GET /v1/orgs/:orgId/attachments?entityType=&entityId=&includeRemoved=` | read permission of the record | Files on a document, payment, journal entry, bank statement line or expense claim (claimants see their own claims' receipts) |
 | `POST /v1/orgs/:orgId/attachments?entityType=&entityId=&fileName=` | manage permission of the record (journals.create for journals) | Body is the raw file (`Content-Type: application/octet-stream` or the file type). PDF, PNG, JPEG or WebP detected from the bytes; at most 5 MB, 20 per record; exact duplicates refused |
 | `GET …/attachments/:id/content?inline=1` | read permission of the record | The file, byte for byte, with `nosniff`, a sandbox CSP, `no-store` and `X-Checksum-SHA256` |
 | `POST …/attachments/:id/remove` | manage permission of the record | Remove with a reason; the record and bytes are kept |
@@ -77,6 +77,16 @@ All org routes need `Authorization: Bearer <token>` and membership in the organi
 | `POST …/approvals/:id/approve` | approvals.decide (+ journals.post with `post: true`) | Approve; with `post: true` also posts. A posting problem is returned as `postError` and the approval stays |
 | `POST …/approvals/:id/reject` | approvals.decide | Reject with a reason |
 | `POST …/approvals/:id/withdraw` | sales.manage / purchases.manage | Take back a pending request |
+| `GET /v1/orgs/:orgId/expense-claims/options` | expenses.submit | Expense accounts and tax rates a claimant may use (employees cannot read the chart of accounts) |
+| `GET /v1/orgs/:orgId/expense-claims?status=&mine=` | expenses.submit (own) / expenses.read (all) | Claims with totals by status |
+| `GET /v1/orgs/:orgId/expense-claims/:id` | claimant or expenses.read | Claim with lines, duplicate hints, receipt count and the caller's allowed actions |
+| `POST /v1/orgs/:orgId/expense-claims` | expenses.submit | New draft: `title`, `lines[]` of `date`, `accountId` (expense account), `merchant`, `description`, `amount` (tax included), `taxRateId` |
+| `PUT` / `DELETE …/expense-claims/:id` | claimant | Edit a draft or rejected claim (it becomes a draft) / delete a draft |
+| `POST …/expense-claims/:id/submit`, `…/withdraw` | claimant | Submit for approval / take it back |
+| `POST …/expense-claims/:id/approve` | approvals.decide + journals.post, not the claimant | Approve and post (optional `date`, `note`) |
+| `POST …/expense-claims/:id/reject` | approvals.decide, not the claimant | Reject with a reason |
+| `POST …/expense-claims/:id/reimburse` | expenses.reimburse | Pay back from a bank or cash account (`bankAccountId`, `date`, `reference`) |
+| `POST …/expense-claims/:id/void` | journals.reverse | Void an approved, unpaid claim; reverses its posting |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 

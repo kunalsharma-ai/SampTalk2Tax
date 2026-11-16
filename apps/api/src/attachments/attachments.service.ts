@@ -1,18 +1,17 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { AttachmentEntity } from '@talk2tax/database';
-import { hasPermission, Permission, RoleName } from '@talk2tax/security';
+import { hasPermission, Permission } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
+import { OrgContext } from '../auth/decorators';
+import { ExpensesService } from '../expenses/expenses.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_PER_RECORD = 20;
 
-interface Org {
-  id: string;
-  role: RoleName;
-}
+type Org = OrgContext;
 
 /** File type from the first bytes. The type the browser claims is never trusted. */
 export function sniffContentType(buf: Buffer): string | null {
@@ -44,10 +43,11 @@ export class AttachmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly expenses: ExpensesService,
   ) {}
 
-  async list(org: Org, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
-    await this.entity(org, entityType, entityId, 'read');
+  async list(org: Org, actor: { id: string }, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
+    await this.entity(org, actor, entityType, entityId, 'read');
     const rows = await this.prisma.attachment.findMany({
       where: { orgId: org.id, entityType, entityId, ...(includeRemoved ? {} : { removedAt: null }) },
       select: { id: true, fileName: true, contentType: true, sizeBytes: true, sha256: true, uploadedById: true, createdAt: true, removedAt: true, removedReason: true },
@@ -63,7 +63,7 @@ export class AttachmentsService {
   }
 
   async upload(org: Org, actor: { id: string }, input: { entityType: AttachmentEntity; entityId: string; fileName: string; content: Buffer }) {
-    await this.entity(org, input.entityType, input.entityId, 'manage');
+    await this.entity(org, actor, input.entityType, input.entityId, 'manage');
     if (!Buffer.isBuffer(input.content) || input.content.length === 0) throw new DomainError('EMPTY_FILE', 'The file is empty');
     if (input.content.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
     const contentType = sniffContentType(input.content);
@@ -100,10 +100,10 @@ export class AttachmentsService {
     });
   }
 
-  async content(org: Org, id: string) {
+  async content(org: Org, actor: { id: string }, id: string) {
     const a = await this.prisma.attachment.findFirst({ where: { id, orgId: org.id } });
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Attachment not found' });
-    await this.entity(org, a.entityType, a.entityId, 'read');
+    await this.entity(org, actor, a.entityType, a.entityId, 'read');
     if (a.removedAt) throw new DomainError('REMOVED', 'This file was removed', HttpStatus.GONE);
     return a;
   }
@@ -111,7 +111,7 @@ export class AttachmentsService {
   async remove(org: Org, actor: { id: string }, id: string, reason: string) {
     const a = await this.prisma.attachment.findFirst({ where: { id, orgId: org.id }, select: { entityType: true, entityId: true, removedAt: true, fileName: true } });
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Attachment not found' });
-    await this.entity(org, a.entityType, a.entityId, 'manage');
+    await this.entity(org, actor, a.entityType, a.entityId, 'manage');
     if (a.removedAt) throw new DomainError('ALREADY_REMOVED', 'This file was already removed', HttpStatus.CONFLICT);
     return this.prisma.$transaction(async (tx) => {
       await tx.attachment.update({ where: { id }, data: { removedAt: new Date(), removedById: actor.id, removedReason: reason } });
@@ -121,7 +121,7 @@ export class AttachmentsService {
   }
 
   /** The record must exist in this organisation, and the caller needs read or manage rights on it. */
-  private async entity(org: Org, type: AttachmentEntity, id: string, access: 'read' | 'manage') {
+  private async entity(org: Org, actor: { id: string }, type: AttachmentEntity, id: string, access: 'read' | 'manage') {
     let permission: Permission;
     switch (type) {
       case 'DOCUMENT': {
@@ -149,6 +149,9 @@ export class AttachmentsService {
         permission = `banking.${access}`;
         break;
       }
+      case 'EXPENSE_CLAIM':
+        // Claimants see and add receipts on their own claims; see ExpensesService.
+        return this.expenses.attachmentAccess(org, actor.id, id, access);
       default:
         throw new DomainError('INVALID_ENTITY', 'Unknown record type');
     }

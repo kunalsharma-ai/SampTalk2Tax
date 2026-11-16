@@ -320,7 +320,7 @@ function EntryForm({ line, onDone }: { line: StatementLine; onDone: () => Promis
   const accounts = useAccounts();
   const [accountId, setAccountId] = useState('');
   const [description, setDescription] = useState(line.description);
-  const control = new Set([org?.arAccountId, org?.apAccountId, line.accountId]);
+  const control = new Set([org?.arAccountId, org?.apAccountId, org?.claimsAccountId, line.accountId]);
   const options = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && !control.has(a.id));
   const save = useMutation({ mutationFn: () => api(`/v1/orgs/${orgId}/banking/lines/${line.id}/create-entry`, { method: 'POST', body: { accountId, description } }), onSuccess: onDone });
   const inflow = !line.amount.startsWith('-');
