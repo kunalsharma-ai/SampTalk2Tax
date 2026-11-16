@@ -151,6 +151,8 @@ export class UsageService {
           organisations: list,
         };
       }),
+      // Every organisation on the platform: more than the default 5 seconds once there are many.
+      { timeout: 30_000 },
     );
   }
 

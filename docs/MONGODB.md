@@ -230,6 +230,16 @@ cascades themselves now come from the snapshot too. `test/check-constraints.test
 evaluator honest: on real records of every checked table, and on copies with each named column
 set to edge values, its verdict must equal PostgreSQL's.
 
+**Planned writes (step 10b).** Before MongoDB can take a write without PostgreSQL in front,
+the API has to work out the stored record itself: column defaults (ids, `now()`, `@updatedAt`,
+literals), `increment`/`decrement`/`push` and the other update operators, nested creates and
+deletes, and the values as PostgreSQL keeps them (Decimal rounded to its scale with overflow
+refused, `@db.Date` cut to the day, VarChar length, Char padding, jsonb without undefined
+members). `apps/api/src/db/mongo-writes.ts` does that. With `T2T_PLAN_CHECK=1` every mirrored
+write is also planned and compared field by field with the row PostgreSQL stored; differences
+go to `plan-differences.txt` (or `PLAN_DIFFERENCES_FILE`). The whole API suite runs with none.
+Values PostgreSQL's sequences draw are left out of the comparison until counters take them over.
+
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
 moved tables' rows into MongoDB and leaves records already there alone, so it is safe to
