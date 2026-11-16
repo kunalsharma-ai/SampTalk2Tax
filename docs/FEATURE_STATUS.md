@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1054 |
+| Not started | 1048 |
 | Designed | 0 |
 | Implementing | 54 |
 | Implemented | 31 |
-| Tested | 196 |
+| Tested | 202 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -38,7 +38,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
-| Enterprise financial management | M6 | 29 | 23 | 6 |
+| Enterprise financial management | M6 | 29 | 17 | 12 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
@@ -1747,6 +1747,102 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx
   - apps/web/e2e/close-flow.test.mjs
   - docs/MONTH_END_CLOSE.md
+
+### ENT-001 — Multi-company accounting
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Each company is its own organisation with its own books; a user can belong to many and switch between them. Companies owned or administered by the same user can now be grouped under a parent for group reporting (see ENT-007).
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts
+  - packages/accounting-engine/test/consolidation.test.ts
+  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/consolidation/consolidation.service.ts
+  - apps/api/src/consolidation/consolidation.controller.ts
+  - apps/api/test/consolidation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/consolidation
+  - apps/web/e2e/consolidation-flow.test.mjs
+  - docs/CONSOLIDATION.md
+
+### ENT-002 — Multi-entity accounting
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Groups of entities owned by a parent organisation: owners and admins add the companies they also own or administer; consolidated reports need report access in every member, and each member's figures are read inside its own tenant context (row-level security applies).
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts
+  - packages/accounting-engine/test/consolidation.test.ts
+  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/consolidation/consolidation.service.ts
+  - apps/api/src/consolidation/consolidation.controller.ts
+  - apps/api/test/consolidation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/consolidation
+  - apps/web/e2e/consolidation-flow.test.mjs
+  - docs/CONSOLIDATION.md
+
+### ENT-007 — Consolidated financial statements
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Consolidation worksheet (per company, eliminations, consolidated) and consolidated profit and loss and balance sheet for any period, combined by account code, with CSV/Excel/PDF export audited with the file hash. Full consolidation only (every member treated as 100% owned).
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts
+  - packages/accounting-engine/test/consolidation.test.ts
+  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/consolidation/consolidation.service.ts
+  - apps/api/src/consolidation/consolidation.controller.ts
+  - apps/api/test/consolidation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/consolidation
+  - apps/web/e2e/consolidation-flow.test.mjs
+  - docs/CONSOLIDATION.md
+
+### ENT-009 — Intercompany elimination
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Elimination rules pair one member's account with another's (current accounts, intercompany sales and purchases, investment and share capital), checked against each member's chart of accounts. Both balances are removed; a mismatch stays visible in an 'Intercompany differences to resolve' line and the worksheet still balances. Intercompany balances must sit on dedicated accounts (AR/AP control accounts cannot be split).
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts
+  - packages/accounting-engine/test/consolidation.test.ts
+  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/consolidation/consolidation.service.ts
+  - apps/api/src/consolidation/consolidation.controller.ts
+  - apps/api/test/consolidation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/consolidation
+  - apps/web/e2e/consolidation-flow.test.mjs
+  - docs/CONSOLIDATION.md
+
+### ENT-011 — Foreign currency translation
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Members in another currency are translated with user-entered rates per period end: assets and liabilities at closing, revenue and expenses at average, equity and earnings brought forward at a historical rate, with the difference in a foreign currency translation reserve. Rates are not fetched from a market source.
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts
+  - packages/accounting-engine/test/consolidation.test.ts
+  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/consolidation/consolidation.service.ts
+  - apps/api/src/consolidation/consolidation.controller.ts
+  - apps/api/test/consolidation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/consolidation
+  - apps/web/e2e/consolidation-flow.test.mjs
+  - docs/CONSOLIDATION.md
+
+### ENT-012 — Group reporting
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Group reporting through consolidation groups: worksheet, consolidated P&L and balance sheet, elimination status and translation summary on one page, exportable.
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts
+  - packages/accounting-engine/test/consolidation.test.ts
+  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/consolidation/consolidation.service.ts
+  - apps/api/src/consolidation/consolidation.controller.ts
+  - apps/api/test/consolidation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/consolidation
+  - apps/web/e2e/consolidation-flow.test.mjs
+  - docs/CONSOLIDATION.md
 
 ### ENT-014 — Financial dimensions
 

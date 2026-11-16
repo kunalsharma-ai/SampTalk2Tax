@@ -64,6 +64,8 @@ import { InvoicePrintController, InvoiceTemplatesController, SignaturesControlle
 import { InvoiceTemplatesService } from './invoice-templates/invoice-templates.service';
 import { LoansController } from './loans/loans.controller';
 import { ReportExportsController } from './report-exports/report-exports.controller';
+import { ConsolidationController } from './consolidation/consolidation.controller';
+import { ConsolidationService } from './consolidation/consolidation.service';
 import { ReportExportService } from './report-exports/report-exports.service';
 import { LoansService } from './loans/loans.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
@@ -136,6 +138,7 @@ export class AppModule {
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
+        ConsolidationController,
         SignaturesController,
         DimensionsController,
         EInvoicingController,
@@ -184,6 +187,7 @@ export class AppModule {
         LoansService,
         InvoiceTemplatesService,
         ReportExportService,
+        ConsolidationService,
         DimensionsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,

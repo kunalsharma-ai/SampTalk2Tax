@@ -1,0 +1,139 @@
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Res } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { z } from 'zod';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { isoDate, openApi, ZodPipe } from '../common/zod';
+import { parseExportFormat } from '../report-exports/report-exports.service';
+import { ConsolidationService } from './consolidation.service';
+
+const name = z.string().trim().min(1, 'Give it a name').max(120, 'Keep the name under 120 characters');
+const currency = z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code such as INR');
+const rate = z.string().regex(/^\d{1,12}(\.\d{1,10})?$/, 'Enter a rate such as 83.25');
+const side = z.object({ orgId: z.uuid('Choose an organisation'), code: z.string().trim().min(1, 'Choose an account').max(20) }).strict();
+const CreateBody = z.object({ name, currency: currency.nullish() }).strict();
+const UpdateBody = z.object({ name, currency }).strict();
+const MemberBody = z.object({ orgId: z.uuid('Choose an organisation') }).strict();
+const RateBody = z.object({ memberOrgId: z.uuid(), periodEnd: isoDate, closing: rate, average: rate, historical: rate }).strict();
+const RuleBody = z.object({ name, left: side, right: side, isActive: z.boolean().optional() }).strict();
+const PeriodQuery = z.object({ from: isoDate, to: isoDate }).strict();
+const ExportQuery = PeriodQuery.extend({ format: z.string().optional() }).strict();
+
+/**
+ * Consolidation groups owned by this organisation. Setting a group up needs org.manage here;
+ * reading the consolidated figures needs reports.read here and in every member.
+ */
+@ApiTags('consolidation')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/consolidation/groups')
+export class ConsolidationController {
+  constructor(private readonly svc: ConsolidationService) {}
+
+  @Get()
+  @RequirePermission('reports.read')
+  list(@CurrentOrg() org: OrgContext) {
+    return this.svc.list(org);
+  }
+
+  @Post()
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(CreateBody) })
+  create(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(CreateBody)) body: z.infer<typeof CreateBody>) {
+    return this.svc.create(org, user, body);
+  }
+
+  @Get(':groupId')
+  @RequirePermission('reports.read')
+  detail(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string) {
+    return this.svc.detail(org, user.id, id);
+  }
+
+  @Put(':groupId')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(UpdateBody) })
+  update(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Body(new ZodPipe(UpdateBody)) body: z.infer<typeof UpdateBody>) {
+    return this.svc.update(org, user, id, body);
+  }
+
+  @Delete(':groupId')
+  @RequirePermission('org.manage')
+  remove(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string) {
+    return this.svc.remove(org, user, id);
+  }
+
+  @Post(':groupId/members')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(MemberBody) })
+  addMember(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Body(new ZodPipe(MemberBody)) body: z.infer<typeof MemberBody>) {
+    return this.svc.addMember(org, user, id, body.orgId);
+  }
+
+  @Delete(':groupId/members/:memberOrgId')
+  @RequirePermission('org.manage')
+  removeMember(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Param('memberOrgId', ParseUUIDPipe) memberOrgId: string) {
+    return this.svc.removeMember(org, user, id, memberOrgId);
+  }
+
+  @Put(':groupId/rates')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(RateBody) })
+  setRate(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Body(new ZodPipe(RateBody)) body: z.infer<typeof RateBody>) {
+    return this.svc.setRate(org, user, id, body);
+  }
+
+  @Delete(':groupId/rates/:rateId')
+  @RequirePermission('org.manage')
+  deleteRate(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Param('rateId', ParseUUIDPipe) rateId: string) {
+    return this.svc.deleteRate(org, user, id, rateId);
+  }
+
+  @Post(':groupId/rules')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(RuleBody) })
+  addRule(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Body(new ZodPipe(RuleBody)) body: z.infer<typeof RuleBody>) {
+    return this.svc.addRule(org, user, id, body);
+  }
+
+  @Put(':groupId/rules/:ruleId')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(RuleBody) })
+  updateRule(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Param('ruleId', ParseUUIDPipe) ruleId: string, @Body(new ZodPipe(RuleBody)) body: z.infer<typeof RuleBody>) {
+    return this.svc.updateRule(org, user, id, ruleId, body);
+  }
+
+  @Delete(':groupId/rules/:ruleId')
+  @RequirePermission('org.manage')
+  deleteRule(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Param('ruleId', ParseUUIDPipe) ruleId: string) {
+    return this.svc.deleteRule(org, user, id, ruleId);
+  }
+
+  /** The consolidation worksheet with consolidated profit and loss and balance sheet. */
+  @Get(':groupId/report')
+  @RequirePermission('reports.read')
+  report(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Query(new ZodPipe(PeriodQuery)) q: z.infer<typeof PeriodQuery>) {
+    return this.svc.report(org, user.id, id, q);
+  }
+
+  /** worksheet, income-statement or balance-sheet as CSV, Excel or PDF. */
+  @Get(':groupId/export/:statement')
+  @HttpCode(200)
+  @RequirePermission('reports.read')
+  async download(
+    @CurrentOrg() org: OrgContext,
+    @CurrentUser() user: AuthUser,
+    @Param('groupId', ParseUUIDPipe) id: string,
+    @Param('statement') statement: string,
+    @Query(new ZodPipe(ExportQuery)) q: z.infer<typeof ExportQuery>,
+    @Res() res: Response,
+  ) {
+    const format = parseExportFormat(q.format);
+    const file = await this.svc.export(org, user, id, statement, format, { from: q.from, to: q.to });
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"; filename*=UTF-8''${encodeURIComponent(file.fileName)}`);
+    res.setHeader('Content-Length', String(file.body.length));
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Report-SHA256', file.sha256);
+    res.end(file.body);
+  }
+}

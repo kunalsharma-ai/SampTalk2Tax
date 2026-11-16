@@ -181,3 +181,7 @@ accounts (bank) 1─* bank_reconciliations 1─* bank_statement_lines
 ## Planned additions
 
 Dimension masters (cost centre, department, project, location), recurring journal templates, exchange-rate tables, tax rules with effective dating (M3).
+
+## Consolidation (M6 slice 7)
+
+`consolidation_groups` (parent `org_id`, name unique per parent, presentation currency), `consolidation_members` (`group_id`, `member_org_id`, unique together), `consolidation_rates` (closing, average and historical rates per member and `period_end`; positive; FK to the member, cascade), `elimination_rules` (left and right member and account code; FK to the members, restrict; the two sides must differ). All four carry the parent's `org_id` with forced row-level security. See [`CONSOLIDATION.md`](CONSOLIDATION.md).

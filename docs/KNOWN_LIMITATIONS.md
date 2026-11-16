@@ -106,6 +106,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * PDFs use the standard Helvetica font, so characters outside Western European scripts (Devanagari, Arabic, CJK, the rupee sign) print as `?`; amounts carry no currency symbol. Exports are on request only (no schedules or email), the Excel file holds values without formulas, and KPIs, management reports, budgets and forecasts are not exportable yet. See [`REPORT_EXPORTS.md`](REPORT_EXPORTS.md).
 
+## Group consolidation (M6, slice 7)
+
+* Full consolidation only: every member counts as 100% owned (no non-controlling interests or equity accounting). Accounts combine by code, with no mapping between different charts. Intercompany amounts must sit on dedicated accounts and are booked by hand in each company (no mirrored intercompany invoices yet). Translation rates are entered per period end, with one historical rate per member. See [`CONSOLIDATION.md`](CONSOLIDATION.md).
+
 ## Departments and projects (M6, slice 3)
 
 * Two dimensions only (department, project), one of each per line. No location or custom dimensions, required tags per account, cost allocation or splitting a line across projects. Only the profit and loss is split; budgets, the trial balance, balance sheet and general ledger are not. Bank entries, expense claims, payroll, depreciation and deferral releases post untagged, and document tax, receivable and payable lines are not tagged. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md).
