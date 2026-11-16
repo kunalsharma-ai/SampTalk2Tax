@@ -115,6 +115,19 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/orgs/:orgId/withholding/register?kind=&from=&to=` | reports.read | Register rows, totals by section, to deposit with due dates and overdue, and the payable account check (period of a year or less) |
 | `GET` / `POST /v1/orgs/:orgId/withholding/deposits` | reports.read / journals.post | List challans; record one (`kind`, `documentIds`, `depositDate`, `bankAccountId`, `challanReference`, optional `interestAmount` and `interestAccountId`), posting Dr payable, Cr bank |
 | `POST /v1/orgs/:orgId/withholding/deposits/:id/void` | journals.reverse | Void a challan (`reason`); reverses its journal |
+| `GET` / `PUT /v1/orgs/:orgId/payroll/settings` | payroll.read / payroll.manage | `{ configured: false }` or PF/ESI/PT codes and the seven payroll accounts (optional `accounts`; created as 6100, 6110, 2410–2414 otherwise). India and INR only; accounts frozen once a run is posted |
+| `GET /v1/orgs/:orgId/payroll/rules` | payroll.read | The statutory rules in use with their sources |
+| `GET` / `POST /v1/orgs/:orgId/payroll/employees` | payroll.read / payroll.manage | List employees; add one with its first `structure` (`effectiveFrom` on the 1st, `components` with `code`, `name`, `kind` WAGES/EXCLUDED, `monthlyAmount`) |
+| `GET` / `PUT /v1/orgs/:orgId/payroll/employees/:id` | payroll.read / payroll.manage | One employee with salary history; update details (code, joining date and previous-employer figures frozen after a posted payslip) |
+| `POST /v1/orgs/:orgId/payroll/employees/:id/salaries` | payroll.manage | Add a salary revision from a month (`STRUCTURE_USED` if that month's structure is already on a posted payslip) |
+| `GET` / `POST /v1/orgs/:orgId/payroll/runs` | payroll.read / payroll.manage | List pay runs; create a draft (`period` YYYY-MM, `payDate`; `PAY_RUN_EXISTS` if one is open) |
+| `GET` / `DELETE /v1/orgs/:orgId/payroll/runs/:id` | payroll.read / payroll.manage | A run with payslips, totals, liabilities with due dates and payments; delete a draft |
+| `POST /v1/orgs/:orgId/payroll/runs/:id/recalculate` | payroll.manage | Work out a draft again (optional `payDate`), keeping loss-of-pay days and one-offs |
+| `GET` / `PUT /v1/orgs/:orgId/payroll/runs/:id/payslips/:employeeId` | payroll.read / payroll.manage | The payslip with organisation, employee and year-to-date figures; set `lopDays` and `oneOffs` on a draft |
+| `POST /v1/orgs/:orgId/payroll/runs/:id/post` | payroll.manage + journals.post | Post to the ledger (`PAYSLIPS_CHANGED` if a recalculation gives different figures) |
+| `POST /v1/orgs/:orgId/payroll/runs/:id/void` | payroll.manage + journals.reverse | Void (`reason`, optional `date`); refused while a later run is posted or a payment stands |
+| `POST /v1/orgs/:orgId/payroll/runs/:id/payments` | payroll.manage + journals.post | Record a payment of `liability` (NET_PAY, PF, ESI, PT, TDS) from `bankAccountId` on `date` with `reference`; posts Dr payable, Cr bank |
+| `POST /v1/orgs/:orgId/payroll/runs/:id/payments/:paymentId/void` | payroll.manage + journals.reverse | Void a payment (`reason`) |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 

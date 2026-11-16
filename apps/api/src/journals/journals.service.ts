@@ -261,7 +261,7 @@ export class JournalsService {
     tx: Tx,
     org: OrgInfo,
     actor: Actor,
-    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX'; lines: JournalLineInput[] },
+    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL'; lines: JournalLineInput[] },
   ): Promise<{ id: string; entryNumber: number }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);

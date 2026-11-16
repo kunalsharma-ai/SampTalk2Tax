@@ -304,32 +304,32 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| PAY-001 |  | rule | Build a complete payroll financial management domain | Not started |
-| PAY-002 |  | capability | Employee master records | Not started |
-| PAY-003 |  | capability | Salary structures | Not started |
+| PAY-001 |  | rule | Build a complete payroll financial management domain | Implementing |
+| PAY-002 |  | capability | Employee master records | Tested |
+| PAY-003 |  | capability | Salary structures | Tested |
 | PAY-004 |  | capability | Payroll calendars | Not started |
-| PAY-005 |  | capability | Earnings | Not started |
-| PAY-006 |  | capability | Deductions | Not started |
-| PAY-007 |  | capability | Bonuses | Not started |
+| PAY-005 |  | capability | Earnings | Tested |
+| PAY-006 |  | capability | Deductions | Tested |
+| PAY-007 |  | capability | Bonuses | Implementing |
 | PAY-008 |  | capability | Commissions | Not started |
 | PAY-009 |  | capability | Reimbursements | Implementing |
 | PAY-010 |  | capability | Overtime | Not started |
-| PAY-011 |  | capability | Leave-related adjustments | Not started |
+| PAY-011 |  | capability | Leave-related adjustments | Implementing |
 | PAY-012 |  | capability | Attendance integration | Not started |
 | PAY-013 |  | capability | Employee advances | Not started |
 | PAY-014 |  | capability | Loans | Not started |
 | PAY-015 |  | capability | Benefits accounting | Not started |
-| PAY-016 |  | capability | Payroll journals | Not started |
-| PAY-017 |  | capability | Salary payment preparation | Not started |
-| PAY-018 |  | capability | Payslips | Not started |
+| PAY-016 |  | capability | Payroll journals | Tested |
+| PAY-017 |  | capability | Salary payment preparation | Implementing |
+| PAY-018 |  | capability | Payslips | Tested |
 | PAY-019 |  | capability | Payroll approvals | Not started |
 | PAY-020 |  | capability | Payroll cost allocation | Not started |
 | PAY-021 |  | capability | Departmental payroll analysis | Not started |
 | PAY-022 |  | capability | Project-level labor costs | Not started |
 | PAY-023 |  | capability | Contractor payments | Not started |
 | PAY-024 |  | capability | Payroll reporting | Not started |
-| PAY-025 |  | rule | For India, design configurable statutory components covering applicable PF, ESI, professional tax, TDS and other payroll obligations | Not started |
-| PAY-026 |  | rule | Country-specific payroll calculations must be activated only after appropriate regulatory validation | Not started |
+| PAY-025 |  | rule | For India, design configurable statutory components covering applicable PF, ESI, professional tax, TDS and other payroll obligations | Implementing |
+| PAY-026 |  | rule | Country-specific payroll calculations must be activated only after appropriate regulatory validation | Implementing |
 | PAY-027 | Payroll AI | capability | Payroll anomaly detection | Not started |
 | PAY-028 | Payroll AI | capability | Salary cost forecasting | Not started |
 | PAY-029 | Payroll AI | capability | Overtime prediction | Not started |

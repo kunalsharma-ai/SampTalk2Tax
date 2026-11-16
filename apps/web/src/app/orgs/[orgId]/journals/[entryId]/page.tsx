@@ -102,8 +102,10 @@ export default function JournalDetailPage() {
       </div>
       {j.source !== 'MANUAL' ? (
         <div className="mt-4">
-          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
-            {j.source === 'TAX'
+          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
+            {j.source === 'PAYROLL'
+              ? 'This entry was posted by a pay run or a payroll payment. To correct it, void the payment or the pay run (Payroll → Pay runs).'
+              : j.source === 'TAX'
               ? 'This entry was posted when TDS or TCS was deposited with the government. To correct it, void the deposit (Tax → TDS and TCS).'
               : j.source === 'EXPENSE'
               ? 'This entry was posted when an expense claim was approved or reimbursed. To correct an approved, unpaid claim, void the claim.'

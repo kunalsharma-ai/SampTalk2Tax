@@ -48,6 +48,11 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * No OCR: amounts are typed in, the receipt is attached as evidence. No corporate card feeds.
 * Employees are added as members of an organisation with the EMPLOYEE role; there are no email invitations yet.
 
+## Payroll (M3, slice 3)
+
+* India only, new tax regime only, professional tax for Maharashtra only. No old regime or declarations, perquisites, LWF, gratuity, statutory bonus, overtime, loans, ECR/24Q/Form 16 or bank files, payroll approvals or payslip PDFs. The full list and the sources are in [`PAYROLL_INDIA.md`](PAYROLL_INDIA.md).
+* The statutory rules have not been reviewed by a payroll professional; the Maharashtra PT slabs come from a secondary source.
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

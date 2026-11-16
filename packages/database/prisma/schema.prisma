@@ -47,6 +47,7 @@ enum JournalSource {
   BANK
   EXPENSE
   TAX
+  PAYROLL
 }
 
 enum StatementLineStatus {
@@ -203,6 +204,9 @@ model Organization {
   withholdingSettings  WithholdingSettings?
   withholdingSections  WithholdingSection[]
   withholdingDeposits  WithholdingDeposit[]
+  payrollSettings      PayrollSettings?
+  employees            Employee[]
+  payRuns              PayRun[]
 
   @@map("organizations")
 }
@@ -953,4 +957,217 @@ model WithholdingDepositItem {
 
   @@index([orgId, documentId])
   @@map("withholding_deposit_items")
+}
+
+// ---------------------------------------------------------------- payroll (India)
+
+enum PayComponentKind {
+  WAGES
+  EXCLUDED
+}
+
+enum PtCategory {
+  GENERAL
+  WOMAN
+  EXEMPT
+}
+
+enum PayRunStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+enum PayrollLiability {
+  NET_PAY
+  PF
+  ESI
+  PT
+  TDS
+}
+
+/// Registrations and the accounts a pay run posts to.
+model PayrollSettings {
+  orgId                         String       @id @map("org_id") @db.Uuid
+  pfEstablishmentCode           String?      @map("pf_establishment_code")
+  esiEmployerCode               String?      @map("esi_employer_code")
+  ptRegistration                String?      @map("pt_registration")
+  salaryExpenseAccountId        String       @map("salary_expense_account_id") @db.Uuid
+  employerContributionAccountId String       @map("employer_contribution_account_id") @db.Uuid
+  netPayAccountId               String       @map("net_pay_account_id") @db.Uuid
+  pfPayableAccountId            String       @map("pf_payable_account_id") @db.Uuid
+  esiPayableAccountId           String       @map("esi_payable_account_id") @db.Uuid
+  ptPayableAccountId            String       @map("pt_payable_account_id") @db.Uuid
+  tdsPayableAccountId           String       @map("tds_payable_account_id") @db.Uuid
+  createdAt                     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                           Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("payroll_settings")
+}
+
+model Employee {
+  id            String            @id @default(uuid()) @db.Uuid
+  orgId         String            @map("org_id") @db.Uuid
+  code          String
+  name          String
+  email         String?
+  pan           String?           @db.Char(10)
+  dateOfJoining DateTime          @map("date_of_joining") @db.Date
+  dateOfLeaving DateTime?         @map("date_of_leaving") @db.Date
+  /// State whose professional tax applies (GST state code).
+  workStateCode String?           @map("work_state_code") @db.Char(2)
+  ptCategory    PtCategory        @default(GENERAL) @map("pt_category")
+  pfMember      Boolean           @default(true) @map("pf_member")
+  epsMember     Boolean           @default(true) @map("eps_member")
+  /// PF on wages above the ceiling, by agreement between employer and employee.
+  pfOnFullWages Boolean           @default(false) @map("pf_on_full_wages")
+  uan           String?
+  esiNumber     String?           @map("esi_number")
+  /// Salary and tax from a previous employer in the tax year of joining.
+  priorTaxYear  String?           @map("prior_tax_year")
+  priorIncome   Decimal           @default(0) @map("prior_income") @db.Decimal(24, 6)
+  priorTds      Decimal           @default(0) @map("prior_tds") @db.Decimal(24, 6)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org           Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  structures    SalaryStructure[]
+  payslips      Payslip[]
+
+  @@unique([orgId, code])
+  @@unique([id, orgId])
+  @@map("employees")
+}
+
+/// Monthly pay from a given month. Never changed: a revision is a new structure from a later month.
+model SalaryStructure {
+  id            String            @id @default(uuid()) @db.Uuid
+  orgId         String            @map("org_id") @db.Uuid
+  employeeId    String            @map("employee_id") @db.Uuid
+  effectiveFrom DateTime          @map("effective_from") @db.Date
+  createdById   String            @map("created_by_id") @db.Uuid
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  employee      Employee          @relation(fields: [employeeId, orgId], references: [id, orgId], onDelete: Restrict)
+  components    SalaryComponent[]
+  payslips      Payslip[]
+
+  @@unique([employeeId, effectiveFrom])
+  @@unique([id, orgId])
+  @@map("salary_structures")
+}
+
+model SalaryComponent {
+  id            String           @id @default(uuid()) @db.Uuid
+  orgId         String           @map("org_id") @db.Uuid
+  structureId   String           @map("structure_id") @db.Uuid
+  position      Int              @db.SmallInt
+  code          String
+  name          String
+  kind          PayComponentKind
+  monthlyAmount Decimal          @map("monthly_amount") @db.Decimal(24, 6)
+  structure     SalaryStructure  @relation(fields: [structureId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([structureId, code])
+  @@map("salary_components")
+}
+
+/// One month's payroll. Draft payslips are recalculated freely; posting freezes them and posts one journal.
+model PayRun {
+  id                 String              @id @default(uuid()) @db.Uuid
+  orgId              String              @map("org_id") @db.Uuid
+  number             String
+  /// YYYY-MM
+  period             String              @db.Char(7)
+  status             PayRunStatus        @default(DRAFT)
+  payDate            DateTime            @map("pay_date") @db.Date
+  gross              Decimal             @default(0) @db.Decimal(24, 6)
+  deductions         Decimal             @default(0) @db.Decimal(24, 6)
+  net                Decimal             @default(0) @db.Decimal(24, 6)
+  employerCost       Decimal             @default(0) @map("employer_cost") @db.Decimal(24, 6)
+  journalEntryId     String?             @unique @map("journal_entry_id") @db.Uuid
+  postedAt           DateTime?           @map("posted_at") @db.Timestamptz(6)
+  postedById         String?             @map("posted_by_id") @db.Uuid
+  voidJournalEntryId String?             @unique @map("void_journal_entry_id") @db.Uuid
+  voidDate           DateTime?           @map("void_date") @db.Date
+  voidReason         String?             @map("void_reason")
+  createdById        String              @map("created_by_id") @db.Uuid
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  payslips           Payslip[]
+  remittances        PayrollRemittance[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@map("pay_runs")
+}
+
+model Payslip {
+  id             String          @id @default(uuid()) @db.Uuid
+  orgId          String          @map("org_id") @db.Uuid
+  payRunId       String          @map("pay_run_id") @db.Uuid
+  employeeId     String          @map("employee_id") @db.Uuid
+  structureId    String          @map("structure_id") @db.Uuid
+  daysInMonth    Int             @map("days_in_month") @db.SmallInt
+  /// Days not worked before joining or after leaving.
+  daysOutside    Decimal         @default(0) @map("days_outside") @db.Decimal(4, 1)
+  lopDays        Decimal         @default(0) @map("lop_days") @db.Decimal(4, 1)
+  paidDays       Decimal         @map("paid_days") @db.Decimal(4, 1)
+  /// One-off earnings this month: [{ name, kind, amount }].
+  oneOffs        Json            @default("[]") @map("one_offs")
+  /// Earnings as paid: [{ code, name, kind, amount }].
+  earnings       Json
+  gross          Decimal         @db.Decimal(24, 6)
+  wages          Decimal         @db.Decimal(24, 6)
+  wagesAddedBack Decimal         @map("wages_added_back") @db.Decimal(24, 6)
+  pfWages        Decimal         @map("pf_wages") @db.Decimal(24, 6)
+  pfEmployee     Decimal         @map("pf_employee") @db.Decimal(24, 6)
+  eps            Decimal         @db.Decimal(24, 6)
+  epfEmployer    Decimal         @map("epf_employer") @db.Decimal(24, 6)
+  edli           Decimal         @db.Decimal(24, 6)
+  pfAdmin        Decimal         @map("pf_admin") @db.Decimal(24, 6)
+  esiCovered     Boolean         @map("esi_covered")
+  esiWages       Decimal         @map("esi_wages") @db.Decimal(24, 6)
+  esiEmployee    Decimal         @map("esi_employee") @db.Decimal(24, 6)
+  esiEmployer    Decimal         @map("esi_employer") @db.Decimal(24, 6)
+  pt             Decimal         @db.Decimal(24, 6)
+  ptNote         String          @map("pt_note")
+  tds            Decimal         @db.Decimal(24, 6)
+  /// How the month's TDS was worked out: projected income, taxable income, annual tax, note.
+  tdsDetail      Json            @map("tds_detail")
+  deductions     Decimal         @db.Decimal(24, 6)
+  net            Decimal         @db.Decimal(24, 6)
+  employerCost   Decimal         @map("employer_cost") @db.Decimal(24, 6)
+  payRun         PayRun          @relation(fields: [payRunId, orgId], references: [id, orgId], onDelete: Cascade)
+  employee       Employee        @relation(fields: [employeeId, orgId], references: [id, orgId], onDelete: Restrict)
+  structure      SalaryStructure @relation(fields: [structureId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([payRunId, employeeId])
+  @@index([orgId, employeeId])
+  @@map("payslips")
+}
+
+/// Paying out what a posted pay run owes: net salaries, or PF, ESI, professional tax or TDS to the authority.
+model PayrollRemittance {
+  id                 String           @id @default(uuid()) @db.Uuid
+  orgId              String           @map("org_id") @db.Uuid
+  payRunId           String           @map("pay_run_id") @db.Uuid
+  liability          PayrollLiability
+  number             String
+  date               DateTime         @db.Date
+  bankAccountId      String           @map("bank_account_id") @db.Uuid
+  reference          String
+  amount             Decimal          @db.Decimal(24, 6)
+  status             PaymentStatus    @default(POSTED)
+  journalEntryId     String           @unique @map("journal_entry_id") @db.Uuid
+  voidJournalEntryId String?          @unique @map("void_journal_entry_id") @db.Uuid
+  voidDate           DateTime?        @map("void_date") @db.Date
+  voidReason         String?          @map("void_reason")
+  createdById        String           @map("created_by_id") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  payRun             PayRun           @relation(fields: [payRunId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@index([payRunId])
+  @@map("payroll_remittances")
 }
