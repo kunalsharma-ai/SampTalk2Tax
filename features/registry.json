@@ -24635,9 +24635,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Opt-in network: owners and admins join with recorded, versioned consent and can withdraw at any time."
     },
     {
       "id": "BENCH-002",
@@ -24660,9 +24669,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Give-to-get: each shared metric is compared with the median and quartiles of peer groups (industry, size, country), narrowest group with enough participants first."
     },
     {
       "id": "BENCH-003",
@@ -24685,9 +24703,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Gross margin over 12 months."
     },
     {
       "id": "BENCH-004",
@@ -24710,9 +24737,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Net margin over 12 months."
     },
     {
       "id": "BENCH-005",
@@ -24735,9 +24771,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Revenue growth, 12 months against the 12 before."
     },
     {
       "id": "BENCH-006",
@@ -24760,9 +24805,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Operating expense ratio over 12 months."
     },
     {
       "id": "BENCH-007",
@@ -24785,9 +24839,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Days sales outstanding (3-month basis)."
     },
     {
       "id": "BENCH-008",
@@ -24810,9 +24873,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Days payables outstanding (3-month basis)."
     },
     {
       "id": "BENCH-009",
@@ -24835,9 +24907,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Working capital efficiency: days of sales tied up in receivables + inventory − payables."
     },
     {
       "id": "BENCH-010",
@@ -24860,9 +24941,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Revenue per employee from payroll headcount (or entered); compared only within the same currency."
     },
     {
       "id": "BENCH-011",
@@ -24885,9 +24975,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Project profitability: profit before overheads of tagged projects ÷ their revenue."
     },
     {
       "id": "BENCH-012",
@@ -24910,9 +25009,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Cash conversion cycle: DSO + days inventory − DPO."
     },
     {
       "id": "BENCH-013",
@@ -24935,9 +25043,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Explicit consent statement must be ticked; who agreed, when and the consent version are stored and audited."
     },
     {
       "id": "BENCH-014",
@@ -24960,9 +25077,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Median only with 5+ other participants; quartiles only with 10+."
     },
     {
       "id": "BENCH-015",
@@ -24985,9 +25111,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Groups below the threshold are suppressed and the next broader group is tried; counts are shown only as bands."
     },
     {
       "id": "BENCH-016",
@@ -25010,9 +25145,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Only aggregates over other participants are returned; no organisation id in the pool; tests check no single value is returned."
     },
     {
       "id": "BENCH-017",
@@ -25035,9 +25179,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Rounded ratios under random keys in a system-only pool; no differential-privacy noise yet (differencing over time is a documented limitation)."
     },
     {
       "id": "BENCH-018",
@@ -25060,9 +25213,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Participation is a tenant table with forced RLS; the pool has a system-only RLS policy, tested against tenant reads and writes."
     },
     {
       "id": "BENCH-019",
@@ -25085,9 +25247,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Formulas, thresholds, peer-group order and privacy rules are shown on the page and in docs/BENCHMARKING.md."
     },
     {
       "id": "BENCH-020",
@@ -25110,9 +25281,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "The live pool holds only real participants; nothing is invented. Demo organisations never reach it."
     },
     {
       "id": "BENCH-021",
@@ -25135,9 +25315,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Synthetic peers (seed:benchmark-peers, refused in production) are flagged is_synthetic, compared only with demo organisations and labelled on the page."
     },
     {
       "id": "I18N-001",

@@ -9,6 +9,7 @@
     "start": "node --env-file-if-exists=../../.env dist/main.js",
     "dev": "tsc -p tsconfig.build.json && node --enable-source-maps --env-file-if-exists=../../.env dist/main.js",
     "seed": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/seed/seed-demo.js",
+    "seed:benchmark-peers": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/seed/seed-benchmark-peers.js",
     "test": "vitest run"
   },
   "dependencies": {
