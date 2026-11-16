@@ -45,6 +45,7 @@ export const hi: Record<string, string> = {
   Vendors: 'विक्रेता',
   Bills: 'बिल',
   Payments: 'भुगतान',
+  'Recurring bills': 'आवर्ती बिल',
   'Payment batches': 'भुगतान बैच',
   'Payables ageing': 'देय राशि की आयु',
   // Banking

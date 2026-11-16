@@ -289,6 +289,11 @@ export class DocumentsService {
     return doc;
   }
 
+  /** Post a draft inside the caller's transaction (recurring bills that post themselves). The caller checks journals.post. */
+  async postDraftInTx(tx: Tx, org: LedgerOrg, actor: Actor, id: string) {
+    await this.postInTx(tx, org, actor, id, false);
+  }
+
   /** A sales document's lines and totals worked out by the invoice rules, without saving anything (quotations and orders). */
   async computeSales(tx: Tx, org: LedgerOrg, input: Omit<DocumentInput, 'kind' | 'withholdingSectionId' | 'reverseCharge'>) {
     const p = await this.prepare(tx, org, 'SALES', { ...input, kind: 'INVOICE' });

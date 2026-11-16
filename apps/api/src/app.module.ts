@@ -114,6 +114,9 @@ import { PaymentBatchesService } from './payment-batches/payment-batches.service
 import { JournalTemplatesController } from './journal-templates/journal-templates.controller';
 import { JournalTemplatesRunnerService } from './journal-templates/journal-templates-runner.service';
 import { JournalTemplatesService } from './journal-templates/journal-templates.service';
+import { RecurringBillsController } from './recurring-bills/recurring-bills.controller';
+import { RecurringBillsRunnerService } from './recurring-bills/recurring-bills-runner.service';
+import { RecurringBillsService } from './recurring-bills/recurring-bills.service';
 import { ContractsService } from './sales-orders/contracts.service';
 import { SalesOrdersController } from './sales-orders/sales-orders.controller';
 import { ReportExportsController } from './report-exports/report-exports.controller';
@@ -246,6 +249,7 @@ export class AppModule {
         SalesOrdersController,
         ContractsController,
         JournalTemplatesController,
+        RecurringBillsController,
         BadDebtsController,
         YearEndController,
         PaymentBatchesController,
@@ -343,6 +347,8 @@ export class AppModule {
         YearEndService,
         PaymentBatchesService,
         JournalTemplatesRunnerService,
+        RecurringBillsService,
+        RecurringBillsRunnerService,
         InvoiceTemplatesService,
         ReportExportService,
         ConsolidationService,

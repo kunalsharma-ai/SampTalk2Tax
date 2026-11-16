@@ -127,6 +127,9 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
             {d.status === 'POSTED' && canManage && d.kind === 'INVOICE' && !d.debitNoteFor ? (
               <Link href={`/orgs/${orgId}/${l.docsPath}/new?debitNoteFor=${d.id}`}><Button variant="ghost">Raise debit note…</Button></Link>
             ) : null}
+            {d.kind === 'BILL' && d.status !== 'VOID' && canManage && d.currency === d.functionalCurrency ? (
+              <Link href={`/orgs/${orgId}/purchases/recurring-bills/new?fromBill=${d.id}`}><Button variant="ghost">Make recurring…</Button></Link>
+            ) : null}
             {d.status === 'POSTED' && canManage && can(org.role, 'journals.reverse') ? (
               <Button variant="ghost" onClick={() => { voidDoc.reset(); setVoidOpen(true); }}>Void…</Button>
             ) : null}

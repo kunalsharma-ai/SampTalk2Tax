@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 821 |
+| Not started | 820 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 407 |
+| Tested | 408 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 21 | 22 |
-| Accounts payable | M2 | 36 | 23 | 13 |
+| Accounts payable | M2 | 36 | 22 | 14 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -720,6 +720,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › posts a bill to payables with recoverable input tax and pays it
   - apps/web/e2e/sales-flow.test.mjs
+
+### AP-005 — Recurring bills
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Recurring bills RB-0001: vendor, lines (GST rate, SAC, dimensions), place of supply, reverse charge, TDS section, due days; monthly/quarterly/half-yearly/yearly schedule (month end, end date) that makes each due run as a draft or posted bill through the normal bill code (GST, TDS, approval rules, periods, duplicate vendor reference). The vendor reference must carry a placeholder that changes each run. The first bill is checked on save inside a rolled-back savepoint. Runs recorded once in the same transaction (append-only); failures kept on the schedule; pause/resume (skip missed)/end; Make recurring from a bill. Hourly runner (RECURRING_BILL_RUNNER_INTERVAL_SECONDS). Functional currency only.
+- Evidence:
+  - packages/accounting-engine/src/recurring-bills.ts
+  - packages/accounting-engine/test/recurring-bills.test.ts
+  - packages/database/prisma/migrations/20261129090000_recurring_bills/migration.sql
+  - apps/api/src/recurring-bills/recurring-bills.service.ts
+  - apps/api/test/recurring-bills.e2e.test.ts
+  - apps/web/e2e/recurring-bills-flow.test.mjs
+  - docs/RECURRING_BILLS.md
+  - apps/web/src/app/orgs/[orgId]/purchases/recurring-bills/[billId]/page.tsx
 
 ### AP-006 — Bill approval workflows
 

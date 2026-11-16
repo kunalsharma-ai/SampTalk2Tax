@@ -41,6 +41,7 @@ export * from './statutory';
 export * from './fx';
 export * from './fx-documents';
 export * from './recurring-journals';
+export * from './recurring-bills';
 export * from './bad-debts';
 export * from './year-end';
 export * from './payment-batches';
