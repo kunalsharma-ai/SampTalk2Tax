@@ -4,12 +4,17 @@ Talk2Tax is moving its data from PostgreSQL (Prisma) to MongoDB. The HTTP layer 
 change: the API is NestJS on Express (`@nestjs/platform-express`) and stays that way.
 
 The move goes module by module, in stacked pull requests, in dependency order: what
-everything else points at (users, organisations) moves first. MongoDB has no foreign keys
-into PostgreSQL, so a moved module works. A module still on PostgreSQL stops working as soon
-as something it points at has moved, because its foreign keys (to organisations, for
-example) can no longer be satisfied. So each pull request says which test suites pass, and
-the whole app runs end to end again only once the last pull request lands. This document
-is the rulebook every module follows when it moves.
+everything else points at (people, organisations) moves first. The whole test suite
+passes after every step, because of the bridge described under
+[While both databases run](#while-both-databases-run). This document is the rulebook every
+module follows when it moves.
+
+| Step | Moved to MongoDB | Status |
+| --- | --- | --- |
+| 1 | Data layer, replica set, migrations | Done (#87) |
+| 2 | `users`, `auth_sessions`, `login_throttles` | Done (#89) |
+| 3 | `organizations`, `memberships`, `invitations` | This step |
+| 4 | Chart of accounts, fiscal periods | Next |
 
 ## Why these choices
 
@@ -49,6 +54,34 @@ is the rulebook every module follows when it moves.
    trigger move with it and must pass against MongoDB.
 7. **Tenant bypass** (`allowSystemAccessOutsideRequests`, `withSystemAccess`) keeps its
    meaning: system work sees every organisation, but an insert must name its `orgId`.
+
+## While both databases run
+
+Modules still on PostgreSQL point at moved records with foreign keys (for example
+`memberships.user_id`) and read them in joins. So, until the last step:
+
+* **MongoDB is the record** for a moved collection. Only the moved module writes it.
+* **A copy stays in PostgreSQL.** Right after its MongoDB transaction commits, the moved
+  module copies the rows it changed into their old table (`PostgresMirrorService`). The
+  copy is made from what MongoDB now holds, never from the request. Unmoved modules keep
+  reading the copy, unchanged.
+* **The audit trail stays in PostgreSQL** until the last step, because every unmoved module
+  appends to it inside its own transactions. A moved module appends its audit events right
+  after its MongoDB change commits.
+* **If the PostgreSQL half fails**, `thenInPostgres` undoes the MongoDB half (for example, a
+  new sign-up whose audit record cannot be written is removed again). Between the two
+  commits a crash could still leave the copy behind. The copy is rewritten on the record's
+  next change, and the copying tool below repairs it.
+
+**Nested system access.** `withSystemAccess` restores whatever the transaction had before it,
+so a mirror copy made inside system work leaves the outer bypass on. Audit rows for routes
+without an organisation in their path (accepting an invitation) point the transaction at the
+organisation with `useOrgInTx` first.
+
+**Existing data.** An installation with data from before a step runs
+`pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
+moved tables' rows into MongoDB and leaves records already there alone, so it is safe to
+run again.
 
 ## Running it locally
 

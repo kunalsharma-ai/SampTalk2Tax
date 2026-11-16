@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Injectable, Logger, Optional } from '@nestjs/common';
 import { DocumentValidationError, JournalValidationError, MoneyError, StatementImportError } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
+import { DecimalFieldError, GuardViolation, ImmutableDocumentError, isDuplicateKeyError } from '@talk2tax/document-db';
 import type { Request, Response } from 'express';
 import { ErrorsService } from '../operations/errors.service';
 
@@ -64,6 +65,16 @@ export class ErrorFilter implements ExceptionFilter {
     }
     if (e instanceof MoneyError) {
       return { status: 422, body: { error: 'INVALID_AMOUNT', message: e.message } };
+    }
+    // MongoDB: the guards that replaced triggers, append-only collections, unique indexes.
+    if (e instanceof GuardViolation || e instanceof ImmutableDocumentError) {
+      return { status: 409, body: { error: 'LEDGER_INTEGRITY', message: e.message } };
+    }
+    if (e instanceof DecimalFieldError) {
+      return { status: 422, body: { error: 'INVALID_AMOUNT', message: e.message } };
+    }
+    if (isDuplicateKeyError(e)) {
+      return { status: 409, body: { error: 'CONFLICT', message: 'A record with these unique values already exists', target: Object.keys((e as { keyPattern?: object }).keyPattern ?? {}) } };
     }
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       if (e.code === 'P2002') return { status: 409, body: { error: 'CONFLICT', message: 'A record with these unique values already exists', target: e.meta?.target } };

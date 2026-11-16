@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { bootApp, createOrg, Ctx, registerUser, setOrgFields, TestUser, today } from './helpers';
 
 /** Employee expense claims, from a draft to reimbursement, against a real database. */
 let ctx: Ctx;
@@ -197,7 +197,7 @@ describe('other paths', () => {
 
   it('creates the reimbursements account on first use for organisations that predate it', async () => {
     const other = await createOrg(ctx, owner, { name: 'Older Co (synthetic)' });
-    await ctx.prisma.organization.update({ where: { id: other.orgId }, data: { claimsAccountId: null } });
+    await setOrgFields(ctx, other.orgId, { claimsAccountId: null });
     await ctx.http().post(`${other.base}/members`).set(owner.auth).send({ email: approver.email, role: 'APPROVER' }).expect(201);
     const c = (await ctx.http().post(`${other.base}/expense-claims`).set(owner.auth).send({ title: 'Synthetic', lines: [{ date: day(1), accountId: other.acc['6600'], amount: '10.00' }] }).expect(201)).body;
     await ctx.http().post(`${other.base}/expense-claims/${c.id}/submit`).set(owner.auth).expect(200);

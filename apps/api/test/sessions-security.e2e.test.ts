@@ -2,6 +2,7 @@ import { SignJWT } from 'jose';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FixedWindowCounter } from '../src/auth/rate-limit';
+import { authSessions } from '../src/db/collections/identity';
 import { bootApp, Ctx, registerUser, TestUser } from './helpers';
 
 const PASSWORD = 'a-very-long-test-password';
@@ -30,7 +31,8 @@ describe('refresh tokens', () => {
     await ctx.http().get('/v1/auth/me').set(bearer(r1.body.accessToken)).expect(200);
     const r2 = await ctx.http().post('/v1/auth/refresh').send({ refreshToken: r1.body.refreshToken }).expect(200);
     await ctx.http().get('/v1/auth/me').set(bearer(r2.body.accessToken)).expect(200);
-    const row = await ctx.prisma.authSession.findUniqueOrThrow({ where: { id: r1.body.sessionId } });
+    const row = await ctx.db.collection('auth_sessions').findOne({ _id: r1.body.sessionId as never });
+    if (!row) throw new Error('session not stored');
     expect(row.rotationCount).toBe(2);
     // Only a hash of the secret is stored.
     expect(row.secretHash).not.toContain(r2.body.refreshToken.split('.')[1]);
@@ -49,7 +51,7 @@ describe('refresh tokens', () => {
   it('treats an old token used after the grace window as theft and ends the session', async () => {
     const u = await registerUser(ctx);
     const r1 = await ctx.http().post('/v1/auth/refresh').send({ refreshToken: u.refreshToken }).expect(200);
-    await ctx.prisma.authSession.update({ where: { id: r1.body.sessionId }, data: { rotatedAt: new Date(Date.now() - 60_000) } });
+    await ctx.db.collection('auth_sessions').updateOne({ _id: r1.body.sessionId as never }, { $set: { rotatedAt: new Date(Date.now() - 60_000) } });
     const reuse = await ctx.http().post('/v1/auth/refresh').send({ refreshToken: u.refreshToken }).expect(401);
     expect(reuse.body.error).toBe('REFRESH_TOKEN_REUSED');
     // Both the thief's and the owner's tokens are now dead.
@@ -71,15 +73,15 @@ describe('refresh tokens', () => {
   it('ends sessions past their hard expiry or idle limit', async () => {
     const a = await registerUser(ctx);
     const sidA = a.refreshToken.split('.')[0];
-    await ctx.prisma.$executeRaw`UPDATE auth_sessions SET expires_at = created_at + interval '1 millisecond' WHERE id = ${sidA}::uuid`;
+    await ctx.db.collection('auth_sessions').updateOne({ _id: sidA as never }, [{ $set: { expiresAt: { $add: ['$createdAt', 1] } } }]);
     expect((await ctx.http().get('/v1/auth/me').set(a.auth).expect(401)).body.error).toBe('SESSION_EXPIRED');
     expect((await ctx.http().post('/v1/auth/refresh').send({ refreshToken: a.refreshToken }).expect(401)).body.error).toBe('SESSION_EXPIRED');
 
     const b = await registerUser(ctx);
     const sidB = b.refreshToken.split('.')[0];
-    await ctx.prisma.authSession.update({ where: { id: sidB }, data: { lastUsedAt: new Date(Date.now() - 8 * 86_400_000) } });
+    await ctx.db.collection('auth_sessions').updateOne({ _id: sidB as never }, { $set: { lastUsedAt: new Date(Date.now() - 8 * 86_400_000) } });
     expect((await ctx.http().post('/v1/auth/refresh').send({ refreshToken: b.refreshToken }).expect(401)).body.error).toBe('SESSION_EXPIRED');
-    expect((await ctx.prisma.authSession.findUniqueOrThrow({ where: { id: sidB } })).revokedReason).toBe('expired');
+    expect((await ctx.db.collection('auth_sessions').findOne({ _id: sidB as never }))?.revokedReason).toBe('expired');
   });
 
   it('rejects access tokens that do not name a session, and expired ones with TOKEN_EXPIRED', async () => {
@@ -141,15 +143,22 @@ describe('sessions and sign-out', () => {
     expect((audit?.data as { reason: string }).reason).toBe('signed_out');
   });
 
-  it('the database refuses to revive a revoked session or move it to another user', async () => {
+  it('the data layer refuses to revive a revoked session, move it to another user or extend it', async () => {
     const a = await registerUser(ctx);
     const b = await registerUser(ctx);
     const sid = a.refreshToken.split('.')[0];
     await ctx.http().delete('/v1/auth/sessions/current').set(a.auth).expect(204);
-    await expect(ctx.prisma.$executeRaw`UPDATE auth_sessions SET revoked_at = NULL, revoked_reason = NULL WHERE id = ${sid}::uuid`).rejects.toThrow(/revoked session/);
+    const sessions = ctx.store.collection(authSessions);
+    await expect(sessions.updateOne({ id: sid }, { $set: { revokedAt: null, revokedReason: null } })).rejects.toThrow(/revoked session/);
     const live = b.refreshToken.split('.')[0];
-    await expect(ctx.prisma.$executeRaw`UPDATE auth_sessions SET user_id = ${a.id}::uuid WHERE id = ${live}::uuid`).rejects.toThrow(/cannot change its user/);
-    await expect(ctx.prisma.$executeRaw`UPDATE auth_sessions SET expires_at = expires_at + interval '1 day' WHERE id = ${live}::uuid`).rejects.toThrow(/hard expiry/);
+    await expect(sessions.updateOne({ id: live }, { $set: { userId: a.id } })).rejects.toThrow(/cannot change its user/);
+    const row = await sessions.findById(live);
+    await expect(sessions.updateOne({ id: live }, { $set: { expiresAt: new Date(row!.expiresAt.getTime() + 86_400_000) } })).rejects.toThrow(/hard expiry/);
+    // Nothing changed.
+    expect((await sessions.findById(live))?.userId).toBe(b.id);
+    expect((await sessions.findById(sid))?.revokedAt).toBeInstanceOf(Date);
+    // The validator refuses what the guards cannot see: a double where a count belongs, a missing user.
+    await expect(ctx.db.collection('auth_sessions').updateOne({ _id: live as never }, { $set: { rotationCount: -1 } })).rejects.toThrow(/validation/i);
   });
 });
 
@@ -186,9 +195,9 @@ describe('sign-in lockout', () => {
     const u = await registerUser(ctx);
     await expectLockout(u.email, PASSWORD);
     expect(await ctx.prisma.auditEvent.findFirst({ where: { action: 'user.sign_in_locked', entityId: u.id } })).toBeTruthy();
-    await ctx.prisma.loginThrottle.update({ where: { email: u.email }, data: { lockedUntil: new Date(Date.now() - 1000), firstFailureAt: new Date(Date.now() - 20 * 60_000) } });
+    await ctx.db.collection('login_throttles').updateOne({ _id: u.email as never }, { $set: { lockedUntil: new Date(Date.now() - 1000), firstFailureAt: new Date(Date.now() - 20 * 60_000) } });
     await login(ctx, u.email).expect(200);
-    expect(await ctx.prisma.loginThrottle.findUnique({ where: { email: u.email } })).toBeNull();
+    expect(await ctx.db.collection('login_throttles').findOne({ _id: u.email as never })).toBeNull();
   });
 
   it('answers the same way for an address with no account', async () => {

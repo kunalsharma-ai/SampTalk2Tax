@@ -1,3 +1,6 @@
+import { DocumentStoreService } from '../common/document-store.service';
+import { organizations } from '../db/collections/tenancy';
+import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { HttpException, HttpStatus, Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
@@ -26,6 +29,8 @@ export class RegionsService implements OnApplicationBootstrap {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly store: DocumentStoreService,
+    private readonly mirror: PostgresMirrorService,
   ) {}
 
   /** Organisations from before regions existed belong to the first region that serves this database. */
@@ -35,9 +40,12 @@ export class RegionsService implements OnApplicationBootstrap {
   }
 
   async claimUntagged(): Promise<number> {
-    return this.prisma.$transaction(async (tx) =>
-      withSystemAccess(tx, async () => tx.$executeRaw`UPDATE organizations SET data_region = ${this.config.DEPLOYMENT_REGION} WHERE data_region IS NULL`),
-    );
+    const orgs = this.store.collection(organizations);
+    const untagged = (await orgs.find({ dataRegion: null }, { projection: { id: 1 } })).map((o) => o.id);
+    if (!untagged.length) return 0;
+    await orgs.updateMany({ id: { $in: untagged }, dataRegion: null }, { $set: { dataRegion: this.config.DEPLOYMENT_REGION } });
+    await this.mirror.organizations(untagged);
+    return untagged.length;
   }
 
   get current(): string {
@@ -89,19 +97,21 @@ export class RegionsService implements OnApplicationBootstrap {
       throw new DomainError('REGION_UNKNOWN', `${to} is not in REGION_DIRECTORY; add it there first so people can be pointed to it`, HttpStatus.UNPROCESSABLE_ENTITY);
     }
     if (!reason.trim()) throw new DomainError('REGION_REASON_REQUIRED', 'Say why the organisation is moving', HttpStatus.UNPROCESSABLE_ENTITY);
-    return this.prisma.$transaction(async (tx) =>
+    const orgs = this.store.collection(organizations);
+    const org = await orgs.findById(orgId);
+    if (!org) throw new DomainError('NOT_FOUND', 'Organisation not found', HttpStatus.NOT_FOUND);
+    const from = org.dataRegion ?? this.current;
+    if (from === to) throw new DomainError('REGION_UNCHANGED', `${org.name} is already in ${to}`, HttpStatus.CONFLICT);
+    if (from !== this.current && to !== this.current) {
+      throw new DomainError('REGION_NOT_HERE', `${org.name} lives in ${from}; move it from that region`, HttpStatus.CONFLICT);
+    }
+    await orgs.updateOne({ id: orgId }, { $set: { dataRegion: to, updatedAt: new Date() } });
+    await this.prisma.$transaction(async (tx) =>
       withSystemAccess(tx, async () => {
-        const org = await tx.organization.findUnique({ where: { id: orgId }, select: { id: true, name: true, dataRegion: true } });
-        if (!org) throw new DomainError('NOT_FOUND', 'Organisation not found', HttpStatus.NOT_FOUND);
-        const from = org.dataRegion ?? this.current;
-        if (from === to) throw new DomainError('REGION_UNCHANGED', `${org.name} is already in ${to}`, HttpStatus.CONFLICT);
-        if (from !== this.current && to !== this.current) {
-          throw new DomainError('REGION_NOT_HERE', `${org.name} lives in ${from}; move it from that region`, HttpStatus.CONFLICT);
-        }
-        await tx.organization.update({ where: { id: orgId }, data: { dataRegion: to } });
+        await this.mirror.organizations([orgId], tx);
         await this.audit.append(tx, { orgId, actorId: null, action: 'organization.region_moved', entityType: 'organization', entityId: orgId, data: { from, to, reason: reason.trim(), by: this.current } });
-        return { orgId, name: org.name, from, to };
       }),
     );
+    return { orgId, name: org.name, from, to };
   }
 }

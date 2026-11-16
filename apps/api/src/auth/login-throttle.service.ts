@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { PrismaService } from '../common/prisma.service';
+import { DocumentStoreService } from '../common/document-store.service';
+import { loginThrottles } from '../db/collections/identity';
 import { AppConfig, CONFIG } from '../config';
 
 /** Thrown for a locked address. Carries Retry-After for the response. */
@@ -13,44 +14,49 @@ export class TooManyAttemptsError extends HttpException {
 }
 
 /**
- * Counts failed sign-ins per email address in PostgreSQL (so every API instance sees
- * the same count). After LOGIN_MAX_FAILURES failures within LOGIN_LOCK_MINUTES the
- * address is locked for LOGIN_LOCK_MINUTES. Unknown addresses are counted the same way,
- * so the answer never reveals whether an account exists.
+ * Counts failed sign-ins per email address in MongoDB (so every API instance sees the
+ * same count). After LOGIN_MAX_FAILURES failures within LOGIN_LOCK_MINUTES the address is
+ * locked for LOGIN_LOCK_MINUTES. Unknown addresses are counted the same way, so the answer
+ * never reveals whether an account exists.
  */
 @Injectable()
 export class LoginThrottleService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly store: DocumentStoreService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
   async assertNotLocked(email: string): Promise<void> {
-    const row = await this.prisma.loginThrottle.findUnique({ where: { email }, select: { lockedUntil: true } });
+    const row = await this.store.collection(loginThrottles).findById(email);
     if (row?.lockedUntil && row.lockedUntil > new Date()) throw this.lockedError(row.lockedUntil);
   }
 
-  /** Records a failure; returns true when this failure locked the address. */
+  /**
+   * Records a failure; returns true when this failure locked the address. Read and write
+   * happen in one transaction: two failures at the same moment conflict and one is retried,
+   * so neither is lost.
+   */
   async recordFailure(email: string): Promise<boolean> {
-    const win = `${this.config.LOGIN_LOCK_MINUTES} minutes`;
+    const windowMs = this.config.LOGIN_LOCK_MINUTES * 60_000;
     const max = this.config.LOGIN_MAX_FAILURES;
-    const rows = await this.prisma.$queryRaw<{ failures: number; locked_until: Date | null }[]>`
-      INSERT INTO login_throttles (email, failures, first_failure_at, locked_until, updated_at)
-      VALUES (${email}, 1, now(), CASE WHEN 1 >= ${max}::int THEN now() + ${win}::interval END, now())
-      ON CONFLICT (email) DO UPDATE SET
-        failures = CASE WHEN login_throttles.first_failure_at < now() - ${win}::interval THEN 1 ELSE login_throttles.failures + 1 END,
-        first_failure_at = CASE WHEN login_throttles.first_failure_at < now() - ${win}::interval THEN now() ELSE login_throttles.first_failure_at END,
-        locked_until = CASE
-          WHEN (CASE WHEN login_throttles.first_failure_at < now() - ${win}::interval THEN 1 ELSE login_throttles.failures + 1 END) >= ${max}::int
-          THEN now() + ${win}::interval
-          ELSE NULL END,
-        updated_at = now()
-      RETURNING failures, locked_until`;
-    return rows[0]?.failures === max && rows[0].locked_until !== null;
+    return this.store.transaction(async () => {
+      const c = this.store.collection(loginThrottles);
+      const row = await c.findById(email);
+      const now = new Date();
+      const fresh = !row || row.firstFailureAt.getTime() < now.getTime() - windowMs;
+      const failures = fresh ? 1 : row.failures + 1;
+      const lockedUntil = failures >= max ? new Date(now.getTime() + windowMs) : null;
+      await c.updateOne(
+        { id: email },
+        { $set: { failures, firstFailureAt: fresh ? now : row.firstFailureAt, lockedUntil, updatedAt: now } },
+        { upsert: true },
+      );
+      return failures === max && lockedUntil !== null;
+    });
   }
 
   async clear(email: string): Promise<void> {
-    await this.prisma.loginThrottle.deleteMany({ where: { email } });
+    await this.store.collection(loginThrottles).deleteMany({ id: email });
   }
 
   lockedError(until: Date): TooManyAttemptsError {

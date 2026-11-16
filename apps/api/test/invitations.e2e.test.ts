@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { runInOrg } from '../src/common/tenant-context';
+import { invitations, memberships } from '../src/db/collections/tenancy';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
 
 let ctx: Ctx;
@@ -24,7 +26,7 @@ describe('invitations', () => {
     const res = await ctx.http().post(`${base}/invitations`).set(owner.auth).send({ email: email.toUpperCase(), role: 'ACCOUNTANT' }).expect(201);
     expect(res.body.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(res.body.invitation).toMatchObject({ email, role: 'ACCOUNTANT', status: 'PENDING' });
-    const stored = await ctx.prisma.invitation.findUniqueOrThrow({ where: { id: res.body.invitation.id } });
+    const stored = (await ctx.db.collection('invitations').findOne({ _id: res.body.invitation.id } as never))!;
     expect(stored.tokenHash).not.toContain(res.body.token);
 
     // The invitee may register only after the invitation was sent.
@@ -71,9 +73,9 @@ describe('invitations', () => {
     expect((await ctx.http().post(`/v1/invitations/${a.body.token}/accept`).set(invitee.auth).expect(410)).body.error).toBe('INVITE_REVOKED');
 
     const b = await ctx.http().post(`${base}/invitations`).set(owner.auth).send({ email, role: 'VIEWER' }).expect(201);
-    await ctx.prisma.$executeRaw`UPDATE invitations SET expires_at = created_at + interval '1 millisecond' WHERE id = ${b.body.invitation.id}::uuid`;
-    const row = await ctx.prisma.invitation.findUniqueOrThrow({ where: { id: b.body.invitation.id } });
-    expect(row.expiresAt.getTime()).toBeLessThan(Date.now());
+    await ctx.db.collection('invitations').updateOne({ _id: b.body.invitation.id as never }, [{ $set: { expiresAt: { $add: ['$createdAt', 1] } } }]);
+    const row = await ctx.db.collection('invitations').findOne({ _id: b.body.invitation.id as never });
+    expect(row!.expiresAt.getTime()).toBeLessThan(Date.now());
     expect((await ctx.http().post(`/v1/invitations/${b.body.token}/accept`).set(invitee.auth).expect(410)).body.error).toBe('INVITE_EXPIRED');
     // A new invitation for the same email replaces the expired one.
     await ctx.http().post(`${base}/invitations`).set(owner.auth).send({ email, role: 'VIEWER' }).expect(201);
@@ -108,18 +110,30 @@ describe('invitations', () => {
     const otherOrg = await createOrg(ctx, other);
     await ctx.http().get(`${otherOrg.base}/invitations`).set(owner.auth).expect(404);
     await ctx.http().post(`${otherOrg.base}/invitations/${inv.body.invitation.id}/revoke`).set(other.auth).expect(404);
-    expect(await ctx.prisma.invitation.count({ where: { orgId } })).toBe(2);
+    expect(await ctx.db.collection('invitations').countDocuments({ orgId })).toBe(2);
   });
 
-  it('the database keeps invitations as history', async () => {
+  it('the data layer keeps invitations as history', async () => {
     const owner = await registerUser(ctx);
-    const { base } = await createOrg(ctx, owner);
+    const { base, orgId } = await createOrg(ctx, owner);
     const inv = await ctx.http().post(`${base}/invitations`).set(owner.auth).send({ email: fresh(), role: 'VIEWER' }).expect(201);
     const id = inv.body.invitation.id;
-    await expect(ctx.prisma.$executeRaw`DELETE FROM invitations WHERE id = ${id}::uuid`).rejects.toThrow(/cannot be deleted/);
-    await expect(ctx.prisma.$executeRaw`UPDATE invitations SET role = 'OWNER' WHERE id = ${id}::uuid`).rejects.toThrow(/cannot change/);
-    await ctx.http().post(`${base}/invitations/${id}/revoke`).set(owner.auth).expect(200);
-    await expect(ctx.prisma.$executeRaw`UPDATE invitations SET revoked_at = NULL, revoked_by_id = NULL WHERE id = ${id}::uuid`).rejects.toThrow(/already revoked/);
+    await runInOrg(orgId, async () => {
+      const c = ctx.store.collection(invitations);
+      await expect(c.deleteOne({ id })).rejects.toThrow(/cannot be deleted/);
+      await expect(c.updateOne({ id }, { $set: { role: 'OWNER' } })).rejects.toThrow(/cannot change/);
+      await ctx.http().post(`${base}/invitations/${id}/revoke`).set(owner.auth).expect(200);
+      await expect(c.updateOne({ id }, { $set: { revokedAt: null, revokedById: null, openFor: 'x@example.test' } })).rejects.toThrow(/already revoked/);
+      expect((await c.findById(id))?.revokedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  it('two invitations for one address at the same moment: one is refused', async () => {
+    const owner = await registerUser(ctx);
+    const { base } = await createOrg(ctx, owner);
+    const email = fresh();
+    const results = await Promise.all([1, 2, 3].map(() => ctx.http().post(`${base}/invitations`).set(owner.auth).send({ email, role: 'VIEWER' })));
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409, 409]);
   });
 });
 
@@ -149,10 +163,15 @@ describe('member roles and removal', () => {
     expect(members.find((m) => m.userId === t.viewer.id)?.role).toBe('ACCOUNTANT');
   });
 
-  it('keeps at least one owner, in the service and in the database', async () => {
+  it('keeps at least one owner, in the service and in the data layer', async () => {
     const t = await team();
     expect((await ctx.http().put(`${t.base}/members/${t.owner.id}`).set(t.owner.auth).send({ role: 'ADMIN' }).expect(409)).body.error).toBe('LAST_OWNER');
     expect((await ctx.http().delete(`${t.base}/members/${t.owner.id}`).set(t.owner.auth).expect(409)).body.error).toBe('LAST_OWNER');
+    await runInOrg(t.orgId, async () => {
+      await expect(ctx.store.collection(memberships).deleteMany({ role: 'OWNER' })).rejects.toThrow(/at least one owner/);
+      await expect(ctx.store.collection(memberships).updateMany({ role: 'OWNER' }, { $set: { role: 'VIEWER' } })).rejects.toThrow(/at least one owner/);
+    });
+    // The PostgreSQL copy keeps its own trigger meanwhile.
     await expect(ctx.prisma.$executeRaw`DELETE FROM memberships WHERE org_id = ${t.orgId}::uuid AND role = 'OWNER'`).rejects.toThrow(/at least one owner/);
     // With a second owner, the first can step down.
     await ctx.http().put(`${t.base}/members/${t.admin.id}`).set(t.owner.auth).send({ role: 'OWNER' }).expect(200);

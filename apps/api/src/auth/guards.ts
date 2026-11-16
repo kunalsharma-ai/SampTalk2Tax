@@ -3,8 +3,10 @@ import { Reflector } from '@nestjs/core';
 import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { FlagKey, isWriteMethod } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
-import { PrismaService } from '../common/prisma.service';
-import { enterOrg, enterUser } from '../common/tenant-context';
+import { PrismaService, withSystemAccess } from '../common/prisma.service';
+import { DocumentStoreService } from '../common/document-store.service';
+import { enterOrg, enterUser, runInOrg } from '../common/tenant-context';
+import { memberships, organizations } from '../db/collections/tenancy';
 import { RegionsService } from '../regions/regions.service';
 import { accessOf } from '../billing/limits';
 import { FlagsService } from '../operations/flags.service';
@@ -26,6 +28,7 @@ export class AuthGuard implements CanActivate {
     private readonly supportAccess: SupportAccessService,
     private readonly maintenance: MaintenanceService,
     private readonly flags: FlagsService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -70,10 +73,7 @@ export class AuthGuard implements CanActivate {
     const orgId: string | undefined = req.params?.orgId;
     if (orgId !== undefined) {
       if (!z.uuid().safeParse(orgId).success) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
-      const membership = await this.prisma.membership.findUnique({
-        where: { orgId_userId: { orgId, userId: user.id } },
-        include: { org: { select: { functionalCurrency: true, fiscalYearStartMonth: true, dataRegion: true, suspendedAt: true, suspendedReason: true, subscription: { select: { status: true, trialEndsAt: true, currentPeriodEnd: true, plan: { select: { name: true, features: true } } } } } } },
-      });
+      const membership = await this.membershipOf(orgId, user.id);
       // Non-members get 404, not 403, so organization ids cannot be probed. The one exception
       // is support staff while the organisation has granted support access: read-only, logged.
       if (!membership) return this.viaSupport(req, user, orgId, permission, targets);
@@ -115,6 +115,26 @@ export class AuthGuard implements CanActivate {
       throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Organization-scoped route is missing :orgId' });
     }
     return true;
+  }
+
+  /** The person's membership in the organisation, with what the checks below need of the organisation. */
+  private async membershipOf(orgId: string, userId: string) {
+    const m = await runInOrg(orgId, () => this.store.collection(memberships).findOne({ userId }));
+    if (!m) return null;
+    const [org, subscription] = await Promise.all([
+      this.store.collection(organizations).findById(orgId),
+      // The request is not inside the organisation yet, so this read is the system's.
+      this.prisma.$transaction((tx) =>
+        withSystemAccess(tx, () =>
+          tx.subscription.findUnique({
+            where: { orgId },
+            select: { status: true, trialEndsAt: true, currentPeriodEnd: true, plan: { select: { name: true, features: true } } },
+          }),
+        ),
+      ),
+    ]);
+    if (!org) return null;
+    return { role: m.role, org: { functionalCurrency: org.functionalCurrency, fiscalYearStartMonth: org.fiscalYearStartMonth, dataRegion: org.dataRegion, suspendedAt: org.suspendedAt, suspendedReason: org.suspendedReason, subscription } };
   }
 
   /** A module behind a feature flag that is off for this organisation is refused. */

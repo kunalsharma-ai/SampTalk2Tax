@@ -1,3 +1,6 @@
+import { DocumentStoreService } from '../common/document-store.service';
+import { runInOrg } from '../common/tenant-context';
+import { invitations, memberships } from '../db/collections/tenancy';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { BillingCurrency, BillingInterval, isDowngrade, PLAN_FEATURE_LABELS, PlanDefinition, PlanFeature, PlanLimits, priceFor } from '@talk2tax/accounting-engine';
 import { randomUUID } from 'node:crypto';
@@ -35,6 +38,7 @@ export class BillingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   async forOrg(orgId: string, now = new Date()) {
@@ -42,8 +46,8 @@ export class BillingService {
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
     const currency = s.currency as BillingCurrency;
     const [members, openInvitations, plans, history] = await Promise.all([
-      this.prisma.membership.count({ where: { orgId } }),
-      this.prisma.invitation.count({ where: { orgId, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } } }),
+      runInOrg(orgId, () => this.store.collection(memberships).count({})),
+      runInOrg(orgId, () => this.store.collection(invitations).count({ openFor: { $exists: true }, expiresAt: { $gt: now } })),
       this.prisma.plan.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] }),
       this.prisma.subscriptionEvent.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: 30 }),
     ]);

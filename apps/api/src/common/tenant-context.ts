@@ -61,3 +61,17 @@ export function enterApiKey(apiKey: { id: string; prefix: string }): void {
   const store = tenantStorage.getStore();
   if (store) store.apiKey = apiKey;
 }
+
+/**
+ * Runs fn as the system (every organisation visible). For the few reads that cross tenants
+ * by design: a person's own memberships, an invitation looked up by its link token. Keep
+ * the filter explicit (userId, tokenHash) and never wrap writes of tenant data in this.
+ */
+export function runAsSystem<T>(fn: () => Promise<T>): Promise<T> {
+  return tenantStorage.run({ ...currentTenantContext(), bypass: true }, fn);
+}
+
+/** Runs fn inside one organisation: a new one (not yet in the request), or the one an invitation belongs to. */
+export function runInOrg<T>(orgId: string, fn: () => Promise<T>): Promise<T> {
+  return tenantStorage.run({ ...currentTenantContext(), orgId, bypass: false }, fn);
+}
