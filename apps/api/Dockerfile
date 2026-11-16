@@ -7,7 +7,7 @@
 #   --secret id=extra_ca,src=<ca.pem>
 
 # The full Node image already has OpenSSL (for Prisma) and CA certificates; no apt needed.
-FROM node:22-bookworm AS build
+FROM node:26-bookworm AS build
 RUN corepack enable
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
