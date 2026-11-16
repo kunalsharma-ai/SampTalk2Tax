@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 819 |
+| Not started | 818 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 409 |
+| Tested | 410 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 21 | 22 |
+| Accounts receivable | M2 | 43 | 20 | 23 |
 | Accounts payable | M2 | 36 | 21 | 15 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -606,6 +606,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/WORKFLOW_AUTOMATIONS.md
   - apps/api/test/collections.e2e.test.ts
   - apps/web/e2e/collections-flow.test.mjs
+
+### AR-025 — Dispute management
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Invoice disputes DS-0001: raised from a posted invoice with something due, for part or all of what is due (checked), with reason, description, owner (a member) and target date; one open per invoice (partial unique index); changes and notes kept in an append-only history; resolved by a posted credit note of the same customer and currency, customer pays, written off or withdrawn, then final (trigger). An open dispute keeps the invoice out of AI payment reminders and the INVOICE_OVERDUE workflow trigger; it still counts in receivables. Summary: open count and amount, past target, oldest, average days to settle, outcomes.
+- Evidence:
+  - packages/accounting-engine/src/disputes.ts
+  - packages/accounting-engine/test/disputes.test.ts
+  - packages/database/prisma/migrations/20261201090000_invoice_disputes/migration.sql
+  - apps/api/src/disputes/disputes.service.ts
+  - apps/api/test/disputes.e2e.test.ts
+  - apps/web/e2e/disputes-flow.test.mjs
+  - docs/INVOICE_DISPUTES.md
+  - apps/web/src/app/orgs/[orgId]/sales/disputes/page.tsx
 
 ### AR-026 — Bad debt provisions
 

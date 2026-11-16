@@ -143,7 +143,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-022 |  | capability | Customer statements | Tested |
 | AR-023 |  | capability | Receivable aging | Tested |
 | AR-024 |  | capability | Collection reminders | Integration pending |
-| AR-025 |  | capability | Dispute management | Not started |
+| AR-025 |  | capability | Dispute management | Tested |
 | AR-026 |  | capability | Bad debt provisions | Tested |
 | AR-027 |  | capability | Write-offs | Tested |
 | AR-028 |  | capability | Revenue recognition support | Not started |

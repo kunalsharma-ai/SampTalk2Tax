@@ -124,6 +124,9 @@ beforeAll(async () => {
   await invoice('cedar', 'Cedar Mart', '20000.00', addDays(T, -3));
   await invoice('lotus', 'Lotus Stores', '8000.00', addDays(T, -5));
   await invoice('teak', 'Teak Traders', '30000.00', addDays(T, 10));
+  // Banyan disputes another invoice: the reminder leaves it out while the dispute is open.
+  await invoice('disputed', 'Banyan Retail', '7000.00', addDays(T, -20));
+  await ctx.http().post(`${org.base}/sales/disputes`).set(owner.auth).send({ documentId: inv.disputed.id, reason: 'QUALITY', description: 'Damaged on arrival' }).expect(201);
   // Banyan paid one invoice in full, 60 days late, and part of another.
   await receipt('Banyan Retail', '15000.00', [{ documentId: inv.paid.id, amount: '10000.00' }, { documentId: inv.a.id, amount: '5000.00' }]);
 });

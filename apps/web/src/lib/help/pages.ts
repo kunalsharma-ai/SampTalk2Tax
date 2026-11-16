@@ -210,6 +210,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the lines, the amounts, the end date or whether bills are posted. Once it has made bills, its vendor, first date, frequency and run day stay as they are.',
     where: 'Purchases. Bills already made keep their lines and amounts.',
   },
+  'sales/disputes': {
+    what: 'Invoices a customer has queried, with the amount in dispute, the reason, who owns it and the date to settle it by.',
+    how: 'Raise a dispute from the invoice with Raise dispute…. Open a dispute to add notes, change the owner, amount or target date, and resolve it with a credit note, the customer paying, a write-off or the customer withdrawing it.',
+    where: 'Sales. While a dispute is open its invoice is left out of payment reminders and overdue-invoice workflows; it still counts in receivables and the ageing.',
+  },
+  'sales/disputes/[id]': {
+    what: 'One dispute: what the customer disputes, how much, the owner, the date to settle by and every step taken.',
+    how: 'Add a note after each call or email. Change… updates the amount, reason, owner or target date (kept in the history). Resolve… records how it ended; for a credit note, post the credit note first.',
+    where: 'Opened from Disputes or the invoice. A resolved dispute is final; raise a new one if the customer queries the invoice again.',
+  },
   'purchases/payment-schedule': {
     what: 'When each open bill will be paid, and the bank balance week by week after the planned payments.',
     how: 'Plan a date for each bill (and an amount, to pay part), or press Plan the rest to plan every unplanned bill for its due date or your pay day. Then prepare a payment batch from the bills planned up to a date.',
