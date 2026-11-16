@@ -41,6 +41,7 @@ export const hi: Record<string, string> = {
   Disputes: 'विवाद',
   'Pro forma invoices': 'प्रोफ़ॉर्मा चालान',
   Retainers: 'रिटेनर',
+  'Customer onboarding': 'ग्राहक ऑनबोर्डिंग',
   'Payment links': 'भुगतान लिंक',
   Collections: 'वसूली',
   'Invoice templates': 'इनवॉइस टेम्पलेट',

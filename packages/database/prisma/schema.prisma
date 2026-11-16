@@ -83,6 +83,7 @@ enum AttachmentEntity {
   JOURNAL_ENTRY
   BANK_STATEMENT_LINE
   EXPENSE_CLAIM
+  CUSTOMER_ONBOARDING
 }
 
 enum ApprovalStatus {
@@ -5345,4 +5346,74 @@ model PaymentLinkNotice {
   @@unique([orgId, provider, eventId])
   @@index([orgId, receivedAt])
   @@map("payment_link_notices")
+}
+
+/// AR-003: whether customers added from now on must be onboarded before they are invoiced.
+model CustomerOnboardingSettings {
+  orgId       String   @id @map("org_id") @db.Uuid
+  required    Boolean  @default(false)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("customer_onboarding_settings")
+}
+
+/// AR-003: the organisation's own onboarding checklist.
+model CustomerOnboardingRequirement {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  label     String   @db.VarChar(300)
+  needsFile Boolean  @default(false) @map("needs_file")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@index([orgId, sortOrder])
+  @@map("customer_onboarding_requirements")
+}
+
+/// AR-003: one onboarding per customer; invoices to the customer post only once it is approved.
+model CustomerOnboarding {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  contactId        String    @map("contact_id") @db.Uuid
+  status           String    @default("OPEN") @db.VarChar(10)
+  creditLimit      Decimal?  @map("credit_limit") @db.Decimal(24, 6)
+  paymentTermsDays Int?      @map("payment_terms_days")
+  notes            String?   @db.VarChar(2000)
+  submittedById    String?   @map("submitted_by_id") @db.Uuid
+  submittedAt      DateTime? @map("submitted_at") @db.Timestamptz(6)
+  decidedById      String?   @map("decided_by_id") @db.Uuid
+  decidedAt        DateTime? @map("decided_at") @db.Timestamptz(6)
+  decisionNote     String?   @map("decision_note") @db.VarChar(1000)
+  selfApproved     Boolean   @default(false) @map("self_approved")
+  createdById      String?   @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@unique([orgId, contactId])
+  @@index([orgId, status])
+  @@map("customer_onboardings")
+}
+
+/// AR-003: a checklist item of one onboarding, copied from the organisation's checklist.
+model CustomerOnboardingCheck {
+  id            String    @id @default(uuid()) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  onboardingId  String    @map("onboarding_id") @db.Uuid
+  requirementId String?   @map("requirement_id") @db.Uuid
+  label         String    @db.VarChar(300)
+  needsFile     Boolean   @default(false) @map("needs_file")
+  sortOrder     Int       @default(0) @map("sort_order")
+  done          Boolean   @default(false)
+  doneById      String?   @map("done_by_id") @db.Uuid
+  doneAt        DateTime? @map("done_at") @db.Timestamptz(6)
+  note          String?   @db.VarChar(1000)
+  attachmentId  String?   @map("attachment_id") @db.Uuid
+
+  @@unique([onboardingId, requirementId], map: "customer_onboarding_checks_onboarding_requirement_key")
+  @@index([orgId, onboardingId])
+  @@map("customer_onboarding_checks")
 }

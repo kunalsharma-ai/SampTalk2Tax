@@ -121,7 +121,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 |---|---|---|---|---|
 | AR-001 |  | rule | Build a comprehensive AR module | Implementing |
 | AR-002 |  | capability | Customer management | Tested |
-| AR-003 |  | capability | Customer onboarding | Not started |
+| AR-003 |  | capability | Customer onboarding | Tested |
 | AR-004 |  | capability | Customer credit limits | Tested |
 | AR-005 |  | capability | Quotations | Tested |
 | AR-006 |  | capability | Estimates | Tested |

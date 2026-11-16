@@ -6253,6 +6253,21 @@
         "docs/PAYMENT_LINKS.md"
       ],
       "notes": "Payment links PL-0001 on posted INR/USD invoices through the organisation's own Razorpay or Stripe account (keys sealed, set up and tested in Settings → Payment gateways, deposit account, one gateway per currency). Settled by the signed webhook or by checking: an ordinary receipt into the deposit account applied to the invoice up to what is owed. One open link per invoice; trigger keeps links permanent and final. Not built: emailing the link from Talk2Tax, refunds, other currencies."
+    },
+    "AR-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-onboarding.ts",
+        "packages/accounting-engine/test/customer-onboarding.test.ts",
+        "packages/database/prisma/migrations/20261207090000_customer_onboarding/migration.sql",
+        "apps/api/src/customer-onboarding/customer-onboarding.service.ts",
+        "apps/api/test/customer-onboarding.e2e.test.ts",
+        "apps/web/src/components/onboarding/onboarding-panel.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/onboarding/page.tsx",
+        "apps/web/e2e/customer-onboarding-flow.test.mjs",
+        "docs/CUSTOMER_ONBOARDING.md"
+      ],
+      "notes": "One onboarding per customer: details read from the customer (email, address with PIN, GSTIN or PAN, proposed credit terms) plus the organisation's own checklist (files where needed, attachments type CUSTOMER_ONBOARDING); submit, second-person approval (self-approved only when nobody else can) sets credit limit and terms, reject with reason, reopen. Optional setting starts onboarding for every new customer (contacts trigger). Invoices to a customer with an unapproved onboarding do not post. Not built: customer self-service portal."
     }
   }
 }

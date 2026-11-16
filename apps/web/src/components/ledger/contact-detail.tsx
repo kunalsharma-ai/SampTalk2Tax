@@ -1,5 +1,5 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Select, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -18,6 +18,7 @@ import { DocumentsTable } from './documents-table';
 import { CustomerDeals } from '@/components/crm/customer-deals';
 import { Customer360 } from '@/components/crm/customer-360';
 import { VendorBankCard } from '@/components/purchases/vendor-bank-card';
+import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
 
 export function ContactDetail({ l }: { l: LedgerConfig }) {
   const { org, orgId } = useOrg();
@@ -26,6 +27,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
   const [to, setTo] = useState(today());
   const [draft, setDraft] = useState<ContactDraft | null>(null);
   const [stCurrency, setStCurrency] = useState('');
+  const qc = useQueryClient();
   const contact = useQuery({ queryKey: ['contact', orgId, contactId], queryFn: () => api<Contact>(`/v1/orgs/${orgId}/contacts/${contactId}`) });
   const statement = useQuery({
     queryKey: ['contact', orgId, contactId, 'statement', l.ledger, from, to, stCurrency],
@@ -66,6 +68,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
         <Stat label="Unapplied credits" value={<Money value={bal.unapplied} currency={c} />} tone="violet" />
         <Stat label="Balance" value={<Money value={bal.balance} currency={c} signed />} tone="positive" />
       </div>
+      {l.ledger === 'SALES' && x.isCustomer ? <OnboardingPanel orgId={orgId} contactId={x.id} currency={c} onChange={() => void qc.invalidateQueries({ queryKey: ['contact', orgId, contactId] })} /> : null}
       <Card className="mt-6">
         <CardHeader
           title="Statement"

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 809 |
+| Not started | 808 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 419 |
+| Tested | 420 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 14 | 29 |
+| Accounts receivable | M2 | 43 | 13 | 30 |
 | Accounts payable | M2 | 36 | 18 | 18 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -453,6 +453,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/sales-flow.test.mjs
   - /v1/orgs/:orgId/contacts
   - apps/web/src/app/orgs/[orgId]/sales/customers
+
+### AR-003 — Customer onboarding
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: One onboarding per customer: details read from the customer (email, address with PIN, GSTIN or PAN, proposed credit terms) plus the organisation's own checklist (files where needed, attachments type CUSTOMER_ONBOARDING); submit, second-person approval (self-approved only when nobody else can) sets credit limit and terms, reject with reason, reopen. Optional setting starts onboarding for every new customer (contacts trigger). Invoices to a customer with an unapproved onboarding do not post. Not built: customer self-service portal.
+- Evidence:
+  - packages/accounting-engine/src/customer-onboarding.ts
+  - packages/accounting-engine/test/customer-onboarding.test.ts
+  - packages/database/prisma/migrations/20261207090000_customer_onboarding/migration.sql
+  - apps/api/src/customer-onboarding/customer-onboarding.service.ts
+  - apps/api/test/customer-onboarding.e2e.test.ts
+  - apps/web/src/components/onboarding/onboarding-panel.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/onboarding/page.tsx
+  - apps/web/e2e/customer-onboarding-flow.test.mjs
+  - docs/CUSTOMER_ONBOARDING.md
 
 ### AR-004 — Customer credit limits
 
