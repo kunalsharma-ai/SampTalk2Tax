@@ -25738,9 +25738,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Integration pending",
+      "evidence": [
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/integrations/secret-box.ts",
+        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
+        "apps/api/test/integrations.e2e.test.ts",
+        "apps/web/e2e/integrations-flow.test.mjs",
+        "docs/INTEGRATIONS.md"
+      ],
+      "notes": "Each organisation sets up its own SMTP server (any provider offering SMTP) in Settings → Integrations, with a test that signs in and sends an email. Tested against a local SMTP server; waiting on a check with a real provider."
     },
     {
       "id": "INTG-033",
@@ -25786,9 +25794,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Integration pending",
+      "evidence": [
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/integrations/secret-box.ts",
+        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
+        "apps/api/test/integrations.e2e.test.ts",
+        "apps/web/e2e/integrations-flow.test.mjs",
+        "docs/INTEGRATIONS.md"
+      ],
+      "notes": "Each organisation adds its own Claude API key and model in Settings → Integrations; all four AI agents use it. Tested through the official SDK against a local stand-in; waiting on a check with a live key."
     },
     {
       "id": "INTG-035",
@@ -25930,9 +25946,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/integrations/secret-box.ts",
+        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
+        "apps/api/test/integrations.e2e.test.ts",
+        "apps/web/e2e/integrations-flow.test.mjs",
+        "docs/INTEGRATIONS.md"
+      ],
+      "notes": "For AI and email: which settings are in use (the organisation’s, the server’s fallback, or none) and the last test result with its message, time and who ran it."
     },
     {
       "id": "INTG-041",
@@ -26098,9 +26122,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/integrations/secret-box.ts",
+        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
+        "apps/api/test/integrations.e2e.test.ts",
+        "apps/web/e2e/integrations-flow.test.mjs",
+        "docs/INTEGRATIONS.md"
+      ],
+      "notes": "Creating, changing, testing and removing an integration are audited; secrets are never written to the audit trail, only whether they changed and their last four characters."
     },
     {
       "id": "INTG-048",
@@ -26122,9 +26154,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/integrations/secret-box.ts",
+        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
+        "apps/api/test/integrations.e2e.test.ts",
+        "apps/web/e2e/integrations-flow.test.mjs",
+        "docs/INTEGRATIONS.md"
+      ],
+      "notes": "Each integration can be switched off (kept) or removed; the features then fall back to the server’s settings or say they are not set up."
     },
     {
       "id": "INTG-049",
@@ -26170,9 +26210,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/integrations/secret-box.ts",
+        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
+        "apps/api/test/integrations.e2e.test.ts",
+        "apps/web/e2e/integrations-flow.test.mjs",
+        "docs/INTEGRATIONS.md"
+      ],
+      "notes": "The page shows \"Not tested\", \"Working\" or \"Failed\" from a real test, never \"connected\" just because settings were saved; the registry keeps Claude and email at Integration pending until checked with live credentials."
     },
     {
       "id": "SEC-001",
@@ -26455,9 +26503,10 @@
       "status": "Implementing",
       "evidence": [
         ".env.example",
-        "apps/api/src/config.ts"
+        "apps/api/src/config.ts",
+        "apps/api/src/integrations/secret-box.ts"
       ],
-      "notes": "Secrets come from environment variables and are validated at startup; no secrets in code. A secrets manager integration is not done."
+      "notes": "Server secrets come from environment variables, validated at startup. Integration secrets an organisation enters in the app are encrypted with AES-256-GCM (key from INTEGRATIONS_ENCRYPTION_KEY or derived from JWT_SECRET), never returned and never audited. No external secrets manager (Vault, KMS) yet."
     },
     {
       "id": "SEC-013",
@@ -32859,9 +32908,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/integrations/integrations.service.ts",
+        "apps/api/src/integrations/secret-box.ts",
+        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
+        "apps/api/test/integrations.e2e.test.ts",
+        "apps/web/e2e/integrations-flow.test.mjs",
+        "docs/INTEGRATIONS.md"
+      ],
+      "notes": "Governance → Integrations, for owners and admins (org.manage)."
     },
     {
       "id": "NAV-040",

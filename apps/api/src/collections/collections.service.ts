@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { checkDraft, CustomerFacts, customerFacts, D, draftPasses, factsForModel, RISK_LEVELS, RiskLevel } from '@talk2tax/accounting-engine';
 import { CollectionDraftStatus, Prisma } from '@talk2tax/database';
@@ -11,7 +12,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
-import { COPILOT_MODEL, CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
+import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { MailerService } from '../workflows/email';
 
 type Actor = { id: string };
@@ -97,7 +98,7 @@ export class CollectionsService {
     private readonly audit: AuditService,
     private readonly mailer: MailerService,
     @Inject(CONFIG) private readonly config: AppConfig,
-    @Optional() @Inject(COPILOT_MODEL) private readonly model: CopilotModel | null,
+    private readonly integrations: IntegrationsService,
   ) {}
 
   // ------------------------------------------------------------------ reading
@@ -110,12 +111,14 @@ export class CollectionsService {
       this.prisma.collectionDraft.groupBy({ by: ['status'], where: { orgId }, _count: true }),
     ]);
     const names = run ? await this.names([run.startedById]) : new Map<string, string>();
+    const mail = await this.mailer.status(orgId);
+    const ai = await this.integrations.ai(orgId);
     return {
-      aiConfigured: !!this.model,
+      aiConfigured: ai.model !== null,
       aiEnabled: settings?.enabled ?? false,
-      emailReady: this.mailer.ready,
-      emailFrom: this.mailer.ready ? (this.config.EMAIL_FROM ?? null) : null,
-      model: this.config.COPILOT_MODEL,
+      emailReady: mail.ready,
+      emailFrom: mail.from,
+      model: ai.modelName,
       canChangeAi: hasPermission(member.role, 'org.manage'),
       aiNotice: await this.guard.notice(orgId, 'COLLECTIONS'),
       limits: { customersPerRun: MAX_CUSTOMERS_PER_RUN, remindAgainAfterDays: REMIND_AGAIN_AFTER_DAYS },
@@ -234,7 +237,8 @@ export class CollectionsService {
   async start(member: Member, actor: Actor) {
     const { orgId } = member;
     await this.guard.assert(orgId, 'COLLECTIONS');
-    const model = this.model!;
+    const ai = await this.integrations.ai(orgId);
+    const model = ai.model!;
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true, functionalCurrency: true } });
     const today = todayIst();
 
@@ -265,14 +269,14 @@ export class CollectionsService {
         else if (chosen.length >= MAX_CUSTOMERS_PER_RUN) skipped.push({ contactId: c.contact_id, name: c.name, reason: `More than ${MAX_CUSTOMERS_PER_RUN} customers: draft again after these` });
         else chosen.push(c);
       }
-      const run = await tx.collectionRun.create({ data: { orgId, startedById: actor.id, skipped: skipped as unknown as Prisma.InputJsonValue, model: this.config.COPILOT_MODEL, ...(chosen.length ? {} : { status: 'DONE', finishedAt: new Date() }) } });
+      const run = await tx.collectionRun.create({ data: { orgId, startedById: actor.id, skipped: skipped as unknown as Prisma.InputJsonValue, model: ai.modelName, ...(chosen.length ? {} : { status: 'DONE', finishedAt: new Date() }) } });
       const drafts: { id: string; facts: CustomerFacts }[] = [];
       for (const c of chosen) {
         const facts = await this.factsFor(tx, orgId, { id: c.contact_id, name: c.name }, today, org.functionalCurrency);
-        const d = await tx.collectionDraft.create({ data: { orgId, runId: run.id, contactId: c.contact_id, toEmail: c.email!.trim(), facts: facts as unknown as Prisma.InputJsonValue, model: this.config.COPILOT_MODEL } });
+        const d = await tx.collectionDraft.create({ data: { orgId, runId: run.id, contactId: c.contact_id, toEmail: c.email!.trim(), facts: facts as unknown as Prisma.InputJsonValue, model: ai.modelName } });
         drafts.push({ id: d.id, facts });
       }
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'collections.drafting_started', entityType: 'collection_run', entityId: run.id, data: { customers: chosen.length, skipped: skipped.length, model: this.config.COPILOT_MODEL } });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'collections.drafting_started', entityType: 'collection_run', entityId: run.id, data: { customers: chosen.length, skipped: skipped.length, model: ai.modelName } });
       return { run, drafts };
     });
 
@@ -364,7 +368,7 @@ export class CollectionsService {
    * stays locked while the mail server is talked to, so two people cannot send it twice.
    */
   async send(member: Member, actor: Actor, id: string, input: { subject?: string; body?: string }) {
-    if (!this.mailer.ready) throw new DomainError('EMAIL_NOT_SET_UP', 'Email is not set up on this server (SMTP_URL and EMAIL_FROM), so reminders cannot be sent yet.', HttpStatus.CONFLICT);
+    if (!(await this.mailer.status(member.orgId)).ready) throw new DomainError('EMAIL_NOT_SET_UP', 'Email is not set up yet, so reminders cannot be sent: an owner or admin can add a mail server in Settings → Integrations.', HttpStatus.CONFLICT);
     const { orgId } = member;
     await this.prisma.$transaction(
       async (tx) => {
@@ -387,7 +391,7 @@ export class CollectionsService {
         if (changed.length) {
           throw new DomainError('DRAFT_OUT_OF_DATE', `Since this was drafted, ${changed.join(', ')} ${changed.length === 1 ? 'has' : 'have'} been paid or changed. Reject this reminder and draft again.`, HttpStatus.CONFLICT, { invoices: changed });
         }
-        const res = await this.mailer.send({ to: [d.toEmail], subject, text: body, messageId: `<${d.id}@talk2tax.collections>`, headers: { 'X-T2T-Reminder': d.id } });
+        const res = await this.mailer.send(orgId, { to: [d.toEmail], subject, text: body, messageId: `<${d.id}@talk2tax.collections>`, headers: { 'X-T2T-Reminder': d.id } });
         const at = new Date();
         const log = [...((d.sendLog as unknown as unknown[]) ?? []), { at: at.toISOString(), ok: res.ok, status: res.status, error: res.error, responseSnippet: res.responseSnippet, by: actor.id }].slice(-10);
         await tx.collectionDraft.update({

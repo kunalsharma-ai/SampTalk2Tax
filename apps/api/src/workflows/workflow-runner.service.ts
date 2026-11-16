@@ -101,7 +101,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     if (every > 0) {
       this.timer = setInterval(() => void this.tick().catch((e) => this.logger.error(`Workflow runner failed: ${(e as Error).message}`)), every * 1000);
       this.timer.unref();
-      this.logger.log(`Workflow runner looks for events, schedules and due deliveries every ${every} s${this.mailer.ready ? '' : '; email is not set up (SMTP_URL)'}`);
+      this.logger.log(`Workflow runner looks for events, schedules and due deliveries every ${every} s; email goes through each organisation's own mail server (Settings → Integrations)${this.config.SMTP_URL ? ', or the server\'s SMTP_URL' : ''}`);
     }
   }
   async onModuleDestroy() {
@@ -351,7 +351,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
         }
       } else if (a.type === 'SEND_EMAIL') {
         const preview = await this.previewEmail(tx, orgId, w.name, a, ev);
-        const problem = preview.problem ?? (this.mailer.ready ? null : EMAIL_NOT_SET_UP);
+        const problem = preview.problem ?? ((await this.mailer.status(orgId)).ready ? null : EMAIL_NOT_SET_UP);
         await tx.workflowActionRun.create({
           data: problem
             ? { orgId, runId: run.id, position, type: a.type, status: 'FAILED', input: preview as unknown as Prisma.InputJsonValue, attempts: 0, error: problem, finishedAt: now }
@@ -431,7 +431,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     const attempt = a.attempts + 1;
     if (a.type === 'SEND_EMAIL') {
       const e = a.input as unknown as EmailPreview;
-      const res = await this.mailer.send({ to: e.to, subject: e.subject, text: e.body, messageId: `<${a.id}@talk2tax.workflow>`, headers: { 'X-T2T-Workflow': a.run.workflow.id, 'X-T2T-Attempt': String(attempt) } });
+      const res = await this.mailer.send(orgId, { to: e.to, subject: e.subject, text: e.body, messageId: `<${a.id}@talk2tax.workflow>`, headers: { 'X-T2T-Workflow': a.run.workflow.id, 'X-T2T-Attempt': String(attempt) } });
       const now = new Date();
       await this.recordAttempt(a.id, a.runId, attempt, { status: res.status, ok: res.ok, durationMs: res.durationMs, error: res.error, responseSnippet: res.responseSnippet }, res.ok ? null : nextDeliveryAttempt(attempt, res.retryable, now), now);
       return;

@@ -76,6 +76,16 @@ const schema = z.object({
     .transform((v) => (v && v.trim() ? v.trim() : undefined)),
   /** Longest one SMTP delivery may take, in seconds. */
   SMTP_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(120).default(20),
+  /**
+   * Optional key that encrypts integration secrets (API keys, SMTP passwords) set up in the app.
+   * When unset, a key derived from JWT_SECRET is used. Changing either means those secrets have to
+   * be entered again in Settings → Integrations.
+   */
+  INTEGRATIONS_ENCRYPTION_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined))
+    .pipe(z.string().min(32, 'INTEGRATIONS_ENCRYPTION_KEY must be at least 32 characters').optional()),
   /** The web app's address, used for links in emails to members. */
   APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
 }).superRefine((c, ctx) => {

@@ -1,4 +1,5 @@
 'use client';
+import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Field, Stat, Table, Td, Textarea, Th, Tr, cn } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -95,8 +96,8 @@ export default function ClosePage() {
             <div className="px-5 pb-5">
               <ErrorAlert title="Review did not start" error={review.error} />
               {!v.ai.configured ? (
-                <Alert tone="warning" title="AI is not set up on this server">
-                  An administrator needs to set <code className="font-mono">ANTHROPIC_API_KEY</code> for the API and restart it. The checklist, tasks and closing work without it.
+                <Alert tone="warning" title="AI is not set up yet">
+                  An owner or admin can add a Claude API key in <IntegrationsLink />. The checklist, tasks and closing work without it.
                 </Alert>
               ) : v.ai.notice ? (
                 <AiNoticeAlert notice={v.ai.notice} orgId={orgId} canChange={v.ai.canChangeAi} />

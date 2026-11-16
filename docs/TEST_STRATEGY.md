@@ -137,3 +137,5 @@ pnpm e2e                                # browser tests; needs the API on :4000 
 Set `WEB_URL` to test another address, and `E2E_SCREENSHOTS=<dir>` to save screenshots.
 
 CI (`.github/workflows/ci.yml`) runs build, typecheck, all tests against a Postgres service, starts the API and web app and runs the browser tests, and checks the feature registry is regenerated.
+
+Integrations: `apps/api/test/integrations.e2e.test.ts` (6) covers owner-and-admin-only access, encryption at rest and no secret in responses or the audit trail, AI key tests through the official SDK against the local stand-in (rejected and working), the copilot using the organisation's own key and model, switching off, a mail server test with a refused login and a real test email, automations sending through the organisation's server, removal, a secret sealed with another key, the server fallback, and the private-network and unencrypted refusals; `apps/web/e2e/integrations-flow.test.mjs` sets up and tests both in the browser.

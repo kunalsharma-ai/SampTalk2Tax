@@ -1,4 +1,5 @@
 'use client';
+import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert as Notice, Badge, Button, Card, CardHeader, Dialog, EmptyState, Select, Table, Td, Th, Tr, cn } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -84,7 +85,7 @@ export default function WorkflowPage() {
             </Notice>
           ) : null}
           {hasEmail && cat.data && !cat.data.email.ready ? (
-            <Notice tone="warning" title="Email is not set up on this server">Its emails fail, with that reason in the run log, until an administrator sets SMTP_URL and EMAIL_FROM. Tasks and webhooks still work.</Notice>
+            <Notice tone="warning" title="Email is not set up yet">Its emails fail, with that reason in the run log, until an owner or admin adds your mail server in <IntegrationsLink />. Tasks and webhooks still work.</Notice>
           ) : null}
 
           <Card>

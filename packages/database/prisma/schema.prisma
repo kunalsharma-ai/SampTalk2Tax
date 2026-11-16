@@ -211,6 +211,7 @@ model Organization {
   consolidationGroups  ConsolidationGroup[]
   consolidatedIn       ConsolidationMember[]   @relation("ConsolidationMemberOrg")
   twinScenarios        TwinScenario[]
+  integrations         OrgIntegration[]
   userSignatures       UserSignature[]
   documentSignatures   DocumentSignature[]
   approvalPolicies     ApprovalPolicy[]
@@ -2927,4 +2928,43 @@ model TwinScenario {
   @@unique([orgId, name])
   @@index([orgId])
   @@map("twin_scenarios")
+}
+
+enum IntegrationKind {
+  AI_ANTHROPIC
+  EMAIL_SMTP
+}
+
+enum IntegrationTestStatus {
+  NOT_TESTED
+  OK
+  FAILED
+}
+
+/// An organisation's own connection to an outside service, set up in the app (Settings → Integrations).
+/// Secrets are encrypted with AES-256-GCM by the API and never returned; only a hint of the last characters is kept.
+model OrgIntegration {
+  id           String                @id @default(uuid()) @db.Uuid
+  orgId        String                @map("org_id") @db.Uuid
+  kind         IntegrationKind
+  enabled      Boolean               @default(true)
+  /// Settings that are not secret (model, host, port, sender address…), checked per kind by the API.
+  settings     Json
+  /// base64(iv | tag | ciphertext) of the secret (API key or SMTP password); null when none.
+  secretCipher String?               @map("secret_cipher")
+  /// Which encryption key sealed the secret, so a key change is reported instead of failing silently.
+  keyId        String?               @map("key_id") @db.VarChar(16)
+  secretHint   String?               @map("secret_hint") @db.VarChar(16)
+  testStatus   IntegrationTestStatus @default(NOT_TESTED) @map("test_status")
+  testMessage  String?               @map("test_message") @db.VarChar(500)
+  testedAt     DateTime?             @map("tested_at") @db.Timestamptz(6)
+  testedById   String?               @map("tested_by_id") @db.Uuid
+  updatedById  String                @map("updated_by_id") @db.Uuid
+  createdAt    DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org          Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, kind])
+  @@index([orgId])
+  @@map("org_integrations")
 }

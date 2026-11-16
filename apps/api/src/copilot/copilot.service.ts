@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { CopilotMessageStatus, Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
@@ -9,7 +10,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
-import { COPILOT_MODEL, CopilotMessageParam, CopilotModel, CopilotRequest, CopilotResponse, FALLBACK_BETA } from './copilot.model';
+import { CopilotMessageParam, CopilotModel, CopilotRequest, CopilotResponse, FALLBACK_BETA } from './copilot.model';
 import { CopilotSource, CopilotTools, TOOLSET_VERSION, ToolContext } from './copilot.tools';
 
 type Actor = { id: string };
@@ -42,7 +43,7 @@ export function systemPrompt(org: { name: string; functionalCurrency: string; fi
 }
 
 const STATUS_MESSAGES = {
-  AI_NOT_CONFIGURED: 'The AI copilot is not set up on this server: an administrator needs to set ANTHROPIC_API_KEY. Nothing was sent anywhere.',
+  AI_NOT_CONFIGURED: 'The AI copilot is not set up: an owner or admin can add a Claude API key in Settings → Integrations. Nothing was sent anywhere.',
   COPILOT_OFF: 'The AI copilot is turned off for this organisation. An owner or admin can turn it on.',
 } as const;
 
@@ -66,7 +67,7 @@ export class CopilotService {
     private readonly audit: AuditService,
     private readonly tools: CopilotTools,
     @Inject(CONFIG) private readonly config: AppConfig,
-    @Optional() @Inject(COPILOT_MODEL) private readonly model: CopilotModel | null,
+    private readonly integrations: IntegrationsService,
   ) {}
 
   // ------------------------------------------------------------------ status and settings
@@ -74,10 +75,12 @@ export class CopilotService {
   async status(member: Member) {
     const s = await this.prisma.copilotSettings.findUnique({ where: { orgId: member.orgId } });
     const by = s ? await this.prisma.user.findUnique({ where: { id: s.updatedById }, select: { name: true } }) : null;
+    const ai = await this.integrations.ai(member.orgId);
     return {
-      configured: !!this.model,
-      provider: this.model?.provider ?? 'Anthropic',
-      model: this.config.COPILOT_MODEL,
+      configured: ai.model !== null,
+      provider: ai.model?.provider ?? 'Anthropic',
+      model: ai.modelName,
+      source: ai.source,
       enabled: s?.enabled ?? false,
       changedBy: s ? (by?.name ?? 'Former member') : null,
       changedAt: s?.updatedAt.toISOString() ?? null,
@@ -99,8 +102,9 @@ export class CopilotService {
 
   // ------------------------------------------------------------------ conversations
 
-  private isClosed(c: { model: string; toolsetVersion: number }) {
-    return c.model !== this.config.COPILOT_MODEL || c.toolsetVersion !== TOOLSET_VERSION;
+  /** A conversation started on another model (the organisation changed it) or an older tool set cannot go on. */
+  private isClosed(c: { model: string; toolsetVersion: number }, modelName: string) {
+    return c.model !== modelName || c.toolsetVersion !== TOOLSET_VERSION;
   }
 
   async list(orgId: string, actor: Actor) {
@@ -110,7 +114,8 @@ export class CopilotService {
       take: 100,
       include: { _count: { select: { messages: { where: { role: 'USER' } } } } },
     });
-    return rows.map((c) => ({ id: c.id, title: c.title, questions: c._count.messages, closed: this.isClosed(c), createdAt: c.createdAt.toISOString(), updatedAt: c.updatedAt.toISOString() }));
+    const { modelName } = await this.integrations.ai(orgId);
+    return rows.map((c) => ({ id: c.id, title: c.title, questions: c._count.messages, closed: this.isClosed(c, modelName), createdAt: c.createdAt.toISOString(), updatedAt: c.updatedAt.toISOString() }));
   }
 
   private async load(orgId: string, actor: Actor, id: string) {
@@ -122,11 +127,12 @@ export class CopilotService {
   async get(orgId: string, actor: Actor, id: string) {
     const c = await this.load(orgId, actor, id);
     const messages = await this.prisma.copilotMessage.findMany({ where: { orgId, conversationId: id }, orderBy: { seq: 'asc' } });
+    const { modelName } = await this.integrations.ai(orgId);
     return {
       id: c.id,
       title: c.title,
       model: c.model,
-      closed: this.isClosed(c),
+      closed: this.isClosed(c, modelName),
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
       messages: messages.map((m) => ({
@@ -168,8 +174,9 @@ export class CopilotService {
     const q = question.trim();
     if (!q) throw new DomainError('INVALID_QUESTION', 'Ask a question');
     if (q.length > MAX_QUESTION_CHARS) throw new DomainError('INVALID_QUESTION', `Keep a question under ${MAX_QUESTION_CHARS} characters`);
-    if (!this.model) throw new DomainError('AI_NOT_CONFIGURED', STATUS_MESSAGES.AI_NOT_CONFIGURED, HttpStatus.SERVICE_UNAVAILABLE);
-    const model = this.model;
+    const ai = await this.integrations.ai(member.orgId);
+    if (!ai.model) throw new DomainError('AI_NOT_CONFIGURED', STATUS_MESSAGES.AI_NOT_CONFIGURED, HttpStatus.SERVICE_UNAVAILABLE);
+    const model = ai.model;
     const settings = await this.prisma.copilotSettings.findUnique({ where: { orgId: member.orgId } });
     if (!settings?.enabled) throw new DomainError('COPILOT_OFF', settings?.offReason ? `AI was stopped for this organisation: ${settings.offReason}. An owner or admin can turn it back on in the AI control center.` : STATUS_MESSAGES.COPILOT_OFF, HttpStatus.CONFLICT);
     await this.guard.assert(member.orgId, 'COPILOT');
@@ -184,7 +191,7 @@ export class CopilotService {
       if (conversationId) {
         conv = await tx.copilotConversation.findFirst({ where: { id: conversationId, orgId, userId: actor.id } });
         if (!conv) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Conversation not found' });
-        if (this.isClosed(conv)) throw new DomainError('CONVERSATION_CLOSED', 'This conversation was started with an earlier version of the copilot. Start a new conversation to ask more.', HttpStatus.CONFLICT);
+        if (this.isClosed(conv, ai.modelName)) throw new DomainError('CONVERSATION_CLOSED', 'This conversation was started with another AI model or an earlier version of the copilot. Start a new conversation to ask more.', HttpStatus.CONFLICT);
         // One answer at a time per conversation: lock it, then look for one still being worked on.
         await tx.$queryRaw`SELECT id FROM copilot_conversations WHERE id = ${conv.id}::uuid FOR UPDATE`;
         const pending = await tx.copilotMessage.findFirst({ where: { orgId, conversationId: conv.id, status: 'PENDING' } });
@@ -196,7 +203,7 @@ export class CopilotService {
         }
       } else {
         conv = await tx.copilotConversation.create({
-          data: { orgId, userId: actor.id, title: q.replace(/\s+/g, ' ').slice(0, 120), model: this.config.COPILOT_MODEL, toolsetVersion: TOOLSET_VERSION, systemPrompt: systemPrompt(org) },
+          data: { orgId, userId: actor.id, title: q.replace(/\s+/g, ' ').slice(0, 120), model: ai.modelName, toolsetVersion: TOOLSET_VERSION, systemPrompt: systemPrompt(org) },
         });
       }
       const last = await tx.copilotMessage.findFirst({ where: { orgId, conversationId: conv.id }, orderBy: { seq: 'desc' }, select: { seq: true } });
@@ -366,8 +373,8 @@ export class CopilotService {
     if (signal.aborted || e instanceof Anthropic.APIUserAbortError || e instanceof Anthropic.APIConnectionTimeoutError) {
       return { errorCode: 'AI_TIMEOUT', errorMessage: `The AI provider took longer than ${this.config.COPILOT_TURN_TIMEOUT_SECONDS} seconds. Ask again, or try a narrower question.` };
     }
-    if (e instanceof Anthropic.AuthenticationError) return { errorCode: 'AI_KEY_REJECTED', errorMessage: 'The AI provider rejected the API key. An administrator needs to check ANTHROPIC_API_KEY.' };
-    if (e instanceof Anthropic.PermissionDeniedError) return { errorCode: 'AI_ACCESS_DENIED', errorMessage: `The API key does not have access to the model ${this.config.COPILOT_MODEL}.` };
+    if (e instanceof Anthropic.AuthenticationError) return { errorCode: 'AI_KEY_REJECTED', errorMessage: 'The AI provider rejected the API key. An owner or admin needs to check the key in Settings → Integrations.' };
+    if (e instanceof Anthropic.PermissionDeniedError) return { errorCode: 'AI_ACCESS_DENIED', errorMessage: 'The API key does not have access to the chosen Claude model. An owner or admin can change the model in Settings → Integrations.' };
     if (e instanceof Anthropic.RateLimitError) return { errorCode: 'AI_RATE_LIMITED', errorMessage: 'The AI provider is limiting requests right now. Try again in a minute.' };
     if (e instanceof Anthropic.APIConnectionError) return { errorCode: 'AI_UNREACHABLE', errorMessage: 'The AI provider could not be reached. Try again shortly.' };
     if (e instanceof Anthropic.APIError) {

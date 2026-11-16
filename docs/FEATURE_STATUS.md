@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1019 |
+| Not started | 1012 |
 | Designed | 0 |
 | Implementing | 54 |
 | Implemented | 31 |
-| Tested | 231 |
-| Integration pending | 8 |
+| Tested | 236 |
+| Integration pending | 10 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -53,7 +53,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial recovery planner | M7 | 11 | 11 | 0 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
 | Internationalization | M8 | 16 | 10 | 6 |
-| Integration marketplace | M6 | 50 | 50 | 0 |
+| Integration marketplace | M6 | 50 | 44 | 6 |
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 17 | 5 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
@@ -64,7 +64,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 16 | 2 |
-| Navigation structure | M1 | 48 | 35 | 13 |
+| Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
@@ -2902,6 +2902,90 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/periods.test.ts
   - apps/web/src
 
+### INTG-032 — Email providers
+
+- Module: Integration marketplace
+- Status: **Integration pending**
+- Notes: Each organisation sets up its own SMTP server (any provider offering SMTP) in Settings → Integrations, with a test that signs in and sends an email. Tested against a local SMTP server; waiting on a check with a real provider.
+- Evidence:
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/integrations/secret-box.ts
+  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
+  - apps/api/test/integrations.e2e.test.ts
+  - apps/web/e2e/integrations-flow.test.mjs
+  - docs/INTEGRATIONS.md
+
+### INTG-034 — Claude
+
+- Module: Integration marketplace
+- Status: **Integration pending**
+- Notes: Each organisation adds its own Claude API key and model in Settings → Integrations; all four AI agents use it. Tested through the official SDK against a local stand-in; waiting on a check with a live key.
+- Evidence:
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/integrations/secret-box.ts
+  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
+  - apps/api/test/integrations.e2e.test.ts
+  - apps/web/e2e/integrations-flow.test.mjs
+  - docs/INTEGRATIONS.md
+
+### INTG-040 — Connection status
+
+- Module: Integration marketplace
+- Status: **Tested**
+- Notes: For AI and email: which settings are in use (the organisation’s, the server’s fallback, or none) and the last test result with its message, time and who ran it.
+- Evidence:
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/integrations/secret-box.ts
+  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
+  - apps/api/test/integrations.e2e.test.ts
+  - apps/web/e2e/integrations-flow.test.mjs
+  - docs/INTEGRATIONS.md
+
+### INTG-047 — Audit logs
+
+- Module: Integration marketplace
+- Status: **Tested**
+- Notes: Creating, changing, testing and removing an integration are audited; secrets are never written to the audit trail, only whether they changed and their last four characters.
+- Evidence:
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/integrations/secret-box.ts
+  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
+  - apps/api/test/integrations.e2e.test.ts
+  - apps/web/e2e/integrations-flow.test.mjs
+  - docs/INTEGRATIONS.md
+
+### INTG-048 — Disconnect controls
+
+- Module: Integration marketplace
+- Status: **Tested**
+- Notes: Each integration can be switched off (kept) or removed; the features then fall back to the server’s settings or say they are not set up.
+- Evidence:
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/integrations/secret-box.ts
+  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
+  - apps/api/test/integrations.e2e.test.ts
+  - apps/web/e2e/integrations-flow.test.mjs
+  - docs/INTEGRATIONS.md
+
+### INTG-050 — Never claim an integration is live merely because its interface exists
+
+- Module: Integration marketplace
+- Status: **Tested**
+- Notes: The page shows "Not tested", "Working" or "Failed" from a real test, never "connected" just because settings were saved; the registry keeps Claude and email at Integration pending until checked with live credentials.
+- Evidence:
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/integrations/secret-box.ts
+  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
+  - apps/api/test/integrations.e2e.test.ts
+  - apps/web/e2e/integrations-flow.test.mjs
+  - docs/INTEGRATIONS.md
+
 ### SEC-001 — Multi-tenant isolation
 
 - Module: Security and enterprise governance
@@ -2953,10 +3037,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Implementing**
-- Notes: Secrets come from environment variables and are validated at startup; no secrets in code. A secrets manager integration is not done.
+- Notes: Server secrets come from environment variables, validated at startup. Integration secrets an organisation enters in the app are encrypted with AES-256-GCM (key from INTEGRATIONS_ENCRYPTION_KEY or derived from JWT_SECRET), never returned and never audited. No external secrets manager (Vault, KMS) yet.
 - Evidence:
   - .env.example
   - apps/api/src/config.ts
+  - apps/api/src/integrations/secret-box.ts
 
 ### SEC-014 — Audit logging
 
@@ -3405,6 +3490,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/automations-flow.test.mjs
   - apps/web/e2e/automations-schedule-email.test.mjs
   - apps/web/src/app/orgs/[orgId]/automations
+
+### NAV-039 — Integrations
+
+- Module: Navigation structure
+- Status: **Tested**
+- Notes: Governance → Integrations, for owners and admins (org.manage).
+- Evidence:
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/integrations/secret-box.ts
+  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
+  - apps/api/test/integrations.e2e.test.ts
+  - apps/web/e2e/integrations-flow.test.mjs
+  - docs/INTEGRATIONS.md
 
 ### NAV-042 — User Management
 

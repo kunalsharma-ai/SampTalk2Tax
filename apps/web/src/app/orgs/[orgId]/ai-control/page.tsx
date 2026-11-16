@@ -1,4 +1,5 @@
 'use client';
+import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Field, Input, Stat, Textarea, cn } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -60,8 +61,8 @@ export default function AiControlPage() {
             </div>
             {!v.configured ? (
               <div className="mt-3">
-                <Alert tone="warning" title="AI is not set up on this server">
-                  An administrator needs to set <code className="font-mono">ANTHROPIC_API_KEY</code> for the API and restart it. Until then nothing is sent to an AI provider and every agent stays idle.
+                <Alert tone="warning" title="AI is not set up yet">
+                  An owner or admin can add a Claude API key in <IntegrationsLink />. Until then nothing is sent to an AI provider and every agent stays idle.
                 </Alert>
               </div>
             ) : null}

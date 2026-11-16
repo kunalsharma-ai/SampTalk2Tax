@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { BANK_AI_ACTIONS, BankLineContext, BankProposalInput, checkProposal, CONFIDENCE_LEVELS, contextForModel, D, minorUnits, rankCandidates, ResolvedProposal } from '@talk2tax/accounting-engine';
 import { BankAiSuggestionStatus, Prisma } from '@talk2tax/database';
@@ -11,7 +12,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
-import { COPILOT_MODEL, CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
+import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 
 type Actor = { id: string };
 
@@ -110,7 +111,7 @@ export class BankAiService {
     private readonly audit: AuditService,
     private readonly banking: BankingService,
     @Inject(CONFIG) private readonly config: AppConfig,
-    @Optional() @Inject(COPILOT_MODEL) private readonly model: CopilotModel | null,
+    private readonly integrations: IntegrationsService,
   ) {}
 
   // ------------------------------------------------------------------ reading
@@ -123,11 +124,12 @@ export class BankAiService {
       this.prisma.bankAiSuggestion.groupBy({ by: ['status'], where: { orgId: org.id, statementLine: { accountId } }, _count: true }),
     ]);
     const names = run ? await this.names([run.startedById]) : new Map<string, string>();
+    const ai = await this.integrations.ai(org.id);
     return {
       account: { id: account.id, code: account.code, name: account.name },
-      aiConfigured: !!this.model,
+      aiConfigured: ai.model !== null,
       aiEnabled: settings?.enabled ?? false,
-      model: this.config.COPILOT_MODEL,
+      model: ai.modelName,
       canChangeAi: hasPermission(org.role, 'org.manage'),
       aiNotice: await this.guard.notice(org.id, 'BANKING'),
       limits: { linesPerRun: MAX_LINES_PER_RUN },
@@ -272,7 +274,8 @@ export class BankAiService {
   async start(org: BankOrg, actor: Actor, accountId: string) {
     await this.guard.assert(org.id, 'BANKING');
     await this.bankAccount(org.id, accountId);
-    const model = this.model!;
+    const ai = await this.integrations.ai(org.id);
+    const model = ai.model!;
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true, functionalCurrency: true } });
     const scale = minorUnits(org.functionalCurrency);
 
@@ -299,15 +302,15 @@ export class BankAiService {
           else if (chosen.length >= MAX_LINES_PER_RUN) skipped.push({ ...s, reason: `More than ${MAX_LINES_PER_RUN} lines: run again after these` });
           else chosen.push(l);
         }
-        const run = await tx.bankAiRun.create({ data: { orgId: org.id, accountId, startedById: actor.id, skipped: skipped as unknown as Prisma.InputJsonValue, model: this.config.COPILOT_MODEL, ...(chosen.length ? {} : { status: 'DONE', finishedAt: new Date() }) } });
+        const run = await tx.bankAiRun.create({ data: { orgId: org.id, accountId, startedById: actor.id, skipped: skipped as unknown as Prisma.InputJsonValue, model: ai.modelName, ...(chosen.length ? {} : { status: 'DONE', finishedAt: new Date() }) } });
         const shared = chosen.length ? await this.shared(tx, org.id) : null;
         const work: { id: string; context: BankLineContext }[] = [];
         for (const l of chosen) {
           const context = await this.contextFor(tx, org, l, shared!);
-          const s = await tx.bankAiSuggestion.create({ data: { orgId: org.id, runId: run.id, statementLineId: l.id, context: context as unknown as Prisma.InputJsonValue, model: this.config.COPILOT_MODEL } });
+          const s = await tx.bankAiSuggestion.create({ data: { orgId: org.id, runId: run.id, statementLineId: l.id, context: context as unknown as Prisma.InputJsonValue, model: ai.modelName } });
           work.push({ id: s.id, context });
         }
-        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank_ai.run_started', entityType: 'bank_ai_run', entityId: run.id, data: { accountId, lines: chosen.length, skipped: skipped.length, model: this.config.COPILOT_MODEL } });
+        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank_ai.run_started', entityType: 'bank_ai_run', entityId: run.id, data: { accountId, lines: chosen.length, skipped: skipped.length, model: ai.modelName } });
         return { run, work };
       },
       { timeout: 60_000 },
@@ -383,7 +386,7 @@ export class BankAiService {
 
   private providerError(e: unknown): { errorCode: string; errorMessage: string } {
     if (e instanceof Anthropic.APIUserAbortError || e instanceof Anthropic.APIConnectionTimeoutError || (e instanceof Error && e.name === 'TimeoutError')) return { errorCode: 'AI_TIMEOUT', errorMessage: 'The AI provider took too long. Run again.' };
-    if (e instanceof Anthropic.AuthenticationError) return { errorCode: 'AI_KEY_REJECTED', errorMessage: 'The AI provider rejected the API key. An administrator needs to check ANTHROPIC_API_KEY.' };
+    if (e instanceof Anthropic.AuthenticationError) return { errorCode: 'AI_KEY_REJECTED', errorMessage: 'The AI provider rejected the API key. An owner or admin needs to check the key in Settings → Integrations.' };
     if (e instanceof Anthropic.RateLimitError) return { errorCode: 'AI_RATE_LIMITED', errorMessage: 'The AI provider is limiting requests right now. Run again in a minute.' };
     if (e instanceof Anthropic.APIConnectionError) return { errorCode: 'AI_UNREACHABLE', errorMessage: 'The AI provider could not be reached. Run again shortly.' };
     if (e instanceof Anthropic.APIError) {

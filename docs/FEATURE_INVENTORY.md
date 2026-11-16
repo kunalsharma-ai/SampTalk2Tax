@@ -1201,25 +1201,25 @@ Part 34 · M6 · priority P2 · depends on: SEC
 | INTG-029 | Productivity | capability | Google Workspace | Not started |
 | INTG-030 | Productivity | capability | Slack | Not started |
 | INTG-031 | Productivity | capability | Microsoft Teams | Not started |
-| INTG-032 | Productivity | capability | Email providers | Not started |
+| INTG-032 | Productivity | capability | Email providers | Integration pending |
 | INTG-033 | Productivity | capability | Cloud document storage | Not started |
-| INTG-034 | AI | capability | Claude | Not started |
+| INTG-034 | AI | capability | Claude | Integration pending |
 | INTG-035 | AI | capability | OpenAI | Not started |
 | INTG-036 | AI | capability | Gemini | Not started |
 | INTG-037 | AI | capability | Approved enterprise AI services | Not started |
 | INTG-038 | Integration Requirements | capability | Authentication | Not started |
 | INTG-039 | Integration Requirements | capability | Scope-based permissions | Not started |
-| INTG-040 | Integration Requirements | capability | Connection status | Not started |
+| INTG-040 | Integration Requirements | capability | Connection status | Tested |
 | INTG-041 | Integration Requirements | capability | Data mapping | Not started |
 | INTG-042 | Integration Requirements | capability | Sync history | Not started |
 | INTG-043 | Integration Requirements | capability | Retry logic | Not started |
 | INTG-044 | Integration Requirements | capability | Rate-limit handling | Not started |
 | INTG-045 | Integration Requirements | capability | Error handling | Not started |
 | INTG-046 | Integration Requirements | capability | Reconciliation | Not started |
-| INTG-047 | Integration Requirements | capability | Audit logs | Not started |
-| INTG-048 | Integration Requirements | capability | Disconnect controls | Not started |
+| INTG-047 | Integration Requirements | capability | Audit logs | Tested |
+| INTG-048 | Integration Requirements | capability | Disconnect controls | Tested |
 | INTG-049 | Integration Requirements | rule | Use sandbox adapters where live provider credentials are unavailable | Not started |
-| INTG-050 | Integration Requirements | rule | Never claim an integration is live merely because its interface exists | Not started |
+| INTG-050 | Integration Requirements | rule | Never claim an integration is live merely because its interface exists | Tested |
 
 ## Security and enterprise governance
 
@@ -1576,7 +1576,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-036 |  | capability | Automation Studio | Implementing |
 | NAV-037 |  | capability | Financial Recovery | Not started |
 | NAV-038 |  | capability | Financial Benchmarking | Not started |
-| NAV-039 |  | capability | Integrations | Not started |
+| NAV-039 |  | capability | Integrations | Tested |
 | NAV-040 |  | capability | Subscription Management | Not started |
 | NAV-041 |  | capability | Organization Settings | Not started |
 | NAV-042 |  | capability | User Management | Tested |

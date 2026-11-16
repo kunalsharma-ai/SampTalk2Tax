@@ -17,7 +17,7 @@ Code checks every proposal against the books. Nothing is recorded until a person
 
 ## A run
 
-1. **Starting.** **Suggest for unmatched lines** needs `ANTHROPIC_API_KEY` on the server (`503 AI_NOT_CONFIGURED`) and AI turned on for the organisation (`409 AI_OFF`). Only one run per organisation can run at a time (`409 BANK_AI_BUSY`). A run cut off by a restart is closed at the next run, and its lines are marked `INTERRUPTED`.
+1. **Starting.** **Suggest for unmatched lines** needs a Claude API key, added by an owner or admin in **Settings → Integrations** (or the server's `ANTHROPIC_API_KEY` as a fallback; see [`INTEGRATIONS.md`](INTEGRATIONS.md)) (`503 AI_NOT_CONFIGURED`) and AI turned on for the organisation (`409 AI_OFF`). Only one run per organisation can run at a time (`409 BANK_AI_BUSY`). A run cut off by a restart is closed at the next run, and its lines are marked `INTERRUPTED`.
 2. **Choosing lines.** The run takes unmatched, unreconciled lines on the account, oldest first, up to 25. Three kinds of line are left out, each listed with its reason:
    * lines with an exact one-to-one match (same amount within 14 days and nothing else competing); the existing **Match suggested** handles those;
    * lines that already have a suggestion waiting;

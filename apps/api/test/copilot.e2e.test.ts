@@ -121,7 +121,7 @@ describe('setting up', () => {
     await bare.http().put(`${borg.base}/copilot/settings`).set(owner.auth).send({ enabled: true }).expect(200);
     const r = await bare.http().post(`${borg.base}/copilot/conversations`).set(owner.auth).send({ question: 'What is our cash?' }).expect(503);
     expect(r.body).toMatchObject({ error: 'AI_NOT_CONFIGURED' });
-    expect(r.body.message).toContain('ANTHROPIC_API_KEY');
+    expect(r.body.message).toContain('Settings → Integrations');
     expect(await bare.prisma.copilotConversation.count({ where: { orgId: borg.orgId } })).toBe(0);
   });
 
@@ -304,7 +304,7 @@ describe('when the model does not answer', () => {
       const a = lastAnswer(await read(c.id));
       expect(a).toMatchObject({ status: 'FAILED', errorCode: code, text: null });
       expect(a.errorMessage).toBeTruthy();
-      if (code === 'AI_KEY_REJECTED') expect(a.errorMessage).toContain('ANTHROPIC_API_KEY');
+      if (code === 'AI_KEY_REJECTED') expect(a.errorMessage).toContain('Settings → Integrations');
     }
   });
 

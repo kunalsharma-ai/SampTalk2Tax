@@ -107,7 +107,7 @@ The runner runs inside the API process. Tests set the interval to 0 and call `ti
 
 ## Emails
 
-* **Sending.** Plain text over SMTP with nodemailer, one connection per message, through `SMTP_URL` from `EMAIL_FROM` (see `DEPLOYMENT.md`). Without them, email actions fail with "Email is not set up on this server", and the builder and workflow page say so.
+* **Sending.** Plain text over SMTP with nodemailer, one connection per message, through the organisation's own mail server and sender set up in **Settings → Integrations** ([`INTEGRATIONS.md`](INTEGRATIONS.md)), or the server's `SMTP_URL` and `EMAIL_FROM` as a fallback. Without either, email actions fail with "Email is not set up", and the builder and workflow page say so and link to the page.
 * **What is sent.** When the run starts, the addresses, subject and message are worked out and kept with the action, so every attempt sends the same email and the run log shows exactly what went:
   * amounts are written for people, such as `₹1,50,000.00` (Indian grouping for rupees) or `USD 1,234.50`, and dates as `2 Nov 2026`;
   * emails to members end with the automation's name, the organisation and a link to the record (`APP_URL`);

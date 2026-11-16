@@ -6,7 +6,7 @@ Screens: **Sales › Collections** (the queue and the review page for each remin
 
 ## How a run works
 
-1. A member with `collections.manage` presses **Draft reminders**. The server needs `ANTHROPIC_API_KEY` (otherwise `503 AI_NOT_CONFIGURED`), and the organisation must have AI turned on. The copilot's organisation switch is used for this, so one setting covers every AI feature (otherwise `409 AI_OFF`).
+1. A member with `collections.manage` presses **Draft reminders**. It needs a Claude API key, added by an owner or admin in **Settings → Integrations** (or the server's `ANTHROPIC_API_KEY` as a fallback; see [`INTEGRATIONS.md`](INTEGRATIONS.md)) (otherwise `503 AI_NOT_CONFIGURED`), and the organisation must have AI turned on. The copilot's organisation switch is used for this, so one setting covers every AI feature (otherwise `409 AI_OFF`).
 2. Customers with posted invoices that are due before today and not fully paid are listed, the largest overdue total first. These customers are left out, and the run lists each with its reason:
    * customers with no email address;
    * customers with a reminder already waiting for review (drafting, to review, or not delivered);
@@ -37,7 +37,7 @@ Screens: **Sales › Collections** (the queue and the review page for each remin
 * The review page shows the reminder (editable), the checks, the facts it was written from (with links to the invoices) and the risk with its reasons.
 * As the person edits, the checks run again on the server (`POST …/check`, which saves nothing). **Send** stays disabled while a check fails.
 * **Approve and send** (or **Send with my edits**) re-runs the checks (`422 DRAFT_CHECKS_FAILED`, with the failing checks) and works the facts out again from the books. If an invoice has been paid or changed since drafting, sending is refused (`409 DRAFT_OUT_OF_DATE`); reject the reminder and draft again.
-* The email goes out over the same SMTP set-up as automations (`SMTP_URL`, `EMAIL_FROM`; otherwise `409 EMAIL_NOT_SET_UP`).
+* The email goes out through the organisation's mail server set up in **Settings → Integrations** (or the server's `SMTP_URL` as a fallback; otherwise `409 EMAIL_NOT_SET_UP`).
   * It is sent to the customer's saved address only, as plain text.
   * It carries a Message-ID of `<reminder id@talk2tax.collections>` and an `X-T2T-Reminder` header.
   * The row is locked while the mail server is talked to, so two people cannot send it twice.

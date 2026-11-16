@@ -55,15 +55,16 @@ docker compose --profile app up --build   # API + Postgres
 | `JWT_TTL_SECONDS` | no | Default 3600 |
 | `PORT` | no | Default 4000 |
 | `CORS_ORIGINS` | no | Comma-separated allow-list |
-| `ANTHROPIC_API_KEY` | no | AI copilot. Without it the copilot says it is not set up and sends nothing. Each organisation must also turn the copilot on |
+| `ANTHROPIC_API_KEY` | no | Optional fallback. Organisations add their own Claude key in Settings → Integrations ([`INTEGRATIONS.md`](INTEGRATIONS.md)); this key serves those that have not |
 | `ANTHROPIC_BASE_URL` | no | Claude API endpoint, for a gateway; the browser tests point it at a local stand-in |
 | `COPILOT_MODEL`, `COPILOT_MAX_TOOL_ROUNDS`, `COPILOT_TURN_TIMEOUT_SECONDS` | no | Default `claude-opus-5-5`, 8 rounds of tool calls, 240 seconds per answer |
 | `WORKFLOW_RUNNER_INTERVAL_SECONDS` | no | How often the automation runner looks for events and due webhooks. Default 10; 0 turns the runner off |
 | `WEBHOOK_ALLOW_PRIVATE_NETWORKS` | no | `true` lets webhooks use http:// and reach private and loopback addresses. Development and tests only; must be false (the default) in production |
 | `WEBHOOK_TIMEOUT_SECONDS` | no | Longest a webhook delivery may take. Default 10 |
-| `SMTP_URL` | for email | The SMTP server automations send email through: `smtp://user:password@host:587` (STARTTLS when offered; add `?requireTLS=true` to insist) or `smtps://user:password@host:465`. Unset: email actions fail with "Email is not set up" |
+| `SMTP_URL` | no | Optional fallback. Organisations add their own mail server in Settings → Integrations; this one serves those that have not: `smtp://user:password@host:587` (STARTTLS when offered; add `?requireTLS=true` to insist) or `smtps://user:password@host:465`. Unset: email actions fail with "Email is not set up" |
 | `EMAIL_FROM` | with `SMTP_URL` | The sender of every email, such as `Talk2Tax <no-reply@example.com>`. Required when `SMTP_URL` is set. Set up SPF and DKIM for its domain with your mail provider |
 | `SMTP_TIMEOUT_SECONDS` | no | Longest one SMTP delivery may take. Default 20 |
+| `INTEGRATIONS_ENCRYPTION_KEY` | no | Encrypts the API keys and SMTP passwords organisations enter in Settings → Integrations (AES-256-GCM). Unset: a key derived from `JWT_SECRET`. Changing either means those secrets must be entered again (the page says so) |
 | `APP_URL` | no | The web app's public address, for links in emails to members. Default `http://localhost:3000` |
 | `TEST_DATABASE_URL` | tests | Must contain "test" |
 | `DEMO_PASSWORD` | no | Fixed password for the seeded demo user |

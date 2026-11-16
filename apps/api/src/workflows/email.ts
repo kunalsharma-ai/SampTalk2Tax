@@ -1,7 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { smtpRetryable } from '@talk2tax/accounting-engine';
-import { createTransport } from 'nodemailer';
-import { AppConfig, CONFIG } from '../config';
+import { IntegrationsService, MailSetupError } from '../integrations/integrations.service';
 
 export interface EmailMessage {
   to: string[];
@@ -24,29 +23,35 @@ export interface EmailResult {
   durationMs: number;
 }
 
-export const EMAIL_NOT_SET_UP = 'Email is not set up on this server (SMTP_URL and EMAIL_FROM)';
+export const EMAIL_NOT_SET_UP = 'Email is not set up: an owner or admin can add a mail server in Settings → Integrations';
 
 /**
- * Sends plain-text email through the SMTP server in SMTP_URL. One connection per message:
- * automations send a few emails a minute at most, and a fresh connection never carries a
- * stale or broken session into the next delivery.
+ * Sends plain-text email for one organisation, through its own mail server (Settings →
+ * Integrations) or else the server's SMTP_URL. One connection per message: automations and
+ * reminders send a few emails a minute at most, and a fresh connection never carries a stale or
+ * broken session into the next delivery.
  */
 @Injectable()
 export class MailerService {
-  constructor(@Inject(CONFIG) private readonly config: AppConfig) {}
+  constructor(private readonly integrations: IntegrationsService) {}
 
-  get ready(): boolean {
-    return !!(this.config.SMTP_URL && this.config.EMAIL_FROM);
+  /** Whether this organisation can send email, from which address, and whose server is used. */
+  async status(orgId: string): Promise<{ ready: boolean; from: string | null; source: 'ORGANISATION' | 'SERVER' | 'NONE' }> {
+    const m = await this.integrations.mail(orgId);
+    return { ready: m.source !== 'NONE', from: m.from, source: m.source };
   }
 
-  async send(m: EmailMessage): Promise<EmailResult> {
+  async send(orgId: string, m: EmailMessage): Promise<EmailResult> {
     const started = Date.now();
-    if (!this.ready) return { ok: false, status: null, retryable: false, error: EMAIL_NOT_SET_UP, responseSnippet: null, durationMs: 0 };
-    const ms = this.config.SMTP_TIMEOUT_SECONDS * 1000;
-    const transport = createTransport({ url: this.config.SMTP_URL, connectionTimeout: ms, greetingTimeout: ms, socketTimeout: ms });
+    const mail = await this.integrations.mail(orgId);
+    if (mail.source === 'NONE') return { ok: false, status: null, retryable: false, error: EMAIL_NOT_SET_UP, responseSnippet: null, durationMs: 0 };
+    const ms = mail.timeoutMs;
+    let transport: Awaited<ReturnType<typeof mail.transport>> | null = null;
     try {
+      transport = await mail.transport();
       const info = await transport.sendMail({
-        from: this.config.EMAIL_FROM,
+        from: mail.from,
+        ...(mail.replyTo ? { replyTo: mail.replyTo } : {}),
         to: m.to,
         subject: m.subject,
         text: m.text,
@@ -61,6 +66,7 @@ export class MailerService {
       }
       return { ok: true, status: Number(/^\d{3}/.exec(response ?? '')?.[0] ?? 250), retryable: false, error: null, responseSnippet: response, durationMs: Date.now() - started };
     } catch (e) {
+      if (e instanceof MailSetupError) return { ok: false, status: null, retryable: false, error: e.message, responseSnippet: null, durationMs: Date.now() - started };
       const err = e as Error & { responseCode?: number; response?: string; code?: string };
       const status = typeof err.responseCode === 'number' ? err.responseCode : null;
       const timedOut = err.code === 'ETIMEDOUT';
@@ -73,7 +79,7 @@ export class MailerService {
         durationMs: Date.now() - started,
       };
     } finally {
-      transport.close();
+      transport?.close();
     }
   }
 }

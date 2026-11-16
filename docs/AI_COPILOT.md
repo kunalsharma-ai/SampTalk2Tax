@@ -17,8 +17,8 @@ The **copilot** lets members ask questions about their books in plain language. 
 
 Two switches must both be on before anything is sent to Anthropic.
 
-1. **The server needs an API key.** Set `ANTHROPIC_API_KEY` for the API and restart it.
-   * Without the key, the copilot screen says **"The AI copilot is not set up"**.
+1. **A Claude API key.** An owner or admin adds the organisation's key and chooses the model in **Settings → Integrations**, and can test it there; no server change or restart is needed (see [`INTEGRATIONS.md`](INTEGRATIONS.md)). The server's `ANTHROPIC_API_KEY` is used only for organisations without a key of their own.
+   * Without a key, the copilot screen says **"The AI copilot is not set up"**.
    * The API answers questions with `503 AI_NOT_CONFIGURED`, and nothing is sent anywhere.
    * Earlier conversations stay readable.
 2. **Each organisation must turn it on.** An owner or admin (`org.manage`) turns it on for the organisation. It starts off.
@@ -27,9 +27,9 @@ Two switches must both be on before anything is sent to Anthropic.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | (none) | Anthropic API key. Empty means not set up. |
+| `ANTHROPIC_API_KEY` | (none) | Optional server fallback key for organisations that have not added their own in Settings → Integrations. |
 | `ANTHROPIC_BASE_URL` | Anthropic's endpoint | For a gateway or proxy. The browser test points it at the local stand-in. |
-| `COPILOT_MODEL` | `claude-opus-5-5` | The Claude model. |
+| `COPILOT_MODEL` | `claude-opus-5-5` | The default Claude model; an organisation's own choice in Settings → Integrations wins. |
 | `COPILOT_MAX_TOOL_ROUNDS` | 8 | The most rounds of tool calls for one question. |
 | `COPILOT_TURN_TIMEOUT_SECONDS` | 240 | The longest one answer may take, across all its calls to the model. |
 

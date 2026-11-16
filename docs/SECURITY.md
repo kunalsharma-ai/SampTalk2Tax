@@ -57,7 +57,7 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | documents.sign (save one's own signature; e-sign posted invoices and credit notes) | ✓ | ✓ | ✓ | ✓ | |
 | tasks.use (tasks for oneself or one's role; give tasks) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-The AI copilot sends questions and the figures it reads to Anthropic only when the server has `ANTHROPIC_API_KEY` **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
+The AI copilot sends questions and the figures it reads to Anthropic only when there is a Claude key (the organisation's own from Settings → Integrations, or the server's `ANTHROPIC_API_KEY`) **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
 
 The collections agent uses the same organisation switch: each customer's name, overdue invoices and payment history are sent to the model only while AI is on. The model can only submit a draft; it cannot send email or change records. Every amount and invoice number in a draft is checked against the customer's facts, the balances are checked again before sending, and only a member with `collections.manage` can send, to the address saved on the customer. Customer and invoice text is passed as data and the instructions say so. See [`AI_COLLECTIONS.md`](AI_COLLECTIONS.md).
 
@@ -113,3 +113,7 @@ MFA (TOTP/WebAuthn), SSO (OIDC/SAML), a shared rate-limit store, segregation-of-
 ## Reporting a vulnerability
 
 Until a security contact is published, report privately to the repository owner rather than opening a public issue.
+
+## Integration secrets
+
+API keys and SMTP passwords that owners and admins enter in Settings → Integrations are encrypted with AES-256-GCM before storage (key from `INTEGRATIONS_ENCRYPTION_KEY`, or derived from `JWT_SECRET` with HKDF-SHA256 under its own label), in a tenant table with forced row-level security. They are never returned to the browser or written to the audit trail (only whether they changed and their last four characters). Only `org.manage` can see or change integrations. On a public server, mail servers on private, loopback or link-local addresses and unencrypted SMTP are refused, and the connection goes to the address checked. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
