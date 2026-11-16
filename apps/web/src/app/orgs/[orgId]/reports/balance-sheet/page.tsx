@@ -1,9 +1,10 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Card, CardHeader, Table, Td, Tr } from '@talk2tax/ui';
+import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
-import { BalancedBadge, DateInput } from '@/components/report-bits';
+import { BalancedBadge, DateInput, fyStartFor } from '@/components/report-bits';
 import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -19,7 +20,7 @@ export default function BalanceSheetPage() {
   const q = useQuery({ queryKey: ['bs', orgId, asOf], queryFn: () => api<BS>(`/v1/orgs/${orgId}/reports/balance-sheet?asOf=${asOf}`) });
   if (!org) return null;
   const c = org.functionalCurrency;
-  const rows = (lines: Line[]) => lines.map((l) => <Tr key={l.accountId}><Td><span className="num text-fg-muted">{l.code}</span> {l.name}</Td><Td numeric><Money value={l.amount} currency={c} signed /></Td></Tr>);
+  const rows = (lines: Line[]) => lines.map((l) => <Tr key={l.accountId}><Td><span className="num text-fg-muted">{l.code}</span> {l.accountId ? <Link className="hover:text-accent" href={`/orgs/${orgId}/reports/general-ledger?accountId=${l.accountId}&from=${fyStartFor(asOf, org.fiscalYearStartMonth ?? 4)}&to=${asOf}`}>{l.name}</Link> : l.name}</Td><Td numeric><Money value={l.amount} currency={c} signed /></Td></Tr>);
   const head = (t: string) => <tr><Td colSpan={2} className="bg-surface-raised/60 text-xs font-semibold uppercase tracking-wide text-fg-muted">{t}</Td></tr>;
   const total = (t: string, v: string) => <tr><Td className="font-semibold">{t}</Td><Td numeric className="font-semibold"><Money value={v} currency={c} signed /></Td></tr>;
   return (

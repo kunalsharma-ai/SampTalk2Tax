@@ -13,6 +13,7 @@ import {
 import { Prisma } from '@talk2tax/database';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
+import { GraphService } from '../graph/graph.service';
 
 interface MovementRow {
   id: string;
@@ -27,7 +28,10 @@ interface MovementRow {
 /** All reports read only POSTED entries; drafts never affect balances. */
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly graph: GraphService,
+  ) {}
 
   private async movements(orgId: string, from: string | null, to: string, dims: { departmentId?: string | null; projectId?: string | null } = {}): Promise<AccountMovement[]> {
     const fromDate = from ? toDbDate(from) : null;
@@ -144,6 +148,7 @@ export class ReportsService {
       where: { orgId, accountId: q.accountId, entry: { status: 'POSTED', date: { gte: toDbDate(q.from), lte: toDbDate(q.to) } } },
       include: { entry: { select: { id: true, date: true, entryNumber: true, memo: true } } },
     });
+    const sources = await this.graph.entrySources(orgId, [...new Set(lines.map((l) => l.entry.id))]);
     const rows = buildAccountLedger(
       account.type,
       openingBalance,
@@ -164,7 +169,8 @@ export class ReportsService {
       to: q.to,
       openingBalance: f(openingBalance),
       closingBalance: f(rows.length ? rows[rows.length - 1].runningBalance : openingBalance),
-      rows: rows.map((r) => ({ ...r, debit: f(r.debit), credit: f(r.credit), runningBalance: f(r.runningBalance) })),
+      // Each line says which record created its entry, so a figure can be traced to its source document.
+      rows: rows.map((r) => ({ ...r, debit: f(r.debit), credit: f(r.credit), runningBalance: f(r.runningBalance), source: sources.get(r.journalId) ?? null })),
     };
   }
 
