@@ -508,6 +508,9 @@ export class DocumentsService {
     if ((await policyFor(tx, org.id, doc.kind, doc.total.toFixed())) && !(await currentApproval(tx, id, doc.total.toFixed()))) {
       throw new DomainError('APPROVAL_REQUIRED', 'This document needs an approval before it can post. Submit it for approval first.', HttpStatus.CONFLICT);
     }
+    if (doc.kind === 'INVOICE' && doc.contact.creditHold) {
+      throw new DomainError('CREDIT_HOLD', `${doc.contact.name} is on credit hold (${doc.contact.creditHoldReason}). Lift the hold on the customer's page to post invoices to them.`, HttpStatus.CONFLICT);
+    }
     if (doc.kind === 'INVOICE' && doc.contact.creditLimit) {
       const bal = (await this.subledger.balances(tx, org.id, 'SALES', '9999-12-31', doc.contactId)).get(doc.contactId);
       const exposure = (bal ? bal.outstanding.minus(bal.unapplied) : new D(0)).plus(computed.total);

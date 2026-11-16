@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 839 |
+| Not started | 836 |
 | Designed | 0 |
 | Implementing | 66 |
 | Implemented | 34 |
-| Tested | 390 |
+| Tested | 393 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -41,7 +41,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Enterprise financial management | M6 | 29 | 14 | 15 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
-| CRM and finance integration | M6 | 13 | 6 | 7 |
+| CRM and finance integration | M6 | 13 | 3 | 10 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
@@ -3102,6 +3102,51 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/quotes-orders-flow.test.mjs
   - docs/QUOTES_AND_ORDERS.md
   - apps/api/src/ledgers/documents.service.ts
+
+### CRM-010 — Customer profitability
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Customer profitability: revenue (income lines of posted invoices less credit notes) less direct costs (expenses posted to the customer's linked projects), monthly for 12 months and to date; ranked on Customer insights.
+- Evidence:
+  - packages/accounting-engine/src/customer-insights.ts
+  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/crm/customer-insights.service.ts
+  - apps/api/test/customer-insights.e2e.test.ts
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - apps/web/src/components/crm/customer-360.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
+  - docs/CUSTOMER_360.md
+
+### CRM-011 — Customer lifetime value
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Lifetime value = gross profit to date + yearly gross profit (max of trailing 12m revenue and contract ARR, at the customer's margin) x expected years r/(1-r) (max 5) from the org's own 12-month retention; 3 years assumed (and shown) with fewer than 5 customers to measure.
+- Evidence:
+  - packages/accounting-engine/src/customer-insights.ts
+  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/crm/customer-insights.service.ts
+  - apps/api/test/customer-insights.e2e.test.ts
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - apps/web/src/components/crm/customer-360.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
+  - docs/CUSTOMER_360.md
+
+### CRM-012 — Credit risk
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Credit risk score 0-100 from 5 explained factors (overdue share, oldest overdue, days late, limit use, slowing), ratings low/medium/high/very high, suggested credit limit, credit hold that blocks invoice posting with audit trail.
+- Evidence:
+  - packages/accounting-engine/src/customer-insights.ts
+  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/crm/customer-insights.service.ts
+  - apps/api/test/customer-insights.e2e.test.ts
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - apps/web/src/components/crm/customer-360.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
+  - docs/CUSTOMER_360.md
 
 ### RISK-001 — Duplicate invoice detection
 

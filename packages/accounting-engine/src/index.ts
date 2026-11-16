@@ -48,3 +48,4 @@ export * from './operations';
 export * from './crm';
 export * from './sales-orders';
 export * from './contracts';
+export * from './customer-insights';
