@@ -35,13 +35,13 @@ const KPI_MONTHS = 15;
 
 /** YYYY-MM of an ISO date. */
 const monthOf = (iso: string) => iso.slice(0, 7);
-function shiftMonth(month: string, by: number): string {
+export function shiftMonth(month: string, by: number): string {
   const y = +month.slice(0, 4);
   const m = +month.slice(5, 7) - 1 + by;
   const yy = y + Math.floor(m / 12);
   return `${yy}-${String((((m % 12) + 12) % 12) + 1).padStart(2, '0')}`;
 }
-function monthEnd(month: string): string {
+export function monthEnd(month: string): string {
   const y = +month.slice(0, 4);
   const m = +month.slice(5, 7);
   return `${month}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
@@ -109,7 +109,7 @@ export class KpisService {
   }
 
   /** Revenue by customer from posted invoices and credit notes (their revenue lines), in a date range. */
-  async customerRevenue(orgId: string, from: string, to: string, scale: number) {
+  async customerRevenue(orgId: string, from: string, to: string, scale: number, top = 5) {
     const rows = await this.prisma.$queryRaw<{ id: string; name: string; revenue: Prisma.Decimal }[]>`
       SELECT c.id, c.name, SUM(l.functional_credit - l.functional_debit) AS revenue
       FROM journal_lines l
@@ -122,7 +122,7 @@ export class KpisService {
       GROUP BY c.id, c.name`;
     return concentration(
       rows.map((r) => ({ id: r.id, name: r.name, revenue: r.revenue.toFixed() })),
-      5,
+      top,
       scale,
     );
   }

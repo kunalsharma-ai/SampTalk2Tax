@@ -32621,9 +32621,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recovery.ts",
+        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/recovery/recovery.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
+        "packages/accounting-engine/test/recovery.test.ts",
+        "apps/api/test/recovery.e2e.test.ts",
+        "apps/web/e2e/recovery-flow.test.mjs",
+        "docs/RECOVERY_PLANNER.md"
+      ],
+      "notes": "Covered by the financial recovery planner (docs/RECOVERY_PLANNER.md): recovery options measured on the digital twin from the books (collections, supplier terms, cost cuts, funding, pricing), combined into plans with their cash effect and evidence."
     },
     {
       "id": "INNOV-013",
@@ -32687,9 +32696,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dashboards.ts",
+        "packages/accounting-engine/test/dashboards.test.ts",
+        "packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql",
+        "apps/api/src/dashboards",
+        "apps/api/test/dashboards.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/dashboards",
+        "apps/web/src/components/dashboards",
+        "apps/web/e2e/dashboards-flow.test.mjs",
+        "docs/AI_DASHBOARDS.md"
+      ],
+      "notes": "A dashboard is described in words; the AI (Claude, through the AI control guard and the copilot's switch and budget, prompt version recorded) proposes widgets, says what asked-for data is not available, and asks questions that the person answers to revise the draft. Live drafting waits on a Claude key (scripted model in tests)."
     },
     {
       "id": "INNOV-016",
@@ -32709,9 +32728,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dashboards.ts",
+        "packages/accounting-engine/test/dashboards.test.ts",
+        "packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql",
+        "apps/api/src/dashboards",
+        "apps/api/test/dashboards.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/dashboards",
+        "apps/web/src/components/dashboards",
+        "apps/web/e2e/dashboards-flow.test.mjs",
+        "docs/AI_DASHBOARDS.md"
+      ],
+      "notes": "Configurations (figure, line, bar, table, top customers) may only use 23 approved metrics (the KPIs and main figures of the books); the engine checks every widget (approved metric, units not mixed in a chart, month and count limits) whether the AI or a person built it, and works out every figure from posted month figures. The AI never produces a number. Customer widgets need sales.read."
     },
     {
       "id": "INNOV-017",
@@ -32753,9 +32782,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/benchmark.ts",
+        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/benchmarking/benchmarking.service.ts",
+        "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
+        "packages/accounting-engine/test/benchmark.test.ts",
+        "apps/api/test/benchmarking.e2e.test.ts",
+        "apps/web/e2e/benchmarking-flow.test.mjs",
+        "docs/BENCHMARKING.md"
+      ],
+      "notes": "Covered by benchmarking (docs/BENCHMARKING.md): opt-in with recorded consent, an anonymous pool with no organisation id, medians only with 5+ peers and quartiles with 10+, each metric's formula shown for explanation."
     },
     {
       "id": "NAV-001",

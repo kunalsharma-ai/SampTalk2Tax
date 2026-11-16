@@ -127,6 +127,8 @@ Disaster simulation: `packages/accounting-engine/test/disaster.test.ts` (6) chec
 
 Policy studio: `packages/accounting-engine/test/policies.test.ts` (3) checks rule and test validation, test results with actual values and rules in words; `apps/api/test/policies.e2e.test.ts` (11) covers checking without saving, saving, back-tests against posted bills, the self-approval, accountant and failing-test blocks, approval into workflows and later versions, retiring, audit, immutable versions, AI drafts with a scripted model counted in the AI control center, AI off or not set up, permissions and tenant isolation; `apps/web/e2e/policy-studio-flow.test.mjs` writes, tests, back-tests, approves and retires a policy in the browser with two users.
 
+Dashboards: `packages/accounting-engine/test/dashboards.test.ts` (3) checks validation, every widget's figures by hand and dashboards in words; `apps/api/test/dashboards.e2e.test.ts` (4) covers figures from posted documents, earlier months, saving, changing and deleting with audit, AI drafts with a scripted model counted in the AI control center, permissions and tenant isolation; `apps/web/e2e/dashboards-flow.test.mjs` builds, previews, saves, changes and deletes a dashboard in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

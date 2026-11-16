@@ -279,6 +279,8 @@ model Organization {
   disasterSimulations    DisasterSimulation[]
   policies               Policy[]
   policyVersions         PolicyVersion[]
+  dashboards Dashboard[]
+  dashboardAiDrafts DashboardAiDraft[]
   policyAiDrafts         PolicyAiDraft[]
 
   @@map("organizations")
@@ -3384,4 +3386,46 @@ model PolicyAiDraft {
 
   @@index([orgId, createdAt])
   @@map("policy_ai_drafts")
+}
+
+/// A dashboard of approved metrics, built by hand or drafted by the AI from a description.
+model Dashboard {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  number      Int
+  name        String       @db.VarChar(120)
+  description String?      @db.VarChar(1000)
+  /// { widgets: [...] }, checked by the engine before saving.
+  config      Json
+  version     Int          @default(1)
+  createdById String       @map("created_by_id") @db.Uuid
+  updatedById String       @map("updated_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([orgId, name])
+  @@map("dashboards")
+}
+
+/// Each AI draft of a dashboard, with its tokens.
+model DashboardAiDraft {
+  id           String       @id @default(uuid()) @db.Uuid
+  orgId        String       @map("org_id") @db.Uuid
+  request      String       @db.VarChar(8000)
+  /// DONE or FAILED
+  status       String       @db.VarChar(10)
+  result       Json?
+  errorCode    String?      @map("error_code") @db.VarChar(40)
+  errorMessage String?      @map("error_message") @db.VarChar(500)
+  model        String?      @db.VarChar(100)
+  inputTokens  Int          @default(0) @map("input_tokens")
+  outputTokens Int          @default(0) @map("output_tokens")
+  createdById  String       @map("created_by_id") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, createdAt])
+  @@map("dashboard_ai_drafts")
 }

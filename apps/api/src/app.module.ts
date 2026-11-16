@@ -78,6 +78,8 @@ import { GraphService } from './graph/graph.service';
 import { DecisionsController } from './decisions/decisions.controller';
 import { DisastersController } from './disasters/disasters.controller';
 import { DisastersService } from './disasters/disasters.service';
+import { DashboardsController } from './dashboards/dashboards.controller';
+import { DashboardsService } from './dashboards/dashboards.service';
 import { PoliciesController } from './policies/policies.controller';
 import { PoliciesService } from './policies/policies.service';
 import { DecisionsService } from './decisions/decisions.service';
@@ -168,6 +170,7 @@ export class AppModule {
         DecisionsController,
     DisastersController,
     PoliciesController,
+    DashboardsController,
         ForecastLabController,
         IntegrationsController,
         SignaturesController,
@@ -228,6 +231,7 @@ export class AppModule {
         DecisionsService,
     DisastersService,
     PoliciesService,
+    DashboardsService,
         ForecastLabService,
         IntegrationsService,
         DimensionsService,
