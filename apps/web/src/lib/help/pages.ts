@@ -109,6 +109,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Sort by the figure you care about and filter by risk or credit hold. Open a customer for the full workings.',
     where: 'Sales. Figures come from posted invoices, receipts and costs on projects linked to each customer.',
   },
+  'sales/revenue-recognition': {
+    what: 'Revenue invoiced for services delivered over time (a year of support, a subscription billed up front), held as deferred revenue and recognised month by month, with a waterfall of what each month recognises.',
+    how: 'Choose the deferred revenue account once. On a draft invoice, tick the lines delivered over time and give the service start, the months and whether to spread by days or evenly. Post the invoice, then run the monthly release under Prepaid and deferred.',
+    where: 'Sales. Posting credits those lines to the deferred revenue account and opens a deferred revenue schedule per line; each release run moves a month to the line\'s revenue account. Voiding the invoice takes back what was recognised.',
+  },
   'sales/revenue-forecast': {
     what: 'Revenue still to come, month by month, from contracts, open orders, deals and recent sales.',
     how: 'Choose how many months to see. Read committed (contracts and orders), expected (plus weighted deals and other sales) and best case. Save the forecast to compare it with what is invoiced later.',

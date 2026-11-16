@@ -3277,9 +3277,20 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/revenue-recognition.ts",
+        "packages/accounting-engine/test/revenue-recognition.test.ts",
+        "packages/database/prisma/migrations/20261212090000_revenue_recognition/migration.sql",
+        "apps/api/src/revenue-recognition/revenue-recognition.service.ts",
+        "apps/api/src/ledgers/documents.service.ts",
+        "apps/api/test/revenue-recognition.e2e.test.ts",
+        "apps/web/src/components/revenue-recognition/recognition-card.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/revenue-recognition/page.tsx",
+        "apps/web/e2e/revenue-recognition-flow.test.mjs",
+        "docs/REVENUE_RECOGNITION.md"
+      ],
+      "notes": "Invoice lines for services delivered over time: service start, months (1-120), spread by days or evenly, set on the draft. Posting credits them to the deferred revenue account (2350 by default, configurable) and opens a DEFERRED_REVENUE schedule per line; the monthly release run recognises them. Revenue waterfall (12 months) over all deferred revenue schedules. Voiding takes back what was recognised and ends the schedules. Not built: standalone selling price allocation across bundled lines, credit notes adjusting schedules, milestone or usage-based recognition. Not reviewed against Ind AS 115 / ASC 606 by an accountant."
     },
     {
       "id": "AR-029",

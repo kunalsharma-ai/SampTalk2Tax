@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 804 |
+| Not started | 803 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 424 |
+| Tested | 425 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 12 | 31 |
+| Accounts receivable | M2 | 43 | 11 | 32 |
 | Accounts payable | M2 | 36 | 15 | 21 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -773,6 +773,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx
   - apps/web/e2e/bad-debts-flow.test.mjs
   - docs/BAD_DEBTS.md
+
+### AR-028 — Revenue recognition support
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Invoice lines for services delivered over time: service start, months (1-120), spread by days or evenly, set on the draft. Posting credits them to the deferred revenue account (2350 by default, configurable) and opens a DEFERRED_REVENUE schedule per line; the monthly release run recognises them. Revenue waterfall (12 months) over all deferred revenue schedules. Voiding takes back what was recognised and ends the schedules. Not built: standalone selling price allocation across bundled lines, credit notes adjusting schedules, milestone or usage-based recognition. Not reviewed against Ind AS 115 / ASC 606 by an accountant.
+- Evidence:
+  - packages/accounting-engine/src/revenue-recognition.ts
+  - packages/accounting-engine/test/revenue-recognition.test.ts
+  - packages/database/prisma/migrations/20261212090000_revenue_recognition/migration.sql
+  - apps/api/src/revenue-recognition/revenue-recognition.service.ts
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/test/revenue-recognition.e2e.test.ts
+  - apps/web/src/components/revenue-recognition/recognition-card.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/revenue-recognition/page.tsx
+  - apps/web/e2e/revenue-recognition-flow.test.mjs
+  - docs/REVENUE_RECOGNITION.md
 
 ### AR-029 — Contract billing
 

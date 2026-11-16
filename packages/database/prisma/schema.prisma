@@ -5571,3 +5571,32 @@ model UsageRecord {
   @@index([orgId])
   @@map("usage_records")
 }
+
+/// AR-028: where revenue recognised over time waits until it is earned.
+model RevenueRecognitionSettings {
+  orgId             String   @id @map("org_id") @db.Uuid
+  deferredAccountId String   @map("deferred_account_id") @db.Uuid
+  updatedById       String   @map("updated_by_id") @db.Uuid
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("revenue_recognition_settings")
+}
+
+/// AR-028: an invoice line recognised over its service period; on posting it gets a deferred revenue schedule.
+model InvoiceLineRecognition {
+  id          String         @id @default(uuid()) @db.Uuid
+  orgId       String         @map("org_id") @db.Uuid
+  documentId  String         @map("document_id") @db.Uuid
+  lineNo      Int            @map("line_no")
+  startDate   DateTime       @map("start_date") @db.Date
+  months      Int
+  method      DeferralMethod
+  scheduleId  String?        @unique @map("schedule_id") @db.Uuid
+  createdById String         @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([documentId, lineNo])
+  @@index([orgId])
+  @@map("invoice_line_recognition")
+}
