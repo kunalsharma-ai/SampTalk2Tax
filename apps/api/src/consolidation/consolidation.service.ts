@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ConsolidationError, D, checkTranslationRates, consolidate, formatDate, minorUnits, type ConsolidationEntity, type ConsolidationResult, type ExportFormat, type ExportReport, type ExportRow } from '@talk2tax/accounting-engine';
+import { ConsolidationError, D, checkOwnershipPercent, checkTranslationRates, consolidate, formatDate, minorUnits, type ConsolidationEntity, type ConsolidationResult, type ExportFormat, type ExportReport, type ExportRow } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -105,6 +105,7 @@ export class ConsolidationService {
           name: nameOf(m.memberOrgId),
           currency: names.get(m.memberOrgId)?.currency ?? null,
           isParent: m.memberOrgId === g.orgId,
+          ownershipPercent: m.ownershipPercent.toFixed(),
           yourRole: role,
           canReadReports: !!role && hasPermission(role, 'reports.read'),
           addedAt: m.createdAt.toISOString(),
@@ -192,6 +193,27 @@ export class ConsolidationService {
       await tx.consolidationGroup.update({ where: { id }, data: { updatedAt: new Date() } });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'consolidation_group.member_added', entityType: 'consolidation_group', entityId: id, data: { memberOrgId, name } });
     });
+    return this.detail(org, actor.id, id);
+  }
+
+  async setOwnership(org: OrgContext, actor: Actor, id: string, memberOrgId: string, ownershipPercent: string) {
+    const g = await this.group(org, id);
+    const m = g.members.find((x) => x.memberOrgId === memberOrgId);
+    if (!m) throw new DomainError('NOT_FOUND', 'That organisation is not in the group', HttpStatus.NOT_FOUND);
+    const issues = checkOwnershipPercent(ownershipPercent);
+    if (issues.length) throw new DomainError('VALIDATION_FAILED', issues[0]!, HttpStatus.BAD_REQUEST);
+    if (memberOrgId === org.id && !new D(ownershipPercent).eq(100)) {
+      throw new DomainError('PARENT_MEMBER', 'The parent organisation always owns itself in full', HttpStatus.CONFLICT);
+    }
+    const before = m.ownershipPercent.toFixed();
+    const after = new D(ownershipPercent).toFixed();
+    if (before !== after) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.consolidationMember.update({ where: { groupId_memberOrgId: { groupId: id, memberOrgId } }, data: { ownershipPercent: after } });
+        await tx.consolidationGroup.update({ where: { id }, data: { updatedAt: new Date() } });
+        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'consolidation_group.ownership_changed', entityType: 'consolidation_group', entityId: id, data: { memberOrgId, before, after } });
+      });
+    }
     return this.detail(org, actor.id, id);
   }
 
@@ -332,6 +354,7 @@ export class ConsolidationService {
         closing: signed(closing.rows),
         period: signed(period.rows),
         rates: rate ? { closing: rate.closing.toFixed(), average: rate.average.toFixed(), historical: rate.historical.toFixed() } : null,
+        ownershipPercent: m.ownershipPercent.toFixed(),
       });
     }
     let result: ConsolidationResult;
@@ -375,8 +398,12 @@ export class ConsolidationService {
     const slug = r.group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const notes = [
       ...r.entities.map((e) => (e.rates ? `${e.name}: ${e.currency} translated at closing ${e.rates.closing}, average ${e.rates.average}, historical ${e.rates.historical}.` : `${e.name}: ${e.currency}.`)),
+      ...r.entities
+        .filter((e) => e.ownershipPercent !== '100')
+        .map((e) => `${e.name} is ${e.ownershipPercent}% owned: non-controlling interests are ${e.nonControllingNetAssets} of its net assets and ${e.nonControllingProfit} of its profit, before goodwill and fair value adjustments.`),
       ...r.eliminations.filter((e) => !e.matched).map((e) => `Elimination "${e.name}" ${e.problem ? `could not be applied: ${e.problem}` : `leaves a difference of ${e.difference}`}.`),
     ];
+    const hasNci = r.entities.some((e) => e.ownershipPercent !== '100');
     const label = (x: { code: string; name: string }) => [x.code || '', x.name] as [string, string];
     if (statement === 'worksheet') {
       return {
@@ -418,6 +445,12 @@ export class ConsolidationService {
           ...lines(is.expenses),
           { cells: ['', 'Total expenses', is.totalExpenses], style: 'subtotal' },
           { cells: ['', is.netIncome.startsWith('-') ? 'Net loss' : 'Net profit', is.netIncome], style: 'total' },
+          ...(hasNci
+            ? [
+                { cells: ['', 'Attributable to owners of the parent', is.attributableToOwners] },
+                { cells: ['', 'Attributable to non-controlling interests', is.attributableToNonControlling] },
+              ]
+            : []),
         ],
         notes,
         fileName: `${slug}-consolidated-profit-and-loss-${r.from}-to-${r.to}`,
@@ -439,6 +472,12 @@ export class ConsolidationService {
         { cells: ['', 'Equity', null], style: 'section' },
         ...lines(bs.equity),
         { cells: ['', 'Profit for the period', bs.periodEarnings] },
+        ...(hasNci
+          ? [
+              { cells: ['', 'Equity attributable to owners of the parent', bs.equityAttributableToOwners], style: 'subtotal' as const },
+              { cells: ['', 'Non-controlling interests', bs.nonControllingInterests] },
+            ]
+          : []),
         { cells: ['', 'Total equity', bs.totalEquity], style: 'subtotal' },
         { cells: ['', 'Total liabilities and equity', addMoney(bs.totalLiabilities, bs.totalEquity, r.currency)], style: 'total' },
       ],

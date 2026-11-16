@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { D } from '@talk2tax/accounting-engine';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
 /**
@@ -171,6 +172,28 @@ describe('consolidation groups', () => {
     expect(list.filter((e: { action: string; data: { report: string } }) => e.action === 'report.exported' && e.data.report.startsWith('consolidated-')).length).toBe(2);
   });
 
+  it('shows non-controlling interests for a partly owned member', async () => {
+    const d = (await ctx.http().put(`${G}/${groupId}/members/${sub.orgId}`).set(owner.auth).send({ ownershipPercent: '75' }).expect(200)).body;
+    expect(d.members.find((m: { orgId: string }) => m.orgId === sub.orgId).ownershipPercent).toBe('75');
+    await ctx.http().put(`${G}/${groupId}/members/${parent.orgId}`).set(owner.auth).send({ ownershipPercent: '90' }).expect(409);
+    await ctx.http().put(`${G}/${groupId}/members/${sub.orgId}`).set(owner.auth).send({ ownershipPercent: '0' }).expect(400);
+    await ctx.http().put(`${G}/${groupId}/members/${sub.orgId}`).set(owner.auth).send({ ownershipPercent: '100.5' }).expect(400);
+    await ctx.http().put(`${G}/${groupId}/members/${sub.orgId}`).set(accountant.auth).send({ ownershipPercent: '60' }).expect(403);
+    await ctx.http().put(`${G}/${groupId}/members/${theirs.orgId}`).set(owner.auth).send({ ownershipPercent: '60' }).expect(404);
+    const r = await report();
+    // Sub: bank 200,000 less 105,000 owed to Holding; loss of 105,000 for the period.
+    expect(r.entities.find((e: { id: string }) => e.id === sub.orgId)).toMatchObject({ ownershipPercent: '75', netAssets: '95000.00', nonControllingNetAssets: '23750.00', nonControllingProfit: '-26250.00' });
+    expect(r.balanceSheet.nonControllingInterests).toBe('23750.00');
+    expect(new D(r.balanceSheet.equityAttributableToOwners).plus(r.balanceSheet.nonControllingInterests).toFixed(2)).toBe(r.balanceSheet.totalEquity);
+    expect(new D(r.incomeStatement.attributableToOwners).minus(r.incomeStatement.netIncome).toFixed(2)).toBe('26250.00');
+    expect(r.balanceSheet.balanced).toBe(true);
+    const csv = (await ctx.http().get(`${G}/${groupId}/export/income-statement?from=${FROM}&to=${T}&format=csv`).set(owner.auth).expect(200)).text;
+    expect(csv).toContain('Attributable to non-controlling interests,-26250.00');
+    expect(csv).toContain('Sub Pvt Ltd is 75% owned');
+    const bs = (await ctx.http().get(`${G}/${groupId}/export/balance-sheet?from=${FROM}&to=${T}&format=csv`).set(owner.auth).expect(200)).text;
+    expect(bs).toContain('Non-controlling interests,23750.00');
+  });
+
   it('removes a member with its rates, and deletes the group', async () => {
     const d = (await ctx.http().delete(`${G}/${groupId}/members/${us.orgId}`).set(owner.auth).expect(200)).body;
     expect(d.rates).toEqual([]);
@@ -183,6 +206,6 @@ describe('consolidation groups', () => {
     await ctx.http().get(`${G}/${groupId}`).set(owner.auth).expect(404);
     const audit = (await ctx.http().get(`${parent.base}/audit-events?entityType=consolidation_group&limit=100`).set(owner.auth).expect(200)).body;
     const actions = (Array.isArray(audit) ? audit : audit.items).map((e: { action: string }) => e.action);
-    expect(actions).toEqual(expect.arrayContaining(['consolidation_group.created', 'consolidation_group.member_added', 'consolidation_group.rates_set', 'consolidation_group.member_removed', 'consolidation_group.deleted']));
+    expect(actions).toEqual(expect.arrayContaining(['consolidation_group.created', 'consolidation_group.member_added', 'consolidation_group.rates_set', 'consolidation_group.member_removed', 'consolidation_group.ownership_changed', 'consolidation_group.deleted']));
   });
 });

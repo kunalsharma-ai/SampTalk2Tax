@@ -2,7 +2,8 @@
  * Browser end-to-end test for group consolidation: an owner of two companies creates a group in
  * the parent, adds the subsidiary, adds an elimination rule by picking each company's account,
  * reads the worksheet and the consolidated statements, sees an intercompany difference, and
- * exports the worksheet. Real Next.js app → real API → real PostgreSQL.
+ * exports the worksheet, then marks the subsidiary as 60% owned and sees non-controlling interests.
+ * Real Next.js app → real API → real PostgreSQL.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -117,6 +118,21 @@ test('an owner consolidates two companies with an elimination', async () => {
   assert.match(dl.suggestedFilename(), /^e2e-group-consolidation-worksheet-/);
   assert.match(csv, /Code,Account,E2E Holding,E2E Subsidiary,Eliminations,Consolidated/);
   assert.match(csv, /1250,Due from group companies,40000\.00,0\.00,-40000\.00,0\.00/);
+
+  // A partly owned subsidiary: outside shareholders get their share within equity.
+  await page.getByRole('tab', { name: 'Companies, rates and rules' }).click();
+  await page.getByLabel("Group's share of E2E Subsidiary (%)").fill('60');
+  await members.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save' }).waitFor({ state: 'detached' });
+  await page.getByRole('tab', { name: 'Balance sheet' }).click();
+  // Subsidiary net assets: bank 50,000 less 40,500 owed to the holding company = 9,500; 40% is 3,800.
+  const bs2 = await page.getByRole('table', { name: 'Consolidated balance sheet' }).innerText();
+  assert.match(bs2, /Non-controlling interests\s+₹3,800\.00/);
+  assert.match(bs2, /Equity attributable to owners of the parent\s+-?₹[\d,]+\.\d\d/);
+  await page.getByRole('tab', { name: 'Profit and loss' }).click();
+  assert.match(await page.getByRole('table', { name: 'Consolidated profit and loss' }).innerText(), /Attributable to non-controlling interests\s+-₹16,200\.00/);
+  await page.getByRole('tab', { name: 'Worksheet' }).click();
+  await page.getByRole('list', { name: 'Non-controlling interests' }).getByText('E2E Subsidiary: 60% owned').waitFor();
 
   assert.deepEqual(consoleErrors.filter((e) => !/favicon|Failed to load resource/.test(e)), []);
 });

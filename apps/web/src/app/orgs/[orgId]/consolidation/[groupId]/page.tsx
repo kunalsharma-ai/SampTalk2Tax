@@ -145,6 +145,18 @@ function Worksheet({ r }: { r: ConsolidationReport }) {
           })}
         </ul>
       </Card>
+      {r.entities.some((e) => e.ownershipPercent !== '100') ? (
+        <Card className="p-4">
+          <CardHeader title="Non-controlling interests" description="Partly owned companies are consolidated in full; the outside shareholders' share of their net assets and profit is shown within equity." />
+          <ul className="space-y-1 text-sm text-fg-muted" aria-label="Non-controlling interests">
+            {r.entities.filter((e) => e.ownershipPercent !== '100').map((e) => (
+              <li key={e.id}>
+                {e.name}: {e.ownershipPercent}% owned; outside shareholders hold <Money value={e.nonControllingNetAssets} currency={r.currency} signed /> of net assets <Money value={e.netAssets} currency={r.currency} signed /> and <Money value={e.nonControllingProfit} currency={r.currency} signed /> of the profit
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
       {r.entities.some((e) => e.rates) ? (
         <Card className="p-4">
           <CardHeader title="Translation" description="Assets and liabilities at the closing rate, revenue and expenses at the average rate, equity at the historical rate." />
@@ -159,7 +171,7 @@ function Worksheet({ r }: { r: ConsolidationReport }) {
   );
 }
 
-function StatementTable({ label, sections, footer, c }: { label: string; sections: { title: string; lines: Line[]; total?: [string, string] }[]; footer: [string, string][]; c: string }) {
+function StatementTable({ label, sections, footer, after = [], c }: { label: string; sections: { title: string; lines: Line[]; total?: [string, string] }[]; footer: [string, string][]; after?: [string, string][]; c: string }) {
   return (
     <Card className="max-w-3xl">
       <Table aria-label={label}>
@@ -177,6 +189,7 @@ function StatementTable({ label, sections, footer, c }: { label: string; section
         </tbody>
         <tfoot>
           {footer.map(([k, v]) => <tr key={k}><Td className="text-base font-semibold">{k}</Td><Td numeric className="text-base font-semibold"><Money value={v} currency={c} signed /></Td></tr>)}
+          {after.map(([k, v]) => <tr key={k}><Td className="pl-6 text-fg-muted">{k}</Td><Td numeric className="text-fg-muted"><Money value={v} currency={c} signed /></Td></tr>)}
         </tfoot>
       </Table>
     </Card>
@@ -194,6 +207,14 @@ function IncomeStatement({ r }: { r: ConsolidationReport }) {
         { title: 'Expenses', lines: is.expenses, total: ['Total expenses', is.totalExpenses] },
       ]}
       footer={[[Number(is.netIncome) < 0 ? 'Group net loss' : 'Group net profit', is.netIncome]]}
+      after={
+        r.entities.some((e) => e.ownershipPercent !== '100')
+          ? [
+              ['Attributable to owners of the parent', is.attributableToOwners],
+              ['Attributable to non-controlling interests', is.attributableToNonControlling],
+            ]
+          : []
+      }
     />
   );
 }
@@ -201,6 +222,8 @@ function IncomeStatement({ r }: { r: ConsolidationReport }) {
 function BalanceSheet({ r }: { r: ConsolidationReport }) {
   const bs = r.balanceSheet;
   const liabEq = new D(bs.totalLiabilities).plus(bs.totalEquity).toFixed(2);
+  const nci = r.entities.some((e) => e.ownershipPercent !== '100');
+  const profit: Line = { code: '', name: 'Profit for the period', kind: 'ACCOUNT', amount: bs.periodEarnings };
   return (
     <StatementTable
       label="Consolidated balance sheet"
@@ -208,7 +231,12 @@ function BalanceSheet({ r }: { r: ConsolidationReport }) {
       sections={[
         { title: 'Assets', lines: bs.assets, total: ['Total assets', bs.totalAssets] },
         { title: 'Liabilities', lines: bs.liabilities, total: ['Total liabilities', bs.totalLiabilities] },
-        { title: 'Equity', lines: [...bs.equity, { code: '', name: 'Profit for the period', kind: 'ACCOUNT', amount: bs.periodEarnings }], total: ['Total equity', bs.totalEquity] },
+        ...(nci
+          ? [
+              { title: 'Equity', lines: [...bs.equity, profit], total: ['Equity attributable to owners of the parent', bs.equityAttributableToOwners] as [string, string] },
+              { title: 'Non-controlling interests', lines: [{ code: '', name: 'Non-controlling interests', kind: 'ACCOUNT' as const, amount: bs.nonControllingInterests }], total: ['Total equity', bs.totalEquity] as [string, string] },
+            ]
+          : [{ title: 'Equity', lines: [...bs.equity, profit], total: ['Total equity', bs.totalEquity] as [string, string] }]),
       ]}
       footer={[['Total liabilities and equity', liabEq]]}
     />
@@ -234,12 +262,13 @@ function Setup({ g, orgId, base, manage, periodEnd, currency }: { g: GroupDetail
       <Card className="p-4 xl:col-span-2">
         <CardHeader title="Companies in the group" description="You can add the companies you own or administer. Reading the consolidation needs report access in every one of them." />
         <Table aria-label="Companies in the group">
-          <thead><tr><Th>Company</Th><Th>Currency</Th><Th>Your role there</Th><Th>Added</Th><Th /></tr></thead>
+          <thead><tr><Th>Company</Th><Th>Currency</Th><Th>Group's share</Th><Th>Your role there</Th><Th>Added</Th><Th /></tr></thead>
           <tbody>
             {g.members.map((m) => (
               <Tr key={m.orgId}>
                 <Td>{m.name ?? 'An organisation you are not a member of'} {m.isParent ? <Badge tone="accent">Parent</Badge> : null}</Td>
                 <Td>{m.currency ?? '—'}</Td>
+                <Td>{manage && !m.isParent ? <OwnershipEditor key={m.ownershipPercent} name={m.name ?? ''} value={m.ownershipPercent} pending={call.isPending} onSave={(v) => call.mutate({ path: `/members/${m.orgId}`, method: 'PUT', body: { ownershipPercent: v } })} /> : `${m.ownershipPercent}%`}</Td>
                 <Td>{m.yourRole ?? '—'}{m.canReadReports ? null : <span className="ml-1 text-xs text-negative">no report access</span>}</Td>
                 <Td>{date(m.addedAt.slice(0, 10))}</Td>
                 <Td>{manage && !m.isParent ? <Button size="sm" variant="ghost" aria-label={`Remove ${m.name}`} disabled={call.isPending} onClick={() => confirm(`Remove ${m.name} from the group?`) && call.mutate({ path: `/members/${m.orgId}`, method: 'DELETE' })}>Remove</Button> : null}</Td>
@@ -334,6 +363,17 @@ function Setup({ g, orgId, base, manage, periodEnd, currency }: { g: GroupDetail
 }
 
 /** A company and one of its accounts, read from that company's own chart of accounts. */
+function OwnershipEditor({ name, value, pending, onSave }: { name: string; value: string; pending: boolean; onSave: (v: string) => void }) {
+  const [v, setV] = useState(value);
+  return (
+    <form className="flex items-center gap-1" onSubmit={(e) => { e.preventDefault(); onSave(v.trim()); }}>
+      <Input aria-label={`Group's share of ${name} (%)`} value={v} onChange={(e) => setV(e.target.value)} inputMode="decimal" className="w-24 text-right" />
+      <span className="text-sm text-fg-muted">%</span>
+      {v.trim() !== value ? <Button type="submit" size="sm" variant="secondary" loading={pending}>Save</Button> : null}
+    </form>
+  );
+}
+
 function SidePicker({ label, members, org, code, onChange }: { label: string; members: GroupDetail['members']; org: string; code: string; onChange: (org: string, code: string) => void }) {
   const accounts = useQuery({
     queryKey: ['accounts', org],
