@@ -64,7 +64,7 @@ test('an owner sets an approval rule for bills', async () => {
 test('a receipt is attached to a draft bill, which cannot post until approved', async () => {
   const acc = Object.fromEntries((await call(owner, `/v1/orgs/${orgId}/accounts`)).body.map((a) => [a.code, a.id]));
   const vendor = await call(owner, `/v1/orgs/${orgId}/contacts`, { name: 'Synthetic Steel', isVendor: true });
-  const bill = await call(owner, `/v1/orgs/${orgId}/purchases/documents`, { kind: 'BILL', contactId: vendor.body.id, issueDate: new Date().toISOString().slice(0, 10), lines: [{ accountId: acc['1300'], quantity: '1', unitPrice: '25000.00' }] });
+  const bill = await call(owner, `/v1/orgs/${orgId}/purchases/documents`, { kind: 'BILL', contactId: vendor.body.id, issueDate: new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10), lines: [{ accountId: acc['1300'], quantity: '1', unitPrice: '25000.00' }] });
   assert.equal(bill.status, 201);
   billId = bill.body.id;
   await owner.goto(`${base}/purchases/bills/${billId}`);

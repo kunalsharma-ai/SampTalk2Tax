@@ -18,7 +18,7 @@ import {
   taxYearOf,
 } from '@talk2tax/tax-engine';
 import { AuditService } from '../audit/audit.service';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, todayIso, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
@@ -631,7 +631,7 @@ export class PayrollService {
   }
 
   private serializeEmployee(e: EmployeeWithStructures) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
     const current = [...e.structures].reverse().find((s) => fromDbDate(s.effectiveFrom) <= today) ?? e.structures[0] ?? null;
     const structure = (s: StructureWithComponents) => ({
       id: s.id,

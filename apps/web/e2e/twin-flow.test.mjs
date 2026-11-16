@@ -50,7 +50,7 @@ test('a what-if scenario is built from a template, played forward, saved and com
   orgId = page.url().split('/').pop();
   base = `/v1/orgs/${orgId}`;
   accounts = Object.fromEntries((await call(`${base}/accounts`)).body.map((a) => [a.code, a.id]));
-  const now = new Date().toISOString().slice(0, 7);
+  const now = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 7);
   const last = shift(now, -1);
   const have = new Set((await call(`${base}/periods`)).body.map((p) => p.fiscalYear));
   for (const m of [last, now]) {

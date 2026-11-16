@@ -7,7 +7,7 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AiControlService } from '../ai-control/ai-control.service';
 import { AuditService } from '../audit/audit.service';
 import { todayIst } from '../cash-flow/cash-flow.service';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, istDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
@@ -222,7 +222,7 @@ export class CollectionsService {
       open: invoices.filter((i) => new D(i.open.toString()).gt(0)).map((i) => ({ number: i.number, issueDate: fromDbDate(i.issue_date), dueDate: fromDbDate(i.due_date), total: money(i.total), balance: money(i.open), reference: i.reference })),
       paid: invoices.filter((i) => new D(i.open.toString()).lte(0) && i.last_paid).map((i) => ({ number: i.number, dueDate: fromDbDate(i.due_date), paidOn: fromDbDate(i.last_paid!) })),
       lastPayment: lastPayment ? { date: fromDbDate(lastPayment.date), amount: money(lastPayment.amount) } : null,
-      previousReminders: reminders.map((r) => ({ sentOn: r.sentAt!.toISOString().slice(0, 10), subject: r.subject ?? '' })),
+      previousReminders: reminders.map((r) => ({ sentOn: istDate(r.sentAt!), subject: r.subject ?? '' })),
     });
   }
 
@@ -265,7 +265,7 @@ export class CollectionsService {
         const sent = recent.find((r) => r.contactId === c.contact_id && r.status === 'SENT');
         if (!c.email?.trim()) skipped.push({ contactId: c.contact_id, name: c.name, reason: 'No email address on the customer' });
         else if (open) skipped.push({ contactId: c.contact_id, name: c.name, reason: 'A reminder is already waiting for review' });
-        else if (sent) skipped.push({ contactId: c.contact_id, name: c.name, reason: `Reminded on ${sent.sentAt!.toISOString().slice(0, 10)}` });
+        else if (sent) skipped.push({ contactId: c.contact_id, name: c.name, reason: `Reminded on ${istDate(sent.sentAt!)}` });
         else if (chosen.length >= MAX_CUSTOMERS_PER_RUN) skipped.push({ contactId: c.contact_id, name: c.name, reason: `More than ${MAX_CUSTOMERS_PER_RUN} customers: draft again after these` });
         else chosen.push(c);
       }

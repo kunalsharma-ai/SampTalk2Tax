@@ -7,7 +7,8 @@ const gstin = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckChara
 const OWN = gstin('27', 'ZZZCW0101Z');
 const BUYER = gstin('29', 'ZZZCW0102Z');
 const TRANSPORTER = gstin('27', 'ZZZCW0103Z');
-const t = today();
+// Two hours ago, in India: an e-way bill generated an hour ago is then never dated before its invoice, even just after midnight IST.
+const t = new Date(Date.now() + 5.5 * 3_600_000 - 2 * 3_600_000).toISOString().slice(0, 10);
 const FY = Number(t.slice(5, 7)) >= 4 ? Number(t.slice(0, 4)) : Number(t.slice(0, 4)) - 1;
 const FY_START = `${FY}-04-01`;
 const ddmmyyyy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;

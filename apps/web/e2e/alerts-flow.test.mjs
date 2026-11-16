@@ -13,7 +13,7 @@ const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
 let browser, page, orgId, base, accounts;
 const ids = {};
 const consoleErrors = [];
-const T = new Date().toISOString().slice(0, 10);
+const T = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
 async function call(path, body, method = body ? 'POST' : 'GET') {

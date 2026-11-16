@@ -12,7 +12,7 @@ const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
 let browser, page, base, orgId;
 const consoleErrors = [];
 
-const todayIso = new Date().toISOString().slice(0, 10);
+const todayIso = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const day = (n) => new Date(Date.parse(`${todayIso}T00:00:00Z`) - (10 - n) * 86_400_000).toISOString().slice(0, 10);
 const dmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const statement = [

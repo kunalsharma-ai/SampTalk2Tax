@@ -15,7 +15,7 @@ import { computePayslip, daysInMonth, monthsLeftInTaxYear, taxYearLabel } from '
 
 const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
 const SHOTS = process.env.E2E_SCREENSHOTS;
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const PERIOD = today().slice(0, 7);
 const NAME = 'Meera Iyer (synthetic)';
 let browser, page, orgId, base, runId, employeeId;
