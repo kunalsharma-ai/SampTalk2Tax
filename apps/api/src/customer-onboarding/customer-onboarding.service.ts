@@ -7,6 +7,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { CONTACTS } from '../db/collections/sales';
 import { MovedTables } from '../db/moved-table';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type Db = Tx | PrismaService;
@@ -213,7 +214,7 @@ export class CustomerOnboardingService {
   }
 
   private async lock(tx: Tx, org: OnboardingOrg, id: string) {
-    await tx.$queryRaw`SELECT id FROM customer_onboardings WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'customer_onboardings', id, org.id);
     const o = await tx.customerOnboarding.findFirst({ where: { id, orgId: org.id, party: org.party } });
     if (!o) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Onboarding not found' });
     return o;

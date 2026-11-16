@@ -8,6 +8,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import type { LinkType } from '../workflows/workflow-facts';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export type Assignee = { role: AssignableRole } | { userId: string };
@@ -120,7 +121,7 @@ export class TasksService {
 
   async close(org: OrgContext, actor: Actor, id: string, to: 'DONE' | 'CANCELLED', note: string | null) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM tasks WHERE id = ${id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'tasks', id);
       const t = await tx.task.findFirst({ where: { AND: [{ id }, this.visibleWhere(org, actor)] } });
       if (!t) throw new NotFoundException('Task not found');
       if (t.status !== 'OPEN') throw new DomainError('TASK_CLOSED', `This task is already ${t.status === 'DONE' ? 'done' : 'cancelled'}`, HttpStatus.CONFLICT);

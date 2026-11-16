@@ -7,6 +7,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
+import { lockName, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface RemitOrg {
@@ -147,7 +148,7 @@ export class InternationalPaymentsService {
   async create(org: RemitOrg, actor: Actor, input: RemittanceInput) {
     this.need(this.can(org).manage, 'Preparing an international payment needs purchases.manage');
     const id = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('international_payments'), hashtext(${org.id}))`;
+      await lockName(tx, `international_payments:${org.id}`);
       const n = ((await tx.internationalPayment.aggregate({ where: { orgId: org.id }, _max: { number: true } }))._max.number ?? 0) + 1;
       const row = await tx.internationalPayment.create({ data: { orgId: org.id, number: n, contactId: input.contactId, bankAccountId: input.bankAccountId, paymentDate: toDbDate(input.paymentDate), currency: input.currency.toUpperCase(), createdById: actor.id } });
       await this.apply(tx, org, row.id, input);
@@ -436,7 +437,7 @@ export class InternationalPaymentsService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM international_payments WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'international_payments', id, orgId);
     const r = await tx.internationalPayment.findFirst({ where: { id, orgId }, include: INCLUDE });
     if (!r) throw new NotFoundException({ error: 'NOT_FOUND', message: 'International payment not found' });
     return r;

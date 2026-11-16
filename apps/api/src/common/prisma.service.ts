@@ -3,6 +3,7 @@ import '../db/readable-models';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
 import { isTransientTransactionError, type DocumentStore } from '@talk2tax/document-db';
+import { useCounterStore } from '../db/counters';
 import { DocumentStoreService } from './document-store.service';
 import { currentTenantContext, TenantContext, tenantStorage } from './tenant-context';
 
@@ -36,6 +37,9 @@ function settings(ctx: TenantContext): [string, string, string] {
  * A statement issued on the root client from inside a transaction callback (instead of on
  * `tx`) is not given settings, so it sees no tenant rows: that bug fails closed.
  */
+/** Runs of a transaction callback before a MongoDB write conflict is given up on. */
+const MAX_ATTEMPTS = 40;
+
 export function createTenantAwarePrisma(base: PrismaService, store?: Pick<DocumentStore, 'hold' | 'collection'>): PrismaService {
   const apply = (ctx: TenantContext) => {
     const [org, user, bypass] = settings(ctx);
@@ -81,7 +85,12 @@ export function createTenantAwarePrisma(base: PrismaService, store?: Pick<Docume
         result = await held.run(() => runOnce(arg, options, ctx));
       } catch (e) {
         await held.abort().catch(() => undefined);
-        if (attempt < 5 && isTransientTransactionError(e)) continue;
+        // Concurrent postings meet on the same counter or lock document; each conflict waits a
+        // little (growing, with jitter) and runs again, as MongoDB's own retry loop does.
+        if (attempt < MAX_ATTEMPTS && isTransientTransactionError(e)) {
+          await new Promise((r) => setTimeout(r, Math.random() * Math.min(5 * 2 ** attempt, 200)));
+          continue;
+        }
         throw e;
       }
       try {
@@ -160,5 +169,8 @@ async function connectAndCheckRole(base: PrismaService): Promise<void> {
 export const prismaProvider: Provider = {
   provide: PrismaService,
   inject: [DocumentStoreService],
-  useFactory: (store: DocumentStoreService) => createTenantAwarePrisma(new PrismaService(), store),
+  useFactory: (store: DocumentStoreService) => {
+    useCounterStore(store);
+    return createTenantAwarePrisma(new PrismaService(), store);
+  },
 };

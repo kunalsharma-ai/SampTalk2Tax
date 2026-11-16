@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { TasksService } from '../tasks/tasks.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type Member = { orgId: string; role: RoleName };
@@ -118,7 +119,7 @@ export class CopilotActionsService {
 
   /** Locks a proposal of this member that can still be decided. */
   private async lockOpen(tx: Prisma.TransactionClient, orgId: string, actor: Actor, id: string) {
-    await tx.$queryRaw`SELECT id FROM copilot_actions WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'copilot_actions', id, orgId);
     const a = await tx.copilotAction.findFirst({ where: { id, orgId, userId: actor.id } });
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Action not found' });
     if (a.status !== 'PROPOSED') throw new DomainError('ACTION_DECIDED', `This action was already ${a.status.toLowerCase()}`, HttpStatus.CONFLICT);

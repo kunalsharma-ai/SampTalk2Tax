@@ -10,6 +10,8 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { lineSums, postedBetween } from '../db/ledger-queries';
 import { byCode } from '../db/subledger-queries';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface YearEndOrg {
@@ -128,9 +130,7 @@ export class YearEndService {
       const label = fiscalYearLabel(year.startDate, org.fiscalYearStartMonth);
       const closing = this.closing(rows, re.id, label, org.functionalCurrency);
       if (closing.lines.length === 0) throw new DomainError('NOTHING_TO_CLOSE', `${label} has nothing left in its revenue and expense accounts`, HttpStatus.CONFLICT);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'year_end_close', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'year_end_close') }];
       const again = (await tx.yearEndClose.count({ where: { orgId: org.id, fiscalYear, status: 'ACTIVE' } })) > 0;
       const je = await this.journals.postSystemEntry(tx, org, actor, {
         date: year.endDate,
@@ -250,7 +250,7 @@ export class YearEndService {
     const ps = await db.fiscalPeriod.findMany({ where: { orgId, fiscalYear }, orderBy: { startDate: 'asc' } });
     if (ps.length === 0) throw new NotFoundException({ error: 'NOT_FOUND', message: `No fiscal year ${fiscalYear}` });
     const last = ps[ps.length - 1]!;
-    if (lock) await db.$queryRaw`SELECT id FROM fiscal_periods WHERE id = ${last.id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    if (lock) await lockRow(db, 'fiscal_periods', last.id, orgId);
     return { startDate: fromDbDate(ps[0]!.startDate), endDate: fromDbDate(last.endDate), lastPeriod: last };
   }
 

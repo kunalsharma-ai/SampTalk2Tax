@@ -24,6 +24,7 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
 import { lineSums, postedBetween } from '../db/ledger-queries';
 import { byCode, roundPg, withOpen } from '../db/subledger-queries';
+import { lockRow } from '../db/locks';
 
 export interface InsightOrg {
   id: string;
@@ -100,7 +101,7 @@ export class CustomerInsightsService {
 
   async setCreditHold(org: InsightOrg, actor: Actor, contactId: string, body: { hold: boolean; reason?: string | null }) {
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM contacts WHERE id = ${contactId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      const rows = await lockRow<{ id: string }>(tx, 'contacts', contactId, org.id);
       if (!rows.length) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Customer not found' });
       const c = await tx.contact.findUniqueOrThrow({ where: { id: contactId } });
       if (!c.isCustomer) throw new DomainError('NOT_A_CUSTOMER', 'Only customers can be put on credit hold', HttpStatus.UNPROCESSABLE_ENTITY);

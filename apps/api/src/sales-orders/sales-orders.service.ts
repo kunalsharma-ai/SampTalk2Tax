@@ -8,6 +8,8 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export interface SalesOrg {
   id: string;
@@ -92,10 +94,7 @@ export class SalesOrdersService {
 
   /** Also used by contracts. */
   async nextNumber(tx: Tx, orgId: string, key: 'sales_quote' | 'sales_order' | 'sales_contract' | 'pro_forma' | 'purchase_order' | 'goods_receipt' | 'retainer') {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${key}, 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, key) }];
     return value;
   }
 
@@ -281,7 +280,7 @@ export class SalesOrdersService {
   }
 
   private async lockQuote(tx: Tx, orgId: string, id: string): Promise<QuoteWithLines> {
-    await tx.$queryRaw`SELECT id FROM sales_quotes WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'sales_quotes', id, orgId);
     const q = await tx.salesQuote.findFirst({ where: { id, orgId }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
     if (!q) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Quotation not found' });
     return q;
@@ -413,7 +412,7 @@ export class SalesOrdersService {
   }
 
   async winDeal(tx: Tx, org: SalesOrg, actor: Actor, dealId: string, body: string, by = 'quotation accepted') {
-    await tx.$queryRaw`SELECT id FROM crm_deals WHERE id = ${dealId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'crm_deals', dealId, org.id);
     const d = await tx.crmDeal.findFirst({ where: { id: dealId, orgId: org.id } });
     if (!d) return;
     if (!isOpenStage(d.stage)) {
@@ -530,7 +529,7 @@ export class SalesOrdersService {
   }
 
   async lockOrder(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM sales_orders WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'sales_orders', id, orgId);
     const o = (await tx.salesOrder.findFirst({ where: { id, orgId }, include: this.orderInclude })) as OrderWithLines | null;
     if (!o) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Sales order not found' });
     const ids = [...new Set(o.lines.flatMap((l) => l.billings.map((b) => b.documentId)))];

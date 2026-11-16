@@ -19,6 +19,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
 import { SalesOrg, SalesOrdersService } from './sales-orders.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type Db = Tx | PrismaService;
@@ -67,7 +68,7 @@ export class UsageBillingService {
   }
 
   private async contract(db: Db, orgId: string, id: string, lock = false): Promise<SalesContract> {
-    if (lock) await (db as Tx).$queryRaw`SELECT id FROM sales_contracts WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    if (lock) await lockRow(db as Tx, 'sales_contracts', id, orgId);
     const c = await db.salesContract.findFirst({ where: { id, orgId } });
     if (!c) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Contract not found' });
     return c;

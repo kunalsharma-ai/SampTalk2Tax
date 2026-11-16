@@ -10,6 +10,7 @@ import { DocumentsService } from '../ledgers/documents.service';
 import { APPROVAL_POLICIES, APPROVAL_REQUESTS } from '../db/collections/sales';
 import { MovedTables } from '../db/moved-table';
 import { currentApproval, policyFor } from './approval-rules';
+import { lockRow } from '../db/locks';
 
 interface Actor {
   id: string;
@@ -207,16 +208,16 @@ export class ApprovalsService {
   }
 
   private async lockRequest(tx: Tx, org: OrgContext, id: string) {
-    await tx.$queryRaw`SELECT id FROM approval_requests WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'approval_requests', id, org.id);
     const r = await tx.approvalRequest.findFirst({ where: { id, orgId: org.id }, include: REQ_INCLUDE });
     if (!r) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Approval request not found' });
     this.require(org, readPermission(r.documentKind), 'see this request');
-    if (r.documentId) await tx.$queryRaw`SELECT id FROM documents WHERE id = ${r.documentId}::uuid FOR UPDATE`;
+    if (r.documentId) await lockRow(tx, 'documents', r.documentId);
     return r;
   }
 
   private async lockDraft(tx: Tx, org: OrgContext, documentId: string) {
-    await tx.$queryRaw`SELECT id FROM documents WHERE id = ${documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'documents', documentId, org.id);
     const doc = await tx.document.findFirst({ where: { id: documentId, orgId: org.id }, include: { contact: { select: { name: true } } } });
     if (!doc) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
     if (doc.status !== 'DRAFT') throw new DomainError('NOT_DRAFT', 'Only drafts can be submitted for approval', HttpStatus.CONFLICT);

@@ -29,6 +29,7 @@ import { PurchaseOrdersService } from '../purchase-orders/purchase-orders.servic
 import { RegionsService } from '../regions/regions.service';
 import { todayIst } from '../tasks/tasks.service';
 import { UsageService } from '../usage/usage.service';
+import { lockName } from '../db/locks';
 
 type Actor = { id: string };
 interface StaffOrg {
@@ -407,7 +408,7 @@ export class VendorPortalService {
     const number = input.invoiceNumber.trim().replace(/\s+/g, ' ');
     const key = invoiceNumberKey(number);
     const id = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`vendor-portal:${contact.id}`}))`;
+      await lockName(tx, `vendor-portal:${contact.id}`);
       if (input.purchaseOrderId) {
         const o = await tx.purchaseOrder.findFirst({ where: { id: input.purchaseOrderId, orgId: org.id, contactId: contact.id, status: { in: ['ISSUED', 'CLOSED'] } }, select: { id: true } });
         if (!o) throw new DomainError('SUBMISSION_INVALID', 'Choose one of your purchase orders', HttpStatus.UNPROCESSABLE_ENTITY);

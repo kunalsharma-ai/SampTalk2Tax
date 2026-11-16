@@ -139,6 +139,27 @@ export class DocumentStore {
     return nextSequenceValue(this.db(), name, this.sessions.getStore());
   }
 
+  /**
+   * Raises a global counter to at least `value` (never lowers it), inside the current
+   * transaction if there is one. For counters that started elsewhere and are catching up.
+   */
+  async raiseSequence(name: string, value: number): Promise<void> {
+    await this.db()
+      .collection<{ _id: string; value: number }>('_sequences')
+      .updateOne({ _id: name }, { $max: { value } }, { upsert: true, session: this.sessions.getStore() });
+  }
+
+  /**
+   * Takes a named lock for the rest of the current transaction by writing its document in
+   * `_row_locks`. A second transaction that takes the same lock before the first ends fails
+   * with a write conflict and runs again, so the two take turns.
+   */
+  async lock(name: string): Promise<void> {
+    await this.db()
+      .collection<{ _id: string; n: number; at: Date }>('_row_locks')
+      .updateOne({ _id: name }, { $inc: { n: 1 }, $set: { at: new Date() } }, { upsert: true, session: this.sessions.getStore() });
+  }
+
   /** Next value of a counter kept per organisation (document numbers and the like). */
   async nextTenantSequence(name: string): Promise<number> {
     const { orgId } = this.options.context();

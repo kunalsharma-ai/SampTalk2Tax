@@ -5,6 +5,7 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, todayIso, toDbDate } from '../common/dates';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { nextCounter } from '../db/counters';
 
 export interface ForecastOrg {
   id: string;
@@ -85,10 +86,7 @@ export class RevenueForecastService {
   async save(org: ForecastOrg, actor: { id: string }, body: { months: number; note?: string | null }, today = todayIso()) {
     const f = await this.forecast(org, body.months, today);
     return this.prisma.$transaction(async (tx) => {
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'revenue_forecast', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'revenue_forecast') }];
       const row = await tx.revenueForecast.create({
         data: {
           orgId: org.id,

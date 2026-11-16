@@ -21,6 +21,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { MailerService } from '../workflows/email';
+import { lockName } from '../db/locks';
 
 type Ticket = {
   id: string;
@@ -210,7 +211,7 @@ export class SupportService {
       throw new DomainError('INVALID_SUPPORT_ACCESS', (e as Error).message);
     }
     await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'support-access:' + orgId}))`;
+      await lockName(tx, 'support-access:' + orgId);
       const active = await tx.supportAccessGrant.findFirst({ where: { orgId, revokedAt: null, expiresAt: { gt: now } } });
       if (active) throw new DomainError('SUPPORT_ACCESS_ACTIVE', 'Support already has access. End it first to grant it again on different terms.', HttpStatus.CONFLICT);
       if (input.ticketId) {

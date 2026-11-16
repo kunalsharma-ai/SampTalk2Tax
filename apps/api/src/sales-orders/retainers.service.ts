@@ -9,6 +9,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { SalesOrg, SalesOrdersService } from './sales-orders.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type Db = Tx | PrismaService;
@@ -112,7 +113,7 @@ export class RetainersService {
   }
 
   private async lock(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM retainers WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'retainers', id, orgId);
     return this.load(tx, orgId, id);
   }
 

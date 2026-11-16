@@ -4,6 +4,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../copilot/copilot.model';
 import { planLimits } from '../billing/limits';
+import { lockName } from '../db/locks';
 
 export const UPLOAD_LIMIT_REACHED = 'UPLOAD_LIMIT_REACHED';
 export const AI_CREDITS_USED_UP = 'AI_CREDITS_USED_UP';
@@ -57,7 +58,7 @@ export class UsageService {
 
   /** Inside an upload's transaction: refuse it past the plan's monthly limit, otherwise record it. */
   async takeUpload(tx: Tx, orgId: string, bytes: number) {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'usage-upload:' + orgId}))`;
+    await lockName(tx, 'usage-upload:' + orgId);
     const p = await planLimits(tx, orgId);
     const limit = p?.limits.documentUploadsPerMonth ?? null;
     if (limit !== null) {

@@ -30,6 +30,7 @@ import { DomainError } from '../common/errors';
 import { DOCUMENTS } from '../db/collections/sales';
 import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { lockRow } from '../db/locks';
 
 export interface TemplateOrg {
   id: string;
@@ -511,7 +512,7 @@ export class InvoiceTemplatesService {
 
   async sign(org: TemplateOrg, actor: Actor, documentId: string, userAgent: string | null) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT 1 FROM documents WHERE id = ${documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await (lockRow(tx, 'documents', documentId, org.id)).then((r) => r.length);
       const d = await this.salesDocument(tx, org, documentId);
       if (d.status !== 'POSTED') throw new DomainError('DOCUMENT_NOT_POSTED', 'Post the invoice before signing it; drafts can still change', HttpStatus.CONFLICT);
       const existing = await tx.documentSignature.findFirst({ where: { orgId: org.id, documentId, withdrawnAt: null } });

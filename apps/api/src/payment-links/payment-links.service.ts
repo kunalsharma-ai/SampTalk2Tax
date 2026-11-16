@@ -11,6 +11,8 @@ import { PrismaService, Tx, useOrgInTx, withSystemAccess } from '../common/prism
 import { AppConfig, CONFIG } from '../config';
 import { SecretBox, secretHint } from '../integrations/secret-box';
 import { DocumentsService } from '../ledgers/documents.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 export interface LinkOrg {
   id: string;
@@ -284,10 +286,7 @@ export class PaymentLinksService {
     if (existing) await this.prisma.paymentLink.update({ where: { id: existing.id }, data: { status: 'EXPIRED' } });
     const provider = row.provider as Provider;
     const number = await this.prisma.$transaction(async (tx) => {
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'payment_link', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-        RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'payment_link') }];
       return value;
     });
     const back = `${this.config.APP_URL.replace(/\/$/, '')}/paid?ref=${encodeURIComponent(paymentLinkRef(number))}`;
@@ -381,7 +380,7 @@ export class PaymentLinksService {
         // commit, after system access is switched off, so the transaction is pointed at the org.
         await useOrgInTx(tx, orgId);
         return withSystemAccess(tx, async () => {
-          await tx.$queryRaw`SELECT id FROM payment_links WHERE id = ${linkId}::uuid FOR UPDATE`;
+          await lockRow(tx, 'payment_links', linkId);
           const l = await tx.paymentLink.findUniqueOrThrow({ where: { id: linkId } });
           if (l.status === 'PAID') return { settled: false };
           if (state.currency && state.currency.toUpperCase() !== l.currency) return { settled: false, problem: `Paid in ${state.currency.toUpperCase()}, not ${l.currency}` };

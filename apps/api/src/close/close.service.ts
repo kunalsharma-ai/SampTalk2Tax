@@ -33,6 +33,7 @@ import { JournalsService } from '../journals/journals.service';
 import { postgresWithMongo } from '../db/postgres-mirror.service';
 import { PeriodsService } from '../periods/periods.service';
 import { TasksService } from '../tasks/tasks.service';
+import { holdLock, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface CloseOrg {
@@ -390,6 +391,7 @@ export class CloseService {
 
   private async openClose(tx: Tx, orgId: string, periodId: string) {
     await tx.$queryRaw`SELECT id FROM period_closes WHERE period_id = ${periodId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await holdLock(`period_closes:period:${periodId}`);
     const c = await tx.periodClose.findFirst({ where: { orgId, periodId } });
     if (!c) throw new DomainError('CLOSE_NOT_STARTED', 'Start the close of this month first', HttpStatus.CONFLICT);
     return c;
@@ -649,7 +651,7 @@ export class CloseService {
   }
 
   private async lockAdjustment(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM close_adjustments WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'close_adjustments', id, orgId);
     const a = await tx.closeAdjustment.findFirst({ where: { id, orgId } });
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Adjusting entry not found' });
     return a;
@@ -668,7 +670,8 @@ export class CloseService {
       async (tx, undoLater) => {
         const c = await this.openClose(tx, org.id, periodId);
         if (c.status === 'CLOSED') throw new DomainError('CLOSE_CLOSED', 'This month is already closed', HttpStatus.CONFLICT);
-        const locked = await tx.$queryRaw<{ status: string }[]>`SELECT status::text AS status FROM fiscal_periods WHERE id = ${periodId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+        await lockRow(tx, 'fiscal_periods', periodId, org.id);
+        const locked = await tx.fiscalPeriod.findMany({ where: { id: periodId, orgId: org.id }, select: { status: true } });
         if (locked[0]?.status === 'CLOSED') throw new DomainError('PERIOD_CLOSED', 'This period is closed for good and cannot be changed', HttpStatus.CONFLICT);
         const p = await this.period(tx, org.id, periodId);
         const running = await tx.closeAiReview.count({ where: { orgId: org.id, closeId: c.id, status: 'RUNNING' } });
@@ -696,7 +699,8 @@ export class CloseService {
     await postgresWithMongo(this.prisma, async (tx, undoLater) => {
       const c = await this.openClose(tx, org.id, periodId);
       if (c.status !== 'CLOSED') throw new DomainError('CLOSE_NOT_CLOSED', 'This month is not closed', HttpStatus.CONFLICT);
-      const locked = await tx.$queryRaw<{ status: string; name: string }[]>`SELECT status::text AS status, name FROM fiscal_periods WHERE id = ${periodId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'fiscal_periods', periodId, org.id);
+      const locked = await tx.fiscalPeriod.findMany({ where: { id: periodId, orgId: org.id }, select: { status: true, name: true } });
       if (locked[0]?.status === 'CLOSED') throw new DomainError('PERIOD_CLOSED', 'This period is closed for good and cannot be reopened', HttpStatus.CONFLICT);
       const own = await tx.fiscalPeriod.findFirstOrThrow({ where: { id: periodId, orgId: org.id }, select: { startDate: true } });
       const later = await tx.periodClose.findFirst({

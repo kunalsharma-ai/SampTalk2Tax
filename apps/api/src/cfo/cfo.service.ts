@@ -50,6 +50,7 @@ import { KpisService } from '../kpis/kpis.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { LoansService } from '../loans/loans.service';
 import { TwinService } from '../twin/twin.service';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface CfoOrg {
@@ -485,7 +486,7 @@ export class CfoService {
     const model = ai.model!;
     const o = await this.orgRow(org.id);
     const r = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM cfo_reports WHERE id = ${id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'cfo_reports', id);
       const r = await tx.cfoReport.findFirst({ where: { id, orgId: org.id } });
       if (!r) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Report not found' });
       this.draft(r);

@@ -24,6 +24,8 @@ import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 interface Actor {
   id: string;
@@ -304,7 +306,7 @@ export class ExpensesService {
   }
 
   private async lock(tx: Tx, org: OrgContext, actor: Actor, id: string) {
-    await tx.$queryRaw`SELECT id FROM expense_claims WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'expense_claims', id, org.id);
     const c = await tx.expenseClaim.findFirst({ where: { id, orgId: org.id }, include: CLAIM_INCLUDE });
     if (!c) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Expense claim not found' });
     this.assertCanSee(org, actor, c.claimantId);
@@ -356,7 +358,7 @@ export class ExpensesService {
   private async claimsAccount(tx: Tx, orgId: string, actorId: string): Promise<string> {
     const known = (await this.store.collection(organizations).findById(orgId))?.claimsAccountId;
     if (known) return known;
-    await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'organizations', orgId);
     const candidates = ['2250', '2251', '2252', '2253', '2254', '2255', '2256', '2257', '2258', '2259'];
     const taken = new Set((await this.chart.find(orgId, { code: { $in: candidates } })).map((a) => a.code));
     const code = candidates.find((x) => !taken.has(x));
@@ -368,10 +370,7 @@ export class ExpensesService {
   }
 
   private async nextNumber(tx: Tx, orgId: string) {
-    const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-      INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, 'doc:EXPENSE_CLAIM', 1)
-      ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
-      RETURNING value`;
+    const [{ value }] = [{ value: await nextCounter(tx, orgId, 'doc:EXPENSE_CLAIM') }];
     return value;
   }
 

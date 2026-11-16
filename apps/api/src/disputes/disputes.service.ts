@@ -19,6 +19,8 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
+import { nextCounter } from '../db/counters';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface DisputeOrg {
@@ -110,7 +112,7 @@ export class DisputesService {
   async raise(org: DisputeOrg, actor: Actor, input: DisputeInput & { documentId: string }) {
     const today = todayIst();
     const id = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM documents WHERE id = ${input.documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'documents', input.documentId, org.id);
       const doc = await tx.document.findFirst({ where: { id: input.documentId, orgId: org.id } });
       if (!doc || doc.kind !== 'INVOICE') throw new NotFoundException({ error: 'NOT_FOUND', message: 'Invoice not found' });
       if (doc.status !== 'POSTED') throw new DomainError('NOT_DISPUTABLE', 'Only a posted invoice can be disputed', HttpStatus.CONFLICT);
@@ -122,9 +124,7 @@ export class DisputesService {
       const amount = input.amount ? dec(input.amount).toFixed() : open.toFixed(scale);
       this.check({ ...input, amount }, open.toFixed(scale), doc.currency, today);
       await this.assertMember(tx, org.id, input.ownerId);
-      const [{ value: number }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'invoice_dispute', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'invoice_dispute') }];
       const d = await tx.invoiceDispute.create({
         data: {
           orgId: org.id,
@@ -203,7 +203,7 @@ export class DisputesService {
   }
 
   private async lockOpen(tx: Tx, org: DisputeOrg, id: string) {
-    await tx.$queryRaw`SELECT id FROM invoice_disputes WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'invoice_disputes', id, org.id);
     const d = await tx.invoiceDispute.findFirst({ where: { id, orgId: org.id } });
     if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Dispute not found' });
     if (d.status !== 'OPEN') throw new DomainError('DISPUTE_RESOLVED', `${disputeRef(d.number)} is resolved; raise a new dispute if the customer queries the invoice again`, HttpStatus.CONFLICT);

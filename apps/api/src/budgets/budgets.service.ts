@@ -20,6 +20,7 @@ import { DomainError } from '../common/errors';
 import { DocumentStoreService } from '../common/document-store.service';
 import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService } from '../common/prisma.service';
+import { lockName, lockRow } from '../db/locks';
 
 type Tx = Prisma.TransactionClient;
 type Actor = { id: string };
@@ -211,7 +212,7 @@ export class BudgetsService {
     const o = await this.org(orgId);
     const scale = minorUnits(o.functionalCurrency);
     const id = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`budget:${orgId}:${input.fiscalYear}`}))`;
+      await lockName(tx, `budget:${orgId}:${input.fiscalYear}`);
       const last = await tx.budget.findFirst({ where: { orgId, fiscalYear: input.fiscalYear }, orderBy: { version: 'desc' }, select: { version: true } });
       const version = (last?.version ?? 0) + 1;
       let lines: { accountId: string; amounts: string[] }[] = [];
@@ -270,7 +271,7 @@ export class BudgetsService {
   }
 
   private async draft(tx: Tx, orgId: string, id: string) {
-    await tx.$executeRaw`SELECT 1 FROM budgets WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await (lockRow(tx, 'budgets', id, orgId)).then((r) => r.length);
     const b = await this.load(orgId, id, tx);
     if (b.status !== 'DRAFT') throw new DomainError('BUDGET_NOT_DRAFT', `Version ${b.version} is ${b.status.toLowerCase()}; only drafts change. Start a new version from it instead.`, HttpStatus.CONFLICT);
     return b;
@@ -349,7 +350,7 @@ export class BudgetsService {
 
   private async move(orgId: string, actor: Actor, id: string, from: BudgetStatus, step: (tx: Tx, b: Budget) => Promise<{ action: string; data: Record<string, unknown> }>) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT 1 FROM budgets WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+      await (lockRow(tx, 'budgets', id, orgId)).then((r) => r.length);
       const b = await this.load(orgId, id, tx);
       if (b.status !== from) throw new DomainError('BUDGET_STATUS', `Version ${b.version} is ${b.status.toLowerCase()}`, HttpStatus.CONFLICT);
       const { action, data } = await step(tx, b);

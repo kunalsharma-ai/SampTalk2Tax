@@ -6,6 +6,7 @@ import type { AuthUser } from '../auth/decorators';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
+import { lockName } from '../db/locks';
 
 /** Occurrences older than this are removed (the group and its counts stay). */
 export const ERROR_RETENTION_DAYS = 30;
@@ -45,7 +46,7 @@ export class ErrorsService {
       // Platform records, outside any organisation's row-level security.
       await tenantStorage.run({ bypass: true }, async () =>
         await this.prisma.$transaction(async (tx) => {
-          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'error-group:' + fingerprint}))`;
+          await lockName(tx, 'error-group:' + fingerprint);
           const existing = await tx.errorGroup.findUnique({ where: { fingerprint } });
           const group = existing
             ? await tx.errorGroup.update({ where: { id: existing.id }, data: { occurrences: { increment: 1 }, lastSeenAt: now, message, resolvedAt: null, resolvedBy: null } })

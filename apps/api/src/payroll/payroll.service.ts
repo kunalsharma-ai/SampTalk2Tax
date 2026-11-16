@@ -23,6 +23,8 @@ import { fromDbDate, todayIso, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
+import { holdLock, lockRow } from '../db/locks';
 
 export interface PayrollOrg {
   id: string;
@@ -121,7 +123,7 @@ export class PayrollService {
 
   async saveSettings(orgId: string, actor: { id: string }, input: { pfEstablishmentCode?: string | null; esiEmployerCode?: string | null; ptRegistration?: string | null; accounts?: PayrollAccounts }) {
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', orgId);
       const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
       if (org.countryCode !== 'IN' || org.functionalCurrency !== 'INR') throw new DomainError('NOT_INDIA', 'Payroll is available to organisations in India that keep their books in INR');
       const before = await tx.payrollSettings.findUnique({ where: { orgId } });
@@ -238,13 +240,11 @@ export class PayrollService {
   async createRun(org: PayrollOrg, actor: { id: string }, input: { period: string; payDate: string }) {
     if (input.payDate < periodStart(input.period)) throw new DomainError('INVALID_DATE', 'The pay date cannot be before the month it pays for');
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', org.id);
       await this.requireSettings(tx, org.id);
       const live = await tx.payRun.findFirst({ where: { orgId: org.id, period: input.period, status: { not: 'VOID' } } });
       if (live) throw new DomainError('PAY_RUN_EXISTS', `${live.number} already covers ${input.period}`, HttpStatus.CONFLICT);
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'doc:PAY_RUN', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'doc:PAY_RUN') }];
       const run = await tx.payRun.create({ data: { orgId: org.id, number: `PAY-${String(value).padStart(6, '0')}`, period: input.period, payDate: toDbDate(input.payDate), createdById: actor.id } });
       const skipped = await this.syncPayslips(tx, org.id, run.id, input.period, new Map());
       await this.updateTotals(tx, run.id);
@@ -371,9 +371,7 @@ export class PayrollService {
       const bank = await tx.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
       if (!bank || !bank.isPostable || !bank.isActive || !['BANK', 'CASH'].includes(bank.subtype ?? '')) throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
       const settings = await this.requireSettings(tx, org.id);
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'doc:PAYROLL_PAYMENT', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'doc:PAYROLL_PAYMENT') }];
       const number = `PAYP-${String(value).padStart(6, '0')}`;
       const c = org.functionalCurrency;
       const je = await this.journals.postSystemEntry(tx, org, actor, {
@@ -399,6 +397,7 @@ export class PayrollService {
     return this.prisma.$transaction(async (tx) => {
       await this.lockRun(tx, org.id, runId);
       const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM payroll_remittances WHERE id = ${remittanceId}::uuid AND org_id = ${org.id}::uuid AND pay_run_id = ${runId}::uuid FOR UPDATE`;
+      if (rows[0]) await holdLock(`payroll_remittances:${remittanceId}`);
       if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });
       const r = await tx.payrollRemittance.findUniqueOrThrow({ where: { id: remittanceId } });
       if (r.status !== 'POSTED') throw new DomainError('ALREADY_VOID', 'Payment is already void', HttpStatus.CONFLICT);
@@ -737,12 +736,12 @@ export class PayrollService {
   }
 
   private async lockEmployee(tx: Tx, orgId: string, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM employees WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'employees', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Employee not found' });
   }
 
   private async lockRun(tx: Tx, orgId: string, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM pay_runs WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'pay_runs', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Pay run not found' });
     return tx.payRun.findUniqueOrThrow({ where: { id } });
   }
