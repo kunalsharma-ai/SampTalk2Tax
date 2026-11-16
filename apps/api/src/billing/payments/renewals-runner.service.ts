@@ -3,6 +3,7 @@ import { DunningStage, dunningStage, RENEWAL_NOTICE_DAYS } from '@talk2tax/accou
 import { PrismaService, withSystemAccess } from '../../common/prisma.service';
 import { tenantStorage } from '../../common/tenant-context';
 import { AppConfig, CONFIG } from '../../config';
+import { HeartbeatsService } from '../../operations/heartbeats.service';
 import { MailerService } from '../../workflows/email';
 import { BillingService } from '../billing.service';
 import { SubscriptionPaymentsService } from './subscription-payments.service';
@@ -35,12 +36,14 @@ export class RenewalsRunnerService implements OnApplicationBootstrap, OnModuleDe
     private readonly billing: BillingService,
     private readonly mailer: MailerService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly heartbeats: HeartbeatsService,
   ) {}
 
   onApplicationBootstrap() {
     const every = this.config.BILLING_RUNNER_INTERVAL_SECONDS;
+    this.heartbeats.register('Renewals and reminders', every);
     if (every > 0) {
-      this.timer = setInterval(() => void this.tick().catch((e) => this.logger.error(`Renewal runner failed: ${(e as Error).message}`)), every * 1000);
+      this.timer = setInterval(() => void this.heartbeats.track('Renewals and reminders', () => this.tick()), every * 1000);
       this.timer.unref();
       this.logger.log(`Renewals are issued ${RENEWAL_NOTICE_DAYS} days before a period ends, checked every ${every} s`);
     }

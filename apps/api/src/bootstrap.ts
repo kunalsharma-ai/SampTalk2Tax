@@ -7,6 +7,8 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import type { CopilotModel } from './copilot/copilot.model';
 import { tenantContextMiddleware } from './common/tenant-context';
+import { MetricsService } from './operations/metrics.service';
+import { requestContext } from './operations/request-context';
 import { AppConfig } from './config';
 
 /**
@@ -24,6 +26,8 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean; cop
   // Client IPs (rate limits, session list) come from X-Forwarded-For only across trusted hops.
   app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.use(helmet());
+  // A request id for every request (X-Request-Id), and its timing for System health.
+  app.use(requestContext(app.get(MetricsService)));
   // Each request gets its own tenant context for row-level security (filled in by the auth guard).
   app.use(tenantContextMiddleware);
   app.enableCors({ origin: config.CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: false });

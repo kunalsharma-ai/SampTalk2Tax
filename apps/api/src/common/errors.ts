@@ -1,7 +1,8 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Injectable, Logger, Optional } from '@nestjs/common';
 import { DocumentValidationError, JournalValidationError, MoneyError, StatementImportError } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
+import { ErrorsService } from '../operations/errors.service';
 
 export class DomainError extends Error {
   constructor(
@@ -15,16 +16,29 @@ export class DomainError extends Error {
 }
 
 @Catch()
+@Injectable()
 export class ErrorFilter implements ExceptionFilter {
   private readonly logger = new Logger('ErrorFilter');
 
+  constructor(@Optional() private readonly errors?: ErrorsService) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const res = host.switchToHttp().getResponse<Response>();
+    const req = host.switchToHttp().getRequest<Request & { requestId?: string; user?: { id: string }; org?: { id: string } }>();
     const { status, body } = this.map(exception);
     const retryAfter = (exception as { retryAfterSeconds?: unknown })?.retryAfterSeconds;
     if (typeof retryAfter === 'number') res.setHeader('Retry-After', String(retryAfter));
-    if (status >= 500) this.logger.error(exception instanceof Error ? exception.stack : String(exception));
-    res.status(status).json(body);
+    // The request id lets a person quote the exact failure to support (System → Errors finds it).
+    const requestId = req?.requestId;
+    if (status >= 500) {
+      this.logger.error(`${requestId ?? '-'} ${exception instanceof Error ? exception.stack : String(exception)}`);
+      // An unavailable service (maintenance, a gateway) is expected; only unexpected failures are tracked.
+      if (this.errors && requestId && status !== 503) {
+        const orgId = req.org?.id ?? (typeof req.params?.orgId === 'string' && /^[0-9a-f-]{36}$/i.test(req.params.orgId) ? req.params.orgId : null);
+        void this.errors.record({ error: exception, status, requestId, method: req.method, path: req.originalUrl ?? req.url, orgId, userId: req.user?.id ?? null });
+      }
+    }
+    res.status(status).json(requestId ? { ...body, requestId } : body);
   }
 
   private map(e: unknown): { status: number; body: Record<string, unknown> } {

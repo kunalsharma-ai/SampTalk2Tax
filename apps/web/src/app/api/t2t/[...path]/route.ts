@@ -9,7 +9,7 @@ import { clearSessionCookies, clientHeaders, IssuedSession, refreshSession, setS
  * header, which a cross-site form or image cannot send.
  */
 /** Response headers that matter to the browser (file downloads keep their name and sandbox). */
-const PASS_THROUGH = ['idempotent-replay', 'content-disposition', 'x-content-type-options', 'content-security-policy', 'cache-control', 'x-checksum-sha256', 'x-report-sha256', 'retry-after'];
+const PASS_THROUGH = ['idempotent-replay', 'content-disposition', 'x-content-type-options', 'content-security-policy', 'cache-control', 'x-checksum-sha256', 'x-report-sha256', 'retry-after', 'x-request-id'];
 
 function unauthenticated(body: unknown = { error: 'UNAUTHENTICATED', message: 'Not signed in' }) {
   const res = NextResponse.json(body, { status: 401 });

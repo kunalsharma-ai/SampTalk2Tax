@@ -254,3 +254,11 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 ## Usage metering (M9, slice 5)
 
 * `usage_events`: one row per metered use (`AI_CALL` with input and output tokens and whose key, or `UPLOAD` with bytes), counted per India-time calendar month against the plan's limits. Append-only (trigger), forced RLS. See [`USAGE_METERING.md`](USAGE_METERING.md).
+
+## Operations (M9, slice 6)
+
+* `feature_flags`: a row only for a flag an administrator changed (on/off, rollout 0 to 100%, note, who and when); without a row a flag is at its default in code.
+* `feature_flag_overrides`: a flag forced on or off for one organisation, with a reason. Forced RLS; cascades with the organisation.
+* `maintenance_windows`: message, start, expected end, who started and ended it. At most one open window (unique partial index); ended only once (check).
+* `error_groups`: unexpected server errors grouped by a SHA-256 fingerprint of error kind, code location and route pattern; counts, first and last seen, resolved by whom.
+* `error_events`: each occurrence with request id, status, route pattern, organisation and person ids (no foreign keys), message and stack; kept 30 days. Forced RLS. See [`OPERATIONS.md`](OPERATIONS.md).

@@ -2,7 +2,7 @@ import { Controller, ForbiddenException, Get, Param, Post, Query } from '@nestjs
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { hasPermission } from '@talk2tax/security';
 import { z } from 'zod';
-import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFlag } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
 import { OpportunitiesService, type OpportunityQuery } from './opportunities.service';
 
@@ -29,6 +29,7 @@ function salesData(org: OrgContext) {
  */
 @ApiTags('opportunities')
 @ApiBearerAuth()
+@RequireFlag('opportunities')
 @Controller('v1/orgs/:orgId/opportunities')
 export class OpportunitiesController {
   constructor(private readonly svc: OpportunitiesService) {}

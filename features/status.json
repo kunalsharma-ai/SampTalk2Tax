@@ -5583,6 +5583,96 @@
         "docs/USAGE_METERING.md"
       ],
       "notes": "Platform admin → Usage: AI requests and tokens and uploads per organisation per month against each plan, fullest first, with totals and organisations at or near a limit."
+    },
+    "ADMIN-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/feature-flags.ts",
+        "packages/accounting-engine/test/feature-flags.test.ts",
+        "apps/api/src/operations/flags.service.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/web/src/app/admin/flags/page.tsx",
+        "apps/web/src/lib/nav.ts",
+        "apps/web/test/nav.test.ts",
+        "packages/accounting-engine/src/operations.ts",
+        "packages/accounting-engine/test/operations.test.ts",
+        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/operations/operations.controller.ts",
+        "apps/api/test/operations.e2e.test.ts",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/OPERATIONS.md"
+      ],
+      "notes": "Flags declared in code with defaults; administrators switch one off for everyone, roll it out to a stable hashed share of organisations, or set it for one organisation (kept in that organisation's audit trail). The API refuses a switched-off module with 403 FEATURE_OFF and the menu hides it. Four modules are behind flags so far."
+    },
+    "ADMIN-010": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/operations/metrics.service.ts",
+        "apps/api/src/operations/request-context.ts",
+        "apps/api/src/operations/system.service.ts",
+        "apps/web/src/app/admin/system/page.tsx",
+        "packages/accounting-engine/src/operations.ts",
+        "packages/accounting-engine/test/operations.test.ts",
+        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/operations/operations.controller.ts",
+        "apps/api/test/operations.e2e.test.ts",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/OPERATIONS.md"
+      ],
+      "notes": "Requests per route pattern over the last 15 minutes: counts, 4xx and 5xx, p50 and p95, and requests per minute. In memory per API server instance; not aggregated across instances."
+    },
+    "ADMIN-011": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/operations/system.service.ts",
+        "apps/api/src/operations/heartbeats.service.ts",
+        "apps/web/src/app/admin/system/page.tsx",
+        "packages/accounting-engine/src/operations.ts",
+        "packages/accounting-engine/test/operations.test.ts",
+        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/operations/operations.controller.ts",
+        "apps/api/test/operations.e2e.test.ts",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/OPERATIONS.md"
+      ],
+      "notes": "System health measured on request: database latency, size, connections, PostgreSQL version and migrations; API version, uptime, memory and load; each background runner's last pass, duration, failures and lateness. No external metrics system or alerting to an on-call service yet."
+    },
+    "ADMIN-017": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/operations/errors.service.ts",
+        "apps/api/src/common/errors.ts",
+        "packages/database/prisma/migrations/20261116090100_error_events_rls/migration.sql",
+        "apps/web/src/app/admin/errors/page.tsx",
+        "apps/web/src/app/admin/errors/[id]/page.tsx",
+        "apps/web/src/lib/api.ts",
+        "packages/accounting-engine/src/operations.ts",
+        "packages/accounting-engine/test/operations.test.ts",
+        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/operations/operations.controller.ts",
+        "apps/api/test/operations.e2e.test.ts",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/OPERATIONS.md"
+      ],
+      "notes": "Every unexpected 5xx is recorded with its request id (shown to the person as a reference), grouped by error kind, code location and route; findable by reference; resolve and reopen; a resolved group that recurs opens again. Occurrences kept 30 days. Errors in the web app's browser code are not collected yet."
+    },
+    "ADMIN-020": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/operations/maintenance.service.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/web/src/app/admin/maintenance/page.tsx",
+        "apps/web/src/components/maintenance-banner.tsx",
+        "apps/web/src/app/api/status/route.ts",
+        "packages/accounting-engine/src/operations.ts",
+        "packages/accounting-engine/test/operations.test.ts",
+        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/operations/operations.controller.ts",
+        "apps/api/test/operations.e2e.test.ts",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/OPERATIONS.md"
+      ],
+      "notes": "Start now or schedule a maintenance window with a message and expected end. While in progress every change by anyone but platform staff is refused (503 MAINTENANCE with Retry-After); reads, sign-in and payment webhooks keep working, background runners skip their passes, and a banner shows on every page including sign-in."
     }
   }
 }

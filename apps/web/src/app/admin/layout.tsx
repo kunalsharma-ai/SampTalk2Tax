@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { Logo } from '@/components/brand';
 import { signOut } from '@/lib/api';
 import { ROLE_LABEL, useMeWithRole } from '@/lib/admin';
+import { MaintenanceBanner } from '@/components/maintenance-banner';
 
 const NAV = [
   { href: '/admin', label: 'Overview' },
@@ -18,6 +19,10 @@ const NAV = [
   { href: '/admin/plans', label: 'Plans' },
   { href: '/admin/payments', label: 'Payments' },
   { href: '/admin/announcements', label: 'Announcements' },
+  { href: '/admin/system', label: 'System health' },
+  { href: '/admin/errors', label: 'Errors' },
+  { href: '/admin/flags', label: 'Feature flags' },
+  { href: '/admin/maintenance', label: 'Maintenance' },
 ];
 
 /** Platform administration: for the people who run Talk2Tax. Never an organisation's books. */
@@ -56,6 +61,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <button className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg" onClick={() => void signOut()}>Sign out</button>
           </div>
         </header>
+        <MaintenanceBanner />
         <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
           {me.isLoading ? <p className="text-sm text-fg-muted">Loading…</p> : !role ? <p className="text-sm text-fg-muted">Platform administration is only for the people who run Talk2Tax.</p> : children}
         </main>

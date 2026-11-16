@@ -353,3 +353,11 @@ See [`USAGE_METERING.md`](USAGE_METERING.md).
 |---|---|---|---|
 | GET | `/v1/orgs/:orgId/usage` | members | This month's AI requests and uploads against the plan, by day, and six months of history |
 | GET | `/v1/admin/usage?month=YYYY-MM` | platform.read | Every organisation's use in a month against its plan |
+
+## Operations
+
+Every response carries `X-Request-Id`, and every error body `requestId`. Errors: `403 FEATURE_OFF`
+(a module switched off by a feature flag), `503 MAINTENANCE` (changes paused, with `Retry-After`).
+See [`OPERATIONS.md`](OPERATIONS.md) for the routes: `GET /v1/status` (public),
+`GET /v1/orgs/:orgId/flags`, and `/v1/admin/system`, `/v1/admin/errors`, `/v1/admin/flags`,
+`/v1/admin/maintenance`.

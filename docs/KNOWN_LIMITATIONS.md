@@ -254,8 +254,12 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Platform administration
 
-* Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Monitoring is a later M9 slice; usage metering is in [`USAGE_METERING.md`](USAGE_METERING.md). See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+* Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Usage metering is in [`USAGE_METERING.md`](USAGE_METERING.md), monitoring in [`OPERATIONS.md`](OPERATIONS.md). See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
 
 ## Plans and subscriptions
 
 * Online subscription payments (Razorpay, Stripe) are tested only against a local stand-in of their APIs, not yet with real test accounts. Renewals are paid by the customer: no saved-card, UPI AutoPay or e-mandate charging. No refunds or credit notes for subscriptions; no tax for suppliers outside India. No coupons or add-ons yet. See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). AI and upload limits are shown but not yet counted. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
+
+## Operations
+
+* Request timings and runner heartbeats are in memory per API instance and cover the last 15 minutes; there is no metrics history, no aggregation across instances and no alerting to an on-call service. Errors in the web app's browser code and in background runner passes are not grouped under Errors. Feature flags cover four modules. Maintenance pauses changes by everyone except platform staff, including organisation owners; it does not stop already-running requests. See [`OPERATIONS.md`](OPERATIONS.md).

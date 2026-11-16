@@ -1373,20 +1373,20 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-004 |  | capability | User management | Tested |
 | ADMIN-005 |  | capability | Subscription management | Tested |
 | ADMIN-006 |  | capability | Plan management | Tested |
-| ADMIN-007 |  | capability | Feature flags | Not started |
+| ADMIN-007 |  | capability | Feature flags | Tested |
 | ADMIN-008 |  | capability | AI usage monitoring | Tested |
 | ADMIN-009 |  | capability | AI model configuration | Not started |
-| ADMIN-010 |  | capability | API usage monitoring | Not started |
-| ADMIN-011 |  | capability | Infrastructure monitoring | Not started |
+| ADMIN-010 |  | capability | API usage monitoring | Tested |
+| ADMIN-011 |  | capability | Infrastructure monitoring | Tested |
 | ADMIN-012 |  | capability | Support ticket management | Tested |
 | ADMIN-013 |  | capability | Audit log search | Not started |
 | ADMIN-014 |  | capability | Integration health | Not started |
 | ADMIN-015 |  | capability | Billing management | Tested |
 | ADMIN-016 |  | capability | Product analytics | Not started |
-| ADMIN-017 |  | capability | Error monitoring | Not started |
+| ADMIN-017 |  | capability | Error monitoring | Tested |
 | ADMIN-018 |  | capability | Security alerts | Not started |
 | ADMIN-019 |  | capability | System announcements | Tested |
-| ADMIN-020 |  | capability | Maintenance controls | Not started |
+| ADMIN-020 |  | capability | Maintenance controls | Tested |
 | ADMIN-021 |  | rule | Super Admin access must not automatically grant unrestricted access to tenant financial data | Tested |
 | ADMIN-022 |  | rule | Implement controlled support access with explicit authorization, logging and expiration | Tested |
 

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
-import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFlag } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { ForecastLabService } from './forecast-lab.service';
 
@@ -15,6 +15,7 @@ const SaveBody = z.object({ window: window.default(12), note: z.string().trim().
  */
 @ApiTags('forecast-lab')
 @ApiBearerAuth()
+@RequireFlag('forecast-lab')
 @Controller('v1/orgs/:orgId/forecast-lab')
 export class ForecastLabController {
   constructor(private readonly svc: ForecastLabService) {}

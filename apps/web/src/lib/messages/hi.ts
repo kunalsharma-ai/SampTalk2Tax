@@ -179,4 +179,8 @@ export const hi: Record<string, string> = {
   'Times in this organisation are shown in this zone for everyone who has not chosen their own. Business dates such as today, due dates and periods follow the country rules, not this setting.':
     'इस संगठन में समय इसी क्षेत्र में दिखाया जाता है, उन सभी को जिन्होंने अपना क्षेत्र नहीं चुना है। आज की तारीख़, देय तिथियाँ और अवधियाँ देश के नियमों के अनुसार चलती हैं, इस सेटिंग के अनुसार नहीं।',
   'Only owners and admins can change it.': 'इसे केवल मालिक और एडमिन बदल सकते हैं।',
+  // Maintenance banner (M9 slice 6)
+  'Maintenance in progress: {message} You can read and export your records; changes are paused until about {until}.': 'रखरखाव चल रहा है: {message} आप अपने रिकॉर्ड पढ़ और निर्यात कर सकते हैं; लगभग {until} तक बदलाव रुके हुए हैं।',
+  'Maintenance in progress: {message} You can read and export your records; changes are paused until it ends.': 'रखरखाव चल रहा है: {message} आप अपने रिकॉर्ड पढ़ और निर्यात कर सकते हैं; इसके समाप्त होने तक बदलाव रुके हुए हैं।',
+  'Planned maintenance from {from}: {message} Changes will be paused while it runs.': '{from} से नियोजित रखरखाव: {message} इसके चलते समय बदलाव रुके रहेंगे।',
 };

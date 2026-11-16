@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { hasPermission } from '@talk2tax/security';
 import type { DisasterShock } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
-import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFlag } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { DisastersService, type SimulationInput } from './disasters.service';
 
@@ -40,6 +40,7 @@ function ledgers(org: OrgContext) {
  */
 @ApiTags('disaster-simulation')
 @ApiBearerAuth()
+@RequireFlag('disaster-simulation')
 @Controller('v1/orgs/:orgId/disasters')
 export class DisastersController {
   constructor(private readonly svc: DisastersService) {}

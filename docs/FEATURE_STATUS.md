@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 856 |
+| Not started | 851 |
 | Designed | 0 |
 | Implementing | 65 |
 | Implemented | 33 |
-| Tested | 375 |
+| Tested | 380 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -58,7 +58,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 5 | 27 |
-| Platform super admin | M9 | 22 | 10 | 12 |
+| Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
@@ -5295,6 +5295,27 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/PLANS_AND_SUBSCRIPTIONS.md
   - apps/web/src/app/admin/plans/page.tsx
 
+### ADMIN-007 — Feature flags
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Flags declared in code with defaults; administrators switch one off for everyone, roll it out to a stable hashed share of organisations, or set it for one organisation (kept in that organisation's audit trail). The API refuses a switched-off module with 403 FEATURE_OFF and the menu hides it. Four modules are behind flags so far.
+- Evidence:
+  - packages/accounting-engine/src/feature-flags.ts
+  - packages/accounting-engine/test/feature-flags.test.ts
+  - apps/api/src/operations/flags.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/web/src/app/admin/flags/page.tsx
+  - apps/web/src/lib/nav.ts
+  - apps/web/test/nav.test.ts
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
 ### ADMIN-008 — AI usage monitoring
 
 - Module: Platform super admin
@@ -5311,6 +5332,41 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/usage/page.tsx
   - apps/web/e2e/usage-flow.test.mjs
   - docs/USAGE_METERING.md
+
+### ADMIN-010 — API usage monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Requests per route pattern over the last 15 minutes: counts, 4xx and 5xx, p50 and p95, and requests per minute. In memory per API server instance; not aggregated across instances.
+- Evidence:
+  - apps/api/src/operations/metrics.service.ts
+  - apps/api/src/operations/request-context.ts
+  - apps/api/src/operations/system.service.ts
+  - apps/web/src/app/admin/system/page.tsx
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
+### ADMIN-011 — Infrastructure monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: System health measured on request: database latency, size, connections, PostgreSQL version and migrations; API version, uptime, memory and load; each background runner's last pass, duration, failures and lateness. No external metrics system or alerting to an on-call service yet.
+- Evidence:
+  - apps/api/src/operations/system.service.ts
+  - apps/api/src/operations/heartbeats.service.ts
+  - apps/web/src/app/admin/system/page.tsx
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
 
 ### ADMIN-012 — Support ticket management
 
@@ -5350,6 +5406,26 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/subscription-payments-flow.test.mjs
   - docs/SUBSCRIPTION_PAYMENTS.md
 
+### ADMIN-017 — Error monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Every unexpected 5xx is recorded with its request id (shown to the person as a reference), grouped by error kind, code location and route; findable by reference; resolve and reopen; a resolved group that recurs opens again. Occurrences kept 30 days. Errors in the web app's browser code are not collected yet.
+- Evidence:
+  - apps/api/src/operations/errors.service.ts
+  - apps/api/src/common/errors.ts
+  - packages/database/prisma/migrations/20261116090100_error_events_rls/migration.sql
+  - apps/web/src/app/admin/errors/page.tsx
+  - apps/web/src/app/admin/errors/[id]/page.tsx
+  - apps/web/src/lib/api.ts
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
 ### ADMIN-019 — System announcements
 
 - Module: Platform super admin
@@ -5366,6 +5442,25 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/PLATFORM_ADMINISTRATION.md
   - apps/web/src/app/admin/announcements/page.tsx
   - apps/web/src/components/shell.tsx
+
+### ADMIN-020 — Maintenance controls
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Start now or schedule a maintenance window with a message and expected end. While in progress every change by anyone but platform staff is refused (503 MAINTENANCE with Retry-After); reads, sign-in and payment webhooks keep working, background runners skip their passes, and a banner shows on every page including sign-in.
+- Evidence:
+  - apps/api/src/operations/maintenance.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/web/src/app/admin/maintenance/page.tsx
+  - apps/web/src/components/maintenance-banner.tsx
+  - apps/web/src/app/api/status/route.ts
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
 
 ### ADMIN-021 — Super Admin access must not automatically grant unrestricted access to tenant financial data
 

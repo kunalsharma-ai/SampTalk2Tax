@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } f
 import { PrismaService } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
+import { HeartbeatsService } from '../operations/heartbeats.service';
 import { AlertsService, STALE_AFTER_MINUTES } from './alerts.service';
 
 /** How many organisations one pass checks at most; the rest wait for the next pass, oldest first. */
@@ -23,12 +24,14 @@ export class AlertsRunnerService implements OnApplicationBootstrap, OnModuleDest
     private readonly prisma: PrismaService,
     private readonly alerts: AlertsService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly heartbeats: HeartbeatsService,
   ) {}
 
   onApplicationBootstrap() {
     const every = this.config.ALERTS_RUNNER_INTERVAL_SECONDS;
+    this.heartbeats.register('Alert checks', every);
     if (every > 0) {
-      this.timer = setInterval(() => void this.tick().catch((e) => this.logger.error(`Alert runner failed: ${(e as Error).message}`)), every * 1000);
+      this.timer = setInterval(() => void this.heartbeats.track('Alert checks', () => this.tick()), every * 1000);
       this.timer.unref();
       this.logger.log(`Alert checks run in the background every ${every} s for organisations not checked in the last ${STALE_AFTER_MINUTES} minutes`);
     }

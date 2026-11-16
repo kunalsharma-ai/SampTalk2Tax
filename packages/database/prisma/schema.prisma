@@ -3925,3 +3925,81 @@ model UsageEvent {
   @@index([createdAt])
   @@map("usage_events")
 }
+
+/// Operations (M9 slice 6). A flag without a row is at its default.
+model FeatureFlag {
+  key            String   @id @db.VarChar(48)
+  enabled        Boolean
+  rolloutPercent Int      @default(100) @map("rollout_percent")
+  note           String?
+  updatedBy      String   @map("updated_by") @db.Uuid
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("feature_flags")
+}
+
+model FeatureFlagOverride {
+  flagKey   String   @map("flag_key") @db.VarChar(48)
+  orgId     String   @map("org_id") @db.Uuid
+  enabled   Boolean
+  reason    String
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@id([flagKey, orgId])
+  @@index([orgId])
+  @@map("feature_flag_overrides")
+}
+
+model MaintenanceWindow {
+  id            String    @id @db.Uuid
+  message       String
+  startsAt      DateTime  @map("starts_at") @db.Timestamptz(6)
+  expectedEndAt DateTime? @map("expected_end_at") @db.Timestamptz(6)
+  createdBy     String    @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  endedAt       DateTime? @map("ended_at") @db.Timestamptz(6)
+  endedBy       String?   @map("ended_by") @db.Uuid
+
+  @@index([startsAt])
+  @@map("maintenance_windows")
+}
+
+model ErrorGroup {
+  id           String       @id @db.Uuid
+  fingerprint  String       @unique @db.VarChar(64)
+  name         String       @db.VarChar(200)
+  message      String
+  method       String       @db.VarChar(8)
+  route        String       @db.VarChar(300)
+  frame        String?      @db.VarChar(500)
+  occurrences  Int          @default(0)
+  firstSeenAt  DateTime     @default(now()) @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt   DateTime     @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  resolvedAt   DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  resolvedBy   String?      @map("resolved_by") @db.Uuid
+  events       ErrorEvent[]
+
+  @@index([lastSeenAt])
+  @@map("error_groups")
+}
+
+model ErrorEvent {
+  id        BigInt     @id @default(autoincrement())
+  groupId   String     @map("group_id") @db.Uuid
+  group     ErrorGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  requestId String     @map("request_id") @db.VarChar(64)
+  status    Int
+  method    String     @db.VarChar(8)
+  path      String     @db.VarChar(500)
+  orgId     String?    @map("org_id") @db.Uuid
+  userId    String?    @map("user_id") @db.Uuid
+  message   String
+  stack     String?
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([groupId, createdAt])
+  @@index([requestId])
+  @@index([createdAt])
+  @@map("error_events")
+}

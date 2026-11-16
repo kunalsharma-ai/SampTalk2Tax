@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/brand';
+import { MaintenanceBanner } from '@/components/maintenance-banner';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -24,6 +25,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </section>
       <section className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
+          <div className="mb-6 overflow-hidden rounded-[var(--t2t-radius-md)] empty:hidden">
+            <MaintenanceBanner />
+          </div>
           <div className="mb-8 lg:hidden">
             <Logo />
           </div>
