@@ -693,7 +693,7 @@ Part 19 · M6 · priority P2 · depends on: GL
 | ENT-025 |  | capability | Financial controls | Not started |
 | ENT-026 |  | capability | Audit management | Not started |
 | ENT-027 |  | capability | Corporate reporting | Not started |
-| ENT-028 |  | rule | Design for configurable accounting frameworks such as IFRS and applicable local GAAP | Not started |
+| ENT-028 |  | rule | Design for configurable accounting frameworks such as IFRS and applicable local GAAP | Implementing |
 | ENT-029 |  | rule | Do not claim standards compliance without appropriate validation | Not started |
 
 ## Inventory, manufacturing and service finance
@@ -1153,7 +1153,7 @@ Part 33 · M8 · priority P2 · depends on: none
 | I18N-004 |  | capability | Regional date formats | Tested |
 | I18N-005 |  | capability | Country-specific tax configurations | Tested |
 | I18N-006 |  | capability | Country-specific invoice formats | Tested |
-| I18N-007 |  | capability | Local financial reporting | Not started |
+| I18N-007 |  | capability | Local financial reporting | Tested |
 | I18N-008 |  | capability | Time-zone awareness | Implementing |
 | I18N-009 |  | capability | Regional document templates | Tested |
 | I18N-010 |  | capability | Configurable fiscal years | Implemented |

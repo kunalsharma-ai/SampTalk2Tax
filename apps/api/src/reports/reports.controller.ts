@@ -1,5 +1,6 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { STATUTORY_FORMAT_IDS } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
 import { isoDate, ZodPipe } from '../common/zod';
@@ -14,6 +15,7 @@ const RangeQuery = z.object({ from: isoDate, to: isoDate });
 const IncomeQuery = RangeQuery.extend({ departmentId: z.uuid().optional(), projectId: z.uuid().optional() });
 const AsOfQuery = z.object({ asOf: isoDate });
 const LedgerQuery = RangeQuery.extend({ accountId: z.uuid() });
+const StatutoryQuery = RangeQuery.extend({ format: z.enum(STATUTORY_FORMAT_IDS).optional(), comparative: z.enum(['true', 'false']).optional().transform((v) => v !== 'false') }).strict();
 
 function checkRange(from: string | undefined, to: string) {
   if (from && from > to) throw new BadRequestException({ error: 'INVALID_RANGE', message: '"from" must be on or before the end date' });
@@ -43,6 +45,21 @@ export class ReportsController {
   @RequirePermission('reports.read')
   balanceSheet(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(AsOfQuery)) q: z.infer<typeof AsOfQuery>) {
     return this.reports.balanceSheet(org.id, q);
+  }
+
+  /** Formats for local financial statements, and the one the organisation's country uses. */
+  @Get('statutory/formats')
+  @RequirePermission('reports.read')
+  statutoryFormats(@CurrentOrg() org: OrgContext) {
+    return this.reports.statutoryFormats(org.id);
+  }
+
+  /** The balance sheet at `to` and profit and loss for `from`..`to` in a local layout, with the year before. */
+  @Get('statutory')
+  @RequirePermission('reports.read')
+  statutory(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(StatutoryQuery)) q: z.infer<typeof StatutoryQuery>) {
+    checkRange(q.from, q.to);
+    return this.reports.statutory(org.id, q);
   }
 
   @Get('dashboard')
