@@ -52,6 +52,7 @@ export const ALERT_RULE_KEYS = [
   'DUPLICATE_BILL',
   'DUPLICATE_PAYMENT',
   'UNUSUAL_JOURNAL',
+  'VENDOR_RISK',
 ] as const;
 export type AlertRuleKey = (typeof ALERT_RULE_KEYS)[number];
 
@@ -124,6 +125,13 @@ export const ALERT_RULES: readonly AlertRuleDef[] = Object.freeze([
       p('minAmount', 'and at least', 'amount', '0', '9999999999999', '100000', false),
       p('backdatedDays', 'Posted later than its date by more than', 'days', '1', '365', '30'),
     ],
+  },
+  {
+    key: 'VENDOR_RISK',
+    area: 'CONTROLS',
+    name: 'Vendor risk needs a review',
+    description: 'A vendor has a medium or high risk (bank details changed or shared, tax problems, poor performance, a large share of purchases, onboarding not approved) that nobody has reviewed, a new risk since the last review, or a review date that has come. Critical for a high risk. Clears once someone records a review.',
+    params: [],
   },
 ] satisfies AlertRuleDef[]);
 

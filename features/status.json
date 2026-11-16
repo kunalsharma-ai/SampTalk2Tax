@@ -6378,6 +6378,21 @@
         "docs/SUPPLIER_TAX_CHECKS.md"
       ],
       "notes": "Per active vendor: GSTIN and PAN validity and agreement, state, TDS without PAN, duplicate GSTIN/PAN across vendors, GST bills without GSTIN or under an older GSTIN, wrong tax head, plus GST portal checks recorded by people (append-only, audited) flagging cancelled/suspended/composition suppliers and the bills affected, stale checks and name differences. Not built: automatic GSP lookup (needs keys)."
+    },
+    "AP-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/vendor-risk.ts",
+        "packages/accounting-engine/test/vendor-risk.test.ts",
+        "packages/database/prisma/migrations/20261215090000_vendor_risk/migration.sql",
+        "apps/api/src/vendor-risk/vendor-risk.service.ts",
+        "apps/api/test/vendor-risk.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-risk/page.tsx",
+        "apps/web/src/components/vendor-risk/risk-card.tsx",
+        "apps/web/e2e/vendor-risk-flow.test.mjs",
+        "docs/VENDOR_RISK.md"
+      ],
+      "notes": "Risk per active vendor from bank details (shared account, changed/unverified), supplier tax problems, performance grade, share of purchases, new vendor growing fast, onboarding not approved and late payment; level = worst factor. Reviews (decision, note, next review date) append-only and audited; new factor, higher level or due date asks again. VENDOR_RISK alert check. Not built: outside credit/sanctions data, blocking orders on a stop decision."
     }
   }
 }

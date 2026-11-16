@@ -4506,9 +4506,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/vendor-risk.ts",
+        "packages/accounting-engine/test/vendor-risk.test.ts",
+        "packages/database/prisma/migrations/20261215090000_vendor_risk/migration.sql",
+        "apps/api/src/vendor-risk/vendor-risk.service.ts",
+        "apps/api/test/vendor-risk.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-risk/page.tsx",
+        "apps/web/src/components/vendor-risk/risk-card.tsx",
+        "apps/web/e2e/vendor-risk-flow.test.mjs",
+        "docs/VENDOR_RISK.md"
+      ],
+      "notes": "Risk per active vendor from bank details (shared account, changed/unverified), supplier tax problems, performance grade, share of purchases, new vendor growing fast, onboarding not approved and late payment; level = worst factor. Reviews (decision, note, next review date) append-only and audited; new factor, higher level or due date asks again. VENDOR_RISK alert check. Not built: outside credit/sanctions data, blocking orders on a stop decision."
     },
     {
       "id": "AP-025",

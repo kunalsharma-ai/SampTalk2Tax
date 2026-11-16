@@ -185,6 +185,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with the serious problems. Open a vendor to fix their details or record a GST portal check: look the GSTIN up on the portal\'s Search Taxpayer page and record its status, type and legal name.',
     where: 'Purchases. Talk2Tax does not query the GST portal itself; registration status comes from the checks people record. Nothing here changes the books.',
   },
+  'purchases/vendor-risk': {
+    what: 'Every active vendor\'s risk, worked out from what the books hold: bank details changed, unverified or shared with another vendor, tax problems, a poor performance grade, a large share of purchases, a new vendor growing fast, onboarding not approved and bills paid late.',
+    how: 'Work through the vendors waiting for a review. Open each, look at the factors and record a decision with a note and a date to look again. A new factor, a higher risk or that date asks for another review.',
+    where: 'Purchases. The Vendor risk needs a review check in Alerts raises the same vendors. Talk2Tax does not buy outside credit or sanctions data; nothing here changes the books.',
+  },
   'purchases/international-payments': {
     what: 'Payments to vendors abroad in their currency (outward remittances): the bills, the RBI purpose code, who pays the bank charges and, from India, which part of Form 15CA is needed and whether a Form 15CB is.',
     how: 'Choose a vendor and currency, tick the bills and the purpose, then prepare the payment. Someone else approves it. Download the bank instruction, give it to the bank with the forms, and record the payment at the bank\'s rate once paid.',

@@ -1,6 +1,6 @@
 # Alerts and leakage checks (M4, slice 4; priority and tasks M7)
 
-**Alerts** runs nine checks over the books: cash, overdue customers, compliance due dates, KPI targets, budgets, and money that may be leaking. Each check raises an alert for each thing it finds. The alert holds the figures and records it was raised on, so anyone can check it.
+**Alerts** runs ten checks over the books: cash, overdue customers, compliance due dates, KPI targets, budgets, money that may be leaking, and vendor risks waiting for a review. Each check raises an alert for each thing it finds. The alert holds the figures and records it was raised on, so anyone can check it.
 
 An alert can be in one of four states:
 
@@ -31,6 +31,7 @@ Every change is kept in the alert's history and in the audit trail.
 | Possible duplicate bill | Leakage | Posted bills from the same vendor for the same total, each within N days of the one before | Warning | Days (7) |
 | Possible duplicate payment | Leakage | Posted payments to the same vendor for the same amount, each within N days of the one before | Critical | Days (3) |
 | Unusual manual journal | Controls | A manual journal posted in the last 90 days that is N times the median manual journal of the year before and at least an amount, or that was posted more than N days after its date | Info, or warning when both apply | 5×, 100,000, 30 days |
+| Vendor risk needs a review | Controls | A vendor with a medium or high risk never reviewed, a new risk since the last review, or a review date reached (see VENDOR_RISK.md) | Critical for high risk, warning for medium, info for low | None |
 
 Notes on individual checks:
 
@@ -138,7 +139,7 @@ Wording follows the directive: an alert says what looks unusual and what to chec
 * **Background schedule is fixed.** The checks run at most hourly per organisation, 20 organisations a pass; a very large installation may need a shorter interval or a separate worker.
 * **Tasks go to a role, not a person,** and alerts cannot be snoozed. One setting applies to every check.
 * **Priority is a fixed formula,** not learned from how people act on alerts.
-* **No AI or statistics.** All nine checks are fixed rules with thresholds. There is no machine learning, anomaly scoring or AI explanation.
+* **No AI or statistics.** All ten checks are fixed rules with thresholds. There is no machine learning, anomaly scoring or AI explanation.
 * **Duplicates.** Only exact amounts from the same contact are matched: no near-amount, cross-vendor or OCR-based matching. Duplicate expense claims are checked separately when a claim is entered.
 * **Unusual journals.** Size and posting delay only: no checks on weekend or holiday posting, the user, the accounts, or round amounts.
 * **Missed billing.** Missed billing looks only at the last complete month, so an alert clears once a new month starts. It does not use contracts, subscriptions or milestones, which are not modelled yet.

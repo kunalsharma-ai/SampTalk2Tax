@@ -59,6 +59,7 @@ export const hi: Record<string, string> = {
   'Payment batches': 'भुगतान बैच',
   'International payments': 'अंतरराष्ट्रीय भुगतान',
   'Supplier tax checks': 'आपूर्तिकर्ता कर जाँच',
+  'Vendor risk': 'विक्रेता जोखिम',
   'Payables ageing': 'देय राशि की आयु',
   // Banking
   'Bank accounts': 'बैंक खाते',

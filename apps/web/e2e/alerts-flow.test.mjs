@@ -66,9 +66,9 @@ test('the checks find a repeated bill and payment, and each alert can be dismiss
   // records above came after, so run them again.
   await page.getByRole('link', { name: 'Alerts', exact: true }).click();
   await page.getByRole('heading', { name: 'Alerts', exact: true }).waitFor();
-  await page.getByText(/Last checked just now \(automatically\) · 9 checks ran · 0 found/).waitFor();
+  await page.getByText(/Last checked just now \(automatically\) · 10 checks ran · 0 found/).waitFor();
   await page.getByRole('button', { name: 'Run checks now' }).click();
-  await page.getByText(/Checks finished just now by Alert Owner · 9 checks ran · 2 found · 2 new, 0 back, 0 cleared/).waitFor();
+  await page.getByText(/Checks finished just now by Alert Owner · 10 checks ran · 3 found · 3 new, 0 back, 0 cleared/).waitFor();
   const billRow = page.getByRole('button', { name: 'Warning: Possible duplicate bill: 2 bills to Cedar Hardware for ₹23,600' });
   const payRow = page.getByRole('button', { name: 'Critical: Possible duplicate payment: 2 payments to Cedar Hardware for ₹7,500' });
   await billRow.waitFor();

@@ -246,7 +246,7 @@ describe('acting on alerts', () => {
 describe('settings', () => {
   it('lists every check with its thresholds, and refuses bad values', async () => {
     const rules = (await ctx.http().get(`${org.base}/alert-rules`).set(viewer.auth).expect(200)).body as { key: string; enabled: boolean; values: Record<string, string>; updatedBy: string | null }[];
-    expect(rules).toHaveLength(9);
+    expect(rules).toHaveLength(10);
     expect(rules.find((r) => r.key === 'UNUSUAL_JOURNAL')).toMatchObject({ enabled: true, values: { multiple: '5', minAmount: '100000', backdatedDays: '365' }, updatedBy: 'Alert Owner' });
     expect(rules.find((r) => r.key === 'DUPLICATE_BILL')).toMatchObject({ values: { windowDays: '7' }, updatedBy: null });
     await ctx.http().put(`${org.base}/alert-rules/DUPLICATE_BILL`).set(viewer.auth).send({ enabled: false }).expect(403);

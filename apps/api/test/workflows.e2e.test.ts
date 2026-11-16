@@ -341,6 +341,8 @@ describe('workflow automations', () => {
         `Journal #${accrual.entryNumber} by Flow Owner: Month-end accrual (2500.00)`,
         `Voided ${toVoid.number} (INVOICE): Raised twice`,
         'WARNING alert from Overdue customer invoices: Small Shop owes ₹64,000 more than 30 days overdue',
+        // The only vendor holds every purchase (vendor risk, AP-024).
+        'WARNING alert from Vendor risk needs a review: Teak Supplies: medium vendor risk, nobody has reviewed it yet',
       ].sort(),
     );
     // Journals made by other modules (the invoices and payments above) are not manual journals.

@@ -5643,3 +5643,23 @@ model SupplierGstinCheck {
   @@index([orgId, contactId, checkedOn])
   @@map("supplier_gstin_checks")
 }
+
+/// A person's review of a vendor's risk (AP-024): the level and factors they saw, their decision and when to look again. Append-only.
+model VendorRiskReview {
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  contactId    String   @map("contact_id") @db.Uuid
+  /// NONE, LOW, MEDIUM or HIGH when reviewed.
+  level        String   @db.VarChar(6)
+  factorCodes  String[] @default([]) @map("factor_codes")
+  /// ACCEPTED, MONITOR or STOP.
+  decision     String   @db.VarChar(8)
+  note         String   @db.VarChar(1000)
+  reviewedOn   DateTime @map("reviewed_on") @db.Date
+  nextReviewOn DateTime @map("next_review_on") @db.Date
+  reviewedById String   @map("reviewed_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, contactId, reviewedOn])
+  @@map("vendor_risk_reviews")
+}
