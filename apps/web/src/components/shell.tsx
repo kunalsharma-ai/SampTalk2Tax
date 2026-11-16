@@ -9,7 +9,7 @@ import { can } from '@/lib/types';
 import { Logo } from './brand';
 
 const NAV: { group: string; items: { href: string; label: string }[] }[] = [
-  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }] },
+  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }] },
   {
     group: 'Sales',
     items: [

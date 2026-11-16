@@ -41,6 +41,8 @@ export const PERMISSIONS = [
   'budgets.manage',
   /** Acknowledge and dismiss alerts, run the checks, and change their settings. Everyone who reads reports sees alerts. */
   'alerts.manage',
+  /** Ask the AI copilot questions about the books. It only reads; it never changes anything. */
+  'copilot.use',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -56,6 +58,7 @@ const READ_ONLY: Permission[] = [
   'purchases.read',
   'banking.read',
   'expenses.read',
+  'copilot.use',
 ];
 
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>>> = Object.freeze({

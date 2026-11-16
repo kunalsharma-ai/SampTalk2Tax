@@ -55,6 +55,9 @@ docker compose --profile app up --build   # API + Postgres
 | `JWT_TTL_SECONDS` | no | Default 3600 |
 | `PORT` | no | Default 4000 |
 | `CORS_ORIGINS` | no | Comma-separated allow-list |
+| `ANTHROPIC_API_KEY` | no | AI copilot. Without it the copilot says it is not set up and sends nothing. Each organisation must also turn the copilot on |
+| `ANTHROPIC_BASE_URL` | no | Claude API endpoint, for a gateway; the browser tests point it at a local stand-in |
+| `COPILOT_MODEL`, `COPILOT_MAX_TOOL_ROUNDS`, `COPILOT_TURN_TIMEOUT_SECONDS` | no | Default `claude-opus-5-5`, 8 rounds of tool calls, 240 seconds per answer |
 | `TEST_DATABASE_URL` | tests | Must contain "test" |
 | `DEMO_PASSWORD` | no | Fixed password for the seeded demo user |
 | `T2T_API_URL` | web | API base URL used by the web app's server-side proxy. Default `http://localhost:4000` |

@@ -24,6 +24,26 @@ const schema = z.object({
    */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
+  /**
+   * AI copilot. The copilot calls Anthropic's Claude API with this key. Without it the
+   * copilot says it is not set up and sends nothing anywhere. An empty value counts as unset.
+   */
+  ANTHROPIC_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined)),
+  /** Where the Claude API is reached. Leave unset for Anthropic's own endpoint; set it for a gateway, or for tests. */
+  ANTHROPIC_BASE_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined))
+    .pipe(z.string().url('ANTHROPIC_BASE_URL must be a URL').optional()),
+  /** The Claude model the copilot uses. */
+  COPILOT_MODEL: z.string().trim().min(1).default('claude-opus-5-5'),
+  /** Most tool calls (rounds of looking at the books) the copilot may make for one question. */
+  COPILOT_MAX_TOOL_ROUNDS: z.coerce.number().int().min(1).max(20).default(8),
+  /** Longest the copilot may spend on one answer, in seconds, across all its calls to the model. */
+  COPILOT_TURN_TIMEOUT_SECONDS: z.coerce.number().int().min(10).max(900).default(240),
 });
 
 export type AppConfig = z.infer<typeof schema>;

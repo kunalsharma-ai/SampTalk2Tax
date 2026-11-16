@@ -46,6 +46,9 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | expenses.read (all claims) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | expenses.reimburse | ✓ | ✓ | ✓ | | |
 | audit.read | ✓ | ✓ | ✓ | ✓ | |
+| copilot.use (ask the AI copilot; only one's own conversations) | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+The AI copilot sends questions and the figures it reads to Anthropic only when the server has `ANTHROPIC_API_KEY` **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
 
 The EMPLOYEE role has only `org.read` and `expenses.submit`.
 

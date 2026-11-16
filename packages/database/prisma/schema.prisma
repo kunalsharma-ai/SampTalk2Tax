@@ -225,6 +225,9 @@ model Organization {
   alerts               Alert[]
   alertEvents          AlertEvent[]
   alertScans           AlertScan[]
+  copilotSettings      CopilotSettings?
+  copilotConversations CopilotConversation[]
+  copilotMessages      CopilotMessage[]
 
   @@map("organizations")
 }
@@ -1694,4 +1697,84 @@ model AlertScan {
 
   @@index([orgId, finishedAt])
   @@map("alert_scans")
+}
+
+// ---------------------------------------------------------------- AI copilot (M4)
+
+enum CopilotRole {
+  USER
+  ASSISTANT
+}
+
+enum CopilotMessageStatus {
+  /// The assistant is still working on the answer.
+  PENDING
+  COMPLETE
+  /// The model declined to answer.
+  REFUSED
+  /// Stopped before a full answer: too many steps, or the answer was cut off.
+  INCOMPLETE
+  /// The AI provider could not be reached or returned an error.
+  FAILED
+}
+
+/// Whether the organisation lets its members use the copilot. Off until an owner or admin turns it on, because questions and figures are sent to the AI provider.
+model CopilotSettings {
+  orgId       String       @id @map("org_id") @db.Uuid
+  enabled     Boolean      @default(false)
+  updatedById String       @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("copilot_settings")
+}
+
+/// A conversation belongs to the member who started it; nobody else sees it.
+model CopilotConversation {
+  id             String           @id @default(uuid()) @db.Uuid
+  orgId          String           @map("org_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  title          String           @db.VarChar(200)
+  /// The model, instructions and tool set the conversation was started with. A conversation is only continued with the same ones, so the model always sees the history it produced.
+  model          String           @db.VarChar(100)
+  toolsetVersion Int              @map("toolset_version")
+  systemPrompt   String           @map("system_prompt")
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @default(now()) @map("updated_at") @db.Timestamptz(6)
+  org            Organization     @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  messages       CopilotMessage[]
+
+  @@unique([id, orgId])
+  @@index([orgId, userId, updatedAt])
+  @@map("copilot_conversations")
+}
+
+model CopilotMessage {
+  id              String               @id @default(uuid()) @db.Uuid
+  orgId           String               @map("org_id") @db.Uuid
+  conversationId  String               @map("conversation_id") @db.Uuid
+  seq             Int
+  role            CopilotRole
+  status          CopilotMessageStatus
+  /// The question, or the answer's text.
+  text            String?
+  /// The exact messages exchanged with the model for this turn (thinking, tool calls and tool results included), replayed unchanged on later turns.
+  apiMessages     Json                 @default("[]") @map("api_messages")
+  /// What the assistant looked at: one entry per tool call, with its input and the page it comes from.
+  sources         Json                 @default("[]")
+  errorCode       String?              @map("error_code") @db.VarChar(60)
+  errorMessage    String?              @map("error_message") @db.VarChar(1000)
+  /// The model that answered (can differ from the conversation's when the provider fell back to another model).
+  servedModel     String?              @map("served_model") @db.VarChar(100)
+  inputTokens     Int?                 @map("input_tokens")
+  outputTokens    Int?                 @map("output_tokens")
+  cacheReadTokens Int?                 @map("cache_read_tokens")
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt     DateTime?            @map("completed_at") @db.Timestamptz(6)
+  org             Organization         @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  conversation    CopilotConversation  @relation(fields: [conversationId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([conversationId, seq])
+  @@index([orgId, status])
+  @@map("copilot_messages")
 }

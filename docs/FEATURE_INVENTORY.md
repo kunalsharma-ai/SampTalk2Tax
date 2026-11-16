@@ -629,7 +629,7 @@ Part 17 · M5 · priority P3 · depends on: AIGW, WFLOW
 | AGENT-057 | Agent Action Levels | rule | Level 3: Execute approved low-risk workflows | Not started |
 | AGENT-058 | Agent Action Levels | rule | Level 4: Execute specifically authorized actions within strict limits | Not started |
 | AGENT-059 | Agent Action Levels | rule | High-risk financial activities must require appropriate human authorization regardless of agent confidence | Not started |
-| AGENT-060 | Agent Action Levels | rule | Provide an emergency stop and tenant-wide AI disable controls | Not started |
+| AGENT-060 | Agent Action Levels | rule | Provide an emergency stop and tenant-wide AI disable controls | Implementing |
 
 ## Autonomous financial workflows
 
@@ -831,7 +831,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-013 |  | capability | Control ownership | Not started |
 | AUDIT-014 |  | capability | Segregation-of-duties checks | Not started |
 | AUDIT-015 |  | capability | Period-close certification | Not started |
-| AUDIT-016 |  | capability | AI action history | Not started |
+| AUDIT-016 |  | capability | AI action history | Tested |
 | AUDIT-017 |  | capability | Financial transaction replay | Not started |
 | AUDIT-018 | Explainable AI Ledger | capability | Agent identity | Not started |
 | AUDIT-019 | Explainable AI Ledger | capability | Model version | Not started |
@@ -1258,8 +1258,8 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-029 | AI Security | capability | Prompt injection defenses | Not started |
 | SEC-030 | AI Security | capability | Tool permission enforcement | Not started |
 | SEC-031 | AI Security | capability | Sensitive data redaction | Not started |
-| SEC-032 | AI Security | capability | AI action logging | Not started |
-| SEC-033 | AI Security | capability | AI usage controls | Not started |
+| SEC-032 | AI Security | capability | AI action logging | Tested |
+| SEC-033 | AI Security | capability | AI usage controls | Tested |
 | SEC-034 | AI Security | capability | Model access policies | Not started |
 | SEC-035 | AI Security | capability | Cross-tenant data leakage tests | Tested |
 | SEC-036 | AI Security | capability | Human approval gates | Implementing |
@@ -1541,7 +1541,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-001 |  | rule | Create a premium sidebar and global navigation system | Implementing |
 | NAV-002 |  | capability | Overview | Implemented |
 | NAV-003 |  | capability | Executive Command Center | Not started |
-| NAV-004 |  | capability | AI Finance Copilot | Not started |
+| NAV-004 |  | capability | AI Finance Copilot | Integration pending |
 | NAV-005 |  | capability | Accounting | Implemented |
 | NAV-006 |  | capability | General Ledger | Implemented |
 | NAV-007 |  | capability | Accounts Receivable | Not started |
@@ -1640,13 +1640,13 @@ Part 50 · All · priority P0 · depends on: none
 | RULE-002 |  | rule | Do not create disconnected dashboards | Implemented |
 | RULE-003 |  | rule | Do not substitute static cards for implemented business logic | Implemented |
 | RULE-004 |  | rule | Do not invent financial data in production | Not started |
-| RULE-005 |  | rule | Do not claim AI functionality when only a static response exists | Not started |
+| RULE-005 |  | rule | Do not claim AI functionality when only a static response exists | Tested |
 | RULE-006 |  | rule | Do not claim live banking integration without credentials and provider validation | Not started |
 | RULE-007 |  | rule | Do not claim regulatory compliance without verification | Not started |
 | RULE-008 |  | rule | Do not use insecure shortcuts | Not started |
 | RULE-009 |  | rule | Do not store secrets in source code | Tested |
 | RULE-010 |  | rule | Do not bypass tenant permissions | Tested |
-| RULE-011 |  | rule | Do not permit unauthorized AI financial actions | Not started |
+| RULE-011 |  | rule | Do not permit unauthorized AI financial actions | Tested |
 | RULE-012 |  | rule | Do not use floating-point arithmetic for financial postings | Tested |
 | RULE-013 |  | rule | Do not modify historical posted transactions silently | Tested |
 | RULE-014 |  | rule | Do not expose financial information across tenants | Tested |

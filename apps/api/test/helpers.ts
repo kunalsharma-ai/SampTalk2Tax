@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { createApp } from '../src/bootstrap';
+import type { CopilotModel } from '../src/copilot/copilot.model';
 import { allowSystemAccessOutsideRequests } from '../src/common/tenant-context';
 import { loadConfig } from '../src/config';
 import { PrismaService } from '../src/common/prisma.service';
@@ -15,18 +16,21 @@ export interface Ctx {
 /** Tests read and tamper with the database directly, as the system. */
 allowSystemAccessOutsideRequests();
 
-export async function bootApp(overrides: Record<string, string> = {}): Promise<Ctx> {
+export async function bootApp(overrides: Record<string, string> = {}, opts: { copilotModel?: CopilotModel | null } = {}): Promise<Ctx> {
+  // The copilot never reaches a real AI provider from the tests, even when a key is set locally.
   const config = loadConfig({
     // Suites register many users from one address; the rate limit test sets its own low limits.
     RATE_LIMIT_AUTH_PER_MINUTE: '100000',
     RATE_LIMIT_API_PER_MINUTE: '100000',
     ...process.env,
+    ANTHROPIC_API_KEY: '',
+    ANTHROPIC_BASE_URL: '',
     NODE_ENV: 'test',
     DATABASE_URL: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET ?? 'test-secret-that-is-long-enough-for-hs256-signing',
     ...overrides,
   });
-  const app = await createApp(config, { logger: process.env.TEST_LOGS === '1' });
+  const app = await createApp(config, { logger: process.env.TEST_LOGS === '1', copilotModel: 'copilotModel' in opts ? opts.copilotModel : null });
   await app.init();
   return { app, http: () => request(app.getHttpServer()), prisma: app.get(PrismaService) };
 }

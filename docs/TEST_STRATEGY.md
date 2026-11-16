@@ -66,6 +66,8 @@ Integration tests never drop or reset data. Each test registers its own users an
 
 `apps/web/e2e/security-flow.test.mjs` signs one account in on two browsers, deletes the expired access cookie and sees the page load anyway (the refresh token was rotated), signs the phone out from the laptop's Security page, changes the password (signing the phone out again), checks that a copied access token stops working after sign-out, and sees the lockout message after five wrong passwords.
 
+`apps/web/e2e/copilot-flow.test.mjs` turns the AI copilot on, asks a question answered from the real profit and loss (with a table and a linked source), sees a provider rate-limit error explained, asks again, deletes the conversation and turns the copilot off. The API must run with `ANTHROPIC_API_KEY` set to any value and `ANTHROPIC_BASE_URL=http://127.0.0.1:4555`: the test starts a local stand-in for Anthropic's Messages API there (`test-support/anthropic-stand-in.mjs`) and scripts its replies, so the real SDK, streaming included, is exercised without a key or network. The API tests never reach a provider: `bootApp` clears the key.
+
 Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, workflow recovery, automated accessibility audits (axe), visual regression, load.
 
 ## Running
