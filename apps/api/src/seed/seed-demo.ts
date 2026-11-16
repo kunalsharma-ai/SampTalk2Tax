@@ -27,6 +27,7 @@ import { EInvoicingService } from '../e-invoicing/e-invoicing.service';
 import { BudgetsService } from '../budgets/budgets.service';
 import { EWayBillsService } from '../e-way-bills/e-way-bills.service';
 import { CashFlowService, todayIst } from '../cash-flow/cash-flow.service';
+import { KpisService } from '../kpis/kpis.service';
 
 /**
  * Creates a clearly-labelled SYNTHETIC demo organization with a few months of
@@ -521,6 +522,22 @@ async function main() {
   await cash.save(org.id, actor, { asOf: addDays(todayIst(), -30), horizonDays: 90, note: 'Synthetic backtest: the books 30 days ago' });
   await cash.save(org.id, actor, { horizonDays: 90, note: 'Synthetic: month-start forecast' });
   console.log(`  Cash flow: ${planned.length} planned items, a minimum balance, a backtest and a saved forecast`);
+
+  // SYNTHETIC KPI targets and management reports: two months ago finalised with commentary,
+  // last month a draft with commentary.
+  const kpis = app.get(KpisService);
+  for (const [kpi, comparator, target, note] of [
+    ['grossMargin', 'AT_LEAST', '35', 'Synthetic target'],
+    ['dso', 'AT_MOST', '45', 'Synthetic target: collect within 45 days'],
+    ['currentRatio', 'AT_LEAST', '1.5', null],
+    ['opexRatio', 'AT_MOST', '45', null],
+  ] as const) await kpis.setTarget(org.id, actor, kpi, { comparator, target, note });
+  const thisMonth = todayIst().slice(0, 7);
+  const monthsBack = (n: number) => { const d = new Date(Date.UTC(+thisMonth.slice(0, 4), +thisMonth.slice(5, 7) - 1 - n, 1)); return d.toISOString().slice(0, 7); };
+  await kpis.saveCommentary(org.id, actor, monthsBack(2), 'Synthetic commentary. Sales held steady with two new retail customers; software spend rose with the annual licence renewal. Collections improved after reminders to Coastal Hospitality.');
+  await kpis.finalise(org.id, actor, monthsBack(2));
+  await kpis.saveCommentary(org.id, actor, monthsBack(1), 'Synthetic draft. Revenue is ahead of budget; payroll ran above plan after the October hires. Still to confirm: the GST payment and year-to-date margin before finalising.');
+  console.log(`  KPIs: 4 targets; management report ${monthsBack(2)} final, ${monthsBack(1)} draft`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

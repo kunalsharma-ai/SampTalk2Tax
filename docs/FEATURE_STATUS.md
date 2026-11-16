@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1132 |
+| Not started | 1127 |
 | Designed | 0 |
 | Implementing | 42 |
 | Implemented | 29 |
-| Tested | 140 |
+| Tested | 145 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -33,7 +33,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
 | Treasury management | M6 | 28 | 28 | 0 |
-| Financial planning and analysis | M4 | 35 | 23 | 12 |
+| Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 60 | 0 |
@@ -42,10 +42,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
-| Financial fraud and risk intelligence | M4 | 19 | 19 | 0 |
+| Financial fraud and risk intelligence | M4 | 19 | 18 | 1 |
 | Continuous audit and governance | M6 | 30 | 24 | 6 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 41 | 0 |
+| Advanced financial reporting | M6 | 41 | 38 | 3 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 17 | 0 |
@@ -1111,6 +1111,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/budgets-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/budget-vs-actual
 
+### FPA-021 — Financial KPI management
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: 13 KPIs computed monthly from posted journals (revenue, gross/operating/net margin, opex ratio, current and quick ratio, working capital, liabilities to equity, DSO, DPO, net cash flow, runway), each with its formula, components, previous month, same month last year, 13-month history, and a target (at least / at most) that is met or missed. Fixed catalogue: no custom KPI formulas. See docs/KPIS_AND_MANAGEMENT_REPORTS.md.
+- Evidence:
+  - packages/accounting-engine/src/kpis.ts
+  - packages/accounting-engine/test/kpis.test.ts
+  - apps/api/src/kpis
+  - apps/api/test/kpis.e2e.test.ts
+  - apps/web/e2e/kpis-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/kpis
+
 ### FPA-023 — Budget approvals
 
 - Module: Financial planning and analysis
@@ -1225,6 +1238,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
   - apps/web/e2e/approvals-flow.test.mjs
 
+### RISK-012 — Customer concentration risk
+
+- Module: Financial fraud and risk intelligence
+- Status: **Tested**
+- Notes: Revenue by customer from posted invoices less credit notes (tax excluded) over the last 12 months and per month: top 5 with shares, the rest grouped, and a warning when one customer is 40% or more. No alerts or scoring.
+- Evidence:
+  - packages/accounting-engine/src/kpis.ts
+  - packages/accounting-engine/test/kpis.test.ts
+  - apps/api/src/kpis
+  - apps/api/test/kpis.e2e.test.ts
+  - apps/web/e2e/kpis-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/kpis
+
 ### AUDIT-004 — Audit trails
 
 - Module: Continuous audit and governance
@@ -1322,6 +1348,46 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Exact duplicate files (same SHA-256) on the same record are refused. No cross-record or fuzzy duplicate detection.
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files
+
+### RPT-018 — Working capital
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Working capital (current assets − current liabilities at month end), with current and quick ratio, DSO and DPO and their history. Classification by account subtype; an unclassified liability counts as current.
+- Evidence:
+  - packages/accounting-engine/src/kpis.ts
+  - packages/accounting-engine/test/kpis.test.ts
+  - apps/api/src/kpis
+  - apps/api/test/kpis.e2e.test.ts
+  - apps/web/e2e/kpis-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/kpis
+
+### RPT-019 — Financial ratios
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Financial ratios: margins, operating expense ratio, current and quick ratio, liabilities to equity, DSO and DPO, from posted journals by account subtype, with the figures behind each. DSO/DPO compare GST-inclusive balances with tax-exclusive revenue/expenses (documented).
+- Evidence:
+  - packages/accounting-engine/src/kpis.ts
+  - packages/accounting-engine/test/kpis.test.ts
+  - apps/api/src/kpis
+  - apps/api/test/kpis.e2e.test.ts
+  - apps/web/e2e/kpis-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/kpis
+
+### RPT-024 — Board reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Monthly management report: grouped P&L for the month vs previous month, same month last year and the approved budget, year to date, cash, KPIs and top customers, with commentary. Finalising freezes figures and commentary (trigger); later postings are listed against it. Printable from the browser; no PDF export, scheduling or distribution yet.
+- Evidence:
+  - packages/accounting-engine/src/kpis.ts
+  - packages/accounting-engine/test/kpis.test.ts
+  - apps/api/src/kpis
+  - apps/api/test/kpis.e2e.test.ts
+  - apps/web/e2e/kpis-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/management
+  - packages/database/prisma/migrations/20261101300000_kpis_management_reports
 
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 
