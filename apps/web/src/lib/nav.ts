@@ -44,6 +44,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/purchases/vendors', label: 'Vendors' },
       { href: '/purchases/onboarding', label: 'Vendor onboarding' },
       { href: '/purchases/vendor-performance', label: 'Vendor performance' },
+      { href: '/purchases/supplier-tax', label: 'Supplier tax checks' },
       { href: '/purchases/orders', label: 'Purchase orders' },
       { href: '/purchases/bills', label: 'Bills' },
       { href: '/purchases/payments', label: 'Payments' },

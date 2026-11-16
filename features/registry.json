@@ -4337,9 +4337,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/supplier-checks.ts",
+        "packages/tax-engine/test/supplier-checks.test.ts",
+        "packages/database/prisma/migrations/20261214090000_supplier_tax_checks/migration.sql",
+        "apps/api/src/supplier-tax/supplier-tax.service.ts",
+        "apps/api/test/supplier-tax.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/supplier-tax/page.tsx",
+        "apps/web/src/components/supplier-tax/gstin-checks-card.tsx",
+        "apps/web/e2e/supplier-tax-flow.test.mjs",
+        "docs/SUPPLIER_TAX_CHECKS.md"
+      ],
+      "notes": "Per active vendor: GSTIN and PAN validity and agreement, state, TDS without PAN, duplicate GSTIN/PAN across vendors, GST bills without GSTIN or under an older GSTIN, wrong tax head, plus GST portal checks recorded by people (append-only, audited) flagging cancelled/suspended/composition suppliers and the bills affected, stale checks and name differences. Not built: automatic GSP lookup (needs keys)."
     },
     {
       "id": "AP-020",

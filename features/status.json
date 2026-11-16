@@ -6363,6 +6363,21 @@
         "docs/CUSTOMER_PORTAL.md"
       ],
       "notes": "Private link per customer (t2tp_ token, SHA-256 stored, shown once; 30/90/180/365 days or until revoked; revoke; view count and last opened). Portal without sign-in: balance, overdue and unused credits by currency, posted invoices and credit notes with state, payment-link Pay button, receipts, statement with running balance, invoice opened with the business's print template. Per-IP rate limited, no-referrer, noindex, RLS-scoped after the link lookup. Not built: customer sign-in accounts, emailing the link from the app, uploading remittances or raising disputes from the portal, branding/custom domain."
+    },
+    "AP-019": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/supplier-checks.ts",
+        "packages/tax-engine/test/supplier-checks.test.ts",
+        "packages/database/prisma/migrations/20261214090000_supplier_tax_checks/migration.sql",
+        "apps/api/src/supplier-tax/supplier-tax.service.ts",
+        "apps/api/test/supplier-tax.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/supplier-tax/page.tsx",
+        "apps/web/src/components/supplier-tax/gstin-checks-card.tsx",
+        "apps/web/e2e/supplier-tax-flow.test.mjs",
+        "docs/SUPPLIER_TAX_CHECKS.md"
+      ],
+      "notes": "Per active vendor: GSTIN and PAN validity and agreement, state, TDS without PAN, duplicate GSTIN/PAN across vendors, GST bills without GSTIN or under an older GSTIN, wrong tax head, plus GST portal checks recorded by people (append-only, audited) flagging cancelled/suspended/composition suppliers and the bills affected, stale checks and name differences. Not built: automatic GSP lookup (needs keys)."
     }
   }
 }
