@@ -57,6 +57,13 @@ function scalarFilter(f: Field, cond: unknown): Doc {
     return { [f.name]: scalarValue(f, cond) };
   }
   const c = cond as Doc;
+  if (f.type === 'Json' && !f.isList && Array.isArray(c.path) && Object.keys(c).every((k) => k === 'path' || k === 'equals')) {
+    // A value inside a JSON field, compared with a plain string, number or boolean.
+    const path = c.path as unknown[];
+    const v = c.equals;
+    if (!path.length || path.some((x) => typeof x !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(x)) || !['string', 'number', 'boolean'].includes(typeof v)) no('JSON path filter');
+    return { [`${f.name}.${path.join('.')}`]: v };
+  }
   if (f.isList) {
     if ('has' in c) return { [f.name]: scalarValue(f, c.has) };
     if ('hasSome' in c) return { [f.name]: { $in: (c.hasSome as unknown[]).map((x) => scalarValue(f, x)) } };
@@ -149,7 +156,13 @@ interface Link {
 function linkOf(info: MirrorInfo, f: Field): Link {
   const target = modelInfo(f.type);
   if (!target) no(`relation to ${f.type}, which is not mirrored`);
-  const pairs = (from: readonly string[], to: readonly string[]) => from.map((x, i) => [x, to[i]] as const).filter(([x]) => x !== 'orgId');
+  // orgId is dropped from compound keys (the organisation is already fixed by the read), unless
+  // it is the whole key, as on the relations to the organisation itself.
+  const pairs = (from: readonly string[], to: readonly string[]) => {
+    const all = from.map((x, i) => [x, to[i]] as const);
+    const rest = all.filter(([x, y]) => x !== 'orgId' && y !== 'orgId');
+    return rest.length ? rest : all;
+  };
   if (f.relationFromFields?.length) {
     const p = pairs(f.relationFromFields, f.relationToFields!);
     return { target: target!, local: p.map((x) => x[0]), remote: p.map((x) => x[1]), many: false };
@@ -188,17 +201,32 @@ async function relationFilter(store: Store, info: MirrorInfo, f: Field, cond: un
 
 // ------------------------------------------------------------------ ordering
 
-function orderOf(info: MirrorInfo, orderBy: unknown): [string, 1 | -1][] {
+type Order = [string, 1 | -1, ('first' | 'last')?];
+
+function orderOf(info: MirrorInfo, orderBy: unknown): Order[] {
   if (!orderBy) return [];
   const list = (Array.isArray(orderBy) ? orderBy : [orderBy]) as Doc[];
   const m = MODELS.get(info.model)!;
-  const out: [string, 1 | -1][] = [];
+  const out: Order[] = [];
   for (const o of list) {
-    for (const [k, dir] of Object.entries(o)) {
+    for (const [k, d] of Object.entries(o)) {
       const f = m.fields.find((x) => x.name === k);
+      if (f && f.kind === 'object') {
+        if (f.isList) no(`ordering by ${k}`);
+        out.push(...orderOf(modelInfo(f.type) ?? no(`ordering by ${k}`), d).map(([x, dir, nulls]) => [`${k}.${x}`, dir, nulls] as Order));
+        continue;
+      }
       if (!f || (f.kind !== 'scalar' && f.kind !== 'enum')) no(`ordering by ${k}`);
-      if (dir !== 'asc' && dir !== 'desc') no('ordering with null placement');
-      out.push([k, dir === 'asc' ? 1 : -1]);
+      let dir = d as unknown;
+      let nulls: 'first' | 'last' | undefined;
+      if (typeof dir === 'object' && dir !== null) {
+        const o2 = dir as { sort?: unknown; nulls?: unknown };
+        if (Object.keys(o2).some((x) => x !== 'sort' && x !== 'nulls') || (o2.nulls !== undefined && o2.nulls !== 'first' && o2.nulls !== 'last')) no('ordering option');
+        dir = o2.sort;
+        nulls = o2.nulls as typeof nulls;
+      }
+      if (dir !== 'asc' && dir !== 'desc') no('ordering direction');
+      out.push([k, dir === 'asc' ? 1 : -1, nulls]);
     }
   }
   return out;
@@ -208,16 +236,17 @@ function orderOf(info: MirrorInfo, orderBy: unknown): [string, 1 | -1][] {
  * Sorts as PostgreSQL does: NULLs last going up, first going down (MongoDB puts them first
  * going up), ties in insertion order as a heap scan mostly gives.
  */
-function sortStages(info: MirrorInfo, order: [string, 1 | -1][]): Doc[] {
+function sortStages(info: MirrorInfo, order: Order[]): Doc[] {
   if (!order.length) return [];
   const m = MODELS.get(info.model)!;
   const add: Doc = {};
   const sort: Doc = {};
-  order.forEach(([k, dir], i) => {
+  order.forEach(([k, dir, nulls], i) => {
     const f = m.fields.find((x) => x.name === k)!;
     if (!f.isRequired) {
       add[`__n${i}`] = { $eq: [{ $ifNull: [`$${k === 'id' ? '_id' : k}`, null] }, null] };
-      sort[`__n${i}`] = dir;
+      // true (a NULL) sorts after false: up puts NULLs last, down first, unless asked otherwise.
+      sort[`__n${i}`] = nulls ? (nulls === 'last' ? 1 : -1) : dir;
     }
     if (f.kind === 'enum') {
       // PostgreSQL orders an enum by the order its values were declared in, not by name.
@@ -264,7 +293,7 @@ async function myOrgs(store: Store, userId: string | undefined): Promise<string[
 }
 
 /** Runs a filter against the collection the way RLS would see it: the request's organisation, or all for system work. */
-async function read(store: Store, info: MirrorInfo, filter: Doc, opts: { order?: [string, 1 | -1][]; skip?: number; take?: number; projection?: Doc } = {}): Promise<Doc[]> {
+async function read(store: Store, info: MirrorInfo, filter: Doc, opts: { order?: Order[]; skip?: number; take?: number; projection?: Doc } = {}): Promise<Doc[]> {
   const ctx = currentTenantContext();
   const policy = ctx.bypass ? undefined : POLICIES[info.model];
   if (policy) {
@@ -273,7 +302,8 @@ async function read(store: Store, info: MirrorInfo, filter: Doc, opts: { order?:
     if (policy.cross) return runAsSystem(() => read(store, info, narrowed, opts));
     filter = narrowed;
   }
-  if (info.tenant && !ctx.orgId && !ctx.bypass) no('no organisation in context');
+  // With no organisation set, row-level security shows no rows of a tenant table.
+  if (info.tenant && !ctx.orgId && !ctx.bypass) return [];
   const e = info.embedded;
   const coll = store.collection(e ? e.parent : info.def);
   const pipeline: Doc[] = [];
@@ -336,11 +366,32 @@ interface ReadArgs {
 }
 
 async function findRows(store: Store, info: MirrorInfo, args: ReadArgs = {}): Promise<Doc[]> {
-  if (args.distinct || args.cursor) no(args.distinct ? 'distinct' : 'cursor');
+  if (args.cursor) no('cursor');
   if (args.select && args.include) no('select with include');
   if (args.take !== undefined && args.take < 0) no('negative take');
   const filter = await toFilter(store, info, args.where);
-  const rows = (await read(store, info, filter, { order: orderOf(info, args.orderBy), skip: args.skip, take: args.take })).map((d) => toRow(info, d));
+  let rows: Doc[];
+  if (args.distinct) {
+    // As Prisma does it: the first row (in the order asked for) of each combination, then paging.
+    const on = (Array.isArray(args.distinct) ? args.distinct : [args.distinct]) as string[];
+    if (on.some((k) => !info.scalars.some((f) => f.name === k))) no('distinct on an unknown field');
+    const seen = new Set<string>();
+    rows = (await read(store, info, filter, { order: orderOf(info, args.orderBy) }))
+      .map((d) => toRow(info, d))
+      .filter((r) => {
+        const key = JSON.stringify(on.map((k) => (r[k] === null ? null : String(r[k]))));
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    rows = rows.slice(args.skip ?? 0, args.take === undefined ? undefined : (args.skip ?? 0) + args.take);
+  } else {
+    const order = orderOf(info, args.orderBy);
+    if (order.some(([k]) => k.includes('.'))) {
+      rows = (await read(store, info, filter)).map((d) => toRow(info, d));
+      rows = (await sortByRelations(store, info, rows, order)).slice(args.skip ?? 0, args.take === undefined ? undefined : (args.skip ?? 0) + args.take);
+    } else rows = (await read(store, info, filter, { order, skip: args.skip, take: args.take })).map((d) => toRow(info, d));
+  }
   await loadRelations(store, info, rows, args.select ?? args.include ?? {}, !!args.select);
   return args.select ? rows.map((r) => pick(info, r, args.select!)) : rows;
 }
@@ -350,7 +401,10 @@ async function loadRelations(store: Store, info: MirrorInfo, rows: Doc[], spec: 
   const m = MODELS.get(info.model)!;
   for (const [k, want] of Object.entries(spec)) {
     if (!want) continue;
-    if (k === '_count') no('_count');
+    if (k === '_count') {
+      await loadCounts(store, info, rows, want);
+      continue;
+    }
     const f = m.fields.find((x) => x.name === k);
     if (!f) no(`unknown field ${k}`);
     if (f!.kind !== 'object') {
@@ -358,24 +412,88 @@ async function loadRelations(store: Store, info: MirrorInfo, rows: Doc[], spec: 
       continue;
     }
     const link = linkOf(info, f!);
-    if (link.local.length !== 1) no('relation on a compound key');
     const nested: ReadArgs = want === true ? {} : (want as ReadArgs);
-    const keys = [...new Set(rows.map((r) => r[link.local[0]]).filter((x) => x !== null && x !== undefined))];
+    const linked = (r: Doc) => link.local.every((x) => r[x] !== null && r[x] !== undefined);
+    const own = (r: Doc): Doc => Object.fromEntries(link.remote.map((x, i) => [x, r[link.local[i]]]));
     if (link.many && (nested.take !== undefined || nested.skip)) {
       // Paging applies per parent, so each parent gets its own query.
-      for (const r of rows) {
-        const w = { AND: [nested.where ?? {}, { [link.remote[0]]: r[link.local[0]] }] };
-        r[k] = r[link.local[0]] === null ? [] : await findRows(store, link.target, { ...nested, where: w });
-      }
+      for (const r of rows) r[k] = linked(r) ? await findRows(store, link.target, { ...nested, where: { AND: [nested.where ?? {}, own(r)] } }) : [];
       continue;
     }
-    const related = keys.length ? await findRows(store, link.target, { ...nested, where: { AND: [nested.where ?? {}, { [link.remote[0]]: { in: keys } }] }, select: nested.select ? { ...nested.select, [link.remote[0]]: true } : undefined }) : [];
-    const strip = nested.select && !nested.select[link.remote[0]];
+    const parents = rows.filter(linked);
+    const keys = link.remote.map((x, i) => ({ [x]: { in: [...new Set(parents.map((r) => r[link.local[i]]))] } }));
+    const extra = nested.select ? Object.fromEntries(link.remote.filter((x) => !nested.select![x]).map((x) => [x, true])) : {};
+    const related = parents.length ? await findRows(store, link.target, { ...nested, where: { AND: [nested.where ?? {}, ...keys] }, select: nested.select ? { ...nested.select, ...extra } : undefined }) : [];
+    const same = (x: Doc, r: Doc) => link.remote.every((y, i) => String(x[y]) === String(r[link.local[i]]));
     for (const r of rows) {
-      const mine = related.filter((x) => x[link.remote[0]] === r[link.local[0]] && r[link.local[0]] !== null);
-      const shaped = strip ? mine.map(({ [link.remote[0]]: _drop, ...rest }) => rest) : mine;
+      const mine = linked(r) ? related.filter((x) => same(x, r)) : [];
+      const shaped = Object.keys(extra).length ? mine.map((x) => Object.fromEntries(Object.entries(x).filter(([y]) => !(y in extra)))) : mine;
       r[k] = link.many ? shaped : (shaped[0] ?? null);
     }
+  }
+}
+
+/**
+ * Orders rows by fields of their to-one relations (and their own fields), as PostgreSQL would:
+ * NULLs last going up and first going down unless asked, a missing relation as NULL.
+ */
+async function sortByRelations(store: Store, info: MirrorInfo, rows: Doc[], order: Order[]): Promise<Doc[]> {
+  const rels = [...new Set(order.filter(([k]) => k.includes('.')).map(([k]) => k.split('.')[0]))];
+  if (order.some(([k]) => k.split('.').length > 2)) no('ordering by a relation of a relation');
+  const holder = rows.map((r) => ({ ...r }));
+  await loadRelations(store, info, holder, Object.fromEntries(rels.map((r) => [r, true])), false);
+  const value = (r: Doc, k: string): unknown => {
+    const [a, b] = k.split('.');
+    return b === undefined ? r[a] : ((r[a] as Doc | null)?.[b] ?? null);
+  };
+  const cmp = (x: unknown, y: unknown): number => {
+    if (Prisma.Decimal.isDecimal(x)) return (x as Prisma.Decimal).cmp(y as Prisma.Decimal);
+    if (x instanceof Date) return x.getTime() - (y as Date).getTime();
+    return (x as string) < (y as string) ? -1 : (x as string) > (y as string) ? 1 : 0;
+  };
+  const idx = holder.map((_, i) => i);
+  idx.sort((i, j) => {
+    for (const [k, dir, nulls] of order) {
+      const a = value(holder[i], k);
+      const b = value(holder[j], k);
+      const an = a === null || a === undefined;
+      const bn = b === null || b === undefined;
+      if (an || bn) {
+        if (an && bn) continue;
+        const nullsLast = nulls ? nulls === 'last' : dir === 1;
+        return an === nullsLast ? 1 : -1;
+      }
+      const c = cmp(a, b);
+      if (c) return c * dir;
+    }
+    return i - j;
+  });
+  return idx.map((i) => rows[i]);
+}
+
+/** `_count: true` or `_count: { select: { relation: true | { where } } }`: the related rows of each list relation, counted. */
+async function loadCounts(store: Store, info: MirrorInfo, rows: Doc[], want: unknown) {
+  const m = MODELS.get(info.model)!;
+  const lists = m.fields.filter((f) => f.kind === 'object' && f.isList);
+  let spec: Doc;
+  if (want === true) spec = Object.fromEntries(lists.map((f) => [f.name, true]));
+  else {
+    const w = want as Doc;
+    if (Object.keys(w).some((x) => x !== 'select') || typeof w.select !== 'object') no('_count option');
+    spec = w.select as Doc;
+  }
+  for (const r of rows) r._count = {};
+  for (const [name, c] of Object.entries(spec)) {
+    if (!c) continue;
+    const f = lists.find((x) => x.name === name);
+    if (!f) no(`_count of ${name}`);
+    const link = linkOf(info, f!);
+    const where = c === true ? {} : (c as Doc).where ?? {};
+    if (c !== true && Object.keys(c as Doc).some((x) => x !== 'where')) no('_count option');
+    const parents = rows.filter((r) => link.local.every((x) => r[x] !== null && r[x] !== undefined));
+    const keys = link.remote.map((x, i) => ({ [x]: { in: [...new Set(parents.map((r) => r[link.local[i]]))] } }));
+    const related = parents.length ? await findRows(store, link.target, { where: { AND: [where, ...keys] }, select: Object.fromEntries(link.remote.map((x) => [x, true])) }) : [];
+    for (const r of rows) (r._count as Doc)[name] = related.filter((x) => link.remote.every((y, i) => String(x[y]) === String(r[link.local[i]]))).length;
   }
 }
 
@@ -426,8 +544,6 @@ export function mongoReadOps(pg: Delegate, info: MirrorInfo, store: Store): Reco
       attempt('count', args, async () => {
         if (args?.select || args?.distinct || args?.cursor || args?.orderBy) no('count with options');
         const filter = await toFilter(store, info, args?.where);
-        const ctx = currentTenantContext();
-        if (info.tenant && !ctx.orgId && !ctx.bypass) no('no organisation in context');
         const rows = await read(store, info, filter, { skip: args?.skip as number | undefined, take: args?.take as number | undefined, projection: { _id: 1 } });
         return rows.length;
       }),

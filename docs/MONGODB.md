@@ -165,9 +165,15 @@ directly (to simulate a change made past the API) sync the rows with `mirrorRows
 rules (`not` and `notIn` never match NULL); relation filters through mirrored tables become id
 lists; ordering keeps PostgreSQL's NULL placement and orders enums by declaration; includes of
 mirrored relations are loaded a query per relation. Rows come back as Prisma returns them
-(Prisma.Decimal, bigint, Uint8Array). A query that cannot be translated yet (a relation to a
-table moved by hand, `_count`, `distinct`) still reads PostgreSQL; run the tests with
-`READ_FALLBACKS_FILE=path` to list them. Set `MONGO_READS=off` to read PostgreSQL again.
+(Prisma.Decimal, bigint, Uint8Array). Tables moved by hand are read the same way
+(`readable-models.ts`), lines kept inside their parent with `$unwind`. Also translated:
+`_count`, `distinct` (first row of each combination, as Prisma does), `nulls: 'first' | 'last'`,
+ordering by a field of a to-one relation (sorted in memory), relations on compound keys and to
+the organisation, and JSON `path` + `equals`. The row-level security policies that are not
+"this organisation" are applied as filters, and with no organisation set a tenant table shows no
+rows. A query that still cannot be translated reads PostgreSQL; run the tests with
+`READ_FALLBACKS_FILE=path` to list them (the full suite lists none). Set `MONGO_READS=off` to
+read PostgreSQL again. The 198 raw SQL reports still read PostgreSQL.
 
 * A transaction's MongoDB work runs one call at a time, because MongoDB refuses two
   operations at once in one transaction and PostgreSQL code often reads with `Promise.all`.
