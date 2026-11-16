@@ -1590,6 +1590,103 @@
         "packages/database/prisma/migrations/20261101260000_budgets"
       ],
       "notes": "Submit, withdraw, send back with a reason, approve by someone other than the submitter (API and CHECK); one approved version per year, earlier one superseded; approved versions immutable (triggers). Single approval step."
+    },
+    "FPA-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
+      ],
+      "notes": "Daily cash and bank forecast from open invoices and bills at each contact's usual payment delay (last year's settled documents; everyone's history or the due date when fewer than 3), planned receipts and payments (once, weekly, monthly, quarterly, yearly), a low and high case, a minimum-balance warning, and weekly or monthly buckets. Rule-based, no machine learning. See docs/CASH_FLOW_FORECAST.md."
+    },
+    "FPA-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow",
+        "packages/database/prisma/migrations/20261101280000_cash_flow_forecast"
+      ],
+      "notes": "Saved forecasts are immutable (trigger) and compared day by day with the actual closing cash from posted journals: average miss, bias, share of days inside the range, largest miss. No alerts when accuracy drops."
+    },
+    "FPA-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
+      ],
+      "notes": "30-day horizon of the cash-flow forecast (weekly buckets). Cash only: not a profit or balance sheet forecast."
+    },
+    "FPA-030": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
+      ],
+      "notes": "60-day horizon of the cash-flow forecast (weekly buckets). Cash only: not a profit or balance sheet forecast."
+    },
+    "FPA-031": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
+      ],
+      "notes": "90-day horizon of the cash-flow forecast (weekly buckets). Cash only: not a profit or balance sheet forecast."
+    },
+    "FPA-032": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
+      ],
+      "notes": "180-day horizon of the cash-flow forecast (monthly buckets). Cash only: not a profit or balance sheet forecast."
+    },
+    "FPA-033": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
+      ],
+      "notes": "365-day horizon of the cash-flow forecast (monthly buckets). Cash only: not a profit or balance sheet forecast."
+    },
+    "FPA-035": {
+      "status": "Implemented",
+      "evidence": [
+        "packages/accounting-engine/src/cashflow.ts",
+        "packages/accounting-engine/test/cashflow.test.ts",
+        "apps/api/src/cash-flow",
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/cash-flow"
+      ],
+      "notes": "Backtesting: a forecast rebuilt from the books as they stood on an earlier day (up to 2 years back), saved and measured against actual cash. The range is the 25th to 75th percentile of payment delays, not a statistical confidence interval; backtests use today's planned items. Kept below Tested until a real interval model exists."
     }
   }
 }

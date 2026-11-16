@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1140 |
+| Not started | 1132 |
 | Designed | 0 |
 | Implementing | 42 |
-| Implemented | 28 |
-| Tested | 133 |
+| Implemented | 29 |
+| Tested | 140 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -33,7 +33,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
 | Treasury management | M6 | 28 | 28 | 0 |
-| Financial planning and analysis | M4 | 35 | 31 | 4 |
+| Financial planning and analysis | M4 | 35 | 23 | 12 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 60 | 0 |
@@ -1085,6 +1085,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/budgets-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/budgets/[budgetId]
 
+### FPA-008 — Cash-flow forecasting
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: Daily cash and bank forecast from open invoices and bills at each contact's usual payment delay (last year's settled documents; everyone's history or the due date when fewer than 3), planned receipts and payments (once, weekly, monthly, quarterly, yearly), a low and high case, a minimum-balance warning, and weekly or monthly buckets. Rule-based, no machine learning. See docs/CASH_FLOW_FORECAST.md.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+
 ### FPA-014 — Variance analysis
 
 - Module: Financial planning and analysis
@@ -1110,6 +1123,98 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/budgets.e2e.test.ts
   - apps/web/e2e/budgets-flow.test.mjs
   - packages/database/prisma/migrations/20261101260000_budgets
+
+### FPA-024 — Forecast accuracy monitoring
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: Saved forecasts are immutable (trigger) and compared day by day with the actual closing cash from posted journals: average miss, bias, share of days inside the range, largest miss. No alerts when accuracy drops.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+  - packages/database/prisma/migrations/20261101280000_cash_flow_forecast
+
+### FPA-029 — 30-day forecasts
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: 30-day horizon of the cash-flow forecast (weekly buckets). Cash only: not a profit or balance sheet forecast.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+
+### FPA-030 — 60-day forecasts
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: 60-day horizon of the cash-flow forecast (weekly buckets). Cash only: not a profit or balance sheet forecast.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+
+### FPA-031 — 90-day forecasts
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: 90-day horizon of the cash-flow forecast (weekly buckets). Cash only: not a profit or balance sheet forecast.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+
+### FPA-032 — 180-day forecasts
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: 180-day horizon of the cash-flow forecast (monthly buckets). Cash only: not a profit or balance sheet forecast.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+
+### FPA-033 — 365-day forecasts
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: 365-day horizon of the cash-flow forecast (monthly buckets). Cash only: not a profit or balance sheet forecast.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
+
+### FPA-035 — Provide confidence intervals and model backtesting
+
+- Module: Financial planning and analysis
+- Status: **Implemented**
+- Notes: Backtesting: a forecast rebuilt from the books as they stood on an earlier day (up to 2 years back), saved and measured against actual cash. The range is the 25th to 75th percentile of payment delays, not a statistical confidence interval; backtests use today's planned items. Kept below Tested until a real interval model exists.
+- Evidence:
+  - packages/accounting-engine/src/cashflow.ts
+  - packages/accounting-engine/test/cashflow.test.ts
+  - apps/api/src/cash-flow
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/cash-flow
 
 ### WFLOW-006 — Approval workflows
 

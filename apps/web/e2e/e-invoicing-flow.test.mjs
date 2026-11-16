@@ -189,6 +189,6 @@ test('the register lists it, and recording the cancellation lets the invoice be 
   await v.getByRole('button', { name: /^Void/ }).last().click();
   await v.waitFor({ state: 'hidden' });
   await page.getByText(/^Voided on/).waitFor();
-  await page.getByLabel('E-invoice').getByText('IRN cancelled').waitFor();
+  await page.getByLabel('E-invoice').getByText('IRN cancelled', { exact: true }).waitFor();
   assert.deepEqual(consoleErrors, []);
 });

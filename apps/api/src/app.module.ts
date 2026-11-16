@@ -45,6 +45,8 @@ import { PayrollController } from './payroll/payroll.controller';
 import { PayrollService } from './payroll/payroll.service';
 import { BudgetsController } from './budgets/budgets.controller';
 import { BudgetsService } from './budgets/budgets.service';
+import { CashFlowController } from './cash-flow/cash-flow.controller';
+import { CashFlowService } from './cash-flow/cash-flow.service';
 import { ComplianceController } from './compliance/compliance.controller';
 import { ComplianceService } from './compliance/compliance.service';
 import { EInvoicingController } from './e-invoicing/e-invoicing.controller';
@@ -86,6 +88,7 @@ export class AppModule {
         PayrollController,
         ComplianceController,
         BudgetsController,
+        CashFlowController,
         EInvoicingController,
         EWayBillsController,
       ],
@@ -116,6 +119,7 @@ export class AppModule {
         PayrollService,
         ComplianceService,
         BudgetsService,
+        CashFlowService,
         EInvoicingService,
         EWayBillsService,
         // Order matters: rate limiting runs before authentication.
