@@ -10,7 +10,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Accounting
 * No year-end close (retained earnings roll-forward is shown as "unclosed earnings" on the balance sheet).
-* No recurring journals, templates, accrual auto-reversal, revaluation, exchange-rate tables, intercompany, consolidation, subsidiary ledgers or cash-basis reporting.
+* Journal templates and recurring journals exist (docs/JOURNAL_TEMPLATES.md); a schedule runs monthly, quarterly, half-yearly or yearly (no weekly or custom calendars), and a template cannot reverse itself on the next day (use Accruals for that). No revaluation, exchange-rate tables, intercompany, consolidation, subsidiary ledgers or cash-basis reporting.
 * Dimensions are free-form key/values on lines; there are no dimension masters or dimension reports.
 * The chart template is a generic SMB chart, not a statutory chart (e.g. Schedule III presentation is not implemented).
 * Period CLOSED status exists but there is no close workflow; LOCKED/OPEN toggling is available to OWNER/ADMIN.

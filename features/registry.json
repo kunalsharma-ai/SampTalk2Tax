@@ -1288,9 +1288,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recurring-journals.ts",
+        "packages/accounting-engine/test/recurring-journals.test.ts",
+        "packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql",
+        "apps/api/src/journal-templates/journal-templates.service.ts",
+        "apps/api/test/journal-templates.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/journal-templates",
+        "apps/web/e2e/journal-templates-flow.test.mjs",
+        "docs/JOURNAL_TEMPLATES.md",
+        "apps/api/src/journal-templates/journal-templates-runner.service.ts"
+      ],
+      "notes": "Template schedules monthly, quarterly, half-yearly or yearly, on the start day or the month's last day, to an end date or until ended; each run a draft or a posted Recurring journal, made once (numbered, in one transaction), by the hourly runner or Run due now; failures kept and retried; pause, resume (catch up or skip), end. Not yet: weekly or custom calendars, auto-reversing templates."
     },
     {
       "id": "GL-008",
@@ -1424,9 +1434,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/recurring-journals.ts",
+        "packages/accounting-engine/test/recurring-journals.test.ts",
+        "packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql",
+        "apps/api/src/journal-templates/journal-templates.service.ts",
+        "apps/api/test/journal-templates.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/journal-templates",
+        "apps/web/e2e/journal-templates-flow.test.mjs",
+        "docs/JOURNAL_TEMPLATES.md"
+      ],
+      "notes": "Templates with lines (any currency, departments, projects), memo, reference and placeholders such as {month}; used by hand as a draft or posted, saved from any manual journal, archived once used."
     },
     {
       "id": "GL-013",

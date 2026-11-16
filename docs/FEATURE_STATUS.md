@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 831 |
+| Not started | 829 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 397 |
+| Tested | 399 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 12 | 32 |
+| General ledger and accounting engine | M1 | 44 | 10 | 34 |
 | Accounts receivable | M2 | 43 | 26 | 17 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
@@ -126,6 +126,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/journals
   - apps/web/e2e/ledger-flow.test.mjs
 
+### GL-007 — Recurring journals
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Template schedules monthly, quarterly, half-yearly or yearly, on the start day or the month's last day, to an end date or until ended; each run a draft or a posted Recurring journal, made once (numbered, in one transaction), by the hourly runner or Run due now; failures kept and retried; pause, resume (catch up or skip), end. Not yet: weekly or custom calendars, auto-reversing templates.
+- Evidence:
+  - packages/accounting-engine/src/recurring-journals.ts
+  - packages/accounting-engine/test/recurring-journals.test.ts
+  - packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql
+  - apps/api/src/journal-templates/journal-templates.service.ts
+  - apps/api/test/journal-templates.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/journal-templates
+  - apps/web/e2e/journal-templates-flow.test.mjs
+  - docs/JOURNAL_TEMPLATES.md
+  - apps/api/src/journal-templates/journal-templates-runner.service.ts
+
 ### GL-008 — Adjusting journals
 
 - Module: General ledger and accounting engine
@@ -153,6 +169,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
   - apps/web/src
+
+### GL-012 — Journal templates
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Templates with lines (any currency, departments, projects), memo, reference and placeholders such as {month}; used by hand as a draft or posted, saved from any manual journal, archived once used.
+- Evidence:
+  - packages/accounting-engine/src/recurring-journals.ts
+  - packages/accounting-engine/test/recurring-journals.test.ts
+  - packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql
+  - apps/api/src/journal-templates/journal-templates.service.ts
+  - apps/api/test/journal-templates.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/journal-templates
+  - apps/web/e2e/journal-templates-flow.test.mjs
+  - docs/JOURNAL_TEMPLATES.md
 
 ### GL-013 — Accrual accounting
 

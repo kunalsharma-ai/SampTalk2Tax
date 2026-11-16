@@ -25,6 +25,8 @@ export default function JournalDetailPage() {
   const [reverseOpen, setReverseOpen] = useState(false);
   const [reverseDate, setReverseDate] = useState(today());
   const [reverseMemo, setReverseMemo] = useState('');
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
   const q = useQuery({ queryKey: ['journal', orgId, entryId], queryFn: () => api<Journal>(`/v1/orgs/${orgId}/journals/${entryId}`) });
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: ['journal', orgId] });
@@ -45,6 +47,14 @@ export default function JournalDetailPage() {
       await refresh();
       setReverseOpen(false);
       router.push(`/orgs/${orgId}/journals/${j.id}`);
+    },
+  });
+
+  const saveTemplate = useMutation({
+    mutationFn: () => api<{ id: string }>(`/v1/orgs/${orgId}/journal-templates/from-journal/${entryId}`, { method: 'POST', body: { name: templateName } }),
+    onSuccess: async (t) => {
+      await qc.invalidateQueries({ queryKey: ['journal-templates', orgId] });
+      router.push(`/orgs/${orgId}/journal-templates/${t.id}`);
     },
   });
 
@@ -78,6 +88,9 @@ export default function JournalDetailPage() {
               </>
             ) : null}
             {j.status === 'DRAFT' && can(org.role, 'journals.post') ? <Button loading={post.isPending} onClick={() => post.mutate()}>Post</Button> : null}
+            {j.source === 'MANUAL' && can(org.role, 'journals.create') ? (
+              <Button variant="secondary" onClick={() => { setTemplateName(j.memo?.slice(0, 120) ?? ''); setTemplateOpen(true); }}>Save as template…</Button>
+            ) : null}
             {j.status === 'POSTED' && (j.source === 'MANUAL' || j.source === 'CLOSE') && !j.reversedBy && j.type !== 'REVERSING' && can(org.role, 'journals.reverse') ? (
               <Button variant="secondary" onClick={() => setReverseOpen(true)}>Reverse…</Button>
             ) : null}
@@ -204,6 +217,17 @@ export default function JournalDetailPage() {
             <Button variant="ghost" onClick={() => setReverseOpen(false)}>Cancel</Button>
             <Button loading={reverse.isPending} onClick={() => reverse.mutate()}>Post reversal</Button>
           </div>
+        </div>
+      </Dialog>
+      <Dialog open={templateOpen} onOpenChange={setTemplateOpen} title="Save as a template" description="Keep these lines, memo and reference as a journal template. Use it to start the same journal again, or give it a schedule to make it every month.">
+        <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+          Template name
+          <Input value={templateName} maxLength={120} onChange={(e) => setTemplateName(e.target.value)} placeholder="e.g. Office rent accrual" />
+        </label>
+        {saveTemplate.error ? <div className="mt-3"><Alert title="The template was not saved">{(saveTemplate.error as Error).message}</Alert></div> : null}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setTemplateOpen(false)}>Cancel</Button>
+          <Button loading={saveTemplate.isPending} disabled={!templateName.trim()} onClick={() => saveTemplate.mutate()}>Save template</Button>
         </div>
       </Dialog>
     </>
