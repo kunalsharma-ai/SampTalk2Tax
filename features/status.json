@@ -6096,6 +6096,20 @@
         "apps/web/src/app/orgs/[orgId]/purchases/recurring-bills/[billId]/page.tsx"
       ],
       "notes": "Recurring bills RB-0001: vendor, lines (GST rate, SAC, dimensions), place of supply, reverse charge, TDS section, due days; monthly/quarterly/half-yearly/yearly schedule (month end, end date) that makes each due run as a draft or posted bill through the normal bill code (GST, TDS, approval rules, periods, duplicate vendor reference). The vendor reference must carry a placeholder that changes each run. The first bill is checked on save inside a rolled-back savepoint. Runs recorded once in the same transaction (append-only); failures kept on the schedule; pause/resume (skip missed)/end; Make recurring from a bill. Hourly runner (RECURRING_BILL_RUNNER_INTERVAL_SECONDS). Functional currency only."
+    },
+    "AP-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-schedule.ts",
+        "packages/accounting-engine/test/payment-schedule.test.ts",
+        "packages/database/prisma/migrations/20261130090000_payment_schedule/migration.sql",
+        "apps/api/src/payment-batches/payment-schedule.service.ts",
+        "apps/api/test/payment-schedule.e2e.test.ts",
+        "apps/web/e2e/payment-schedule-flow.test.mjs",
+        "docs/PAYMENT_SCHEDULE.md",
+        "apps/web/src/app/orgs/[orgId]/purchases/payment-schedule/page.tsx"
+      ],
+      "notes": "Payment schedule: each open bill gets a planned pay date and optional part amount (bill_payment_plans, bills only by trigger); suggested date = due date or the last chosen pay weekday before it, never the past; plans checked (not past, not before bill date, not more than left); weekly planned outflows against ledger bank balances with short weeks flagged (receipts not included); Plan the rest auto-plans unplanned bills; Prepare batch takes bills planned up to a date into a new payment batch with their amounts; Plan payment… from a bill. Functional currency only; planning moves no money."
     }
   }
 }

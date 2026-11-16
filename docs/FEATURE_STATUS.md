@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 820 |
+| Not started | 819 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 408 |
+| Tested | 409 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 21 | 22 |
-| Accounts payable | M2 | 36 | 22 | 14 |
+| Accounts payable | M2 | 36 | 21 | 15 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -745,6 +745,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
   - apps/web/e2e/approvals-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/approvals
+
+### AP-007 — Payment scheduling
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Payment schedule: each open bill gets a planned pay date and optional part amount (bill_payment_plans, bills only by trigger); suggested date = due date or the last chosen pay weekday before it, never the past; plans checked (not past, not before bill date, not more than left); weekly planned outflows against ledger bank balances with short weeks flagged (receipts not included); Plan the rest auto-plans unplanned bills; Prepare batch takes bills planned up to a date into a new payment batch with their amounts; Plan payment… from a bill. Functional currency only; planning moves no money.
+- Evidence:
+  - packages/accounting-engine/src/payment-schedule.ts
+  - packages/accounting-engine/test/payment-schedule.test.ts
+  - packages/database/prisma/migrations/20261130090000_payment_schedule/migration.sql
+  - apps/api/src/payment-batches/payment-schedule.service.ts
+  - apps/api/test/payment-schedule.e2e.test.ts
+  - apps/web/e2e/payment-schedule-flow.test.mjs
+  - docs/PAYMENT_SCHEDULE.md
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-schedule/page.tsx
 
 ### AP-008 — Partial payments
 

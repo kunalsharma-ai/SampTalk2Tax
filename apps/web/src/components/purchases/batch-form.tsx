@@ -12,7 +12,8 @@ import { useAccounts, useOrg } from '@/lib/org';
 import type { Batch, PayableBill } from '@/lib/payment-batches';
 
 /** Prepare a new payment batch, or change a draft one: the bank account, the date and the bills. */
-export function BatchForm({ batchId }: { batchId?: string }) {
+/** `preset`: a new batch for the bills planned up to a date (from the payment schedule). */
+export function BatchForm({ batchId, preset }: { batchId?: string; preset?: { paymentDate: string; items: Record<string, string>; memo: string } }) {
   const { org, orgId } = useOrg();
   const router = useRouter();
   const qc = useQueryClient();
@@ -21,9 +22,9 @@ export function BatchForm({ batchId }: { batchId?: string }) {
   const existing = useQuery({ queryKey: ['payment-batch', orgId, batchId], queryFn: () => api<Batch>(`${base}/${batchId}`), enabled: !!batchId });
   const bills = useQuery({ queryKey: ['payable-bills', orgId], queryFn: () => api<PayableBill[]>(`${base}/payable-bills`) });
   const [bankId, setBankId] = useState('');
-  const [paymentDate, setPaymentDate] = useState(today());
-  const [memo, setMemo] = useState('');
-  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [paymentDate, setPaymentDate] = useState(preset?.paymentDate ?? today());
+  const [memo, setMemo] = useState(preset?.memo ?? '');
+  const [picked, setPicked] = useState<Record<string, string>>(preset?.items ?? {});
   const banks = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && a.subtype === 'BANK');
   useEffect(() => {
     if (!bankId && banks.length && !batchId) setBankId(banks[0]!.id);
