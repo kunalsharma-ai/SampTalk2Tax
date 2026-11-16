@@ -65,7 +65,7 @@ export class TwinService {
     return { currency: org.functionalCurrency, scale: minorUnits(org.functionalCurrency), months };
   }
 
-  private async buffer(orgId: string) {
+  async buffer(orgId: string) {
     const s = await this.prisma.cashFlowSettings.findUnique({ where: { orgId } });
     return s?.minimumBalance.toFixed() ?? null;
   }

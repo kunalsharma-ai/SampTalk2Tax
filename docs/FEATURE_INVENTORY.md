@@ -1101,17 +1101,17 @@ Part 31 · M7 · priority P3 · depends on: FPA, TWIN
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| RECOV-001 |  | rule | Create an AI-assisted business financial recovery workspace | Not started |
-| RECOV-002 |  | capability | Cash conservation scenarios | Not started |
-| RECOV-003 |  | capability | Collection acceleration plans | Not started |
-| RECOV-004 |  | capability | Expense reduction options | Not started |
-| RECOV-005 |  | capability | Supplier renegotiation opportunities | Not started |
-| RECOV-006 |  | capability | Financing scenarios | Not started |
-| RECOV-007 |  | capability | Revenue improvement opportunities | Not started |
-| RECOV-008 |  | capability | Operational restructuring simulations | Not started |
-| RECOV-009 |  | capability | Liquidity recovery forecasts | Not started |
-| RECOV-010 |  | rule | Display projected outcomes and risks | Not started |
-| RECOV-011 |  | rule | Do not execute layoffs, borrowing, contract changes or financial transfers autonomously | Not started |
+| RECOV-001 |  | rule | Create an AI-assisted business financial recovery workspace | Implementing |
+| RECOV-002 |  | capability | Cash conservation scenarios | Tested |
+| RECOV-003 |  | capability | Collection acceleration plans | Tested |
+| RECOV-004 |  | capability | Expense reduction options | Tested |
+| RECOV-005 |  | capability | Supplier renegotiation opportunities | Tested |
+| RECOV-006 |  | capability | Financing scenarios | Tested |
+| RECOV-007 |  | capability | Revenue improvement opportunities | Tested |
+| RECOV-008 |  | capability | Operational restructuring simulations | Tested |
+| RECOV-009 |  | capability | Liquidity recovery forecasts | Tested |
+| RECOV-010 |  | rule | Display projected outcomes and risks | Tested |
+| RECOV-011 |  | rule | Do not execute layoffs, borrowing, contract changes or financial transfers autonomously | Tested |
 
 ## Privacy-preserving financial benchmarking
 

@@ -211,6 +211,7 @@ model Organization {
   consolidationGroups  ConsolidationGroup[]
   consolidatedIn       ConsolidationMember[]   @relation("ConsolidationMemberOrg")
   twinScenarios        TwinScenario[]
+  recoveryPlans        RecoveryPlan[]
   integrations         OrgIntegration[]
   userSignatures       UserSignature[]
   documentSignatures   DocumentSignature[]
@@ -3030,4 +3031,70 @@ model TwinScenarioNote {
   @@index([orgId])
   @@index([scenarioId])
   @@map("twin_scenario_notes")
+}
+
+enum RecoveryPlanStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum RecoveryActionStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
+  DROPPED
+}
+
+/// A financial recovery plan: options chosen from the recovery planner, forecast together with the
+/// digital twin. A plan only tracks what people decide to do; nothing in it is executed by the system.
+model RecoveryPlan {
+  id             String             @id @default(uuid()) @db.Uuid
+  orgId          String             @map("org_id") @db.Uuid
+  name           String             @db.VarChar(120)
+  description    String?            @db.VarChar(1000)
+  status         RecoveryPlanStatus @default(DRAFT)
+  baselineMonths Int                @map("baseline_months")
+  horizonMonths  Int                @map("horizon_months")
+  createdById    String             @map("created_by_id") @db.Uuid
+  updatedById    String             @map("updated_by_id") @db.Uuid
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  closedAt       DateTime?          @map("closed_at") @db.Timestamptz(6)
+  org            Organization       @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  actions        RecoveryAction[]
+
+  @@unique([orgId, name])
+  @@unique([id, orgId], map: "recovery_plans_id_org_key")
+  @@index([orgId])
+  @@map("recovery_plans")
+}
+
+/// One option taken into a recovery plan, with the twin changes it stood for when it was added,
+/// who owns it, when it is due and how far it has got.
+model RecoveryAction {
+  id            String               @id @default(uuid()) @db.Uuid
+  orgId         String               @map("org_id") @db.Uuid
+  planId        String               @map("plan_id") @db.Uuid
+  optionKey     String               @map("option_key") @db.VarChar(40)
+  category      String               @db.VarChar(30)
+  title         String               @db.VarChar(200)
+  detail        String               @db.VarChar(2000)
+  drivers       Json
+  targets       Json
+  risks         Json
+  needsDecision Boolean              @map("needs_decision")
+  status        RecoveryActionStatus @default(PLANNED)
+  ownerId       String?              @map("owner_id") @db.Uuid
+  dueDate       DateTime?            @map("due_date") @db.Date
+  note          String?              @db.VarChar(2000)
+  createdById   String               @map("created_by_id") @db.Uuid
+  updatedById   String               @map("updated_by_id") @db.Uuid
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  plan          RecoveryPlan         @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, optionKey])
+  @@index([orgId])
+  @@map("recovery_actions")
 }
