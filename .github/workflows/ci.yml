@@ -124,7 +124,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       # The three images the release workflow publishes, built the same way (layers cached between runs).
       - name: Build the migration image
         uses: docker/build-push-action@v6
