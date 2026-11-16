@@ -144,6 +144,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the date. Read the buckets from current to over 90 days; open a customer to chase them.',
     where: 'Sales. The total agrees to the receivables account in the balance sheet.',
   },
+  'sales/bad-debts': {
+    what: 'The allowance for customers who may not pay, worked out from how overdue each invoice is, and the invoices written off as bad debts.',
+    how: 'Set the bad-debt accounts and rates once. Pick a date, check the provision matrix and post the provision: only the difference from the allowance already in the books is posted. Mark an invoice doubtful to provide a chosen percentage of it, or write it off when it will not be paid.',
+    where: 'Sales. Provisions and write-offs post journals; write-offs reduce the invoice, the ageing and the customer statement without touching GST returns.',
+  },
   'sales/collections': {
     what: 'Payment reminders to customers, drafted by the AI from what each one owes and how they pay.',
     how: 'Run the collections agent, read each draft, edit it if needed and approve it to send. Nothing is sent without approval.',

@@ -89,7 +89,7 @@ const DOC_INCLUDE = {
   allocationsIn: {
     where: { removedOn: null },
     orderBy: { createdAt: 'asc' },
-    include: { payment: { select: { id: true, number: true, date: true, kind: true } }, creditDocument: { select: { id: true, number: true, issueDate: true, kind: true } } },
+    include: { payment: { select: { id: true, number: true, date: true, kind: true } }, creditDocument: { select: { id: true, number: true, issueDate: true, kind: true } }, writeOff: { select: { id: true, number: true } } },
   },
   allocationsOut: { where: { removedOn: null }, orderBy: { createdAt: 'asc' }, include: { target: { select: { id: true, number: true, kind: true } } } },
   withholdingSection: { select: { id: true, code: true, name: true } },
@@ -494,6 +494,7 @@ export class DocumentsService {
       const al = await tx.allocation.findUniqueOrThrow({ where: { id: allocationId }, include: { target: true } });
       if (ledgerOf(al.target.kind) !== ledger) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Allocation not found' });
       if (al.removedOn) throw new DomainError('ALREADY_REMOVED', 'Allocation was already removed', HttpStatus.CONFLICT);
+      if (al.writeOffId) throw new DomainError('WRITE_OFF_ALLOCATION', 'This is a bad-debt write-off. Reverse the write-off instead (Sales → Bad debts), which also reverses its journal.', HttpStatus.CONFLICT);
       const today = todayIso();
       const removedOn = today < fromDbDate(al.date) ? fromDbDate(al.date) : today;
       // The realised exchange difference goes with the allocation: reversed on the day it is removed.
@@ -929,7 +930,9 @@ export class DocumentsService {
             fxJournalEntryId: a.fxJournalEntryId,
             source: a.payment
               ? { type: 'payment' as const, id: a.payment.id, number: a.payment.number, kind: a.payment.kind }
-              : { type: 'credit' as const, id: a.creditDocument!.id, number: a.creditDocument!.number, kind: a.creditDocument!.kind },
+              : a.writeOff
+                ? { type: 'write_off' as const, id: a.writeOff.id, number: `WO-${String(a.writeOff.number).padStart(4, '0')}`, kind: 'WRITE_OFF' }
+                : { type: 'credit' as const, id: a.creditDocument!.id, number: a.creditDocument!.number, kind: a.creditDocument!.kind },
           }))
         : d.allocationsOut.map((a) => ({ id: a.id, amount: a.amount.toFixed(scale), date: fromDbDate(a.date), fxGain: a.fxGain.isZero() ? null : a.fxGain.toFixed(minorUnits(org.functionalCurrency)), fxJournalEntryId: a.fxJournalEntryId, target: { id: a.target.id, number: a.target.number, kind: a.target.kind } })),
     };

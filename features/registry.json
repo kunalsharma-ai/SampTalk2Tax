@@ -3090,9 +3090,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bad-debts.ts",
+        "packages/accounting-engine/test/bad-debts.test.ts",
+        "packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql",
+        "apps/api/src/bad-debts/bad-debts.service.ts",
+        "apps/api/test/bad-debts.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx",
+        "apps/web/e2e/bad-debts-flow.test.mjs",
+        "docs/BAD_DEBTS.md"
+      ],
+      "notes": "Provision matrix from the receivables ageing (rate per bucket, editable), specific provisions for invoices marked doubtful at their own percentage, foreign invoices at their own rate; each provision posts only the difference from the allowance in the books (increase or release) as a BAD_DEBT journal, kept append-only with the matrix it used. Not yet: provision rates learnt from history (expected-credit-loss model), provisions per customer group."
     },
     {
       "id": "AR-027",
@@ -3116,9 +3125,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bad-debts.ts",
+        "packages/accounting-engine/test/bad-debts.test.ts",
+        "packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql",
+        "apps/api/src/bad-debts/bad-debts.service.ts",
+        "apps/api/test/bad-debts.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx",
+        "apps/web/e2e/bad-debts-flow.test.mjs",
+        "docs/BAD_DEBTS.md"
+      ],
+      "notes": "Write off all or part of a posted invoice against the allowance (refused beyond what it holds) or straight to bad-debt expense, at the invoice's own exchange rate; settles the invoice like a receipt, so ageing, statement and control account agree, without changing GST returns or e-invoices; reversible once (journal and settlement reversed). Not yet: GST bad-debt relief, write-offs of payables or small balances in bulk."
     },
     {
       "id": "AR-028",

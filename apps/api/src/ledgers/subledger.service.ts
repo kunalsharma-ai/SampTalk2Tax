@@ -20,7 +20,7 @@ export function ledgerKinds(ledger: Ledger) {
   return KINDS[ledger];
 }
 
-interface OpenItem {
+export interface OpenItem {
   id: string;
   contactId: string;
   contactName: string;
@@ -226,6 +226,14 @@ export class SubledgerService {
       if (d.status === 'VOID' && d.voidDate) {
         events.push({ date: fromDbDate(d.voidDate), seq: 3, kind: `${d.kind}_VOID`, id: d.id, number: d.number!, description: `${label} voided`, amount: total.times(-sign) });
       }
+    }
+    // Bad-debt write-offs settle invoices like a credit; a reversal brings the amount back.
+    const writeOffs = ledger === 'SALES' ? await this.prisma.badDebtWriteOff.findMany({ where: { orgId: org.id, contactId, currency } }) : [];
+    for (const w of writeOffs) {
+      const amt = new D(w.amount.toFixed());
+      const number = `WO-${String(w.number).padStart(4, '0')}`;
+      events.push({ date: fromDbDate(w.date), seq: 2, kind: 'WRITE_OFF', id: w.id, number, description: `Written off as a bad debt · ${w.reason}`, amount: amt.negated() });
+      if (w.reversedOn) events.push({ date: fromDbDate(w.reversedOn), seq: 3, kind: 'WRITE_OFF_REVERSED', id: w.id, number, description: 'Write-off reversed', amount: amt });
     }
     for (const p of pays) {
       if (p.currency !== currency) continue;
