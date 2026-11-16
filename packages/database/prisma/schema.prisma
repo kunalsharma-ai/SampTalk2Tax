@@ -236,6 +236,8 @@ model Organization {
   tasks                Task[]
   collectionRuns       CollectionRun[]
   collectionDrafts     CollectionDraft[]
+  bankAiRuns           BankAiRun[]
+  bankAiSuggestions    BankAiSuggestion[]
 
   @@map("organizations")
 }
@@ -686,6 +688,7 @@ model BankStatementLine {
   import           BankStatementImport @relation(fields: [importId, orgId], references: [id, orgId], onDelete: Restrict)
   reconciliation   BankReconciliation? @relation(fields: [reconciliationId, orgId], references: [id, orgId], onDelete: Restrict)
   matches          BankMatch[]
+  aiSuggestions    BankAiSuggestion[]
 
   @@unique([orgId, accountId, fingerprint])
   @@unique([id, orgId])
@@ -2039,4 +2042,89 @@ model CollectionDraft {
   @@index([orgId, status, createdAt])
   @@index([orgId, contactId, createdAt])
   @@map("collection_drafts")
+}
+
+enum BankAiRunStatus {
+  RUNNING
+  DONE
+}
+
+enum BankAiSuggestionStatus {
+  /// The AI model is looking at the line.
+  DRAFTING
+  /// A proposal, checked; waiting for a person to accept or dismiss it.
+  READY
+  /// A person accepted it and it was applied.
+  ACCEPTED
+  /// A person dismissed it, or the line was dealt with another way.
+  DISMISSED
+  /// No proposal: the model declined, answered badly or could not be reached.
+  FAILED
+}
+
+enum BankAiAction {
+  MATCH
+  PAYMENT
+  ENTRY
+  NONE
+}
+
+/// One run of AI reconciliation on one bank account.
+model BankAiRun {
+  id          String             @id @default(uuid()) @db.Uuid
+  orgId       String             @map("org_id") @db.Uuid
+  accountId   String             @map("account_id") @db.Uuid
+  status      BankAiRunStatus    @default(RUNNING)
+  startedById String             @map("started_by_id") @db.Uuid
+  /// Unmatched lines left out, each with the reason: [{lineId, date, amount, description, reason}].
+  skipped     Json               @default("[]")
+  model       String             @db.VarChar(100)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt  DateTime?          @map("finished_at") @db.Timestamptz(6)
+  org         Organization       @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  suggestions BankAiSuggestion[]
+
+  @@unique([id, orgId])
+  @@index([orgId, accountId, createdAt])
+  @@map("bank_ai_runs")
+}
+
+/// What the AI model proposed for one unmatched bank line: what it was shown, what it
+/// proposed and why, the checks, and what a person decided.
+model BankAiSuggestion {
+  id              String                 @id @default(uuid()) @db.Uuid
+  orgId           String                 @map("org_id") @db.Uuid
+  runId           String                 @map("run_id") @db.Uuid
+  statementLineId String                 @map("statement_line_id") @db.Uuid
+  status          BankAiSuggestionStatus @default(DRAFTING)
+  /// What the model was shown, with the ids its references stand for (BankLineContext).
+  context         Json
+  action          BankAiAction?
+  /// What the model sent, with references (BankProposalInput).
+  proposal        Json?
+  /// The proposal with ids, when every check passed (ResolvedProposal).
+  resolved        Json?
+  confidence      String?                @db.VarChar(10)
+  reason          String?
+  checks          Json                   @default("[]")
+  model           String                 @db.VarChar(100)
+  servedModel     String?                @map("served_model") @db.VarChar(100)
+  inputTokens     Int?                   @map("input_tokens")
+  outputTokens    Int?                   @map("output_tokens")
+  errorCode       String?                @map("error_code") @db.VarChar(40)
+  errorMessage    String?                @map("error_message")
+  decidedById     String?                @map("decided_by_id") @db.Uuid
+  decidedAt       DateTime?              @map("decided_at") @db.Timestamptz(6)
+  decisionNote    String?                @map("decision_note")
+  /// What accepting it created: {journalEntryIds, paymentId, paymentNumber}.
+  result          Json?
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org             Organization           @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  run             BankAiRun              @relation(fields: [runId, orgId], references: [id, orgId], onDelete: Restrict)
+  statementLine   BankStatementLine      @relation(fields: [statementLineId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, status, createdAt])
+  @@index([orgId, statementLineId])
+  @@map("bank_ai_suggestions")
 }

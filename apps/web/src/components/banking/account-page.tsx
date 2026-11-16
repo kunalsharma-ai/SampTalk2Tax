@@ -63,6 +63,7 @@ export function BankAccountPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             {manage ? <Link href={`/orgs/${orgId}/banking/${accountId}/import`}><Button variant="secondary">Import statement</Button></Link> : null}
+            <Link href={`/orgs/${orgId}/banking/${accountId}/ai`}><Button variant="secondary">AI suggestions</Button></Link>
             <Link href={`/orgs/${orgId}/banking/${accountId}/reconcile`}><Button variant="secondary">Reconcile</Button></Link>
             {manage && view === 'UNMATCHED' ? (
               <Button disabled={!uniqueSuggestions} loading={autoMatch.isPending} onClick={() => autoMatch.mutate()}>

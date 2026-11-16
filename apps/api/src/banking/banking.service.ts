@@ -242,12 +242,12 @@ export class BankingService {
     return rows.slice(0, 100).map((r) => this.serializeLedgerLine(org, r));
   }
 
-  async match(org: BankOrg, actor: Actor, lineId: string, journalLineIds: string[]) {
+  async match(org: BankOrg, actor: Actor, lineId: string, journalLineIds: string[], outer?: Tx) {
     return this.inTx(async (tx) => {
       const line = await this.lockLine(tx, org.id, lineId);
       await this.matchInTx(tx, org, actor, line, journalLineIds, 'EXISTING');
       return this.reload(tx, org, lineId);
-    });
+    }, outer);
   }
 
   /** Applies only suggestions where the pair is each other's only same-amount candidate. */
@@ -297,7 +297,7 @@ export class BankingService {
   }
 
   /** Posts a bank entry (money in: Dr bank / Cr account; money out: Dr account / Cr bank) and matches it. */
-  async createEntry(org: BankOrg, actor: Actor, lineId: string, input: { accountId: string; description?: string }) {
+  async createEntry(org: BankOrg, actor: Actor, lineId: string, input: { accountId: string; description?: string }, outer?: Tx) {
     this.require(org, 'journals.post', 'post entries from bank lines');
     return this.inTx(async (tx) => {
       const line = await this.lockLine(tx, org.id, lineId);
@@ -322,11 +322,11 @@ export class BankingService {
       const bankLine = await tx.journalLine.findFirstOrThrow({ where: { entryId: je.id, accountId: line.accountId } });
       await this.matchInTx(tx, org, actor, line, [bankLine.id], 'CREATED_ENTRY');
       return this.reload(tx, org, lineId);
-    });
+    }, outer);
   }
 
   /** Records a customer receipt (money in) or vendor payment (money out) for the line and matches it. */
-  async recordPayment(org: BankOrg, actor: Actor, lineId: string, input: { contactId: string; allocations: { documentId: string; amount: string }[]; memo?: string }) {
+  async recordPayment(org: BankOrg, actor: Actor, lineId: string, input: { contactId: string; allocations: { documentId: string; amount: string }[]; memo?: string }, outer?: Tx) {
     return this.inTx(async (tx) => {
       const line = await this.lockLine(tx, org.id, lineId);
       this.assertOpen(line);
@@ -345,7 +345,7 @@ export class BankingService {
       const bankLine = await tx.journalLine.findFirstOrThrow({ where: { entryId: p.journalEntryId, accountId: line.accountId } });
       await this.matchInTx(tx, org, actor, line, [bankLine.id], 'CREATED_PAYMENT');
       return this.reload(tx, org, lineId);
-    });
+    }, outer);
   }
 
   async exclude(org: BankOrg, actor: Actor, lineId: string, reason: string) {
@@ -544,7 +544,7 @@ export class BankingService {
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.line_matched', entityType: 'bank_statement_line', entityId: line.id, data: { journalLineIds: ids, origin } });
   }
 
-  private async suggestionsFor(db: Tx | PrismaService, org: BankOrg, accountId: string, lines: { id: string; date: Date; amount: Prisma.Decimal; description: string; reference: string | null }[]) {
+  async suggestionsFor(db: Tx | PrismaService, org: BankOrg, accountId: string, lines: { id: string; date: Date; amount: Prisma.Decimal; description: string; reference: string | null }[]) {
     const dates = lines.map((l) => fromDbDate(l.date)).sort();
     const ledger = await this.unmatchedLedgerLines(db, org.id, accountId, { from: addDay(dates[0], -14), to: addDay(dates[dates.length - 1], 14) });
     return suggestMatches(
@@ -553,7 +553,7 @@ export class BankingService {
     );
   }
 
-  private unmatchedLedgerLines(db: Tx | PrismaService, orgId: string, accountId: string, q: { from: string; to: string; search?: string }) {
+  unmatchedLedgerLines(db: Tx | PrismaService, orgId: string, accountId: string, q: { from: string; to: string; search?: string }) {
     const search = q.search?.trim() ? Prisma.sql`AND (je.memo ILIKE ${'%' + q.search.trim() + '%'} OR je.reference ILIKE ${'%' + q.search.trim() + '%'} OR jl.description ILIKE ${'%' + q.search.trim() + '%'})` : Prisma.empty;
     return db.$queryRaw<LedgerLineRow[]>`
       SELECT jl.id, jl.entry_id, je.entry_number, je.date, je.memo, je.reference, jl.description, je.source::text AS source, je.reverses_entry_id,
@@ -710,7 +710,8 @@ export class BankingService {
   }
 
   /** A concurrent match of the same ledger line hits the partial unique index; report it plainly. */
-  private async inTx<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  private async inTx<T>(fn: (tx: Tx) => Promise<T>, outer?: Tx): Promise<T> {
+    if (outer) return fn(outer);
     try {
       return await this.prisma.$transaction(fn, { timeout: 20_000 });
     } catch (e) {

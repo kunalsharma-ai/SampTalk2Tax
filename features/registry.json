@@ -4897,9 +4897,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Integration pending",
+      "evidence": [
+        "packages/accounting-engine/src/bank-ai.ts",
+        "packages/accounting-engine/test/bank-ai.test.ts",
+        "apps/api/src/bank-ai/bank-ai.service.ts",
+        "apps/api/test/bank-ai.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/[accountId]/ai/page.tsx",
+        "apps/web/e2e/bank-ai-flow.test.mjs",
+        "docs/AI_RECONCILIATION.md"
+      ],
+      "notes": "Bank lines are classified by the AI model into a match, a receipt or payment for a contact, or an entry to an account from the chart, using how a person booked the last 15 bank lines as examples. Suggestions only; a person accepts each. Waiting on ANTHROPIC_API_KEY for a live check."
     },
     {
       "id": "BANK-017",
@@ -12356,9 +12364,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Integration pending",
+      "evidence": [
+        "packages/accounting-engine/src/bank-ai.ts",
+        "packages/accounting-engine/test/bank-ai.test.ts",
+        "apps/api/src/bank-ai/bank-ai.service.ts",
+        "apps/api/test/bank-ai.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/[accountId]/ai/page.tsx",
+        "apps/web/e2e/bank-ai-flow.test.mjs",
+        "docs/AI_RECONCILIATION.md"
+      ],
+      "notes": "Bank reconciliation agent: for each unmatched statement line without an exact one-to-one match (up to 25 per run, oldest first), the AI model (Anthropic Claude) suggests ledger lines already in the books that add up to it, a receipt or payment against open invoices or bills, or an entry to one account, with a confidence and a reason. It sees short references, never ids; every proposal is checked against what it was shown; a person accepts or dismisses each, and accepting goes through the same matching, receipt and entry code as by hand. Tested with a scripted model and a local Messages API stand-in; waiting on ANTHROPIC_API_KEY for a live check."
     },
     {
       "id": "AGENT-005",
@@ -17813,9 +17829,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/bank-ai/bank-ai.service.ts",
+        "apps/api/src/collections/collections.service.ts",
+        "apps/api/test/bank-ai.e2e.test.ts",
+        "apps/api/test/collections.e2e.test.ts",
+        "apps/web/e2e/bank-ai-flow.test.mjs"
+      ],
+      "notes": "Every AI proposal is kept as proposed (bank suggestions: the action and references the model sent, and the resolved records; reminders: the text the model wrote), frozen by database triggers, next to what a person decided."
     },
     {
       "id": "AUDIT-023",
@@ -17838,9 +17860,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/bank-ai/bank-ai.service.ts",
+        "apps/api/src/collections/collections.service.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/[accountId]/ai/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx"
+      ],
+      "notes": "Each AI proposal stores and shows the model's own short reason (bank suggestions) or risk reasons (reminders), with the checks run on it. These are the model's stated reasons, not its internal reasoning."
     },
     {
       "id": "AUDIT-024",

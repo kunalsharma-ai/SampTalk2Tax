@@ -80,7 +80,7 @@ export interface CollectionsOverview {
 export interface AiActivity {
   rows: {
     id: string;
-    feature: 'COPILOT' | 'COLLECTIONS';
+    feature: 'COPILOT' | 'COLLECTIONS' | 'BANKING';
     at: string;
     by: string;
     what: string;
@@ -114,3 +114,57 @@ export const RISK: Record<Risk, { label: string; tone: Tone }> = {
 export function dateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
 }
+
+export type BankAiStatus = 'DRAFTING' | 'READY' | 'ACCEPTED' | 'DISMISSED' | 'FAILED';
+export type BankAiResolved =
+  | { action: 'MATCH'; journalLineIds: string[]; ledger: { ref: string; date: string; amount: string; text: string }[] }
+  | { action: 'PAYMENT'; contactId: string; contactName: string; allocations: { documentId: string; number: string; amount: string }[]; unallocated: string }
+  | { action: 'ENTRY'; accountId: string; accountCode: string; accountName: string; description: string }
+  | { action: 'NONE' };
+export interface BankAiSuggestion {
+  id: string;
+  runId: string;
+  status: BankAiStatus;
+  line: { id: string; accountId: string; date: string; description: string; reference: string | null; amount: string; status: string };
+  lineOpen: boolean;
+  action: 'MATCH' | 'PAYMENT' | 'ENTRY' | 'NONE' | null;
+  proposal: { accountCode?: string; entryDescription?: string; contactRef?: string; ledgerRefs?: string[]; allocations?: { documentRef: string; amount: string }[] } | null;
+  resolved: BankAiResolved | null;
+  confidence: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+  reason: string | null;
+  checks: DraftCheck[];
+  canAccept: boolean;
+  shown: { ledger: number; documents: number; accounts: number; history: number };
+  model: string;
+  servedModel: string | null;
+  usage: { inputTokens: number; outputTokens: number } | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  result: { paymentNumber?: string | null; entryNumber?: string | null; journalEntryIds?: string[] } | null;
+  createdAt: string;
+}
+export interface BankAiOverview {
+  account: { id: string; code: string; name: string };
+  aiConfigured: boolean;
+  aiEnabled: boolean;
+  model: string;
+  canChangeAi: boolean;
+  limits: { linesPerRun: number };
+  counts: Partial<Record<BankAiStatus, number>>;
+  latestRun: { id: string; status: 'RUNNING' | 'DONE'; startedBy: string; skipped: { lineId: string; date: string; amount: string; description: string; reason: string }[]; createdAt: string; finishedAt: string | null; suggestions: number } | null;
+}
+export const BANK_AI_STATUS: Record<BankAiStatus, { label: string; tone: Tone }> = {
+  DRAFTING: { label: 'Thinking', tone: 'accent' },
+  READY: { label: 'To review', tone: 'warning' },
+  ACCEPTED: { label: 'Accepted', tone: 'positive' },
+  DISMISSED: { label: 'Dismissed', tone: 'neutral' },
+  FAILED: { label: 'No suggestion', tone: 'negative' },
+};
+export const CONFIDENCE: Record<'LOW' | 'MEDIUM' | 'HIGH', { label: string; tone: Tone }> = {
+  HIGH: { label: 'High confidence', tone: 'positive' },
+  MEDIUM: { label: 'Medium confidence', tone: 'warning' },
+  LOW: { label: 'Low confidence', tone: 'neutral' },
+};
