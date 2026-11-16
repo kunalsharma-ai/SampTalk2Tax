@@ -221,6 +221,10 @@ model Organization {
   cashForecasts        CashForecast[]
   kpiTargets           KpiTarget[]
   managementReports    ManagementReport[]
+  alertRuleSettings    AlertRuleSetting[]
+  alerts               Alert[]
+  alertEvents          AlertEvent[]
+  alertScans           AlertScan[]
 
   @@map("organizations")
 }
@@ -1580,4 +1584,114 @@ model ManagementReport {
 
   @@unique([orgId, month])
   @@map("management_reports")
+}
+
+enum AlertSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  DISMISSED
+  CLEARED
+}
+
+enum AlertAction {
+  OPENED
+  ACKNOWLEDGED
+  DISMISSED
+  REOPENED
+  CLEARED
+}
+
+/// An organisation's settings for one alert check: on or off, and its thresholds.
+model AlertRuleSetting {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  rule        String       @db.VarChar(40)
+  enabled     Boolean      @default(true)
+  /// Threshold values as decimal strings, by setting key.
+  params      Json         @default("{}")
+  updatedById String       @map("updated_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, rule])
+  @@map("alert_rule_settings")
+}
+
+/// Something a check found. One row per rule and finding (fingerprint) for the life of the
+/// organisation: it clears when no longer found, reopens when found again, and a dismissed
+/// alert stays dismissed.
+model Alert {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  rule        String        @db.VarChar(40)
+  fingerprint String        @db.VarChar(200)
+  severity    AlertSeverity
+  title       String        @db.VarChar(300)
+  summary     String        @db.VarChar(2000)
+  /// The amount at stake, in the functional currency, when there is one.
+  amount      Decimal?      @db.Decimal(24, 6)
+  /// The figures and records the alert was raised on.
+  evidence    Json
+  status      AlertStatus   @default(OPEN)
+  /// The acknowledgement note or the reason for dismissing.
+  statusNote  String?       @map("status_note") @db.VarChar(1000)
+  statusById  String?       @map("status_by_id") @db.Uuid
+  statusAt    DateTime?     @map("status_at") @db.Timestamptz(6)
+  firstSeenAt DateTime      @default(now()) @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime      @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  clearedAt   DateTime?     @map("cleared_at") @db.Timestamptz(6)
+  reopenCount Int           @default(0) @map("reopen_count")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  events      AlertEvent[]
+
+  @@unique([orgId, rule, fingerprint])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("alerts")
+}
+
+/// The history of an alert. Append-only. No actor = the checks did it.
+model AlertEvent {
+  id        String       @id @default(uuid()) @db.Uuid
+  orgId     String       @map("org_id") @db.Uuid
+  alertId   String       @map("alert_id") @db.Uuid
+  action    AlertAction
+  actorId   String?      @map("actor_id") @db.Uuid
+  note      String?      @db.VarChar(1000)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  alert     Alert        @relation(fields: [alertId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, alertId])
+  @@map("alert_events")
+}
+
+/// One run of the checks. Append-only.
+model AlertScan {
+  id         String       @id @default(uuid()) @db.Uuid
+  orgId      String       @map("org_id") @db.Uuid
+  /// Null when the checks ran by themselves because the last run was stale.
+  ranById    String?      @map("ran_by_id") @db.Uuid
+  startedAt  DateTime     @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime     @map("finished_at") @db.Timestamptz(6)
+  rulesRun   Int          @map("rules_run")
+  found      Int
+  opened     Int
+  reopened   Int
+  cleared    Int
+  /// Checks that could not run, with the reason.
+  failures   Json         @default("[]")
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, finishedAt])
+  @@map("alert_scans")
 }

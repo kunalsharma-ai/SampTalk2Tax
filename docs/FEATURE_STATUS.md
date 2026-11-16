@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1127 |
+| Not started | 1120 |
 | Designed | 0 |
 | Implementing | 42 |
-| Implemented | 29 |
-| Tested | 145 |
+| Implemented | 30 |
+| Tested | 151 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 16 | 28 |
-| Accounts receivable | M2 | 43 | 33 | 10 |
+| Accounts receivable | M2 | 43 | 32 | 11 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
 | Global taxation engine | M3 | 54 | 31 | 23 |
@@ -42,8 +42,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
-| Financial fraud and risk intelligence | M4 | 19 | 18 | 1 |
-| Continuous audit and governance | M6 | 30 | 24 | 6 |
+| Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
+| Continuous audit and governance | M6 | 30 | 23 | 7 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 38 | 3 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 18 | 0 |
+| Additional differentiating innovations | M7 | 18 | 17 | 1 |
 | Navigation structure | M1 | 48 | 38 | 10 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 10 | 10 |
@@ -398,6 +398,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › ageing ties to the receivables control account
   - apps/web/e2e/sales-flow.test.mjs
+
+### AR-032 — Revenue leakage detection
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Regular customer not billed: a customer invoiced in each of the previous N months (default 3) with no invoice in the last complete month. Rule-based; no contract or subscription data yet.
+- Evidence:
+  - packages/accounting-engine/src/alerts.ts
+  - packages/accounting-engine/test/alerts.test.ts
+  - apps/api/src/alerts
+  - apps/api/test/alerts.e2e.test.ts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/alerts
 
 ### AP-001 — Supplier management
 
@@ -1238,6 +1251,32 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
   - apps/web/e2e/approvals-flow.test.mjs
 
+### RISK-001 — Duplicate invoice detection
+
+- Module: Financial fraud and risk intelligence
+- Status: **Tested**
+- Notes: Possible duplicate bill (same vendor, same total, within N days, under different invoice numbers) and possible duplicate payment (same vendor, same amount, within N days). The same vendor invoice number is refused at entry (AP-018).
+- Evidence:
+  - packages/accounting-engine/src/alerts.ts
+  - packages/accounting-engine/test/alerts.test.ts
+  - apps/api/src/alerts
+  - apps/api/test/alerts.e2e.test.ts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/alerts
+
+### RISK-004 — Unusual journal detection
+
+- Module: Financial fraud and risk intelligence
+- Status: **Tested**
+- Notes: Manual journals posted in the last 90 days that are N times the median manual journal of the year before (with a minimum amount), or posted more than N days after their date.
+- Evidence:
+  - packages/accounting-engine/src/alerts.ts
+  - packages/accounting-engine/test/alerts.test.ts
+  - apps/api/src/alerts
+  - apps/api/test/alerts.e2e.test.ts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/alerts
+
 ### RISK-012 — Customer concentration risk
 
 - Module: Financial fraud and risk intelligence
@@ -1250,6 +1289,32 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/kpis.e2e.test.ts
   - apps/web/e2e/kpis-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/reports/kpis
+
+### RISK-018 — Provide evidence and reasons for alerts
+
+- Module: Financial fraud and risk intelligence
+- Status: **Tested**
+- Notes: Every alert stores the figures and records it was raised on (facts, linked records, a table) and the check description; history of every state change.
+- Evidence:
+  - packages/accounting-engine/src/alerts.ts
+  - packages/accounting-engine/test/alerts.test.ts
+  - apps/api/src/alerts
+  - apps/api/test/alerts.e2e.test.ts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/alerts
+
+### RISK-019 — Do not automatically accuse individuals of fraud
+
+- Module: Financial fraud and risk intelligence
+- Status: **Tested**
+- Notes: Alerts are worded as things to check, never as accusations; dismissing needs a reason and is kept in the history and audit trail.
+- Evidence:
+  - packages/accounting-engine/src/alerts.ts
+  - packages/accounting-engine/test/alerts.test.ts
+  - apps/api/src/alerts
+  - apps/api/test/alerts.e2e.test.ts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/alerts
 
 ### AUDIT-004 — Audit trails
 
@@ -1277,6 +1342,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts
   - apps/web/src/components/approvals/approval-card.tsx
+
+### AUDIT-010 — Exception tracking
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Alerts are tracked per finding: open, acknowledged, dismissed (with reason) or cleared when no longer found; reopen on recurrence; append-only history and audit events.
+- Evidence:
+  - packages/accounting-engine/src/alerts.ts
+  - packages/accounting-engine/test/alerts.test.ts
+  - apps/api/src/alerts
+  - apps/api/test/alerts.e2e.test.ts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/alerts
 
 ### AUDIT-024 — Approval status
 
@@ -1873,6 +1951,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Demo org is named "(SYNTHETIC DATA)", flagged is_demo, and the seed refuses to run when NODE_ENV=production.
 - Evidence:
   - apps/api/src/seed/seed-demo.ts
+
+### INNOV-005 — Evaluate financial indicators continuously and provide prioritized alerts
+
+- Module: Additional differentiating innovations
+- Status: **Implemented**
+- Notes: Nine checks run on demand and automatically when alerts are opened and the last run is over an hour old, ordered by severity. No background schedule or notifications yet.
+- Evidence:
+  - packages/accounting-engine/src/alerts.ts
+  - packages/accounting-engine/test/alerts.test.ts
+  - apps/api/src/alerts
+  - apps/api/test/alerts.e2e.test.ts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/alerts
 
 ### NAV-001 — Create a premium sidebar and global navigation system
 

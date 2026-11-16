@@ -51,7 +51,7 @@ export class BudgetsService {
   }
 
   /** The twelve months of a fiscal year, from the organisation's start month (not the fiscal_periods table). */
-  private periods(fiscalYear: number, startMonth: number) {
+  periods(fiscalYear: number, startMonth: number) {
     return generateFiscalYear(fiscalYear, startMonth).map((p) => ({ periodNo: p.periodNo, label: monthLabel(p.startDate), startDate: p.startDate, endDate: p.endDate }));
   }
 
@@ -111,7 +111,7 @@ export class BudgetsService {
   }
 
   /** Posted revenue and expense movements by account and month, on each account's normal side. */
-  private async actuals(orgId: string, from: string, to: string, tx: Tx | PrismaService = this.prisma) {
+  async actuals(orgId: string, from: string, to: string, tx: Tx | PrismaService = this.prisma) {
     const rows = await tx.$queryRaw<(ActualRow & { type: string })[]>`
       SELECT l.account_id, to_char(date_trunc('month', e.date), 'YYYY-MM') AS month, a.type::text AS type,
              SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit

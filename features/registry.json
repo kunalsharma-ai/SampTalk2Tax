@@ -3150,9 +3150,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/alerts.ts",
+        "packages/accounting-engine/test/alerts.test.ts",
+        "apps/api/src/alerts",
+        "apps/api/test/alerts.e2e.test.ts",
+        "apps/web/e2e/alerts-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/alerts"
+      ],
+      "notes": "Regular customer not billed: a customer invoiced in each of the previous N months (default 3) with no invoice in the last complete month. Rule-based; no contract or subscription data yet."
     },
     {
       "id": "AR-033",
@@ -16629,9 +16636,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/alerts.ts",
+        "packages/accounting-engine/test/alerts.test.ts",
+        "apps/api/src/alerts",
+        "apps/api/test/alerts.e2e.test.ts",
+        "apps/web/e2e/alerts-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/alerts"
+      ],
+      "notes": "Possible duplicate bill (same vendor, same total, within N days, under different invoice numbers) and possible duplicate payment (same vendor, same amount, within N days). The same vendor invoice number is refused at entry (AP-018)."
     },
     {
       "id": "RISK-002",
@@ -16707,9 +16721,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/alerts.ts",
+        "packages/accounting-engine/test/alerts.test.ts",
+        "apps/api/src/alerts",
+        "apps/api/test/alerts.e2e.test.ts",
+        "apps/web/e2e/alerts-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/alerts"
+      ],
+      "notes": "Manual journals posted in the last 90 days that are N times the median manual journal of the year before (with a minimum amount), or posted more than N days after their date."
     },
     {
       "id": "RISK-005",
@@ -17078,9 +17099,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/alerts.ts",
+        "packages/accounting-engine/test/alerts.test.ts",
+        "apps/api/src/alerts",
+        "apps/api/test/alerts.e2e.test.ts",
+        "apps/web/e2e/alerts-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/alerts"
+      ],
+      "notes": "Every alert stores the figures and records it was raised on (facts, linked records, a table) and the check description; history of every state change."
     },
     {
       "id": "RISK-019",
@@ -17104,9 +17132,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/alerts.ts",
+        "packages/accounting-engine/test/alerts.test.ts",
+        "apps/api/src/alerts",
+        "apps/api/test/alerts.e2e.test.ts",
+        "apps/web/e2e/alerts-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/alerts"
+      ],
+      "notes": "Alerts are worded as things to check, never as accusations; dismissing needs a reason and is kept in the history and audit trail."
     },
     {
       "id": "AUDIT-001",
@@ -17365,9 +17400,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/alerts.ts",
+        "packages/accounting-engine/test/alerts.test.ts",
+        "apps/api/src/alerts",
+        "apps/api/test/alerts.e2e.test.ts",
+        "apps/web/e2e/alerts-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/alerts"
+      ],
+      "notes": "Alerts are tracked per finding: open, acknowledged, dismissed (with reason) or cleared when no longer found; reopen on recurrence; append-only history and audit events."
     },
     {
       "id": "AUDIT-011",
@@ -30777,9 +30819,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "packages/accounting-engine/src/alerts.ts",
+        "packages/accounting-engine/test/alerts.test.ts",
+        "apps/api/src/alerts",
+        "apps/api/test/alerts.e2e.test.ts",
+        "apps/web/e2e/alerts-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/alerts"
+      ],
+      "notes": "Nine checks run on demand and automatically when alerts are opened and the last run is over an hour old, ordered by severity. No background schedule or notifications yet."
     },
     {
       "id": "INNOV-006",

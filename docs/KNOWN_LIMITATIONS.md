@@ -77,6 +77,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * A fixed set of 13 KPIs for the whole organisation, computed by calendar month from posted journals by account subtype: no custom formulas or dashboards, dimensions, peer benchmarks, alerts, drill-down to journals, scheduled or emailed reports, or PDF/Excel export (browser print only). DSO and DPO compare GST-inclusive balances with tax-exclusive revenue and expenses. The management report compares only the approved budget. See [`KPIS_AND_MANAGEMENT_REPORTS.md`](KPIS_AND_MANAGEMENT_REPORTS.md).
 
+## Alerts and leakage checks (M4, slice 4)
+
+* Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run on request or when alerts are opened and the last run is over an hour old: no background schedule, and no email, push or chat notifications. No assignment, due dates or snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

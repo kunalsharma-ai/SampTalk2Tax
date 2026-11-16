@@ -39,6 +39,8 @@ export const PERMISSIONS = [
   'payroll.manage',
   /** Prepare budget versions and submit them. Approving one needs approvals.decide. */
   'budgets.manage',
+  /** Acknowledge and dismiss alerts, run the checks, and change their settings. Everyone who reads reports sees alerts. */
+  'alerts.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -77,6 +79,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'payroll.read',
     'payroll.manage',
     'budgets.manage',
+    'alerts.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set<Permission>(READ_ONLY),

@@ -28,6 +28,7 @@ import { BudgetsService } from '../budgets/budgets.service';
 import { EWayBillsService } from '../e-way-bills/e-way-bills.service';
 import { CashFlowService, todayIst } from '../cash-flow/cash-flow.service';
 import { KpisService } from '../kpis/kpis.service';
+import { AlertsService } from '../alerts/alerts.service';
 
 /**
  * Creates a clearly-labelled SYNTHETIC demo organization with a few months of
@@ -538,6 +539,21 @@ async function main() {
   await kpis.finalise(org.id, actor, monthsBack(2));
   await kpis.saveCommentary(org.id, actor, monthsBack(1), 'Synthetic draft. Revenue is ahead of budget; payroll ran above plan after the October hires. Still to confirm: the GST payment and year-to-date margin before finalising.');
   console.log(`  KPIs: 4 targets; management report ${monthsBack(2)} final, ${monthsBack(1)} draft`);
+
+  // SYNTHETIC alert scenario: the same freight bill entered twice under different numbers.
+  // The demo's whole history was entered on one day, so back-dating is
+  // judged over a year here (365 days) instead of the default 30.
+  for (const [d, ref] of [[-6, 'EVL/FRT/501'], [-4, 'EVL/FRT/502']] as const) {
+    await docs.create(ledgerOrg, actor, 'PURCHASES', { kind: 'BILL', contactId: vendors[1].id, issueDate: addDays(today, d), reference: ref, lines: [{ accountId: a['5000'], description: 'Freight inward, Pune to Mumbai (synthetic)', quantity: '1', unitPrice: '18500.00', taxRateId: gst18.id, hsnCode: '996511' }] }, { post: true });
+    count += 1;
+  }
+  const alerts = app.get(AlertsService);
+  await alerts.saveRule(org.id, actor, 'UNUSUAL_JOURNAL', { enabled: true, params: { backdatedDays: '365' } });
+  await alerts.runScan(org.id, actor);
+  const found = (await alerts.list(org.id, { status: 'ACTIVE', fresh: false })).alerts;
+  const dup = found.find((x) => x.rule === 'DUPLICATE_BILL');
+  if (dup) await alerts.acknowledge(org.id, actor, dup.id, 'Synthetic: asked Evergreen whether EVL/FRT/502 repeats 501');
+  console.log(`  Alerts: ${found.length} found by the checks (${found.map((x) => x.rule).join(', ')})`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

@@ -10,3 +10,4 @@ export * from './expenses';
 export * from './budgets';
 export * from './cashflow';
 export * from './kpis';
+export * from './alerts';
