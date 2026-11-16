@@ -6,6 +6,9 @@ import { apiBaseUrl, SESSION_COOKIE } from '@/lib/server-config';
  * httpOnly session cookie. Only /v1/* paths are forwarded. Mutating requests must
  * carry the x-t2t-csrf header, which a cross-site form or image cannot send.
  */
+/** Response headers that matter to the browser (file downloads keep their name and sandbox). */
+const PASS_THROUGH = ['idempotent-replay', 'content-disposition', 'x-content-type-options', 'content-security-policy', 'cache-control', 'x-checksum-sha256'];
+
 async function forward(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;
   if (path[0] !== 'v1' || path.some((p) => p === '..' || p === '')) {
@@ -27,14 +30,16 @@ async function forward(req: NextRequest, ctx: { params: Promise<{ path: string[]
   const upstream = await fetch(url, {
     method: req.method,
     headers,
-    body: req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.text(),
+    body: req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer(),
     cache: 'no-store',
   });
   const out = new NextResponse(upstream.status === 204 ? null : await upstream.arrayBuffer(), { status: upstream.status });
   const uct = upstream.headers.get('content-type');
   if (uct) out.headers.set('content-type', uct);
-  const replay = upstream.headers.get('idempotent-replay');
-  if (replay) out.headers.set('idempotent-replay', replay);
+  for (const h of PASS_THROUGH) {
+    const v = upstream.headers.get(h);
+    if (v) out.headers.set(h, v);
+  }
   if (upstream.status === 401) out.cookies.set(SESSION_COOKIE, '', { path: '/', maxAge: 0 });
   return out;
 }

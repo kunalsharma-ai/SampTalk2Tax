@@ -49,3 +49,22 @@ Expenses; approval workflows; multi-currency documents; statutory tax; PDFs and 
 
 ### Not in slice 2
 Live bank feeds, OFX/QIF import, foreign-currency bank accounts, many-to-one matching, transfer detection, learning suggestions. See [`KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md).
+
+## Slice 3: attachments and approvals
+
+### Completed and tested
+* Attachments on invoices, credit notes, bills, vendor credits, receipts, payments and journal entries, from the record's page: upload several files at once, open or download, remove with a reason, show removed files.
+* Server rules: raw-byte upload, type detected from the first bytes (PDF, PNG, JPEG, WebP only), 5 MB per file, 20 per record, exact duplicates refused, cleaned file names, record-level permissions (who can read or change the record can read or change its files), downloads served byte for byte with `nosniff`, a sandbox CSP and a checksum header. The web proxy now passes binary bodies and download headers through.
+* Database guards: attachment bytes and metadata never change, rows are never deleted, removal happens once.
+* Approval rules per document type: on/off, minimum total, whether the approver must be someone else. Set by owners and admins on an Approval rules screen.
+* Approval requests: submit a covered draft, approve (optionally posting straight away), reject with a reason, withdraw. Approvals inbox with Waiting / Approved / Rejected / All. The document page shows where the draft stands and disables Post until it is approved.
+* Database guards: a covered document cannot become POSTED without an APPROVED request for exactly its total; the approver must differ from the preparer and the submitter when the rule says so; editing a draft or its lines cancels its open request; requests are never deleted and keep a snapshot when the draft is deleted.
+* New permission `approvals.decide` (Owner, Admin, Approver).
+* Demo seed turns on a rule for bills from 250,000 and leaves one synthetic draft bill with a synthetic PDF waiting for approval.
+
+### Tests
+* API integration: `apps/api/test/attachments-approvals.e2e.test.ts` (12), including magic-byte checks, size limits, cross-tenant and per-role access, direct-SQL tampering with files and approvals, and a posting failure after approval.
+* Browser: `apps/web/e2e/approvals-flow.test.mjs` (5 steps, two signed-in users).
+
+### Not in slice 3
+OCR and extraction, a document vault, malware scanning, object storage, multi-level approval chains, approvals for payments and journals, notifications, and a screen for files on bank lines. See [`KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md).

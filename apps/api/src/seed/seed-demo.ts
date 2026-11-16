@@ -3,6 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { randomBytes } from 'node:crypto';
 import { AppModule } from '../app.module';
 import { AuthService } from '../auth/auth.service';
+import { ApprovalsService } from '../approvals/approvals.service';
+import { AttachmentsService } from '../attachments/attachments.service';
 import { BankingService } from '../banking/banking.service';
 import { todayIso } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
@@ -204,6 +206,26 @@ async function main() {
   });
   const matched = await banking.autoMatch(ledgerOrg, actor, a['1120']);
   console.log(`  Synthetic bank statement: ${imported.newCount} lines, ${matched.matched} matched automatically`);
+
+  // An approval rule for large bills, switched on after the history above was posted, and
+  // one SYNTHETIC draft bill waiting for approval with a synthetic PDF attached.
+  const approvals = app.get(ApprovalsService);
+  await approvals.setPolicy({ ...ledgerOrg, fiscalYearStartMonth: 4 }, actor, 'BILL', { minAmount: '250000', requireDifferentApprover: true, isActive: true });
+  const bigBill = await docs.create(
+    ledgerOrg,
+    actor,
+    'PURCHASES',
+    { kind: 'BILL', contactId: vendors[0].id, issueDate: today, reference: 'DWS/PENDING/900', lines: [{ accountId: a['1300'], description: 'Stock purchase (synthetic)', quantity: '1', unitPrice: '310000.00', taxRateId: taxRate.id }] },
+    { post: false },
+  );
+  await app.get(AttachmentsService).upload(ledgerOrg, actor, {
+    entityType: 'DOCUMENT',
+    entityId: bigBill.id,
+    fileName: 'synthetic-vendor-bill.pdf',
+    content: Buffer.from('%PDF-1.4\n% SYNTHETIC DEMO FILE - not a real bill\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n'),
+  });
+  await approvals.submit({ ...ledgerOrg, fiscalYearStartMonth: 4 }, actor, { documentId: bigBill.id, note: 'Synthetic demo: large stock order' });
+  console.log('  Approval rule: bills from 250000 need a second person; one synthetic draft bill is waiting');
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

@@ -27,6 +27,12 @@ describe('permissions', () => {
     expect(hasPermission('VIEWER', 'banking.read')).toBe(true);
     expect(hasPermission('VIEWER', 'banking.reconcile')).toBe(false);
   });
+  it('lets approvers, owners and admins decide approvals, but not accountants', () => {
+    expect(hasPermission('APPROVER', 'approvals.decide')).toBe(true);
+    expect(hasPermission('OWNER', 'approvals.decide')).toBe(true);
+    expect(hasPermission('ACCOUNTANT', 'approvals.decide')).toBe(false);
+    expect(hasPermission('VIEWER', 'approvals.decide')).toBe(false);
+  });
   it('restricts role assignment', () => {
     expect(canAssignRole('ADMIN', 'OWNER')).toBe(false);
     expect(canAssignRole('ADMIN', 'ACCOUNTANT')).toBe(true);

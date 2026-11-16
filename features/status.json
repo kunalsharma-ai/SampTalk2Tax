@@ -4,7 +4,7 @@
     "AUDIT-004": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a audit trail",
+        "apps/api/test/ledger.e2e.test.ts › audit trail",
         "GET /v1/orgs/:orgId/audit-events, /verify",
         "apps/web/src/app/orgs/[orgId]/audit",
         "apps/web/e2e/ledger-flow.test.mjs"
@@ -119,7 +119,7 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/test/journal.test.ts",
-        "apps/api/test/ledger.e2e.test.ts \u203a journal posting",
+        "apps/api/test/ledger.e2e.test.ts › journal posting",
         "apps/web/src/app/orgs/[orgId]/journals",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -127,7 +127,7 @@
     "GL-003": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a chart of accounts rules",
+        "apps/api/test/ledger.e2e.test.ts › chart of accounts rules",
         "POST/PATCH /v1/orgs/:orgId/accounts",
         "apps/web/src/app/orgs/[orgId]/accounts",
         "apps/web/e2e/ledger-flow.test.mjs"
@@ -136,7 +136,7 @@
     "GL-004": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a validates hierarchy, subtype and uniqueness",
+        "apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness",
         "apps/web/src/app/orgs/[orgId]/accounts",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -144,7 +144,7 @@
     "GL-005": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a validates hierarchy, subtype and uniqueness",
+        "apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness",
         "apps/web/src/app/orgs/[orgId]/accounts",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -152,7 +152,7 @@
     "GL-006": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a journal posting",
+        "apps/api/test/ledger.e2e.test.ts › journal posting",
         "POST /v1/orgs/:orgId/journals (draft, edit, delete, post)",
         "apps/web/src/app/orgs/[orgId]/journals",
         "apps/web/e2e/ledger-flow.test.mjs"
@@ -169,8 +169,8 @@
     "GL-009": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a reverses a posted entry exactly once and nets it to zero",
-        "packages/accounting-engine/test/journal.test.ts \u203a builds a reversal that nets the original to zero",
+        "apps/api/test/ledger.e2e.test.ts › reverses a posted entry exactly once and nets it to zero",
+        "packages/accounting-engine/test/journal.test.ts › builds a reversal that nets the original to zero",
         "apps/web/src/app/orgs/[orgId]/journals",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -193,7 +193,7 @@
     "GL-015": {
       "status": "Implemented",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a creates further fiscal years",
+        "apps/api/test/ledger.e2e.test.ts › creates further fiscal years",
         "packages/accounting-engine/test/periods.test.ts",
         "apps/web/src"
       ]
@@ -202,7 +202,7 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/test/periods.test.ts",
-        "apps/api/test/ledger.e2e.test.ts \u203a period locks",
+        "apps/api/test/ledger.e2e.test.ts › period locks",
         "apps/web/src/app/orgs/[orgId]/periods",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -210,14 +210,14 @@
     "GL-017": {
       "status": "Implemented",
       "evidence": [
-        "packages/accounting-engine/test/periods.test.ts \u203a generates an April-March fiscal year",
+        "packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year",
         "apps/web/src"
       ]
     },
     "GL-018": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a blocks posting into a locked period and allows it again after unlock",
+        "apps/api/test/ledger.e2e.test.ts › blocks posting into a locked period and allows it again after unlock",
         "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)",
         "apps/web/src/app/orgs/[orgId]/periods",
         "apps/web/e2e/ledger-flow.test.mjs"
@@ -226,15 +226,15 @@
     "GL-019": {
       "status": "Implemented",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions",
-        "apps/api/test/ledger.e2e.test.ts \u203a journal posting",
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
+        "apps/api/test/ledger.e2e.test.ts › journal posting",
         "apps/web/src"
       ]
     },
     "GL-020": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a audit trail",
+        "apps/api/test/ledger.e2e.test.ts › audit trail",
         "apps/web/src/app/orgs/[orgId]/audit",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -242,7 +242,7 @@
     "GL-021": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a financial reports",
+        "apps/api/test/ledger.e2e.test.ts › financial reports",
         "packages/accounting-engine/test/reports.test.ts",
         "apps/web/src/app/orgs/[orgId]/reports/trial-balance",
         "apps/web/e2e/ledger-flow.test.mjs"
@@ -251,7 +251,7 @@
     "GL-022": {
       "status": "Implemented",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a builds an account ledger with opening and running balances",
+        "apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances",
         "apps/web/src"
       ]
     },
@@ -265,8 +265,8 @@
     "GL-037": {
       "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/test/journal.test.ts \u203a rejects an unbalanced entry",
-        "apps/api/test/ledger.e2e.test.ts \u203a refuses an unbalanced posted entry even if inserted directly in SQL",
+        "packages/accounting-engine/test/journal.test.ts › rejects an unbalanced entry",
+        "apps/api/test/ledger.e2e.test.ts › refuses an unbalanced posted entry even if inserted directly in SQL",
         "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers) (deferred constraint trigger)"
       ]
     },
@@ -280,47 +280,47 @@
     "GL-039": {
       "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/test/money.test.ts \u203a refuses JS numbers",
-        "apps/api/test/ledger.e2e.test.ts \u203a JSON numbers are refused"
+        "packages/accounting-engine/test/money.test.ts › refuses JS numbers",
+        "apps/api/test/ledger.e2e.test.ts › JSON numbers are refused"
       ]
     },
     "GL-040": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a converts foreign-currency lines to the functional currency",
-        "packages/accounting-engine/test/journal.test.ts \u203a converts foreign-currency lines"
+        "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines to the functional currency",
+        "packages/accounting-engine/test/journal.test.ts › converts foreign-currency lines"
       ]
     },
     "GL-041": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a blocks any direct change to posted entries at the database level",
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+        "apps/api/test/ledger.e2e.test.ts › blocks any direct change to posted entries at the database level",
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions"
       ]
     },
     "GL-042": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a reverses a posted entry exactly once"
+        "apps/api/test/ledger.e2e.test.ts › reverses a posted entry exactly once"
       ]
     },
     "GL-043": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a idempotency and concurrency (retries, concurrent retries, 25 concurrent posts)"
+        "apps/api/test/ledger.e2e.test.ts › idempotency and concurrency (retries, concurrent retries, 25 concurrent posts)"
       ]
     },
     "GL-044": {
       "status": "Tested",
       "evidence": [
         "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)",
-        "apps/api/test/ledger.e2e.test.ts \u203a immutability and reversal"
+        "apps/api/test/ledger.e2e.test.ts › immutability and reversal"
       ]
     },
     "I18N-002": {
       "status": "Implementing",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a converts foreign-currency lines"
+        "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines"
       ],
       "notes": "Transaction currency + rate per line, functional currency per org. Rate tables, revaluation and multi-currency reporting are not done."
     },
@@ -405,14 +405,14 @@
     "PERF-017": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a idempotency and concurrency"
+        "apps/api/test/ledger.e2e.test.ts › idempotency and concurrency"
       ],
       "notes": "Correctness under concurrency is tested; throughput has not been benchmarked."
     },
     "PERF-018": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a tenant isolation"
+        "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation"
       ]
     },
     "QA-001": {
@@ -465,7 +465,7 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/test/journal.test.ts",
-        "apps/api/test/ledger.e2e.test.ts \u203a converts foreign-currency lines"
+        "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines"
       ],
       "notes": "Conversion and precision only; revaluation not built."
     },
@@ -473,19 +473,19 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/test/reports.test.ts",
-        "apps/api/test/ledger.e2e.test.ts \u203a reports"
+        "apps/api/test/ledger.e2e.test.ts › reports"
       ]
     },
     "QA-012": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions"
       ]
     },
     "QA-013": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a tenant isolation"
+        "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation"
       ]
     },
     "QA-021": {
@@ -498,13 +498,13 @@
     "QA-022": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a reverses a posted entry exactly once"
+        "apps/api/test/ledger.e2e.test.ts › reverses a posted entry exactly once"
       ]
     },
     "QA-023": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a period locks"
+        "apps/api/test/ledger.e2e.test.ts › period locks"
       ]
     },
     "QA-024": {
@@ -517,25 +517,25 @@
     "QA-025": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a financial reports"
+        "apps/api/test/ledger.e2e.test.ts › financial reports"
       ]
     },
     "QA-026": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a produce a balanced trial balance and statements that tie out"
+        "apps/api/test/ledger.e2e.test.ts › produce a balanced trial balance and statements that tie out"
       ]
     },
     "QA-027": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a idempotency and concurrency"
+        "apps/api/test/ledger.e2e.test.ts › idempotency and concurrency"
       ]
     },
     "QA-028": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a assigns gap-free unique numbers under concurrent posting; allows only one of many concurrent reversals"
+        "apps/api/test/ledger.e2e.test.ts › assigns gap-free unique numbers under concurrent posting; allows only one of many concurrent reversals"
       ]
     },
     "QA-031": {
@@ -613,7 +613,7 @@
     "SEC-001": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a tenant isolation",
+        "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation",
         "Composite (id, org_id) foreign keys in schema"
       ],
       "notes": "Application-level scoping plus database foreign keys. PostgreSQL row-level security is not enabled yet (see KNOWN_LIMITATIONS)."
@@ -621,14 +621,14 @@
     "SEC-002": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions"
       ]
     },
     "SEC-003": {
       "status": "Tested",
       "evidence": [
         "packages/security/test/security.test.ts",
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions"
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions"
       ],
       "notes": "Fixed roles: OWNER, ADMIN, ACCOUNTANT, APPROVER, VIEWER. Custom roles not done."
     },
@@ -651,7 +651,7 @@
     "SEC-014": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a audit trail",
+        "apps/api/test/ledger.e2e.test.ts › audit trail",
         "apps/web/src/app/orgs/[orgId]/audit",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -659,21 +659,21 @@
     "SEC-015": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a authentication"
+        "apps/api/test/auth-tenancy.e2e.test.ts › authentication"
       ],
       "notes": "Email + password (scrypt) and HS256 JWT bearer tokens."
     },
     "SEC-017": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts \u203a rejects unbalanced, malformed and header-account entries",
+        "apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries",
         "zod schemas on every endpoint"
       ]
     },
     "UX-002": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a organization onboarding",
+        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding",
         "apps/web/src/app/onboarding",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -681,7 +681,7 @@
     "UX-007": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a organization onboarding",
+        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding",
         "apps/web/src/app/onboarding",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -689,7 +689,7 @@
     "UX-008": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a organization onboarding",
+        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding",
         "apps/web/src/app/onboarding",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -697,7 +697,7 @@
     "UX-015": {
       "status": "Implemented",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts \u203a roles and permissions",
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
         "apps/web/src"
       ],
       "notes": "Members screen lists members and adds an existing user by email with a role. Invitation emails and role changes are not built."
@@ -713,7 +713,7 @@
     "AR-002": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a roles and tenants",
+        "apps/api/test/sales-purchases.e2e.test.ts › roles and tenants",
         "apps/web/e2e/sales-flow.test.mjs",
         "/v1/orgs/:orgId/contacts",
         "apps/web/src/app/orgs/[orgId]/sales/customers"
@@ -722,7 +722,7 @@
     "AR-004": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a credit limits",
+        "apps/api/test/sales-purchases.e2e.test.ts › credit limits",
         "apps/web/src/components/ledger/document-form.tsx"
       ],
       "notes": "Override is audited."
@@ -730,7 +730,7 @@
     "AR-009": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a invoices",
+        "apps/api/test/sales-purchases.e2e.test.ts › invoices",
         "packages/accounting-engine/test/documents.test.ts",
         "apps/web/e2e/sales-flow.test.mjs"
       ],
@@ -739,55 +739,55 @@
     "AR-016": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a applies a credit note and settles the invoice",
+        "apps/api/test/sales-purchases.e2e.test.ts › applies a credit note and settles the invoice",
         "packages/accounting-engine/test/documents.test.ts"
       ]
     },
     "AR-019": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a receipts, credits and ageing",
+        "apps/api/test/sales-purchases.e2e.test.ts › receipts, credits and ageing",
         "apps/web/e2e/sales-flow.test.mjs"
       ]
     },
     "AR-020": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a records a partial receipt against an invoice",
+        "apps/api/test/sales-purchases.e2e.test.ts › records a partial receipt against an invoice",
         "apps/web/e2e/sales-flow.test.mjs"
       ]
     },
     "AR-021": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a keeps an unallocated receipt as a customer credit"
+        "apps/api/test/sales-purchases.e2e.test.ts › keeps an unallocated receipt as a customer credit"
       ]
     },
     "AR-022": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a produces a customer statement",
+        "apps/api/test/sales-purchases.e2e.test.ts › produces a customer statement",
         "apps/web/src/components/ledger/contact-detail.tsx"
       ]
     },
     "AR-023": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a ageing ties to the receivables control account",
+        "apps/api/test/sales-purchases.e2e.test.ts › ageing ties to the receivables control account",
         "apps/web/e2e/sales-flow.test.mjs"
       ]
     },
     "AP-001": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a bills and payments",
+        "apps/api/test/sales-purchases.e2e.test.ts › bills and payments",
         "apps/web/src/app/orgs/[orgId]/purchases/vendors"
       ]
     },
     "AP-003": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a bills and payments",
+        "apps/api/test/sales-purchases.e2e.test.ts › bills and payments",
         "apps/web/e2e/sales-flow.test.mjs"
       ],
       "notes": "Same document model as supplier bills."
@@ -795,7 +795,7 @@
     "AP-004": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a posts a bill to payables with recoverable input tax and pays it",
+        "apps/api/test/sales-purchases.e2e.test.ts › posts a bill to payables with recoverable input tax and pays it",
         "apps/web/e2e/sales-flow.test.mjs"
       ]
     },
@@ -841,7 +841,7 @@
     "AP-018": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/sales-purchases.e2e.test.ts \u203a detects a vendor's invoice number entered twice",
+        "apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice",
         "apps/web/e2e/sales-flow.test.mjs"
       ],
       "notes": "Per vendor, case-insensitive; enforced by a partial unique index as well as the service."
@@ -857,7 +857,7 @@
     "BANK-001": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a lists bank and cash accounts",
+        "apps/api/test/banking.e2e.test.ts › lists bank and cash accounts",
         "apps/web/src/components/banking/accounts-page.tsx"
       ],
       "notes": "Bank and cash accounts are ledger accounts (subtype BANK/CASH)."
@@ -865,7 +865,7 @@
     "BANK-002": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a statement import",
+        "apps/api/test/banking.e2e.test.ts › statement import",
         "packages/accounting-engine/test/bank.test.ts",
         "apps/web/e2e/banking-flow.test.mjs"
       ]
@@ -881,14 +881,14 @@
     "BANK-005": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a reconciliation",
+        "apps/api/test/banking.e2e.test.ts › reconciliation",
         "apps/web/e2e/banking-flow.test.mjs"
       ]
     },
     "BANK-006": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a matching",
+        "apps/api/test/banking.e2e.test.ts › matching",
         "packages/accounting-engine/test/bank.test.ts",
         "apps/web/e2e/banking-flow.test.mjs"
       ]
@@ -896,29 +896,29 @@
     "BANK-008": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a suggests and auto-matches only unambiguous pairs",
-        "apps/api/test/banking.e2e.test.ts \u203a records a customer receipt from money in"
+        "apps/api/test/banking.e2e.test.ts › suggests and auto-matches only unambiguous pairs",
+        "apps/api/test/banking.e2e.test.ts › records a customer receipt from money in"
       ]
     },
     "BANK-009": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a matches a ledger line to only one statement line",
-        "apps/api/test/banking.e2e.test.ts \u203a records a customer receipt from money in"
+        "apps/api/test/banking.e2e.test.ts › matches a ledger line to only one statement line",
+        "apps/api/test/banking.e2e.test.ts › records a customer receipt from money in"
       ],
       "notes": "Vendor payments from money-out lines share the tested receipt path."
     },
     "BANK-010": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a books bank charges",
+        "apps/api/test/banking.e2e.test.ts › books bank charges",
         "apps/web/e2e/banking-flow.test.mjs"
       ]
     },
     "BANK-013": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a previews the figures and explains why it does not reconcile yet",
+        "apps/api/test/banking.e2e.test.ts › previews the figures and explains why it does not reconcile yet",
         "apps/web/src/components/banking/reconcile-page.tsx"
       ],
       "notes": "Uncleared ledger items and unmatched statement lines are listed on the reconciliation screen."
@@ -933,7 +933,7 @@
     "BANK-015": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a only owners and admins undo a reconciliation, which keeps its record"
+        "apps/api/test/banking.e2e.test.ts › only owners and admins undo a reconciliation, which keeps its record"
       ],
       "notes": "Reconciliations are never deleted; undo keeps the record and reason; every step is in the audit trail."
     },
@@ -948,7 +948,7 @@
     "BANK-018": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a previews without storing, then imports, and skips lines already imported",
+        "apps/api/test/banking.e2e.test.ts › previews without storing, then imports, and skips lines already imported",
         "packages/accounting-engine/test/bank.test.ts",
         "apps/web/e2e/banking-flow.test.mjs"
       ],
@@ -957,7 +957,7 @@
     "BANK-021": {
       "status": "Implementing",
       "evidence": [
-        "packages/accounting-engine/src/bank.ts \u203a reconciliationIssues",
+        "packages/accounting-engine/src/bank.ts › reconciliationIssues",
         "apps/api/test/banking.e2e.test.ts"
       ],
       "notes": "Reconciliation flags when imported lines do not add up to the statement balance (missing or doubled lines). No line-level detection."
@@ -979,8 +979,8 @@
     "AP-022": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts \u203a records a customer receipt from money in",
-        "apps/api/test/banking.e2e.test.ts \u203a matching"
+        "apps/api/test/banking.e2e.test.ts › records a customer receipt from money in",
+        "apps/api/test/banking.e2e.test.ts › matching"
       ]
     },
     "QA-009": {
@@ -995,6 +995,115 @@
       "evidence": [
         "apps/web/src/components/shell.tsx",
         "apps/web/src/components/banking"
+      ]
+    },
+    "DOC-001": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/api/src/attachments",
+        "apps/web/src/components/attachments.tsx"
+      ],
+      "notes": "Files attach to invoices, bills, payments, journals and bank lines; stored in PostgreSQL with checksum, type detected from bytes, immutable, soft removal with reason. No standalone document vault, folders or search yet."
+    },
+    "DOC-002": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › attachments",
+        "apps/web/e2e/approvals-flow.test.mjs",
+        "POST /v1/orgs/:orgId/attachments"
+      ],
+      "notes": "Invoice and bill files attached to the document record."
+    },
+    "DOC-003": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › attachments",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ],
+      "notes": "Receipts attach to documents, payments and journal entries."
+    },
+    "DOC-006": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)"
+      ],
+      "notes": "Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*."
+    },
+    "DOC-018": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files"
+      ],
+      "notes": "Exact duplicate files (same SHA-256) on the same record are refused. No cross-record or fuzzy duplicate detection."
+    },
+    "AP-006": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › approvals",
+        "apps/web/e2e/approvals-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/approvals"
+      ],
+      "notes": "Bills (and invoices, credit notes, vendor credits) can require an approval above an amount; enforced by a database trigger."
+    },
+    "WFLOW-006": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › approvals",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ],
+      "notes": "Single-step approval of sales and purchase drafts by amount. No multi-level chains, escalations or approvals for other record types yet."
+    },
+    "UX-016": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/app/orgs/[orgId]/settings/approvals",
+        "apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule"
+      ],
+      "notes": "One rule per document type: on/off, minimum total, separate approver."
+    },
+    "AUDIT-006": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/web/src/components/approvals/approval-card.tsx"
+      ],
+      "notes": "Every request, decision, withdrawal and cancellation is kept (never deleted, trigger-enforced) and audited."
+    },
+    "AUDIT-024": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ]
+    },
+    "AUDIT-025": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ],
+      "notes": "Approver name, time and note are stored on the request; the approver must differ from the preparer when the rule says so (database-enforced)."
+    },
+    "AUDIT-028": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts"
+      ],
+      "notes": "Evidence files are linked to the records they support with a SHA-256 checksum. Audit-event-level evidence references are not modelled yet."
+    },
+    "SEC-036": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts"
+      ],
+      "notes": "Human approval gate for posting covered sales and purchase documents. Not yet applied to journals, payments or AI actions (no AI actions exist)."
+    },
+    "DS-014": {
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src/components/approvals/approval-card.tsx"
       ]
     }
   }

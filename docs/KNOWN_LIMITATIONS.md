@@ -33,6 +33,13 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Only the latest reconciliation of an account can be undone. Transfers between two of your own bank accounts are booked as an entry on each side; there is no transfer detection.
 * Excluded lines must be real non-movements (for example a duplicate in the bank's file); excluding a genuine movement will make the statement total disagree.
 
+## Attachments and approvals (M2, slice 3)
+* Files are stored inside PostgreSQL (up to 5 MB each, 20 per record). That is fine for evidence at this scale; object storage is planned before larger volumes. Uploaded files are not scanned for malware; they are only served as downloads or in a sandbox.
+* No OCR or extraction: a file is evidence attached to a record, nothing is read from it. No standalone document vault, folders or search.
+* Bank statement lines accept attachments through the API, but the banking screens do not show them yet.
+* Approvals are single-step: one approver per document, one rule per document type with a minimum total. No multi-level chains, approval by department or vendor, escalations, delegation or notifications. Payments and manual journals have no approval rules yet.
+* An approval is tied to the exact total; any edit to the draft cancels it. A changed tax rate that alters the total also needs a new approval.
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

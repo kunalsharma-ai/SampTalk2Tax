@@ -8,7 +8,7 @@ import { useOrg, useOrgs } from '@/lib/org';
 import { Logo } from './brand';
 
 const NAV: { group: string; items: { href: string; label: string }[] }[] = [
-  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }] },
+  { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/approvals', label: 'Approvals' }] },
   {
     group: 'Sales',
     items: [
@@ -45,7 +45,7 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
       { href: '/reports/general-ledger', label: 'General ledger' },
     ],
   },
-  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/tax-rates', label: 'Tax rates' }] },
+  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/tax-rates', label: 'Tax rates' }, { href: '/settings/approvals', label: 'Approval rules' }] },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {

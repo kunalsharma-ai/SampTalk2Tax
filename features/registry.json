@@ -3607,9 +3607,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › approvals",
+        "apps/web/e2e/approvals-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/approvals"
+      ],
+      "notes": "Bills (and invoices, credit notes, vendor credits) can require an approval above an amount; enforced by a database trigger."
     },
     {
       "id": "AP-007",
@@ -13621,9 +13625,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › approvals",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ],
+      "notes": "Single-step approval of sales and purchase drafts by amount. No multi-level chains, escalations or approvals for other record types yet."
     },
     {
       "id": "WFLOW-007",
@@ -16995,9 +17002,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/web/src/components/approvals/approval-card.tsx"
+      ],
+      "notes": "Every request, decision, withdrawal and cancellation is kept (never deleted, trigger-enforced) and audited."
     },
     {
       "id": "AUDIT-007",
@@ -17445,8 +17455,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ],
       "notes": null
     },
     {
@@ -17470,9 +17483,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ],
+      "notes": "Approver name, time and note are stored on the request; the approver must differ from the preparer when the rule says so (database-enforced)."
     },
     {
       "id": "AUDIT-026",
@@ -17545,9 +17561,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts"
+      ],
+      "notes": "Evidence files are linked to the records they support with a SHA-256 checksum. Audit-event-level evidence references are not modelled yet."
     },
     {
       "id": "AUDIT-029",
@@ -17619,9 +17637,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/api/src/attachments",
+        "apps/web/src/components/attachments.tsx"
+      ],
+      "notes": "Files attach to invoices, bills, payments, journals and bank lines; stored in PostgreSQL with checksum, type detected from bytes, immutable, soft removal with reason. No standalone document vault, folders or search yet."
     },
     {
       "id": "DOC-002",
@@ -17643,9 +17665,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › attachments",
+        "apps/web/e2e/approvals-flow.test.mjs",
+        "POST /v1/orgs/:orgId/attachments"
+      ],
+      "notes": "Invoice and bill files attached to the document record."
     },
     {
       "id": "DOC-003",
@@ -17667,9 +17693,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › attachments",
+        "apps/web/e2e/approvals-flow.test.mjs"
+      ],
+      "notes": "Receipts attach to documents, payments and journal entries."
     },
     {
       "id": "DOC-004",
@@ -17739,9 +17768,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)"
+      ],
+      "notes": "Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*."
     },
     {
       "id": "DOC-007",
@@ -18027,9 +18059,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files"
+      ],
+      "notes": "Exact duplicate files (same SHA-256) on the same record are refused. No cross-record or fuzzy duplicate detection."
     },
     {
       "id": "DOC-019",
@@ -25861,9 +25895,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/test/attachments-approvals.e2e.test.ts"
+      ],
+      "notes": "Human approval gate for posting covered sales and purchase documents. Not yet applied to journals, payments or AI actions (no AI actions exist)."
     },
     {
       "id": "SEC-037",
@@ -26304,9 +26340,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/app/orgs/[orgId]/settings/approvals",
+        "apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule"
+      ],
+      "notes": "One rule per document type: on/off, minimum total, separate approver."
     },
     {
       "id": "UX-017",
@@ -32196,8 +32235,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src/components/approvals/approval-card.tsx"
+      ],
       "notes": null
     },
     {

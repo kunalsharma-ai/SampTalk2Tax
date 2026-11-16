@@ -174,7 +174,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-003 |  | capability | Purchase invoices | Tested |
 | AP-004 |  | capability | Supplier bills | Tested |
 | AP-005 |  | capability | Recurring bills | Not started |
-| AP-006 |  | capability | Bill approval workflows | Not started |
+| AP-006 |  | capability | Bill approval workflows | Tested |
 | AP-007 |  | capability | Payment scheduling | Not started |
 | AP-008 |  | capability | Partial payments | Implemented |
 | AP-009 |  | capability | Advance payments | Implemented |
@@ -642,7 +642,7 @@ Part 18 · M5 · priority P2 · depends on: SEC
 | WFLOW-003 |  | capability | Scheduled automation | Not started |
 | WFLOW-004 |  | capability | Event-based automation | Not started |
 | WFLOW-005 |  | capability | Conditional branching | Not started |
-| WFLOW-006 |  | capability | Approval workflows | Not started |
+| WFLOW-006 |  | capability | Approval workflows | Implementing |
 | WFLOW-007 |  | capability | Parallel tasks | Not started |
 | WFLOW-008 |  | capability | Escalations | Not started |
 | WFLOW-009 |  | capability | Notifications | Not started |
@@ -821,7 +821,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-003 |  | capability | Audit evidence management | Not started |
 | AUDIT-004 |  | capability | Audit trails | Tested |
 | AUDIT-005 |  | capability | Transaction history | Implemented |
-| AUDIT-006 |  | capability | Approval history | Not started |
+| AUDIT-006 |  | capability | Approval history | Tested |
 | AUDIT-007 |  | capability | Document versioning | Not started |
 | AUDIT-008 |  | capability | Financial control testing | Not started |
 | AUDIT-009 |  | capability | Audit sampling | Not started |
@@ -839,11 +839,11 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-021 | Explainable AI Ledger | capability | Data sources | Not started |
 | AUDIT-022 | Explainable AI Ledger | capability | Proposed action | Not started |
 | AUDIT-023 | Explainable AI Ledger | capability | Reasoning summary | Not started |
-| AUDIT-024 | Explainable AI Ledger | capability | Approval status | Not started |
-| AUDIT-025 | Explainable AI Ledger | capability | Approving user | Not started |
+| AUDIT-024 | Explainable AI Ledger | capability | Approval status | Tested |
+| AUDIT-025 | Explainable AI Ledger | capability | Approving user | Tested |
 | AUDIT-026 | Explainable AI Ledger | capability | Execution result | Not started |
 | AUDIT-027 | Explainable AI Ledger | capability | Timestamp | Not started |
-| AUDIT-028 | Explainable AI Ledger | capability | Relevant evidence references | Not started |
+| AUDIT-028 | Explainable AI Ledger | capability | Relevant evidence references | Implementing |
 | AUDIT-029 | Explainable AI Ledger | rule | Do not expose hidden model chain-of-thought | Not started |
 | AUDIT-030 | Explainable AI Ledger | rule | Store concise, auditable decision explanations instead | Not started |
 
@@ -853,12 +853,12 @@ Part 25 · M2 · priority P2 · depends on: AIGW
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| DOC-001 |  | rule | Create a secure financial document management system | Not started |
-| DOC-002 |  | capability | Invoices | Not started |
-| DOC-003 |  | capability | Receipts | Not started |
+| DOC-001 |  | rule | Create a secure financial document management system | Implementing |
+| DOC-002 |  | capability | Invoices | Tested |
+| DOC-003 |  | capability | Receipts | Tested |
 | DOC-004 |  | capability | Purchase orders | Not started |
 | DOC-005 |  | capability | Contracts | Not started |
-| DOC-006 |  | capability | Bank statements | Not started |
+| DOC-006 |  | capability | Bank statements | Implementing |
 | DOC-007 |  | capability | Tax notices | Not started |
 | DOC-008 |  | capability | Financial statements | Not started |
 | DOC-009 |  | capability | Payroll documents | Not started |
@@ -870,7 +870,7 @@ Part 25 · M2 · priority P2 · depends on: AIGW
 | DOC-015 | AI Document Features | capability | Classification | Not started |
 | DOC-016 | AI Document Features | capability | Entity extraction | Not started |
 | DOC-017 | AI Document Features | capability | Field validation | Not started |
-| DOC-018 | AI Document Features | capability | Duplicate detection | Not started |
+| DOC-018 | AI Document Features | capability | Duplicate detection | Implementing |
 | DOC-019 | AI Document Features | capability | Contract clause extraction | Not started |
 | DOC-020 | AI Document Features | capability | Invoice matching | Not started |
 | DOC-021 | AI Document Features | capability | Semantic search | Not started |
@@ -1262,7 +1262,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-033 | AI Security | capability | AI usage controls | Not started |
 | SEC-034 | AI Security | capability | Model access policies | Not started |
 | SEC-035 | AI Security | capability | Cross-tenant data leakage tests | Not started |
-| SEC-036 | AI Security | capability | Human approval gates | Not started |
+| SEC-036 | AI Security | capability | Human approval gates | Implementing |
 | SEC-037 | AI Security | capability | Agent execution limits | Not started |
 | SEC-038 | AI Security | capability | AI emergency shutdown | Not started |
 
@@ -1287,7 +1287,7 @@ Part 36 · M1 · priority P1 · depends on: DS
 | UX-013 | Onboarding Wizard | capability | Connect banking providers | Not started |
 | UX-014 | Onboarding Wizard | capability | Configure tax settings | Not started |
 | UX-015 | Onboarding Wizard | capability | Configure team roles | Implemented |
-| UX-016 | Onboarding Wizard | capability | Configure approval policies | Not started |
+| UX-016 | Onboarding Wizard | capability | Configure approval policies | Tested |
 | UX-017 | Onboarding Wizard | capability | Select AI automation preferences | Not started |
 | UX-018 | Onboarding Wizard | capability | Review setup validation | Not started |
 | UX-019 | Onboarding Wizard | capability | Activate organization | Not started |
@@ -1606,7 +1606,7 @@ Part 46 · M1 · priority P1 · depends on: none
 | DS-011 |  | capability | Date selectors | Not started |
 | DS-012 |  | capability | Currency selectors | Not started |
 | DS-013 |  | capability | Multi-company selectors | Not started |
-| DS-014 |  | capability | Approval dialogs | Not started |
+| DS-014 |  | capability | Approval dialogs | Implemented |
 | DS-015 |  | capability | AI recommendation cards | Not started |
 | DS-016 |  | capability | Agent status indicators | Not started |
 | DS-017 |  | capability | Workflow builders | Not started |

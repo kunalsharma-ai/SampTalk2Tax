@@ -111,6 +111,12 @@ A reconciliation checks three things: the imported lines from the opening balanc
 ### ADR-010 Statement lines match ledger lines; they never post by themselves
 *Decision:* a statement line changes the books only through an explicit action (match, create entry, record receipt) that posts a normal journal. *Why:* bank data is evidence, not a ledger; keeping it separate means an import can never silently change balances, and every bank-originated posting has a user and an audit event. *Cost:* every line needs a decision; auto-match handles the unambiguous ones.
 
+### ADR-011 Evidence files live in PostgreSQL for now
+*Decision:* attachments are stored as `bytea` rows next to the records they support, at most 5 MB each, immutable, removed by marking. *Why:* one transactional store keeps tenant isolation, permissions, audit and backups identical to the ledger with no extra infrastructure, and the trigger can guarantee the bytes never change. *Cost:* database size grows with files; before larger volumes the bytes move to object storage behind the same API, keeping the checksum and metadata rows.
+
+### ADR-012 Approvals are enforced at posting, in the database
+*Decision:* an approval rule is checked by a trigger when a document becomes POSTED, and an approval is valid only for the exact total approved; any edit cancels it. *Why:* the control has to hold for every code path, including future automation and AI agents, not only for the screen that shows the button. *Cost:* single-step rules only for now; multi-level chains will extend the same request table.
+
 ## Planned components (not built yet)
 
 * `packages/ai-orchestration` — model-agnostic gateway (Anthropic, OpenAI, Gemini, self-hosted), deterministic mock adapter for local use, tool permissioning, prompt versioning, cost tracking.

@@ -65,6 +65,18 @@ All org routes need `Authorization: Bearer <token>` and membership in the organi
 | `POST …/banking/accounts/:id/reconciliations` | banking.reconcile | Complete; locks the lines it covers |
 | `GET …/banking/accounts/:id/reconciliations` | banking.read | History, including undone ones |
 | `POST …/banking/reconciliations/:id/undo` | banking.reconcile + periods.lock | Undo the latest reconciliation of an account (reason required) |
+| `GET /v1/orgs/:orgId/attachments?entityType=&entityId=&includeRemoved=` | read permission of the record | Files on a document, payment, journal entry or bank statement line |
+| `POST /v1/orgs/:orgId/attachments?entityType=&entityId=&fileName=` | manage permission of the record (journals.create for journals) | Body is the raw file (`Content-Type: application/octet-stream` or the file type). PDF, PNG, JPEG or WebP detected from the bytes; at most 5 MB, 20 per record; exact duplicates refused |
+| `GET …/attachments/:id/content?inline=1` | read permission of the record | The file, byte for byte, with `nosniff`, a sandbox CSP, `no-store` and `X-Checksum-SHA256` |
+| `POST …/attachments/:id/remove` | manage permission of the record | Remove with a reason; the record and bytes are kept |
+| `GET /v1/orgs/:orgId/approval-policies` | org.read | One rule per document type (INVOICE, CREDIT_NOTE, BILL, VENDOR_CREDIT) |
+| `PUT /v1/orgs/:orgId/approval-policies/:kind` | org.manage | `minAmount`, `requireDifferentApprover`, `isActive` |
+| `GET /v1/orgs/:orgId/approvals?status=&documentId=` | sales.read / purchases.read per request | Requests with `canApprove` for the caller |
+| `GET /v1/orgs/:orgId/approvals/for-document/:documentId` | …read | Whether a rule applies, whether the draft may post, and its request history |
+| `POST /v1/orgs/:orgId/approvals` | sales.manage / purchases.manage | Submit a draft covered by a rule |
+| `POST …/approvals/:id/approve` | approvals.decide (+ journals.post with `post: true`) | Approve; with `post: true` also posts. A posting problem is returned as `postError` and the approval stays |
+| `POST …/approvals/:id/reject` | approvals.decide | Reject with a reason |
+| `POST …/approvals/:id/withdraw` | sales.manage / purchases.manage | Take back a pending request |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 
