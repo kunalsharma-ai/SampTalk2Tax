@@ -89,6 +89,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Balance sheet and profit and loss layouts only (Schedule III Division I, UK Companies Act formats, IFRS IAS 1), placed by account subtype: no notes, cash flow statement, changes in equity, Ind AS, US GAAP or framework-specific adjustments, no current portion of long-term loans, ageing or MSME splits, no rounding to lakhs or crores, no export besides Print, and no filing. See [`LOCAL_FINANCIAL_REPORTING.md`](LOCAL_FINANCIAL_REPORTING.md).
 
+## Multi-currency (M8, slice 4)
+
+* Foreign currencies live on journal lines: invoices, bills and payments are still in the functional currency only, so there are no realised exchange gains or losses on settlement. Rates are entered by people (no feed). Revaluation covers monetary account balances, not individual open documents. See [`MULTI_CURRENCY.md`](MULTI_CURRENCY.md).
+
 ## Alerts and leakage checks (M4, slice 4)
 
 * Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run in the background (at most hourly per organisation, 20 organisations a pass), on request, and when alerts are opened. Priority is a fixed, explained formula, not learned. New alerts become tasks for a role by one setting for all checks; there are no email, push or chat notifications, no assignment to one person and no snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).

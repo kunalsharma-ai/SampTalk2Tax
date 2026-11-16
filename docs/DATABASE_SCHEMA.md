@@ -219,3 +219,9 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 ## Integrations
 
 `org_integrations`: one row per organisation and kind (`AI_ANTHROPIC`, `EMAIL_SMTP`): `enabled`, `settings` (JSON object, no secrets), `secret_cipher` (base64 of IV, GCM tag and ciphertext) with the `key_id` that sealed it (both set or both null), `secret_hint`, the last test (`test_status` NOT_TESTED/OK/FAILED, message, when and by whom; `tested_at` set exactly when tested), updated by and at. Forced row-level security on `org_id`. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+## Exchange rates and revaluation (M8, slice 4)
+
+* `exchange_rates`: one rate per organisation, currency and date (`rate > 0`), forced RLS.
+* `fx_revaluations`: number, date, reversal date, rates and lines (JSON), gain, journal and reversal entry; unique per organisation and date; immutable by trigger; forced RLS.
+* `JournalSource` gains `FX_REVALUATION`.

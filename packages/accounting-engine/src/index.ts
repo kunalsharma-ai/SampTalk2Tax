@@ -38,3 +38,4 @@ export * from './opportunities';
 export * from './locale';
 export * from './countries';
 export * from './statutory';
+export * from './fx';

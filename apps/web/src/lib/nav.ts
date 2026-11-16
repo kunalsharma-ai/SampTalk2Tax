@@ -58,6 +58,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/dimensions', label: 'Departments and projects' },
       { href: '/close', label: 'Month-end close' },
       { href: '/periods', label: 'Fiscal periods' },
+      { href: '/fx', label: 'Exchange rates' },
     ],
   },
   {

@@ -82,6 +82,7 @@ export const hi: Record<string, string> = {
   'TDS/TCS settings': 'TDS/TCS सेटिंग',
   'Tax rates': 'कर दरें',
   'Country module': 'देश मॉड्यूल',
+  'Exchange rates': 'विनिमय दरें',
   'Statutory statements': 'वैधानिक वित्तीय विवरण',
   // Planning
   'Virtual CFO': 'वर्चुअल CFO',

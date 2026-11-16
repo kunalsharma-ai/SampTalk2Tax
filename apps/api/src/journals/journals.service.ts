@@ -92,6 +92,7 @@ export class JournalsService {
         if (period.status === 'CLOSED' || (opts.post && period.status !== 'OPEN')) {
           throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
         }
+        input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
         const normalized = await this.validate(tx, org, input.lines, { manual: true });
         const created = await tx.journalEntry.create({
           data: {
@@ -139,6 +140,7 @@ export class JournalsService {
       assertManual(existing);
       const period = await this.lockPeriodForDate(tx, org.id, input.date);
       if (period.status === 'CLOSED') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is CLOSED`, HttpStatus.CONFLICT);
+      input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
       const normalized = await this.validate(tx, org, input.lines, { manual: true });
       await tx.journalLine.deleteMany({ where: { entryId: id, orgId: org.id } });
       await tx.journalEntry.update({
@@ -265,7 +267,7 @@ export class JournalsService {
     tx: Tx,
     org: OrgInfo,
     actor: Actor,
-    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY'; lines: JournalLineInput[] },
+    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION'; lines: JournalLineInput[] },
   ): Promise<{ id: string; entryNumber: number }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
@@ -404,6 +406,21 @@ export class JournalsService {
     const normalized = validateJournal(lines, { functionalCurrency: org.functionalCurrency, accounts: map });
     await checkLineDimensions(tx, org.id, lines, { allowInactive: opts.allowInactive });
     return normalized;
+  }
+
+  /**
+   * Foreign-currency lines without a rate take the organisation's recorded rate for that currency
+   * on or before the entry date (Settings > Exchange rates). Lines with a rate keep it.
+   */
+  private async fillRates(tx: Tx, org: OrgInfo, date: string, lines: JournalLineInput[]): Promise<JournalLineInput[]> {
+    const wanted = [...new Set(lines.filter((l) => l.currency && l.currency !== org.functionalCurrency && l.exchangeRate === undefined).map((l) => l.currency!))];
+    if (!wanted.length) return lines;
+    const found = new Map<string, string>();
+    for (const currency of wanted) {
+      const r = await tx.exchangeRate.findFirst({ where: { orgId: org.id, currency, date: { lte: toDbDate(date) } }, orderBy: { date: 'desc' } });
+      if (r) found.set(currency, r.rate.toFixed());
+    }
+    return lines.map((l) => (l.currency && l.exchangeRate === undefined && found.has(l.currency) ? { ...l, exchangeRate: found.get(l.currency)! } : l));
   }
 
   private async markPosted(tx: Tx, orgId: string, entryId: string, actorId: string): Promise<number> {

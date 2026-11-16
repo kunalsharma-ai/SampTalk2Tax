@@ -54,6 +54,7 @@ enum JournalSource {
   ACCRUAL
   LOAN
   INTERCOMPANY
+  FX_REVALUATION
 }
 
 enum IntercompanyKind {
@@ -298,6 +299,8 @@ model Organization {
   copilotActions           CopilotAction[]
   dashboardAiDrafts        DashboardAiDraft[]
   policyAiDrafts           PolicyAiDraft[]
+  exchangeRates            ExchangeRate[]
+  fxRevaluations           FxRevaluation[]
 
   @@map("organizations")
 }
@@ -391,32 +394,34 @@ model FiscalPeriod {
 }
 
 model JournalEntry {
-  id                 String        @id @default(uuid()) @db.Uuid
-  orgId              String        @map("org_id") @db.Uuid
-  entryNumber        Int?          @map("entry_number")
-  date               DateTime      @db.Date
-  periodId           String        @map("period_id") @db.Uuid
-  type               JournalType   @default(STANDARD)
-  source             JournalSource @default(MANUAL)
-  status             JournalStatus @default(DRAFT)
-  memo               String?
-  reference          String?
-  functionalCurrency String        @map("functional_currency") @db.Char(3)
-  totalDebit         Decimal       @default(0) @map("total_debit") @db.Decimal(24, 6)
-  totalCredit        Decimal       @default(0) @map("total_credit") @db.Decimal(24, 6)
-  idempotencyKey     String?       @map("idempotency_key")
-  idempotencyHash    String?       @map("idempotency_hash")
-  reversesEntryId    String?       @unique @map("reverses_entry_id") @db.Uuid
-  createdById        String        @map("created_by_id") @db.Uuid
-  postedById         String?       @map("posted_by_id") @db.Uuid
-  postedAt           DateTime?     @map("posted_at") @db.Timestamptz(6)
-  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org                Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  period             FiscalPeriod  @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
-  reverses           JournalEntry? @relation("Reversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
-  reversedBy         JournalEntry? @relation("Reversal")
-  lines              JournalLine[]
+  id                    String         @id @default(uuid()) @db.Uuid
+  orgId                 String         @map("org_id") @db.Uuid
+  entryNumber           Int?           @map("entry_number")
+  date                  DateTime       @db.Date
+  periodId              String         @map("period_id") @db.Uuid
+  type                  JournalType    @default(STANDARD)
+  source                JournalSource  @default(MANUAL)
+  status                JournalStatus  @default(DRAFT)
+  memo                  String?
+  reference             String?
+  functionalCurrency    String         @map("functional_currency") @db.Char(3)
+  totalDebit            Decimal        @default(0) @map("total_debit") @db.Decimal(24, 6)
+  totalCredit           Decimal        @default(0) @map("total_credit") @db.Decimal(24, 6)
+  idempotencyKey        String?        @map("idempotency_key")
+  idempotencyHash       String?        @map("idempotency_hash")
+  reversesEntryId       String?        @unique @map("reverses_entry_id") @db.Uuid
+  createdById           String         @map("created_by_id") @db.Uuid
+  postedById            String?        @map("posted_by_id") @db.Uuid
+  postedAt              DateTime?      @map("posted_at") @db.Timestamptz(6)
+  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                   Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  period                FiscalPeriod   @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
+  reverses              JournalEntry?  @relation("Reversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
+  reversedBy            JournalEntry?  @relation("Reversal")
+  lines                 JournalLine[]
+  fxRevaluation         FxRevaluation? @relation("FxRevaluationEntry")
+  fxRevaluationReversal FxRevaluation? @relation("FxRevaluationReversal")
 
   @@unique([orgId, entryNumber])
   @@unique([orgId, idempotencyKey])
@@ -3596,4 +3601,44 @@ model ReportAiCall {
 
   @@index([orgId, createdAt])
   @@map("report_ai_calls")
+}
+
+/// Exchange rates an organisation records: functional currency per one unit of `currency`, from `date`.
+model ExchangeRate {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  currency    String       @db.Char(3)
+  date        DateTime     @db.Date
+  rate        Decimal      @db.Decimal(24, 10)
+  source      String?      @db.VarChar(200)
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([orgId, currency, date])
+  @@map("exchange_rates")
+}
+
+/// A period-end revaluation of foreign-currency balances: posted on `date`, reversed on `reversalDate`. Immutable.
+model FxRevaluation {
+  id              String       @id @default(uuid()) @db.Uuid
+  orgId           String       @map("org_id") @db.Uuid
+  number          Int
+  date            DateTime     @db.Date
+  reversalDate    DateTime     @map("reversal_date") @db.Date
+  rates           Json
+  lines           Json
+  gain            Decimal      @db.Decimal(24, 6)
+  journalEntryId  String       @unique @map("journal_entry_id") @db.Uuid
+  reversalEntryId String       @unique @map("reversal_entry_id") @db.Uuid
+  createdById     String       @map("created_by_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org             Organization @relation(fields: [orgId], references: [id])
+  journalEntry    JournalEntry @relation("FxRevaluationEntry", fields: [journalEntryId], references: [id])
+  reversalEntry   JournalEntry @relation("FxRevaluationReversal", fields: [reversalEntryId], references: [id])
+
+  @@unique([orgId, number])
+  @@unique([orgId, date])
+  @@map("fx_revaluations")
 }

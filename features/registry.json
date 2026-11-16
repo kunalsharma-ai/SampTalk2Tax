@@ -2080,9 +2080,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/fx.ts",
+        "packages/accounting-engine/test/fx.test.ts",
+        "packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql",
+        "apps/api/src/fx/fx.service.ts",
+        "apps/api/test/fx-revaluation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/fx/page.tsx",
+        "apps/web/e2e/fx-revaluation-flow.test.mjs",
+        "docs/MULTI_CURRENCY.md"
+      ],
+      "notes": "Period-end revaluation of monetary foreign-currency balances (cash, receivables, payables, loans, accruals) at recorded or entered closing rates; unrealised gain or loss posted to the FX_GAIN_LOSS account and reversed the next day; immutable records. Inventory, prepayments and fixed assets stay at historical rates."
     },
     {
       "id": "GL-036",
@@ -9448,9 +9457,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/fx.ts",
+        "packages/accounting-engine/test/fx.test.ts",
+        "packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql",
+        "apps/api/src/fx/fx.service.ts",
+        "apps/api/test/fx-revaluation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/fx/page.tsx",
+        "apps/web/e2e/fx-revaluation-flow.test.mjs",
+        "docs/MULTI_CURRENCY.md"
+      ],
+      "notes": "Exchange rates page shows foreign-currency balances by account and currency at any date, carried and at a chosen rate, and the gain or loss a revaluation would post. No sensitivity ranges or hedging."
     },
     {
       "id": "TRS-014",
@@ -25404,9 +25422,17 @@
       },
       "status": "Implementing",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines"
+        "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines",
+        "packages/accounting-engine/src/fx.ts",
+        "packages/accounting-engine/test/fx.test.ts",
+        "packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql",
+        "apps/api/src/fx/fx.service.ts",
+        "apps/api/test/fx-revaluation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/fx/page.tsx",
+        "apps/web/e2e/fx-revaluation-flow.test.mjs",
+        "docs/MULTI_CURRENCY.md"
       ],
-      "notes": "Transaction currency + rate per line, functional currency per org. Rate tables, revaluation and multi-currency reporting are not done."
+      "notes": "Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table that fills in missing journal rates, and period-end revaluation with automatic reversal. Not done: invoices, bills and payments in foreign currencies with realised gains and losses (AR-031), rate feeds, multi-currency reporting."
     },
     {
       "id": "I18N-003",
