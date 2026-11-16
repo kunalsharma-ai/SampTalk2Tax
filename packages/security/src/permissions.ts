@@ -61,6 +61,8 @@ export const PERMISSIONS = [
   'templates.manage',
   /** E-sign posted invoices and credit notes with one's own signature, and withdraw such a signature. */
   'documents.sign',
+  /** Build and save what-if scenarios in the financial digital twin. They never touch the books; reading them needs reports.read. */
+  'scenarios.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -108,6 +110,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'deferrals.manage',
     'loans.manage',
     'templates.manage',
+    'scenarios.manage',
     'documents.sign',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign']),

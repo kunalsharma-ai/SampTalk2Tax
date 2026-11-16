@@ -494,33 +494,33 @@ Part 15 · M7 · priority P3 · depends on: FPA, AIGW
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | TWIN-001 |  | rule | This must be a signature differentiator | Not started |
-| TWIN-002 |  | rule | Create a simulation environment representing an organization's financial structure and operating drivers | Not started |
-| TWIN-003 |  | capability | Revenue simulations | Not started |
-| TWIN-004 |  | capability | Expense simulations | Not started |
-| TWIN-005 |  | capability | Hiring scenarios | Not started |
-| TWIN-006 |  | capability | Expansion scenarios | Not started |
-| TWIN-007 |  | capability | Product pricing scenarios | Not started |
-| TWIN-008 |  | capability | Tax impact scenarios | Not started |
-| TWIN-009 |  | capability | Debt scenarios | Not started |
-| TWIN-010 |  | capability | Investment scenarios | Not started |
-| TWIN-011 |  | capability | Supplier cost scenarios | Not started |
-| TWIN-012 |  | capability | Customer churn scenarios | Not started |
-| TWIN-013 |  | capability | Currency fluctuations | Not started |
-| TWIN-014 |  | capability | Market downturn scenarios | Not started |
-| TWIN-015 |  | capability | Inflation scenarios | Not started |
-| TWIN-016 |  | capability | Working capital scenarios | Not started |
-| TWIN-017 | User Experience | capability | Identify missing assumptions | Not started |
-| TWIN-018 | User Experience | capability | Request necessary inputs | Not started |
-| TWIN-019 | User Experience | capability | Generate scenarios | Not started |
-| TWIN-020 | User Experience | capability | Estimate financial consequences | Not started |
-| TWIN-021 | User Experience | capability | Calculate cash requirements | Not started |
-| TWIN-022 | User Experience | capability | Estimate profitability | Not started |
-| TWIN-023 | User Experience | capability | Identify key risks | Not started |
-| TWIN-024 | User Experience | capability | Compare alternatives | Not started |
-| TWIN-025 | User Experience | capability | Explain assumptions | Not started |
-| TWIN-026 | User Experience | capability | Save the scenario | Not started |
-| TWIN-027 | User Experience | rule | Simulations must remain separate from actual accounting records | Not started |
-| TWIN-028 | User Experience | rule | Provide clear visual differentiation between actual, forecast and hypothetical figures | Not started |
+| TWIN-002 |  | rule | Create a simulation environment representing an organization's financial structure and operating drivers | Tested |
+| TWIN-003 |  | capability | Revenue simulations | Tested |
+| TWIN-004 |  | capability | Expense simulations | Tested |
+| TWIN-005 |  | capability | Hiring scenarios | Tested |
+| TWIN-006 |  | capability | Expansion scenarios | Tested |
+| TWIN-007 |  | capability | Product pricing scenarios | Tested |
+| TWIN-008 |  | capability | Tax impact scenarios | Tested |
+| TWIN-009 |  | capability | Debt scenarios | Tested |
+| TWIN-010 |  | capability | Investment scenarios | Tested |
+| TWIN-011 |  | capability | Supplier cost scenarios | Tested |
+| TWIN-012 |  | capability | Customer churn scenarios | Tested |
+| TWIN-013 |  | capability | Currency fluctuations | Tested |
+| TWIN-014 |  | capability | Market downturn scenarios | Tested |
+| TWIN-015 |  | capability | Inflation scenarios | Tested |
+| TWIN-016 |  | capability | Working capital scenarios | Tested |
+| TWIN-017 | User Experience | capability | Identify missing assumptions | Tested |
+| TWIN-018 | User Experience | capability | Request necessary inputs | Tested |
+| TWIN-019 | User Experience | capability | Generate scenarios | Tested |
+| TWIN-020 | User Experience | capability | Estimate financial consequences | Tested |
+| TWIN-021 | User Experience | capability | Calculate cash requirements | Tested |
+| TWIN-022 | User Experience | capability | Estimate profitability | Tested |
+| TWIN-023 | User Experience | capability | Identify key risks | Tested |
+| TWIN-024 | User Experience | capability | Compare alternatives | Tested |
+| TWIN-025 | User Experience | capability | Explain assumptions | Tested |
+| TWIN-026 | User Experience | capability | Save the scenario | Tested |
+| TWIN-027 | User Experience | rule | Simulations must remain separate from actual accounting records | Tested |
+| TWIN-028 | User Experience | rule | Provide clear visual differentiation between actual, forecast and hypothetical figures | Tested |
 
 ## AI Virtual CFO
 

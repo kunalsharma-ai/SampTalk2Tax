@@ -90,7 +90,7 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
       { href: '/settings/tax-rates', label: 'Tax rates' },
     ],
   },
-  { group: 'Planning', items: [{ href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }] },
+  { group: 'Planning', items: [{ href: '/planning/budgets', label: 'Budgets' }, { href: '/planning/budget-vs-actual', label: 'Budget vs actual' }, { href: '/planning/cash-flow', label: 'Cash-flow forecast' }, { href: '/planning/twin', label: 'Digital twin' }] },
   { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/ai-control', label: 'AI control center', perm: 'audit.read' }, { href: '/ai-activity', label: 'AI activity', perm: 'audit.read' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/approvals', label: 'Approval rules' }, { href: '/automations', label: 'Automations', perm: 'workflows.manage' }] },
 ];
 
