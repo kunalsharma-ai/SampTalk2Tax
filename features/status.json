@@ -2606,6 +2606,51 @@
         "docs/INVOICE_TEMPLATES.md"
       ],
       "notes": "Printed invoices use the template's date style (02 Nov 2026, Nov 2, 2026 or 2026-11-02). The app's own screens still use one format."
+    },
+    "RPT-033": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-export.ts",
+        "packages/accounting-engine/test/report-export.test.ts",
+        "apps/api/src/report-exports/report-exports.service.ts",
+        "apps/api/src/report-exports/pdf.ts",
+        "apps/api/src/report-exports/report-exports.controller.ts",
+        "apps/api/test/report-exports.e2e.test.ts",
+        "apps/web/src/components/reports/export-buttons.tsx",
+        "apps/web/e2e/report-exports-flow.test.mjs",
+        "docs/REPORT_EXPORTS.md"
+      ],
+      "notes": "PDF export of the trial balance, profit and loss, balance sheet, general ledger, receivables and payables ageing, and profit by department or project from an Export button on each report page. A4 with landscape for wide reports, header row repeated on every page, bold subtotals and totals with rules, notes, footer with page numbers, lakh/crore grouping for INR. Uses the PDF standard fonts, so characters outside Western European scripts print as '?'. Every export is audited (report.exported) with the file's SHA-256."
+    },
+    "RPT-034": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-export.ts",
+        "packages/accounting-engine/test/report-export.test.ts",
+        "apps/api/src/report-exports/report-exports.service.ts",
+        "apps/api/src/report-exports/pdf.ts",
+        "apps/api/src/report-exports/report-exports.controller.ts",
+        "apps/api/test/report-exports.e2e.test.ts",
+        "apps/web/src/components/reports/export-buttons.tsx",
+        "apps/web/e2e/report-exports-flow.test.mjs",
+        "docs/REPORT_EXPORTS.md"
+      ],
+      "notes": "Excel (.xlsx) export of the trial balance, profit and loss, balance sheet, general ledger, receivables and payables ageing, and profit by department or project. Amounts are real numbers with a currency format (lakh/crore grouping chosen per cell for INR, checked in LibreOffice), dates are Excel dates, frozen header, bold totals, notes. Written without dependencies (stored ZIP). Text is never written as a formula."
+    },
+    "RPT-035": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-export.ts",
+        "packages/accounting-engine/test/report-export.test.ts",
+        "apps/api/src/report-exports/report-exports.service.ts",
+        "apps/api/src/report-exports/pdf.ts",
+        "apps/api/src/report-exports/report-exports.controller.ts",
+        "apps/api/test/report-exports.e2e.test.ts",
+        "apps/web/src/components/reports/export-buttons.tsx",
+        "apps/web/e2e/report-exports-flow.test.mjs",
+        "docs/REPORT_EXPORTS.md"
+      ],
+      "notes": "CSV export of the trial balance, profit and loss, balance sheet, general ledger, receivables and payables ageing, and profit by department or project: UTF-8 with BOM, CRLF, RFC 4180 quoting, amounts as plain decimals, and text that a spreadsheet would run as a formula (=, +, -, @) prefixed with an apostrophe."
     }
   }
 }

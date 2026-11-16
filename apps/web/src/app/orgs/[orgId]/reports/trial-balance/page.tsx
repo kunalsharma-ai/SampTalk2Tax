@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { BalancedBadge, DateInput } from '@/components/report-bits';
+import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { today } from '@/lib/format';
@@ -24,7 +25,7 @@ export default function TrialBalancePage() {
   const c = org.functionalCurrency;
   return (
     <>
-      <PageHeader title="Trial balance" description="Net balance of every account from posted journals." actions={<><DateInput label="As of" value={asOf} onChange={setAsOf} />{q.data ? <BalancedBadge balanced={q.data.balanced} /> : null}</>} />
+      <PageHeader title="Trial balance" description="Net balance of every account from posted journals." actions={<><DateInput label="As of" value={asOf} onChange={setAsOf} />{q.data ? <BalancedBadge balanced={q.data.balanced} /> : null}<ExportButtons orgId={orgId} report="trial-balance" params={{ asOf }} /></>} />
       {q.error ? <Alert title="Could not load">{(q.error as Error).message}</Alert> : null}
       <Card>
         <Table>

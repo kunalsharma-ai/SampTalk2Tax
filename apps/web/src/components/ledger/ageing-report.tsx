@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Fragment, useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput } from '@/components/report-bits';
+import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date, today } from '@/lib/format';
@@ -29,7 +30,7 @@ export function AgeingReport({ l }: { l: LedgerConfig }) {
       <PageHeader
         title={l.ageingTitle}
         description={`Open ${l.charge.plural.toLowerCase()} by days past due, less unapplied credits and ${l.payment.plural.toLowerCase()}.`}
-        actions={<DateInput label="As of" value={asOf} onChange={setAsOf} />}
+        actions={<><DateInput label="As of" value={asOf} onChange={setAsOf} /><ExportButtons orgId={orgId} report={l.api === 'sales' ? 'receivables-ageing' : 'payables-ageing'} params={{ asOf }} /></>}
       />
       {q.error ? <Alert title="Could not load">{(q.error as Error).message}</Alert> : null}
       {a ? (

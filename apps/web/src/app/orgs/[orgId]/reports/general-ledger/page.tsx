@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
+import { ExportButtons } from '@/components/reports/export-buttons';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date, today } from '@/lib/format';
@@ -47,6 +48,7 @@ function LedgerView() {
             </Select>
             <DateInput label="From" value={from} onChange={setFrom} />
             <DateInput label="To" value={to} onChange={setTo} />
+            <ExportButtons orgId={orgId} report="general-ledger" params={{ accountId, from, to }} disabled={!accountId} />
           </>
         }
       />
