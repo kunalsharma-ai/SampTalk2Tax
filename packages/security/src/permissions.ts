@@ -69,6 +69,8 @@ export const PERMISSIONS = [
   'cfo.reports',
   /** Record management decisions in decision memory, update them and review their outcomes. Reading needs reports.read. */
   'decisions.manage',
+  /** Write financial policies, their rules and tests, and draft them with the AI. Approving a policy, which turns its rules on, needs workflows.manage. */
+  'policies.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -120,6 +122,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'documents.sign',
     'cfo.reports',
     'decisions.manage',
+    'policies.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve', 'decisions.manage']),
   VIEWER: new Set<Permission>(READ_ONLY),

@@ -26,7 +26,7 @@ export const ACTION_LEVELS = {
  * no agent here changes the books or sends anything without a person's approval.
  */
 export const AGENTS: Record<AiAgent, { name: string; does: string; level: 0 | 1 | 2; approval: string | null; link: string }> = {
-  COPILOT: { name: 'Finance copilot', does: 'Answers questions about the books from the reports it is allowed to run.', level: 0, approval: null, link: '/copilot' },
+  COPILOT: { name: 'Finance copilot', does: 'Answers questions about the books from the reports it is allowed to run, and drafts financial policy rules from a description for people to check, test and approve.', level: 0, approval: null, link: '/copilot' },
   COLLECTIONS: { name: 'Collections agent', does: 'Drafts a payment reminder for each overdue customer, checked against the books.', level: 2, approval: 'A person sends, edits or rejects each reminder.', link: '/sales/collections' },
   BANKING: { name: 'Bank reconciliation agent', does: 'Suggests a match, receipt, payment or entry for unmatched bank lines.', level: 2, approval: 'A person accepts or dismisses each suggestion.', link: '/banking' },
   CLOSE: { name: 'Month-end close agent', does: 'Reviews a month before it is closed and proposes adjusting entries.', level: 2, approval: 'A person posts or rejects each entry, and closes the month.', link: '/close' },
@@ -59,8 +59,10 @@ export class AiControlService {
   /** Tokens (input plus output) each agent used since the start of this month, India time. */
   async usage(orgId: string, since = monthStartIst().since) {
     const where = { orgId, createdAt: { gte: since } };
-    const [copilot, collections, banking, close, cfo] = await Promise.all([
+    const [copilotChat, policyDrafts, collections, banking, close, cfo] = await Promise.all([
       this.prisma.copilotMessage.aggregate({ where: { ...where, role: 'ASSISTANT' }, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
+      // Policy drafting in the policy studio is done by the copilot and counts towards its budget.
+      this.prisma.policyAiDraft.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.collectionDraft.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.bankAiSuggestion.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.closeAiReview.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
@@ -72,6 +74,7 @@ export class AiControlService {
       outputTokens: a._sum.outputTokens ?? 0,
       tokens: (a._sum.inputTokens ?? 0) + (a._sum.outputTokens ?? 0),
     });
+    const copilot = { _count: copilotChat._count + policyDrafts._count, _sum: { inputTokens: (copilotChat._sum.inputTokens ?? 0) + (policyDrafts._sum.inputTokens ?? 0), outputTokens: (copilotChat._sum.outputTokens ?? 0) + (policyDrafts._sum.outputTokens ?? 0) } };
     return { COPILOT: u(copilot), COLLECTIONS: u(collections), BANKING: u(banking), CLOSE: u(close), CFO: u(cfo) } as Record<AiAgent, ReturnType<typeof u>>;
   }
 
@@ -140,7 +143,10 @@ export class AiControlService {
       this.prisma.bankAiSuggestion.groupBy({ by: ['status'], where: { orgId, createdAt: { gte: accuracySince }, OR: [{ status: { not: 'DISMISSED' } }, { decidedById: { not: null } }] }, _count: true }),
       this.prisma.closeAdjustment.groupBy({ by: ['status'], where: { orgId, createdAt: { gte: accuracySince } }, _count: true }),
       Promise.all([
-        this.prisma.copilotMessage.count({ where: { orgId, role: 'ASSISTANT', status: 'FAILED', createdAt: { gte: since } } }),
+        Promise.all([
+          this.prisma.copilotMessage.count({ where: { orgId, role: 'ASSISTANT', status: 'FAILED', createdAt: { gte: since } } }),
+          this.prisma.policyAiDraft.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
+        ]).then(([a, b]) => a + b),
         this.prisma.collectionDraft.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
         this.prisma.bankAiSuggestion.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
         this.prisma.closeAiReview.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),

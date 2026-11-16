@@ -204,6 +204,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Organisation-wide figures only; customer and supplier shares are baseline averages; a supplier's share is measured against cost of sales only; one deterministic path per simulation, not a distribution. See [`DISASTER_SIMULATION.md`](DISASTER_SIMULATION.md).
 
+## Policy studio
+
+* Rules can only do what workflows can do; back-tests cover event rules over the last 90 days only; live AI drafting waits on a Claude key. See [`POLICY_STUDIO.md`](POLICY_STUDIO.md).
+
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

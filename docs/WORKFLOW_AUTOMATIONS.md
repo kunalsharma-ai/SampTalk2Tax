@@ -159,6 +159,8 @@ The runner runs inside the API process. Tests set the interval to 0 and call `ti
 
 ## Building, testing and changing a workflow
 
+Workflows can also come from an approved [policy](POLICY_STUDIO.md). They are named after the policy ("POL-0001 · rule name") and should be changed in the policy studio, where the change is tested and approved; the policy's next approval overwrites edits made here.
+
 * **A new workflow starts off.**
 * **Test.** **Test** runs the workflow as a dry run on:
   * for an event trigger, the most recent real event it listens to (or a chosen event id);

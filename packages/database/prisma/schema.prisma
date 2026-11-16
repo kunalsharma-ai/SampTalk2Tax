@@ -277,6 +277,9 @@ model Organization {
   closeAdjustments       CloseAdjustment[]
   forecastLabRuns        ForecastLabRun[]
   disasterSimulations    DisasterSimulation[]
+  policies               Policy[]
+  policyVersions         PolicyVersion[]
+  policyAiDrafts         PolicyAiDraft[]
 
   @@map("organizations")
 }
@@ -3306,4 +3309,79 @@ model DisasterSimulation {
   @@unique([orgId, number])
   @@unique([orgId, name])
   @@map("disaster_simulations")
+}
+
+/// A financial policy: the policy in words, the workflow rules that enforce it, and tests.
+/// `version` is the latest version; `activeVersion` is the one whose rules are running.
+model Policy {
+  id             String          @id @default(uuid()) @db.Uuid
+  orgId          String          @map("org_id") @db.Uuid
+  number         Int
+  name           String          @db.VarChar(120)
+  statement      String          @db.VarChar(4000)
+  /// DRAFT: the latest version is not approved; ACTIVE: the latest version is running; RETIRED: nothing runs.
+  status         String          @db.VarChar(10)
+  version        Int
+  activeVersion  Int?            @map("active_version")
+  rules          Json
+  tests          Json
+  /// Workflow ids, by rule position, of the workflows running the active version.
+  workflowIds    String[]        @map("workflow_ids") @db.Uuid
+  createdById    String          @map("created_by_id") @db.Uuid
+  updatedById    String          @map("updated_by_id") @db.Uuid
+  approvedById   String?         @map("approved_by_id") @db.Uuid
+  approvedAt     DateTime?       @map("approved_at") @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  versions       PolicyVersion[]
+
+  @@unique([orgId, number])
+  @@unique([orgId, name])
+  @@unique([orgId, id], map: "policies_org_id_id_key")
+  @@map("policies")
+}
+
+/// Every saved version of a policy. Never changed or deleted.
+model PolicyVersion {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  policyId    String       @map("policy_id") @db.Uuid
+  version     Int
+  name        String       @db.VarChar(120)
+  statement   String       @db.VarChar(4000)
+  rules       Json
+  tests       Json
+  /// CREATED, EDITED, APPROVED, RETIRED
+  event       String       @db.VarChar(10)
+  note        String?      @db.VarChar(1000)
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  policy      Policy       @relation(fields: [policyId], references: [id], onDelete: Restrict)
+
+  @@unique([policyId, version, event], map: "policy_versions_policy_version_event_key")
+  @@index([orgId, policyId, version])
+  @@map("policy_versions")
+}
+
+/// Each AI drafting call: what was asked, what came back, and the tokens used (counted under the copilot's budget).
+model PolicyAiDraft {
+  id           String       @id @default(uuid()) @db.Uuid
+  orgId        String       @map("org_id") @db.Uuid
+  request      String       @db.VarChar(8000)
+  /// DONE or FAILED
+  status       String       @db.VarChar(10)
+  result       Json?
+  errorCode    String?      @map("error_code") @db.VarChar(40)
+  errorMessage String?      @map("error_message") @db.VarChar(500)
+  model        String?      @db.VarChar(100)
+  inputTokens  Int          @default(0) @map("input_tokens")
+  outputTokens Int          @default(0) @map("output_tokens")
+  createdById  String       @map("created_by_id") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, createdAt])
+  @@map("policy_ai_drafts")
 }

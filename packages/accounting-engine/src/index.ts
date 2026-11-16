@@ -30,3 +30,4 @@ export * from './benchmark';
 export * from './decisions';
 export * from './forecast-lab';
 export * from './disaster';
+export * from './policies';
