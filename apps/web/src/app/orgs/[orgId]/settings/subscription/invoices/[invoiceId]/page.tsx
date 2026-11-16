@@ -2,6 +2,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card } from '@talk2tax/ui';
 import Link from 'next/link';
+import { Logo } from '@/components/brand';
 import { useParams } from 'next/navigation';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
@@ -60,6 +61,10 @@ export default function SubscriptionInvoicePage() {
       <ErrorAlert title="Could not load the invoice" error={q.error ?? pay.error} />
       {i ? (
         <Card className="mx-auto max-w-3xl p-8 print:border-0 print:p-0 print:shadow-none" aria-label="Invoice">
+          <div className="mb-6 border-b border-line pb-4">
+            <Logo size="sm" className="print:hidden" />
+            <Logo size="sm" tone="light" className="hidden print:block" />
+          </div>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold">{i.status === 'PAID' ? 'Tax invoice' : i.status === 'OPEN' ? 'Payment request' : 'Void payment request'}</h1>

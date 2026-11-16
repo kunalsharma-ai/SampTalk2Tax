@@ -10,14 +10,21 @@
   --t2t-text: #f5f7fb;
   --t2t-text-muted: #a3aec4;
   --t2t-text-faint: #7c88a3;
-  --t2t-accent: #38d9f5;
-  --t2t-accent-strong: #6366f1;
+  /* Brand: the three colours of the Talk2Tax logo (teal, sky, deep blue). */
+  --t2t-brand-teal: #5eead4;
+  --t2t-brand-sky: #0ea5e9;
+  --t2t-brand-blue: #1d4ed8;
+  --t2t-accent: #5eead4;
+  --t2t-accent-strong: #0ea5e9;
   --t2t-violet: #a78bfa;
   --t2t-positive: #34d399;
   --t2t-warning: #fbbf24;
   --t2t-negative: #fb7185;
-  --t2t-focus: #7ee8fa;
-  --t2t-gradient-brand: linear-gradient(135deg, #12c2e9 0%, #6366f1 55%, #a78bfa 100%);
+  --t2t-focus: #99f6e4;
+  /* The logo's gradient, for highlights and decoration. */
+  --t2t-gradient-brand: linear-gradient(135deg, #5eead4 0%, #0ea5e9 50%, #1d4ed8 100%);
+  /* Behind dark text (primary buttons): stops before the deep blue so the label keeps its contrast. */
+  --t2t-gradient-action: linear-gradient(135deg, #5eead4 0%, #0ea5e9 100%);
   --t2t-radius-sm: 6px;
   --t2t-radius-md: 10px;
   --t2t-radius-lg: 14px;

@@ -74,6 +74,15 @@ describe('tickets', () => {
     expect(smtp.messages.length).toBe(sent + 1);
     expect(smtp.messages.at(-1)!.subject).toContain('GSTR-3B does not match the ledger');
     expect(smtp.messages.at(-1)!.text).not.toContain('reverse-charge');
+    // Talk2Tax's own email: the same text, plus an HTML version under the inline Talk2Tax logo.
+    const mail = smtp.messages.at(-1)!;
+    expect(mail.text).toContain('Could you let us look at the books for a day?');
+    expect(mail.html).toContain('src="cid:talk2tax-logo@talk2tax"');
+    expect(mail.html).toContain('Could you let us look at the books for a day?');
+    expect(mail.html).not.toContain('reverse-charge');
+    const logo = mail.attachments.find((a) => a.contentId === 'talk2tax-logo@talk2tax');
+    expect(logo?.contentType).toBe('image/png');
+    expect(logo!.data.subarray(1, 4).toString('latin1')).toBe('PNG');
 
     // The customer never sees the internal note, nor support's email address.
     const seen = (await ctx.http().get(`${org.base}/support/tickets/${ticketId}`).set(accountant.auth).expect(200)).body;

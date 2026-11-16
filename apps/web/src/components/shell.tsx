@@ -64,9 +64,9 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr] print:block">
       <aside className={cn('fixed inset-y-0 left-0 z-30 w-64 overflow-y-auto border-r border-line bg-surface/95 p-4 backdrop-blur lg:sticky lg:top-0 lg:block lg:h-screen print:hidden', open ? 'block' : 'hidden')}>
-        <div className="flex h-10 items-center px-2">
-          <Link href="/">
-            <Logo />
+        <div className="flex h-14 items-center px-1">
+          <Link href="/" aria-label="Talk2Tax home">
+            <Logo size="md" />
           </Link>
         </div>
         <div className="mt-6">{nav}</div>
@@ -164,7 +164,7 @@ function RegionElsewhere({ orgId, name, region }: { orgId: string; name: string;
         {t('This organisation’s data is kept in {region}, so it is opened there and not on this server. Nothing about it is read or changed here.', { region: region.name })}
       </p>
       {region.appUrl ? (
-        <a className="mt-5 inline-flex h-10 items-center rounded-[var(--t2t-radius-md)] bg-[image:var(--t2t-gradient-brand)] px-4 text-sm font-semibold text-[#050a18] hover:brightness-110" href={`${region.appUrl.replace(/\/$/, '')}/orgs/${orgId}`}>
+        <a className="mt-5 inline-flex h-10 items-center rounded-[var(--t2t-radius-md)] bg-[image:var(--t2t-gradient-action)] px-4 text-sm font-semibold text-[#050a18] hover:brightness-110" href={`${region.appUrl.replace(/\/$/, '')}/orgs/${orgId}`}>
           {t('Open it in {region}', { region: region.name })}
         </a>
       ) : (

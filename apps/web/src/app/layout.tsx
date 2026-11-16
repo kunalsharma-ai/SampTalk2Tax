@@ -1,12 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: { default: 'Talk2Tax', template: '%s · Talk2Tax' },
-  description: 'Sampledge Talk2Tax: accounting, tax and finance workspace',
+  description: 'Talk2Tax by Sampledge: accounting, tax and finance workspace. Talk. File. Relax.',
+  applicationName: 'Talk2Tax',
 };
+
+export const viewport: Viewport = { themeColor: '#050a18' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

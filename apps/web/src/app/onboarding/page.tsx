@@ -48,7 +48,7 @@ export default function OnboardingPage() {
 
   return (
     <main id="main" className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6 py-12">
-      <Logo />
+      <Logo size="lg" animated className="self-start" />
       <h1 className="mt-8 text-3xl font-semibold tracking-tight">Set up your organisation</h1>
       <p className="mt-2 text-sm text-fg-muted">This creates your books: a starter chart of accounts and the current fiscal year, split into monthly periods. You can change accounts later.</p>
       <Card className="mt-8 p-6">

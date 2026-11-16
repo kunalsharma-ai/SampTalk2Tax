@@ -4,7 +4,12 @@ export interface StandInMessage {
   raw: string;
   headers: Record<string, string>;
   subject: string;
+  /** The plain-text body (the text/plain part of a multipart message). */
   text: string;
+  /** The text/html part, when the message has one. */
+  html: string | null;
+  /** Other parts, such as an inline logo. */
+  attachments: { contentType: string; contentId: string | null; size: number; data: Buffer }[];
 }
 export interface SmtpStandIn {
   url: string;

@@ -33,8 +33,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr]">
       <aside className="border-b border-line bg-surface/95 p-4 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
-        <div className="flex h-10 items-center gap-2 px-2">
-          <Link href="/"><Logo /></Link>
+        <div className="flex h-14 items-center gap-2 px-1">
+          <Link href="/" aria-label="Talk2Tax home"><Logo size="md" /></Link>
         </div>
         <p className="mt-6 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">Platform administration</p>
         <nav aria-label="Platform administration" className="mt-2">
