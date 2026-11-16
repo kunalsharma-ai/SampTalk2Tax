@@ -195,6 +195,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Work through the vendors waiting for a review. Open each, look at the factors and record a decision with a note and a date to look again. A new factor, a higher risk or that date asks for another review.',
     where: 'Purchases. The Vendor risk needs a review check in Alerts raises the same vendors. Talk2Tax does not buy outside credit or sanctions data; nothing here changes the books.',
   },
+  'purchases/vendor-invoices': {
+    what: 'Invoices vendors sent through their vendor portal link, with the file they attached, the purchase order they quoted and their note.',
+    how: 'Check each one. Record the bill as usual (with their invoice number as the reference), then Record the sent invoice against it: the vendor\'s file is attached to the bill and the vendor sees it as recorded. Or turn it down with a reason the vendor sees; they can send it again.',
+    where: 'Purchases. Give a vendor a link from the Vendor portal card on their page. Nothing a vendor sends posts to the books, and a vendor cannot change their bank details through the portal.',
+  },
   'purchases/international-payments': {
     what: 'Payments to vendors abroad in their currency (outward remittances): the bills, the RBI purpose code, who pays the bank charges and, from India, which part of Form 15CA is needed and whether a Form 15CB is.',
     how: 'Choose a vendor and currency, tick the bills and the purpose, then prepare the payment. Someone else approves it. Download the bank instruction, give it to the bank with the forms, and record the payment at the bank\'s rate once paid.',
@@ -707,6 +712,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },
   'invite/[id]': { what: 'An invitation to join an organisation.', how: 'Sign in or create an account, then accept.', where: 'After accepting, the organisation appears in your list.' },
   'portal/[id]': { what: 'The customer portal: what a customer sees when they open the private link you sent them. Their balance, invoices, payments received and statement, with invoices to open or print and a Pay button where there is a payment link.', how: 'Make the link on the customer\'s page under Customer portal and send it to them. Revoke it there if it reaches the wrong person.', where: 'Open to anyone with the link, without signing in. Read-only: nothing here changes the books.' },
+  'vendor-portal/[id]': { what: 'The vendor portal: what a vendor sees when they open the private link you sent them. What they are owed, their invoices as recorded and when they fall due, payments made with the bank reference, open purchase orders and their statement.', how: 'Make the link on the vendor\'s page under Vendor portal and send it to them. They can send an invoice with its file; it waits under Purchases → Vendor invoices. Revoke the link if it reaches the wrong person.', where: 'Open to anyone with the link, without signing in. Nothing a vendor sends posts to the books, and bank details cannot be changed here.' },
   paid: { what: 'Where a customer lands after paying a payment link: a thank-you with the link reference.', how: 'Nothing to do here. The invoice is marked paid from the gateway\'s own signed notice, not from this page.', where: 'Open to anyone; it shows nothing from the books.' },
   // ---------------------------------------------------------------- platform administration
   admin: {

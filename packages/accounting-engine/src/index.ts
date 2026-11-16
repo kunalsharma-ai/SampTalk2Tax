@@ -72,3 +72,4 @@ export * from './international-payments';
 export * from './customer-portal';
 export * from './vendor-risk';
 export * from './unbilled-revenue';
+export * from './vendor-portal';

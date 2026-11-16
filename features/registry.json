@@ -4142,9 +4142,22 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/vendor-portal.ts",
+        "packages/accounting-engine/test/vendor-portal.test.ts",
+        "packages/database/prisma/migrations/20261217090000_vendor_portal/migration.sql",
+        "apps/api/src/vendor-portal/vendor-portal.service.ts",
+        "apps/api/src/vendor-portal/vendor-portal.controller.ts",
+        "apps/api/test/vendor-portal.e2e.test.ts",
+        "apps/web/src/app/vendor-portal/[token]/page.tsx",
+        "apps/web/src/app/api/vendor-portal/[...path]/route.ts",
+        "apps/web/src/components/vendor-portal/vendor-portal-card.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-invoices/page.tsx",
+        "apps/web/e2e/vendor-portal-flow.test.mjs",
+        "docs/VENDOR_PORTAL.md"
+      ],
+      "notes": "Private link per vendor (t2tv_ token, SHA-256 stored, shown once; expiry or until revoked). Portal without sign-in: owed/due now by currency, posted bills and credits with due dates, TDS and status, payments with bank reference, issued purchase orders with amount still to invoice, statement. Vendor sends an invoice (number, date, total, PO, note) plus a PDF/image file (sniffed, 5 MB, once within an hour); duplicates by normalised number refused against waiting, recorded and existing bills. Purchases > Vendor invoices: record against a bill of the same vendor (file attached to the bill) or turn down with a reason the vendor sees. Append-only, audited. Not built: sign-in accounts, emailing links, auto-creating bills/reading PDFs (needs AI keys), bank detail changes via portal (deliberately)."
     },
     {
       "id": "AP-014",
