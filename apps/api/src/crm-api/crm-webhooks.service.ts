@@ -5,7 +5,7 @@ import type { RoleName } from '@talk2tax/security';
 import { randomBytes } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
-import { PrismaService, Tx } from '../common/prisma.service';
+import { PrismaService, Tx, mirrorRows } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { ContactsService } from '../contacts/contacts.service';
@@ -221,6 +221,7 @@ export class CrmWebhooksService {
         WHERE id IN (SELECT id FROM crm_webhook_deliveries WHERE status = 'PENDING' AND next_attempt_at <= now() ORDER BY next_attempt_at LIMIT ${DELIVERY_BATCH} FOR UPDATE SKIP LOCKED)
         RETURNING id, org_id`,
     );
+    if (due.length) await tenantStorage.run({ bypass: true }, () => mirrorRows(this.prisma, 'CrmWebhookDelivery', { id: { in: due.map((d) => d.id) } }));
     let sent = 0;
     for (const d of due) {
       try {

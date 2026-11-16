@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { mirrorRows } from '../src/common/prisma.service';
+import { tenantStorage } from '../src/common/tenant-context';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
 /**
@@ -65,6 +67,7 @@ beforeAll(async () => {
   const pf = (await ctx.http().post(`${org.base}/sales/pro-formas`).set(owner.auth).send({ contactId: c['Desai Retail']!.id, issueDate: addDays(T, -20), validUntil: addDays(T, 5), lines: [line('12000.00')] }).expect(201)).body;
   // Issued long ago: dated back while still a draft (an issued pro forma is fixed).
   await raw(`UPDATE pro_forma_invoices SET valid_until = $2::date WHERE id = $1::uuid`, pf.id, addDays(T, -2));
+  await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'ProFormaInvoice', { id: pf.id }));
   await ctx.http().post(`${org.base}/sales/pro-formas/${pf.id}/issue`).set(owner.auth).expect(200);
   ids.proForma = pf.id;
 
@@ -79,6 +82,7 @@ beforeAll(async () => {
     `${month(-1)}-01`,
     owner.id,
   );
+  await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'SalesContract', { id: ids.contract }));
 
   // A customer invoiced in each of the three months before last month, not last month.
   for (const k of [-4, -3, -2]) await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: c['Monthly Client']!.id, issueDate: `${month(k)}-05`, lines: [line('9000.00')], post: true }).expect(201);
@@ -128,6 +132,7 @@ describe('unbilled revenue', () => {
     const cfp = `CONTRACT_PERIOD:${ids.contract}`;
     await ctx.http().post(D).set(owner.auth).send({ fingerprint: cfp, action: 'DISMISS', reason: 'Billing by hand this quarter' }).expect(200);
     await raw(`INSERT INTO unbilled_revenue_dismissals (org_id, fingerprint, action, amount, currency, reason, by_id) VALUES ($1::uuid, $2, 'DISMISS', 30000, 'INR', 'Dismissed when one period was due', $3::uuid)`, org.orgId, cfp, owner.id);
+    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'UnbilledRevenueDismissal', { fingerprint: cfp }));
     expect(find(await report(), 'CONTRACT_PERIOD', ids.contract!)!.dismissed).toBeNull();
 
     const back = (await ctx.http().post(D).set(owner.auth).send({ fingerprint: fp, action: 'RESTORE', reason: 'Customer released the hold' }).expect(200)).body;

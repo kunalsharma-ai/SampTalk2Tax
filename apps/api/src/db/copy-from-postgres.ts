@@ -8,6 +8,8 @@ import { loadConfig } from '../config';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { Decimal128 } from '@talk2tax/document-db';
 import { Prisma } from '@talk2tax/database';
+import { copyMirroredTables } from './mirror-writes';
+import './mirrored-models';
 import { journalEntries } from './collections/ledger';
 import { allocations, approvalPolicies, approvalRequests, attachments, contacts, documents, payments } from './collections/sales';
 import { expenseClaims } from './collections/expenses';
@@ -186,6 +188,15 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
     await raw(expenseClaims.name, batch.map(({ lines, ...x }) => ({ ...decs(x), id: x.id, lines: lines.map(({ claimId: _c, orgId: _o, ...l }) => decs(l)) })));
   }
   copied.expense_claims = newClaims.length;
+
+  // Every table whose writes are kept in step (step 7).
+  Object.assign(
+    copied,
+    await copyMirroredTables(
+      (model, page) => prisma.$transaction((tx) => withSystemAccess(tx, () => (tx as unknown as Record<string, { findMany(a: unknown): Promise<Record<string, unknown>[]> }>)[model].findMany(page))),
+      store,
+    ),
+  );
 
   log(`Copied to MongoDB: ${Object.entries(copied).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   return copied;
