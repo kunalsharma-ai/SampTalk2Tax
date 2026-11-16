@@ -94,6 +94,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Budgets are in tokens, not money; one call can take usage past a budget because its size is known only when it returns. The stop applies to one organisation; a platform-wide stop is removing `ANTHROPIC_API_KEY`. Acceptance rates come from people's decisions, not a labelled evaluation set. No orchestrator hands work between agents, and no agent is above level 2. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
 
+## Prepaid expenses, deferred revenue and accruals (M6, slice 2)
+
+* Release evenly by month or by days only; no revenue recognition by milestone, usage or performance obligation. Schedules are not created from invoice or bill lines automatically. Accruals reverse on the first of the next month only, and do not repeat. Only the latest release run can be reversed, and a schedule added after its months were run is released in the next month's run. See [`PREPAID_AND_DEFERRED.md`](PREPAID_AND_DEFERRED.md).
+
 ## Fixed assets (M6, slice 1)
 
 * Straight line and written-down value only, by full calendar months. There are no categories with default terms, revaluation, impairment, partial disposal, transfers, capital work in progress or separate tax-book depreciation. Only the latest depreciation run can be reversed. The conventions have not been reviewed against Companies Act Schedule II by an accountant. See [`FIXED_ASSETS.md`](FIXED_ASSETS.md).

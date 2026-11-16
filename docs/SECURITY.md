@@ -51,6 +51,7 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | collections.manage (draft, edit, send and reject AI payment reminders) | ✓ | ✓ | ✓ | | |
 | close.manage (prepare a month-end close: tasks, AI review, post or reject proposed entries; posting also needs journals.post) | ✓ | ✓ | ✓ | | |
 | assets.manage (fixed asset register: add, depreciate, dispose) | ✓ | ✓ | ✓ | | |
+| deferrals.manage (prepaid and deferred revenue schedules, releases, accruals) | ✓ | ✓ | ✓ | | |
 | tasks.use (tasks for oneself or one's role; give tasks) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 The AI copilot sends questions and the figures it reads to Anthropic only when the server has `ANTHROPIC_API_KEY` **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
@@ -64,6 +65,8 @@ The month-end close review uses the same switch: account codes and names, monthl
 The AI control center lets owners and admins (`org.manage`) switch each agent off, cap its monthly tokens, and stop all AI for the organisation at once with a reason. Every agent goes through one guard before it starts and before each model call, so a stop, a switch-off or a reached budget also halts work already running; what it had not reached is marked as not done, and a review answered after a stop shows nothing it proposed. Accountants and approvers can see the control center (`audit.read`), not change it. Changes are in the audit trail. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
 
 Fixed assets: owners, admins and accountants (`assets.manage`) add assets, post and reverse depreciation and record disposals; everyone with `journals.read` can see the register. Every posting goes through the normal journal code (open periods, balanced, audit trail), and database triggers keep depreciated terms, posted lines and disposals from being changed. See [`FIXED_ASSETS.md`](FIXED_ASSETS.md).
+
+Prepaid expenses, deferred revenue and accruals: owners, admins and accountants (`deferrals.manage`) add and end schedules, post and reverse monthly releases, and post and cancel accruals; everyone with `journals.read` can see them. Every posting goes through the normal journal code, and database triggers keep released terms, release lines, ended schedules and accruals from being changed. See [`PREPAID_AND_DEFERRED.md`](PREPAID_AND_DEFERRED.md).
 
 Workflow webhooks (`docs/WORKFLOW_AUTOMATIONS.md`) are signed with a per-workflow HMAC-SHA256 secret. Outside development they may only reach public https addresses: the address is checked when saved, the host name is resolved when sending, every resolved address is checked against loopback, private, link-local (cloud metadata), CGNAT, reserved and IPv4-mapped forms, and the connection is pinned to the checked address. Redirects are not followed. `WEBHOOK_ALLOW_PRIVATE_NETWORKS` must stay false in production.
 

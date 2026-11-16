@@ -50,6 +50,8 @@ enum JournalSource {
   TAX
   PAYROLL
   CLOSE
+  DEFERRAL
+  ACCRUAL
 }
 
 enum StatementLineStatus {
@@ -232,6 +234,10 @@ model Organization {
   fixedAssets          FixedAsset[]
   depreciationRuns     DepreciationRun[]
   depreciationLines    DepreciationLine[]
+  deferralSchedules    DeferralSchedule[]
+  deferralRuns         DeferralRun[]
+  deferralLines        DeferralLine[]
+  accruals             Accrual[]
   copilotConversations CopilotConversation[]
   copilotMessages      CopilotMessage[]
   workflows            Workflow[]
@@ -2377,4 +2383,147 @@ model DepreciationLine {
   @@unique([runId, assetId, month])
   @@index([orgId, assetId])
   @@map("depreciation_lines")
+}
+
+// ---------------------------------------------------------------- prepaid, deferred revenue, accruals
+
+enum DeferralKind {
+  PREPAID_EXPENSE
+  DEFERRED_REVENUE
+}
+
+enum DeferralMethod {
+  EVEN
+  DAILY
+}
+
+enum DeferralStatus {
+  ACTIVE
+  ENDED
+}
+
+enum DeferralRunStatus {
+  POSTED
+  REVERSED
+}
+
+/// An amount paid in advance (prepaid expense) or received in advance (deferred revenue), released to the income statement over its period.
+model DeferralSchedule {
+  id               String         @id @default(uuid()) @db.Uuid
+  orgId            String         @map("org_id") @db.Uuid
+  kind             DeferralKind
+  /// Shown as PP-0001 (prepaid) or DR-0001 (deferred revenue).
+  number           Int
+  name             String         @db.VarChar(200)
+  counterparty     String?        @db.VarChar(200)
+  /// The prepaid asset or deferred revenue liability account.
+  balanceAccountId String         @map("balance_account_id") @db.Uuid
+  /// The expense or revenue account it is released to.
+  pnlAccountId     String         @map("pnl_account_id") @db.Uuid
+  amount           Decimal        @db.Decimal(24, 6)
+  startDate        DateTime       @map("start_date") @db.Date
+  months           Int
+  method           DeferralMethod
+  /// The journal that recorded the payment or receipt, when it was recorded here.
+  initialEntryId   String?        @map("initial_entry_id") @db.Uuid
+  status           DeferralStatus @default(ACTIVE)
+  endedOn          DateTime?      @map("ended_on") @db.Date
+  endAmount        Decimal?       @map("end_amount") @db.Decimal(24, 6)
+  endEntryId       String?        @map("end_entry_id") @db.Uuid
+  endNote          String?        @map("end_note") @db.VarChar(500)
+  endedById        String?        @map("ended_by_id") @db.Uuid
+  createdById      String         @map("created_by_id") @db.Uuid
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org              Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines            DeferralLine[]
+
+  @@unique([orgId, kind, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("deferral_schedules")
+}
+
+/// One month's releases for the organisation, posted as one journal.
+model DeferralRun {
+  id              String            @id @default(uuid()) @db.Uuid
+  orgId           String            @map("org_id") @db.Uuid
+  /// YYYY-MM
+  month           String            @db.VarChar(7)
+  status          DeferralRunStatus @default(POSTED)
+  total           Decimal           @db.Decimal(24, 6)
+  journalEntryId  String            @map("journal_entry_id") @db.Uuid
+  postedById      String            @map("posted_by_id") @db.Uuid
+  postedAt        DateTime          @default(now()) @map("posted_at") @db.Timestamptz(6)
+  reversalEntryId String?           @map("reversal_entry_id") @db.Uuid
+  reversedById    String?           @map("reversed_by_id") @db.Uuid
+  reversedAt      DateTime?         @map("reversed_at") @db.Timestamptz(6)
+  org             Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines           DeferralLine[]
+
+  @@unique([id, orgId])
+  @@index([orgId, month])
+  @@map("deferral_runs")
+}
+
+model DeferralLine {
+  id         String           @id @default(uuid()) @db.Uuid
+  orgId      String           @map("org_id") @db.Uuid
+  runId      String           @map("run_id") @db.Uuid
+  scheduleId String           @map("schedule_id") @db.Uuid
+  /// The month this release is for (YYYY-MM): the run's month, or an earlier month caught up in it.
+  month      String           @db.VarChar(7)
+  amount     Decimal          @db.Decimal(24, 6)
+  org        Organization     @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  run        DeferralRun      @relation(fields: [runId, orgId], references: [id, orgId], onDelete: Restrict)
+  schedule   DeferralSchedule @relation(fields: [scheduleId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([runId, scheduleId, month])
+  @@index([orgId, scheduleId])
+  @@map("deferral_lines")
+}
+
+enum AccrualKind {
+  EXPENSE
+  INCOME
+}
+
+enum AccrualStatus {
+  POSTED
+  CANCELLED
+}
+
+/// A month-end accrual: posted on the last day of the month and reversed automatically on the first day of the next.
+model Accrual {
+  id                    String        @id @default(uuid()) @db.Uuid
+  orgId                 String        @map("org_id") @db.Uuid
+  kind                  AccrualKind
+  /// Shown as AC-0001.
+  number                Int
+  description           String        @db.VarChar(200)
+  counterparty          String?       @db.VarChar(200)
+  /// YYYY-MM: the month it is accrued in.
+  month                 String        @db.VarChar(7)
+  /// The expense or revenue account.
+  pnlAccountId          String        @map("pnl_account_id") @db.Uuid
+  /// The accrued liability or accrued income account.
+  balanceAccountId      String        @map("balance_account_id") @db.Uuid
+  amount                Decimal       @db.Decimal(24, 6)
+  entryId               String        @map("entry_id") @db.Uuid
+  reversalEntryId       String        @map("reversal_entry_id") @db.Uuid
+  status                AccrualStatus @default(POSTED)
+  /// The two entries that undid it: the opposite of the accrual on its date, and the accrual again on its reversal's date.
+  cancelEntryId         String?       @map("cancel_entry_id") @db.Uuid
+  cancelReversalEntryId String?       @map("cancel_reversal_entry_id") @db.Uuid
+  cancelNote            String?       @map("cancel_note") @db.VarChar(500)
+  cancelledById         String?       @map("cancelled_by_id") @db.Uuid
+  cancelledAt           DateTime?     @map("cancelled_at") @db.Timestamptz(6)
+  createdById           String        @map("created_by_id") @db.Uuid
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  org                   Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, month])
+  @@map("accruals")
 }

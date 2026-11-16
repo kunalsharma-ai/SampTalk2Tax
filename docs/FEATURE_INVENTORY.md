@@ -681,9 +681,9 @@ Part 19 · M6 · priority P2 · depends on: GL
 | ENT-013 |  | capability | Subsidiary reporting | Not started |
 | ENT-014 |  | capability | Financial dimensions | Not started |
 | ENT-015 |  | capability | Revenue recognition | Not started |
-| ENT-016 |  | capability | Deferred revenue | Not started |
-| ENT-017 |  | capability | Prepaid expenses | Not started |
-| ENT-018 |  | capability | Accruals | Not started |
+| ENT-016 |  | capability | Deferred revenue | Tested |
+| ENT-017 |  | capability | Prepaid expenses | Tested |
+| ENT-018 |  | capability | Accruals | Tested |
 | ENT-019 |  | capability | Fixed asset management | Tested |
 | ENT-020 |  | capability | Depreciation | Tested |
 | ENT-021 |  | capability | Amortization | Not started |

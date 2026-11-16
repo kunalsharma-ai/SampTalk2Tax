@@ -58,6 +58,8 @@ import { AiControlService } from './ai-control/ai-control.service';
 import { CloseController } from './close/close.controller';
 import { FixedAssetsController } from './fixed-assets/fixed-assets.controller';
 import { FixedAssetsService } from './fixed-assets/fixed-assets.service';
+import { DeferralsController } from './deferrals/deferrals.controller';
+import { DeferralsService } from './deferrals/deferrals.service';
 import { CloseService } from './close/close.service';
 import { CollectionsController } from './collections/collections.controller';
 import { CollectionsService } from './collections/collections.service';
@@ -121,6 +123,7 @@ export class AppModule {
         CloseController,
         AiControlController,
         FixedAssetsController,
+        DeferralsController,
         EInvoicingController,
         EWayBillsController,
         WorkflowsController,
@@ -163,6 +166,7 @@ export class AppModule {
         CloseService,
         AiControlService,
         FixedAssetsService,
+        DeferralsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,
         EWayBillsService,

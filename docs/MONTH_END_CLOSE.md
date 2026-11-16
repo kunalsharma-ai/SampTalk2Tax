@@ -45,6 +45,7 @@ The checklist is worked out again each time the page is opened and again inside 
 | Expense claims | Submitted expense claims are waiting for a decision |
 | Payroll | There are employees in the month but no posted pay run for it |
 | Depreciation | There are fixed assets at the month end but no depreciation was posted in the month |
+| Prepaid and deferred releases | Prepaid expense or deferred revenue releases due through the month are not posted ([`PREPAID_AND_DEFERRED.md`](PREPAID_AND_DEFERRED.md)) |
 | Cash | A cash account is below zero at the month end |
 | AI items | AI items are waiting: proposed adjusting entries for this close, or bank suggestions |
 | Earlier months | Earlier months are still open |

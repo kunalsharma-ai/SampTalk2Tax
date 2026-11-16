@@ -16,3 +16,4 @@ export * from './collections';
 export * from './bank-ai';
 export * from './close';
 export * from './fixed-assets';
+export * from './deferrals';
