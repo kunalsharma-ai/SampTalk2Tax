@@ -4597,6 +4597,20 @@
         "docs/VOICE_ASSISTANT.md"
       ],
       "notes": "The copilot can only propose a task or acknowledging/dismissing an alert; the member who asked confirms on screen within 15 minutes (never by speech; sensitive ones ask twice), permission re-checked and the action carried out in the same transaction as the decision; decided actions immutable (trigger); audited."
+    },
+    "INNOV-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/impact.ts",
+        "packages/accounting-engine/test/impact.test.ts",
+        "packages/database/prisma/migrations/20261107090000_business_impact/migration.sql",
+        "apps/api/src/impact",
+        "apps/api/test/business-impact.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/impact",
+        "apps/web/e2e/business-impact-flow.test.mjs",
+        "docs/BUSINESS_IMPACT.md"
+      ],
+      "notes": "Thirteen business changes across sales (new customer, lost customer, prices, salespeople, customer terms), HR (hires, pay rise, headcount reduction), procurement (supplier price by supplier share, supplier terms) and operations (new site, equipment, running costs), built from the books (cost of sales ratio, customers' sales, suppliers' bills) and played through the digital twin against carrying on as is; before/after revenue, margins, operating and net profit and cash; each change on its own with the statement lines it moves and its payback; each business area on its own with interaction; saved assessments re-run on the books; copy to a twin scenario."
     }
   }
 }

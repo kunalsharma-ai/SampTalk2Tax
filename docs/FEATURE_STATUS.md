@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 915 |
+| Not started | 914 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 323 |
+| Tested | 324 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 2 | 16 |
+| Additional differentiating innovations | M7 | 18 | 1 | 17 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4727,6 +4727,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
   - apps/web/src/app/orgs/[orgId]/reports/balance-sheet/page.tsx
   - apps/web/src/app/orgs/[orgId]/reports/trial-balance/page.tsx
+
+### INNOV-008 — Estimate how sales, HR, procurement and operational changes affect financial performance
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Thirteen business changes across sales (new customer, lost customer, prices, salespeople, customer terms), HR (hires, pay rise, headcount reduction), procurement (supplier price by supplier share, supplier terms) and operations (new site, equipment, running costs), built from the books (cost of sales ratio, customers' sales, suppliers' bills) and played through the digital twin against carrying on as is; before/after revenue, margins, operating and net profit and cash; each change on its own with the statement lines it moves and its payback; each business area on its own with interaction; saved assessments re-run on the books; copy to a twin scenario.
+- Evidence:
+  - packages/accounting-engine/src/impact.ts
+  - packages/accounting-engine/test/impact.test.ts
+  - packages/database/prisma/migrations/20261107090000_business_impact/migration.sql
+  - apps/api/src/impact
+  - apps/api/test/business-impact.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/planning/impact
+  - apps/web/e2e/business-impact-flow.test.mjs
+  - docs/BUSINESS_IMPACT.md
 
 ### INNOV-009 — Compare forecast models against historical outcomes and track accuracy
 

@@ -30,6 +30,7 @@ export * from './benchmark';
 export * from './decisions';
 export * from './forecast-lab';
 export * from './disaster';
+export * from './impact';
 export * from './policies';
 export * from './dashboards';
 export * from './report-designer';

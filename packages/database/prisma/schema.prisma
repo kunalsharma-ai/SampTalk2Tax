@@ -277,6 +277,7 @@ model Organization {
   closeAdjustments       CloseAdjustment[]
   forecastLabRuns        ForecastLabRun[]
   disasterSimulations    DisasterSimulation[]
+  impactAssessments      ImpactAssessment[]
   policies               Policy[]
   policyVersions         PolicyVersion[]
   dashboards             Dashboard[]
@@ -3348,6 +3349,29 @@ model DisasterSimulation {
   @@unique([orgId, number])
   @@unique([orgId, name])
   @@map("disaster_simulations")
+}
+
+/// A saved business impact assessment: the business changes only (sales, HR, procurement,
+/// operations). Every view re-runs them against the books as they stand.
+model ImpactAssessment {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  number         Int
+  name           String       @db.VarChar(120)
+  description    String?      @db.VarChar(1000)
+  baselineMonths Int          @map("baseline_months")
+  horizonMonths  Int          @map("horizon_months")
+  /// [{ lever, ... }] as checked by the engine's checkChange
+  changes        Json
+  createdById    String       @map("created_by_id") @db.Uuid
+  updatedById    String       @map("updated_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([orgId, name])
+  @@map("impact_assessments")
 }
 
 /// A financial policy: the policy in words, the workflow rules that enforce it, and tests.
