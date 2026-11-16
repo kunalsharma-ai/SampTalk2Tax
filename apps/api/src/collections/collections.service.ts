@@ -465,7 +465,8 @@ export class CollectionsService {
     ]);
     const bank = await this.prisma.bankAiSuggestion.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: limit, include: { statementLine: { select: { description: true, amount: true, accountId: true } }, run: { select: { startedById: true } } } });
     const close = await this.prisma.closeAiReview.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: limit, include: { close: { select: { periodId: true, period: { select: { name: true } } } }, adjustments: { select: { status: true } } } });
-    const names = await this.names([...answers.map((a) => a.conversation.userId), ...drafts.flatMap((d) => [d.run.startedById, d.decidedById]), ...bank.flatMap((b) => [b.run.startedById, b.decidedById]), ...close.map((c) => c.startedById)]);
+    const cfo = await this.prisma.cfoReport.findMany({ where: { orgId, aiStartedAt: { not: null } }, orderBy: { aiStartedAt: 'desc' }, take: limit });
+    const names = await this.names([...answers.map((a) => a.conversation.userId), ...drafts.flatMap((d) => [d.run.startedById, d.decidedById]), ...bank.flatMap((b) => [b.run.startedById, b.decidedById]), ...close.map((c) => c.startedById), ...cfo.flatMap((r) => [r.aiStartedById, r.finalisedById])]);
     const closeDecision = (adj: { status: string }[]) => {
       const n = (s: string) => adj.filter((a) => a.status === s).length;
       const parts = [n('POSTED') && `${n('POSTED')} posted`, n('REJECTED') && `${n('REJECTED')} rejected`, n('READY') && `${n('READY')} waiting for review`, n('SUPERSEDED') && `${n('SUPERSEDED')} superseded`].filter(Boolean);
@@ -534,6 +535,21 @@ export class CollectionsService {
         error: c.errorCode,
         decision: closeDecision(c.adjustments),
         link: `/close/${c.close.periodId}`,
+      })),
+      ...cfo.map((r) => ({
+        id: r.id,
+        feature: 'CFO' as const,
+        at: r.aiStartedAt!.toISOString(),
+        by: names.get(r.aiStartedById!) ?? 'Former member',
+        what: `Wrote the executive summary of the ${r.title.charAt(0).toLowerCase()}${r.title.slice(1)}`,
+        model: r.aiModel,
+        servedModel: r.servedModel,
+        inputTokens: r.inputTokens,
+        outputTokens: r.outputTokens,
+        outcome: r.aiStatus === 'DONE' ? 'COMPLETE' : r.aiStatus === 'RUNNING' ? 'PENDING' : 'FAILED',
+        error: r.aiErrorCode,
+        decision: r.status === 'FINAL' ? `Finalised by ${names.get(r.finalisedById!) ?? 'a former member'}` : r.aiStatus === 'DONE' ? 'Draft, not yet finalised' : null,
+        link: `/cfo/reports/${r.id}`,
       })),
     ];
     rows.sort((a, b) => b.at.localeCompare(a.at));

@@ -25,3 +25,4 @@ export * from './consolidation';
 export * from './twin';
 export * from './twin-insights';
 export * from './recovery';
+export * from './cfo';

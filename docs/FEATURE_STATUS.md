@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 985 |
+| Not started | 950 |
 | Designed | 0 |
-| Implementing | 57 |
+| Implementing | 60 |
 | Implemented | 31 |
-| Tested | 260 |
-| Integration pending | 10 |
+| Tested | 291 |
+| Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -35,7 +35,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Treasury management | M6 | 28 | 23 | 5 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
-| AI Virtual CFO | M7 | 35 | 35 | 0 |
+| AI Virtual CFO | M7 | 35 | 0 | 35 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
 | Enterprise financial management | M6 | 29 | 15 | 14 |
@@ -1833,6 +1833,535 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/twin.e2e.test.ts
   - apps/web/e2e/twin-flow.test.mjs
   - docs/DIGITAL_TWIN.md
+
+### VCFO-001 — Build a sophisticated AI Virtual CFO
+
+- Module: AI Virtual CFO
+- Status: **Implementing**
+- Notes: Virtual CFO built: health score, nine analyses, nine worked questions, board packs and investor updates with a checked AI summary. Peer benchmarking and configurable thresholds are not built.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-002 — Financial health assessment
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Health score out of 100 from five stated rules (liquidity, profitability, working capital, growth, solvency) with a grade.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-003 — Executive financial summaries
+
+- Module: AI Virtual CFO
+- Status: **Integration pending**
+- Notes: Deterministic headline on every assessment; AI executive summary of packs written from the facts and rejected if it quotes any figure not in them. Tested against the scripted model and the local stand-in; needs a live check with a Claude key.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-004 — Strategic financial recommendations
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Recommendations from areas needing action, then watch, with priority, link and required approval.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-005 — Liquidity analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Liquidity: cash, current and quick ratios, monthly change in cash, runway, 90-day forecast lowest point against the minimum balance.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-006 — Profitability analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Profitability: revenue, gross, operating and net profit and margins over three months against the previous three and last year.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-007 — Working capital analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Working capital: DSO, DPO, days inventory, cash conversion cycle, overdue receivables.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-008 — Revenue growth analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Revenue growth: three months against the three before and last year, 12 against the 12 before, largest customer share.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-009 — Cost reduction recommendations
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Cost reduction: expense lines up more than 15% on the six months before, with the monthly saving and who approves a cut.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-010 — Financial risk detection
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Risk detection: runway, forecast below minimum, losses, negative equity, interest cover, concentration, overdue filings, high alerts.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-011 — Scenario analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Scenario analysis: 10% salary rise measured on the digital twin; planning section counts saved, approved and waiting scenarios; links to the twin and war room.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-012 — Board reporting
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Board packs: every area, recommendations, commentary, checked AI summary, refresh while draft, finalise (immutable at the database level), print.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-013 — Investor reporting
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Investor updates: growth, profitability, liquidity, capital and debt, with the same commentary, summary and finalise.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-014 — Financial planning assistance
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Planning: year-to-date variance against the approved budget and scenario status, with a prompt to prepare a budget.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-015 — Capital allocation analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Capital allocation: free cash above a reserve of three months of fixed costs or the minimum balance, with options and approvals.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-016 — Business expansion analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Expansion: months an expansion adding a fifth to fixed costs could be funded from free cash, with a link to the twin expansion template.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-017 — Debt management analysis
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Debt: loans outstanding, principal and interest due in 12 months, interest cover, debt service cover, liabilities to equity.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-018 — Financial benchmarking
+
+- Module: AI Virtual CFO
+- Status: **Implementing**
+- Notes: Compares with the organisation's own history (previous months, same months last year) only; peer and industry benchmarks are the benchmarking module.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-019 — Why did profit decrease?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Why profit changed (fell or rose) last month: accounts by their effect on profit.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-020 — Which clients are most profitable?
+
+- Module: AI Virtual CFO
+- Status: **Implementing**
+- Notes: Clients ranked by revenue, share, change, overdue and days late. Costs are not recorded per client, so profit per client is not known; the answer says so with low confidence.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-021 — Which projects are losing money?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Projects with a net loss over 12 months from profit by project.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-022 — How much cash will we need next quarter?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Cash needed next quarter: minimum balance minus the 90-day forecast lowest point, base and late cases, plus the twin trend.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-023 — What expenses should we investigate?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Expenses to investigate: accounts more than 25% above their six-month average, plus duplicate and unusual-journal alerts.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-024 — What happens if salaries increase by 10%?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Salaries +10%: twin with and without, profit, cash and runway.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-025 — Which vendors are charging more than expected?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Vendors charging more: unit price by vendor and item, last 90 days against the 9 months before, with extra cost.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-026 — What is our current tax exposure?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Tax exposure: tax payable balances and statutory items overdue or due in 45 days.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-027 — Which invoices are likely to be paid late?
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Invoices likely to be paid late from each customer's record over 12 months.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-028 — Source records
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Every finding and answer lists its source reports and a table of the records behind it.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-029 — Relevant period
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Every finding and answer states its period.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-030 — Calculation method
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Every finding and answer states its calculation method.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-031 — Assumptions
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Every finding and answer lists its assumptions.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-032 — Confidence or uncertainty
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Every finding and answer has a confidence level and the reason.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-033 — Recommended actions
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Every finding and answer lists recommended actions with links.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-034 — Required approvals
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Each recommended action names who has to approve it.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+
+### VCFO-035 — Never fabricate financial figures
+
+- Module: AI Virtual CFO
+- Status: **Tested**
+- Notes: Figures are worked out in code; the AI summary is rejected if it quotes any figure not in the facts; the copilot reads CFO answers through tools and is told to pass on method and confidence.
+- Evidence:
+  - packages/accounting-engine/src/cfo.ts
+  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/cfo/cfo.service.ts
+  - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
+  - packages/accounting-engine/test/cfo.test.ts
+  - apps/api/test/cfo.e2e.test.ts
+  - apps/web/e2e/cfo-flow.test.mjs
+  - docs/VIRTUAL_CFO.md
+  - apps/api/src/copilot/copilot.tools.ts
 
 ### AGENT-001 — Create a dedicated AI Agent Control Center
 

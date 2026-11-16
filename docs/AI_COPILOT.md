@@ -62,6 +62,8 @@ There are eleven tools, all read-only, with strict input schemas. Each tool retu
 | `get_budget_variance` | Approved budget against actual for a fiscal year, by month, quarter or year | Budget vs actual |
 | `list_alerts` | Alerts by status. This never runs the checks itself. | Alerts |
 | `get_compliance_calendar` | Filings and tax payments due in a range, with their status | Compliance calendar |
+| `get_cfo_assessment` | The virtual CFO's health score and analyses, each with method, assumptions, confidence and actions | Virtual CFO |
+| `get_cfo_answer` | One of the virtual CFO's nine worked answers (`question` key) | Virtual CFO |
 
 When a tool fails, its error goes back to the model as an error result, and the answer shows that source as "could not be read". The causes include:
 

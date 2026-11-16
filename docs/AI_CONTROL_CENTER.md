@@ -1,6 +1,6 @@
 # AI control center
 
-The AI control center (`/orgs/:orgId/ai-control`, under Governance) puts every AI agent in one place and gives owners and admins the controls over them. It is the governance layer over the four AI features built so far: the finance copilot, the collections agent, AI bank reconciliation and the month-end close review.
+The AI control center (`/orgs/:orgId/ai-control`, under Governance) puts every AI agent in one place and gives owners and admins the controls over them. It is the governance layer over the five AI features built so far: the finance copilot, the collections agent, AI bank reconciliation, the month-end close review and the virtual CFO's pack summaries.
 
 ## What it shows
 
@@ -16,7 +16,7 @@ For each agent:
   | Level | Meaning | Agents |
   |---|---|---|
   | 0 | Read-only analysis | Finance copilot |
-  | 1 | Draft recommendations | none |
+  | 1 | Draft recommendations | Virtual CFO (executive summaries of packs, checked against the figures) |
   | 2 | Prepare changes for approval | Collections, bank reconciliation, month-end close |
   | 3 | Execute approved low-risk workflows | none |
   | 4 | Execute authorised actions within strict limits | none |
@@ -29,7 +29,7 @@ For each agent:
   * bank reconciliation: suggestions accepted against suggestions a person dismissed (lines dealt with another way don't count);
   * month-end close: adjusting entries posted against entries rejected (superseded ones don't count).
 
-  The copilot has no rate, because its answers are not approved or rejected.
+  The copilot and the virtual CFO have no rate, because their output is not approved or rejected item by item.
 
 ## Controls
 
@@ -70,7 +70,7 @@ So every control takes effect on work that is already running, not only on new w
 | Endpoint | Permission | What it does |
 |---|---|---|
 | `GET /v1/orgs/:orgId/ai-control` | audit.read | The overview above |
-| `PUT …/ai-control/agents/:agent` `{ enabled, monthlyTokenLimit }` | org.manage | Switch and budget for `COPILOT`, `COLLECTIONS`, `BANKING` or `CLOSE` |
+| `PUT …/ai-control/agents/:agent` `{ enabled, monthlyTokenLimit }` | org.manage | Switch and budget for `COPILOT`, `COLLECTIONS`, `BANKING`, `CLOSE` or `CFO` |
 | `POST …/ai-control/stop` `{ reason }` | org.manage | Emergency stop (`409 AI_ALREADY_STOPPED`) |
 | `POST …/ai-control/resume` | org.manage | Turn AI back on (`409 AI_ALREADY_ON`) |
 

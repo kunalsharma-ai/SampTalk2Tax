@@ -82,7 +82,7 @@ export interface CollectionsOverview {
 export interface AiActivity {
   rows: {
     id: string;
-    feature: 'COPILOT' | 'COLLECTIONS' | 'BANKING' | 'CLOSE';
+    feature: 'COPILOT' | 'COLLECTIONS' | 'BANKING' | 'CLOSE' | 'CFO';
     at: string;
     by: string;
     what: string;

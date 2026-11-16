@@ -528,41 +528,41 @@ Part 16 · M7 · priority P3 · depends on: RPT, AIGW
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| VCFO-001 |  | rule | Build a sophisticated AI Virtual CFO | Not started |
-| VCFO-002 |  | capability | Financial health assessment | Not started |
-| VCFO-003 |  | capability | Executive financial summaries | Not started |
-| VCFO-004 |  | capability | Strategic financial recommendations | Not started |
-| VCFO-005 |  | capability | Liquidity analysis | Not started |
-| VCFO-006 |  | capability | Profitability analysis | Not started |
-| VCFO-007 |  | capability | Working capital analysis | Not started |
-| VCFO-008 |  | capability | Revenue growth analysis | Not started |
-| VCFO-009 |  | capability | Cost reduction recommendations | Not started |
-| VCFO-010 |  | capability | Financial risk detection | Not started |
-| VCFO-011 |  | capability | Scenario analysis | Not started |
-| VCFO-012 |  | capability | Board reporting | Not started |
-| VCFO-013 |  | capability | Investor reporting | Not started |
-| VCFO-014 |  | capability | Financial planning assistance | Not started |
-| VCFO-015 |  | capability | Capital allocation analysis | Not started |
-| VCFO-016 |  | capability | Business expansion analysis | Not started |
-| VCFO-017 |  | capability | Debt management analysis | Not started |
-| VCFO-018 |  | capability | Financial benchmarking | Not started |
-| VCFO-019 | Conversational Interface | capability | Why did profit decrease? | Not started |
-| VCFO-020 | Conversational Interface | capability | Which clients are most profitable? | Not started |
-| VCFO-021 | Conversational Interface | capability | Which projects are losing money? | Not started |
-| VCFO-022 | Conversational Interface | capability | How much cash will we need next quarter? | Not started |
-| VCFO-023 | Conversational Interface | capability | What expenses should we investigate? | Not started |
-| VCFO-024 | Conversational Interface | capability | What happens if salaries increase by 10%? | Not started |
-| VCFO-025 | Conversational Interface | capability | Which vendors are charging more than expected? | Not started |
-| VCFO-026 | Conversational Interface | capability | What is our current tax exposure? | Not started |
-| VCFO-027 | Conversational Interface | capability | Which invoices are likely to be paid late? | Not started |
-| VCFO-028 | Conversational Interface | capability | Source records | Not started |
-| VCFO-029 | Conversational Interface | capability | Relevant period | Not started |
-| VCFO-030 | Conversational Interface | capability | Calculation method | Not started |
-| VCFO-031 | Conversational Interface | capability | Assumptions | Not started |
-| VCFO-032 | Conversational Interface | capability | Confidence or uncertainty | Not started |
-| VCFO-033 | Conversational Interface | capability | Recommended actions | Not started |
-| VCFO-034 | Conversational Interface | capability | Required approvals | Not started |
-| VCFO-035 | Conversational Interface | rule | Never fabricate financial figures | Not started |
+| VCFO-001 |  | rule | Build a sophisticated AI Virtual CFO | Implementing |
+| VCFO-002 |  | capability | Financial health assessment | Tested |
+| VCFO-003 |  | capability | Executive financial summaries | Integration pending |
+| VCFO-004 |  | capability | Strategic financial recommendations | Tested |
+| VCFO-005 |  | capability | Liquidity analysis | Tested |
+| VCFO-006 |  | capability | Profitability analysis | Tested |
+| VCFO-007 |  | capability | Working capital analysis | Tested |
+| VCFO-008 |  | capability | Revenue growth analysis | Tested |
+| VCFO-009 |  | capability | Cost reduction recommendations | Tested |
+| VCFO-010 |  | capability | Financial risk detection | Tested |
+| VCFO-011 |  | capability | Scenario analysis | Tested |
+| VCFO-012 |  | capability | Board reporting | Tested |
+| VCFO-013 |  | capability | Investor reporting | Tested |
+| VCFO-014 |  | capability | Financial planning assistance | Tested |
+| VCFO-015 |  | capability | Capital allocation analysis | Tested |
+| VCFO-016 |  | capability | Business expansion analysis | Tested |
+| VCFO-017 |  | capability | Debt management analysis | Tested |
+| VCFO-018 |  | capability | Financial benchmarking | Implementing |
+| VCFO-019 | Conversational Interface | capability | Why did profit decrease? | Tested |
+| VCFO-020 | Conversational Interface | capability | Which clients are most profitable? | Implementing |
+| VCFO-021 | Conversational Interface | capability | Which projects are losing money? | Tested |
+| VCFO-022 | Conversational Interface | capability | How much cash will we need next quarter? | Tested |
+| VCFO-023 | Conversational Interface | capability | What expenses should we investigate? | Tested |
+| VCFO-024 | Conversational Interface | capability | What happens if salaries increase by 10%? | Tested |
+| VCFO-025 | Conversational Interface | capability | Which vendors are charging more than expected? | Tested |
+| VCFO-026 | Conversational Interface | capability | What is our current tax exposure? | Tested |
+| VCFO-027 | Conversational Interface | capability | Which invoices are likely to be paid late? | Tested |
+| VCFO-028 | Conversational Interface | capability | Source records | Tested |
+| VCFO-029 | Conversational Interface | capability | Relevant period | Tested |
+| VCFO-030 | Conversational Interface | capability | Calculation method | Tested |
+| VCFO-031 | Conversational Interface | capability | Assumptions | Tested |
+| VCFO-032 | Conversational Interface | capability | Confidence or uncertainty | Tested |
+| VCFO-033 | Conversational Interface | capability | Recommended actions | Tested |
+| VCFO-034 | Conversational Interface | capability | Required approvals | Tested |
+| VCFO-035 | Conversational Interface | rule | Never fabricate financial figures | Tested |
 
 ## Multi-agent AI finance workforce
 

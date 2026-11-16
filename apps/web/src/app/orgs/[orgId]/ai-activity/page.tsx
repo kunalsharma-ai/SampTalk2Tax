@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { dateTime, type AiActivity } from '@/lib/collections';
 import { useOrg } from '@/lib/org';
 
-const FEATURE = { COPILOT: 'Copilot', COLLECTIONS: 'Collections', BANKING: 'Bank reconciliation', CLOSE: 'Month-end close' } as const;
+const FEATURE = { COPILOT: 'Copilot', COLLECTIONS: 'Collections', BANKING: 'Bank reconciliation', CLOSE: 'Month-end close', CFO: 'Virtual CFO' } as const;
 const OUTCOME_TONE: Record<string, 'neutral' | 'positive' | 'warning' | 'negative' | 'accent'> = {
   COMPLETE: 'positive',
   SENT: 'positive',
@@ -55,6 +55,7 @@ export default function AiActivityPage() {
               <option value="COLLECTIONS">Collections</option>
               <option value="BANKING">Bank reconciliation</option>
               <option value="CLOSE">Month-end close</option>
+              <option value="CFO">Virtual CFO</option>
             </Select>
           </label>
           {rows.length ? (

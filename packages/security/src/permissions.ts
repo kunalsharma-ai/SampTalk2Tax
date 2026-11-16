@@ -65,6 +65,8 @@ export const PERMISSIONS = [
   'scenarios.manage',
   /** Approve or reject submitted scenarios in the war room (never one's own submission). */
   'scenarios.approve',
+  /** Prepare and finalise virtual CFO board packs and investor updates, and have the AI write their summary. */
+  'cfo.reports',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -114,6 +116,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'templates.manage',
     'scenarios.manage',
     'documents.sign',
+    'cfo.reports',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve']),
   VIEWER: new Set<Permission>(READ_ONLY),
