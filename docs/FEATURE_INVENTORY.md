@@ -258,7 +258,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-013 | India Module | capability | GST reconciliation | Tested |
 | TAX-014 | India Module | capability | GSTR-related reporting | Tested |
 | TAX-015 | India Module | capability | E-invoicing | Tested |
-| TAX-016 | India Module | capability | E-way bill workflows | Not started |
+| TAX-016 | India Module | capability | E-way bill workflows | Tested |
 | TAX-017 | India Module | capability | TDS | Tested |
 | TAX-018 | India Module | capability | TCS | Tested |
 | TAX-019 | India Module | capability | Income tax preparation support | Not started |

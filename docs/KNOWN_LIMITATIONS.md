@@ -59,7 +59,11 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## E-invoicing (M3, slice 5)
 
-* No direct connection to the IRP or a GSP: the user uploads the JSON and pastes the response back. Only B2B invoices and credit notes in INR: no exports, SEZ, deemed exports, debit notes, B2C dynamic QR codes or e-way bills. Signatures are checked only when the user saves the IRP's public key. See [`E_INVOICING_INDIA.md`](E_INVOICING_INDIA.md).
+* No direct connection to the IRP or a GSP: the user uploads the JSON and pastes the response back. Only B2B invoices and credit notes in INR: no exports, SEZ, deemed exports, debit notes or B2C dynamic QR codes. Signatures are checked only when the user saves the IRP's public key. See [`E_INVOICING_INDIA.md`](E_INVOICING_INDIA.md).
+
+## E-way bills (M3, slice 6)
+
+* No direct connection to the e-way bill portal: the user uploads the JSON and records the number and validity. Only outward supplies on tax invoices, one invoice at a time: no exports, inward supplies, job work, delivery challans, branch transfers, validity extensions, consolidated or multi-vehicle e-way bills. The state's own threshold is whatever the user enters. See [`E_WAY_BILLS_INDIA.md`](E_WAY_BILLS_INDIA.md).
 
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.

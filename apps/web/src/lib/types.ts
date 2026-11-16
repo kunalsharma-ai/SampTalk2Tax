@@ -938,3 +938,62 @@ export interface EInvoiceRegister {
 }
 
 export type EInvoiceDocument = { configured: false; documentId: string } | (EInvoiceRow & { configured: true; history: EInvoiceRecord[] });
+
+// ---------------------------------------------------------------- e-way bills (India)
+
+export type EWayBillSettings =
+  | { configured: false; gstRegistered: boolean; stateCode: string | null; suggested: { address1: string; address2: string | null; city: string; pincode: string; goodsUnit: string } | null }
+  | { configured: true; gstRegistered: boolean; stateCode: string | null; threshold: string; intraStateThreshold: string | null; address1: string; address2: string | null; city: string; pincode: string; goodsUnit: string };
+
+export type EWayBillState = 'NEEDED' | 'OPTIONAL' | 'NEEDS_DATA' | 'TOO_OLD' | 'GENERATED' | 'CANCELLED' | 'NOT_APPLICABLE' | 'UNSUPPORTED';
+export type TransportMode = 'ROAD' | 'RAIL' | 'AIR' | 'SHIP';
+
+export interface EWayBillRecord {
+  id: string;
+  number: string;
+  generatedAt: string;
+  validUntil: string | null;
+  expectedValidUntil: string | null;
+  expired: boolean;
+  distanceKm: number;
+  vehicleType: 'R' | 'O';
+  transporterId: string | null;
+  transporterName: string | null;
+  partB: { mode: TransportMode; vehicleNo: string | null; transDocNo: string | null; transDocDate: string | null } | null;
+  status: 'ACTIVE' | 'CANCELLED';
+  cancellableUntil: string;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  cancelRemark: string | null;
+  updates: { id: string; updatedAt: string; mode: TransportMode; vehicleNo: string | null; transDocNo: string | null; fromPlace: string; fromStateCode: string; reason: string; remark: string }[];
+  createdAt: string;
+}
+
+export interface EWayBillRow {
+  documentId: string;
+  number: string | null;
+  issueDate: string;
+  documentStatus: string;
+  contact: { id: string; name: string };
+  buyerGstin: string | null;
+  placeOfSupply: string | null;
+  total: string;
+  consignmentValue: string;
+  required: boolean;
+  generateBy: string;
+  state: EWayBillState;
+  reason: string;
+  issues: { field: string; message: string }[];
+  eWayBill: EWayBillRecord | null;
+}
+
+export interface EWayBillRegister {
+  from: string;
+  to: string;
+  today: string;
+  threshold: string;
+  summary: { needed: number; needsData: number; tooOld: number; generated: number; expiringSoon: number; partAOnly: number; optional: number; notApplicable: number };
+  rows: EWayBillRow[];
+}
+
+export type EWayBillDocument = { configured: false; documentId: string } | (EWayBillRow & { configured: true; history: EWayBillRecord[] });

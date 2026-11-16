@@ -1529,6 +1529,19 @@
         "apps/api/src/e-invoicing/e-invoicing.service.ts"
       ],
       "notes": "Followed by design: Talk2Tax submits nothing to a government system. E-invoice JSON is uploaded by the user to the IRP and the IRP's response is imported; GST returns and TDS statements are marked filed by hand. An approved GSP/ASP integration is not built."
+    },
+    "TAX-016": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/ewaybill.ts",
+        "packages/tax-engine/test/ewaybill.test.ts",
+        "apps/api/src/e-way-bills",
+        "apps/api/test/e-way-bills.e2e.test.ts",
+        "apps/web/e2e/e-way-bills-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/tax/e-way-bills",
+        "apps/web/src/components/e-way-bill.tsx"
+      ],
+      "notes": "India e-way bills for outward supplies on tax invoices: which invoices need one (goods value with GST over Rs 50,000 or a state's own intra-state threshold; services and exempt goods left out; 180-day document limit), the portal's bulk JSON with Part B, validity under Rule 138(10), recording the number, vehicle changes kept in order, cancellation within 24 hours, and no void with a live e-way bill (API and trigger). No portal/GSP connection, exports, inward or job-work movements, extensions or consolidated bills; see docs/E_WAY_BILLS_INDIA.md."
     }
   }
 }
