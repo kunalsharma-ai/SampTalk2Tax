@@ -1,3 +1,4 @@
+import { currentTenantContext } from '../common/tenant-context';
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@talk2tax/database';
@@ -47,7 +48,9 @@ export class AuditService {
       select: { hash: true },
     });
     const createdAt = new Date();
-    const data = (input.data ?? null) as Prisma.InputJsonValue | null;
+    // A change made through the CRM API records the key it came with, next to the key's creator.
+    const apiKey = currentTenantContext().apiKey;
+    const data = (apiKey ? { ...((input.data as Record<string, unknown> | null) ?? {}), viaApiKey: { id: apiKey.id, prefix: apiKey.prefix } } : (input.data ?? null)) as Prisma.InputJsonValue | null;
     const hash = auditHash(prev?.hash ?? null, {
       orgId: input.orgId,
       actorId: input.actorId,

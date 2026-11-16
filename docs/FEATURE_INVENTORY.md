@@ -770,7 +770,7 @@ Part 22 · M6 · priority P3 · depends on: AR, INTG
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| CRM-001 |  | rule | Provide native lightweight CRM functionality and integration APIs for external CRM systems | Implementing |
+| CRM-001 |  | rule | Provide native lightweight CRM functionality and integration APIs for external CRM systems | Tested |
 | CRM-002 |  | capability | Customer records | Not started |
 | CRM-003 |  | capability | Leads | Tested |
 | CRM-004 |  | capability | Opportunities | Tested |
@@ -1194,7 +1194,7 @@ Part 34 · M6 · priority P2 · depends on: SEC
 | INTG-022 | Business | capability | WooCommerce | Not started |
 | INTG-023 | Business | capability | HRMS platforms | Not started |
 | INTG-024 | Business | capability | Payroll platforms | Not started |
-| INTG-025 | Business | capability | CRM platforms | Not started |
+| INTG-025 | Business | capability | CRM platforms | Implementing |
 | INTG-026 | Business | capability | Procurement platforms | Not started |
 | INTG-027 | Business | capability | Project management systems | Not started |
 | INTG-028 | Productivity | capability | Microsoft 365 | Not started |

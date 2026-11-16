@@ -13,6 +13,8 @@ export interface TenantContext {
   userId?: string;
   /** Set only for system work that must cross tenants (e.g. the global audit chain). */
   bypass?: boolean;
+  /** Set when the request came through the CRM API with a key: audit events record it. */
+  apiKey?: { id: string; prefix: string };
   /** Inside an interactive transaction whose settings are already applied. */
   inTx?: boolean;
 }
@@ -52,4 +54,10 @@ export function enterOrg(orgId: string): void {
 export function enterUser(userId: string): void {
   const store = tenantStorage.getStore();
   if (store) store.userId = userId;
+}
+
+/** Marks the current request as made with an API key (after the key is checked). */
+export function enterApiKey(apiKey: { id: string; prefix: string }): void {
+  const store = tenantStorage.getStore();
+  if (store) store.apiKey = apiKey;
 }

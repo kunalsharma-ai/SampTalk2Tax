@@ -169,6 +169,7 @@ export class CrmService {
     return {
       id: l.id,
       reference: leadRef(l.number),
+      externalRef: l.externalRef,
       name: l.name,
       company: l.company,
       email: l.email,
@@ -245,18 +246,41 @@ export class CrmService {
   }
 
   async createLead(org: CrmOrg, actor: Actor, input: LeadInput) {
+    return (await this.createLeadOnce(org, actor, input)).lead;
+  }
+
+  /**
+   * Creates a lead, or, when another system sends its own id (externalRef) that is already on a
+   * lead, returns that lead unchanged, so a retried call never makes a second one.
+   */
+  async createLeadOnce(org: CrmOrg, actor: Actor, input: LeadInput & { externalRef?: string | null }): Promise<{ lead: Awaited<ReturnType<CrmService['getLead']>>; created: boolean }> {
+    const externalRef = clean(input.externalRef);
+    if (externalRef) {
+      const existing = await this.prisma.crmLead.findFirst({ where: { orgId: org.id, externalRef }, select: { id: true } });
+      if (existing) return { lead: await this.getLead(org, existing.id), created: false };
+    }
     const estimatedValue = input.estimatedValue ? this.amount(org, input.estimatedValue, 'estimated value') : null;
-    const id = await this.prisma.$transaction(async (tx) => {
-      const ownerId = await this.checkOwner(tx, org.id, input.ownerId === undefined ? actor.id : input.ownerId);
-      const number = await this.nextNumber(tx, org.id, 'crm_lead');
-      const l = await tx.crmLead.create({
-        data: { orgId: org.id, number, name: input.name.trim(), company: clean(input.company), email: normalEmail(input.email), phone: clean(input.phone), source: input.source, ownerId, estimatedValue, notes: clean(input.notes), createdById: actor.id },
+    let id: string;
+    try {
+      id = await this.prisma.$transaction(async (tx) => {
+        const ownerId = await this.checkOwner(tx, org.id, input.ownerId === undefined ? actor.id : input.ownerId);
+        const number = await this.nextNumber(tx, org.id, 'crm_lead');
+        const l = await tx.crmLead.create({
+          data: { orgId: org.id, number, name: input.name.trim(), company: clean(input.company), email: normalEmail(input.email), phone: clean(input.phone), source: input.source, ownerId, estimatedValue, notes: clean(input.notes), externalRef, createdById: actor.id },
+        });
+        await this.activity(tx, org.id, actor, { leadId: l.id }, 'CREATED', null, { source: input.source });
+        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'crm.lead.created', entityType: 'crm_lead', entityId: l.id, data: { reference: leadRef(number), name: l.name, company: l.company, source: l.source, ownerId, ...(externalRef ? { externalRef } : {}) } });
+        return l.id;
       });
-      await this.activity(tx, org.id, actor, { leadId: l.id }, 'CREATED', null, { source: input.source });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'crm.lead.created', entityType: 'crm_lead', entityId: l.id, data: { reference: leadRef(number), name: l.name, company: l.company, source: l.source, ownerId } });
-      return l.id;
-    });
-    return this.getLead(org, id);
+    } catch (e) {
+      // Two calls with the same externalRef at once: the second finds the first's lead.
+      if (externalRef && e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        const existing = await this.prisma.crmLead.findFirst({ where: { orgId: org.id, externalRef }, select: { id: true } });
+        if (existing) return { lead: await this.getLead(org, existing.id), created: false };
+      }
+      throw e;
+    }
+    return { lead: await this.getLead(org, id), created: true };
   }
 
   async updateLead(org: CrmOrg, actor: Actor, id: string, input: LeadInput) {
@@ -345,6 +369,7 @@ export class CrmService {
     return {
       id: d.id,
       reference: dealRef(d.number),
+      externalRef: d.externalRef,
       name: d.name,
       contact: contact(d.contactId),
       leadId: d.leadId,
@@ -414,23 +439,44 @@ export class CrmService {
   }
 
   async createDeal(org: CrmOrg, actor: Actor, input: DealInput & { stage?: DealStage; probability?: number | null }) {
+    return (await this.createDealOnce(org, actor, input)).deal;
+  }
+
+  /** Like createLeadOnce: a deal already carrying this externalRef is returned, not made again. */
+  async createDealOnce(org: CrmOrg, actor: Actor, input: DealInput & { stage?: DealStage; probability?: number | null; externalRef?: string | null }): Promise<{ deal: Awaited<ReturnType<CrmService['getDeal']>>; created: boolean }> {
+    const externalRef = clean(input.externalRef);
+    const existingDeal = async () => {
+      const d = externalRef ? await this.prisma.crmDeal.findFirst({ where: { orgId: org.id, externalRef }, select: { id: true } }) : null;
+      return d ? { deal: await this.getDeal(org, d.id), created: false } : null;
+    };
+    const before = await existingDeal();
+    if (before) return before;
     const amount = this.amount(org, input.amount, 'deal amount');
     const stage = input.stage ?? 'PROSPECTING';
     if (!isOpenStage(stage)) this.invalid('A new deal starts at an open stage', 'DEAL_STAGE');
     const probability = input.probability ?? DEAL_STAGE_PROBABILITY[stage];
     this.rule(() => checkProbability(probability));
-    const id = await this.prisma.$transaction(async (tx) => {
-      await this.checkCustomer(tx, org.id, input.contactId);
-      const ownerId = await this.checkOwner(tx, org.id, input.ownerId === undefined ? actor.id : input.ownerId);
-      const number = await this.nextNumber(tx, org.id, 'crm_deal');
-      const d = await tx.crmDeal.create({
-        data: { orgId: org.id, number, name: input.name.trim(), contactId: input.contactId, amount, stage, probability, expectedCloseDate: toDbDate(input.expectedCloseDate), ownerId, notes: clean(input.notes), createdById: actor.id },
+    let id: string;
+    try {
+      id = await this.prisma.$transaction(async (tx) => {
+        await this.checkCustomer(tx, org.id, input.contactId);
+        const ownerId = await this.checkOwner(tx, org.id, input.ownerId === undefined ? actor.id : input.ownerId);
+        const number = await this.nextNumber(tx, org.id, 'crm_deal');
+        const d = await tx.crmDeal.create({
+          data: { orgId: org.id, number, name: input.name.trim(), contactId: input.contactId, amount, stage, probability, expectedCloseDate: toDbDate(input.expectedCloseDate), ownerId, notes: clean(input.notes), externalRef, createdById: actor.id },
+        });
+        await this.activity(tx, org.id, actor, { dealId: d.id }, 'CREATED', null, { stage, probability });
+        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'crm.deal.created', entityType: 'crm_deal', entityId: d.id, data: { reference: dealRef(number), amount, contactId: input.contactId, stage, probability, ownerId, ...(externalRef ? { externalRef } : {}) } });
+        return d.id;
       });
-      await this.activity(tx, org.id, actor, { dealId: d.id }, 'CREATED', null, { stage, probability });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'crm.deal.created', entityType: 'crm_deal', entityId: d.id, data: { reference: dealRef(number), amount, contactId: input.contactId, stage, probability, ownerId } });
-      return d.id;
-    });
-    return this.getDeal(org, id);
+    } catch (e) {
+      if (externalRef && e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        const again = await existingDeal();
+        if (again) return again;
+      }
+      throw e;
+    }
+    return { deal: await this.getDeal(org, id), created: true };
   }
 
   async updateDeal(org: CrmOrg, actor: Actor, id: string, input: DealInput) {

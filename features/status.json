@@ -5715,16 +5715,23 @@
       "notes": "Deals DL-0001 for a customer through PROSPECTING/QUALIFICATION/PROPOSAL/NEGOTIATION to WON (100%) or LOST (0%, reason required), reopenable; default stage probabilities overridable; weighted value; board by stage, overdue deals, 90-day win rate and days to win, weighted value by expected close month; deals on the customer page. Single currency (functional) for now."
     },
     "CRM-001": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/crm.ts",
+        "packages/accounting-engine/src/crm-api.ts",
         "packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql",
+        "packages/database/prisma/migrations/20261122090000_crm_external_api/migration.sql",
         "apps/api/src/crm/crm.service.ts",
+        "apps/api/src/crm-api/crm-api.controller.ts",
+        "apps/api/src/crm-api/crm-webhooks.service.ts",
         "apps/api/test/crm.e2e.test.ts",
+        "apps/api/test/crm-api.e2e.test.ts",
         "apps/web/e2e/crm-pipeline-flow.test.mjs",
-        "docs/CRM_PIPELINE.md"
+        "apps/web/e2e/crm-connection-flow.test.mjs",
+        "docs/CRM_PIPELINE.md",
+        "docs/CRM_EXTERNAL_API.md"
       ],
-      "notes": "Native lightweight CRM: leads and pipeline built (CRM slice 1). Quotations, sales orders, contracts, customer 360, revenue forecast and the external CRM API follow in later slices."
+      "notes": "Native lightweight CRM (leads, pipeline, quotations, orders, contracts, customer 360, revenue forecast) and integration APIs for external CRMs: API keys made under Settings > Integrations (hashed, scoped read/write, expiry, revoke, act as their creator), the CRM API at /v1/crm-api (also /api/crm on the app) with idempotent creation by externalRef, and signed CRM webhooks from the audit trail with retries, test, delivery log and secret rotation."
     },
     "CRM-005": {
       "status": "Tested",
@@ -5883,6 +5890,16 @@
         "docs/REVENUE_FORECAST.md"
       ],
       "notes": "Deterministic forecast by month from active contracts (by invoice date, auto-renew runs on), open orders (left to bill, this month), open deals (weighted/full at close month) and the 3-month run rate of other sales; committed/expected/best; itemised; saved forecasts RF-0001 (immutable) compared with actual revenue (WAPE). AI explanation not built yet."
+    },
+    "INTG-025": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/crm-api/crm-api.controller.ts",
+        "apps/api/src/crm-api/crm-webhooks.service.ts",
+        "apps/web/src/components/crm-connection/crm-connection.tsx",
+        "docs/CRM_EXTERNAL_API.md"
+      ],
+      "notes": "Any CRM platform can connect through the generic CRM API (API keys) and CRM webhooks. Ready-made connectors for named platforms (Salesforce, HubSpot, Zoho) that map their objects automatically are not built."
     }
   }
 }
