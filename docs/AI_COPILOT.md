@@ -4,7 +4,7 @@ The **copilot** lets members ask questions about their books in plain language. 
 
 * **The model:** Anthropic's Claude (`claude-opus-5-5` by default), called through the official TypeScript SDK.
 * **Where the figures come from:** the copilot never computes or recalls figures itself. It calls **read-only tools**, and these run the same services as the reports in the app. Every answer lists the reports it looked at, each linking to the same figures in the app.
-* **What it cannot do:** it cannot post, change, approve, file, pay or send anything.
+* **What it cannot do:** it cannot post, approve, file, pay or send anything. It can only *propose* a task or an alert update, which happens when the member confirms it on screen; questions can also be spoken. See [`VOICE_ASSISTANT.md`](VOICE_ASSISTANT.md).
 
 | Part | Where |
 |---|---|
@@ -137,10 +137,10 @@ When a tool fails, its error goes back to the model as an error result, and the 
 * **Not yet run against the live API.** The copilot has not been used against the live Claude API in this repository, because no key has been provided yet. Everything up to the HTTP call is tested, using the official SDK against a local stand-in. Run a few questions after adding the key.
 * **No streaming of the text.** The answer appears whole when it is finished; only the list of reports looked at updates while it works.
 * **No document reading** (bills, receipts or PDFs), **no web search**, and **no other organisations' data**.
-* **No actions.** The copilot cannot draft journals, invoices, reminders or filings. It answers questions only. AI agents that act, with approval, are later work.
+* **Few actions.** The copilot can only propose a task or acknowledging or dismissing an alert, each carried out when the member confirms it (see [`VOICE_ASSISTANT.md`](VOICE_ASSISTANT.md)). It cannot draft journals, invoices, reminders or filings.
 * **No platform admin controls.** There is no screen for choosing the model or tracking spend; the model is set by `COPILOT_MODEL`. There is no per-organisation budget beyond the per-member hourly limit, and no emergency stop apart from removing the key.
 * **Answers can be wrong.** The instructions require figures to come from tool results and to name their report, but a language model can still misread a table or make a wrong calculation. The screen says to check figures in the linked reports before relying on them. Tax and legal questions are answered from what the books show, with a suggestion to confirm with the organisation's chartered accountant or tax adviser.
-* **English only**, and no voice input.
+* **English only.** Voice input and spoken answers use the browser's speech services; see [`VOICE_ASSISTANT.md`](VOICE_ASSISTANT.md).
 
 ## Tests
 

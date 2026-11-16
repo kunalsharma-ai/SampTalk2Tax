@@ -8,9 +8,10 @@ import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import { AiNoticeAlert } from '@/components/ai/ai-notice';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Markdown } from '@/components/copilot/markdown';
+import { canSpeak, speak, stopSpeaking, useSpeechInput } from '@/components/copilot/speech';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
-import { CopilotConversation, CopilotConversationSummary, CopilotMessage, CopilotStatus, STARTERS, when } from '@/lib/copilot';
+import { CopilotAction, CopilotConversation, CopilotConversationSummary, CopilotMessage, CopilotStatus, STARTERS, when } from '@/lib/copilot';
 import { useOrg } from '@/lib/org';
 
 const MAX_CHARS = 4000;
@@ -45,18 +46,33 @@ function Copilot() {
   });
   const pending = !!conv.data?.messages.some((m) => m.status === 'PENDING');
   const wasPending = useRef(false);
+  const [readAloud, setReadAloud] = useState(true);
   useEffect(() => {
-    if (wasPending.current && !pending) void qc.invalidateQueries({ queryKey: ['copilot-conversations', orgId] });
+    try {
+      setReadAloud(localStorage.getItem('t2t-copilot-read-aloud') !== 'off');
+    } catch {
+      /* storage unavailable: keep the default */
+    }
+  }, []);
+  useEffect(() => {
+    if (wasPending.current && !pending) {
+      void qc.invalidateQueries({ queryKey: ['copilot-conversations', orgId] });
+      // A spoken question gets its answer read aloud.
+      const ms = conv.data?.messages ?? [];
+      const last = ms[ms.length - 1];
+      const question = ms[ms.length - 2];
+      if (readAloud && last?.role === 'ASSISTANT' && last.status === 'COMPLETE' && last.text && question?.channel === 'VOICE') speak(last.text);
+    }
     wasPending.current = pending;
-  }, [pending, qc, orgId]);
+  }, [pending, qc, orgId, conv.data, readAloud]);
 
   const open = (id: string | null) => router.replace(`/orgs/${orgId}/copilot${id ? `?c=${id}` : ''}`, { scroll: false });
 
   const ask = useMutation({
-    mutationFn: (question: string) =>
+    mutationFn: ({ question, channel }: { question: string; channel: 'TEXT' | 'VOICE' }) =>
       selected && !conv.data?.closed
-        ? api<CopilotConversation>(`${base}/conversations/${selected}/messages`, { method: 'POST', body: { question } })
-        : api<CopilotConversation>(`${base}/conversations`, { method: 'POST', body: { question } }),
+        ? api<CopilotConversation>(`${base}/conversations/${selected}/messages`, { method: 'POST', body: { question, channel } })
+        : api<CopilotConversation>(`${base}/conversations`, { method: 'POST', body: { question, channel } }),
     onSuccess: (c) => {
       setDraft('');
       qc.setQueryData(['copilot-conversation', orgId, c.id], c);
@@ -77,6 +93,27 @@ function Copilot() {
     },
   });
 
+  const decide = useMutation({
+    mutationFn: ({ id, how }: { id: string; how: 'confirm' | 'cancel' }) => api<CopilotAction>(`${base}/actions/${id}/${how}`, { method: 'POST' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['copilot-conversation', orgId, selected] }),
+  });
+  const voice = useSpeechInput((text) => {
+    setDraft(text);
+    const st = status.data;
+    if (st?.configured && st.enabled && !pending && text.length <= MAX_CHARS) ask.mutate({ question: text, channel: 'VOICE' });
+  });
+  const listeningText = voice.listening ? voice.heard : null;
+  const setRead = (on: boolean) => {
+    setReadAloud(on);
+    if (!on) stopSpeaking();
+    try {
+      localStorage.setItem('t2t-copilot-read-aloud', on ? 'on' : 'off');
+    } catch {
+      /* storage unavailable */
+    }
+  };
+  const [voiceOut, setVoiceOut] = useState(false);
+  useEffect(() => setVoiceOut(canSpeak()), []);
   if (!org) return null;
   const s = status.data;
   const usable = !!s?.configured && !!s?.enabled;
@@ -84,7 +121,7 @@ function Copilot() {
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     const q = draft.trim();
-    if (q && !tooLong && usable && !pending) ask.mutate(q);
+    if (q && !tooLong && usable && !pending) ask.mutate({ question: q, channel: 'TEXT' });
   };
   const retry = (m: CopilotMessage) => {
     const question = conv.data?.messages.find((x) => x.seq === m.seq - 1)?.text ?? '';
@@ -96,7 +133,7 @@ function Copilot() {
     <>
       <PageHeader
         title="Copilot"
-        description="Ask questions about your books in plain language. The copilot reads your posted records (reports, KPIs, cash flow, budgets, alerts, compliance) and shows which ones each answer came from. It cannot change anything."
+        description="Ask questions about your books in plain language, typed or spoken. The copilot reads your posted records (reports, KPIs, cash flow, budgets, alerts, compliance) and shows which ones each answer came from. It can only propose a task or an alert update, and nothing happens until you confirm it."
         actions={
           s?.configured && s.enabled && s.canChange ? (
             <Button variant="ghost" size="sm" loading={toggle.isPending} onClick={() => toggle.mutate(false)}>
@@ -183,7 +220,21 @@ function Copilot() {
                 </div>
               </EmptyState>
             ) : null}
-            {conv.data?.messages.map((m) => (m.role === 'USER' ? <Question key={m.id} m={m} /> : <Answer key={m.id} m={m} orgId={orgId} onRetry={() => retry(m)} canRetry={usable && !pending && !conv.data.closed} />))}
+            {conv.data?.messages.map((m) =>
+              m.role === 'USER' ? (
+                <Question key={m.id} m={m} />
+              ) : (
+                <div key={m.id} className="flex flex-col gap-3">
+                  <Answer m={m} orgId={orgId} onRetry={() => retry(m)} canRetry={usable && !pending && !conv.data.closed} />
+                  {conv.data.actions
+                    .filter((a) => a.messageId === m.id)
+                    .map((a) => (
+                      <ActionCard key={a.id} a={a} orgId={orgId} busy={decide.isPending && decide.variables?.id === a.id} onDecide={(how) => decide.mutate({ id: a.id, how })} />
+                    ))}
+                </div>
+              ),
+            )}
+            <ErrorAlert title="The action was not carried out" error={decide.error} />
           </div>
           <form onSubmit={submit} className="border-t border-line px-5 py-4">
             {conv.data?.closed ? (
@@ -205,14 +256,38 @@ function Copilot() {
                 if (e.key === 'Enter' && !e.shiftKey) submit(e as unknown as FormEvent);
               }}
             />
+            {listeningText !== null ? (
+              <p className="mt-2 text-sm" role="status" aria-label="Listening">
+                <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-negative" aria-hidden />
+                Listening… {listeningText ? <span className="text-fg-muted">“{listeningText}”</span> : <span className="text-fg-muted">speak your question</span>}
+              </p>
+            ) : null}
+            {voice.error ? <p className="mt-2 text-xs text-negative">{voice.error}</p> : null}
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
               <span className={`text-xs ${tooLong ? 'text-negative' : 'text-fg-faint'}`}>
                 {tooLong ? `Keep a question under ${MAX_CHARS} characters` : 'Enter to send, Shift+Enter for a new line. Answers can be wrong: check the figures in the linked reports before relying on them.'}
               </span>
-              <Button type="submit" disabled={!usable || !draft.trim() || tooLong || pending} loading={ask.isPending}>
-                Ask
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                {voiceOut ? (
+                  <label className="flex items-center gap-1.5 text-xs text-fg-muted">
+                    <input type="checkbox" checked={readAloud} onChange={(e) => setRead(e.target.checked)} /> Read spoken answers aloud
+                  </label>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!usable || pending || !voice.supported}
+                  title={voice.supported ? 'Speak your question. Your browser turns it into text (in Chrome and Edge, using the browser maker’s speech service); Talk2Tax receives only the text.' : 'This browser cannot turn speech into text. Try Chrome, Edge or Safari.'}
+                  onClick={() => (voice.listening ? voice.stop() : voice.start())}
+                >
+                  {voice.listening ? 'Stop listening' : 'Speak'}
+                </Button>
+                <Button type="submit" disabled={!usable || !draft.trim() || tooLong || pending} loading={ask.isPending}>
+                  Ask
+                </Button>
+              </div>
             </div>
+            {voice.supported ? <p className="mt-1 text-[11px] text-fg-faint">Spoken questions are turned into text by your browser (in Chrome and Edge, by the browser maker&rsquo;s speech service). Talk2Tax receives only the text.</p> : null}
           </form>
         </Card>
       </div>
@@ -237,7 +312,10 @@ function Question({ m }: { m: CopilotMessage }) {
     <div className="flex justify-end">
       <div className="max-w-[85%] whitespace-pre-wrap rounded-[var(--t2t-radius-lg)] bg-surface-hover px-4 py-2 text-sm" role="group" aria-label="Question">
         {m.text}
-        <div className="mt-1 text-right text-[11px] text-fg-faint">{when(m.createdAt)}</div>
+        <div className="mt-1 text-right text-[11px] text-fg-faint">
+          {m.channel === 'VOICE' ? 'Spoken · ' : ''}
+          {when(m.createdAt)}
+        </div>
       </div>
     </div>
   );
@@ -302,5 +380,66 @@ function Answer({ m, orgId, onRetry, canRetry }: { m: CopilotMessage; orgId: str
         </p>
       ) : null}
     </section>
+  );
+}
+
+const ACTION_STATUS: Record<CopilotAction['status'], { label: string; tone: 'neutral' | 'positive' | 'warning' | 'negative' }> = {
+  PROPOSED: { label: 'Waiting for you', tone: 'warning' },
+  DONE: { label: 'Done', tone: 'positive' },
+  CANCELLED: { label: 'Cancelled', tone: 'neutral' },
+  FAILED: { label: 'Not done', tone: 'negative' },
+  EXPIRED: { label: 'Expired', tone: 'neutral' },
+};
+
+/**
+ * A proposal from the assistant. Nothing happens until the member presses Confirm; a sensitive one
+ * asks a second time. Speech can never confirm.
+ */
+function ActionCard({ a, orgId, busy, onDecide }: { a: CopilotAction; orgId: string; busy: boolean; onDecide: (how: 'confirm' | 'cancel') => void }) {
+  const [check, setCheck] = useState(false);
+  const st = ACTION_STATUS[a.status];
+  return (
+    <div className="max-w-[95%] rounded-[var(--t2t-radius-md)] border border-line bg-surface-hover/40 p-4" role="group" aria-label="Proposed action">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <Badge tone={st.tone}>{st.label}</Badge>
+        {a.sensitive ? <Badge tone="negative">Sensitive</Badge> : null}
+        <span className="text-fg-faint">{a.status === 'PROPOSED' ? `Proposed by the copilot · expires at ${when(a.expiresAt)}` : a.decidedAt ? when(a.decidedAt) : ''}</span>
+      </div>
+      <p className="mt-2 text-sm">{a.summary}</p>
+      {a.status === 'DONE' && a.result ? (
+        <p className="mt-1 text-xs">
+          <Link className="text-accent hover:underline" href={`/orgs/${orgId}${a.result.path}`}>
+            {a.result.label}
+          </Link>
+        </p>
+      ) : null}
+      {a.error ? <p className="mt-1 text-xs text-negative">{a.error}</p> : null}
+      {a.status === 'PROPOSED' ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button size="sm" loading={busy} onClick={() => (a.sensitive ? setCheck(true) : onDecide('confirm'))}>
+            Confirm
+          </Button>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => onDecide('cancel')}>
+            Cancel
+          </Button>
+        </div>
+      ) : null}
+      <Dialog open={check} onOpenChange={setCheck} title="Confirm this sensitive action?" description={a.summary}>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setCheck(false)}>
+            Go back
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setCheck(false);
+              onDecide('confirm');
+            }}
+          >
+            Yes, do it
+          </Button>
+        </div>
+      </Dialog>
+    </div>
   );
 }

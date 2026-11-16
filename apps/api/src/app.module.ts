@@ -102,6 +102,7 @@ import { CopilotController } from './copilot/copilot.controller';
 import { COPILOT_MODEL, CopilotModel, copilotModelFromConfig } from './copilot/copilot.model';
 import { CopilotService } from './copilot/copilot.service';
 import { CopilotTools } from './copilot/copilot.tools';
+import { CopilotActionsService } from './copilot/copilot.actions';
 import { ComplianceController } from './compliance/compliance.controller';
 import { ComplianceService } from './compliance/compliance.service';
 import { EInvoicingController } from './e-invoicing/e-invoicing.controller';
@@ -214,6 +215,7 @@ export class AppModule {
         KpisService,
         AlertsService,
         CopilotTools,
+        CopilotActionsService,
         CopilotService,
         CollectionsService,
         BankAiService,

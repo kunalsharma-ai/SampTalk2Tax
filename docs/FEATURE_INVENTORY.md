@@ -1525,8 +1525,8 @@ Part 44 · M7 · priority P3 · depends on: none
 | INNOV-010 | 44.9 Financial Disaster Simulation | rule | Simulate liquidity shocks, customer defaults, supplier failures and major operational disruptions | Tested |
 | INNOV-011 | 44.10 Business Opportunity Intelligence | rule | Identify potentially profitable growth opportunities based on authorized financial and operational data | Not started |
 | INNOV-012 | 44.11 Intelligent Financial Recovery Planning | rule | Generate evidence-based financial recovery scenarios | Tested |
-| INNOV-013 | 44.12 Voice-Based Financial Assistant | rule | Allow authorized users to ask financial questions by voice | Not started |
-| INNOV-014 | 44.12 Voice-Based Financial Assistant | rule | Require confirmation for sensitive actions | Not started |
+| INNOV-013 | 44.12 Voice-Based Financial Assistant | rule | Allow authorized users to ask financial questions by voice | Integration pending |
+| INNOV-014 | 44.12 Voice-Based Financial Assistant | rule | Require confirmation for sensitive actions | Tested |
 | INNOV-015 | 44.13 AI-Generated Financial Dashboards | rule | Allow users to describe a dashboard in natural language | Tested |
 | INNOV-016 | 44.13 AI-Generated Financial Dashboards | rule | Generate a validated dashboard configuration using approved metrics | Tested |
 | INNOV-017 | 44.14 AI Financial Report Designer | rule | Generate report layouts and narrative summaries from user instructions | Tested |

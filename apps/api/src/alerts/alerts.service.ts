@@ -643,7 +643,13 @@ export class AlertsService {
   // ------------------------------------------------------------------ acting on an alert
 
   private async act(orgId: string, actor: Actor, id: string, from: AlertStatus[], to: AlertStatus, action: 'ACKNOWLEDGED' | 'DISMISSED' | 'REOPENED', note: string | null) {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction((tx) => this.actInTx(tx, orgId, actor, id, from, to, action, note));
+    return this.get(orgId, id);
+  }
+
+  /** Changes an alert's state inside the caller's transaction. Returns its title. */
+  private async actInTx(tx: Prisma.TransactionClient, orgId: string, actor: Actor, id: string, from: AlertStatus[], to: AlertStatus, action: 'ACKNOWLEDGED' | 'DISMISSED' | 'REOPENED', note: string | null) {
+    {
       const a = await tx.alert.findFirst({ where: { id, orgId } });
       if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Alert not found' });
       if (!from.includes(a.status)) {
@@ -661,8 +667,16 @@ export class AlertsService {
       });
       await tx.alertEvent.create({ data: { orgId, alertId: id, action, actorId: actor.id, note } });
       await this.audit.append(tx, { orgId, actorId: actor.id, action: `alert.${action.toLowerCase()}`, entityType: 'alert', entityId: id, data: { rule: a.rule, title: a.title, from: a.status, note } });
-    });
-    return this.get(orgId, id);
+      return a.title;
+    }
+  }
+
+  /** Acknowledge or dismiss inside the caller's transaction (used by confirmed assistant actions). */
+  acknowledgeInTx(tx: Prisma.TransactionClient, orgId: string, actor: Actor, id: string, note: string | null) {
+    return this.actInTx(tx, orgId, actor, id, ['OPEN'], 'ACKNOWLEDGED', 'ACKNOWLEDGED', note);
+  }
+  dismissInTx(tx: Prisma.TransactionClient, orgId: string, actor: Actor, id: string, reason: string) {
+    return this.actInTx(tx, orgId, actor, id, ['OPEN', 'ACKNOWLEDGED'], 'DISMISSED', 'DISMISSED', reason);
   }
 
   acknowledge(orgId: string, actor: Actor, id: string, note: string | null) {
