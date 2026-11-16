@@ -52,6 +52,7 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | close.manage (prepare a month-end close: tasks, AI review, post or reject proposed entries; posting also needs journals.post) | ✓ | ✓ | ✓ | | |
 | assets.manage (fixed asset register: add, depreciate, dispose) | ✓ | ✓ | ✓ | | |
 | deferrals.manage (prepaid and deferred revenue schedules, releases, accruals) | ✓ | ✓ | ✓ | | |
+| loans.manage (loans: add, installments, prepayments, rate changes, reversal) | ✓ | ✓ | ✓ | | |
 | tasks.use (tasks for oneself or one's role; give tasks) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 The AI copilot sends questions and the figures it reads to Anthropic only when the server has `ANTHROPIC_API_KEY` **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
@@ -69,6 +70,8 @@ Fixed assets: owners, admins and accountants (`assets.manage`) add assets, post 
 Prepaid expenses, deferred revenue and accruals: owners, admins and accountants (`deferrals.manage`) add and end schedules, post and reverse monthly releases, and post and cancel accruals; everyone with `journals.read` can see them. Every posting goes through the normal journal code, and database triggers keep released terms, release lines, ended schedules and accruals from being changed. See [`PREPAID_AND_DEFERRED.md`](PREPAID_AND_DEFERRED.md).
 
 Departments and projects: owners, admins and accountants (`accounts.manage`) add and change them; everyone with `journals.read` sees them and `reports.read` reads profit by department or project. Line tags are checked by the API (same organisation, right kind, active) and by the database (composite foreign keys and a kind trigger), and values are never deleted. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md).
+
+Loans: owners, admins and accountants (`loans.manage`) add loans and record installments, prepayments and rate changes, and reverse the latest entry; everyone with `journals.read` sees loans and the treasury overview. Every posting goes through the normal journal code, and database triggers keep a loan's agreed terms and its entries from being changed or deleted. The app records borrowings and never moves money. See [`LOANS_AND_TREASURY.md`](LOANS_AND_TREASURY.md).
 
 Workflow webhooks (`docs/WORKFLOW_AUTOMATIONS.md`) are signed with a per-workflow HMAC-SHA256 secret. Outside development they may only reach public https addresses: the address is checked when saved, the host name is resolved when sending, every resolved address is checked against loopback, private, link-local (cloud metadata), CGNAT, reserved and IPv4-mapped forms, and the connection is pinned to the checked address. Redirects are not followed. `WEBHOOK_ALLOW_PRIVATE_NETWORKS` must stay false in production.
 

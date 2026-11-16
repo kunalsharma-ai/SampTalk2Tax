@@ -4807,9 +4807,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/loans.ts",
+        "packages/accounting-engine/test/loans.test.ts",
+        "apps/api/src/loans/loans.service.ts",
+        "apps/api/test/loans.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/loans",
+        "apps/web/e2e/loans-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "docs/LOANS_AND_TREASURY.md"
+      ],
+      "notes": "Interest on loans is worked out per installment and posted to the interest expense account. Not built: interest earned on bank balances or deposits."
     },
     {
       "id": "BANK-012",
@@ -9114,9 +9123,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/api/src/loans/loans.service.ts",
+        "apps/api/test/loans.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/treasury/page.tsx",
+        "apps/web/e2e/loans-flow.test.mjs",
+        "docs/LOANS_AND_TREASURY.md"
+      ],
+      "notes": "Cash and bank balances from posted journals up to today, and net cash after borrowings, on the treasury overview. Not built: intraday or bank-fed balances, balances by entity or currency."
     },
     {
       "id": "TRS-003",
@@ -9289,9 +9304,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/loans.ts",
+        "packages/accounting-engine/test/loans.test.ts",
+        "apps/api/src/loans/loans.service.ts",
+        "apps/api/test/loans.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/loans",
+        "apps/web/e2e/loans-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "docs/LOANS_AND_TREASURY.md"
+      ],
+      "notes": "Loans kept as a register: money received posted or brought in from opening balances, installments posted from the bank split into principal and interest, prepayments with charges (shorter term or lower installment), floating-rate changes, reversal of the latest entry, closing when repaid, overdue installments, and what is owed within 12 months and later. Not built: covenants, security, drawdowns in tranches, moratorium periods, foreign-currency loans, loans given (receivable)."
     },
     {
       "id": "TRS-010",
@@ -9314,9 +9338,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/loans.ts",
+        "packages/accounting-engine/test/loans.test.ts",
+        "apps/api/src/loans/loans.service.ts",
+        "apps/api/test/loans.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/loans",
+        "apps/web/e2e/loans-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "docs/LOANS_AND_TREASURY.md"
+      ],
+      "notes": "Repayment schedules for EMI and equal-principal loans, previewed as the loan is entered, recomputed after prepayments and rate changes, with installments paid and still to pay. Not built: bullet or balloon repayments, quarterly or irregular installments, step-up EMIs."
     },
     {
       "id": "TRS-011",
@@ -9339,9 +9372,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/loans.ts",
+        "packages/accounting-engine/test/loans.test.ts",
+        "apps/api/src/loans/loans.service.ts",
+        "apps/api/test/loans.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/loans",
+        "apps/web/e2e/loans-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "docs/LOANS_AND_TREASURY.md"
+      ],
+      "notes": "Interest monthly on the opening balance of each installment period (monthly rests), rounded to the currency; the lender's own split can be recorded instead. Not built: daily-balance interest, interest accrued at month end between installment dates, interest income on deposits."
     },
     {
       "id": "TRS-012",
@@ -9464,9 +9506,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/loans/loans.service.ts",
+        "apps/api/test/loans.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/treasury/page.tsx",
+        "apps/web/e2e/loans-flow.test.mjs",
+        "docs/LOANS_AND_TREASURY.md"
+      ],
+      "notes": "Treasury overview: cash and bank balances, borrowings (within 12 months and later), net cash or debt, installments due in 30 days and overdue, repayments by month for 12 months, interest paid this financial year, and a check of each loan account in the ledger against the loans. Not built: cash forecast on the same page (see the cash-flow forecast), investments, FX exposure, multi-entity cash pooling."
     },
     {
       "id": "TRS-017",

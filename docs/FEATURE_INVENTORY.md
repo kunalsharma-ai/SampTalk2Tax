@@ -222,7 +222,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-008 |  | capability | Deposit matching | Tested |
 | BANK-009 |  | capability | Payment matching | Tested |
 | BANK-010 |  | capability | Bank charges | Tested |
-| BANK-011 |  | capability | Interest accounting | Not started |
+| BANK-011 |  | capability | Interest accounting | Implementing |
 | BANK-012 |  | capability | Foreign exchange accounting | Not started |
 | BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
 | BANK-014 |  | capability | Bank balance monitoring | Implementing |
@@ -417,21 +417,21 @@ Part 13 · M6 · priority P2 · depends on: GL, BANK
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | TRS-001 |  | rule | Implement enterprise-grade treasury capabilities | Not started |
-| TRS-002 |  | capability | Cash positioning | Not started |
+| TRS-002 |  | capability | Cash positioning | Implementing |
 | TRS-003 |  | capability | Bank account visibility | Not started |
 | TRS-004 |  | capability | Cash-flow forecasting | Not started |
 | TRS-005 |  | capability | Liquidity monitoring | Not started |
 | TRS-006 |  | capability | Working capital management | Not started |
 | TRS-007 |  | capability | Cash pooling analysis | Not started |
 | TRS-008 |  | capability | Intercompany funding | Not started |
-| TRS-009 |  | capability | Debt management | Not started |
-| TRS-010 |  | capability | Loan schedules | Not started |
-| TRS-011 |  | capability | Interest calculations | Not started |
+| TRS-009 |  | capability | Debt management | Tested |
+| TRS-010 |  | capability | Loan schedules | Tested |
+| TRS-011 |  | capability | Interest calculations | Tested |
 | TRS-012 |  | capability | Investment tracking | Not started |
 | TRS-013 |  | capability | Foreign exchange exposure | Not started |
 | TRS-014 |  | capability | Currency risk monitoring | Not started |
 | TRS-015 |  | capability | Payment planning | Not started |
-| TRS-016 |  | capability | Treasury dashboards | Not started |
+| TRS-016 |  | capability | Treasury dashboards | Tested |
 | TRS-017 |  | capability | Bank relationship management | Not started |
 | TRS-018 |  | capability | Financing scenarios | Not started |
 | TRS-019 |  | capability | Debt covenant tracking | Not started |

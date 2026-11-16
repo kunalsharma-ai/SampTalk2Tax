@@ -30,7 +30,14 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
       { href: '/purchases/ageing', label: 'Payables ageing' },
     ],
   },
-  { group: 'Banking', items: [{ href: '/banking', label: 'Bank accounts' }] },
+  {
+    group: 'Banking',
+    items: [
+      { href: '/banking', label: 'Bank accounts' },
+      { href: '/treasury', label: 'Treasury' },
+      { href: '/loans', label: 'Loans' },
+    ],
+  },
   { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }] },
   {
     group: 'Payroll',

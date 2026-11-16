@@ -60,6 +60,8 @@ import { FixedAssetsController } from './fixed-assets/fixed-assets.controller';
 import { FixedAssetsService } from './fixed-assets/fixed-assets.service';
 import { DeferralsController } from './deferrals/deferrals.controller';
 import { DeferralsService } from './deferrals/deferrals.service';
+import { LoansController } from './loans/loans.controller';
+import { LoansService } from './loans/loans.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
 import { DimensionsService } from './dimensions/dimensions.service';
 import { CloseService } from './close/close.service';
@@ -126,6 +128,7 @@ export class AppModule {
         AiControlController,
         FixedAssetsController,
         DeferralsController,
+        LoansController,
         DimensionsController,
         EInvoicingController,
         EWayBillsController,
@@ -170,6 +173,7 @@ export class AppModule {
         AiControlService,
         FixedAssetsService,
         DeferralsService,
+        LoansService,
         DimensionsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,
