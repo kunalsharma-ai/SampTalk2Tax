@@ -2614,9 +2614,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/contracts.ts",
+        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/sales-orders/contracts.service.ts",
+        "apps/api/src/sales-orders/contracts-runner.service.ts",
+        "apps/api/test/contracts.e2e.test.ts",
+        "apps/web/e2e/contracts-flow.test.mjs",
+        "docs/CONTRACTS.md",
+        "apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx"
+      ],
+      "notes": "Each due contract period becomes a draft invoice (invoice rules incl. GST), by the background runner (CONTRACT_RUNNER_INTERVAL_SECONDS), on activation, Bill now, or Bill due periods now; each period recorded once (no double billing); deleted/voided invoice can be billed again; failures kept on the contract and retried. Invoices are drafts to check and post; no auto-posting or auto-email yet."
     },
     {
       "id": "AR-011",
@@ -2640,9 +2649,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/contracts.ts",
+        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/sales-orders/contracts.service.ts",
+        "apps/api/src/sales-orders/contracts-runner.service.ts",
+        "apps/api/test/contracts.e2e.test.ts",
+        "apps/web/e2e/contracts-flow.test.mjs",
+        "docs/CONTRACTS.md",
+        "apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx"
+      ],
+      "notes": "Fixed-fee recurring billing works through contracts (CRM-006/AR-010). Not built: usage-based or metered charges, proration of part periods, card/mandate auto-collection."
     },
     {
       "id": "AR-012",
@@ -3131,9 +3149,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/contracts.ts",
+        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/sales-orders/contracts.service.ts",
+        "apps/api/src/sales-orders/contracts-runner.service.ts",
+        "apps/api/test/contracts.e2e.test.ts",
+        "apps/web/e2e/contracts-flow.test.mjs",
+        "docs/CONTRACTS.md",
+        "apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx"
+      ],
+      "notes": "Contract billing from the contract's lines in force on the billing day; price changes and renewals apply to later periods only; reference CT-0001 <period> / customer reference."
     },
     {
       "id": "AR-030",
@@ -17473,9 +17500,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/contracts.ts",
+        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/sales-orders/contracts.service.ts",
+        "apps/api/src/sales-orders/contracts-runner.service.ts",
+        "apps/api/test/contracts.e2e.test.ts",
+        "apps/web/e2e/contracts-flow.test.mjs",
+        "docs/CONTRACTS.md",
+        "apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx"
+      ],
+      "notes": "Customer contracts CT-0001: monthly/quarterly/half-yearly/yearly, in advance or arrears, fixed end on a period end or rolling; draft -> active <-> paused -> ended/cancelled; renew by hand (with % price change) or automatically; renewal-due flag from notice days; MRR/ARR; append-only history; activating for a deal wins it."
     },
     {
       "id": "CRM-007",
@@ -34172,9 +34208,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/lib/nav.ts",
+        "apps/web/e2e/contracts-flow.test.mjs"
+      ],
+      "notes": "Sales → Contracts."
     },
     {
       "id": "NAV-023",

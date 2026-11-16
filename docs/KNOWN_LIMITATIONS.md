@@ -270,5 +270,6 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## CRM
 
-* Leads, the pipeline, quotations and sales orders are built (CRM slices 1 and 2); contracts, customer profitability and lifetime value, the revenue forecast and the external CRM connection are not yet. Deals are in the functional currency only. There are no follow-up reminders from leads or deals, and no import of leads from a file. See [`CRM_PIPELINE.md`](CRM_PIPELINE.md).
+* Leads, the pipeline, quotations, sales orders and contracts are built (CRM slices 1 to 3); customer profitability and lifetime value, the revenue forecast and the external CRM connection are not yet. Deals are in the functional currency only. There are no follow-up reminders from leads or deals, and no import of leads from a file. See [`CRM_PIPELINE.md`](CRM_PIPELINE.md).
 * Quotations cannot be printed, made into a PDF or e-mailed from the app yet (*Mark sent* only records it); quotations and orders are in the functional currency only; an order's lines cannot be amended; and editing the quantities on a draft invoice made from an order does not change what the order counts as billed. See [`QUOTES_AND_ORDERS.md`](QUOTES_AND_ORDERS.md).
+* Contract invoices are made as drafts and are not posted or e-mailed automatically; there is no proration of part periods, no usage-based charges and no automatic collection. See [`CONTRACTS.md`](CONTRACTS.md).

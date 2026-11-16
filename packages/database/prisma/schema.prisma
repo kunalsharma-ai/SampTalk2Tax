@@ -285,6 +285,7 @@ model Organization {
   crmActivities            CrmActivity[]
   salesQuotes              SalesQuote[]
   salesOrders              SalesOrder[]
+  salesContracts           SalesContract[]
   loanEvents               LoanEvent[]
   dimensionValues          DimensionValue[]
   copilotConversations     CopilotConversation[]
@@ -4275,4 +4276,134 @@ model SalesOrderBilling {
   @@index([orgId, documentId])
   @@index([orderLineId])
   @@map("sales_order_billings")
+}
+
+enum SalesContractStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
+enum ContractFrequency {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+enum ContractTiming {
+  ADVANCE
+  ARREARS
+}
+
+enum ContractPeriodStatus {
+  BILLED
+  SKIPPED
+}
+
+/// A customer contract billed every period into a draft invoice (CRM slice 3). Shown as CT-0001.
+model SalesContract {
+  id               String                @id @default(uuid()) @db.Uuid
+  orgId            String                @map("org_id") @db.Uuid
+  number           Int
+  contactId        String                @map("contact_id") @db.Uuid
+  dealId           String?               @map("deal_id") @db.Uuid
+  title            String                @db.VarChar(200)
+  status           SalesContractStatus   @default(DRAFT)
+  frequency        ContractFrequency
+  timing           ContractTiming        @default(ADVANCE)
+  startDate        DateTime              @map("start_date") @db.Date
+  /// Null: rolls on until cancelled.
+  endDate          DateTime?             @map("end_date") @db.Date
+  /// The next period to bill or skip (1 for the first).
+  nextPeriodNo     Int                   @default(1) @map("next_period_no")
+  autoRenew        Boolean               @default(false) @map("auto_renew")
+  renewalMonths    Int?                  @map("renewal_months")
+  noticeDays       Int                   @default(30) @map("notice_days")
+  paymentTermsDays Int?                  @map("payment_terms_days")
+  placeOfSupply    String?               @map("place_of_supply") @db.Char(2)
+  /// The customer's purchase order or contract reference.
+  reference        String?               @db.VarChar(100)
+  memo             String?               @db.VarChar(1000)
+  currency         String                @db.Char(3)
+  /// Per period.
+  subtotal         Decimal               @db.Decimal(24, 6)
+  taxTotal         Decimal               @map("tax_total") @db.Decimal(24, 6)
+  total            Decimal               @db.Decimal(24, 6)
+  activatedAt      DateTime?             @map("activated_at") @db.Timestamptz(6)
+  cancelReason     String?               @map("cancel_reason") @db.VarChar(500)
+  cancelledAt      DateTime?             @map("cancelled_at") @db.Timestamptz(6)
+  endedAt          DateTime?             @map("ended_at") @db.Timestamptz(6)
+  lastError        String?               @map("last_error") @db.VarChar(1000)
+  lastErrorAt      DateTime?             @map("last_error_at") @db.Timestamptz(6)
+  createdById      String                @map("created_by_id") @db.Uuid
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org              Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines            SalesContractLine[]
+  periods          SalesContractPeriod[]
+  events           SalesContractEvent[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@index([status])
+  @@map("sales_contracts")
+}
+
+model SalesContractLine {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  contractId  String        @map("contract_id") @db.Uuid
+  lineNo      Int           @map("line_no")
+  description String?       @db.VarChar(500)
+  accountId   String        @map("account_id") @db.Uuid
+  quantity    Decimal       @db.Decimal(24, 6)
+  unitPrice   Decimal       @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?       @map("tax_rate_id") @db.Uuid
+  hsnCode     String?       @map("hsn_code")
+  netAmount   Decimal       @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal       @map("tax_amount") @db.Decimal(24, 6)
+  contract    SalesContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, lineNo])
+  @@unique([id, orgId])
+  @@map("sales_contract_lines")
+}
+
+model SalesContractPeriod {
+  id          String               @id @default(uuid()) @db.Uuid
+  orgId       String               @map("org_id") @db.Uuid
+  contractId  String               @map("contract_id") @db.Uuid
+  periodNo    Int                  @map("period_no")
+  periodStart DateTime             @map("period_start") @db.Date
+  periodEnd   DateTime             @map("period_end") @db.Date
+  status      ContractPeriodStatus
+  documentId  String?              @map("document_id") @db.Uuid
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contract    SalesContract        @relation(fields: [contractId], references: [id], onDelete: Restrict)
+
+  @@unique([contractId, periodNo])
+  @@index([orgId, documentId])
+  @@map("sales_contract_periods")
+}
+
+/// Append-only history of a contract (actor null: the billing runner).
+model SalesContractEvent {
+  id         String        @id @default(uuid()) @db.Uuid
+  orgId      String        @map("org_id") @db.Uuid
+  contractId String        @map("contract_id") @db.Uuid
+  kind       String        @db.VarChar(40)
+  body       String        @db.VarChar(1000)
+  data       Json?
+  actorId    String?       @map("actor_id") @db.Uuid
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  contract   SalesContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId, createdAt])
+  @@map("sales_contract_events")
 }

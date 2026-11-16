@@ -93,6 +93,9 @@ import { InvoicePrintController, InvoiceTemplatesController, SignaturesControlle
 import { InvoiceTemplatesService } from './invoice-templates/invoice-templates.service';
 import { LoansController } from './loans/loans.controller';
 import { CrmController } from './crm/crm.controller';
+import { ContractsController } from './sales-orders/contracts.controller';
+import { ContractsRunnerService } from './sales-orders/contracts-runner.service';
+import { ContractsService } from './sales-orders/contracts.service';
 import { SalesOrdersController } from './sales-orders/sales-orders.controller';
 import { ReportExportsController } from './report-exports/report-exports.controller';
 import { ConsolidationController } from './consolidation/consolidation.controller';
@@ -218,6 +221,7 @@ export class AppModule {
         LoansController,
         CrmController,
         SalesOrdersController,
+        ContractsController,
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
@@ -298,6 +302,8 @@ export class AppModule {
         LoansService,
         CrmService,
         SalesOrdersService,
+        ContractsService,
+        ContractsRunnerService,
         InvoiceTemplatesService,
         ReportExportService,
         ConsolidationService,
