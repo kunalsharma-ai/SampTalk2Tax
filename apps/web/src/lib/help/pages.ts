@@ -170,6 +170,26 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Record a payment from a bank account and apply it to open bills.',
     where: 'Purchases. Payments reduce what you owe and appear on bank reconciliation.',
   },
+  'purchases/payment-batches': {
+    what: 'Supplier payment runs: bills grouped into one batch that is prepared by one person, approved by another, sent to the bank as a file and then recorded as payments.',
+    how: 'Choose New batch, pick the bank account, the date and the bills. Someone else approves it. Download the bank file, upload it to your bank, and record the payments once the bank has paid.',
+    where: 'Purchases. Recording a batch posts one payment per vendor with the batch reference, which settles the bills and shows on bank reconciliation.',
+  },
+  'purchases/payment-batches/new': {
+    what: 'A new payment batch: the bank account, the payment date and the bills it pays.',
+    how: 'Tick each bill to pay and change the amount to pay part of it. Vendors without verified bank details are flagged and block approval.',
+    where: 'Purchases. Nothing is posted until the payments are recorded.',
+  },
+  'purchases/payment-batches/[id]': {
+    what: 'One payment batch: its bills and vendors, who prepared and approved it, the bank file and the payments it made.',
+    how: 'Approve a draft prepared by someone else. Once approved, download the bank file, then record the payments when the bank has paid. Cancel it if it will not be paid.',
+    where: 'Purchases. Each vendor\'s payment has the batch reference; bills link to it.',
+  },
+  'purchases/payment-batches/[id]/edit': {
+    what: 'Changing a draft payment batch.',
+    how: 'Add or remove bills, change amounts, the date or the bank account. An approved batch cannot be changed; cancel it and prepare a new one.',
+    where: 'Purchases. Nothing is posted until the payments are recorded.',
+  },
   'purchases/ageing': {
     what: 'What you owe vendors on a date, split by how long it has been due.',
     how: 'Pick the date and plan payments from the oldest buckets.',

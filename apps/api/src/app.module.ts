@@ -109,6 +109,8 @@ import { BadDebtsController } from './bad-debts/bad-debts.controller';
 import { BadDebtsService } from './bad-debts/bad-debts.service';
 import { YearEndController } from './year-end/year-end.controller';
 import { YearEndService } from './year-end/year-end.service';
+import { PaymentBatchesController, VendorBankDetailsController } from './payment-batches/payment-batches.controller';
+import { PaymentBatchesService } from './payment-batches/payment-batches.service';
 import { JournalTemplatesController } from './journal-templates/journal-templates.controller';
 import { JournalTemplatesRunnerService } from './journal-templates/journal-templates-runner.service';
 import { JournalTemplatesService } from './journal-templates/journal-templates.service';
@@ -246,6 +248,8 @@ export class AppModule {
         JournalTemplatesController,
         BadDebtsController,
         YearEndController,
+        PaymentBatchesController,
+        VendorBankDetailsController,
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
@@ -337,6 +341,7 @@ export class AppModule {
         JournalTemplatesService,
         BadDebtsService,
         YearEndService,
+        PaymentBatchesService,
         JournalTemplatesRunnerService,
         InvoiceTemplatesService,
         ReportExportService,

@@ -43,6 +43,7 @@ export * from './fx-documents';
 export * from './recurring-journals';
 export * from './bad-debts';
 export * from './year-end';
+export * from './payment-batches';
 export * from './plans';
 export * from './subscription-billing';
 export * from './support';
