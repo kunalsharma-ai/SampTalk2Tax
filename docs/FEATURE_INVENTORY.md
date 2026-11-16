@@ -1514,7 +1514,7 @@ Part 44 · M7 · priority P3 · depends on: none
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | INNOV-001 | 44.1 Financial Knowledge Graph | rule | Connect customers, contracts, invoices, vendors, projects, payments, journal entries and risks in an explainable relationship graph | Implemented |
-| INNOV-002 | 44.2 Financial Decision Memory | rule | Maintain a searchable history of approved management decisions, assumptions, financial outcomes and lessons learned | Not started |
+| INNOV-002 | 44.2 Financial Decision Memory | rule | Maintain a searchable history of approved management decisions, assumptions, financial outcomes and lessons learned | Tested |
 | INNOV-003 | 44.3 AI Financial Policy Studio | rule | Allow organizations to define financial policies conversationally | Not started |
 | INNOV-004 | 44.3 AI Financial Policy Studio | rule | Convert approved policies into testable, version-controlled workflow rules | Not started |
 | INNOV-005 | 44.4 Continuous Financial Health Monitoring | rule | Evaluate financial indicators continuously and provide prioritized alerts | Implemented |

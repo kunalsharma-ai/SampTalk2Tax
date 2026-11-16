@@ -67,6 +67,8 @@ export const PERMISSIONS = [
   'scenarios.approve',
   /** Prepare and finalise virtual CFO board packs and investor updates, and have the AI write their summary. */
   'cfo.reports',
+  /** Record management decisions in decision memory, update them and review their outcomes. Reading needs reports.read. */
+  'decisions.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -117,8 +119,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'scenarios.manage',
     'documents.sign',
     'cfo.reports',
+    'decisions.manage',
   ]),
-  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve']),
+  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve', 'decisions.manage']),
   VIEWER: new Set<Permission>(READ_ONLY),
   /** Staff who only claim expenses: their own claims and the organisation's name, nothing else. */
   EMPLOYEE: new Set<Permission>(['org.read', 'expenses.submit']),

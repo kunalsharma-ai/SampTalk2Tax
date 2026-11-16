@@ -192,6 +192,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Contracts are not modelled, so they are not in the graph; risks are the alerts that cite a record; bank statement lines, budgets, scenarios and tax returns are not nodes; one record's neighbours at a time, shown as lists; a profit and loss filtered by department or project does not link to the ledger. See [`KNOWLEDGE_GRAPH.md`](KNOWLEDGE_GRAPH.md).
 
+## Decision memory (M7 slice 7)
+
+* Outcomes are organisation-wide KPIs (not per department or project); no reminders when a review is due; word search only, and the copilot cannot search decisions yet. See [`DECISION_MEMORY.md`](DECISION_MEMORY.md).
+
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

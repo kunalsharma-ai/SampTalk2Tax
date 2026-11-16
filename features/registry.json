@@ -32330,9 +32330,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/decisions.ts",
+        "packages/accounting-engine/test/decisions.test.ts",
+        "packages/database/prisma/migrations/20261105120000_decision_memory/migration.sql",
+        "apps/api/src/decisions",
+        "apps/api/test/decisions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/decisions",
+        "apps/web/e2e/decision-memory-flow.test.mjs",
+        "docs/DECISION_MEMORY.md"
+      ],
+      "notes": "Decisions with context, assumptions and expected outcomes (KPIs with a target and month, compared with the month before the decision and measured from the posted books); search across decisions, assumptions and lessons; review records whether each assumption held, a verdict and lessons, and freezes the measured figures; reviewed and withdrawn decisions are locked by a database trigger. Approved scenarios and recovery plans can be recorded as decisions."
     },
     {
       "id": "INNOV-003",

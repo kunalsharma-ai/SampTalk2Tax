@@ -44,6 +44,7 @@ export default function ScenarioPage() {
         actions={
           <>
             {manage && s && !locked ? <Button variant="ghost" onClick={() => confirm(`Delete the scenario "${s.name}"?`) && del.mutate()}>Delete</Button> : null}
+            {s?.status === 'APPROVED' && can(org.role, 'decisions.manage') ? <Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/decisions/new?sourceType=SCENARIO&sourceId=${s.id}`}>Record as a decision</Link> : null}
             <Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/planning/twin`}>All scenarios</Link>
           </>
         }
