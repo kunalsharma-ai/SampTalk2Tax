@@ -95,10 +95,10 @@ export class ApprovalsService {
 
   /** What the document page needs: does a policy apply, and where is the approval now. */
   async forDocument(org: OrgContext, actor: Actor, documentId: string) {
-    const doc = await this.prisma.document.findFirst({ where: { id: documentId, orgId: org.id }, select: { id: true, kind: true, status: true, total: true, createdById: true } });
+    const doc = await this.prisma.document.findFirst({ where: { id: documentId, orgId: org.id }, select: { id: true, kind: true, status: true, total: true, exchangeRate: true, createdById: true } });
     if (!doc) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
     this.require(org, readPermission(doc.kind), 'see this document');
-    const policy = doc.status === 'DRAFT' ? await policyFor(this.prisma, org.id, doc.kind, doc.total.toFixed()) : null;
+    const policy = doc.status === 'DRAFT' ? await policyFor(this.prisma, org.id, doc.kind, doc.total.times(doc.exchangeRate).toFixed()) : null;
     const approved = doc.status === 'DRAFT' ? await currentApproval(this.prisma, doc.id, doc.total.toFixed()) : null;
     const history = await this.prisma.approvalRequest.findMany({ where: { documentId: doc.id, orgId: org.id }, include: REQ_INCLUDE, orderBy: { requestedAt: 'desc' } });
     const scale = minorUnits(org.functionalCurrency);
@@ -114,7 +114,7 @@ export class ApprovalsService {
     return this.prisma.$transaction(async (tx) => {
       const doc = await this.lockDraft(tx, org, input.documentId);
       this.require(org, managePermission(doc.kind), 'submit this document for approval');
-      const policy = await policyFor(tx, org.id, doc.kind, doc.total.toFixed());
+      const policy = await policyFor(tx, org.id, doc.kind, doc.total.times(doc.exchangeRate).toFixed());
       if (!policy) throw new DomainError('NO_APPROVAL_NEEDED', 'No approval rule applies to this document; it can be posted directly');
       const open = await tx.approvalRequest.findFirst({ where: { documentId: doc.id, status: { in: ['PENDING', 'APPROVED'] } } });
       if (open) throw new DomainError('ALREADY_SUBMITTED', open.status === 'PENDING' ? 'This document is already waiting for approval' : 'This document is already approved', HttpStatus.CONFLICT);

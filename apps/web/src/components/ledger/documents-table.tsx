@@ -47,8 +47,8 @@ export function DocumentsTable({ l, orgId, items, currency, showContact = true }
               <Td className="whitespace-nowrap">{date(d.issueDate)}</Td>
               <Td className="whitespace-nowrap text-fg-muted">{d.kind === l.charge.kind ? date(d.dueDate) : '—'}</Td>
               <Td><DocStatus d={d} /></Td>
-              <Td numeric><Money value={d.total} currency={currency} /></Td>
-              <Td numeric>{d.status === 'POSTED' ? <Money value={d.amountDue} currency={currency} /> : <span className="text-fg-faint">—</span>}</Td>
+              <Td numeric><Money value={d.total} currency={d.currency} /></Td>
+              <Td numeric>{d.status === 'POSTED' ? <Money value={d.amountDue} currency={d.currency} /> : <span className="text-fg-faint">—</span>}</Td>
             </Tr>
           );
         })}

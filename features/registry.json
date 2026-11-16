@@ -3210,9 +3210,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/fx-documents.ts",
+        "packages/accounting-engine/test/fx-documents.test.ts",
+        "packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql",
+        "apps/api/src/ledgers/documents.service.ts",
+        "apps/api/src/ledgers/subledger.service.ts",
+        "apps/api/test/fx-documents.e2e.test.ts",
+        "apps/web/src/components/ledger/currency-rate.tsx",
+        "apps/web/e2e/fx-documents-flow.test.mjs",
+        "docs/MULTI_CURRENCY.md"
+      ],
+      "notes": "Invoices, credit notes, bills, vendor credits, receipts and payments in any supported currency, at the recorded rate on the date or one entered and kept with the record. Settling at another rate posts a realised exchange gain or loss (reversed if the allocation is removed). Receivables and payables, ageing, balances, credit limits and approvals are in the functional currency at each record's rate; customer statements are per currency. Not yet: TDS/TCS, reverse charge or GST charged on foreign-currency documents, e-invoices for them, quotations/orders/contracts in other currencies, rate feeds."
     },
     {
       "id": "AR-032",
@@ -4879,9 +4889,20 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/fx-documents.ts",
+        "packages/accounting-engine/test/fx-documents.test.ts",
+        "packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql",
+        "apps/api/src/ledgers/documents.service.ts",
+        "apps/api/src/ledgers/subledger.service.ts",
+        "apps/api/test/fx-documents.e2e.test.ts",
+        "apps/web/src/components/ledger/currency-rate.tsx",
+        "apps/web/e2e/fx-documents-flow.test.mjs",
+        "docs/MULTI_CURRENCY.md",
+        "apps/api/src/fx/fx.service.ts"
+      ],
+      "notes": "Receipts and payments in a foreign currency into any bank account, realised gains and losses on settlement and period-end revaluation of foreign balances. Bank statement import and reconciliation are still in the functional currency only."
     },
     {
       "id": "BANK-013",
@@ -25559,9 +25580,11 @@
         "apps/api/test/fx-revaluation.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/fx/page.tsx",
         "apps/web/e2e/fx-revaluation-flow.test.mjs",
-        "docs/MULTI_CURRENCY.md"
+        "docs/MULTI_CURRENCY.md",
+        "apps/api/test/fx-documents.e2e.test.ts",
+        "apps/web/e2e/fx-documents-flow.test.mjs"
       ],
-      "notes": "Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table that fills in missing journal rates, and period-end revaluation with automatic reversal. Not done: invoices, bills and payments in foreign currencies with realised gains and losses (AR-031), rate feeds, multi-currency reporting."
+      "notes": "Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table, period-end revaluation, and invoices, bills and payments in foreign currencies with realised gains and losses (AR-031). Not done: rate feeds, multi-currency reporting, foreign-currency bank statements."
     },
     {
       "id": "I18N-003",
@@ -32103,9 +32126,11 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/test/journal.test.ts",
-        "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines"
+        "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines",
+        "packages/accounting-engine/test/fx-documents.test.ts",
+        "apps/api/test/fx-documents.e2e.test.ts"
       ],
-      "notes": "Conversion and precision only; revaluation not built."
+      "notes": "Conversion and precision, revaluation, and realised gains and losses on foreign-currency documents."
     },
     {
       "id": "QA-009",
@@ -35179,9 +35204,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/components/ledger/currency-rate.tsx",
+        "apps/web/e2e/fx-documents-flow.test.mjs"
+      ],
+      "notes": "Currency and exchange-rate picker on invoices, bills, credits and payments: shows the recorded rate on the date and the home-currency amount."
     },
     {
       "id": "DS-013",

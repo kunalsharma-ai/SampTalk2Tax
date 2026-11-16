@@ -188,7 +188,7 @@ export class CfoService {
     return this.prisma.$queryRaw<{ id: string; number: string; contact_id: string; name: string; due_date: Date; open: Prisma.Decimal }[]>`
       SELECT x.id, x.number, x.contact_id, c.name, x.due_date, x.open FROM (
         SELECT d.id, d.number, d.contact_id, d.due_date,
-          d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open
+          ROUND((d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0)) * d.exchange_rate, 2) AS open
         FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND d.issue_date <= ${toDbDate(today)}::date) x
       JOIN contacts c ON c.id = x.contact_id
       WHERE x.open > 0

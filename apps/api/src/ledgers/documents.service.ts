@@ -9,6 +9,12 @@ import {
   TaxRateInfo,
   addDays,
   allocationIssues,
+  atRate,
+  checkRate,
+  isSupportedCurrency,
+  rateOn,
+  settlement,
+  toFunctional,
   applyReverseCharge,
   applyWithholding,
   buildDocumentJournal,
@@ -56,6 +62,10 @@ export interface DocumentInput {
   reverseCharge?: boolean;
   /** TDS section on a bill, or TCS section on an invoice. */
   withholdingSectionId?: string | null;
+  /** ISO currency; the functional currency when left out. */
+  currency?: string | null;
+  /** Functional currency per one unit; the recorded rate on or before the issue date when left out. */
+  exchangeRate?: string | null;
   lines: DocumentLineInput[];
 }
 
@@ -64,6 +74,10 @@ export interface PaymentInput {
   date: string;
   bankAccountId: string;
   amount: string;
+  /** ISO currency; the functional currency when left out. */
+  currency?: string | null;
+  /** Functional currency per one unit; the recorded rate on or before the date when left out. */
+  exchangeRate?: string | null;
   reference?: string | null;
   memo?: string | null;
   allocations: { documentId: string; amount: string }[];
@@ -153,21 +167,22 @@ export class DocumentsService {
         due_date: Date;
         reference: string | null;
         currency: string;
+        exchange_rate: Prisma.Decimal;
         subtotal: Prisma.Decimal;
         tax_total: Prisma.Decimal;
         total: Prisma.Decimal;
         used: Prisma.Decimal | null;
       }[]
     >`SELECT d.id, d.kind, d.status::text AS status, d.number, d.contact_id, c.name AS contact_name, d.issue_date, d.due_date, d.reference,
-             d.currency, d.subtotal, d.tax_total, d.total, a.used
+             d.currency, d.exchange_rate, d.subtotal, d.tax_total, d.total, a.used
       ${base}
       ORDER BY d.issue_date DESC, d.number DESC NULLS FIRST, d.created_at DESC
       LIMIT ${q.limit} OFFSET ${q.offset}`;
-    const scale = minorUnits(org.functionalCurrency);
     const todayIsoStr = todayIso();
     return {
       total: Number(count),
       items: rows.map((r) => {
+        const scale = minorUnits(r.currency);
         const total = new D(r.total.toFixed());
         const used = new D(r.used?.toFixed() ?? '0');
         const due = fromDbDate(r.due_date);
@@ -182,6 +197,8 @@ export class DocumentsService {
           dueDate: due,
           reference: r.reference,
           currency: r.currency,
+          exchangeRate: r.exchange_rate.toFixed(),
+          functionalTotal: toFunctional(total, r.exchange_rate.toFixed(), org.functionalCurrency).toFixed(minorUnits(org.functionalCurrency)),
           subtotal: r.subtotal.toFixed(scale),
           taxTotal: r.tax_total.toFixed(scale),
           total: total.toFixed(scale),
@@ -242,7 +259,8 @@ export class DocumentsService {
         dueDate: toDbDate(prepared.dueDate),
         reference: input.reference || null,
         memo: input.memo || null,
-        currency: org.functionalCurrency,
+        currency: prepared.currency,
+        exchangeRate: prepared.rate,
         ...gstColumns(prepared.gst),
         ...taxColumns(prepared.computed, prepared.withholding),
         subtotal: prepared.computed.subtotal.toFixed(),
@@ -284,6 +302,8 @@ export class DocumentsService {
           dueDate: toDbDate(prepared.dueDate),
           reference: input.reference || null,
           memo: input.memo || null,
+          currency: prepared.currency,
+          exchangeRate: prepared.rate,
           ...gstColumns(prepared.gst),
           ...taxColumns(prepared.computed, prepared.withholding),
           subtotal: prepared.computed.subtotal.toFixed(),
@@ -351,12 +371,14 @@ export class DocumentsService {
       if (target.kind !== k.charge || credit.kind !== k.credit) throw new DomainError('INVALID_ALLOCATION', `Apply a ${k.credit.toLowerCase().replace('_', ' ')} to a ${k.charge.toLowerCase()}`);
       if (target.status !== 'POSTED' || credit.status !== 'POSTED') throw new DomainError('NOT_POSTED', 'Both documents must be posted', HttpStatus.CONFLICT);
       if (target.contactId !== credit.contactId) throw new DomainError('INVALID_ALLOCATION', 'The credit belongs to a different contact');
+      if (target.currency !== credit.currency) throw new DomainError('CURRENCY_MISMATCH', `${target.number} is in ${target.currency} and ${credit.number} is in ${credit.currency}`);
       const amount = dec(input.amount);
-      const issues = allocationIssues(amount, await this.remainingOfCredit(tx, credit.id, credit.total), await this.outstandingOf(tx, target.id, target.total), org.functionalCurrency);
+      const issues = allocationIssues(amount, await this.remainingOfCredit(tx, credit.id, credit.total), await this.outstandingOf(tx, target.id, target.total), target.currency);
       if (issues.length) throw new DomainError('INVALID_ALLOCATION', issues.join('; '));
       const date = [fromDbDate(target.issueDate), fromDbDate(credit.issueDate)].sort()[1];
-      const al = await tx.allocation.create({ data: { orgId: org.id, targetId: target.id, creditDocumentId: credit.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id } });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.created', entityType: 'allocation', entityId: al.id, data: { targetId: target.id, creditDocumentId: credit.id, amount: amount.toFixed() } });
+      const fx = await this.realiseFx(tx, org, actor, ledger, { amount, currency: target.currency, date, targetRate: target.exchangeRate.toFixed(), sourceRate: credit.exchangeRate.toFixed(), memo: `${credit.number} settles ${target.number}` });
+      const al = await tx.allocation.create({ data: { orgId: org.id, targetId: target.id, creditDocumentId: credit.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id, ...fx } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.created', entityType: 'allocation', entityId: al.id, data: { targetId: target.id, creditDocumentId: credit.id, amount: amount.toFixed(), ...(fx.fxJournalEntryId ? { fxGain: fx.fxGain, fxJournalEntryId: fx.fxJournalEntryId } : {}) } });
       return this.serializeDoc(org, await tx.document.findUniqueOrThrow({ where: { id: target.id }, include: DOC_INCLUDE }));
     });
   }
@@ -398,8 +420,9 @@ export class DocumentsService {
       throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
     }
     const amount = dec(input.amount);
+    const { currency, rate } = await this.currencyAndRate(tx, org, input.currency, input.exchangeRate, input.date);
     const control = await this.controlAccount(tx, org.id, ledger);
-    const lines = buildPaymentJournal(kind, amount, bank.id, control, org.functionalCurrency);
+    const lines = atRate(buildPaymentJournal(kind, amount, bank.id, control, currency), currency, rate, org.functionalCurrency, null);
     const n = await this.nextNumber(tx, org.id, kind);
     const number = documentNumber(kind, n);
     const contact = await tx.contact.findUniqueOrThrow({ where: { id: input.contactId } });
@@ -418,7 +441,8 @@ export class DocumentsService {
         contactId: input.contactId,
         date: toDbDate(input.date),
         bankAccountId: bank.id,
-        currency: org.functionalCurrency,
+        currency,
+        exchangeRate: rate,
         amount: amount.toFixed(),
         reference: input.reference || null,
         memo: input.memo || null,
@@ -434,7 +458,7 @@ export class DocumentsService {
       action: 'payment.recorded',
       entityType: 'payment',
       entityId: p.id,
-      data: { kind, number, amount: amount.toFixed(), contactId: input.contactId, journalEntryId: je.id },
+      data: { kind, number, amount: amount.toFixed(), currency, ...(currency === org.functionalCurrency ? {} : { exchangeRate: rate }), contactId: input.contactId, journalEntryId: je.id },
     });
     await this.allocateInTx(tx, org, actor, ledger, p.id, input.allocations);
     return { id: p.id, number: p.number, journalEntryId: je.id };
@@ -472,8 +496,12 @@ export class DocumentsService {
       if (al.removedOn) throw new DomainError('ALREADY_REMOVED', 'Allocation was already removed', HttpStatus.CONFLICT);
       const today = todayIso();
       const removedOn = today < fromDbDate(al.date) ? fromDbDate(al.date) : today;
-      await tx.allocation.update({ where: { id: allocationId }, data: { removedOn: toDbDate(removedOn), removedById: actor.id } });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.removed', entityType: 'allocation', entityId: allocationId, data: { targetId: al.targetId, amount: al.amount.toFixed() } });
+      // The realised exchange difference goes with the allocation: reversed on the day it is removed.
+      const rev = al.fxJournalEntryId
+        ? await this.journals.reverseSystemEntry(tx, org, actor, al.fxJournalEntryId, { date: removedOn, memo: `Allocation removed from ${al.target.number}` })
+        : null;
+      await tx.allocation.update({ where: { id: allocationId }, data: { removedOn: toDbDate(removedOn), removedById: actor.id, fxReversalJournalEntryId: rev?.id ?? null } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.removed', entityType: 'allocation', entityId: allocationId, data: { targetId: al.targetId, amount: al.amount.toFixed(), ...(rev ? { fxReversalJournalEntryId: rev.id } : {}) } });
       return { id: allocationId, removedOn };
     });
   }
@@ -496,6 +524,8 @@ export class DocumentsService {
       placeOfSupply: doc.placeOfSupply,
       reverseCharge: doc.reverseCharge,
       withholdingSectionId: doc.withholdingSectionId,
+      currency: doc.currency,
+      exchangeRate: doc.exchangeRate.toFixed(),
       lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode, departmentId: l.departmentId, projectId: l.projectId })),
     };
     const { computed, gst, withholding } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
@@ -505,7 +535,7 @@ export class DocumentsService {
     if (!computed.total.eq(doc.total.toFixed()) || !sameGstTax(computed.lines, doc.lines)) {
       throw new DomainError('TOTAL_CHANGED', 'A tax rate on this draft changed since it was saved. Open and save the draft again to review the new total.', HttpStatus.CONFLICT);
     }
-    if ((await policyFor(tx, org.id, doc.kind, doc.total.toFixed())) && !(await currentApproval(tx, id, doc.total.toFixed()))) {
+    if ((await policyFor(tx, org.id, doc.kind, doc.total.times(doc.exchangeRate).toFixed())) && !(await currentApproval(tx, id, doc.total.toFixed()))) {
       throw new DomainError('APPROVAL_REQUIRED', 'This document needs an approval before it can post. Submit it for approval first.', HttpStatus.CONFLICT);
     }
     if (doc.kind === 'INVOICE' && doc.contact.creditHold) {
@@ -513,7 +543,7 @@ export class DocumentsService {
     }
     if (doc.kind === 'INVOICE' && doc.contact.creditLimit) {
       const bal = (await this.subledger.balances(tx, org.id, 'SALES', '9999-12-31', doc.contactId)).get(doc.contactId);
-      const exposure = (bal ? bal.outstanding.minus(bal.unapplied) : new D(0)).plus(computed.total);
+      const exposure = (bal ? bal.outstanding.minus(bal.unapplied) : new D(0)).plus(toFunctional(computed.total, doc.exchangeRate.toFixed(), org.functionalCurrency));
       const limit = new D(doc.contact.creditLimit.toFixed());
       if (exposure.gt(limit)) {
         if (!overrideCreditLimit) {
@@ -533,7 +563,7 @@ export class DocumentsService {
       source: 'DOCUMENT',
       memo: `${number} · ${doc.contact.name}${doc.reference ? ` · ${doc.reference}` : ''}`,
       reference: number,
-      lines: buildDocumentJournal(doc.kind, computed, control, org.functionalCurrency),
+      lines: atRate(buildDocumentJournal(doc.kind, computed, control, doc.currency), doc.currency, doc.exchangeRate.toFixed(), org.functionalCurrency, doc.currency === org.functionalCurrency ? null : await this.fxAccount(tx, org.id)),
     });
     // The GST facts are taken again as they stand now (for example the customer's GSTIN), so the posted document records what was charged.
     await tx.document.update({ where: { id }, data: { status: 'POSTED', number, journalEntryId: je.id, postedById: actor.id, postedAt: new Date(), ...gstColumns(gst), ...taxColumns(computed, withholding) } });
@@ -554,18 +584,24 @@ export class DocumentsService {
       if (doc.kind !== k.charge) throw new DomainError('INVALID_ALLOCATION', `${k.payment === 'RECEIPT' ? 'Receipts' : 'Payments'} can only settle ${k.charge.toLowerCase()}s`);
       if (doc.status !== 'POSTED') throw new DomainError('NOT_POSTED', `${doc.number ?? 'Draft'} is not posted`, HttpStatus.CONFLICT);
       if (doc.contactId !== p.contactId) throw new DomainError('INVALID_ALLOCATION', `${doc.number} belongs to a different contact`);
+      if (doc.currency !== p.currency) throw new DomainError('CURRENCY_MISMATCH', `${doc.number} is in ${doc.currency} and this ${p.kind === 'RECEIPT' ? 'receipt' : 'payment'} is in ${p.currency}`);
       const amount = dec(a.amount);
-      const issues = allocationIssues(amount, remaining, await this.outstandingOf(tx, doc.id, doc.total), org.functionalCurrency);
+      const issues = allocationIssues(amount, remaining, await this.outstandingOf(tx, doc.id, doc.total), doc.currency);
       if (issues.length) throw new DomainError('INVALID_ALLOCATION', `${doc.number}: ${issues.join('; ')}`);
       const date = [fromDbDate(p.date), fromDbDate(doc.issueDate)].sort()[1];
-      const al = await tx.allocation.create({ data: { orgId: org.id, targetId: doc.id, paymentId: p.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id } });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.created', entityType: 'allocation', entityId: al.id, data: { targetId: doc.id, paymentId: p.id, amount: amount.toFixed() } });
+      const fx = await this.realiseFx(tx, org, actor, ledger, { amount, currency: doc.currency, date, targetRate: doc.exchangeRate.toFixed(), sourceRate: p.exchangeRate.toFixed(), memo: `${p.number} settles ${doc.number}` });
+      const al = await tx.allocation.create({ data: { orgId: org.id, targetId: doc.id, paymentId: p.id, amount: amount.toFixed(), date: toDbDate(date), createdById: actor.id, ...fx } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'allocation.created', entityType: 'allocation', entityId: al.id, data: { targetId: doc.id, paymentId: p.id, amount: amount.toFixed(), ...(fx.fxJournalEntryId ? { fxGain: fx.fxGain, fxJournalEntryId: fx.fxJournalEntryId } : {}) } });
       remaining = remaining.minus(amount);
     }
   }
 
   private async prepare(tx: Tx, org: LedgerOrg, ledger: Ledger, input: DocumentInput, excludeId?: string) {
     const contact = await this.checkContact(tx, org.id, ledger, input.contactId);
+    const { currency, rate } = await this.currencyAndRate(tx, org, input.currency, input.exchangeRate, input.issueDate);
+    const foreign = currency !== org.functionalCurrency;
+    if (foreign && input.withholdingSectionId) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues: [`TDS and TCS are not worked out on ${currency} documents yet; record this one in ${org.functionalCurrency}`] });
+    if (foreign && input.reverseCharge) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues: [`Reverse charge is not worked out on ${currency} documents yet; record this one in ${org.functionalCurrency}`] });
     const accountIds = [...new Set(input.lines.map((l) => l.accountId))];
     const accounts = await tx.account.findMany({ where: { orgId: org.id, id: { in: accountIds } } });
     const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
@@ -584,7 +620,12 @@ export class DocumentsService {
       taxes.map((t) => [t.id, { id: t.id, name: t.name, rate: t.rate.toFixed(), accountId: ledger === 'SALES' ? t.salesAccountId : t.purchaseAccountId, kind: t.kind }]),
     );
     const { gst, splitter, reg } = await this.prepareGst(tx, org, ledger, contact, input, taxes);
-    let computed = computeDocument(input.lines, org.functionalCurrency, taxMap, splitter);
+    let computed = computeDocument(input.lines, currency, taxMap, splitter);
+    if (foreign && gst && computed.taxTotal.gt(0)) {
+      throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, {
+        issues: [`A ${currency} document cannot charge GST yet. Use the zero-rated (export), nil-rated, exempt or non-GST rate, or record it in ${org.functionalCurrency}.`],
+      });
+    }
     if (input.reverseCharge) {
       // Validated in prepareGst: a GST purchase. The input-tax accounts pair with the output-tax accounts.
       const i = this.gst.accountsFor(reg!, 'PURCHASES');
@@ -614,7 +655,48 @@ export class DocumentsService {
         throw new DomainError('DUPLICATE_BILL', `This vendor's invoice "${input.reference}" is already entered${dup[0].number ? ` as ${dup[0].number}` : ' as a draft'}`, HttpStatus.CONFLICT);
       }
     }
-    return { computed, dueDate, gst, withholding };
+    return { computed, dueDate, gst, withholding, currency, rate };
+  }
+
+  /**
+   * The currency of a document or payment and its rate (functional units per one unit): the
+   * rate given, or the organisation's recorded rate on or before the date. 1 in the functional currency.
+   */
+  private async currencyAndRate(tx: Tx, org: LedgerOrg, currencyIn: string | null | undefined, rateIn: string | null | undefined, date: string) {
+    const currency = (currencyIn || org.functionalCurrency).toUpperCase();
+    if (currency === org.functionalCurrency) {
+      if (rateIn && !new D(rateIn).eq(1)) throw new DomainError('FX_INVALID', `The rate is always 1 in ${org.functionalCurrency}`, HttpStatus.UNPROCESSABLE_ENTITY);
+      return { currency, rate: '1' };
+    }
+    if (!isSupportedCurrency(currency)) throw new DomainError('FX_INVALID', `${currency} is not a supported currency`, HttpStatus.UNPROCESSABLE_ENTITY);
+    if (rateIn) {
+      try {
+        return { currency, rate: checkRate(rateIn).toFixed() };
+      } catch (e) {
+        throw new DomainError('FX_INVALID', (e as Error).message, HttpStatus.UNPROCESSABLE_ENTITY);
+      }
+    }
+    const rows = await tx.exchangeRate.findMany({ where: { orgId: org.id, currency, date: { lte: toDbDate(date) } }, orderBy: { date: 'desc' }, take: 1 });
+    const found = rateOn(rows.map((r) => ({ date: fromDbDate(r.date), rate: r.rate.toFixed() })), date);
+    if (!found) throw new DomainError('FX_RATE_MISSING', `There is no ${currency} rate on or before ${date}. Enter the rate, or add it under Accounting → Exchange rates.`, HttpStatus.UNPROCESSABLE_ENTITY);
+    return { currency, rate: new D(found.rate).toFixed() };
+  }
+
+  /** The account exchange gains, losses and currency rounding are posted to. */
+  private async fxAccount(tx: Tx, orgId: string) {
+    const a = await tx.account.findFirst({ where: { orgId, subtype: 'FX_GAIN_LOSS', isActive: true, isPostable: true }, orderBy: { code: 'asc' } });
+    if (!a) throw new DomainError('FX_ACCOUNT_MISSING', 'Add an active account with the subtype FX_GAIN_LOSS (such as 7200 Foreign Exchange Gain/Loss) for exchange gains, losses and currency rounding.', HttpStatus.CONFLICT);
+    return a.id;
+  }
+
+  /** Posts the realised exchange difference of settling an amount at another rate (nothing when the rates are the same). */
+  private async realiseFx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, s: { amount: Dec; currency: string; date: string; targetRate: string; sourceRate: string; memo: string }) {
+    if (s.currency === org.functionalCurrency || new D(s.targetRate).eq(s.sourceRate)) return { fxGain: '0', fxJournalEntryId: null };
+    const control = await this.controlAccount(tx, org.id, ledger);
+    const result = settlement({ ledger, amount: s.amount, currency: s.currency, targetRate: s.targetRate, sourceRate: s.sourceRate, controlAccountId: control, fxAccountId: await this.fxAccount(tx, org.id), functionalCurrency: org.functionalCurrency });
+    if (!result.lines) return { fxGain: '0', fxJournalEntryId: null };
+    const je = await this.journals.postSystemEntry(tx, org, actor, { date: s.date, source: 'FX_SETTLEMENT', memo: `Realised exchange ${result.gain.isPositive() ? 'gain' : 'loss'} · ${s.memo}`, lines: result.lines });
+    return { fxGain: result.gain.toFixed(), fxJournalEntryId: je.id };
   }
 
   /**
@@ -774,6 +856,10 @@ export class DocumentsService {
       reference: d.reference,
       memo: d.memo,
       currency: d.currency,
+      exchangeRate: d.exchangeRate.toFixed(),
+      /** The total in the functional currency at the document's rate (as posted). */
+      functionalTotal: toFunctional(total, d.exchangeRate.toFixed(), org.functionalCurrency).toFixed(minorUnits(org.functionalCurrency)),
+      functionalCurrency: org.functionalCurrency,
       reverseCharge: d.reverseCharge,
       reverseChargeTax: d.reverseChargeTax.toFixed(scale),
       withholding: d.withholdingKind
@@ -839,11 +925,13 @@ export class DocumentsService {
             id: a.id,
             amount: a.amount.toFixed(scale),
             date: fromDbDate(a.date),
+            fxGain: a.fxGain.isZero() ? null : a.fxGain.toFixed(minorUnits(org.functionalCurrency)),
+            fxJournalEntryId: a.fxJournalEntryId,
             source: a.payment
               ? { type: 'payment' as const, id: a.payment.id, number: a.payment.number, kind: a.payment.kind }
               : { type: 'credit' as const, id: a.creditDocument!.id, number: a.creditDocument!.number, kind: a.creditDocument!.kind },
           }))
-        : d.allocationsOut.map((a) => ({ id: a.id, amount: a.amount.toFixed(scale), date: fromDbDate(a.date), target: { id: a.target.id, number: a.target.number, kind: a.target.kind } })),
+        : d.allocationsOut.map((a) => ({ id: a.id, amount: a.amount.toFixed(scale), date: fromDbDate(a.date), fxGain: a.fxGain.isZero() ? null : a.fxGain.toFixed(minorUnits(org.functionalCurrency)), fxJournalEntryId: a.fxJournalEntryId, target: { id: a.target.id, number: a.target.number, kind: a.target.kind } })),
     };
   }
 
@@ -860,6 +948,10 @@ export class DocumentsService {
       date: fromDbDate(p.date),
       bankAccount: p.bankAccount,
       currency: p.currency,
+      exchangeRate: p.exchangeRate.toFixed(),
+      functionalAmount: toFunctional(amount, p.exchangeRate.toFixed(), org.functionalCurrency).toFixed(minorUnits(org.functionalCurrency)),
+      functionalCurrency: org.functionalCurrency,
+      fxGain: p.allocations.reduce((s, a) => s.plus(a.fxGain.toFixed()), new D(0)).toFixed(minorUnits(org.functionalCurrency)),
       amount: amount.toFixed(scale),
       allocated: used.toFixed(scale),
       unallocated: (p.status === 'POSTED' ? amount.minus(used) : new D(0)).toFixed(scale),
@@ -869,7 +961,7 @@ export class DocumentsService {
       voidJournalEntryId: p.voidJournalEntryId,
       voidDate: p.voidDate ? fromDbDate(p.voidDate) : null,
       createdAt: p.createdAt.toISOString(),
-      allocations: p.allocations.map((a) => ({ id: a.id, amount: a.amount.toFixed(scale), date: fromDbDate(a.date), target: { id: a.target.id, number: a.target.number, kind: a.target.kind } })),
+      allocations: p.allocations.map((a) => ({ id: a.id, amount: a.amount.toFixed(scale), date: fromDbDate(a.date), fxGain: a.fxGain.isZero() ? null : a.fxGain.toFixed(minorUnits(org.functionalCurrency)), fxJournalEntryId: a.fxJournalEntryId, target: { id: a.target.id, number: a.target.number, kind: a.target.kind } })),
     };
   }
 }

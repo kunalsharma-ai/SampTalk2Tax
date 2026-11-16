@@ -1,6 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, CardHeader, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, Select, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -24,10 +24,11 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
   const [from, setFrom] = useState(() => fyStartFor(today(), org?.fiscalYearStartMonth ?? 1));
   const [to, setTo] = useState(today());
   const [draft, setDraft] = useState<ContactDraft | null>(null);
+  const [stCurrency, setStCurrency] = useState('');
   const contact = useQuery({ queryKey: ['contact', orgId, contactId], queryFn: () => api<Contact>(`/v1/orgs/${orgId}/contacts/${contactId}`) });
   const statement = useQuery({
-    queryKey: ['contact', orgId, contactId, 'statement', l.ledger, from, to],
-    queryFn: () => api<Statement>(`/v1/orgs/${orgId}/contacts/${contactId}/statement?ledger=${l.ledger}&from=${from}&to=${to}`),
+    queryKey: ['contact', orgId, contactId, 'statement', l.ledger, from, to, stCurrency],
+    queryFn: () => api<Statement>(`/v1/orgs/${orgId}/contacts/${contactId}/statement?ledger=${l.ledger}&from=${from}&to=${to}${stCurrency ? `&currency=${stCurrency}` : ''}`),
   });
   const docs = useQuery({
     queryKey: ['documents', orgId, l.api, 'contact', contactId],
@@ -67,26 +68,39 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
       <Card className="mt-6">
         <CardHeader
           title="Statement"
-          description="Every posted document and payment, with a running balance."
-          actions={<div className="flex flex-wrap gap-3"><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /></div>}
+          description={statement.data && statement.data.currencies.length > 1 ? `Every posted document and payment in ${statement.data.currency}, with a running balance. Balances above are in ${c}, at each record's own rate.` : 'Every posted document and payment, with a running balance.'}
+          actions={
+            <div className="flex flex-wrap gap-3">
+              {statement.data && statement.data.currencies.length > 1 ? (
+                <label className="flex flex-col gap-1 text-xs font-medium uppercase tracking-wide text-fg-muted">
+                  Currency
+                  <Select aria-label="Statement currency" value={statement.data.currency} onChange={(e) => setStCurrency(e.target.value)}>
+                    {statement.data.currencies.map((x) => <option key={x} value={x}>{x}</option>)}
+                  </Select>
+                </label>
+              ) : null}
+              <DateInput label="From" value={from} onChange={setFrom} />
+              <DateInput label="To" value={to} onChange={setTo} />
+            </div>
+          }
         />
         {statement.data ? (
           <Table>
             <thead><tr><Th>Date</Th><Th>Number</Th><Th>Details</Th><Th numeric>{l.ledger === 'SALES' ? 'Charged' : 'Billed'}</Th><Th numeric>{l.ledger === 'SALES' ? 'Paid / credited' : 'Paid / credited'}</Th><Th numeric>Balance</Th></tr></thead>
             <tbody>
-              <Tr><Td colSpan={5} className="text-fg-muted">Opening balance</Td><Td numeric><Money value={statement.data.openingBalance} currency={c} signed /></Td></Tr>
+              <Tr><Td colSpan={5} className="text-fg-muted">Opening balance</Td><Td numeric><Money value={statement.data.openingBalance} currency={statement.data.currency} signed /></Td></Tr>
               {statement.data.lines.map((s, i) => (
                 <Tr key={`${s.id}-${s.kind}-${i}`}>
                   <Td className="whitespace-nowrap">{date(s.date)}</Td>
                   <Td className="num"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/${s.kind.startsWith('RECEIPT') || s.kind.startsWith('PAYMENT') ? l.paymentsPath : l.docsPath}/${s.id}`}>{s.number}</Link></Td>
                   <Td className="text-fg-muted">{s.description}</Td>
-                  <Td numeric>{s.charge ? <Money value={s.charge} currency={c} /> : ''}</Td>
-                  <Td numeric>{s.credit ? <Money value={s.credit} currency={c} /> : ''}</Td>
-                  <Td numeric><Money value={s.balance} currency={c} signed /></Td>
+                  <Td numeric>{s.charge ? <Money value={s.charge} currency={statement.data.currency} /> : ''}</Td>
+                  <Td numeric>{s.credit ? <Money value={s.credit} currency={statement.data.currency} /> : ''}</Td>
+                  <Td numeric><Money value={s.balance} currency={statement.data.currency} signed /></Td>
                 </Tr>
               ))}
             </tbody>
-            <tfoot><tr><Td colSpan={5} className="font-semibold">Closing balance</Td><Td numeric className="font-semibold"><Money value={statement.data.closingBalance} currency={c} signed /></Td></tr></tfoot>
+            <tfoot><tr><Td colSpan={5} className="font-semibold">Closing balance</Td><Td numeric className="font-semibold"><Money value={statement.data.closingBalance} currency={statement.data.currency} signed /></Td></tr></tfoot>
           </Table>
         ) : <p className="px-5 py-4 text-sm text-fg-muted">Loading…</p>}
       </Card>

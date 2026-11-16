@@ -347,6 +347,7 @@ export class EWayBillsService {
     }
     if (d.status === 'VOID') return out(last ? 'CANCELLED' : 'NOT_APPLICABLE', last ? 'E-way bill cancelled and invoice voided' : 'Voided');
     if (!pre.lines.some((l) => l.hsnCode && !l.hsnCode.startsWith('99'))) return out('NOT_APPLICABLE', 'Services only: no goods move');
+    if (d.currency !== 'INR') return out('UNSUPPORTED', `In ${d.currency}: e-way bills for foreign-currency invoices are not supported yet; generate it on the portal`);
     if (d.placeOfSupply === '96') return out('UNSUPPORTED', 'Export: e-way bills for exports are not supported yet; generate it on the portal');
     const built = buildEWayBill(pre);
     const dataIssues = built.issues.filter((i) => !i.field.startsWith('transport.') && i.field !== 'issueDate');

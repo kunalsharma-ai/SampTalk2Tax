@@ -63,11 +63,11 @@ export class ContactsService {
     return this.serialize(org, c, sales.get(id), purchases.get(id));
   }
 
-  statement(org: OrgRef, id: string, q: { ledger: 'SALES' | 'PURCHASES'; from?: string; to?: string }) {
+  statement(org: OrgRef, id: string, q: { ledger: 'SALES' | 'PURCHASES'; from?: string; to?: string; currency?: string }) {
     const to = q.to ?? todayIso();
     const from = q.from ?? `${to.slice(0, 4)}-01-01`;
     if (from > to) throw new DomainError('INVALID_RANGE', '"from" must not be after "to"');
-    return this.subledger.statement(org, id, q.ledger, from, to);
+    return this.subledger.statement(org, id, q.ledger, from, to, q.currency);
   }
 
   async create(org: OrgRef, actor: { id: string }, input: ContactInput & { name: string }) {

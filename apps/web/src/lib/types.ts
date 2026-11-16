@@ -261,6 +261,10 @@ export interface DocumentSummary {
   dueDate: string;
   reference: string | null;
   currency: string;
+  /** Functional currency per one unit; 1 in the functional currency. */
+  exchangeRate: string;
+  /** The total in the functional currency at the document's rate. */
+  functionalTotal: string;
   subtotal: string;
   taxTotal: string;
   total: string;
@@ -295,6 +299,7 @@ export interface DocumentLine {
 
 export interface FinancialDocument extends DocumentSummary {
   memo: string | null;
+  functionalCurrency: string;
   reverseCharge: boolean;
   reverseChargeTax: string;
   withholding: {
@@ -326,6 +331,9 @@ export interface FinancialDocument extends DocumentSummary {
     id: string;
     amount: string;
     date: string;
+    /** Realised exchange gain (+) or loss (-) in the functional currency; null when none. */
+    fxGain: string | null;
+    fxJournalEntryId: string | null;
     source?: { type: 'payment' | 'credit'; id: string; number: string; kind: string };
     target?: { id: string; number: string; kind: string };
   }[];
@@ -340,6 +348,11 @@ export interface Payment {
   date: string;
   bankAccount: { id: string; code: string; name: string };
   currency: string;
+  exchangeRate: string;
+  functionalAmount: string;
+  functionalCurrency: string;
+  /** Realised exchange gain (+) or loss (-) on what it settled, in the functional currency. */
+  fxGain: string;
   amount: string;
   allocated: string;
   unallocated: string;
@@ -348,7 +361,7 @@ export interface Payment {
   journalEntryId: string;
   voidJournalEntryId: string | null;
   voidDate: string | null;
-  allocations: { id: string; amount: string; date: string; target: { id: string; number: string; kind: string } }[];
+  allocations: { id: string; amount: string; date: string; fxGain: string | null; fxJournalEntryId: string | null; target: { id: string; number: string; kind: string } }[];
 }
 
 export interface AgeingItem {
@@ -361,6 +374,11 @@ export interface AgeingItem {
   bucket: string | null;
   total: string;
   open: string;
+  currency: string;
+  /** For an item in another currency: its rate and its amounts in that currency. */
+  rate?: string;
+  foreignTotal?: string;
+  foreignOpen?: string;
 }
 
 export interface AgeingAmounts {
@@ -386,6 +404,8 @@ export interface Statement {
   contact: { id: string; name: string };
   ledger: 'SALES' | 'PURCHASES';
   currency: string;
+  /** The currencies this contact has documents or payments in (a statement is in one of them). */
+  currencies: string[];
   from: string;
   to: string;
   openingBalance: string;
@@ -415,7 +435,7 @@ export interface LedgerLink {
   date: string;
   memo: string | null;
   reference: string | null;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT';
   amount: string;
   payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
 }

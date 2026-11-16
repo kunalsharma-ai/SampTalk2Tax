@@ -159,6 +159,7 @@ export async function loadDueDocumentFacts(tx: Tx, orgId: string, trigger: 'INVO
       number: d.number,
       contactName: d.contact.name,
       contactEmail: d.contact.email,
+      currency: d.currency,
       total: money(d.total),
       balance: money(open[0]?.balance ?? d.total),
       issueDate: fromDbDate(d.issueDate),

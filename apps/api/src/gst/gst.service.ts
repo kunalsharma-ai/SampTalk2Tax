@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { D, Ledger } from '@talk2tax/accounting-engine';
+import { D, Ledger, toFunctional } from '@talk2tax/accounting-engine';
 import { Contact, GstRegistration, Prisma } from '@talk2tax/database';
 import {
   checkGstin,
@@ -198,7 +198,11 @@ export class GstService {
       include: { contact: { select: { name: true } }, lines: { orderBy: { lineNo: 'asc' }, include: { tax: { select: { gstCategory: true } } } } },
       orderBy: [{ issueDate: 'asc' }, { number: 'asc' }],
     });
-    return docs.map((d) => ({
+    // Returns are in rupees: a document in another currency is converted at its own rate.
+    return docs.map((d) => {
+      const r = d.exchangeRate.toFixed();
+      const inr = (v: Prisma.Decimal) => (d.currency === 'INR' ? v.toFixed(2) : toFunctional(new D(v.toFixed()), r, 'INR').toFixed(2));
+      return {
       id: d.id,
       kind: d.kind,
       status: d.status as 'POSTED' | 'VOID',
@@ -208,7 +212,7 @@ export class GstService {
       gstin: d.counterpartyGstin,
       placeOfSupply: d.placeOfSupply!,
       nature: d.supplyNature!,
-      total: d.subtotal.plus(d.taxTotal).toFixed(2),
+      total: inr(d.subtotal.plus(d.taxTotal)),
       reverseCharge: d.reverseCharge,
       supplierState: d.supplierState ?? undefined,
       lines: d.lines.map((l) => ({
@@ -216,12 +220,13 @@ export class GstService {
         quantity: l.quantity.toFixed(),
         category: (l.tax?.gstCategory ?? 'NON_GST') as GstCategory,
         rate: l.taxRate.toFixed(),
-        taxable: l.netAmount.toFixed(2),
-        cgst: l.cgstAmount.toFixed(2),
-        sgst: l.sgstAmount.toFixed(2),
-        igst: l.igstAmount.toFixed(2),
+        taxable: inr(l.netAmount),
+        cgst: inr(l.cgstAmount),
+        sgst: inr(l.sgstAmount),
+        igst: inr(l.igstAmount),
       })),
-    }));
+      };
+    });
   }
 
   // ------------------------------------------------------------------ helpers

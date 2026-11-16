@@ -436,11 +436,11 @@ export class AlertsService {
         const since = toDbDate(addDays(today, -DUPLICATE_LOOKBACK_DAYS));
         const bills = def.key === 'DUPLICATE_BILL';
         const items = bills
-          ? (await this.prisma.document.findMany({ where: { orgId, kind: 'BILL', status: 'POSTED', issueDate: { gte: since } }, select: { id: true, contactId: true, issueDate: true, total: true, number: true, reference: true, contact: { select: { name: true } } } })).map((d) => ({
+          ? (await this.prisma.document.findMany({ where: { orgId, kind: 'BILL', status: 'POSTED', issueDate: { gte: since } }, select: { id: true, contactId: true, issueDate: true, total: true, exchangeRate: true, number: true, reference: true, contact: { select: { name: true } } } })).map((d) => ({
               id: d.id,
               contactId: d.contactId,
               date: fromDbDate(d.issueDate),
-              amount: d.total.toFixed(),
+              amount: d.total.times(d.exchangeRate).toDecimalPlaces(2).toFixed(),
               number: d.number ?? '',
               reference: d.reference,
               contactName: d.contact.name,

@@ -55,6 +55,7 @@ enum JournalSource {
   LOAN
   INTERCOMPANY
   FX_REVALUATION
+  FX_SETTLEMENT
 }
 
 enum IntercompanyKind {
@@ -611,6 +612,8 @@ model Document {
   reference            String?
   memo                 String?
   currency             String                   @db.Char(3)
+  /// Functional currency per one unit of the document's currency; 1 in the functional currency. Fixed when saved.
+  exchangeRate         Decimal                  @default(1) @map("exchange_rate") @db.Decimal(24, 10)
   /// India GST, set on documents that use GST rates: place of supply (state code, 96 = outside India).
   placeOfSupply        String?                  @map("place_of_supply") @db.Char(2)
   /// India GST: the supplier's state (the organisation's on sales, the vendor's on purchases).
@@ -706,6 +709,8 @@ model Payment {
   date               DateTime      @db.Date
   bankAccountId      String        @map("bank_account_id") @db.Uuid
   currency           String        @db.Char(3)
+  /// Functional currency per one unit of the payment's currency; 1 in the functional currency.
+  exchangeRate       Decimal       @default(1) @map("exchange_rate") @db.Decimal(24, 10)
   amount             Decimal       @db.Decimal(24, 6)
   reference          String?
   memo               String?
@@ -742,6 +747,10 @@ model Allocation {
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   removedOn        DateTime? @map("removed_on") @db.Date
   removedById      String?   @map("removed_by_id") @db.Uuid
+  /// Realised exchange gain (+) or loss (-) in the functional currency, posted when the allocation was made.
+  fxGain                   Decimal   @default(0) @map("fx_gain") @db.Decimal(24, 6)
+  fxJournalEntryId         String?   @unique @map("fx_journal_entry_id") @db.Uuid
+  fxReversalJournalEntryId String?   @unique @map("fx_reversal_journal_entry_id") @db.Uuid
   target           Document  @relation("AllocationTarget", fields: [targetId, orgId], references: [id, orgId], onDelete: Restrict)
   payment          Payment?  @relation(fields: [paymentId, orgId], references: [id, orgId], onDelete: Restrict)
   creditDocument   Document? @relation("AllocationCreditSource", fields: [creditDocumentId, orgId], references: [id, orgId], onDelete: Restrict)

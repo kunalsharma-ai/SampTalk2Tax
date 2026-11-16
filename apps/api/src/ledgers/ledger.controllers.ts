@@ -37,6 +37,8 @@ function schemas(ledger: Ledger) {
     reverseCharge: z.boolean().optional(),
     /** TDS section (bills) or TCS section (invoices). */
     withholdingSectionId: z.uuid().nullable().optional(),
+    currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code').nullable().optional(),
+    exchangeRate: z.string().trim().max(30).nullable().optional(),
     lines: z.array(Line).min(1).max(500),
   });
   return {
@@ -58,6 +60,8 @@ function schemas(ledger: Ledger) {
       date: isoDate,
       bankAccountId: z.uuid(),
       amount: decimalString,
+      currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code').nullable().optional(),
+      exchangeRate: z.string().trim().max(30).nullable().optional(),
       reference: z.string().trim().max(100).nullable().optional(),
       memo: z.string().max(1000).nullable().optional(),
       allocations: z.array(z.object({ documentId: z.uuid(), amount: decimalString })).max(200).default([]),

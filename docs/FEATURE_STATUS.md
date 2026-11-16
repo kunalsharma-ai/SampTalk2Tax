@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 834 |
+| Not started | 831 |
 | Designed | 0 |
-| Implementing | 66 |
+| Implementing | 67 |
 | Implemented | 34 |
-| Tested | 395 |
+| Tested | 397 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,9 +25,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 12 | 32 |
-| Accounts receivable | M2 | 43 | 27 | 16 |
+| Accounts receivable | M2 | 43 | 26 | 17 |
 | Accounts payable | M2 | 36 | 25 | 11 |
-| Banking and reconciliation | M2 | 24 | 7 | 17 |
+| Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -65,7 +65,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
-| Design system | M1 | 36 | 35 | 1 |
+| Design system | M1 | 36 | 34 | 2 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
 ## Features with progress and evidence
@@ -533,6 +533,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/CONTRACTS.md
   - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
 
+### AR-031 — Multi-currency invoices
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Invoices, credit notes, bills, vendor credits, receipts and payments in any supported currency, at the recorded rate on the date or one entered and kept with the record. Settling at another rate posts a realised exchange gain or loss (reversed if the allocation is removed). Receivables and payables, ageing, balances, credit limits and approvals are in the functional currency at each record's rate; customer statements are per currency. Not yet: TDS/TCS, reverse charge or GST charged on foreign-currency documents, e-invoices for them, quotations/orders/contracts in other currencies, rate feeds.
+- Evidence:
+  - packages/accounting-engine/src/fx-documents.ts
+  - packages/accounting-engine/test/fx-documents.test.ts
+  - packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/src/ledgers/subledger.service.ts
+  - apps/api/test/fx-documents.e2e.test.ts
+  - apps/web/src/components/ledger/currency-rate.tsx
+  - apps/web/e2e/fx-documents-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
+
 ### AR-032 — Revenue leakage detection
 
 - Module: Accounts receivable
@@ -740,6 +756,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/loans-flow.test.mjs
   - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
   - docs/LOANS_AND_TREASURY.md
+
+### BANK-012 — Foreign exchange accounting
+
+- Module: Banking and reconciliation
+- Status: **Implementing**
+- Notes: Receipts and payments in a foreign currency into any bank account, realised gains and losses on settlement and period-end revaluation of foreign balances. Bank statement import and reconciliation are still in the functional currency only.
+- Evidence:
+  - packages/accounting-engine/src/fx-documents.ts
+  - packages/accounting-engine/test/fx-documents.test.ts
+  - packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/src/ledgers/subledger.service.ts
+  - apps/api/test/fx-documents.e2e.test.ts
+  - apps/web/src/components/ledger/currency-rate.tsx
+  - apps/web/e2e/fx-documents-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
+  - apps/api/src/fx/fx.service.ts
 
 ### BANK-013 — Unreconciled transaction reporting
 
@@ -4370,7 +4403,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table that fills in missing journal rates, and period-end revaluation with automatic reversal. Not done: invoices, bills and payments in foreign currencies with realised gains and losses (AR-031), rate feeds, multi-currency reporting.
+- Notes: Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table, period-end revaluation, and invoices, bills and payments in foreign currencies with realised gains and losses (AR-031). Not done: rate feeds, multi-currency reporting, foreign-currency bank statements.
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
   - packages/accounting-engine/src/fx.ts
@@ -4381,6 +4414,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/fx/page.tsx
   - apps/web/e2e/fx-revaluation-flow.test.mjs
   - docs/MULTI_CURRENCY.md
+  - apps/api/test/fx-documents.e2e.test.ts
+  - apps/web/e2e/fx-documents-flow.test.mjs
 
 ### I18N-003 — Regional number formats
 
@@ -5839,10 +5874,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Testing and quality assurance
 - Status: **Tested**
-- Notes: Conversion and precision only; revaluation not built.
+- Notes: Conversion and precision, revaluation, and realised gains and losses on foreign-currency documents.
 - Evidence:
   - packages/accounting-engine/test/journal.test.ts
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
+  - packages/accounting-engine/test/fx-documents.test.ts
+  - apps/api/test/fx-documents.e2e.test.ts
 
 ### QA-009 — Reconciliation tests
 
@@ -6372,6 +6409,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Sidebar only shows modules that exist today.
 - Evidence:
   - apps/web/src
+
+### DS-012 — Currency selectors
+
+- Module: Design system
+- Status: **Tested**
+- Notes: Currency and exchange-rate picker on invoices, bills, credits and payments: shows the recorded rate on the date and the home-currency amount.
+- Evidence:
+  - apps/web/src/components/ledger/currency-rate.tsx
+  - apps/web/e2e/fx-documents-flow.test.mjs
 
 ### DS-014 — Approval dialogs
 

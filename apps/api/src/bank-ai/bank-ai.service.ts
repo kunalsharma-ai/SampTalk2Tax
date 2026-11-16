@@ -226,7 +226,7 @@ export class BankAiService {
       SELECT d.id, d.number, d.contact_id, c.name AS contact_name, d.due_date, d.reference,
         d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open
       FROM documents d JOIN contacts c ON c.id = d.contact_id
-      WHERE d.org_id = ${org.id}::uuid AND d.kind = ${kind}::"DocumentKind" AND d.status = 'POSTED'`;
+      WHERE d.org_id = ${org.id}::uuid AND d.kind = ${kind}::"DocumentKind" AND d.status = 'POSTED' AND d.currency = ${org.functionalCurrency}`;
     const ranked = rankCandidates(
       me,
       docs.filter((d) => new D(d.open.toString()).gt(0)).map((d) => ({ id: d.id, number: d.number, contactId: d.contact_id, contactName: d.contact_name, dueDate: d.due_date ? fromDbDate(d.due_date) : null, reference: d.reference, amount: new D(d.open.toString()).toFixed(2), date: d.due_date ? fromDbDate(d.due_date) : null, text: `${d.contact_name} ${d.number} ${d.reference ?? ''}` })),

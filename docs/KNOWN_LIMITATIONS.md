@@ -16,7 +16,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Period CLOSED status exists but there is no close workflow; LOCKED/OPEN toggling is available to OWNER/ADMIN.
 
 ## Receivables and payables (M2, slice 1)
-* Documents are in the organisation's functional currency only; multi-currency invoices and bills are not supported yet.
+* Invoices, bills, credits and payments can be in another currency (see [`MULTI_CURRENCY.md`](MULTI_CURRENCY.md)), but quotations, sales orders, contracts and expense claims are in the functional currency only.
 * Simple tax rates are percentages the tenant configures. India GST (M3, slice 1) and India TDS/TCS with GST reverse charge (M3, slice 2) are the only statutory tax modules; what they do not cover yet is listed in [`TAX_ENGINE_INDIA_GST.md`](TAX_ENGINE_INDIA_GST.md) and [`TAX_ENGINE_INDIA_TDS_TCS.md`](TAX_ENGINE_INDIA_TDS_TCS.md). There is no other country's tax, no e-invoicing, no TDS/TCS statements and no filing.
 * No quotes, sales orders, purchase orders, recurring invoices, debit notes, write-offs, bad-debt provisions, collection reminders, payment links or portals.
 * No PDF generation or emailing of invoices and statements.
@@ -91,7 +91,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Multi-currency (M8, slice 4)
 
-* Foreign currencies live on journal lines: invoices, bills and payments are still in the functional currency only, so there are no realised exchange gains or losses on settlement. Rates are entered by people (no feed). Revaluation covers monetary account balances, not individual open documents. See [`MULTI_CURRENCY.md`](MULTI_CURRENCY.md).
+* Invoices, bills, credits, receipts and payments can be in another currency, with realised exchange gains and losses on settlement. Not yet on foreign-currency documents: TDS/TCS, reverse charge, GST charged above 0% (exports at zero rate are fine), e-invoices and e-way bills. A payment reminder covers one currency at a time. Rates are entered by people (no feed). Revaluation covers monetary account balances, not individual open documents. Bank statement lines are in the functional currency. See [`MULTI_CURRENCY.md`](MULTI_CURRENCY.md).
 
 ## Alerts and leakage checks (M4, slice 4)
 
