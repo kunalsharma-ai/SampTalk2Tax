@@ -14911,9 +14911,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/fixed-assets.ts",
+        "packages/accounting-engine/test/fixed-assets.test.ts",
+        "apps/api/src/fixed-assets/fixed-assets.service.ts",
+        "apps/api/test/fixed-assets.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/fixed-assets",
+        "apps/web/e2e/fixed-assets-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql",
+        "docs/FIXED_ASSETS.md"
+      ],
+      "notes": "Fixed asset register: assets with category, serial number, location, accounts, cost, residual value and dates; purchase posted from the register or already in the books; assets brought in part-depreciated; terms fixed once depreciation is posted (database trigger); disposal with proceeds and gain or loss posted. Not built: asset categories with default terms, transfers between locations, revaluation, impairment, partial disposal, tagging or photos."
     },
     {
       "id": "ENT-020",
@@ -14935,9 +14944,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/fixed-assets.ts",
+        "packages/accounting-engine/test/fixed-assets.test.ts",
+        "apps/api/src/fixed-assets/fixed-assets.service.ts",
+        "apps/api/test/fixed-assets.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/fixed-assets",
+        "apps/web/e2e/fixed-assets-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql",
+        "docs/FIXED_ASSETS.md"
+      ],
+      "notes": "Straight-line and written-down-value depreciation by month, posted once a month as one journal (catching up missed months), reversible latest first; schedules per asset. Not tested against a published depreciation schedule (for example Companies Act Schedule II rates); no separate tax-book (Income Tax Act block) depreciation."
     },
     {
       "id": "ENT-021",
@@ -31991,9 +32009,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src/components/shell.tsx",
+        "apps/web/src/app/orgs/[orgId]/fixed-assets"
+      ],
+      "notes": "Accounting → Fixed assets: register, add or change an asset, asset detail with schedule and disposal, depreciation runs."
     },
     {
       "id": "NAV-027",

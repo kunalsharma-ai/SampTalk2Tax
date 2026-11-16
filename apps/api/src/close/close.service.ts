@@ -126,7 +126,7 @@ const CHECK_LINK: Record<string, string | null> = {
   PENDING_APPROVALS: '/approvals',
   EXPENSE_CLAIMS_WAITING: '/expenses',
   PAYROLL_NOT_POSTED: '/payroll',
-  DEPRECIATION_MISSING: '/journals/new',
+  DEPRECIATION_MISSING: '/fixed-assets/depreciation',
   NEGATIVE_CASH: '/reports/trial-balance',
   AI_WAITING: null,
   EARLIER_PERIODS_OPEN: '/close',

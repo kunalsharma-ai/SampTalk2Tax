@@ -91,6 +91,8 @@ AI control center (M5 slice 6): `apps/api/test/ai-control.e2e.test.ts` (8 tests)
 
 `apps/web/e2e/ai-control-flow.test.mjs` drives the page in the browser.
 
+Fixed assets (M6 slice 1): engine tests (`packages/accounting-engine/test/fixed-assets.test.ts`, 10) cover straight-line rounding into the last month, opening depreciation, posted amounts, written-down value resetting at the fiscal year, the residual floor, charges through the disposal month and none after, and the disposal entry. `apps/api/test/fixed-assets.e2e.test.ts` (9) covers adding assets with and without the purchase posted, validation, permissions, a run's journal, catch-up of a skipped month, fixed terms, latest-first reversal, disposal with a loss and its preconditions, and the database guards. `apps/web/e2e/fixed-assets-flow.test.mjs` drives purchase to disposal in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;

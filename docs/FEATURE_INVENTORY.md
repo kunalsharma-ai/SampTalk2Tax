@@ -684,8 +684,8 @@ Part 19 · M6 · priority P2 · depends on: GL
 | ENT-016 |  | capability | Deferred revenue | Not started |
 | ENT-017 |  | capability | Prepaid expenses | Not started |
 | ENT-018 |  | capability | Accruals | Not started |
-| ENT-019 |  | capability | Fixed asset management | Not started |
-| ENT-020 |  | capability | Depreciation | Not started |
+| ENT-019 |  | capability | Fixed asset management | Tested |
+| ENT-020 |  | capability | Depreciation | Tested |
 | ENT-021 |  | capability | Amortization | Not started |
 | ENT-022 |  | capability | Lease accounting | Not started |
 | ENT-023 |  | capability | Cost allocation | Not started |
@@ -1563,7 +1563,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-023 |  | capability | Customers | Not started |
 | NAV-024 |  | capability | Vendors | Not started |
 | NAV-025 |  | capability | Inventory Finance | Not started |
-| NAV-026 |  | capability | Fixed Assets | Not started |
+| NAV-026 |  | capability | Fixed Assets | Implemented |
 | NAV-027 |  | capability | Multi-Entity Finance | Not started |
 | NAV-028 |  | capability | Financial Consolidation | Not started |
 | NAV-029 |  | capability | Reports | Implemented |

@@ -56,6 +56,8 @@ import { BankAiService } from './bank-ai/bank-ai.service';
 import { AiControlController } from './ai-control/ai-control.controller';
 import { AiControlService } from './ai-control/ai-control.service';
 import { CloseController } from './close/close.controller';
+import { FixedAssetsController } from './fixed-assets/fixed-assets.controller';
+import { FixedAssetsService } from './fixed-assets/fixed-assets.service';
 import { CloseService } from './close/close.service';
 import { CollectionsController } from './collections/collections.controller';
 import { CollectionsService } from './collections/collections.service';
@@ -118,6 +120,7 @@ export class AppModule {
         BankAiController,
         CloseController,
         AiControlController,
+        FixedAssetsController,
         EInvoicingController,
         EWayBillsController,
         WorkflowsController,
@@ -159,6 +162,7 @@ export class AppModule {
         BankAiService,
         CloseService,
         AiControlService,
+        FixedAssetsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,
         EWayBillsService,

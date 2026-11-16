@@ -42,6 +42,7 @@ enum JournalStatus {
 
 enum JournalSource {
   MANUAL
+  ASSET
   DOCUMENT
   PAYMENT
   BANK
@@ -228,6 +229,9 @@ model Organization {
   alertScans           AlertScan[]
   copilotSettings      CopilotSettings?
   aiAgentSettings      AiAgentSetting[]
+  fixedAssets          FixedAsset[]
+  depreciationRuns     DepreciationRun[]
+  depreciationLines    DepreciationLine[]
   copilotConversations CopilotConversation[]
   copilotMessages      CopilotMessage[]
   workflows            Workflow[]
@@ -2276,4 +2280,101 @@ model CloseAdjustment {
 
   @@index([orgId, closeId, status])
   @@map("close_adjustments")
+}
+
+enum DepreciationMethod {
+  STRAIGHT_LINE
+  WRITTEN_DOWN_VALUE
+}
+
+enum FixedAssetStatus {
+  ACTIVE
+  DISPOSED
+}
+
+enum DepreciationRunStatus {
+  POSTED
+  REVERSED
+}
+
+/// One item in the fixed asset register: what it cost, the accounts it uses, how it is depreciated, and its disposal.
+model FixedAsset {
+  id                   String             @id @default(uuid()) @db.Uuid
+  orgId                String             @map("org_id") @db.Uuid
+  /// Shown as FA-0001.
+  number               Int
+  name                 String             @db.VarChar(200)
+  category             String?            @db.VarChar(100)
+  serialNumber         String?            @map("serial_number") @db.VarChar(100)
+  location             String?            @db.VarChar(200)
+  assetAccountId       String             @map("asset_account_id") @db.Uuid
+  accumulatedAccountId String             @map("accumulated_account_id") @db.Uuid
+  expenseAccountId     String             @map("expense_account_id") @db.Uuid
+  acquisitionDate      DateTime           @map("acquisition_date") @db.Date
+  inServiceDate        DateTime           @map("in_service_date") @db.Date
+  cost                 Decimal            @db.Decimal(24, 6)
+  residualValue        Decimal            @map("residual_value") @db.Decimal(24, 6)
+  method               DepreciationMethod
+  usefulLifeMonths     Int?               @map("useful_life_months")
+  annualRate           Decimal?           @map("annual_rate") @db.Decimal(7, 4)
+  /// Accumulated depreciation brought in from before, and the month (YYYY-MM) it covers.
+  openingAccumulated   Decimal            @default(0) @map("opening_accumulated") @db.Decimal(24, 6)
+  depreciatedThrough   String?            @map("depreciated_through") @db.VarChar(7)
+  /// The journal that recorded the purchase, when it was recorded here.
+  acquisitionEntryId   String?            @map("acquisition_entry_id") @db.Uuid
+  status               FixedAssetStatus   @default(ACTIVE)
+  disposedOn           DateTime?          @map("disposed_on") @db.Date
+  disposalProceeds     Decimal?           @map("disposal_proceeds") @db.Decimal(24, 6)
+  disposalEntryId      String?            @map("disposal_entry_id") @db.Uuid
+  disposalNote         String?            @map("disposal_note") @db.VarChar(500)
+  disposedById         String?            @map("disposed_by_id") @db.Uuid
+  createdById          String             @map("created_by_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                  Organization       @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines                DepreciationLine[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("fixed_assets")
+}
+
+/// One month's depreciation for the organisation, posted as one journal.
+model DepreciationRun {
+  id              String                @id @default(uuid()) @db.Uuid
+  orgId           String                @map("org_id") @db.Uuid
+  /// YYYY-MM
+  month           String                @db.VarChar(7)
+  status          DepreciationRunStatus @default(POSTED)
+  total           Decimal               @db.Decimal(24, 6)
+  journalEntryId  String                @map("journal_entry_id") @db.Uuid
+  postedById      String                @map("posted_by_id") @db.Uuid
+  postedAt        DateTime              @default(now()) @map("posted_at") @db.Timestamptz(6)
+  reversalEntryId String?               @map("reversal_entry_id") @db.Uuid
+  reversedById    String?               @map("reversed_by_id") @db.Uuid
+  reversedAt      DateTime?             @map("reversed_at") @db.Timestamptz(6)
+  org             Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines           DepreciationLine[]
+
+  @@unique([id, orgId])
+  @@index([orgId, month])
+  @@map("depreciation_runs")
+}
+
+model DepreciationLine {
+  id      String          @id @default(uuid()) @db.Uuid
+  orgId   String          @map("org_id") @db.Uuid
+  runId   String          @map("run_id") @db.Uuid
+  assetId String          @map("asset_id") @db.Uuid
+  /// The month this charge is for (YYYY-MM): the run's month, or an earlier month caught up in it.
+  month   String          @db.VarChar(7)
+  amount  Decimal         @db.Decimal(24, 6)
+  org     Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  run     DepreciationRun @relation(fields: [runId, orgId], references: [id, orgId], onDelete: Restrict)
+  asset   FixedAsset      @relation(fields: [assetId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([runId, assetId, month])
+  @@index([orgId, assetId])
+  @@map("depreciation_lines")
 }
