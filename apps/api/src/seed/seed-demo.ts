@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { AppModule } from '../app.module';
 import { SessionsService } from '../auth/sessions.service';
 import { allowSystemAccessOutsideRequests } from '../common/tenant-context';
@@ -23,6 +23,7 @@ import { depositDueDate, gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PayrollService } from '../payroll/payroll.service';
 import { ComplianceService } from '../compliance/compliance.service';
+import { EInvoicingService } from '../e-invoicing/e-invoicing.service';
 
 /**
  * Creates a clearly-labelled SYNTHETIC demo organization with a few months of
@@ -109,12 +110,13 @@ async function main() {
   await taxRates.create(org.id, actor, { name: 'Non-GST supply', rate: '0', kind: 'GST', gstCategory: 'NON_GST' });
   const customers = await Promise.all(
     [
-      ['Asterix Retail Stores (synthetic)', 30, '1500000.00', synthGstin('27', 'ZZZCA0002Z'), null],
-      ['Brightline Distributors (synthetic)', 45, null, synthGstin('29', 'ZZZCB0003Z'), null],
-      ['Coastal Hospitality Group (synthetic)', 15, null, null, '30'],
-      ['Overseas Services Client (synthetic)', 30, null, null, null],
-    ].map(([name, terms, limit, gstin, stateCode]) =>
-      contacts.create(ctx, actor, { name: name as string, isCustomer: true, paymentTermsDays: terms as number, creditLimit: limit as string | null, gstin: gstin as string | null, stateCode: stateCode as string | null }),
+      // The address details feed e-invoices; Brightline has no PIN code, so its invoices show what is missing.
+      ['Asterix Retail Stores (synthetic)', 30, '1500000.00', synthGstin('27', 'ZZZCA0002Z'), null, '21 Synthetic Arcade, FC Road\nShivajinagar', 'Pune', '411005'],
+      ['Brightline Distributors (synthetic)', 45, null, synthGstin('29', 'ZZZCB0003Z'), null, '7 Demo Industrial Estate', 'Bengaluru', null],
+      ['Coastal Hospitality Group (synthetic)', 15, null, null, '30', null, null, null],
+      ['Overseas Services Client (synthetic)', 30, null, null, null, null, null, null],
+    ].map(([name, terms, limit, gstin, stateCode, address, city, pincode]) =>
+      contacts.create(ctx, actor, { name: name as string, isCustomer: true, paymentTermsDays: terms as number, creditLimit: limit as string | null, gstin: gstin as string | null, stateCode: stateCode as string | null, address: address as string | null, city: city as string | null, pincode: pincode as string | null }),
     ),
   );
   // Where each customer's supplies are made: their own state, except the overseas client (export).
@@ -441,6 +443,27 @@ async function main() {
     filed++;
   }
   console.log(`  Compliance: ${filed} synthetic filing records`);
+
+  // SYNTHETIC e-invoicing: settings from the start of last month with the 30-day limit on, and
+  // made-up IRP responses for this month's Asterix invoice. The responses are NOT from the IRP:
+  // their tokens are unsigned, so the app shows "signature not verified" for them.
+  const einv = app.get(EInvoicingService);
+  const lastMonth = new Date(Date.parse(`${today.slice(0, 7)}-01T00:00:00Z`));
+  lastMonth.setUTCMonth(lastMonth.getUTCMonth() - 1);
+  await einv.saveSettings(org.id, actor, { applicableFrom: lastMonth.toISOString().slice(0, 10), aatoTenCroreOrMore: true, tradeName: 'Northwind Demo', address1: '12 Synthetic Tower, MG Road', address2: 'Camp', city: 'Pune', pincode: '411001', goodsUnit: 'NOS', irpPublicKey: null });
+  const reg = await einv.register(org.id, lastMonth.toISOString().slice(0, 10), today);
+  const unsigned = (data: unknown) => `e30.${Buffer.from(JSON.stringify({ data: JSON.stringify(data), note: 'SYNTHETIC demo token, not issued by the IRP' })).toString('base64url')}.U1lOVEhFVElD`;
+  const istStamp = (d: Date) => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 19).replace('T', ' ');
+  const ddmmyyyy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+  let irns = 0;
+  for (const r of reg.rows.filter((x) => x.state === 'READY' && x.contact.id === customers[0].id && x.kind === 'INVOICE' && x.issueDate.slice(0, 7) === today.slice(0, 7))) {
+    const irn = createHash('sha256').update(`synthetic-irn-${r.documentId}`).digest('hex');
+    const ack = new Date(Date.parse(`${r.issueDate}T06:30:00Z`));
+    const qr = { SellerGstin: synthGstin('27', 'ZZZCN0001Z'), BuyerGstin: r.buyerGstin, DocNo: r.number, DocTyp: 'INV', DocDt: ddmmyyyy(r.issueDate), TotInvVal: Number(r.total), ItemCnt: 1, MainHsnCode: '3926', Irn: irn, IrnDt: istStamp(ack) };
+    await einv.importResponse(org.id, actor, r.documentId, { Irn: irn, AckNo: `1126${String(100000000 + irns).padStart(11, '0')}`, AckDt: istStamp(ack), SignedInvoice: unsigned({ DocDtls: { Typ: 'INV', No: r.number, Dt: qr.DocDt } }), SignedQRCode: unsigned(qr), Status: 'ACT' });
+    irns++;
+  }
+  console.log(`  E-invoicing: ${irns} synthetic IRNs (unsigned, not from the IRP)`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

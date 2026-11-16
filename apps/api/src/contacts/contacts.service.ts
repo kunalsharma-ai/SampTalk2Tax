@@ -19,6 +19,8 @@ export interface ContactInput {
   pan?: string | null;
   withholdingSectionId?: string | null;
   address?: string | null;
+  city?: string | null;
+  pincode?: string | null;
   isCustomer?: boolean;
   isVendor?: boolean;
   paymentTermsDays?: number;
@@ -84,6 +86,8 @@ export class ContactsService {
           pan: normalizePan(input.pan, data.gstin) ?? null,
           withholdingSectionId: input.withholdingSectionId ?? null,
           address: input.address ?? null,
+          city: input.city ?? null,
+          pincode: input.pincode ?? null,
           isCustomer: input.isCustomer ?? false,
           isVendor: input.isVendor ?? false,
           paymentTermsDays: input.paymentTermsDays ?? 30,
@@ -128,6 +132,8 @@ export class ContactsService {
           pan,
           withholdingSectionId: input.withholdingSectionId,
           address: input.address,
+          city: input.city,
+          pincode: input.pincode,
           isCustomer: input.isCustomer,
           isVendor: input.isVendor,
           paymentTermsDays: input.paymentTermsDays,
@@ -190,6 +196,8 @@ export class ContactsService {
       pan: c.pan,
       withholdingSectionId: c.withholdingSectionId,
       address: c.address,
+      city: c.city,
+      pincode: c.pincode,
       isCustomer: c.isCustomer,
       isVendor: c.isVendor,
       paymentTermsDays: c.paymentTermsDays,

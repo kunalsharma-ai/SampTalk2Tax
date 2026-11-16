@@ -57,6 +57,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Statutory dates only: no holiday shifts or notified extensions, one GST frequency for all periods, no composition/ISD/GSTR-7/8, no Form 144, certificates, ITR or ROC dates, no reminders. Returns are marked filed by hand; nothing is filed. Some 2026-27 form and TCS-statement dates come from secondary sources. See [`COMPLIANCE_CALENDAR_INDIA.md`](COMPLIANCE_CALENDAR_INDIA.md).
 
+## E-invoicing (M3, slice 5)
+
+* No direct connection to the IRP or a GSP: the user uploads the JSON and pastes the response back. Only B2B invoices and credit notes in INR: no exports, SEZ, deemed exports, debit notes, B2C dynamic QR codes or e-way bills. Signatures are checked only when the user saves the IRP's public key. See [`E_INVOICING_INDIA.md`](E_INVOICING_INDIA.md).
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.

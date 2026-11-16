@@ -20,6 +20,9 @@ const Fields = {
   /** Default TDS section (vendors) or TCS section (customers) for new documents. */
   withholdingSectionId: z.uuid().nullable().optional(),
   address: optionalText(1000),
+  /** City or locality, and the six-digit PIN code (needed for e-invoices). */
+  city: optionalText(50),
+  pincode: z.string().regex(/^[1-9][0-9]{5}$/, 'A PIN code is six digits').nullable().optional(),
   isCustomer: z.boolean().optional(),
   isVendor: z.boolean().optional(),
   paymentTermsDays: z.number().int().min(0).max(3650).optional(),

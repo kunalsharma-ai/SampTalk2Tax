@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { api } from './api';
-import type { Account, Contact, Employee, GstRegistration, GstState, Org, PayrollSettings, Period, TaxRate, WithholdingSection, WithholdingSettings } from './types';
+import type { Account, Contact, EInvoiceSettings, Employee, GstRegistration, GstState, Org, PayrollSettings, Period, TaxRate, WithholdingSection, WithholdingSettings } from './types';
 
 export function useOrgId(): string {
   return useParams<{ orgId: string }>().orgId;
@@ -72,4 +72,9 @@ export function usePayrollSettings() {
 export function useEmployees() {
   const orgId = useOrgId();
   return useQuery({ queryKey: ['employees', orgId], queryFn: () => api<Employee[]>(`/v1/orgs/${orgId}/payroll/employees`) });
+}
+
+export function useEInvoiceSettings() {
+  const orgId = useOrgId();
+  return useQuery({ queryKey: ['einvoice-settings', orgId], queryFn: () => api<EInvoiceSettings>(`/v1/orgs/${orgId}/e-invoicing/settings`) });
 }
