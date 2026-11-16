@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 914 |
+| Not started | 913 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 324 |
+| Tested | 325 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 1 | 17 |
+| Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4772,6 +4772,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/planning/disasters
   - apps/web/e2e/disaster-simulation-flow.test.mjs
   - docs/DISASTER_SIMULATION.md
+
+### INNOV-011 — Identify potentially profitable growth opportunities based on authorized financial and operational data
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Four kinds found in twelve months of posted books (lapsed customers to win back, revenue lines to cross-sell to active customers, the best-margin department or project, slipped gross margin restored by price), each with named evidence, user-set rates, confidence and reason, measured on the twin via the business impact engine, ranked by extra net profit; every kind that finds nothing says why; an opportunity can be taken forward as a saved impact assessment. Needs reports.read and sales.read.
+- Evidence:
+  - packages/accounting-engine/src/opportunities.ts
+  - packages/accounting-engine/test/opportunities.test.ts
+  - apps/api/src/opportunities
+  - apps/api/test/opportunities.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/planning/opportunities
+  - apps/web/e2e/opportunities-flow.test.mjs
+  - docs/OPPORTUNITY_INTELLIGENCE.md
 
 ### INNOV-012 — Generate evidence-based financial recovery scenarios
 

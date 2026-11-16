@@ -227,3 +227,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+## Opportunity intelligence
+
+* Four fixed kinds of opportunity; take-up rates are the user's estimates; lines are revenue accounts, not products; segment margins include only tagged costs; the total of all opportunities ignores overlap. See [`OPPORTUNITY_INTELLIGENCE.md`](OPPORTUNITY_INTELLIGENCE.md).

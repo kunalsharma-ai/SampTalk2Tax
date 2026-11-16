@@ -17,7 +17,7 @@ export type Lever =
   | 'RUNNING_COSTS';
 
 export type Change =
-  | { lever: 'NEW_CUSTOMER'; label?: string | null; monthlyRevenue: string; rampMonths: number; month?: number }
+  | { lever: 'NEW_CUSTOMER'; label?: string | null; monthlyRevenue: string; rampMonths: number; month?: number; costOfSalesPercent?: string }
   | { lever: 'LOSE_CUSTOMER'; contactId: string; month?: number }
   | { lever: 'PRICE_CHANGE'; pricePercent: string; volumePercent: string; month?: number }
   | { lever: 'SALES_HIRES'; count: number; monthlyCostPerHead: string; oneOffCostPerHead: string; monthlyRevenuePerHead: string; rampMonths: number; month?: number }

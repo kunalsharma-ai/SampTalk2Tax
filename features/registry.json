@@ -32608,9 +32608,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/opportunities.ts",
+        "packages/accounting-engine/test/opportunities.test.ts",
+        "apps/api/src/opportunities",
+        "apps/api/test/opportunities.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/opportunities",
+        "apps/web/e2e/opportunities-flow.test.mjs",
+        "docs/OPPORTUNITY_INTELLIGENCE.md"
+      ],
+      "notes": "Four kinds found in twelve months of posted books (lapsed customers to win back, revenue lines to cross-sell to active customers, the best-margin department or project, slipped gross margin restored by price), each with named evidence, user-set rates, confidence and reason, measured on the twin via the business impact engine, ranked by extra net profit; every kind that finds nothing says why; an opportunity can be taken forward as a saved impact assessment. Needs reports.read and sales.read."
     },
     {
       "id": "INNOV-012",
