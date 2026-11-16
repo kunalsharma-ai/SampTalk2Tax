@@ -6,6 +6,8 @@ import { PrismaService } from '../common/prisma.service';
 import { allowSystemAccessOutsideRequests } from '../common/tenant-context';
 import { loadConfig } from '../config';
 import { accounts, fiscalPeriods } from './collections/chart';
+import { Decimal128 } from '@talk2tax/document-db';
+import { journalEntries } from './collections/ledger';
 import { authSessions, loginThrottles, users } from './collections/identity';
 import { invitations, memberships, organizations } from './collections/tenancy';
 import { withSystemAccess } from '../common/prisma.service';
@@ -113,6 +115,31 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   const newPeriods = await missing(fiscalPeriods, allPeriods.map((p) => p.id));
   await raw(fiscalPeriods.name, allPeriods.filter((p) => newPeriods.has(p.id)));
   copied.fiscal_periods = newPeriods.size;
+
+  // Journal entries, each with its lines inside it, in batches.
+  const entryIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.journalEntry.findMany({ select: { id: true } })));
+  const newEntries = [...(await missing(journalEntries, entryIds.map((e) => e.id)))];
+  const dec = (v: { toFixed(): string }) => Decimal128.fromString(v.toFixed());
+  for (const ids of chunks(newEntries, 500)) {
+    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.journalEntry.findMany({ where: { id: { in: ids } }, include: { lines: true } })));
+    await raw(
+      journalEntries.name,
+      batch.map(({ lines, totalDebit, totalCredit, ...e }) => ({
+        ...e,
+        totalDebit: dec(totalDebit),
+        totalCredit: dec(totalCredit),
+        lines: lines.map(({ entryId: _e, orgId: _o, exchangeRate, debit, credit, functionalDebit, functionalCredit, ...l }) => ({
+          ...l,
+          exchangeRate: dec(exchangeRate),
+          debit: dec(debit),
+          credit: dec(credit),
+          functionalDebit: dec(functionalDebit),
+          functionalCredit: dec(functionalCredit),
+        })),
+      })),
+    );
+  }
+  copied.journal_entries = newEntries.length;
 
   log(`Copied to MongoDB: ${Object.entries(copied).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   return copied;

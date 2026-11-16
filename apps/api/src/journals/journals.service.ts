@@ -7,6 +7,13 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { checkLineDimensions } from '../dimensions/check';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { isDuplicateKeyError, type ScopedCollection } from '@talk2tax/document-db';
+import { randomUUID } from 'node:crypto';
+import { DocumentStoreService } from '../common/document-store.service';
+import { runInOrg } from '../common/tenant-context';
+import { accounts as accountsColl } from '../db/collections/chart';
+import { journalEntries, type JournalEntryDoc } from '../db/collections/ledger';
+import { PostgresMirrorService } from '../db/postgres-mirror.service';
 
 export type CreatableJournalType = 'STANDARD' | 'ADJUSTING' | 'OPENING' | 'CLOSING' | 'RECURRING';
 
@@ -27,12 +34,10 @@ interface OrgInfo {
   functionalCurrency: string;
 }
 
-const ENTRY_INCLUDE = {
-  lines: { orderBy: { lineNo: 'asc' }, include: { account: { select: { code: true, name: true, type: true } } } },
-  reversedBy: { select: { id: true, entryNumber: true } },
-} satisfies Prisma.JournalEntryInclude;
-
-type EntryWithLines = Prisma.JournalEntryGetPayload<{ include: typeof ENTRY_INCLUDE }>;
+type EntryWithLines = Omit<JournalEntryDoc, 'lines'> & {
+  lines: (JournalEntryDoc['lines'][number] & { account: { code: string; name: string } })[];
+  reversedBy: { id: string; entryNumber: number | null } | null;
+};
 
 function requestHash(input: unknown): string {
   return createHash('sha256').update(JSON.stringify(input)).digest('hex');
@@ -43,34 +48,61 @@ export class JournalsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
+    private readonly mirror: PostgresMirrorService,
   ) {}
+
+  /**
+   * MongoDB holds the ledger. Every write happens inside a PostgreSQL transaction, whose MongoDB
+   * transaction commits right after it (docs/MONGODB.md › While both databases run), and is
+   * copied into that PostgreSQL transaction, where documents, bank matches and reports (not
+   * moved yet) point at the entry and its lines.
+   */
+  private entries<T>(orgId: string, fn: (c: ScopedCollection<JournalEntryDoc>) => Promise<T>): Promise<T> {
+    return runInOrg(orgId, () => fn(this.store.collection(journalEntries)));
+  }
+
+  /** Entries as the API shows them: lines with their accounts, and the reversal if any. */
+  private async withDetails(orgId: string, rows: JournalEntryDoc[]): Promise<EntryWithLines[]> {
+    if (!rows.length) return [];
+    const ids = [...new Set(rows.flatMap((e) => e.lines.map((l) => l.accountId)))];
+    const accs = new Map((await runInOrg(orgId, () => this.store.collection(accountsColl).find({ id: { $in: ids } }))).map((a) => [a.id, a]));
+    const reversals = new Map(
+      (await this.entries(orgId, (c) => c.find({ reversesEntryId: { $in: rows.map((e) => e.id) } }))).map((r) => [r.reversesEntryId!, { id: r.id, entryNumber: r.entryNumber }]),
+    );
+    return rows.map((e) => ({
+      ...e,
+      lines: [...e.lines].sort((a, b) => a.lineNo - b.lineNo).map((l) => ({ ...l, account: { code: accs.get(l.accountId)?.code ?? '', name: accs.get(l.accountId)?.name ?? '' } })),
+      reversedBy: reversals.get(e.id) ?? null,
+    }));
+  }
+
+  private async detailed(orgId: string, id: string): Promise<EntryWithLines> {
+    const e = await this.entries(orgId, (c) => c.findOne({ id }));
+    if (!e) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Journal entry not found' });
+    return (await this.withDetails(orgId, [e]))[0]!;
+  }
+
+  /** Adds an entry in MongoDB and copies it into the caller's PostgreSQL transaction. */
+  private async insertEntry(tx: Tx, doc: Omit<JournalEntryDoc, 'id' | 'createdAt' | 'updatedAt'>): Promise<JournalEntryDoc> {
+    const now = new Date();
+    const created = (await this.entries(doc.orgId, (c) => c.insertOne({ ...doc, createdAt: now, updatedAt: now }))) as JournalEntryDoc;
+    await this.mirror.journalEntries([created.id], tx);
+    return created;
+  }
 
   // ---------- reads ----------
 
   async list(orgId: string, q: { status?: 'DRAFT' | 'POSTED'; from?: string; to?: string; accountId?: string; limit: number; offset: number }) {
-    const where: Prisma.JournalEntryWhereInput = {
-      orgId,
-      status: q.status,
-      date: { gte: q.from ? toDbDate(q.from) : undefined, lte: q.to ? toDbDate(q.to) : undefined },
-      ...(q.accountId ? { lines: { some: { accountId: q.accountId } } } : {}),
-    };
-    const [total, rows] = await Promise.all([
-      this.prisma.journalEntry.count({ where }),
-      this.prisma.journalEntry.findMany({
-        where,
-        orderBy: [{ date: 'desc' }, { entryNumber: 'desc' }, { createdAt: 'desc' }],
-        take: q.limit,
-        skip: q.offset,
-        include: ENTRY_INCLUDE,
-      }),
-    ]);
-    return { total, items: rows.map(serialize) };
+    const date = { ...(q.from ? { $gte: toDbDate(q.from) } : {}), ...(q.to ? { $lte: toDbDate(q.to) } : {}) };
+    const filter = { ...(q.status ? { status: q.status } : {}), ...(q.from || q.to ? { date } : {}), ...(q.accountId ? { 'lines.accountId': q.accountId } : {}) };
+    const total = await this.entries(orgId, (c) => c.count(filter));
+    const rows = await this.entries(orgId, (c) => c.find(filter, { sort: { date: -1, entryNumber: -1, createdAt: -1 }, limit: q.limit, skip: q.offset }));
+    return { total, items: (await this.withDetails(orgId, rows)).map(serialize) };
   }
 
   async get(orgId: string, id: string) {
-    const e = await this.prisma.journalEntry.findFirst({ where: { id, orgId }, include: ENTRY_INCLUDE });
-    if (!e) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Journal entry not found' });
-    return serialize(e);
+    return serialize(await this.detailed(orgId, id));
   }
 
   // ---------- writes ----------
@@ -87,14 +119,11 @@ export class JournalsService {
       if (replay) return { replayed: true, entry: replay };
     }
     try {
-      const entry = await this.prisma.$transaction(async (tx) => {
-        const created = await this.createInTx(tx, org, actor, input, { post: opts.post, idempotencyKey: opts.idempotencyKey, idempotencyHash: hash });
-        return tx.journalEntry.findUniqueOrThrow({ where: { id: created.id }, include: ENTRY_INCLUDE });
-      });
-      return { replayed: false, entry: serialize(entry) };
+      const created = await this.prisma.$transaction((tx) => this.createInTx(tx, org, actor, input, { post: opts.post, idempotencyKey: opts.idempotencyKey, idempotencyHash: hash }));
+      return { replayed: false, entry: serialize(await this.detailed(org.id, created.id)) };
     } catch (e) {
       // Concurrent duplicate with the same idempotency key: the other request won the race.
-      if (opts.idempotencyKey && e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      if (opts.idempotencyKey && (isDuplicateKeyError(e) || (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'))) {
         const replay = await this.findIdempotent(org.id, opts.idempotencyKey, hash!);
         if (replay) return { replayed: true, entry: replay };
       }
@@ -120,24 +149,27 @@ export class JournalsService {
     }
     input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
     const normalized = await this.validate(tx, org, input.lines, { manual: true });
-    const created = await tx.journalEntry.create({
-      data: {
-        orgId: org.id,
-        date: toDbDate(input.date),
-        periodId: period.id,
-        type: input.type,
-        memo: input.memo,
-        reference: input.reference,
-        functionalCurrency: org.functionalCurrency,
-        totalDebit: normalized.totalFunctionalDebit.toFixed(),
-        totalCredit: normalized.totalFunctionalCredit.toFixed(),
-        idempotencyKey: opts.idempotencyKey,
-        idempotencyHash: opts.idempotencyHash,
-        createdById: actor.id,
-        lines: { create: lineRows(normalized) },
-      },
+    const posted = opts.post ? await this.posting(tx, org.id, actor.id) : null;
+    const created = await this.insertEntry(tx, {
+      orgId: org.id,
+      date: toDbDate(input.date),
+      periodId: period.id,
+      type: input.type,
+      source: 'MANUAL',
+      status: posted ? 'POSTED' : 'DRAFT',
+      memo: input.memo ?? null,
+      reference: input.reference ?? null,
+      functionalCurrency: org.functionalCurrency,
+      totalDebit: normalized.totalFunctionalDebit.toFixed(),
+      totalCredit: normalized.totalFunctionalCredit.toFixed(),
+      idempotencyKey: opts.idempotencyKey ?? null,
+      idempotencyHash: opts.idempotencyHash ?? null,
+      reversesEntryId: null,
+      createdById: actor.id,
+      ...(posted ?? { entryNumber: null, postedAt: null, postedById: null }),
+      lines: lineRows(normalized),
     });
-    const entryNumber = opts.post ? await this.markPosted(tx, org.id, created.id, actor.id) : null;
+    const entryNumber = posted?.entryNumber ?? null;
     await this.audit.append(tx, {
       orgId: org.id,
       actorId: actor.id,
@@ -158,31 +190,36 @@ export class JournalsService {
       if (period.status === 'CLOSED') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is CLOSED`, HttpStatus.CONFLICT);
       input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
       const normalized = await this.validate(tx, org, input.lines, { manual: true });
-      await tx.journalLine.deleteMany({ where: { entryId: id, orgId: org.id } });
-      await tx.journalEntry.update({
-        where: { id },
-        data: {
-          date: toDbDate(input.date),
-          periodId: period.id,
-          type: input.type,
-          memo: input.memo ?? null,
-          reference: input.reference ?? null,
-          totalDebit: normalized.totalFunctionalDebit.toFixed(),
-          totalCredit: normalized.totalFunctionalCredit.toFixed(),
-          lines: { create: lineRows(normalized) },
-        },
-      });
+      await this.entries(org.id, (c) =>
+        c.updateOne(
+          { id, status: 'DRAFT' },
+          {
+            $set: {
+              date: toDbDate(input.date),
+              periodId: period.id,
+              type: input.type,
+              memo: input.memo ?? null,
+              reference: input.reference ?? null,
+              totalDebit: normalized.totalFunctionalDebit.toFixed(),
+              totalCredit: normalized.totalFunctionalCredit.toFixed(),
+              lines: lineRows(normalized),
+              updatedAt: new Date(),
+            },
+          },
+        ),
+      );
+      await this.mirror.journalEntries([id], tx);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'journal.draft_updated', entityType: 'journal_entry', entityId: id, data: { date: input.date, lines: input.lines.length } });
-      return serialize(await tx.journalEntry.findUniqueOrThrow({ where: { id }, include: ENTRY_INCLUDE }));
-    });
+      return id;
+    }).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
   }
 
   async deleteDraft(orgId: string, actor: Actor, id: string) {
     await this.prisma.$transaction(async (tx) => {
       const existing = await this.lockEntry(tx, orgId, id);
       if (existing.status !== 'DRAFT') throw new DomainError('ENTRY_POSTED', 'Posted entries cannot be deleted; reverse them instead', HttpStatus.CONFLICT);
-      await tx.journalLine.deleteMany({ where: { entryId: id, orgId } });
-      await tx.journalEntry.delete({ where: { id } });
+      await this.entries(orgId, (c) => c.deleteOne({ id, status: 'DRAFT' }));
+      await this.mirror.removeJournalEntry(id, orgId, tx);
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'journal.draft_deleted', entityType: 'journal_entry', entityId: id });
     });
   }
@@ -194,17 +231,19 @@ export class JournalsService {
       const period = await this.lockPeriodForDate(tx, org.id, fromDbDate(existing.date));
       if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
       // Re-validate against the chart as it is now (accounts may have been deactivated since drafting).
-      const lines = await tx.journalLine.findMany({ where: { entryId: id }, orderBy: { lineNo: 'asc' } });
+      const lines = [...existing.lines].sort((a, b) => a.lineNo - b.lineNo);
       await this.validate(
         tx,
         org,
-        lines.map((l) => ({ accountId: l.accountId, currency: l.currency, exchangeRate: l.exchangeRate.toFixed(), debit: l.debit.toFixed(), credit: l.credit.toFixed() })),
+        lines.map((l) => ({ accountId: l.accountId, currency: l.currency, exchangeRate: l.exchangeRate, debit: l.debit, credit: l.credit })),
         { manual: true },
       );
-      const entryNumber = await this.markPosted(tx, org.id, id, actor.id);
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'journal.posted', entityType: 'journal_entry', entityId: id, data: { entryNumber } });
-      return serialize(await tx.journalEntry.findUniqueOrThrow({ where: { id }, include: ENTRY_INCLUDE }));
-    });
+      const posted = await this.posting(tx, org.id, actor.id);
+      await this.entries(org.id, (c) => c.updateOne({ id, status: 'DRAFT' }, { $set: { status: 'POSTED', ...posted, updatedAt: new Date() } }));
+      await this.mirror.journalEntries([id], tx);
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'journal.posted', entityType: 'journal_entry', entityId: id, data: { entryNumber: posted.entryNumber } });
+      return id;
+    }).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
   }
 
   /** Post a reversing entry that exactly offsets a posted entry. The original is never modified. */
@@ -216,46 +255,51 @@ export class JournalsService {
         if (original.source !== 'CLOSE') assertManual(original);
         if (original.status !== 'POSTED') throw new DomainError('NOT_POSTED', 'Only posted entries can be reversed; delete the draft instead', HttpStatus.CONFLICT);
         if (original.type === 'REVERSING' || original.reversesEntryId) throw new DomainError('IS_REVERSAL', 'A reversing entry cannot itself be reversed; post a new entry instead', HttpStatus.CONFLICT);
-        const already = await tx.journalEntry.findFirst({ where: { reversesEntryId: id }, select: { id: true } });
+        const already = await this.entries(org.id, (c) => c.findOne({ reversesEntryId: id }));
         if (already) throw new DomainError('ALREADY_REVERSED', 'Entry has already been reversed', HttpStatus.CONFLICT, { reversalId: already.id });
         if (input.date < fromDbDate(original.date)) throw new DomainError('INVALID_DATE', 'Reversal date cannot be before the original entry date');
         await this.assertNotBankMatched(tx, id);
         const period = await this.lockPeriodForDate(tx, org.id, input.date);
         if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
 
-        const originalLines = await tx.journalLine.findMany({ where: { entryId: id }, orderBy: { lineNo: 'asc' } });
         const lines = buildReversalLines(
-          originalLines.map((l) => ({
-            accountId: l.accountId,
-            currency: l.currency,
-            exchangeRate: l.exchangeRate.toFixed(),
-            debit: l.debit.toFixed(),
-            credit: l.credit.toFixed(),
-            description: l.description,
-            dimensions: (l.dimensions as Record<string, string> | null) ?? null,
-            departmentId: l.departmentId,
-            projectId: l.projectId,
-          })),
+          [...original.lines]
+            .sort((a, b) => a.lineNo - b.lineNo)
+            .map((l) => ({
+              accountId: l.accountId,
+              currency: l.currency,
+              exchangeRate: l.exchangeRate,
+              debit: l.debit,
+              credit: l.credit,
+              description: l.description,
+              dimensions: l.dimensions ?? null,
+              departmentId: l.departmentId,
+              projectId: l.projectId,
+            })),
         );
         const normalized = await this.validate(tx, org, lines, { allowInactive: true });
-        const created = await tx.journalEntry.create({
-          data: {
-            orgId: org.id,
-            date: toDbDate(input.date),
-            periodId: period.id,
-            // A reversed closing entry stays a closing entry: neither ever counts in profit and loss.
-            type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
-            memo: input.memo ?? `Reversal of JE-${original.entryNumber}`,
-            reference: original.reference,
-            functionalCurrency: org.functionalCurrency,
-            totalDebit: normalized.totalFunctionalDebit.toFixed(),
-            totalCredit: normalized.totalFunctionalCredit.toFixed(),
-            reversesEntryId: id,
-            createdById: actor.id,
-            lines: { create: lineRows(normalized) },
-          },
+        const posted = await this.posting(tx, org.id, actor.id);
+        const created = await this.insertEntry(tx, {
+          orgId: org.id,
+          date: toDbDate(input.date),
+          periodId: period.id,
+          // A reversed closing entry stays a closing entry: neither ever counts in profit and loss.
+          type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
+          source: 'MANUAL',
+          status: 'POSTED',
+          memo: input.memo ?? `Reversal of JE-${original.entryNumber}`,
+          reference: original.reference,
+          functionalCurrency: org.functionalCurrency,
+          totalDebit: normalized.totalFunctionalDebit.toFixed(),
+          totalCredit: normalized.totalFunctionalCredit.toFixed(),
+          idempotencyKey: null,
+          idempotencyHash: null,
+          reversesEntryId: id,
+          createdById: actor.id,
+          ...posted,
+          lines: lineRows(normalized),
         });
-        const entryNumber = await this.markPosted(tx, org.id, created.id, actor.id);
+        const entryNumber = posted.entryNumber;
         await this.audit.append(tx, {
           orgId: org.id,
           actorId: actor.id,
@@ -264,10 +308,10 @@ export class JournalsService {
           entityId: id,
           data: { reversalId: created.id, reversalNumber: entryNumber, date: input.date },
         });
-        return serialize(await tx.journalEntry.findUniqueOrThrow({ where: { id: created.id }, include: ENTRY_INCLUDE }));
-      });
+        return created.id;
+      }).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      if (isDuplicateKeyError(e) || (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) {
         throw new DomainError('ALREADY_REVERSED', 'Entry has already been reversed', HttpStatus.CONFLICT);
       }
       throw e;
@@ -289,23 +333,27 @@ export class JournalsService {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
     const normalized = await this.validate(tx, org, input.lines);
-    const created = await tx.journalEntry.create({
-      data: {
-        orgId: org.id,
-        date: toDbDate(input.date),
-        periodId: period.id,
-        type: input.type ?? 'STANDARD',
-        source: input.source,
-        memo: input.memo,
-        reference: input.reference,
-        functionalCurrency: org.functionalCurrency,
-        totalDebit: normalized.totalFunctionalDebit.toFixed(),
-        totalCredit: normalized.totalFunctionalCredit.toFixed(),
-        createdById: actor.id,
-        lines: { create: lineRows(normalized) },
-      },
+    const posted = await this.posting(tx, org.id, actor.id);
+    const created = await this.insertEntry(tx, {
+      orgId: org.id,
+      date: toDbDate(input.date),
+      periodId: period.id,
+      type: input.type ?? 'STANDARD',
+      source: input.source,
+      status: 'POSTED',
+      memo: input.memo ?? null,
+      reference: input.reference ?? null,
+      functionalCurrency: org.functionalCurrency,
+      totalDebit: normalized.totalFunctionalDebit.toFixed(),
+      totalCredit: normalized.totalFunctionalCredit.toFixed(),
+      idempotencyKey: null,
+      idempotencyHash: null,
+      reversesEntryId: null,
+      createdById: actor.id,
+      ...posted,
+      lines: lineRows(normalized),
     });
-    const entryNumber = await this.markPosted(tx, org.id, created.id, actor.id);
+    const entryNumber = posted.entryNumber;
     await this.audit.append(tx, {
       orgId: org.id,
       actorId: actor.id,
@@ -325,38 +373,42 @@ export class JournalsService {
     await this.assertNotBankMatched(tx, entryId);
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
-    const originalLines = await tx.journalLine.findMany({ where: { entryId }, orderBy: { lineNo: 'asc' } });
     const lines = buildReversalLines(
-      originalLines.map((l) => ({
-        accountId: l.accountId,
-        currency: l.currency,
-        exchangeRate: l.exchangeRate.toFixed(),
-        debit: l.debit.toFixed(),
-        credit: l.credit.toFixed(),
-        description: l.description,
-        departmentId: l.departmentId,
-        projectId: l.projectId,
-      })),
+      [...original.lines]
+        .sort((a, b) => a.lineNo - b.lineNo)
+        .map((l) => ({
+          accountId: l.accountId,
+          currency: l.currency,
+          exchangeRate: l.exchangeRate,
+          debit: l.debit,
+          credit: l.credit,
+          description: l.description,
+          departmentId: l.departmentId,
+          projectId: l.projectId,
+        })),
     );
     const normalized = await this.validate(tx, org, lines, { allowInactive: true });
-    const created = await tx.journalEntry.create({
-      data: {
-        orgId: org.id,
-        date: toDbDate(input.date),
-        periodId: period.id,
-        type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
-        source: original.source,
-        memo: input.memo,
-        reference: original.reference,
-        functionalCurrency: org.functionalCurrency,
-        totalDebit: normalized.totalFunctionalDebit.toFixed(),
-        totalCredit: normalized.totalFunctionalCredit.toFixed(),
-        reversesEntryId: entryId,
-        createdById: actor.id,
-        lines: { create: lineRows(normalized) },
-      },
+    const posted = await this.posting(tx, org.id, actor.id);
+    const created = await this.insertEntry(tx, {
+      orgId: org.id,
+      date: toDbDate(input.date),
+      periodId: period.id,
+      type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
+      source: original.source,
+      status: 'POSTED',
+      memo: input.memo,
+      reference: original.reference,
+      functionalCurrency: org.functionalCurrency,
+      totalDebit: normalized.totalFunctionalDebit.toFixed(),
+      totalCredit: normalized.totalFunctionalCredit.toFixed(),
+      idempotencyKey: null,
+      idempotencyHash: null,
+      reversesEntryId: entryId,
+      createdById: actor.id,
+      ...posted,
+      lines: lineRows(normalized),
     });
-    const entryNumber = await this.markPosted(tx, org.id, created.id, actor.id);
+    const entryNumber = posted.entryNumber;
     await this.audit.append(tx, {
       orgId: org.id,
       actorId: actor.id,
@@ -371,12 +423,12 @@ export class JournalsService {
   // ---------- helpers ----------
 
   private async findIdempotent(orgId: string, key: string, hash: string) {
-    const e = await this.prisma.journalEntry.findUnique({ where: { orgId_idempotencyKey: { orgId, idempotencyKey: key } }, include: ENTRY_INCLUDE });
+    const e = await this.entries(orgId, (c) => c.findOne({ idempotencyKey: key }));
     if (!e) return null;
     if (e.idempotencyHash !== hash) {
       throw new DomainError('IDEMPOTENCY_KEY_REUSED', 'This Idempotency-Key was already used with a different request', HttpStatus.UNPROCESSABLE_ENTITY);
     }
-    return serialize(e);
+    return serialize((await this.withDetails(orgId, [e]))[0]!);
   }
 
   /** An entry matched to a bank statement line must be unmatched before it is reversed or voided. */
@@ -387,10 +439,12 @@ export class JournalsService {
     }
   }
 
-  private async lockEntry(tx: Tx, orgId: string, id: string) {
+  /** Holds the entry's PostgreSQL copy FOR UPDATE (one change at a time), then reads the entry from MongoDB. */
+  private async lockEntry(tx: Tx, orgId: string, id: string): Promise<JournalEntryDoc> {
     const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM journal_entries WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
-    if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Journal entry not found' });
-    return tx.journalEntry.findUniqueOrThrow({ where: { id } });
+    const e = rows[0] ? await this.entries(orgId, (c) => c.findOne({ id })) : null;
+    if (!e) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Journal entry not found' });
+    return e;
   }
 
   /** Find the period containing a date and hold it FOR SHARE so it cannot be locked mid-posting. */
@@ -440,16 +494,17 @@ export class JournalsService {
     return lines.map((l) => (l.currency && l.exchangeRate === undefined && found.has(l.currency) ? { ...l, exchangeRate: found.get(l.currency)! } : l));
   }
 
-  private async markPosted(tx: Tx, orgId: string, entryId: string, actorId: string): Promise<number> {
+  /**
+   * The next entry number and the posting stamp. Numbers still come from PostgreSQL's
+   * org_counters while documents post there: the row lock makes postings wait their turn, so
+   * numbers stay gap-free and in posting order.
+   */
+  private async posting(tx: Tx, orgId: string, actorId: string) {
     const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
       INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, 'journal_entry', 1)
       ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1
       RETURNING value`;
-    await tx.journalEntry.update({
-      where: { id: entryId },
-      data: { status: 'POSTED', entryNumber: value, postedAt: new Date(), postedById: actorId },
-    });
-    return value;
+    return { entryNumber: value, postedAt: new Date(), postedById: actorId };
   }
 }
 
@@ -464,8 +519,9 @@ function assertManual(e: { source: string }) {
 }
 
 /** Nested line rows; org_id is filled from the parent entry through the composite (entry_id, org_id) relation. */
-function lineRows(j: NormalizedJournal) {
+function lineRows(j: NormalizedJournal): JournalEntryDoc['lines'] {
   return j.lines.map((l) => ({
+    id: randomUUID(),
     lineNo: l.lineNo,
     accountId: l.accountId,
     currency: l.currency,
@@ -474,10 +530,10 @@ function lineRows(j: NormalizedJournal) {
     credit: l.credit.toFixed(),
     functionalDebit: l.functionalDebit.toFixed(),
     functionalCredit: l.functionalCredit.toFixed(),
-    description: l.description,
-    dimensions: l.dimensions ?? undefined,
-    departmentId: l.departmentId,
-    projectId: l.projectId,
+    description: l.description ?? null,
+    dimensions: l.dimensions ?? null,
+    departmentId: l.departmentId ?? null,
+    projectId: l.projectId ?? null,
   }));
 }
 
@@ -494,8 +550,8 @@ function serialize(e: EntryWithLines) {
     memo: e.memo,
     reference: e.reference,
     functionalCurrency: e.functionalCurrency,
-    totalDebit: e.totalDebit.toFixed(fScale),
-    totalCredit: e.totalCredit.toFixed(fScale),
+    totalDebit: new Prisma.Decimal(e.totalDebit).toFixed(fScale),
+    totalCredit: new Prisma.Decimal(e.totalCredit).toFixed(fScale),
     reversesEntryId: e.reversesEntryId,
     reversedBy: e.reversedBy ? { id: e.reversedBy.id, entryNumber: e.reversedBy.entryNumber } : null,
     createdById: e.createdById,
@@ -509,11 +565,11 @@ function serialize(e: EntryWithLines) {
       accountCode: l.account.code,
       accountName: l.account.name,
       currency: l.currency,
-      exchangeRate: l.exchangeRate.toFixed(),
-      debit: l.debit.toFixed(minorUnits(l.currency)),
-      credit: l.credit.toFixed(minorUnits(l.currency)),
-      functionalDebit: l.functionalDebit.toFixed(fScale),
-      functionalCredit: l.functionalCredit.toFixed(fScale),
+      exchangeRate: new Prisma.Decimal(l.exchangeRate).toFixed(),
+      debit: new Prisma.Decimal(l.debit).toFixed(minorUnits(l.currency)),
+      credit: new Prisma.Decimal(l.credit).toFixed(minorUnits(l.currency)),
+      functionalDebit: new Prisma.Decimal(l.functionalDebit).toFixed(fScale),
+      functionalCredit: new Prisma.Decimal(l.functionalCredit).toFixed(fScale),
       description: l.description,
       dimensions: l.dimensions,
       departmentId: l.departmentId,

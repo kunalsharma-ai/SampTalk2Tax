@@ -20,12 +20,9 @@ export async function assertMemberRoom(tx: Tx, store: DocumentStoreService, orgI
   const p = await planLimits(tx, orgId);
   const max = p?.limits.members ?? null;
   if (max === null) return;
-  const [members, invites] = await runInOrg(orgId, () =>
-    Promise.all([
-      store.collection(memberships).count({}),
-      opts.countOpenInvitations ? store.collection(invitations).count({ openFor: { $exists: true }, expiresAt: { $gt: new Date() } }) : Promise.resolve(0),
-    ]),
-  );
+  // One after the other: inside a transaction, MongoDB runs one operation at a time per session.
+  const members = await runInOrg(orgId, () => store.collection(memberships).count({}));
+  const invites = opts.countOpenInvitations ? await runInOrg(orgId, () => store.collection(invitations).count({ openFor: { $exists: true }, expiresAt: { $gt: new Date() } })) : 0;
   if (members + invites >= max) {
     throw new DomainError(
       'PLAN_LIMIT',
