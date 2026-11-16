@@ -4997,3 +4997,58 @@ model InvoiceDisputeEvent {
   @@index([disputeId, createdAt])
   @@map("invoice_dispute_events")
 }
+
+/// A pro forma invoice (AR-008): what the customer will be billed. Not a tax invoice; posts nothing.
+model ProFormaInvoice {
+  id            String    @id @default(uuid()) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  /// Shown as PF-0001.
+  number        Int
+  contactId     String    @map("contact_id") @db.Uuid
+  quoteId       String?   @map("quote_id") @db.Uuid
+  issueDate     DateTime  @map("issue_date") @db.Date
+  validUntil    DateTime  @map("valid_until") @db.Date
+  placeOfSupply String?   @map("place_of_supply") @db.Char(2)
+  reference     String?   @db.VarChar(100)
+  terms         String?   @db.VarChar(4000)
+  memo          String?   @db.VarChar(1000)
+  currency      String    @db.Char(3)
+  subtotal      Decimal   @db.Decimal(24, 6)
+  taxTotal      Decimal   @map("tax_total") @db.Decimal(24, 6)
+  total         Decimal   @db.Decimal(24, 6)
+  /// DRAFT, ISSUED or CANCELLED (invoiced is worked out from invoiceId)
+  status        String    @default("DRAFT") @db.VarChar(10)
+  issuedAt      DateTime? @map("issued_at") @db.Timestamptz(6)
+  cancelReason  String?   @map("cancel_reason") @db.VarChar(500)
+  cancelledAt   DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  invoiceId     String?   @unique @map("invoice_id") @db.Uuid
+  createdById   String    @map("created_by_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lines         ProFormaInvoiceLine[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("pro_forma_invoices")
+}
+
+model ProFormaInvoiceLine {
+  id          String          @id @default(uuid()) @db.Uuid
+  orgId       String          @map("org_id") @db.Uuid
+  proFormaId  String          @map("pro_forma_id") @db.Uuid
+  lineNo      Int             @map("line_no")
+  description String?         @db.VarChar(500)
+  accountId   String          @map("account_id") @db.Uuid
+  quantity    Decimal         @db.Decimal(24, 6)
+  unitPrice   Decimal         @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?         @map("tax_rate_id") @db.Uuid
+  hsnCode     String?         @map("hsn_code")
+  netAmount   Decimal         @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal         @map("tax_amount") @db.Decimal(24, 6)
+  proForma    ProFormaInvoice @relation(fields: [proFormaId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([proFormaId, lineNo])
+  @@map("pro_forma_invoice_lines")
+}

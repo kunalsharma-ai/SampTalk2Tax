@@ -91,7 +91,7 @@ export class SalesOrdersService {
   }
 
   /** Also used by contracts. */
-  async nextNumber(tx: Tx, orgId: string, key: 'sales_quote' | 'sales_order' | 'sales_contract') {
+  async nextNumber(tx: Tx, orgId: string, key: 'sales_quote' | 'sales_order' | 'sales_contract' | 'pro_forma') {
     const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
       INSERT INTO org_counters (org_id, key, value) VALUES (${orgId}::uuid, ${key}, 1)
       ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1

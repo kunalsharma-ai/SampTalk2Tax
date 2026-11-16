@@ -39,6 +39,7 @@ export const hi: Record<string, string> = {
   'Receivables ageing': 'प्राप्य राशि की आयु',
   'Bad debts': 'डूबत ऋण',
   Disputes: 'विवाद',
+  'Pro forma invoices': 'प्रोफ़ॉर्मा चालान',
   Collections: 'वसूली',
   'Invoice templates': 'इनवॉइस टेम्पलेट',
   'My signature': 'मेरे हस्ताक्षर',

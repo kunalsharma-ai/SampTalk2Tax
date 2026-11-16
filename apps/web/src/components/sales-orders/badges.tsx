@@ -1,4 +1,4 @@
-import { ORDER_BILLING_LABEL, QUOTE_STATE_LABEL } from '@talk2tax/accounting-engine';
+import { ORDER_BILLING_LABEL, PRO_FORMA_STATE_LABEL, QUOTE_STATE_LABEL } from '@talk2tax/accounting-engine';
 import { Badge } from '@talk2tax/ui';
 import type { Order, QuoteState } from '@/lib/sales-orders';
 
@@ -25,4 +25,10 @@ export function RenewalBadge({ renewal }: { renewal: 'ROLLING' | 'RUNNING' | 'RE
   if (renewal === 'PAST_END') return <Badge tone="negative">Past end date</Badge>;
   if (renewal === 'ROLLING') return <Badge tone="violet">Rolling</Badge>;
   return null;
+}
+
+const PRO_FORMA_TONE = { DRAFT: 'neutral', ISSUED: 'accent', EXPIRED: 'warning', INVOICED: 'positive', CANCELLED: 'negative' } as const;
+
+export function ProFormaBadge({ state }: { state: keyof typeof PRO_FORMA_TONE }) {
+  return <Badge tone={PRO_FORMA_TONE[state]}>{PRO_FORMA_STATE_LABEL[state]}</Badge>;
 }

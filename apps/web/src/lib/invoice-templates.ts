@@ -89,3 +89,10 @@ export function readAsDataUrl(file: File): Promise<string> {
     r.readAsDataURL(file);
   });
 }
+
+export interface ProFormaPrintData {
+  proForma: { id: string; reference: string; status: 'DRAFT' | 'ISSUED' | 'CANCELLED'; contactName: string };
+  source: InvoicePrintSource;
+  template: ResolvedTemplate;
+  templates: { id: string; name: string; isDefault: boolean; engine: TemplateEngine }[];
+}

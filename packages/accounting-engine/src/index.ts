@@ -47,6 +47,7 @@ export * from './year-end';
 export * from './payment-batches';
 export * from './payment-schedule';
 export * from './disputes';
+export * from './pro-forma';
 export * from './plans';
 export * from './subscription-billing';
 export * from './support';

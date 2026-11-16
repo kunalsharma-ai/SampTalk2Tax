@@ -11,7 +11,7 @@ import { money, today } from '@/lib/format';
 import { useAccounts, useContacts, useGstRegistration, useGstStates, useOrg, useTaxRates } from '@/lib/org';
 import type { AccountType } from '@/lib/types';
 import { CONTRACT_FREQUENCIES, FREQUENCY_LABEL, FREQUENCY_MONTHS, type ContractFrequency } from '@talk2tax/accounting-engine';
-import type { ContractDetail, QuoteDetail, SalesLineInput } from '@/lib/sales-orders';
+import type { ContractDetail, ProFormaDetail, QuoteDetail, SalesLineInput } from '@/lib/sales-orders';
 
 interface LineState { key: number; accountId: string; description: string; quantity: string; unitPrice: string; taxRateId: string; hsnCode: string }
 
@@ -23,10 +23,12 @@ const TYPE_ORDER: AccountType[] = ['REVENUE', 'EXPENSE', 'ASSET', 'LIABILITY', '
  * Totals are worked out with the same engine and GST split the server uses for invoices, so what is
  * shown is what is saved; the server checks everything again.
  */
-type Mode = 'quote' | 'order' | 'contract';
-const LABEL: Record<Mode, string> = { quote: 'quotation', order: 'order', contract: 'contract' };
+type Mode = 'quote' | 'order' | 'contract' | 'proforma';
+const LABEL: Record<Mode, string> = { quote: 'quotation', order: 'order', contract: 'contract', proforma: 'pro forma invoice' };
+const PATH: Record<Mode, string> = { quote: 'quotes', order: 'orders', contract: 'contracts', proforma: 'pro-formas' };
+const DATE_LABEL: Record<Mode, string> = { quote: 'Quotation date', order: 'Order date', contract: 'Start date', proforma: 'Pro forma date' };
 
-export function SalesForm({ mode, existing, contract, contactId, dealId }: { mode: Mode; existing?: QuoteDetail; contract?: ContractDetail; contactId?: string; dealId?: string }) {
+export function SalesForm({ mode, existing, contract, proForma, fromQuote, contactId, dealId }: { mode: Mode; existing?: QuoteDetail; contract?: ContractDetail; proForma?: ProFormaDetail; fromQuote?: QuoteDetail; contactId?: string; dealId?: string }) {
   const { org, orgId } = useOrg();
   const accounts = useAccounts();
   const contacts = useContacts('customer');
@@ -37,7 +39,8 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
   const qc = useQueryClient();
   const deals = useQuery({ queryKey: ['crm-deals', orgId, 'open', ''], queryFn: () => api<DealList>(`/v1/orgs/${orgId}/crm/deals?view=open`) });
   const c = org?.functionalCurrency ?? 'INR';
-  const prior = existing ?? contract;
+  const prior = existing ?? contract ?? proForma ?? fromQuote;
+  const quoteLike = mode === 'quote' || mode === 'proforma';
   const nextKey = useRef(prior ? prior.lines.length + 1 : 2);
   // Once a contract is active its customer, start date and schedule are fixed.
   const fixed = !!contract && contract.status !== 'DRAFT';
@@ -45,8 +48,8 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
 
   const [contact, setContact] = useState(prior?.contact?.id ?? contactId ?? '');
   const [deal, setDeal] = useState(prior?.deal?.id ?? dealId ?? '');
-  const [date, setDate] = useState(existing?.issueDate ?? contract?.startDate ?? today());
-  const [validUntil, setValidUntil] = useState(existing?.validUntil ?? addDays(today(), 30));
+  const [date, setDate] = useState(existing?.issueDate ?? proForma?.issueDate ?? contract?.startDate ?? today());
+  const [validUntil, setValidUntil] = useState(existing?.validUntil ?? proForma?.validUntil ?? addDays(today(), 30));
   const [reference, setReference] = useState(prior?.customerReference ?? '');
   const [title, setTitle] = useState(contract?.title ?? '');
   const [frequency, setFrequency] = useState<ContractFrequency>(contract?.frequency ?? 'MONTHLY');
@@ -57,7 +60,7 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
   const [renewalMonths, setRenewalMonths] = useState(String(contract?.renewalMonths ?? 12));
   const [noticeDays, setNoticeDays] = useState(String(contract?.noticeDays ?? 30));
   const [termsDays, setTermsDays] = useState(contract?.paymentTermsDays === null || contract?.paymentTermsDays === undefined ? '' : String(contract.paymentTermsDays));
-  const [terms, setTerms] = useState(existing?.terms ?? '');
+  const [terms, setTerms] = useState(existing?.terms ?? proForma?.terms ?? fromQuote?.terms ?? '');
   const [memo, setMemo] = useState(prior?.memo ?? '');
   const [placeOfSupply, setPlaceOfSupply] = useState(prior?.placeOfSupply ?? '');
   const [lines, setLines] = useState<LineState[]>(
@@ -90,7 +93,7 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
   const calc = useMemo(() => {
     const issues: string[] = [];
     if (!contact) issues.push('Choose the customer');
-    if (mode === 'quote' && validUntil && date && validUntil < date) issues.push('Valid until cannot be before the quotation date');
+    if (quoteLike && validUntil && date && validUntil < date) issues.push(`Valid until cannot be before the ${LABEL[mode]} date`);
     if (mode === 'contract') {
       if (!title.trim()) issues.push('Give the contract a title');
       if (!rolling && !endDate) issues.push('Give an end date, or make it rolling');
@@ -137,6 +140,11 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
         return contract ? api<{ id: string }>(`${base}/contracts/${contract.id}`, { method: 'PUT', body }) : api<{ id: string }>(`${base}/contracts`, { method: 'POST', body });
       }
       const body = { ...common, issueDate: date, validUntil, terms: terms || null };
+      if (mode === 'proforma') {
+        const { dealId: _deal, ...rest } = body;
+        const pf = { ...rest, quoteId: proForma ? (proForma.quote?.id ?? null) : (fromQuote?.id ?? null) };
+        return proForma ? api<{ id: string }>(`${base}/pro-formas/${proForma.id}`, { method: 'PUT', body: pf }) : api<{ id: string }>(`${base}/pro-formas`, { method: 'POST', body: pf });
+      }
       return existing ? api<{ id: string }>(`${base}/quotes/${existing.id}`, { method: 'PUT', body }) : api<{ id: string }>(`${base}/quotes`, { method: 'POST', body });
     },
     onSuccess: async (r) => {
@@ -145,9 +153,10 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
       await qc.invalidateQueries({ queryKey: ['sales-orders', orgId] });
       await qc.invalidateQueries({ queryKey: ['sales-contracts', orgId] });
       await qc.invalidateQueries({ queryKey: ['sales-contract', orgId] });
+      await qc.invalidateQueries({ queryKey: ['pro-formas', orgId] });
       await qc.invalidateQueries({ queryKey: ['crm-deals', orgId] });
       await qc.invalidateQueries({ queryKey: ['crm-deal', orgId] });
-      router.push(`/orgs/${orgId}/sales/${mode === 'quote' ? 'quotes' : mode === 'order' ? 'orders' : 'contracts'}/${r.id}`);
+      router.push(`/orgs/${orgId}/sales/${PATH[mode]}/${r.id}`);
     },
   });
   const update = (key: number, patch: Partial<LineState>) => setLines((ls) => ls.map((x) => (x.key === key ? { ...x, ...patch } : x)));
@@ -167,10 +176,10 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
           </Select>
         </label>
         <label className={field}>
-          {mode === 'quote' ? 'Quotation date' : mode === 'order' ? 'Order date' : 'Start date'}
-          <Input aria-label={mode === 'quote' ? 'Quotation date' : mode === 'order' ? 'Order date' : 'Start date'} type="date" disabled={fixed} value={date} onChange={(e) => setDate(e.target.value)} required />
+          {DATE_LABEL[mode]}
+          <Input aria-label={DATE_LABEL[mode]} type="date" disabled={fixed} value={date} onChange={(e) => setDate(e.target.value)} required />
         </label>
-        {mode === 'quote' ? (
+        {quoteLike ? (
           <label className={field}>
             Valid until
             <Input aria-label="Valid until" type="date" value={validUntil} min={date} onChange={(e) => setValidUntil(e.target.value)} required />
@@ -222,6 +231,7 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
             </div>
           </div>
         ) : null}
+        {mode === 'proforma' ? null : (
         <label className={`${field} sm:col-span-2`}>
           Deal
           <Select aria-label="Deal" value={deal} onChange={(e) => setDeal(e.target.value)} disabled={!contact}>
@@ -231,11 +241,12 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
           </Select>
           <span className="normal-case tracking-normal text-fg-faint">{mode === 'quote' ? 'Accepting the quotation marks this deal won.' : mode === 'order' ? 'Saving the order marks this deal won.' : 'Activating the contract marks this deal won.'}</span>
         </label>
+        )}
         <label className={`${field} sm:col-span-2`}>
           {mode === 'order' ? 'Customer PO number' : 'Customer reference'}
           <Input aria-label={mode === 'order' ? 'Customer PO number' : 'Customer reference'} value={reference} maxLength={100} placeholder="Optional" onChange={(e) => setReference(e.target.value)} />
         </label>
-        {mode === 'quote' ? (
+        {quoteLike ? (
           <label className={`${field} sm:col-span-4`}>
             Terms
             <Textarea aria-label="Terms" rows={3} value={terms} maxLength={4000} placeholder="Payment terms, delivery, what is included" onChange={(e) => setTerms(e.target.value)} />
@@ -352,7 +363,7 @@ export function SalesForm({ mode, existing, contract, contactId, dealId }: { mod
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button>
         <Button type="button" loading={save.isPending} disabled={!calc.ok || save.isPending} onClick={() => save.mutate()}>
-          {mode === 'order' ? 'Save order' : prior ? 'Save changes' : mode === 'contract' ? 'Save draft contract' : 'Save draft quotation'}
+          {mode === 'order' ? 'Save order' : existing || contract || proForma ? 'Save changes' : mode === 'contract' ? 'Save draft contract' : mode === 'proforma' ? 'Save draft pro forma invoice' : 'Save draft quotation'}
         </Button>
       </div>
     </form>

@@ -329,7 +329,7 @@ export class InvoiceTemplatesService {
    * The template an invoice prints with: the one asked for, else the invoice's own, else the
    * organisation's default, else a built-in one from the organisation's country preset.
    */
-  private async resolveTemplate(orgId: string, countryCode: string, requested: string | null | undefined, own: string | null) {
+  async resolveTemplate(orgId: string, countryCode: string, requested: string | null | undefined, own: string | null) {
     const id = requested ?? own;
     let t = id ? await this.prisma.invoiceTemplate.findFirst({ where: { id, orgId } }) : null;
     if (requested && !t) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Template not found' });

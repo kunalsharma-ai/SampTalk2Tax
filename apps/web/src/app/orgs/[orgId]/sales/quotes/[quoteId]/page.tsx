@@ -85,6 +85,7 @@ export default function QuotePage() {
               {latest && (s === 'SENT' || s === 'EXPIRED' || s === 'DECLINED') ? <Button variant="secondary" loading={revise.isPending} onClick={() => revise.mutate()}>Revise</Button> : null}
               {latest && (s === 'SENT' || s === 'EXPIRED') ? <Button variant="danger" onClick={() => setDeclining(true)}>Declined</Button> : null}
               {latest && s === 'SENT' ? <Button onClick={() => { setOrderDate(today()); setAccepting(true); }}>Accepted</Button> : null}
+              {s === 'SENT' || s === 'ACCEPTED' ? <Link href={`/orgs/${orgId}/sales/pro-formas/new?fromQuote=${q.id}`}><Button variant="ghost">Make pro forma invoice…</Button></Link> : null}
             </>
           ) : null
         }
