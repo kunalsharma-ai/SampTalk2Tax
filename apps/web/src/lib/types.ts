@@ -452,3 +452,13 @@ export interface ExpenseClaim {
   lines: ExpenseClaimLine[];
   actions: { edit: boolean; submit: boolean; withdraw: boolean; delete: boolean; decide: boolean; reimburse: boolean; void: boolean; attach: boolean };
 }
+
+export interface AuthSessionInfo {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+  current: boolean;
+}

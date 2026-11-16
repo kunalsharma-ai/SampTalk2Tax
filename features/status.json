@@ -633,12 +633,14 @@
       "notes": "Fixed roles: OWNER, ADMIN, ACCOUNTANT, APPROVER, VIEWER. Custom roles not done."
     },
     "SEC-008": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/src/auth/tokens.service.ts",
-        "apps/web/src"
+        "apps/api/src/auth/sessions.service.ts",
+        "apps/api/test/sessions-security.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/account",
+        "apps/web/e2e/security-flow.test.mjs"
       ],
-      "notes": "Short-lived JWT held in an httpOnly SameSite=Lax cookie by the web app. Refresh tokens, revocation and session listing are not done."
+      "notes": "Server-side sessions: 15-minute access token naming the session, rotating refresh token (hash stored), reuse detection with a 30 s grace window, 30-day hard and 7-day idle expiry, revoke one / all others, password change signs out other devices. Both tokens are httpOnly cookies in the web app."
     },
     "SEC-012": {
       "status": "Implementing",
@@ -659,9 +661,10 @@
     "SEC-015": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › authentication"
+        "apps/api/test/auth-tenancy.e2e.test.ts › authentication",
+        "apps/api/test/sessions-security.e2e.test.ts › refresh tokens"
       ],
-      "notes": "Email + password (scrypt) and HS256 JWT bearer tokens."
+      "notes": "Email + password (scrypt), HS256 JWT access tokens bound to a server-side session, rotating refresh tokens. Sign-in lockout per email after 5 failures for 15 minutes."
     },
     "SEC-017": {
       "status": "Tested",
@@ -1180,6 +1183,24 @@
         "apps/web/src/components/expenses/claims-list.tsx"
       ],
       "notes": "Approvals work in the responsive web app at phone width; no mobile app."
+    },
+    "SEC-009": {
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src/app/orgs/[orgId]/account",
+        "apps/web/e2e/security-flow.test.mjs"
+      ],
+      "notes": "A device is a signed-in session: listed with browser, address and last activity, and can be signed out. No trusted-device registration, device binding or new-device alerts."
+    },
+    "SEC-016": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/auth/rate-limit.ts",
+        "apps/api/src/auth/login-throttle.service.ts",
+        "apps/api/test/sessions-security.e2e.test.ts › rate limiting",
+        "apps/api/test/sessions-security.e2e.test.ts › sign-in lockout"
+      ],
+      "notes": "Per-IP limit on sign-in/register/refresh and per-user limit on the API (429 with Retry-After). Counters are in memory per API process (not shared across instances); lockout counters are in PostgreSQL."
     }
   }
 }

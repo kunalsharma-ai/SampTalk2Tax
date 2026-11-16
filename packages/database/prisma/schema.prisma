@@ -121,8 +121,47 @@ model User {
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships  Membership[]
+  sessions     AuthSession[]
 
   @@map("users")
+}
+
+/// A signed-in device. The access token (JWT) names the session, so revoking the
+/// session ends access at once. The refresh token is `<session id>.<secret>`; only a
+/// SHA-256 of the secret is stored, and it changes on every refresh.
+model AuthSession {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secretHash         String    @map("secret_hash")
+  /// The secret before the last rotation, accepted for a short grace window so that
+  /// two refreshes racing each other do not look like token theft.
+  previousSecretHash String?   @map("previous_secret_hash")
+  rotatedAt          DateTime? @map("rotated_at") @db.Timestamptz(6)
+  rotationCount      Int       @default(0) @map("rotation_count")
+  userAgent          String?   @map("user_agent")
+  ipAddress          String?   @map("ip_address")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt         DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(6)
+  /// Hard limit: the session ends here however active it is.
+  expiresAt          DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt          DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedReason      String?   @map("revoked_reason")
+
+  @@index([userId, revokedAt])
+  @@map("auth_sessions")
+}
+
+/// Failed sign-in counter per email address, whether or not an account exists, so
+/// lockout answers the same way for real and unknown addresses.
+model LoginThrottle {
+  email          String    @id
+  failures       Int       @default(0)
+  firstFailureAt DateTime  @map("first_failure_at") @db.Timestamptz(6)
+  lockedUntil    DateTime? @map("locked_until") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("login_throttles")
 }
 
 model Organization {

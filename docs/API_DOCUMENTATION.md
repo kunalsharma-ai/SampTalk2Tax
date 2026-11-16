@@ -2,16 +2,23 @@
 
 Base URL (local): `http://localhost:4000`. Live OpenAPI UI: `/docs`; JSON: `/docs/openapi.json`.
 
-All org routes need `Authorization: Bearer <token>` and membership in the organisation. Money values are decimal **strings**. Dates are `YYYY-MM-DD`.
+All org routes need `Authorization: Bearer <access token>` and membership in the organisation. Access tokens last 15 minutes (`JWT_TTL_SECONDS`); renew them with `POST /v1/auth/refresh`. Every response carries `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`. Money values are decimal **strings**. Dates are `YYYY-MM-DD`.
 
 ## Endpoints
 
 | Method & path | Permission | Purpose |
 |---|---|---|
 | `GET /health` | public | Liveness + DB check |
-| `POST /v1/auth/register` | public | Create user, returns token |
-| `POST /v1/auth/login` | public | Returns token |
+| `POST /v1/auth/register` | public | Create user and sign in: `accessToken`, `expiresIn`, `refreshToken`, `sessionId`, `sessionExpiresAt` |
+| `POST /v1/auth/login` | public | Sign in (same response). 5 failures for one email lock it for 15 min (429) |
+| `POST /v1/auth/refresh` | public | `{ refreshToken }` → new access token and a new refresh token. Inside the 30 s grace window `refreshToken` is `null` (keep the one you have); an older token ends the session |
+| `POST /v1/auth/logout` | public | `{ refreshToken }` → ends that session. Always 204 |
 | `GET /v1/auth/me` | auth | Profile and organisations |
+| `GET /v1/auth/sessions` | auth | My live sessions (browser, address, created, last active, ends by, `current`) |
+| `DELETE /v1/auth/sessions/current` | auth | Sign out this session |
+| `DELETE /v1/auth/sessions/:id` | auth | Sign out one of my sessions (another user's id → 404) |
+| `POST /v1/auth/sessions/revoke-others` | auth | Sign out every other session → `{ signedOut }` |
+| `PUT /v1/auth/password` | auth | `{ currentPassword, newPassword }` → changes it and signs out other sessions → `{ otherSessionsSignedOut }` |
 | `POST /v1/orgs` | auth | Create organisation (caller becomes OWNER); applies chart template and current fiscal year |
 | `GET /v1/orgs` | auth | My organisations |
 | `GET /v1/orgs/:orgId` | org.read | Organisation |
@@ -118,8 +125,9 @@ Content-Type: application/json
 | HTTP | Codes |
 |---|---|
 | 400 | `VALIDATION_FAILED` (with `issues[]`), `INVALID_RANGE` |
-| 401 | `UNAUTHENTICATED`, `INVALID_CREDENTIALS` |
+| 401 | `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `TOKEN_EXPIRED` (refresh and retry), `SESSION_REVOKED`, `SESSION_EXPIRED`, `INVALID_REFRESH_TOKEN`, `REFRESH_TOKEN_REUSED` |
 | 403 | `FORBIDDEN` |
 | 404 | `NOT_FOUND`, `USER_NOT_FOUND` |
 | 409 | `PERIOD_NOT_OPEN`, `ALREADY_POSTED`, `ENTRY_POSTED`, `ALREADY_REVERSED`, `IS_REVERSAL`, `NOT_POSTED`, `SYSTEM_ENTRY`, `DOCUMENT_POSTED`, `ALREADY_VOID`, `HAS_ALLOCATIONS`, `CREDIT_LIMIT_EXCEEDED`, `DUPLICATE_BILL`, `TOTAL_CHANGED`, `CONTACT_IN_USE`, `ALREADY_REMOVED`, `BANK_MATCHED`, `ALREADY_MATCHED`, `NOT_MATCHED`, `LINE_RECONCILED`, `LINE_EXCLUDED`, `NOTHING_NEW`, `PERIOD_RECONCILED`, `NOT_LATEST`, `ALREADY_UNDONE`, `ACCOUNT_IN_USE`, `NON_ZERO_BALANCE`, `HAS_CHILDREN`, `CONFLICT`, `FISCAL_YEAR_EXISTS`, `LEDGER_INTEGRITY` |
-| 422 | `JOURNAL_INVALID` / `DOCUMENT_INVALID` / `STATEMENT_INVALID` / `RECONCILIATION_FAILED` (with `issues[]`), `INVALID_MATCH`, `OPENING_REQUIRED`, `OPENING_MISMATCH`, `CONTROL_ACCOUNT`, `INVALID_ALLOCATION`, `INVALID_BANK_ACCOUNT`, `TAX_ACCOUNT_REQUIRED`, `NOT_A_CUSTOMER`, `NOT_A_VENDOR`, `CONTACT_INACTIVE`, `NO_FISCAL_PERIOD`, `IDEMPOTENCY_KEY_REUSED`, `INVALID_PARENT`, `INVALID_SUBTYPE`, `WEAK_PASSWORD`, `INVALID_DATE` |
+| 422 | `JOURNAL_INVALID` / `DOCUMENT_INVALID` / `STATEMENT_INVALID` / `RECONCILIATION_FAILED` (with `issues[]`), `INVALID_MATCH`, `OPENING_REQUIRED`, `OPENING_MISMATCH`, `CONTROL_ACCOUNT`, `INVALID_ALLOCATION`, `INVALID_BANK_ACCOUNT`, `TAX_ACCOUNT_REQUIRED`, `NOT_A_CUSTOMER`, `NOT_A_VENDOR`, `CONTACT_INACTIVE`, `NO_FISCAL_PERIOD`, `IDEMPOTENCY_KEY_REUSED`, `INVALID_PARENT`, `INVALID_SUBTYPE`, `WEAK_PASSWORD`, `WRONG_PASSWORD`, `SAME_PASSWORD`, `INVALID_DATE` |
+| 429 | `RATE_LIMITED`, `TOO_MANY_ATTEMPTS` (both with `Retry-After`) |

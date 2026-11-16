@@ -11,12 +11,16 @@ export interface Ctx {
   prisma: PrismaService;
 }
 
-export async function bootApp(): Promise<Ctx> {
+export async function bootApp(overrides: Record<string, string> = {}): Promise<Ctx> {
   const config = loadConfig({
+    // Suites register many users from one address; the rate limit test sets its own low limits.
+    RATE_LIMIT_AUTH_PER_MINUTE: '100000',
+    RATE_LIMIT_API_PER_MINUTE: '100000',
     ...process.env,
     NODE_ENV: 'test',
     DATABASE_URL: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET ?? 'test-secret-that-is-long-enough-for-hs256-signing',
+    ...overrides,
   });
   const app = await createApp(config, { logger: process.env.TEST_LOGS === '1' });
   await app.init();
@@ -27,13 +31,14 @@ export interface TestUser {
   id: string;
   email: string;
   token: string;
+  refreshToken: string;
   auth: { Authorization: string };
 }
 
 export async function registerUser(ctx: Ctx, name = 'Test User'): Promise<TestUser> {
   const email = `${randomUUID()}@example.test`;
   const res = await ctx.http().post('/v1/auth/register').send({ email, name, password: 'a-very-long-test-password' }).expect(201);
-  return { id: res.body.user.id, email, token: res.body.accessToken, auth: { Authorization: `Bearer ${res.body.accessToken}` } };
+  return { id: res.body.user.id, email, token: res.body.accessToken, refreshToken: res.body.refreshToken, auth: { Authorization: `Bearer ${res.body.accessToken}` } };
 }
 
 export async function createOrg(ctx: Ctx, user: TestUser, overrides: Record<string, unknown> = {}) {

@@ -5,7 +5,8 @@ const PUBLIC = ['/login', '/register'];
 /** Redirects signed-out visitors to /login (the API still enforces auth on every call). */
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const signedIn = Boolean(req.cookies.get('t2t_session')?.value);
+  // An expired access cookie is fine while the refresh cookie lives: the API proxy renews it.
+  const signedIn = Boolean(req.cookies.get('t2t_session')?.value || req.cookies.get('t2t_refresh')?.value);
   if (!signedIn && !PUBLIC.includes(pathname)) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';

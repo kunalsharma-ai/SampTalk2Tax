@@ -56,7 +56,11 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Member screen adds existing users by email; there are no invitation emails or role changes in the UI.
 
 ## Security
-* Access tokens only (no refresh or server-side revocation). Signing out clears the web session cookie, but the token stays valid until it expires (1 h by default). No MFA/SSO; no rate limiting or lockout on login.
+* No MFA or SSO. No email verification or password reset by email (a signed-in user can change their password).
+* Rate-limit counters live in each API process's memory, so several instances multiply the limit; there is no shared store yet. Sign-in lockout is shared (PostgreSQL).
+* Per-IP limits depend on the reverse proxy in front of the web app setting `X-Forwarded-For`; without one, the address can be faked (see SECURITY.md).
+* A session's "last active" time moves when its access token is renewed (every 15 minutes of use), not on every request.
+* Lockout is per email, so someone can keep an account locked by failing on purpose; there is no CAPTCHA or per-IP backoff on top yet.
 * Tenant isolation is enforced in the application and by composite foreign keys; PostgreSQL row-level security is not enabled yet.
 * Members are added by existing email only; no invitation emails.
 * Segregation of duties (creator ≠ poster) is possible through roles but not enforced as a policy.

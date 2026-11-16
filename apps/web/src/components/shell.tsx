@@ -126,7 +126,10 @@ export function Shell({ children }: { children: ReactNode }) {
             {org ? <Badge tone="violet">{org.role}</Badge> : null}
             {org?.isDemo ? <Badge tone="warning">Synthetic demo data</Badge> : null}
           </span>
-          <div className="ml-auto shrink-0">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <Link href={`/orgs/${orgId}/account`} className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg">
+              Security
+            </Link>
             <button className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg" onClick={() => void signOut()}>
               Sign out
             </button>

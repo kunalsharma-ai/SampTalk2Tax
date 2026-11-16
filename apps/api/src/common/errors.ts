@@ -21,6 +21,8 @@ export class ErrorFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const res = host.switchToHttp().getResponse<Response>();
     const { status, body } = this.map(exception);
+    const retryAfter = (exception as { retryAfterSeconds?: unknown })?.retryAfterSeconds;
+    if (typeof retryAfter === 'number') res.setHeader('Retry-After', String(retryAfter));
     if (status >= 500) this.logger.error(exception instanceof Error ? exception.stack : String(exception));
     res.status(status).json(body);
   }

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1183 |
+| Not started | 1181 |
 | Designed | 0 |
 | Implementing | 29 |
 | Implemented | 30 |
-| Tested | 101 |
+| Tested | 103 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
 | Internationalization | M8 | 16 | 13 | 3 |
 | Integration marketplace | M6 | 50 | 50 | 0 |
-| Security and enterprise governance | M1 | 38 | 29 | 9 |
+| Security and enterprise governance | M1 | 38 | 27 | 11 |
 | User experience and onboarding | M1 | 22 | 17 | 5 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
@@ -957,11 +957,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SEC-008 — Session management
 
 - Module: Security and enterprise governance
-- Status: **Implementing**
-- Notes: Short-lived JWT held in an httpOnly SameSite=Lax cookie by the web app. Refresh tokens, revocation and session listing are not done.
+- Status: **Tested**
+- Notes: Server-side sessions: 15-minute access token naming the session, rotating refresh token (hash stored), reuse detection with a 30 s grace window, 30-day hard and 7-day idle expiry, revoke one / all others, password change signs out other devices. Both tokens are httpOnly cookies in the web app.
 - Evidence:
-  - apps/api/src/auth/tokens.service.ts
-  - apps/web/src
+  - apps/api/src/auth/sessions.service.ts
+  - apps/api/test/sessions-security.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/account
+  - apps/web/e2e/security-flow.test.mjs
+
+### SEC-009 — Device management
+
+- Module: Security and enterprise governance
+- Status: **Implementing**
+- Notes: A device is a signed-in session: listed with browser, address and last activity, and can be signed out. No trusted-device registration, device binding or new-device alerts.
+- Evidence:
+  - apps/web/src/app/orgs/[orgId]/account
+  - apps/web/e2e/security-flow.test.mjs
 
 ### SEC-012 — Secrets management
 
@@ -985,9 +996,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Tested**
-- Notes: Email + password (scrypt) and HS256 JWT bearer tokens.
+- Notes: Email + password (scrypt), HS256 JWT access tokens bound to a server-side session, rotating refresh tokens. Sign-in lockout per email after 5 failures for 15 minutes.
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › authentication
+  - apps/api/test/sessions-security.e2e.test.ts › refresh tokens
+
+### SEC-016 — Rate limiting
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Per-IP limit on sign-in/register/refresh and per-user limit on the API (429 with Retry-After). Counters are in memory per API process (not shared across instances); lockout counters are in PostgreSQL.
+- Evidence:
+  - apps/api/src/auth/rate-limit.ts
+  - apps/api/src/auth/login-throttle.service.ts
+  - apps/api/test/sessions-security.e2e.test.ts › rate limiting
+  - apps/api/test/sessions-security.e2e.test.ts › sign-in lockout
 
 ### SEC-017 — Input validation
 

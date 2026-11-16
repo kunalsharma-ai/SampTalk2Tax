@@ -14,6 +14,8 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean } = 
   // Attachments are uploaded as raw bytes. The limit sits above the 5 MB file cap so the
   // service can answer with a clear FILE_TOO_LARGE error for files a little over it.
   app.useBodyParser('raw', { limit: '6mb', type: ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'] });
+  // Client IPs (rate limits, session list) come from X-Forwarded-For only across trusted hops.
+  app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.use(helmet());
   app.enableCors({ origin: config.CORS_ORIGINS.split(',').map((s) => s.trim()), credentials: false });
   app.enableShutdownHooks();

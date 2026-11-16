@@ -5,7 +5,7 @@ The directive (Part 47) defines milestones M0–M9. This file tracks what each o
 | Milestone | Scope | Status |
 |---|---|---|
 | **M0 Discovery & architecture** | PRD, competitive matrix, domain model, ADRs, DB design, API contracts, security, AI architecture, design system spec, roadmap, dependency map | **Partly done.** Done: PRD, feature registry (1,343 entries), architecture + ADRs, database schema, accounting engine spec, security, API docs, test strategy, deployment, roadmap. Not done: competitive matrix research (framework only), AI architecture, design system spec, tax engine, workflow engine, integration architecture, dashboard specs, pricing |
-| **M1 Functional foundation** | Monorepo, auth, tenants, onboarding, RBAC, database, accounting engine, GL, CoA, journal posting, basic reports, initial dashboard | **Built.** Backend and web app are built and tested (unit, integration and browser tests). Remaining hardening: refresh tokens, rate limiting, row-level security, member invitations |
+| **M1 Functional foundation** | Monorepo, auth, tenants, onboarding, RBAC, database, accounting engine, GL, CoA, journal posting, basic reports, initial dashboard | **Built.** Backend and web app are built and tested (unit, integration and browser tests). Hardening so far: server-side sessions with rotating refresh tokens, revocation and a Security page; sign-in lockout and rate limiting. Remaining: row-level security, member invitations |
 | **M2 Core finance** | AR, AP, banking, reconciliation, expenses, customers, vendors, documents, approval workflows | **In progress.** Slice 1 built and tested: customers, vendors, tax rates, invoices, credit notes, bills, vendor credits, receipts, payments, allocation, statements, ageing and slice 2 built and tested: bank accounts, CSV statement import, matching, bank entries and receipts from statement lines, reconciliation with history and undo; slice 3 built and tested: attachments on records and single-step approval rules for sales and purchase documents; slice 4 built and tested: employee expense claims with receipts, approval and reimbursement (see [`MILESTONE_REPORT_M2.md`](MILESTONE_REPORT_M2.md)). The M2 scope in the directive is covered at a first level; remaining depth is listed in KNOWN_LIMITATIONS |
 | M3 Tax & payroll | Validated India GST/TDS workflows, payroll finance, compliance calendars | Not started |
 | M4 Financial intelligence | Forecasting, budgeting, analytics, AI copilot, alerts, leakage | Not started |
@@ -17,7 +17,7 @@ The directive (Part 47) defines milestones M0–M9. This file tracks what each o
 
 ## Next priorities (proposed order)
 
-1. **M1 hardening:** refresh tokens + logout, rate limiting on auth, PostgreSQL row-level security as a second tenant-isolation layer, financial dimension masters, recurring journal templates, year-end close to retained earnings.
+1. **M1 hardening:** ~~refresh tokens + logout, rate limiting on auth~~ (done), PostgreSQL row-level security as a second tenant-isolation layer, financial dimension masters, recurring journal templates, year-end close to retained earnings.
 2. **M0 remainder:** competitive matrix with sourced, dated research; AI architecture (gateway with mock adapters); design system spec.
 3. **M2 depth:** multi-step approval chains, approvals for payments, batch reimbursements, mileage and per-diem claims, expense policies, OFX import, transfers between own accounts.
 

@@ -58,6 +58,8 @@ Integration tests never drop or reset data. Each test registers its own users an
 
 `apps/web/e2e/expenses-flow.test.mjs` signs in an employee who sees only "My expense claims", writes a two-line claim with a tax-inclusive amount and live totals, attaches a receipt and submits it; the owner approves it (posting it) and pays it back from the bank; the employee then sees it paid, without links into the books.
 
+`apps/web/e2e/security-flow.test.mjs` signs one account in on two browsers, deletes the expired access cookie and sees the page load anyway (the refresh token was rotated), signs the phone out from the laptop's Security page, changes the password (signing the phone out again), checks that a copied access token stops working after sign-out, and sees the lockout message after five wrong passwords.
+
 Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, workflow recovery, automated accessibility audits (axe), visual regression, load.
 
 ## Running
