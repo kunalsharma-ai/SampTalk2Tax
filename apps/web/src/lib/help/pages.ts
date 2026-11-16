@@ -691,6 +691,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   register: { what: 'Create your Talk2Tax account.', how: 'Enter your name, email and a long password.', where: 'After this you create or join an organisation.' },
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },
   'invite/[id]': { what: 'An invitation to join an organisation.', how: 'Sign in or create an account, then accept.', where: 'After accepting, the organisation appears in your list.' },
+  'portal/[id]': { what: 'The customer portal: what a customer sees when they open the private link you sent them. Their balance, invoices, payments received and statement, with invoices to open or print and a Pay button where there is a payment link.', how: 'Make the link on the customer\'s page under Customer portal and send it to them. Revoke it there if it reaches the wrong person.', where: 'Open to anyone with the link, without signing in. Read-only: nothing here changes the books.' },
   paid: { what: 'Where a customer lands after paying a payment link: a thank-you with the link reference.', how: 'Nothing to do here. The invoice is marked paid from the gateway\'s own signed notice, not from this page.', where: 'Open to anyone; it shows nothing from the books.' },
   // ---------------------------------------------------------------- platform administration
   admin: {
