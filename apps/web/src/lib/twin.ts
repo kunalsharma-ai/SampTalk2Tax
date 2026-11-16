@@ -17,7 +17,7 @@ export type DriverKind =
   | 'TAX_RATE'
   | 'ONE_OFF';
 
-export type Driver = { kind: DriverKind; id?: string; label?: string | null } & Record<string, string | number | boolean | null | undefined>;
+export type Driver = { kind: DriverKind; id?: string; label?: string | null; departmentId?: string | null } & Record<string, string | number | boolean | null | undefined>;
 
 export interface TwinMonth {
   index: number;
@@ -81,6 +81,51 @@ export interface TwinRun {
   assumptions: string[];
   risks: { level: 'HIGH' | 'MEDIUM' | 'LOW'; code: string; message: string }[];
   missing: { field: string; question: string }[];
+  insights?: TwinInsights;
+}
+
+export interface TwinImpact { index: number; kind: DriverKind; departmentId: string | null; netProfit: string; ebitda: string; closingCash: string; minimumCash: string }
+export interface TwinSuggestion {
+  code: 'FUND_GAP' | 'COLLECT_SOONER' | 'PRICE_RISE' | 'DELAY_LARGEST_COST' | 'SET_TAX_RATE';
+  title: string;
+  message: string;
+  drivers: Driver[];
+  replaces: number | null;
+  effect: { netProfit: string; closingCash: string; minimumCash: string; cashNegativeFrom: string | null };
+}
+export interface TwinInsights {
+  total: { netProfit: string; closingCash: string };
+  impacts: TwinImpact[];
+  interaction: { netProfit: string; closingCash: string };
+  departments: { departmentId: string | null; changes: number[]; netProfit: string; closingCash: string }[];
+  suggestions: TwinSuggestion[];
+}
+
+export type ScenarioStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+export const STATUS: Record<ScenarioStatus, { label: string; tone: 'neutral' | 'warning' | 'positive' | 'negative' }> = {
+  DRAFT: { label: 'Draft', tone: 'neutral' },
+  SUBMITTED: { label: 'Waiting for approval', tone: 'warning' },
+  APPROVED: { label: 'Approved', tone: 'positive' },
+  REJECTED: { label: 'Rejected', tone: 'negative' },
+};
+
+export interface ScenarioNote { id: string; version: number; month: number | null; changeNumber: number | null; body: string; authorId: string; createdAt: string; resolvedById: string | null; resolvedAt: string | null }
+export interface ScenarioVersion { version: number; name: string; description: string | null; baselineMonths: number; horizonMonths: number; drivers: Driver[]; reason: string; createdById: string; createdAt: string }
+export interface ScenarioDetail {
+  scenario: Scenario;
+  result: TwinRun;
+  baseline: { projection: TwinProjection };
+  people: Record<string, string>;
+  versions: ScenarioVersion[];
+  notes: ScenarioNote[];
+}
+
+/** "EDITED", "RESTORED_FROM_2"… in words. */
+export function versionReason(r: string): string {
+  if (r === 'CREATED') return 'Created';
+  if (r === 'EDITED') return 'Edited';
+  const m = /^RESTORED_FROM_(\d+)$/.exec(r);
+  return m ? `Restored from version ${m[1]}` : r;
 }
 
 export interface Scenario {
@@ -90,8 +135,18 @@ export interface Scenario {
   baselineMonths: 3 | 6 | 12;
   horizonMonths: number;
   drivers: Driver[];
+  status: ScenarioStatus;
+  version: number;
+  submittedById: string | null;
+  submittedAt: string | null;
+  decidedById: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdById: string;
   createdAt: string;
   updatedAt: string;
+  people?: { submittedBy: string | null; decidedBy: string | null; updatedBy: string | null };
+  openNotes?: number;
 }
 
 export interface Template {

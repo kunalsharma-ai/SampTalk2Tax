@@ -63,6 +63,8 @@ export const PERMISSIONS = [
   'documents.sign',
   /** Build and save what-if scenarios in the financial digital twin. They never touch the books; reading them needs reports.read. */
   'scenarios.manage',
+  /** Approve or reject submitted scenarios in the war room (never one's own submission). */
+  'scenarios.approve',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -113,7 +115,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'scenarios.manage',
     'documents.sign',
   ]),
-  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign']),
+  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve']),
   VIEWER: new Set<Permission>(READ_ONLY),
   /** Staff who only claim expenses: their own claims and the organisation's name, nothing else. */
   EMPLOYEE: new Set<Permission>(['org.read', 'expenses.submit']),

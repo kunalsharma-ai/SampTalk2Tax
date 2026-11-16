@@ -2,7 +2,7 @@
 
 The digital twin plays "what if" changes forward from an organisation's actual books, month by month, and shows what they would do to profit and cash. It is a planning tool only: scenarios are stored as their inputs, every result is worked out again when it is opened, and **nothing is ever posted to the ledger** (Directive Part 15).
 
-Pages: **Planning → Digital twin** (`/orgs/:orgId/planning/twin`), a scenario page (`/planning/twin/:id`), a new-scenario page that can start from a template (`/planning/twin/new?template=HIRE`), and a comparison page (`/planning/twin/compare?ids=…`).
+Pages: **Planning → Digital twin** (`/orgs/:orgId/planning/twin`), a scenario page (`/planning/twin/:id`), a new-scenario page that can start from a template (`/planning/twin/new?template=HIRE`), and a comparison page (`/planning/twin/compare?ids=…`). Working a scenario as a team (impacts, suggestions, notes, versions and approval) is described in [`WAR_ROOM.md`](WAR_ROOM.md).
 
 ## The baseline
 

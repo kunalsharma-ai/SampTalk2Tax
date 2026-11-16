@@ -23,3 +23,4 @@ export * from './invoice-templates';
 export * from './report-export';
 export * from './consolidation';
 export * from './twin';
+export * from './twin-insights';

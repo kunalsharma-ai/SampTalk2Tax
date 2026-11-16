@@ -190,6 +190,8 @@ Dimension masters (cost centre, department, project, location), recurring journa
 
 `twin_scenarios`: `org_id`, `name` (unique per organisation), `description`, `baseline_months` (3, 6 or 12), `horizon_months` (1 to 60), `drivers` (a JSON array of at most 50 changes, checked by the engine before saving), created and updated by and at. Forced row-level security on `org_id`. Only inputs are stored; projections are worked out on read and nothing is written to the ledger. See [`DIGITAL_TWIN.md`](DIGITAL_TWIN.md).
 
+War room (M7 slice 2): `twin_scenarios` gains `status` (DRAFT, SUBMITTED, APPROVED, REJECTED), `version`, `submitted_by_id/at`, `decided_by_id/at` and `decision_note`, with checks that the fields match the status. `twin_scenario_versions` (`scenario_id`, `version`, the inputs, `reason`, `created_by_id`) is immutable through a trigger; existing scenarios were backfilled as version 1. `twin_scenario_notes` (`scenario_id`, `version`, optional `month` and `change_number`, `body`, author, resolved by and at). All have forced row-level security on `org_id`. See [`WAR_ROOM.md`](WAR_ROOM.md).
+
 ## Integrations
 
 `org_integrations`: one row per organisation and kind (`AI_ANTHROPIC`, `EMAIL_SMTP`): `enabled`, `settings` (JSON object, no secrets), `secret_cipher` (base64 of IV, GCM tag and ciphertext) with the `key_id` that sealed it (both set or both null), `secret_hint`, the last test (`test_status` NOT_TESTED/OK/FAILED, message, when and by whom; `tested_at` set exactly when tested), updated by and at. Forced row-level security on `org_id`. See [`INTEGRATIONS.md`](INTEGRATIONS.md).

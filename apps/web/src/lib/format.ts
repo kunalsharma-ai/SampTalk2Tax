@@ -50,3 +50,8 @@ export function describeDevice(ua: string | null): string {
   if (browser && os) return `${browser} on ${os}`;
   return browser ?? os ?? ua.slice(0, 60);
 }
+
+/** A moment as a short date and time in India, e.g. "3 Nov 2026, 14:05". */
+export function dateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+}

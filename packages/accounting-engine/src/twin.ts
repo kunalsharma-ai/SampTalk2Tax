@@ -55,7 +55,8 @@ export type TwinDriver =
   | { kind: 'TAX_RATE'; percent: string }
   | { kind: 'ONE_OFF'; label: string; amount: string; month?: number; affectsProfit: boolean };
 
-export type TwinDriverWithMeta = TwinDriver & { id?: string; label?: string | null };
+/** A driver as stored: an optional client id, a label, and the department it belongs to (for impact by department). */
+export type TwinDriverWithMeta = TwinDriver & { id?: string; label?: string | null; departmentId?: string | null };
 
 export interface TwinActualMonth {
   /** YYYY-MM */

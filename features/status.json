@@ -3237,6 +3237,222 @@
         "docs/INTEGRATIONS.md"
       ],
       "notes": "Governance → Integrations, for owners and admins (org.manage)."
+    },
+    "WAR-001": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "One page per scenario where the team works together: model, impacts, suggestions, notes, versions and approval. Not live: others see changes on reload, with no presence or live cursors."
+    },
+    "WAR-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/compare/page.tsx"
+      ],
+      "notes": "Up to five saved scenarios side by side with the no-change baseline, now with approval status and a risk map."
+    },
+    "WAR-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Driver-based monthly simulations played forward from the posted books (see the digital twin)."
+    },
+    "WAR-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Monthly closing cash, lowest cash, cash to raise and the month cash runs out, for every scenario."
+    },
+    "WAR-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/page.tsx"
+      ],
+      "notes": "Planning board: scenarios in Draft, Waiting for approval, Approved and Rejected columns, with version, open notes and who submitted or decided."
+    },
+    "WAR-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/compare/page.tsx"
+      ],
+      "notes": "Risk map on the comparison page: each risk the engine finds, by scenario, with its level and details."
+    },
+    "WAR-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "Each change can belong to a department; the war room shows the measured net profit and cash effect of each change and the total by department."
+    },
+    "WAR-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Investment changes (equipment bought and depreciated) and new loans in scenarios."
+    },
+    "WAR-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md"
+      ],
+      "notes": "Expansion changes: one-off cost, running costs and revenue ramping up to full speed."
+    },
+    "WAR-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "Notes on a scenario, optionally pinned to a projected month and a change, recorded against the version; resolve by the author or a scenario manager, delete by the author; open notes counted on the board."
+    },
+    "WAR-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "Submit, withdraw, approve, reject (with a reason) and reopen; frozen while waiting or approved; the submitter cannot decide; new permission scenarios.approve (owners, admins, approvers); every step audited."
+    },
+    "WAR-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "Every saved set of inputs is an immutable version with who and why; restoring makes an earlier version the newest."
+    },
+    "WAR-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "Left column: scenario settings and the changes, each with its department."
+    },
+    "WAR-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "Centre: the projection updating as changes are typed, chart, risks, inputs to confirm, impacts and month table."
+    },
+    "WAR-016": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/twin-insights.ts",
+        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
+        "packages/accounting-engine/test/twin-insights.test.ts",
+        "apps/api/test/war-room.e2e.test.ts",
+        "apps/web/e2e/war-room-flow.test.mjs",
+        "docs/WAR_ROOM.md"
+      ],
+      "notes": "Suggested next moves (fund the gap, collect sooner, price rise, delay the largest cost, set the tax rate) measured by re-running the model, plus risks and assumptions in words. Rule-based, not written by AI yet."
+    },
+    "WAR-017": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/twin.ts",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/web/src/components/twin/scenario-builder.tsx",
+        "apps/api/test/twin.e2e.test.ts",
+        "apps/web/e2e/twin-flow.test.mjs",
+        "docs/DIGITAL_TWIN.md",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/compare/page.tsx"
+      ],
+      "notes": "Compare up to five scenarios at once."
     }
   }
 }
