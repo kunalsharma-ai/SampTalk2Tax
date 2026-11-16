@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import { runAsSystem } from '../common/tenant-context';
+import { accounts, fiscalPeriods } from './collections/chart';
 import { users } from './collections/identity';
 import { memberships, organizations } from './collections/tenancy';
 
@@ -46,13 +47,51 @@ export class PostgresMirrorService {
     await (tx ? write(tx) : this.prisma.$transaction(write));
   }
 
-  /** Copies these organisations into PostgreSQL `organizations`. */
-  async organizations(ids: readonly string[], tx?: Tx): Promise<void> {
+  /**
+   * Copies these organisations into PostgreSQL `organizations`. A new organisation and its
+   * control accounts point at each other there, so it is first copied `withoutAccounts`,
+   * then its accounts, then the organisation again.
+   */
+  async organizations(ids: readonly string[], tx?: Tx, opts: { withoutAccounts?: boolean } = {}): Promise<void> {
     if (!ids.length) return;
     const rows = await this.store.collection(organizations).find({ id: { $in: [...new Set(ids)] } });
     await this.inPostgres(tx, async (t) => {
-      for (const { id, ownerChanges: _ignored, ...o } of rows) {
-        await t.organization.upsert({ where: { id }, create: { id, ...o }, update: o });
+      for (const { id, ownerChanges: _o, periodChanges: _p, ...o } of rows) {
+        const data = opts.withoutAccounts ? { ...o, arAccountId: null, apAccountId: null, claimsAccountId: null } : o;
+        await t.organization.upsert({ where: { id }, create: { id, ...data }, update: opts.withoutAccounts ? {} : data });
+      }
+    });
+  }
+
+  /** Copies these accounts into PostgreSQL `accounts`, parents before their children. */
+  async accounts(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (!ids.length) return;
+    const rows = await runAsSystem(() => this.store.collection(accounts).find({ id: { $in: [...new Set(ids)] } }));
+    const byId = new Map(rows.map((a) => [a.id, a]));
+    const ordered: typeof rows = [];
+    const placed = new Set<string>();
+    const place = (a: (typeof rows)[number]) => {
+      if (placed.has(a.id)) return;
+      placed.add(a.id);
+      const parent = a.parentId ? byId.get(a.parentId) : undefined;
+      if (parent) place(parent);
+      ordered.push(a);
+    };
+    rows.forEach(place);
+    await this.inPostgres(tx, async (t) => {
+      for (const { id, ...a } of ordered) {
+        await t.account.upsert({ where: { id }, create: { id, ...a }, update: a });
+      }
+    });
+  }
+
+  /** Copies these fiscal periods into PostgreSQL `fiscal_periods`. */
+  async fiscalPeriods(ids: readonly string[], tx?: Tx): Promise<void> {
+    if (!ids.length) return;
+    const rows = await runAsSystem(() => this.store.collection(fiscalPeriods).find({ id: { $in: [...new Set(ids)] } }));
+    await this.inPostgres(tx, async (t) => {
+      for (const { id, ...p } of rows) {
+        await t.fiscalPeriod.upsert({ where: { id }, create: { id, ...p }, update: { status: p.status, lockedAt: p.lockedAt, lockedById: p.lockedById, name: p.name } });
       }
     });
   }
@@ -94,6 +133,32 @@ export async function thenInPostgres<T>(mongoResult: T, postgres: () => Promise<
       await undo();
     } catch (undoError) {
       new Logger('PostgresMirror').error(`Could not undo the MongoDB half of a change after PostgreSQL refused it: ${String(undoError)}`);
+    }
+    throw e;
+  }
+}
+
+/**
+ * A PostgreSQL transaction that makes MongoDB changes part-way through, for work that must
+ * hold PostgreSQL row locks while MongoDB changes (locking a period waits for postings in
+ * progress). Each MongoDB change registers how to reverse it with `undoLater`; if the
+ * PostgreSQL transaction fails, the reversals run, newest first. Only for the transition.
+ */
+export async function postgresWithMongo<T>(
+  prisma: PrismaService,
+  fn: (tx: Tx, undoLater: (undo: () => Promise<unknown>) => void) => Promise<T>,
+  opts?: { timeout?: number },
+): Promise<T> {
+  const undos: (() => Promise<unknown>)[] = [];
+  try {
+    return await prisma.$transaction((tx) => fn(tx, (u) => void undos.push(u)), opts);
+  } catch (e) {
+    for (const undo of undos.reverse()) {
+      try {
+        await undo();
+      } catch (undoError) {
+        new Logger('PostgresMirror').error(`Could not undo a MongoDB change after PostgreSQL refused it: ${String(undoError)}`);
+      }
     }
     throw e;
   }

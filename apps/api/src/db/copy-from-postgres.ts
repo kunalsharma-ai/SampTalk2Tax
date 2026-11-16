@@ -5,6 +5,7 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
 import { allowSystemAccessOutsideRequests } from '../common/tenant-context';
 import { loadConfig } from '../config';
+import { accounts, fiscalPeriods } from './collections/chart';
 import { authSessions, loginThrottles, users } from './collections/identity';
 import { invitations, memberships, organizations } from './collections/tenancy';
 import { withSystemAccess } from '../common/prisma.service';
@@ -22,8 +23,8 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
 
   const missing = async (collection: { name: string }, ids: string[]) => {
     if (!ids.length) return new Set<string>();
-    const have = await store.systemDb().collection(collection.name).distinct('_id', { _id: { $in: ids as never[] } });
-    return new Set(ids.filter((id) => !have.includes(id as never)));
+    const have = new Set<unknown>(await store.systemDb().collection(collection.name).distinct('_id', { _id: { $in: ids as never[] } }));
+    return new Set(ids.filter((id) => !have.has(id)));
   };
 
   const people = await prisma.user.findMany();
@@ -97,8 +98,30 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
   await runAsSystem(() => store.collection(invitations).insertMany(inviteRows));
   copied.invitations = inviteRows.length;
 
+  // The chart of accounts and fiscal periods are copied in bulk, straight into their
+  // collections: PostgreSQL already enforced what their guards check (parents exist, periods do
+  // not overlap), and the collection validators still check every document.
+  const raw = async (name: string, rows: ({ id: string } & Record<string, unknown>)[]) => {
+    for (const chunk of chunks(rows, 1000)) await store.systemDb().collection(name).insertMany(chunk.map(({ id, ...r }) => ({ _id: id as never, ...r })));
+  };
+  const allAccounts = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.account.findMany()));
+  const newAccounts = await missing(accounts, allAccounts.map((a) => a.id));
+  await raw(accounts.name, allAccounts.filter((a) => newAccounts.has(a.id)));
+  copied.accounts = newAccounts.size;
+
+  const allPeriods = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.fiscalPeriod.findMany()));
+  const newPeriods = await missing(fiscalPeriods, allPeriods.map((p) => p.id));
+  await raw(fiscalPeriods.name, allPeriods.filter((p) => newPeriods.has(p.id)));
+  copied.fiscal_periods = newPeriods.size;
+
   log(`Copied to MongoDB: ${Object.entries(copied).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   return copied;
+}
+
+function chunks<T>(rows: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
 }
 
 if (require.main === module) {

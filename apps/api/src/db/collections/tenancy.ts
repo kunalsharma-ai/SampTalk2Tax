@@ -26,6 +26,8 @@ export interface OrganizationDoc {
   claimsAccountId: string | null;
   /** Bumped by every owner change, so two owner changes at once conflict and run one after the other. */
   ownerChanges?: number;
+  /** Bumped by every new fiscal period, so two calendars added at once run one after the other. */
+  periodChanges?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,6 +61,7 @@ export const organizations = defineCollection<OrganizationDoc>({
       apAccountId: { bsonType: ['string', 'null'] },
       claimsAccountId: { bsonType: ['string', 'null'] },
       ownerChanges: { bsonType: ['int', 'long'] },
+      periodChanges: { bsonType: ['int', 'long'] },
       createdAt: { bsonType: 'date' },
       updatedAt: { bsonType: 'date' },
     },

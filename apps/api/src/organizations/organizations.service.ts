@@ -1,6 +1,6 @@
 import { ConflictException, ForbiddenException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { fiscalYearForDate, GENERIC_SMB_COA, generateFiscalYear, isTimeZone } from '@talk2tax/accounting-engine';
+import { fiscalYearForDate, GENERIC_SMB_COA, isTimeZone } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
 import { canAssignRole, RoleName } from '@talk2tax/security';
 import { RegionsService } from '../regions/regions.service';
@@ -8,14 +8,16 @@ import { accessOf, assertMemberRoom } from '../billing/limits';
 import { startSubscription } from '../billing/start';
 import { AppConfig, CONFIG } from '../config';
 import { AuditService } from '../audit/audit.service';
-import { toDbDate, todayIso } from '../common/dates';
+import { todayIso } from '../common/dates';
 import { isDuplicateKeyError } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../common/document-store.service';
-import { PrismaService, Tx, useOrgInTx, withSystemAccess } from '../common/prisma.service';
+import { PrismaService, useOrgInTx, withSystemAccess } from '../common/prisma.service';
 import { DomainError } from '../common/errors';
 import { runAsSystem, runInOrg } from '../common/tenant-context';
 import { users } from '../db/collections/identity';
+import { accounts } from '../db/collections/chart';
 import { memberships, organizations, type OrganizationDoc } from '../db/collections/tenancy';
+import { PeriodsService } from '../periods/periods.service';
 import { PostgresMirrorService, thenInPostgres } from '../db/postgres-mirror.service';
 
 export interface CreateOrgInput {
@@ -36,6 +38,7 @@ export class OrganizationsService {
     private readonly regions: RegionsService,
     private readonly store: DocumentStoreService,
     private readonly mirror: PostgresMirrorService,
+    private readonly periods: PeriodsService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -44,14 +47,25 @@ export class OrganizationsService {
   }
 
   /**
-   * The organisation and its first owner are created in MongoDB. Its subscription, chart of
-   * accounts, fiscal year and audit record follow in PostgreSQL (those modules have not
-   * moved yet); if that part fails, the organisation is removed from MongoDB again.
+   * The organisation, its first owner, its chart of accounts and its first fiscal year are
+   * created in MongoDB. They are then copied to PostgreSQL with the subscription and audit
+   * record (those modules have not moved yet); if that part fails, the MongoDB half is removed.
    */
   async create(userId: string, input: CreateOrgInput, today = todayIso()) {
     const id = randomUUID();
     const now = new Date();
-    const { org, ownerId } = await this.store.transaction(async () => {
+    const fy = fiscalYearForDate(today, input.fiscalYearStartMonth);
+    const made = { ownerId: '', accountIds: [] as string[], periodIds: [] as string[] };
+    const undo = () =>
+      runInOrg(id, async () => {
+        await this.periods.removeFiscalYear(id, made.periodIds);
+        // Children first: an account with children cannot be deleted.
+        for (const accountId of [...made.accountIds].reverse()) await this.store.collection(accounts).deleteOne({ id: accountId });
+        // The organisation goes before its owner, so removing its only owner is allowed.
+        await this.store.collection(organizations).deleteOne({ id });
+        if (made.ownerId) await this.store.collection(memberships).deleteOne({ id: made.ownerId });
+      });
+    const org = await this.store.transaction(async () => {
       const org = await this.store.collection(organizations).insertOne({
         id,
         name: input.name,
@@ -71,7 +85,16 @@ export class OrganizationsService {
         updatedAt: now,
       });
       const owner = await runInOrg(id, () => this.store.collection(memberships).insertOne({ userId, role: 'OWNER', createdAt: now }));
-      return { org, ownerId: owner.id };
+      made.ownerId = owner.id;
+      if (input.chartTemplate === 'GENERIC_SMB') {
+        const ids = await this.applyGenericChart(id, now);
+        made.accountIds = [...ids.values()];
+        const control = { arAccountId: ids.get('1200') ?? null, apAccountId: ids.get('2100') ?? null, claimsAccountId: ids.get('2250') ?? null };
+        await this.store.collection(organizations).updateOne({ id }, { $set: control });
+        Object.assign(org, control);
+      }
+      made.periodIds = (await this.periods.insertFiscalYear(id, fy, input.fiscalYearStartMonth)).map((p) => p.id);
+      return org;
     });
     return thenInPostgres(
       org,
@@ -79,19 +102,13 @@ export class OrganizationsService {
         await this.prisma.$transaction(async (tx) => {
           // The new organisation is the tenant for the rest of this transaction (row-level security).
           await useOrgInTx(tx, id);
+          // The organisation and its control accounts point at each other.
+          await this.mirror.organizations([id], tx, { withoutAccounts: true });
+          await this.mirror.memberships([made.ownerId], tx);
+          await this.mirror.accounts(made.accountIds, tx);
           await this.mirror.organizations([id], tx);
-          await this.mirror.memberships([ownerId], tx);
+          await this.mirror.fiscalPeriods(made.periodIds, tx);
           await startSubscription(tx, org, userId, this.trialDays);
-          if (input.chartTemplate === 'GENERIC_SMB') {
-            const ids = await this.applyGenericChart(tx, org.id);
-            await this.store.collection(organizations).updateOne(
-              { id },
-              { $set: { arAccountId: ids.get('1200') ?? null, apAccountId: ids.get('2100') ?? null, claimsAccountId: ids.get('2250') ?? null, updatedAt: new Date() } },
-            );
-            await this.mirror.organizations([id], tx);
-          }
-          const fy = fiscalYearForDate(today, input.fiscalYearStartMonth);
-          await this.createFiscalYear(tx, org.id, fy, input.fiscalYearStartMonth);
           await this.audit.append(tx, {
             orgId: org.id,
             actorId: userId,
@@ -101,49 +118,32 @@ export class OrganizationsService {
             data: { ...input, initialFiscalYear: fy, dataRegion: this.regions.current },
           });
         });
-        Object.assign(org, await this.store.collection(organizations).findById(id));
       },
-      () =>
-        runInOrg(id, async () => {
-          // The organisation goes first, so removing its only owner is allowed.
-          await this.store.collection(organizations).deleteOne({ id });
-          await this.store.collection(memberships).deleteOne({ id: ownerId });
-        }),
+      undo,
     );
   }
 
-  async applyGenericChart(tx: Tx, orgId: string) {
+  /** Adds the generic small-business chart in MongoDB. Returns account ids by code. */
+  async applyGenericChart(orgId: string, now = new Date()) {
     const idByCode = new Map<string, string>();
-    for (const a of GENERIC_SMB_COA) {
-      const created = await tx.account.create({
-        data: {
-          orgId,
+    await runInOrg(orgId, async () => {
+      for (const a of GENERIC_SMB_COA) {
+        const created = await this.store.collection(accounts).insertOne({
           code: a.code,
           name: a.name,
           type: a.type,
-          subtype: a.subtype,
+          subtype: a.subtype ?? null,
+          description: null,
           isPostable: a.isPostable,
-          parentId: a.parentCode ? idByCode.get(a.parentCode) : undefined,
-        },
-      });
-      idByCode.set(a.code, created.id);
-    }
-    return idByCode;
-  }
-
-  async createFiscalYear(tx: Tx, orgId: string, fiscalYear: number, startMonth: number) {
-    const periods = generateFiscalYear(fiscalYear, startMonth);
-    await tx.fiscalPeriod.createMany({
-      data: periods.map((p) => ({
-        orgId,
-        fiscalYear: p.fiscalYear,
-        periodNo: p.periodNo,
-        name: p.name,
-        startDate: toDbDate(p.startDate),
-        endDate: toDbDate(p.endDate),
-      })),
+          isActive: true,
+          parentId: a.parentCode ? (idByCode.get(a.parentCode) ?? null) : null,
+          createdAt: now,
+          updatedAt: now,
+        });
+        idByCode.set(a.code, created.id);
+      }
     });
-    return periods;
+    return idByCode;
   }
 
   /** The organisations a person belongs to, oldest membership first. */

@@ -27,6 +27,8 @@ import { AppConfig, CONFIG } from '../config';
 import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { DeferralsService } from '../deferrals/deferrals.service';
 import { JournalsService } from '../journals/journals.service';
+import { postgresWithMongo } from '../db/postgres-mirror.service';
+import { PeriodsService } from '../periods/periods.service';
 import { TasksService } from '../tasks/tasks.service';
 
 type Actor = { id: string };
@@ -152,6 +154,7 @@ export class CloseService {
     private readonly deferrals: DeferralsService,
     @Inject(CONFIG) private readonly config: AppConfig,
     private readonly integrations: IntegrationsService,
+    private readonly periods: PeriodsService,
   ) {}
 
   // ------------------------------------------------------------------ reading
@@ -623,8 +626,9 @@ export class CloseService {
    * posting in progress) and a certification records the checks and totals as they stood.
    */
   async close(org: CloseOrg, actor: Actor, periodId: string, note: string | null) {
-    await this.prisma.$transaction(
-      async (tx) => {
+    await postgresWithMongo(
+      this.prisma,
+      async (tx, undoLater) => {
         const c = await this.openClose(tx, org.id, periodId);
         if (c.status === 'CLOSED') throw new DomainError('CLOSE_CLOSED', 'This month is already closed', HttpStatus.CONFLICT);
         const locked = await tx.$queryRaw<{ status: string }[]>`SELECT status::text AS status FROM fiscal_periods WHERE id = ${periodId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
@@ -638,7 +642,7 @@ export class CloseService {
         const totals = await this.totals(tx, org, p);
         await tx.closeAdjustment.updateMany({ where: { orgId: org.id, closeId: c.id, status: 'READY' }, data: { status: 'SUPERSEDED' } });
         if (p.status === 'OPEN') {
-          await tx.fiscalPeriod.update({ where: { id: periodId }, data: { status: 'LOCKED', lockedAt: new Date(), lockedById: actor.id } });
+          await this.periods.setStatusInTx(tx, undoLater, org.id, periodId, 'LOCKED', actor.id);
           await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'period.locked', entityType: 'fiscal_period', entityId: periodId, data: { name: p.name, by: 'month-end close' } });
         }
         const cert = await tx.closeCertification.create({ data: { orgId: org.id, closeId: c.id, certifiedById: actor.id, note: note?.trim() || null, checks: checks as unknown as Prisma.InputJsonValue, totals: totals as Prisma.InputJsonValue } });
@@ -652,7 +656,7 @@ export class CloseService {
 
   /** Reopen a closed month: the period is unlocked and the certification records who reopened it and why. */
   async reopen(org: CloseOrg, actor: Actor, periodId: string, reason: string) {
-    await this.prisma.$transaction(async (tx) => {
+    await postgresWithMongo(this.prisma, async (tx, undoLater) => {
       const c = await this.openClose(tx, org.id, periodId);
       if (c.status !== 'CLOSED') throw new DomainError('CLOSE_NOT_CLOSED', 'This month is not closed', HttpStatus.CONFLICT);
       const locked = await tx.$queryRaw<{ status: string; name: string }[]>`SELECT status::text AS status, name FROM fiscal_periods WHERE id = ${periodId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
@@ -666,7 +670,7 @@ export class CloseService {
       await tx.closeCertification.update({ where: { id: cert.id }, data: { reopenedById: actor.id, reopenedAt: new Date(), reopenReason: reason.trim() } });
       await tx.periodClose.update({ where: { id: c.id }, data: { status: 'IN_PROGRESS' } });
       if (locked[0]?.status === 'LOCKED') {
-        await tx.fiscalPeriod.update({ where: { id: periodId }, data: { status: 'OPEN', lockedAt: null, lockedById: null } });
+        await this.periods.setStatusInTx(tx, undoLater, org.id, periodId, 'OPEN', actor.id);
         await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'period.unlocked', entityType: 'fiscal_period', entityId: periodId, data: { name: locked[0].name, by: 'month-end close reopened' } });
       }
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'close.reopened', entityType: 'period_close', entityId: c.id, data: { certificationId: cert.id, reason: reason.trim() } });
