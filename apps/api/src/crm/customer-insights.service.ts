@@ -1,3 +1,5 @@
+import { MovedTables } from '../db/moved-table';
+import { CONTACTS } from '../db/collections/sales';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
   addDays,
@@ -35,6 +37,7 @@ export class CustomerInsightsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly moved: MovedTables,
   ) {}
 
   /** Every customer with history, ranked by lifetime value, and the organisation's retention. */
@@ -101,11 +104,11 @@ export class CustomerInsightsService {
       if (body.hold) {
         if (c.creditHold) throw new DomainError('ALREADY_ON_HOLD', `${c.name} is already on credit hold`, HttpStatus.CONFLICT);
         if (!reason) throw new DomainError('REASON_REQUIRED', 'Say why the customer is on hold', HttpStatus.UNPROCESSABLE_ENTITY);
-        await tx.contact.update({ where: { id: contactId }, data: { creditHold: true, creditHoldReason: reason, creditHoldAt: new Date(), creditHoldById: actor.id } });
+        await this.moved.update(tx, CONTACTS, org.id, contactId, { creditHold: true, creditHoldReason: reason, creditHoldAt: new Date(), creditHoldById: actor.id, updatedAt: new Date() });
         await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'contact.credit_hold_set', entityType: 'contact', entityId: contactId, data: { reason } });
       } else {
         if (!c.creditHold) throw new DomainError('NOT_ON_HOLD', `${c.name} is not on credit hold`, HttpStatus.CONFLICT);
-        await tx.contact.update({ where: { id: contactId }, data: { creditHold: false, creditHoldReason: null, creditHoldAt: null, creditHoldById: null } });
+        await this.moved.update(tx, CONTACTS, org.id, contactId, { creditHold: false, creditHoldReason: null, creditHoldAt: null, creditHoldById: null, updatedAt: new Date() });
         await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'contact.credit_hold_lifted', entityType: 'contact', entityId: contactId, data: { reason, wasReason: c.creditHoldReason } });
       }
       return { contactId, creditHold: body.hold, creditHoldReason: body.hold ? reason : null };

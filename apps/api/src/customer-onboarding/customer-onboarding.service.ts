@@ -5,6 +5,8 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { CONTACTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 
 type Actor = { id: string };
 type Db = Tx | PrismaService;
@@ -28,6 +30,7 @@ export class CustomerOnboardingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly moved: MovedTables,
   ) {}
 
   private invalid(message: string, code = 'ONBOARDING_INVALID', status = HttpStatus.UNPROCESSABLE_ENTITY, details?: unknown): never {
@@ -321,7 +324,7 @@ export class CustomerOnboardingService {
       if (!rule.allowed) this.invalid(rule.reason!, 'SAME_PERSON', HttpStatus.CONFLICT);
       const c = await tx.contact.findUniqueOrThrow({ where: { id: o.contactId } });
       await tx.customerOnboarding.update({ where: { id }, data: { status: input.approve ? 'APPROVED' : 'REJECTED', decidedById: actor.id, decidedAt: new Date(), decisionNote: note, selfApproved: input.approve && rule.selfApproved } });
-      if (input.approve) await tx.contact.update({ where: { id: c.id }, data: o.party === 'VENDOR' ? { paymentTermsDays: o.paymentTermsDays! } : { creditLimit: o.creditLimit, paymentTermsDays: o.paymentTermsDays! } });
+      if (input.approve) await this.moved.update(tx, CONTACTS, org.id, c.id, { ...(o.party === 'VENDOR' ? {} : { creditLimit: o.creditLimit }), paymentTermsDays: o.paymentTermsDays!, updatedAt: new Date() });
       await this.audit.append(tx, {
         orgId: org.id,
         actorId: actor.id,

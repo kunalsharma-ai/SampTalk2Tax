@@ -19,6 +19,8 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DOCUMENTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { DocumentInput, DocumentsService } from '../ledgers/documents.service';
@@ -85,6 +87,7 @@ export class RecurringBillsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly documents: DocumentsService,
+    private readonly moved: MovedTables,
   ) {}
 
   // ---------- reads ----------
@@ -337,8 +340,10 @@ export class RecurringBillsService {
    */
   private async check(tx: Tx, org: BillOrg, actor: Actor, b: Base, date: Date) {
     await tx.$executeRawUnsafe('SAVEPOINT recurring_bill_check');
-    await this.documents.createDraftInTx(tx, org, actor, 'PURCHASES', this.billInput(org, b, fromDbDate(date)));
+    const draft = await this.documents.createDraftInTx(tx, org, actor, 'PURCHASES', this.billInput(org, b, fromDbDate(date)));
     await tx.$executeRawUnsafe('ROLLBACK TO SAVEPOINT recurring_bill_check');
+    // MongoDB has no savepoints: the trial bill kept there is removed by hand.
+    await this.moved.remove(tx, DOCUMENTS, org.id, draft.id);
   }
 
   private prepare(org: BillOrg, input: RecurringBillInput) {

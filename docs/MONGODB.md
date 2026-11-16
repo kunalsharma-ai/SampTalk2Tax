@@ -15,8 +15,10 @@ module follows when it moves.
 | 2 | `users`, `auth_sessions`, `login_throttles` | Done (#89) |
 | 3 | `organizations`, `memberships`, `invitations` | Done (#90) |
 | 4 | `accounts`, `fiscal_periods` | Done (#91) |
-| 5 | `journal_entries` (lines inside each entry) | This step |
-| 6 | Sales and purchases: contacts, documents, payments, banking | Next |
+| 5 | `journal_entries` (lines inside each entry) | Done (#94) |
+| 6 | Sales and purchases: `contacts`, `documents` (lines inside), `payments`, `allocations`, `approval_policies`, `approval_requests`, `attachments`, `expense_claims` (lines inside), `bank_statement_imports`, `bank_statement_lines`, `bank_matches`, `bank_reconciliations` | Writes moved (this step); reads still on the copy |
+| 7 | Tax, planning, CRM and the latest modules | Next |
+| 8 | Reads and reports as MongoDB queries; Prisma, PostgreSQL, RLS and the copies removed | After 7 |
 
 ## Why these choices
 
@@ -115,6 +117,28 @@ change if the transaction fails (`postgresWithMongo`).
 so a mirror copy made inside system work leaves the outer bypass on. Audit rows for routes
 without an organisation in their path (accepting an invitation) point the transaction at the
 organisation with `useOrgInTx` first.
+
+**Moving writes before reads.** From step 6, a module's writes move first and its reads
+follow in step 8, because about 1,200 Prisma calls and 200 SQL reports read these tables.
+`MovedTables` (`apps/api/src/db/moved-table.ts`) writes the record to MongoDB, where the
+guards check it, then copies what MongoDB now holds into the caller's PostgreSQL transaction
+and returns that row, so callers keep their types. A document's lines (and an expense claim's)
+are rewritten in the copy only when the set changed, since they change only in drafts. The
+copy is updated or inserted, never upserted: PostgreSQL runs BEFORE INSERT triggers for
+`INSERT ... ON CONFLICT` even when the row exists. Row locks (`FOR UPDATE`) are still taken on
+the copy, so concurrent changes to one record take turns.
+
+**Rules that span records.** Each guard checks what the record itself can see in MongoDB:
+document totals, GST and withholding rules, immutability once posted, allocations within the
+source's and target's totals, approvals before a covered document posts, statement lines
+whose matches add up to the amount. The PostgreSQL copy still runs its own triggers too, so
+checks against tables that have not moved yet (withholding deposits, e-invoices, e-way bills,
+purchase orders, bad-debt write-offs, dimensions) stay there until those tables move.
+
+**Approvals and draft changes.** The trigger that cancelled a draft's approval when the draft
+changed now runs in `DocumentsService` before the draft is saved, so the copy's trigger finds
+nothing left to cancel. Deleting a draft clears `documentId` on its requests first, as the
+copy's foreign key did.
 
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the

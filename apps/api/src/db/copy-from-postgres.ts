@@ -7,7 +7,11 @@ import { allowSystemAccessOutsideRequests } from '../common/tenant-context';
 import { loadConfig } from '../config';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { Decimal128 } from '@talk2tax/document-db';
+import { Prisma } from '@talk2tax/database';
 import { journalEntries } from './collections/ledger';
+import { allocations, approvalPolicies, approvalRequests, attachments, contacts, documents, payments } from './collections/sales';
+import { expenseClaims } from './collections/expenses';
+import { bankMatches, bankReconciliations, bankStatementImports, bankStatementLines } from './collections/banking';
 import { authSessions, loginThrottles, users } from './collections/identity';
 import { invitations, memberships, organizations } from './collections/tenancy';
 import { withSystemAccess } from '../common/prisma.service';
@@ -140,6 +144,48 @@ export async function copyFromPostgres(prisma: PrismaService, store: DocumentSto
     );
   }
   copied.journal_entries = newEntries.length;
+
+  const allContacts = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.contact.findMany()));
+  const newContacts = await missing(contacts, allContacts.map((c) => c.id));
+  await raw(contacts.name, allContacts.filter((c) => newContacts.has(c.id)).map((c) => ({ ...c, creditLimit: c.creditLimit === null ? null : dec(c.creditLimit) })));
+  copied.contacts = newContacts.size;
+
+  // Invoices, bills and credits, each with its lines inside it.
+  const docIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.document.findMany({ select: { id: true } })));
+  const newDocs = [...(await missing(documents, docIds.map((x) => x.id)))];
+  const decs = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v instanceof Prisma.Decimal ? dec(v) : v]));
+  for (const ids of chunks(newDocs, 500)) {
+    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.document.findMany({ where: { id: { in: ids } }, include: { lines: { orderBy: { lineNo: 'asc' } } } })));
+    await raw(documents.name, batch.map(({ lines, ...x }) => ({ ...decs(x), id: x.id, lines: lines.map(({ documentId: _d, orgId: _o, ...l }) => decs(l)) })));
+  }
+  copied.documents = newDocs.length;
+
+  for (const [def, model] of [
+    [payments, 'payment'],
+    [allocations, 'allocation'],
+    [approvalPolicies, 'approvalPolicy'],
+    [approvalRequests, 'approvalRequest'],
+    [attachments, 'attachment'],
+    [bankStatementImports, 'bankStatementImport'],
+    [bankReconciliations, 'bankReconciliation'],
+    [bankStatementLines, 'bankStatementLine'],
+    [bankMatches, 'bankMatch'],
+  ] as const) {
+    const rows = (await prisma.$transaction((tx) => withSystemAccess(tx, () => (tx[model] as unknown as { findMany(): Promise<({ id: string } & Record<string, unknown>)[]> }).findMany()))) as ({ id: string } & Record<string, unknown>)[];
+    const fresh = await missing(def, rows.map((r) => r.id));
+    // Attachment bytes come back from Prisma as Uint8Array; they are stored as BSON binary.
+    await raw(def.name, rows.filter((r) => fresh.has(r.id)).map((r) => ({ ...decs(r), id: r.id, ...(r.content instanceof Uint8Array ? { content: Buffer.from(r.content) } : {}) })));
+    copied[def.name] = fresh.size;
+  }
+
+  // Expense claims, each with its lines inside it.
+  const claimIds = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.expenseClaim.findMany({ select: { id: true } })));
+  const newClaims = [...(await missing(expenseClaims, claimIds.map((x) => x.id)))];
+  for (const ids of chunks(newClaims, 500)) {
+    const batch = await prisma.$transaction((tx) => withSystemAccess(tx, () => tx.expenseClaim.findMany({ where: { id: { in: ids } }, include: { lines: { orderBy: { lineNo: 'asc' } } } })));
+    await raw(expenseClaims.name, batch.map(({ lines, ...x }) => ({ ...decs(x), id: x.id, lines: lines.map(({ claimId: _c, orgId: _o, ...l }) => decs(l)) })));
+  }
+  copied.expense_claims = newClaims.length;
 
   log(`Copied to MongoDB: ${Object.entries(copied).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   return copied;
