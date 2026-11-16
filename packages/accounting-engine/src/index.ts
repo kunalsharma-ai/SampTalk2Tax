@@ -5,3 +5,4 @@ export * from './periods';
 export * from './reports';
 export * from './coa-templates';
 export * from './documents';
+export * from './bank';

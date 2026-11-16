@@ -99,7 +99,7 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-029 | 5.1 General Ledger | capability | Projects | Not started |
 | GL-030 | 5.1 General Ledger | capability | Financial dimensions | Implementing |
 | GL-031 | 5.1 General Ledger | capability | Custom financial tags | Not started |
-| GL-032 | 5.1 General Ledger | capability | Account reconciliation | Not started |
+| GL-032 | 5.1 General Ledger | capability | Account reconciliation | Implementing |
 | GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Not started |
 | GL-034 | 5.1 General Ledger | capability | Consolidation adjustments | Not started |
 | GL-035 | 5.1 General Ledger | capability | Foreign currency revaluation | Not started |
@@ -190,7 +190,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-019 |  | capability | Supplier tax validation | Not started |
 | AP-020 |  | capability | Expense classification | Not started |
 | AP-021 |  | capability | Vendor performance tracking | Not started |
-| AP-022 |  | capability | Payment reconciliation | Not started |
+| AP-022 |  | capability | Payment reconciliation | Tested |
 | AP-023 |  | capability | International payment preparation | Not started |
 | AP-024 |  | capability | Vendor risk monitoring | Not started |
 | AP-025 | Advanced AP AI | capability | Invoice document extraction | Not started |
@@ -212,30 +212,30 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| BANK-001 |  | capability | Multiple bank account management | Not started |
-| BANK-002 |  | capability | Bank statement import | Not started |
-| BANK-003 |  | capability | CSV, OFX, QIF and applicable banking formats | Not started |
+| BANK-001 |  | capability | Multiple bank account management | Tested |
+| BANK-002 |  | capability | Bank statement import | Tested |
+| BANK-003 |  | capability | CSV, OFX, QIF and applicable banking formats | Implementing |
 | BANK-004 |  | capability | Bank feed integration framework | Not started |
-| BANK-005 |  | capability | Bank reconciliation | Not started |
-| BANK-006 |  | capability | Transaction matching | Not started |
+| BANK-005 |  | capability | Bank reconciliation | Tested |
+| BANK-006 |  | capability | Transaction matching | Tested |
 | BANK-007 |  | capability | Transfer detection | Not started |
-| BANK-008 |  | capability | Deposit matching | Not started |
-| BANK-009 |  | capability | Payment matching | Not started |
-| BANK-010 |  | capability | Bank charges | Not started |
+| BANK-008 |  | capability | Deposit matching | Tested |
+| BANK-009 |  | capability | Payment matching | Tested |
+| BANK-010 |  | capability | Bank charges | Tested |
 | BANK-011 |  | capability | Interest accounting | Not started |
 | BANK-012 |  | capability | Foreign exchange accounting | Not started |
-| BANK-013 |  | capability | Unreconciled transaction reporting | Not started |
-| BANK-014 |  | capability | Bank balance monitoring | Not started |
-| BANK-015 |  | capability | Reconciliation audit history | Not started |
+| BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
+| BANK-014 |  | capability | Bank balance monitoring | Implementing |
+| BANK-015 |  | capability | Reconciliation audit history | Tested |
 | BANK-016 | AI Enhancements | capability | Intelligent transaction classification | Not started |
-| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Not started |
-| BANK-018 | AI Enhancements | capability | Duplicate transaction detection | Not started |
+| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Implementing |
+| BANK-018 | AI Enhancements | capability | Duplicate transaction detection | Tested |
 | BANK-019 | AI Enhancements | capability | Suspicious transaction monitoring | Not started |
 | BANK-020 | AI Enhancements | capability | Reconciliation exception analysis | Not started |
-| BANK-021 | AI Enhancements | capability | Missing transaction identification | Not started |
+| BANK-021 | AI Enhancements | capability | Missing transaction identification | Implementing |
 | BANK-022 | AI Enhancements | capability | Cash movement forecasting | Not started |
 | BANK-023 | AI Enhancements | capability | Unusual bank activity alerts | Not started |
-| BANK-024 | AI Enhancements | rule | Provide a dedicated banking reconciliation workspace | Not started |
+| BANK-024 | AI Enhancements | rule | Provide a dedicated banking reconciliation workspace | Tested |
 
 ## Global taxation engine
 
@@ -1455,7 +1455,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-006 | Required Tests | capability | Accounting invariant tests | Tested |
 | QA-007 | Required Tests | capability | Tax calculation tests | Not started |
 | QA-008 | Required Tests | capability | Multi-currency tests | Tested |
-| QA-009 | Required Tests | capability | Reconciliation tests | Not started |
+| QA-009 | Required Tests | capability | Reconciliation tests | Tested |
 | QA-010 | Required Tests | capability | Payroll calculation tests | Not started |
 | QA-011 | Required Tests | capability | Financial reporting tests | Tested |
 | QA-012 | Required Tests | capability | Permission tests | Tested |
@@ -1547,7 +1547,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-007 |  | capability | Accounts Receivable | Not started |
 | NAV-008 |  | capability | Accounts Payable | Not started |
 | NAV-009 |  | capability | Banking | Not started |
-| NAV-010 |  | capability | Reconciliation | Not started |
+| NAV-010 |  | capability | Reconciliation | Implemented |
 | NAV-011 |  | capability | Taxation | Not started |
 | NAV-012 |  | capability | Payroll | Not started |
 | NAV-013 |  | capability | Expenses | Not started |

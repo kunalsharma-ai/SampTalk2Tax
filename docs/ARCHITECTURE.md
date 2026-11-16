@@ -13,6 +13,7 @@ Talk2Tax starts as one deployable API (`apps/api`, NestJS) over one PostgreSQL d
 │                                                                                   │
 │  auth   organizations   accounts   periods   journals   reports   audit   health │
 │  contacts   tax-rates   ledgers (sales + purchases documents, payments, ageing)   │
+│  banking (statement import, matching, reconciliation)                             │
 │    │          │             │          │         │          │        │            │
 │    └──────────┴──── domain rules from packages/accounting-engine (pure TS) ────┘  │
 │                         packages/security (roles, permissions, passwords)         │
@@ -100,6 +101,15 @@ Sales and purchases share one implementation (`apps/api/src/ledgers`), parameter
 
 ### ADR-009 Control accounts closed to manual journals
 *Decision:* only document and payment postings may touch the receivables and payables control accounts; enforced in the API and by a trigger. *Why:* otherwise the ageing can silently disagree with the balance sheet. *Cost:* corrections go through credit notes or voids, which is also the auditable path.
+
+## Banking (M2)
+
+`apps/api/src/banking` treats a bank account as a ledger account with subtype BANK or CASH. Statement lines record what the bank says; they are matched to posted journal lines on that account, so the books stay the single source of truth and the bank statement is evidence against it. Creating an entry or a receipt from a line goes through `JournalsService.postSystemEntry` or `DocumentsService.recordPaymentInTx` in the same transaction as the match. CSV parsing, fingerprints, suggestions and the reconciliation arithmetic are pure functions in `packages/accounting-engine/src/bank.ts`. Imports, auto-matching and reconciliation take a row lock on the bank account, so they serialise per account.
+
+A reconciliation checks three things: the imported lines from the opening balance add up to the statement balance (catches missing or doubled lines), every line in the period is matched or excluded, and the ledger balance less uncleared ledger lines equals the statement balance.
+
+### ADR-010 Statement lines match ledger lines; they never post by themselves
+*Decision:* a statement line changes the books only through an explicit action (match, create entry, record receipt) that posts a normal journal. *Why:* bank data is evidence, not a ledger; keeping it separate means an import can never silently change balances, and every bank-originated posting has a user and an audit event. *Cost:* every line needs a decision; auto-match handles the unambiguous ones.
 
 ## Planned components (not built yet)
 

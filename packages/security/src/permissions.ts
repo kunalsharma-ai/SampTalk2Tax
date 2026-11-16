@@ -23,6 +23,9 @@ export const PERMISSIONS = [
   'sales.manage',
   'purchases.read',
   'purchases.manage',
+  'banking.read',
+  'banking.manage',
+  'banking.reconcile',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -36,6 +39,7 @@ const READ_ONLY: Permission[] = [
   'contacts.read',
   'sales.read',
   'purchases.read',
+  'banking.read',
 ];
 
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>>> = Object.freeze({
@@ -52,6 +56,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'contacts.manage',
     'sales.manage',
     'purchases.manage',
+    'banking.manage',
+    'banking.reconcile',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read']),
   VIEWER: new Set<Permission>(READ_ONLY),

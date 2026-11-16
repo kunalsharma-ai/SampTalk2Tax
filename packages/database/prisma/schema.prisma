@@ -42,6 +42,24 @@ enum JournalSource {
   MANUAL
   DOCUMENT
   PAYMENT
+  BANK
+}
+
+enum StatementLineStatus {
+  UNMATCHED
+  MATCHED
+  EXCLUDED
+}
+
+enum BankMatchOrigin {
+  EXISTING
+  CREATED_ENTRY
+  CREATED_PAYMENT
+}
+
+enum ReconciliationStatus {
+  COMPLETED
+  UNDONE
 }
 
 enum DocumentKind {
@@ -90,18 +108,18 @@ model User {
 }
 
 model Organization {
-  id                   String         @id @default(uuid()) @db.Uuid
+  id                   String                @id @default(uuid()) @db.Uuid
   name                 String
-  legalName            String?        @map("legal_name")
-  countryCode          String         @map("country_code") @db.Char(2)
-  functionalCurrency   String         @map("functional_currency") @db.Char(3)
-  fiscalYearStartMonth Int            @map("fiscal_year_start_month") @db.SmallInt
-  isDemo               Boolean        @default(false) @map("is_demo")
+  legalName            String?               @map("legal_name")
+  countryCode          String                @map("country_code") @db.Char(2)
+  functionalCurrency   String                @map("functional_currency") @db.Char(3)
+  fiscalYearStartMonth Int                   @map("fiscal_year_start_month") @db.SmallInt
+  isDemo               Boolean               @default(false) @map("is_demo")
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
-  arAccountId          String?        @map("ar_account_id") @db.Uuid
-  apAccountId          String?        @map("ap_account_id") @db.Uuid
-  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  arAccountId          String?               @map("ar_account_id") @db.Uuid
+  apAccountId          String?               @map("ap_account_id") @db.Uuid
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships          Membership[]
   accounts             Account[]
   periods              FiscalPeriod[]
@@ -112,6 +130,10 @@ model Organization {
   taxRates             TaxRate[]
   documents            Document[]
   payments             Payment[]
+  statementImports     BankStatementImport[]
+  statementLines       BankStatementLine[]
+  bankMatches          BankMatch[]
+  reconciliations      BankReconciliation[]
 
   @@map("organizations")
 }
@@ -131,24 +153,27 @@ model Membership {
 }
 
 model Account {
-  id              String         @id @default(uuid()) @db.Uuid
-  orgId           String         @map("org_id") @db.Uuid
-  code            String
-  name            String
-  type            AccountType
-  subtype         String?
-  description     String?
-  parentId        String?        @map("parent_id") @db.Uuid
-  isPostable      Boolean        @default(true) @map("is_postable")
-  isActive        Boolean        @default(true) @map("is_active")
-  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org             Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  parent          Account?       @relation("AccountHierarchy", fields: [parentId, orgId], references: [id, orgId], onDelete: Restrict)
-  children        Account[]      @relation("AccountHierarchy")
-  lines           JournalLine[]
-  documentLines   DocumentLine[]
-  paymentsViaBank Payment[]
+  id               String                @id @default(uuid()) @db.Uuid
+  orgId            String                @map("org_id") @db.Uuid
+  code             String
+  name             String
+  type             AccountType
+  subtype          String?
+  description      String?
+  parentId         String?               @map("parent_id") @db.Uuid
+  isPostable       Boolean               @default(true) @map("is_postable")
+  isActive         Boolean               @default(true) @map("is_active")
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org              Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  parent           Account?              @relation("AccountHierarchy", fields: [parentId, orgId], references: [id, orgId], onDelete: Restrict)
+  children         Account[]             @relation("AccountHierarchy")
+  lines            JournalLine[]
+  documentLines    DocumentLine[]
+  paymentsViaBank  Payment[]
+  statementImports BankStatementImport[]
+  statementLines   BankStatementLine[]
+  reconciliations  BankReconciliation[]
 
   @@unique([orgId, code])
   @@unique([id, orgId])
@@ -228,8 +253,10 @@ model JournalLine {
   dimensions       Json?
   entry            JournalEntry @relation(fields: [entryId, orgId], references: [id, orgId], onDelete: Restrict)
   account          Account      @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+  bankMatches      BankMatch[]
 
   @@unique([entryId, lineNo])
+  @@unique([id, orgId])
   @@index([orgId, accountId])
   @@map("journal_lines")
 }
@@ -420,4 +447,100 @@ model Allocation {
   @@index([orgId, paymentId])
   @@index([orgId, creditDocumentId])
   @@map("allocations")
+}
+
+/// One uploaded bank statement file. Lines already imported (same fingerprint) are skipped.
+model BankStatementImport {
+  id           String              @id @default(uuid()) @db.Uuid
+  orgId        String              @map("org_id") @db.Uuid
+  accountId    String              @map("account_id") @db.Uuid
+  fileName     String              @map("file_name")
+  fileHash     String              @map("file_hash")
+  lineCount    Int                 @map("line_count")
+  skippedCount Int                 @map("skipped_count")
+  firstDate    DateTime            @map("first_date") @db.Date
+  lastDate     DateTime            @map("last_date") @db.Date
+  importedById String              @map("imported_by_id") @db.Uuid
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  org          Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  account      Account             @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+  lines        BankStatementLine[]
+
+  @@unique([id, orgId])
+  @@index([orgId, accountId])
+  @@map("bank_statement_imports")
+}
+
+/// Money that moved in the bank: positive = in, negative = out. Never deleted.
+model BankStatementLine {
+  id               String              @id @default(uuid()) @db.Uuid
+  orgId            String              @map("org_id") @db.Uuid
+  accountId        String              @map("account_id") @db.Uuid
+  importId         String              @map("import_id") @db.Uuid
+  date             DateTime            @db.Date
+  description      String
+  reference        String?
+  amount           Decimal             @db.Decimal(24, 6)
+  fingerprint      String
+  status           StatementLineStatus @default(UNMATCHED)
+  excludedReason   String?             @map("excluded_reason")
+  reconciliationId String?             @map("reconciliation_id") @db.Uuid
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  org              Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  account          Account             @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+  import           BankStatementImport @relation(fields: [importId, orgId], references: [id, orgId], onDelete: Restrict)
+  reconciliation   BankReconciliation? @relation(fields: [reconciliationId, orgId], references: [id, orgId], onDelete: Restrict)
+  matches          BankMatch[]
+
+  @@unique([orgId, accountId, fingerprint])
+  @@unique([id, orgId])
+  @@index([orgId, accountId, date])
+  @@index([orgId, accountId, status])
+  @@map("bank_statement_lines")
+}
+
+/// Links a statement line to a posted journal line on the same bank account.
+/// Never deleted; unmatching stamps removed_at.
+model BankMatch {
+  id              String            @id @default(uuid()) @db.Uuid
+  orgId           String            @map("org_id") @db.Uuid
+  statementLineId String            @map("statement_line_id") @db.Uuid
+  journalLineId   String            @map("journal_line_id") @db.Uuid
+  origin          BankMatchOrigin   @default(EXISTING)
+  createdById     String            @map("created_by_id") @db.Uuid
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  removedAt       DateTime?         @map("removed_at") @db.Timestamptz(6)
+  removedById     String?           @map("removed_by_id") @db.Uuid
+  org             Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  statementLine   BankStatementLine @relation(fields: [statementLineId, orgId], references: [id, orgId], onDelete: Restrict)
+  journalLine     JournalLine       @relation(fields: [journalLineId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, statementLineId])
+  @@index([orgId, journalLineId])
+  @@map("bank_matches")
+}
+
+model BankReconciliation {
+  id               String               @id @default(uuid()) @db.Uuid
+  orgId            String               @map("org_id") @db.Uuid
+  accountId        String               @map("account_id") @db.Uuid
+  startDate        DateTime             @map("start_date") @db.Date
+  statementDate    DateTime             @map("statement_date") @db.Date
+  openingBalance   Decimal              @map("opening_balance") @db.Decimal(24, 6)
+  statementBalance Decimal              @map("statement_balance") @db.Decimal(24, 6)
+  ledgerBalance    Decimal              @map("ledger_balance") @db.Decimal(24, 6)
+  uncleared        Decimal              @db.Decimal(24, 6)
+  status           ReconciliationStatus @default(COMPLETED)
+  completedById    String               @map("completed_by_id") @db.Uuid
+  completedAt      DateTime             @default(now()) @map("completed_at") @db.Timestamptz(6)
+  undoneById       String?              @map("undone_by_id") @db.Uuid
+  undoneAt         DateTime?            @map("undone_at") @db.Timestamptz(6)
+  undoReason       String?              @map("undo_reason")
+  org              Organization         @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  account          Account              @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+  lines            BankStatementLine[]
+
+  @@unique([id, orgId])
+  @@index([orgId, accountId, statementDate])
+  @@map("bank_reconciliations")
 }

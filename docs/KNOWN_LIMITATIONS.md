@@ -3,9 +3,9 @@
 Honest list of what does not exist or is incomplete. Kept current with each milestone.
 
 ## Product scope
-* The web app covers M1 plus the first M2 slice: customers, invoices, credit notes, receipts, receivables ageing, vendors, bills, vendor credits, payments, payables ageing and tax rates. Every other module in the directive has no screen, and the sidebar does not show them.
+* The web app covers M1 plus the first M2 slice: customers, invoices, credit notes, receipts, receivables ageing, vendors, bills, vendor credits, payments, payables ageing, tax rates, and bank accounts with statement import, matching and reconciliation. Every other module in the directive has no screen, and the sidebar does not show them.
 * Of 1,343 registry entries, the generated [`FEATURE_STATUS.md`](FEATURE_STATUS.md) lists the current counts; everything else is Not started.
-* No banking, bank reconciliation, statutory tax, payroll, procurement, expenses, treasury, FP&A, AI, agents, workflows, documents, integrations, subscriptions or admin modules yet.
+* No statutory tax, payroll, procurement, expenses, treasury, FP&A, AI, agents, workflows, documents, integrations, subscriptions or admin modules yet.
 * No AI functionality of any kind exists yet, and none is claimed.
 
 ## Accounting
@@ -21,9 +21,17 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * No quotes, sales orders, purchase orders, recurring invoices, debit notes, write-offs, bad-debt provisions, collection reminders, payment links or portals.
 * No PDF generation or emailing of invoices and statements.
 * Approval is role-based only (an APPROVER can post drafts); there is no multi-step approval workflow or amount thresholds.
-* Payments are recorded against a bank or cash account in the ledger; there is no bank feed, statement import or reconciliation yet (next M2 slice).
 * Removing an allocation is dated today; there is no back-dated removal.
 * Ageing buckets are fixed (current, 1–30, 31–60, 61–90, over 90).
+
+## Banking (M2, slice 2)
+* Statements come from CSV files only. There is no live bank feed, no OFX/QIF/MT940/PDF import and no connection to any bank; none is claimed.
+* Statement lines are in the organisation's functional currency; foreign-currency bank accounts are not supported yet.
+* Matching is one statement line to one or more ledger lines. Several statement lines cannot yet be matched to one ledger line (for example a deposit the bank splits in two).
+* Suggestions are rules (same amount, within 14 days, shared words). They do not learn from past matches, and no AI is involved.
+* Ledger lines dated before the first reconciliation period are treated as already cleared unless a later statement line matches them, so a cheque issued before that date and still outstanding has to be matched or will show as a difference.
+* Only the latest reconciliation of an account can be undone. Transfers between two of your own bank accounts are booked as an entry on each side; there is no transfer detection.
+* Excluded lines must be real non-movements (for example a duplicate in the bank's file); excluding a genuine movement will make the statement total disagree.
 
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.

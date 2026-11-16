@@ -8,6 +8,8 @@ import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { AuthGuard } from './auth/guards';
 import { TokensService } from './auth/tokens.service';
+import { BankingController } from './banking/banking.controller';
+import { BankingService } from './banking/banking.service';
 import { ErrorFilter } from './common/errors';
 import { ContactsController } from './contacts/contacts.controller';
 import { ContactsService } from './contacts/contacts.service';
@@ -50,6 +52,7 @@ export class AppModule {
         TaxRatesController,
         SalesController,
         PurchasesController,
+        BankingController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -66,6 +69,7 @@ export class AppModule {
         ContactsService,
         TaxRatesService,
         DocumentsService,
+        BankingService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: ErrorFilter },
       ],
