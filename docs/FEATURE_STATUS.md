@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 805 |
+| Not started | 804 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 423 |
+| Tested | 424 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 13 | 30 |
+| Accounts receivable | M2 | 43 | 12 | 31 |
 | Accounts payable | M2 | 36 | 15 | 21 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -577,6 +577,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/contracts-flow.test.mjs
   - docs/CONTRACTS.md
   - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
+### AR-012 — Usage-based billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Usage charges (meters) on contracts billed in arrears: per unit, graduated or volume tiers, included units, minimum charge. Usage recorded by hand, CSV import (all or nothing) or API, idempotent by reference, voided not deleted, negative corrections. Each period's invoice gets usage lines next to the fixed lines; billed readings frozen by triggers; bill again re-uses them. Not built: advance+usage mix, API keys for usage feeds, part-period proration.
+- Evidence:
+  - packages/accounting-engine/src/usage-billing.ts
+  - packages/accounting-engine/test/usage-billing.test.ts
+  - packages/database/prisma/migrations/20261211090000_usage_billing/migration.sql
+  - apps/api/src/sales-orders/usage-billing.service.ts
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/test/usage-billing.e2e.test.ts
+  - apps/web/src/components/contracts/usage-card.tsx
+  - apps/web/e2e/usage-billing-flow.test.mjs
+  - docs/USAGE_BILLING.md
 
 ### AR-013 — Milestone billing
 

@@ -130,7 +130,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-009 |  | capability | Tax invoices | Tested |
 | AR-010 |  | capability | Recurring invoices | Tested |
 | AR-011 |  | capability | Subscription billing | Implementing |
-| AR-012 |  | capability | Usage-based billing | Not started |
+| AR-012 |  | capability | Usage-based billing | Tested |
 | AR-013 |  | capability | Milestone billing | Tested |
 | AR-014 |  | capability | Progress billing | Tested |
 | AR-015 |  | capability | Retainer billing | Tested |

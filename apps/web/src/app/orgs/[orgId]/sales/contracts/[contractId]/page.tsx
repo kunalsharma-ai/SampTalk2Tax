@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { ContractBadge, RenewalBadge } from '@/components/sales-orders/badges';
+import { UsageCard } from '@/components/contracts/usage-card';
 import { SalesLinesTable } from '@/components/sales-orders/lines-table';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -153,6 +154,7 @@ export default function ContractPage() {
               </Table>
             )}
           </Card>
+          <UsageCard orgId={orgId} contractId={contractId} status={c.status} onChange={refresh} />
         </div>
       </div>
       <Dialog open={renewing} onOpenChange={setRenewing} title={`Renew ${c.reference}`} description={`Extends the end date by whole ${FREQUENCY_LABEL[c.frequency].toLowerCase()} periods. A price change applies to every period billed from now on.`}>
