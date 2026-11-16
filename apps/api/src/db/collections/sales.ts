@@ -2,6 +2,7 @@ import { Prisma } from '@talk2tax/database';
 import { defineCollection, GuardViolation, type GuardContext } from '@talk2tax/document-db';
 import type { Binary } from '@talk2tax/document-db';
 import type { MovedTable } from '../moved-table';
+import { checkLineDimensions, eInvoicesRef, eWayBillsRef, invoiceTemplatesRef, purchaseOrderLinesRef, purchaseOrdersRef, withholdingDepositItemsRef } from './mirrored-refs';
 
 /** Customers and vendors. */
 
@@ -282,6 +283,7 @@ export const documents = defineCollection<DocumentDoc>({
       checkDocument(x);
       const c = await ctx.collection(contacts).findOne({ id: x.contactId, orgId: x.orgId });
       if (!c) throw new GuardViolation('The contact does not exist in this organisation');
+      await checkDocumentLinks(null, x, ctx);
     },
     async afterUpdate(before, after, ctx) {
       if (before.status === 'VOID') throw new GuardViolation('A void document is immutable');
@@ -294,6 +296,7 @@ export const documents = defineCollection<DocumentDoc>({
       checkDocument(after);
       if (before.status === 'DRAFT' && after.status === 'POSTED') await checkApprovedToPost(after, ctx);
       if (after.contactId !== before.contactId && !(await ctx.collection(contacts).findOne({ id: after.contactId, orgId: after.orgId }))) throw new GuardViolation('The contact does not exist in this organisation');
+      await checkDocumentLinks(before, after, ctx);
     },
     beforeDelete(x) {
       if (x.status !== 'DRAFT') throw new GuardViolation('A posted document cannot be deleted; void it instead');
@@ -404,9 +407,11 @@ export const payments = defineCollection<PaymentDoc>({
       checkPayment(p);
       if (!(await ctx.collection(contacts).findOne({ id: p.contactId, orgId: p.orgId }))) throw new GuardViolation('The contact does not exist in this organisation');
     },
-    afterUpdate(before, after) {
+    async afterUpdate(before, after, ctx) {
       if (before.status === 'VOID' || after.status !== 'VOID' || PAYMENT_FIXED.some((k) => !same(before[k], after[k]))) throw new GuardViolation('A payment is immutable; void it instead');
       checkPayment(after);
+      // Was payments_void_check.
+      if (await ctx.collection(allocations).findOne({ orgId: after.orgId, paymentId: after.id, removedOn: null })) throw new GuardViolation(`Cannot void ${after.id} while allocations use it; remove them first`);
     },
     beforeDelete() {
       throw new GuardViolation('A payment cannot be deleted; void it instead');
@@ -628,6 +633,57 @@ async function checkApprovedToPost(x: DocumentDoc, ctx: GuardContext) {
   if (!p || n(x.total).lt(p.minAmount)) return;
   const approved = await ctx.collection(approvalRequests).find({ orgId: x.orgId, documentId: x.id, status: 'APPROVED' });
   if (!approved.some((r) => n(r.total).eq(x.total))) throw new GuardViolation('This document needs an approval before it can post');
+}
+
+/**
+ * Were documents_debit_note_check, documents_po_check, documents_template_check, the line
+ * checks document_lines_dimensions and document_lines_po_check, and what voiding needs first
+ * (documents_void_check, documents_void_debit_notes_check, documents_ewb_guard,
+ * documents_irn_guard, documents_void_deposited_check).
+ */
+async function checkDocumentLinks(before: DocumentDoc | null, x: DocumentDoc, ctx: GuardContext) {
+  const docs = ctx.collection(documents);
+  if (before && before.status !== 'DRAFT' && before.debitNoteForId !== x.debitNoteForId) throw new GuardViolation('The invoice a posted debit note adjusts cannot change');
+  if (
+    x.debitNoteForId !== null &&
+    x.status !== 'VOID' &&
+    (!before || before.status !== x.status || before.debitNoteForId !== x.debitNoteForId || before.contactId !== x.contactId || before.currency !== x.currency)
+  ) {
+    const o = await docs.findOne({ id: x.debitNoteForId, orgId: x.orgId });
+    if (o) {
+      if (o.kind !== 'INVOICE' || o.debitNoteForId !== null) throw new GuardViolation('A debit note adjusts an invoice, not another debit note or a credit note');
+      if (o.status !== 'POSTED') throw new GuardViolation('A debit note can only adjust a posted invoice');
+      if (o.contactId !== x.contactId || o.currency !== x.currency) throw new GuardViolation('A debit note must be to the same customer and in the same currency as its invoice');
+    }
+  }
+  if (x.purchaseOrderId !== null && (!before || before.purchaseOrderId !== x.purchaseOrderId || before.contactId !== x.contactId)) {
+    if (x.kind !== 'BILL' || !(await ctx.collection(await purchaseOrdersRef()).findOne({ id: x.purchaseOrderId, orgId: x.orgId, contactId: x.contactId }))) {
+      throw new GuardViolation('A bill is matched only to a purchase order of the same vendor');
+    }
+  }
+  if (x.templateId !== null && x.templateId !== (before?.templateId ?? null)) {
+    if (x.kind !== 'INVOICE' && x.kind !== 'CREDIT_NOTE') throw new GuardViolation('Only invoices and credit notes have a print template');
+    if (await ctx.collection(await invoiceTemplatesRef()).findOne({ id: x.templateId, orgId: x.orgId, archivedAt: { $ne: null } })) throw new GuardViolation(`Template ${x.templateId} is archived`);
+  }
+  await checkLineDimensions(x.orgId, x.lines, before?.lines ?? null, ctx);
+  const was = new Map((before?.lines ?? []).map((l) => [l.id, l]));
+  for (const l of x.lines) {
+    if (l.purchaseOrderLineId === null || was.get(l.id)?.purchaseOrderLineId === l.purchaseOrderLineId) continue;
+    const pol = await ctx.collection(await purchaseOrderLinesRef()).findOne({ id: l.purchaseOrderLineId, orgId: x.orgId });
+    const po = pol ? await ctx.collection(await purchaseOrdersRef()).findOne({ id: pol.orderId as string, orgId: x.orgId }) : null;
+    if (!po || x.kind !== 'BILL' || x.purchaseOrderId !== po.id || x.contactId !== po.contactId || po.status === 'DRAFT') {
+      throw new GuardViolation('A bill line is billed only against an issued purchase order of the same vendor');
+    }
+  }
+  if (!before || before.status === 'VOID' || x.status !== 'VOID') return;
+  const live = { orgId: x.orgId, documentId: x.id, status: 'ACTIVE' };
+  if (await ctx.collection(await eWayBillsRef()).findOne(live)) throw new GuardViolation(`Document ${before.number} has a live e-way bill; cancel it on the portal first`);
+  if (await ctx.collection(await eInvoicesRef()).findOne(live)) throw new GuardViolation(`Document ${before.number} has an IRN; cancel the IRN first or issue a credit note`);
+  if (await ctx.collection(allocations).findOne({ orgId: x.orgId, removedOn: null, $or: [{ targetId: x.id }, { creditDocumentId: x.id }] })) throw new GuardViolation(`Cannot void ${x.id} while allocations use it; remove them first`);
+  if (before.status === 'POSTED') {
+    if (await docs.findOne({ orgId: x.orgId, debitNoteForId: x.id, status: { $ne: 'VOID' } })) throw new GuardViolation(`Invoice ${x.id} has debit notes; void them first`);
+    if (await ctx.collection(await withholdingDepositItemsRef()).findOne({ orgId: x.orgId, documentId: x.id, active: true })) throw new GuardViolation(`Document ${x.id} has withheld tax in a deposit; void the deposit first`);
+  }
 }
 
 // ------------------------------------------------------------------ attachments

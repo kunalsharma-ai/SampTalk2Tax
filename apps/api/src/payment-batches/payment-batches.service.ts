@@ -9,6 +9,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
 import { nextCounter } from '../db/counters';
 import { holdLock, lockRow } from '../db/locks';
+import { allowInTx } from '../db/guards/allow';
 
 type Actor = { id: string };
 export interface BatchOrg {
@@ -103,7 +104,7 @@ export class PaymentBatchesService {
       if (before && (Object.keys(next) as (keyof typeof next)[]).every((k) => before[k] === next[k])) return;
       const describe = (d: { accountName: string; accountNumber: string; ifsc: string | null; swiftBic: string | null; bankCountry: string | null }) => `${d.accountName} · ${maskAccountNumber(d.accountNumber)} · ${d.ifsc ?? `${d.swiftBic} (${d.bankCountry})`}`;
       if (before) {
-        await tx.vendorBankDetails.update({ where: { contactId }, data: { ...next, changedById: actor.id, changedAt: new Date() } });
+        await tx.vendorBankDetails.update({ where: { contactId }, data: { ...next, changedById: actor.id, changedAt: new Date(), verifiedById: null, verifiedAt: null, verificationNote: null } });
       } else {
         await tx.vendorBankDetails.create({ data: { contactId, orgId: org.id, ...next, changedById: actor.id } });
       }
@@ -127,7 +128,8 @@ export class PaymentBatchesService {
         if (await this.otherApprover(tx, org.id, actor.id)) throw new DomainError('SAME_PERSON', 'Bank details must be verified by someone other than the person who changed them', HttpStatus.CONFLICT);
         await tx.$executeRaw`SELECT set_config('t2t.allow_self_verify', 'on', true)`;
       }
-      await tx.vendorBankDetails.update({ where: { contactId }, data: { verifiedById: actor.id, verifiedAt: new Date(), verificationNote: input.note.trim() } });
+      const verify = () => tx.vendorBankDetails.update({ where: { contactId }, data: { verifiedById: actor.id, verifiedAt: new Date(), verificationNote: input.note.trim() } });
+      await (self ? allowInTx('allow_self_verify', async () => await verify()) : verify());
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'vendor_bank_details.verified', entityType: 'contact', entityId: contactId, data: { note: input.note.trim(), selfVerified: self } });
     });
     return this.bankDetails(org, contactId);

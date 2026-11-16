@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
+import { allowInTx } from '../src/db/guards/allow';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
 /**
@@ -138,10 +139,13 @@ describe('the portal, without signing in', () => {
     await portal(token, `/documents/${ids.old}`).expect(404);
     const fresh = (await ctx.http().post(L()).set(owner.auth).send({ expiresInDays: 30 }).expect(201)).body;
     await portal(fresh.token).expect(200);
-    await raw(`ALTER TABLE customer_portal_links DISABLE TRIGGER customer_portal_links_guard`);
-    await raw(`UPDATE customer_portal_links SET created_at = now() - interval '40 days', expires_at = now() - interval '1 day' WHERE id = $1::uuid`, fresh.id);
-    await raw(`ALTER TABLE customer_portal_links ENABLE TRIGGER customer_portal_links_guard`);
-    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'CustomerPortalLink', { id: fresh.id }));
+    // The guards are off for this, as time passing would not need them.
+    await allowInTx('guards_off', async () => {
+      await raw(`ALTER TABLE customer_portal_links DISABLE TRIGGER customer_portal_links_guard`);
+      await raw(`UPDATE customer_portal_links SET created_at = now() - interval '40 days', expires_at = now() - interval '1 day' WHERE id = $1::uuid`, fresh.id);
+      await raw(`ALTER TABLE customer_portal_links ENABLE TRIGGER customer_portal_links_guard`);
+    });
+    await allowInTx('guards_off', () => tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'CustomerPortalLink', { id: fresh.id })));
     expect((await portal(fresh.token).expect(404)).body.message).toBe('This link from Bright Ledger Services has expired. Ask them for a new one.');
     expect((await ctx.http().get(L()).set(owner.auth).expect(200)).body.map((l: { state: string }) => l.state).sort()).toEqual(['EXPIRED', 'REVOKED']);
   });

@@ -203,6 +203,21 @@ transactions meet on the same counter or lock, the second gets a write conflict 
 callback runs again after a short random wait (up to 40 tries). Work-queue leases
 (`FOR UPDATE SKIP LOCKED`) move with the writes in step 10.
 
+**Database rules (step 9c).** The 118 PostgreSQL triggers of the mirrored tables are guards in
+`apps/api/src/db/guards/rules-*.ts`, one rule per table, named after the trigger it replaces.
+A rule gets the operation, the record before and after (column names, as the trigger saw
+them) and `ctx.db`, Prisma-style reads answered from MongoDB in the same transaction. A
+broken rule throws `GuardViolation`, which the API answers as 409 `LEDGER_INTEGRITY`, as it did
+for the trigger. The helpers keep SQL's meaning: `ne` is `<>` (false when either side is
+NULL), `changed` is `IS DISTINCT FROM`, decimals compare by value and JSON with its keys
+sorted. A `set_config('t2t.<name>')` switch is `allowInTx(name, fn)`. A cascade deletes the
+parent before its children, as PostgreSQL does, so a child's rule sees the parent gone.
+The triggers PostgreSQL feature work added to documents, lines, payments and journal lines
+since step 6 (debit notes, purchase orders, print templates, departments and projects, and
+what voiding needs first) are in the guards of those collections. One trigger changed the
+row it checked (new vendor bank details lost their verification); the service now clears
+those fields itself and the guard refuses a write that does not.
+
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
 moved tables' rows into MongoDB and leaves records already there alone, so it is safe to

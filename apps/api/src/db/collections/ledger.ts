@@ -1,6 +1,7 @@
 import { Prisma } from '@talk2tax/database';
 import { defineCollection, GuardViolation, type GuardContext } from '@talk2tax/document-db';
 import { accounts, fiscalPeriods } from './chart';
+import { checkLineDimensions } from './mirrored-refs';
 
 /** The general ledger: journal entries with their lines inside them. */
 
@@ -136,6 +137,7 @@ export const journalEntries = defineCollection<JournalEntryDoc>({
     async beforeInsert(e, ctx) {
       checkLines(e);
       await checkReferences(e, ctx);
+      await checkLineDimensions(e.orgId, e.lines, null, ctx);
     },
     async afterUpdate(before, after, ctx) {
       // Was t2t_guard_journal_entry, t2t_guard_journal_line and t2t_guard_closing_type.
@@ -143,6 +145,7 @@ export const journalEntries = defineCollection<JournalEntryDoc>({
       if (after.orgId !== before.orgId || after.createdById !== before.createdById) throw new GuardViolation('An entry keeps its organisation and author');
       checkLines(after);
       await checkReferences(after, ctx);
+      await checkLineDimensions(after.orgId, after.lines, before.lines, ctx);
     },
     beforeDelete(e) {
       if (e.status === 'POSTED') throw new GuardViolation('A posted journal entry cannot be deleted; post a reversal instead');
