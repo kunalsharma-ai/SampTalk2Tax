@@ -26,6 +26,8 @@ export const hi: Record<string, string> = {
   Approvals: 'मंज़ूरियाँ',
   'My tasks': 'मेरे काम',
   // Sales
+  Leads: 'लीड',
+  Pipeline: 'बिक्री पाइपलाइन',
   Customers: 'ग्राहक',
   Invoices: 'इनवॉइस',
   Receipts: 'प्राप्तियाँ',

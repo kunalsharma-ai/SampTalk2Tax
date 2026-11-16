@@ -15,6 +15,7 @@ import { useOrg } from '@/lib/org';
 import { can, type Contact, type DocumentSummary, type Statement } from '@/lib/types';
 import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
 import { DocumentsTable } from './documents-table';
+import { CustomerDeals } from '@/components/crm/customer-deals';
 
 export function ContactDetail({ l }: { l: LedgerConfig }) {
   const { org, orgId } = useOrg();
@@ -91,6 +92,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
         <CardHeader title={`Recent ${l.charge.plural.toLowerCase()} and ${l.credit.plural.toLowerCase()}`} />
         {docs.data && docs.data.items.length === 0 ? <p className="px-5 py-4 text-sm text-fg-muted">None yet.</p> : <DocumentsTable l={l} orgId={orgId} items={docs.data?.items ?? []} currency={c} showContact={false} />}
       </Card>
+      {l.ledger === 'SALES' && x.isCustomer ? <CustomerDeals orgId={orgId} contactId={x.id} currency={c} /> : null}
       <ContactDialog l={l} draft={draft} setDraft={setDraft} />
     </>
   );

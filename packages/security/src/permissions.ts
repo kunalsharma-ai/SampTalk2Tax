@@ -75,6 +75,8 @@ export const PERMISSIONS = [
   'dashboards.manage',
   /** Design report layouts, produce monthly reports, write and finalise their commentary, with or without the AI. Anyone with reports.read can read them. */
   'reports.design',
+  /** Work the sales pipeline: add and update leads and deals, log activities, move deals through stages and convert leads to customers. Reading needs sales.read. */
+  'crm.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -129,6 +131,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'policies.manage',
     'dashboards.manage',
     'reports.design',
+    'crm.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve', 'decisions.manage']),
   VIEWER: new Set<Permission>(READ_ONLY),

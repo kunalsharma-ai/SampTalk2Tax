@@ -280,6 +280,9 @@ model Organization {
   deferralLines            DeferralLine[]
   accruals                 Accrual[]
   loans                    Loan[]
+  crmLeads                 CrmLead[]
+  crmDeals                 CrmDeal[]
+  crmActivities            CrmActivity[]
   loanEvents               LoanEvent[]
   dimensionValues          DimensionValue[]
   copilotConversations     CopilotConversation[]
@@ -3966,19 +3969,19 @@ model MaintenanceWindow {
 }
 
 model ErrorGroup {
-  id           String       @id @db.Uuid
-  fingerprint  String       @unique @db.VarChar(64)
-  name         String       @db.VarChar(200)
-  message      String
-  method       String       @db.VarChar(8)
-  route        String       @db.VarChar(300)
-  frame        String?      @db.VarChar(500)
-  occurrences  Int          @default(0)
-  firstSeenAt  DateTime     @default(now()) @map("first_seen_at") @db.Timestamptz(6)
-  lastSeenAt   DateTime     @default(now()) @map("last_seen_at") @db.Timestamptz(6)
-  resolvedAt   DateTime?    @map("resolved_at") @db.Timestamptz(6)
-  resolvedBy   String?      @map("resolved_by") @db.Uuid
-  events       ErrorEvent[]
+  id          String       @id @db.Uuid
+  fingerprint String       @unique @db.VarChar(64)
+  name        String       @db.VarChar(200)
+  message     String
+  method      String       @db.VarChar(8)
+  route       String       @db.VarChar(300)
+  frame       String?      @db.VarChar(500)
+  occurrences Int          @default(0)
+  firstSeenAt DateTime     @default(now()) @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime     @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  resolvedAt  DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  resolvedBy  String?      @map("resolved_by") @db.Uuid
+  events      ErrorEvent[]
 
   @@index([lastSeenAt])
   @@map("error_groups")
@@ -4002,4 +4005,129 @@ model ErrorEvent {
   @@index([requestId])
   @@index([createdAt])
   @@map("error_events")
+}
+
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DISQUALIFIED
+  CONVERTED
+}
+
+enum CrmLeadSource {
+  WEBSITE
+  REFERRAL
+  EVENT
+  OUTBOUND
+  PARTNER
+  ADVERTISING
+  OTHER
+}
+
+enum CrmDealStage {
+  PROSPECTING
+  QUALIFICATION
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum CrmActivityKind {
+  CREATED
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  STATUS_CHANGED
+  STAGE_CHANGED
+  CONVERTED
+  UPDATED
+}
+
+/// Someone who might buy. Never deleted; once converted to a customer it is closed for good.
+model CrmLead {
+  id                 String        @id @default(uuid()) @db.Uuid
+  orgId              String        @map("org_id") @db.Uuid
+  /// Shown as LD-0001.
+  number             Int
+  name               String        @db.VarChar(200)
+  company            String?       @db.VarChar(200)
+  email              String?       @db.VarChar(254)
+  phone              String?       @db.VarChar(40)
+  source             CrmLeadSource @default(OTHER)
+  status             CrmLeadStatus @default(NEW)
+  /// The member working the lead.
+  ownerId            String?       @map("owner_id") @db.Uuid
+  /// A first guess at what the lead might buy, in the functional currency.
+  estimatedValue     Decimal?      @map("estimated_value") @db.Decimal(24, 6)
+  notes              String?       @db.VarChar(2000)
+  disqualifiedReason String?       @map("disqualified_reason") @db.VarChar(500)
+  convertedContactId String?       @map("converted_contact_id") @db.Uuid
+  convertedDealId    String?       @map("converted_deal_id") @db.Uuid
+  convertedAt        DateTime?     @map("converted_at") @db.Timestamptz(6)
+  createdById        String        @map("created_by_id") @db.Uuid
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  activities         CrmActivity[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("crm_leads")
+}
+
+/// A sale being worked on for a customer, through the pipeline stages to won or lost. Never deleted.
+model CrmDeal {
+  id                String        @id @default(uuid()) @db.Uuid
+  orgId             String        @map("org_id") @db.Uuid
+  /// Shown as DL-0001.
+  number            Int
+  name              String        @db.VarChar(200)
+  contactId         String        @map("contact_id") @db.Uuid
+  /// The lead it came from, when it was converted from one.
+  leadId            String?       @map("lead_id") @db.Uuid
+  /// In the organisation's functional currency.
+  amount            Decimal       @db.Decimal(24, 6)
+  stage             CrmDealStage  @default(PROSPECTING)
+  /// Whole percent, 0 to 100.
+  probability       Int
+  expectedCloseDate DateTime      @map("expected_close_date") @db.Date
+  ownerId           String?       @map("owner_id") @db.Uuid
+  closedOn          DateTime?     @map("closed_on") @db.Date
+  lostReason        String?       @map("lost_reason") @db.VarChar(500)
+  notes             String?       @db.VarChar(2000)
+  createdById       String        @map("created_by_id") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org               Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  activities        CrmActivity[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, stage])
+  @@index([orgId, contactId])
+  @@map("crm_deals")
+}
+
+/// What happened on a lead or a deal: notes, calls, emails, meetings and every change. Append-only.
+model CrmActivity {
+  id        String          @id @default(uuid()) @db.Uuid
+  orgId     String          @map("org_id") @db.Uuid
+  leadId    String?         @map("lead_id") @db.Uuid
+  dealId    String?         @map("deal_id") @db.Uuid
+  kind      CrmActivityKind
+  body      String?         @db.VarChar(4000)
+  data      Json?
+  actorId   String          @map("actor_id") @db.Uuid
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  org       Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lead      CrmLead?        @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  deal      CrmDeal?        @relation(fields: [dealId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, leadId, createdAt])
+  @@index([orgId, dealId, createdAt])
+  @@map("crm_activities")
 }

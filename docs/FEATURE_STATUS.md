@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 850 |
+| Not started | 847 |
 | Designed | 0 |
-| Implementing | 64 |
+| Implementing | 65 |
 | Implemented | 34 |
-| Tested | 381 |
+| Tested | 383 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -41,7 +41,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Enterprise financial management | M6 | 29 | 14 | 15 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
-| CRM and finance integration | M6 | 13 | 13 | 0 |
+| CRM and finance integration | M6 | 13 | 10 | 3 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
@@ -2959,6 +2959,47 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/statutory/page.tsx
   - apps/web/e2e/statutory-statements-flow.test.mjs
   - docs/LOCAL_FINANCIAL_REPORTING.md
+
+### CRM-001 — Provide native lightweight CRM functionality and integration APIs for external CRM systems
+
+- Module: CRM and finance integration
+- Status: **Implementing**
+- Notes: Native lightweight CRM: leads and pipeline built (CRM slice 1). Quotations, sales orders, contracts, customer 360, revenue forecast and the external CRM API follow in later slices.
+- Evidence:
+  - packages/accounting-engine/src/crm.ts
+  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - apps/api/src/crm/crm.service.ts
+  - apps/api/test/crm.e2e.test.ts
+  - apps/web/e2e/crm-pipeline-flow.test.mjs
+  - docs/CRM_PIPELINE.md
+
+### CRM-003 — Leads
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Leads LD-0001 with source, owner (a member), estimated value; NEW/CONTACTED/QUALIFIED/DISQUALIFIED (reason required, reopenable); duplicate warning by email against leads and contacts; converted once into a new or existing customer (a vendor becomes a customer too), optionally with a deal. Never deleted; a converted lead is frozen by a trigger; append-only activity timeline (calls, emails, meetings, notes, every change).
+- Evidence:
+  - packages/accounting-engine/src/crm.ts
+  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - apps/api/src/crm/crm.service.ts
+  - apps/api/test/crm.e2e.test.ts
+  - apps/web/e2e/crm-pipeline-flow.test.mjs
+  - docs/CRM_PIPELINE.md
+  - apps/web/src/app/orgs/[orgId]/sales/leads/page.tsx
+
+### CRM-004 — Opportunities
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Deals DL-0001 for a customer through PROSPECTING/QUALIFICATION/PROPOSAL/NEGOTIATION to WON (100%) or LOST (0%, reason required), reopenable; default stage probabilities overridable; weighted value; board by stage, overdue deals, 90-day win rate and days to win, weighted value by expected close month; deals on the customer page. Single currency (functional) for now.
+- Evidence:
+  - packages/accounting-engine/src/crm.ts
+  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - apps/api/src/crm/crm.service.ts
+  - apps/api/test/crm.e2e.test.ts
+  - apps/web/e2e/crm-pipeline-flow.test.mjs
+  - docs/CRM_PIPELINE.md
+  - apps/web/src/app/orgs/[orgId]/sales/pipeline/page.tsx
 
 ### RISK-001 — Duplicate invoice detection
 

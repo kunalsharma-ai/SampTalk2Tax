@@ -94,7 +94,7 @@ export interface Journal {
 export const PERMS: Record<Role, Set<string>> = {
   OWNER: new Set(['*']),
   ADMIN: new Set(['*']),
-  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse', 'payroll.read', 'payroll.manage', 'budgets.manage', 'alerts.manage', 'collections.manage', 'close.manage', 'assets.manage', 'deferrals.manage', 'loans.manage', 'templates.manage', 'documents.sign', 'scenarios.manage', 'cfo.reports', 'decisions.manage', 'policies.manage', 'dashboards.manage', 'reports.design']),
+  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse', 'payroll.read', 'payroll.manage', 'budgets.manage', 'alerts.manage', 'collections.manage', 'close.manage', 'assets.manage', 'deferrals.manage', 'loans.manage', 'templates.manage', 'documents.sign', 'scenarios.manage', 'cfo.reports', 'decisions.manage', 'policies.manage', 'dashboards.manage', 'reports.design', 'crm.manage']),
   APPROVER: new Set(['journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve', 'decisions.manage']),
   VIEWER: new Set([]),
   EMPLOYEE: new Set(['expenses.submit']),

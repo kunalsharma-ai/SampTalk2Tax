@@ -92,6 +92,7 @@ import { DeferralsService } from './deferrals/deferrals.service';
 import { InvoicePrintController, InvoiceTemplatesController, SignaturesController } from './invoice-templates/invoice-templates.controller';
 import { InvoiceTemplatesService } from './invoice-templates/invoice-templates.service';
 import { LoansController } from './loans/loans.controller';
+import { CrmController } from './crm/crm.controller';
 import { ReportExportsController } from './report-exports/report-exports.controller';
 import { ConsolidationController } from './consolidation/consolidation.controller';
 import { ConsolidationService } from './consolidation/consolidation.service';
@@ -126,6 +127,7 @@ import { TwinController } from './twin/twin.controller';
 import { TwinService } from './twin/twin.service';
 import { ReportExportService } from './report-exports/report-exports.service';
 import { LoansService } from './loans/loans.service';
+import { CrmService } from './crm/crm.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
 import { DimensionsService } from './dimensions/dimensions.service';
 import { CloseService } from './close/close.service';
@@ -212,6 +214,7 @@ export class AppModule {
         FixedAssetsController,
         DeferralsController,
         LoansController,
+        CrmController,
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
@@ -290,6 +293,7 @@ export class AppModule {
         FixedAssetsService,
         DeferralsService,
         LoansService,
+        CrmService,
         InvoiceTemplatesService,
         ReportExportService,
         ConsolidationService,

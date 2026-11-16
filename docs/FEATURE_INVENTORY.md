@@ -770,10 +770,10 @@ Part 22 · M6 · priority P3 · depends on: AR, INTG
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| CRM-001 |  | rule | Provide native lightweight CRM functionality and integration APIs for external CRM systems | Not started |
+| CRM-001 |  | rule | Provide native lightweight CRM functionality and integration APIs for external CRM systems | Implementing |
 | CRM-002 |  | capability | Customer records | Not started |
-| CRM-003 |  | capability | Leads | Not started |
-| CRM-004 |  | capability | Opportunities | Not started |
+| CRM-003 |  | capability | Leads | Tested |
+| CRM-004 |  | capability | Opportunities | Tested |
 | CRM-005 |  | capability | Quotations | Not started |
 | CRM-006 |  | capability | Contracts | Not started |
 | CRM-007 |  | capability | Sales orders | Not started |
