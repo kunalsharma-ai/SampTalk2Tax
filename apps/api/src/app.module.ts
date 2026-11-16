@@ -162,6 +162,8 @@ import { SalesOrdersService } from './sales-orders/sales-orders.service';
 import { ProFormaController } from './sales-orders/pro-forma.controller';
 import { ProFormaService } from './sales-orders/pro-forma.service';
 import { RetainersController } from './sales-orders/retainers.controller';
+import { PaymentLinksController, PaymentLinkWebhooksController } from './payment-links/payment-links.controller';
+import { PaymentLinksService } from './payment-links/payment-links.service';
 import { RetainersService } from './sales-orders/retainers.service';
 import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
 import { PurchaseOrdersService } from './purchase-orders/purchase-orders.service';
@@ -267,6 +269,8 @@ export class AppModule {
         DisputesController,
         ProFormaController,
     RetainersController,
+    PaymentLinksController,
+    PaymentLinkWebhooksController,
     PurchaseOrdersController,
     BillMatchController,
         VendorBankDetailsController,
@@ -366,6 +370,7 @@ export class AppModule {
         DisputesService,
         ProFormaService,
     RetainersService,
+    PaymentLinksService,
     PurchaseOrdersService,
         JournalTemplatesRunnerService,
         RecurringBillsService,
