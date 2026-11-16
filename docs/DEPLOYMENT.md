@@ -36,15 +36,17 @@ cd apps/web && T2T_API_URL=http://localhost:4000 npx next start -p 3000
 pnpm e2e                                # from the repo root, with both servers running
 ```
 
-The web app has no database access of its own; it talks only to the API. There is no web container image yet.
+The web app has no database access of its own; it talks only to the API. Its container image is described in [`CI_CD.md`](CI_CD.md).
 
-## Container
+## Containers
 
 ```bash
-docker compose --profile app up --build   # API + Postgres
+export JWT_SECRET=$(openssl rand -base64 48)
+docker compose --profile app up --build   # Postgres → migrations → API → web app on :3000
+node scripts/smoke-stack.mjs              # checks the running stack end to end
 ```
 
-`apps/api/Dockerfile` builds the workspace and runs `node dist/main.js` as a non-root user. Run `prisma migrate deploy` (from `packages/database`, with `DATABASE_URL` set) as a release step before starting new API versions. This image has not yet been built in CI.
+Three images: `talk2tax-migrate` (the release step, `prisma migrate deploy`), `talk2tax-api` and `talk2tax-web`, both distroless and non-root with health checks. Building, CI, publishing to GitHub's registry and deploying are in [`CI_CD.md`](CI_CD.md).
 
 ## Configuration
 
@@ -75,6 +77,7 @@ docker compose --profile app up --build   # API + Postgres
 | `REGION_DIRECTORY` | no | JSON of the other regions and their web addresses, used to point people to an organisation's home region |
 | `TEST_DATABASE_URL` | tests | Must contain "test" |
 | `DEMO_PASSWORD` | no | Fixed password for the seeded demo user |
+| `GIT_SHA` | no | The commit being run, baked into the images; shown under Platform admin → System health |
 | `T2T_API_URL` | web | API base URL used by the web app's server-side proxy. Default `http://localhost:4000` |
 | `WEB_URL` | e2e | Web app address for browser tests. Default `http://localhost:3000` |
 
@@ -82,6 +85,6 @@ docker compose --profile app up --build   # API + Postgres
 
 Register in the app, then on the API host run `pnpm --filter @talk2tax/api admin:grant --email you@example.com`. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
 
-## Production (not done yet)
+## Production
 
-Managed PostgreSQL with PITR backups, secrets from a secrets manager, TLS termination, migrations as a gated release step, health checks on `/health`, structured logs and metrics, and a staging environment. Tracked under M9.
+`deploy/docker-compose.prod.yml` runs the published images on one Docker host behind Caddy (automatic TLS), with managed PostgreSQL and settings in `.env.production`; `.github/workflows/release.yml` deploys a version to it after an approval, running migrations first. See [`CI_CD.md`](CI_CD.md). Not done yet: a staging environment, secrets from a secrets manager rather than the host's env file, structured log shipping, and more than one host.

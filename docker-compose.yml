@@ -1,5 +1,8 @@
-# Local development dependencies. Redis and object storage are added when the
-# first feature that needs them lands (see docs/ARCHITECTURE.md).
+# Local development: `docker compose up -d postgres` gives the database only.
+# The whole stack in containers: `docker compose --profile app up --build`
+#   database → migrations (run once, then exit) → API → web app on http://localhost:3000
+# Host ports can be moved with POSTGRES_PORT, API_PORT and WEB_PORT. Images are tagged
+# talk2tax-{migrate,api,web}:${IMAGE_TAG:-local}, so images built elsewhere run with --no-build.
 services:
   postgres:
     image: postgres:16-alpine
@@ -8,7 +11,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -18,20 +21,58 @@ services:
       timeout: 3s
       retries: 20
 
-  api:
+  # The release step: applies migrations, then exits. The API waits for it to succeed.
+  migrate:
+    image: talk2tax-migrate:${IMAGE_TAG:-local}
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      target: migrate
     profiles: ["app"]
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://talk2tax:talk2tax@postgres:5432/talk2tax?schema=public
+    restart: "no"
+
+  api:
+    image: talk2tax-api:${IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: api
+      args:
+        GIT_SHA: ${GIT_SHA:-}
+    profiles: ["app"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://talk2tax:talk2tax@postgres:5432/talk2tax?schema=public
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       PORT: 4000
+      APP_URL: http://localhost:${WEB_PORT:-3000}
+      # Requests reach the API through the web app's proxy, one hop.
+      TRUST_PROXY_HOPS: 1
     ports:
-      - "4000:4000"
+      - "${API_PORT:-4000}:4000"
+
+  web:
+    image: talk2tax-web:${IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-}
+    profiles: ["app"]
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      T2T_API_URL: http://api:4000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
 
 volumes:
   pgdata:

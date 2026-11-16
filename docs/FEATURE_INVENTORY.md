@@ -1251,7 +1251,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-022 |  | capability | Disaster recovery procedures | Not started |
 | SEC-023 |  | capability | Security event monitoring | Not started |
 | SEC-024 |  | capability | Vulnerability scanning | Not started |
-| SEC-025 |  | capability | Dependency scanning | Not started |
+| SEC-025 |  | capability | Dependency scanning | Implemented |
 | SEC-026 |  | capability | Penetration testing preparation | Not started |
 | SEC-027 |  | rule | Build toward relevant security and privacy frameworks, including SOC 2, ISO 27001 and applicable data protection laws | Not started |
 | SEC-028 |  | rule | Do not claim certification without a completed independent assessment | Not started |
