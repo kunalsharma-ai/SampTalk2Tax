@@ -1,3 +1,4 @@
+import type { AiNotice } from '@/components/ai/ai-notice';
 export type ReminderStatus = 'DRAFTING' | 'READY' | 'SENT' | 'SEND_FAILED' | 'REJECTED' | 'FAILED';
 export type Risk = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -61,6 +62,7 @@ export interface Reminder {
 export interface CollectionsOverview {
   aiConfigured: boolean;
   aiEnabled: boolean;
+  aiNotice: AiNotice;
   emailReady: boolean;
   emailFrom: string | null;
   model: string;
@@ -150,6 +152,7 @@ export interface BankAiOverview {
   account: { id: string; code: string; name: string };
   aiConfigured: boolean;
   aiEnabled: boolean;
+  aiNotice: AiNotice;
   model: string;
   canChangeAi: boolean;
   limits: { linesPerRun: number };

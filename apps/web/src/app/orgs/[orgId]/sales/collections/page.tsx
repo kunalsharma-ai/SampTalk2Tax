@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Card, EmptyState, Stat, cn } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
+import { AiNoticeAlert } from '@/components/ai/ai-notice';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
@@ -80,7 +81,8 @@ function Collections() {
           </Alert>
         </div>
       ) : null}
-      {o?.aiConfigured && !o.aiEnabled ? (
+      {o ? <AiNoticeAlert notice={o.aiNotice} orgId={orgId} canChange={o.canChangeAi} /> : null}
+      {o?.aiConfigured && !o.aiEnabled && !o.aiNotice ? (
         <div className="mb-4">
           <Alert tone="warning" title={`AI is off for ${org.name}`}>
             Drafting sends each customer&rsquo;s name, overdue invoices and payment history to the AI model ({o.model}).{' '}

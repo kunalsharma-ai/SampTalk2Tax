@@ -570,7 +570,7 @@ Part 17 · M5 · priority P3 · depends on: AIGW, WFLOW
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| AGENT-001 |  | rule | Create a dedicated AI Agent Control Center | Not started |
+| AGENT-001 |  | rule | Create a dedicated AI Agent Control Center | Tested |
 | AGENT-002 | Accounting Agents | capability | General Ledger Agent | Not started |
 | AGENT-003 | Accounting Agents | capability | Journal Entry Agent | Not started |
 | AGENT-004 | Accounting Agents | capability | Bank Reconciliation Agent | Integration pending |
@@ -613,23 +613,23 @@ Part 17 · M5 · priority P3 · depends on: AIGW, WFLOW
 | AGENT-041 | Business Intelligence Agents | capability | Business Opportunity Agent | Not started |
 | AGENT-042 | Agent Orchestration | capability | Assigns tasks to appropriate agents | Not started |
 | AGENT-043 | Agent Orchestration | capability | Coordinates dependencies | Not started |
-| AGENT-044 | Agent Orchestration | capability | Enforces permissions | Not started |
+| AGENT-044 | Agent Orchestration | capability | Enforces permissions | Implementing |
 | AGENT-045 | Agent Orchestration | capability | Prevents conflicting actions | Not started |
-| AGENT-046 | Agent Orchestration | capability | Tracks execution status | Not started |
+| AGENT-046 | Agent Orchestration | capability | Tracks execution status | Implementing |
 | AGENT-047 | Agent Orchestration | capability | Maintains task histories | Not started |
 | AGENT-048 | Agent Orchestration | capability | Handles retries | Not started |
 | AGENT-049 | Agent Orchestration | capability | Escalates exceptions | Not started |
 | AGENT-050 | Agent Orchestration | capability | Requires human approvals | Not started |
 | AGENT-051 | Agent Orchestration | capability | Records AI decisions | Not started |
-| AGENT-052 | Agent Orchestration | capability | Measures accuracy | Not started |
-| AGENT-053 | Agent Orchestration | capability | Tracks model costs | Not started |
-| AGENT-054 | Agent Action Levels | rule | Level 0: Read-only analysis | Not started |
+| AGENT-052 | Agent Orchestration | capability | Measures accuracy | Tested |
+| AGENT-053 | Agent Orchestration | capability | Tracks model costs | Implementing |
+| AGENT-054 | Agent Action Levels | rule | Level 0: Read-only analysis | Tested |
 | AGENT-055 | Agent Action Levels | rule | Level 1: Draft recommendations | Not started |
-| AGENT-056 | Agent Action Levels | rule | Level 2: Prepare changes for approval | Not started |
+| AGENT-056 | Agent Action Levels | rule | Level 2: Prepare changes for approval | Tested |
 | AGENT-057 | Agent Action Levels | rule | Level 3: Execute approved low-risk workflows | Not started |
 | AGENT-058 | Agent Action Levels | rule | Level 4: Execute specifically authorized actions within strict limits | Not started |
 | AGENT-059 | Agent Action Levels | rule | High-risk financial activities must require appropriate human authorization regardless of agent confidence | Not started |
-| AGENT-060 | Agent Action Levels | rule | Provide an emergency stop and tenant-wide AI disable controls | Implementing |
+| AGENT-060 | Agent Action Levels | rule | Provide an emergency stop and tenant-wide AI disable controls | Tested |
 
 ## Autonomous financial workflows
 

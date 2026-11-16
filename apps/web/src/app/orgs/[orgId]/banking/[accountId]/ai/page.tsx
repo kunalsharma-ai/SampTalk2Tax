@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Card, EmptyState, Field, Stat, Textarea, cn } fro
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import { AiNoticeAlert } from '@/components/ai/ai-notice';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
@@ -77,7 +78,8 @@ function BankAi() {
           </Alert>
         </div>
       ) : null}
-      {o?.aiConfigured && !o.aiEnabled ? (
+      {o ? <AiNoticeAlert notice={o.aiNotice} orgId={orgId} canChange={o.canChangeAi} /> : null}
+      {o?.aiConfigured && !o.aiEnabled && !o.aiNotice ? (
         <div className="mb-4">
           <Alert tone="warning" title={`AI is off for ${org.name}`}>
             Suggestions send each bank line&rsquo;s text and amount, nearby ledger lines, open invoices or bills with customer and vendor names, and your chart of accounts to the AI model ({o.model}).{' '}

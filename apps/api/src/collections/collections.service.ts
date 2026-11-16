@@ -3,6 +3,7 @@ import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } f
 import { checkDraft, CustomerFacts, customerFacts, D, draftPasses, factsForModel, RISK_LEVELS, RiskLevel } from '@talk2tax/accounting-engine';
 import { CollectionDraftStatus, Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
+import { AiControlService } from '../ai-control/ai-control.service';
 import { AuditService } from '../audit/audit.service';
 import { todayIst } from '../cash-flow/cash-flow.service';
 import { fromDbDate, toDbDate } from '../common/dates';
@@ -92,6 +93,7 @@ export class CollectionsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly guard: AiControlService,
     private readonly audit: AuditService,
     private readonly mailer: MailerService,
     @Inject(CONFIG) private readonly config: AppConfig,
@@ -115,6 +117,7 @@ export class CollectionsService {
       emailFrom: this.mailer.ready ? (this.config.EMAIL_FROM ?? null) : null,
       model: this.config.COPILOT_MODEL,
       canChangeAi: hasPermission(member.role, 'org.manage'),
+      aiNotice: await this.guard.notice(orgId, 'COLLECTIONS'),
       limits: { customersPerRun: MAX_CUSTOMERS_PER_RUN, remindAgainAfterDays: REMIND_AGAIN_AFTER_DAYS },
       counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Partial<Record<CollectionDraftStatus, number>>,
       latestRun: run
@@ -230,10 +233,8 @@ export class CollectionsService {
    */
   async start(member: Member, actor: Actor) {
     const { orgId } = member;
-    if (!this.model) throw new DomainError('AI_NOT_CONFIGURED', 'AI is not set up on this server: an administrator needs to set ANTHROPIC_API_KEY. Nothing was sent anywhere.', HttpStatus.SERVICE_UNAVAILABLE);
-    const settings = await this.prisma.copilotSettings.findUnique({ where: { orgId } });
-    if (!settings?.enabled) throw new DomainError('AI_OFF', 'AI is turned off for this organisation. An owner or admin can turn it on in the copilot settings.', HttpStatus.CONFLICT);
-    const model = this.model;
+    await this.guard.assert(orgId, 'COLLECTIONS');
+    const model = this.model!;
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true, functionalCurrency: true } });
     const today = todayIst();
 
@@ -313,7 +314,9 @@ export class CollectionsService {
       metadata: { user_id: actor.id },
     };
     let data: Prisma.CollectionDraftUpdateInput;
-    try {
+    const blocked = await this.guard.check(orgId, 'COLLECTIONS');
+    if (blocked) data = { status: 'FAILED', ...AiControlService.stoppedError(blocked) };
+    else try {
       const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000) });
       const usage = { servedModel: res.model, inputTokens: res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0), outputTokens: res.usage.output_tokens };
       const call = res.content.find((b): b is Anthropic.Beta.Messages.BetaToolUseBlock => b.type === 'tool_use' && b.name === SUBMIT_TOOL.name);

@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Card, Dialog, EmptyState, Textarea } from '@talk2
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
+import { AiNoticeAlert } from '@/components/ai/ai-notice';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Markdown } from '@/components/copilot/markdown';
 import { PageHeader } from '@/components/shell';
@@ -112,7 +113,8 @@ function Copilot() {
           </Alert>
         </div>
       ) : null}
-      {s?.configured && !s.enabled ? (
+      {s ? <AiNoticeAlert notice={s.notice} orgId={orgId} canChange={s.canChange} /> : null}
+      {s?.configured && !s.enabled && !s.notice ? (
         <Card className="mb-6 p-5" aria-label="Turn on the copilot">
           <h2 className="text-sm font-semibold">The copilot is off for {org.name}</h2>
           <p className="mt-1 max-w-3xl text-sm text-fg-muted">

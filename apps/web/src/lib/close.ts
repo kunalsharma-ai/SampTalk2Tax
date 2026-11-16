@@ -61,7 +61,7 @@ export interface CloseView {
   close: { id: string; status: 'IN_PROGRESS' | 'CLOSED'; startedBy: string; startedAt: string } | null;
   checks: CloseCheckView[];
   readiness: { blocking: number; warnings: number; noteRequired: boolean };
-  ai: { configured: boolean; enabled: boolean; model: string; canChangeAi: boolean };
+  ai: { configured: boolean; enabled: boolean; model: string; canChangeAi: boolean; notice: import('@/components/ai/ai-notice').AiNotice };
   review: {
     id: string;
     status: 'RUNNING' | 'DONE' | 'FAILED';

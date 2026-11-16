@@ -227,6 +227,7 @@ model Organization {
   alertEvents          AlertEvent[]
   alertScans           AlertScan[]
   copilotSettings      CopilotSettings?
+  aiAgentSettings      AiAgentSetting[]
   copilotConversations CopilotConversation[]
   copilotMessages      CopilotMessage[]
   workflows            Workflow[]
@@ -1740,11 +1741,36 @@ enum CopilotMessageStatus {
 model CopilotSettings {
   orgId       String       @id @map("org_id") @db.Uuid
   enabled     Boolean      @default(false)
+  /// Set when AI was turned off with the emergency stop: why, in the words of the person who stopped it.
+  offReason   String?      @map("off_reason") @db.VarChar(500)
   updatedById String       @map("updated_by_id") @db.Uuid
   updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
 
   @@map("copilot_settings")
+}
+
+/// The AI features (agents) the control center governs.
+enum AiAgent {
+  COPILOT
+  COLLECTIONS
+  BANKING
+  CLOSE
+}
+
+/// Per-organisation switch and monthly token budget for one AI agent. No row means on, with no budget.
+model AiAgentSetting {
+  orgId             String       @map("org_id") @db.Uuid
+  agent             AiAgent
+  enabled           Boolean      @default(true)
+  /// Input plus output tokens the agent may use in a calendar month (India time). Null means no budget.
+  monthlyTokenLimit Int?         @map("monthly_token_limit")
+  updatedById       String       @map("updated_by_id") @db.Uuid
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org               Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@id([orgId, agent])
+  @@map("ai_agent_settings")
 }
 
 /// A conversation belongs to the member who started it; nobody else sees it.

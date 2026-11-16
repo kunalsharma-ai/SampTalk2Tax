@@ -76,6 +76,21 @@ AI collections agent (M5 slice 3): `apps/api/test/collections.e2e.test.ts` (14 t
 
 AI reconciliation (M5 slice 4): `apps/api/test/bank-ai.e2e.test.ts` (10 tests) uses a scripted model that picks references out of the text it is sent: no key, AI off and permissions; references and never ids, no bank or control accounts offered; a line with an exact match left out; a receipt split over two invoices, a deposit matched to two receipts and an entry, each accepted through the by-hand code; "cannot tell" and an over-allocated bill refused; dismissal; database guards; the next run shown the accepted entry as an example; a suggestion refused after its line was excluded; a refusal, a rate limit and one run at a time; the AI activity log. `apps/web/e2e/bank-ai-flow.test.mjs` accepts an AI receipt (the invoice is paid and the line matched) and dismisses an AI entry through the real SDK against the stand-in. Engine tests cover every check and the text the model reads.
 
+AI control center (M5 slice 6): `apps/api/test/ai-control.e2e.test.ts` (8 tests) checks:
+
+* the overview and action levels;
+* who may look and who may change;
+* validation;
+* an agent switched off refusing before anything is sent;
+* a monthly budget stopping a collections run part-way and refusing the next run;
+* usage kept separate per organisation;
+* acceptance rates from decisions;
+* the emergency stop pressed while a reminder is being drafted, which stops the rest of the run, shows the reason in collections and copilot refusals and is audited;
+* resuming;
+* a stop during a month-end review, which keeps the usage and drops the proposals.
+
+`apps/web/e2e/ai-control-flow.test.mjs` drives the page in the browser.
+
 Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
 
 * the checklist and tasks made once;
