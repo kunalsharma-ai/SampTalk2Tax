@@ -103,6 +103,9 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
         description={<Link className="text-accent hover:underline" href={`/orgs/${orgId}/${l.contactsPath}/${d.contact.id}`}>{d.contact.name}</Link>}
         actions={
           <>
+            {l.ledger === 'SALES' && (d.kind === 'INVOICE' || d.kind === 'CREDIT_NOTE') ? (
+              <Link href={`/orgs/${orgId}/print/${d.id}`}><Button variant="secondary">Print, PDF and sign</Button></Link>
+            ) : null}
             {d.status === 'DRAFT' && canManage ? (
               <>
                 <Button variant="danger" loading={remove.isPending} onClick={() => confirm('Delete this draft? This cannot be undone.') && remove.mutate()}>Delete draft</Button>

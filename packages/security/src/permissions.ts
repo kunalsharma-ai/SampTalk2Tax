@@ -57,6 +57,10 @@ export const PERMISSIONS = [
   'deferrals.manage',
   /** Keep loans: add them, record installments and prepayments, change the rate, reverse the latest of these. */
   'loans.manage',
+  /** Design invoice templates: country presets, themes, colours, sections, logos and HTML templates. */
+  'templates.manage',
+  /** E-sign posted invoices and credit notes with one's own signature, and withdraw such a signature. */
+  'documents.sign',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -103,8 +107,10 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'assets.manage',
     'deferrals.manage',
     'loans.manage',
+    'templates.manage',
+    'documents.sign',
   ]),
-  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
+  APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign']),
   VIEWER: new Set<Permission>(READ_ONLY),
   /** Staff who only claim expenses: their own claims and the organisation's name, nothing else. */
   EMPLOYEE: new Set<Permission>(['org.read', 'expenses.submit']),

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1060 |
+| Not started | 1057 |
 | Designed | 0 |
-| Implementing | 53 |
+| Implementing | 54 |
 | Implemented | 31 |
-| Tested | 191 |
+| Tested | 193 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -52,7 +52,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 11 | 0 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
-| Internationalization | M8 | 16 | 13 | 3 |
+| Internationalization | M8 | 16 | 10 | 6 |
 | Integration marketplace | M6 | 50 | 50 | 0 |
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 17 | 5 |
@@ -406,11 +406,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Accounts receivable
 - Status: **Tested**
-- Notes: Invoices with tenant-configured tax rates. Not a statutory e-invoice format; no PDF or emailing yet.
+- Notes: Invoices with tenant-configured tax rates. Not a statutory e-invoice format; no PDF or emailing yet. Printed with invoice templates (country presets, themes, HTML) and e-signed with a SHA-256 of the signed content.
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › invoices
   - packages/accounting-engine/test/documents.test.ts
   - apps/web/e2e/sales-flow.test.mjs
+  - apps/api/src/invoice-templates/invoice-templates.service.ts
+  - apps/web/e2e/invoice-templates-flow.test.mjs
 
 ### AR-016 — Credit notes
 
@@ -2266,6 +2268,54 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Amounts use Intl.NumberFormat on exact decimal strings (en-IN style grouping for INR). A per-user locale setting is not built.
 - Evidence:
   - apps/web/src
+
+### I18N-004 — Regional date formats
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: Printed invoices use the template's date style (02 Nov 2026, Nov 2, 2026 or 2026-11-02). The app's own screens still use one format.
+- Evidence:
+  - packages/accounting-engine/src/invoice-templates.ts
+  - packages/accounting-engine/test/invoice-templates.test.ts
+  - apps/api/src/invoice-templates/invoice-templates.service.ts
+  - apps/api/test/invoice-templates.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
+  - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
+  - apps/web/e2e/invoice-templates-flow.test.mjs
+  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - docs/INVOICE_TEMPLATES.md
+
+### I18N-006 — Country-specific invoice formats
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: Invoice and credit note layouts from country presets: India GST tax invoice (CGST Rule 46 checks), UAE VAT (bilingual title), UK VAT, US, Singapore GST, Australia GST, EU VAT (Article 226 checks) and generic. Each preset sets the title, tax number label, columns, date and number style, paper size and the rules the designer warns about. Not built: Saudi ZATCA QR, Arabic right-to-left body text, legal review of each preset.
+- Evidence:
+  - packages/accounting-engine/src/invoice-templates.ts
+  - packages/accounting-engine/test/invoice-templates.test.ts
+  - apps/api/src/invoice-templates/invoice-templates.service.ts
+  - apps/api/test/invoice-templates.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
+  - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
+  - apps/web/e2e/invoice-templates-flow.test.mjs
+  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - docs/INVOICE_TEMPLATES.md
+
+### I18N-009 — Regional document templates
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: Templates per organisation: five themes, eight palettes plus custom colours, fonts, editable and reorderable sections and columns, logos, and HTML templates with safe placeholders. Covers invoices and credit notes; quotes, statements, receipts and payslips do not use templates yet.
+- Evidence:
+  - packages/accounting-engine/src/invoice-templates.ts
+  - packages/accounting-engine/test/invoice-templates.test.ts
+  - apps/api/src/invoice-templates/invoice-templates.service.ts
+  - apps/api/test/invoice-templates.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
+  - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
+  - apps/web/e2e/invoice-templates-flow.test.mjs
+  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - docs/INVOICE_TEMPLATES.md
 
 ### I18N-010 — Configurable fiscal years
 

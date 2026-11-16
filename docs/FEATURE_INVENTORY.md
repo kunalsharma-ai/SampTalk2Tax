@@ -1150,12 +1150,12 @@ Part 33 · M8 · priority P2 · depends on: none
 | I18N-001 |  | capability | Multi-language UI | Not started |
 | I18N-002 |  | capability | Multi-currency accounting | Implementing |
 | I18N-003 |  | capability | Regional number formats | Implementing |
-| I18N-004 |  | capability | Regional date formats | Not started |
+| I18N-004 |  | capability | Regional date formats | Implementing |
 | I18N-005 |  | capability | Country-specific tax configurations | Not started |
-| I18N-006 |  | capability | Country-specific invoice formats | Not started |
+| I18N-006 |  | capability | Country-specific invoice formats | Tested |
 | I18N-007 |  | capability | Local financial reporting | Not started |
 | I18N-008 |  | capability | Time-zone awareness | Not started |
-| I18N-009 |  | capability | Regional document templates | Not started |
+| I18N-009 |  | capability | Regional document templates | Tested |
 | I18N-010 |  | capability | Configurable fiscal years | Implemented |
 | I18N-011 |  | capability | Localization framework | Not started |
 | I18N-012 |  | capability | Right-to-left layout support where needed | Not started |

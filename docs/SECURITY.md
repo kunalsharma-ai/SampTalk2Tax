@@ -53,6 +53,8 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | assets.manage (fixed asset register: add, depreciate, dispose) | ✓ | ✓ | ✓ | | |
 | deferrals.manage (prepaid and deferred revenue schedules, releases, accruals) | ✓ | ✓ | ✓ | | |
 | loans.manage (loans: add, installments, prepayments, rate changes, reversal) | ✓ | ✓ | ✓ | | |
+| templates.manage (invoice templates: create, design, logos, HTML, default, archive) | ✓ | ✓ | ✓ | | |
+| documents.sign (save one's own signature; e-sign posted invoices and credit notes) | ✓ | ✓ | ✓ | ✓ | |
 | tasks.use (tasks for oneself or one's role; give tasks) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 The AI copilot sends questions and the figures it reads to Anthropic only when the server has `ANTHROPIC_API_KEY` **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
@@ -72,6 +74,8 @@ Prepaid expenses, deferred revenue and accruals: owners, admins and accountants 
 Departments and projects: owners, admins and accountants (`accounts.manage`) add and change them; everyone with `journals.read` sees them and `reports.read` reads profit by department or project. Line tags are checked by the API (same organisation, right kind, active) and by the database (composite foreign keys and a kind trigger), and values are never deleted. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md).
 
 Loans: owners, admins and accountants (`loans.manage`) add loans and record installments, prepayments and rate changes, and reverse the latest entry; everyone with `journals.read` sees loans and the treasury overview. Every posting goes through the normal journal code, and database triggers keep a loan's agreed terms and its entries from being changed or deleted. The app records borrowings and never moves money. See [`LOANS_AND_TREASURY.md`](LOANS_AND_TREASURY.md).
+
+Invoice templates and e-signatures: owners, admins and accountants (`templates.manage`) design templates; HTML templates are untrusted input, checked on save (no scripts, event handlers, `javascript:` URLs, frames, forms, `<base>`/`<link>`/`<meta>` or network loads), filled with escaped values only, rendered with a `default-src 'none'` Content-Security-Policy and shown in a sandboxed frame without `allow-scripts`. Logos and signatures are sniffed from their bytes (PNG, JPEG, WebP; never SVG) and size-limited. Members with `documents.sign` (owners, admins, accountants, approvers) e-sign posted invoices with their own signature only; each signature keeps a copy of the image and a SHA-256 of the signed content, is never edited or deleted (triggers), and is re-verified on every view. It is an electronic signature with tamper evidence, not Aadhaar eSign or a DSC. See [`INVOICE_TEMPLATES.md`](INVOICE_TEMPLATES.md).
 
 Workflow webhooks (`docs/WORKFLOW_AUTOMATIONS.md`) are signed with a per-workflow HMAC-SHA256 secret. Outside development they may only reach public https addresses: the address is checked when saved, the host name is resolved when sending, every resolved address is checked against loopback, private, link-local (cloud metadata), CGNAT, reserved and IPv4-mapped forms, and the connection is pinned to the checked address. Redirects are not followed. `WEBHOOK_ALLOW_PRIVATE_NETWORKS` must stay false in production.
 

@@ -201,6 +201,9 @@ model Organization {
   bankMatches          BankMatch[]
   reconciliations      BankReconciliation[]
   attachments          Attachment[]
+  invoiceTemplates     InvoiceTemplate[]
+  userSignatures       UserSignature[]
+  documentSignatures   DocumentSignature[]
   approvalPolicies     ApprovalPolicy[]
   approvalRequests     ApprovalRequest[]
   expenseClaims        ExpenseClaim[]
@@ -581,6 +584,10 @@ model Document {
   depositItems         WithholdingDepositItem[]
   eInvoices            EInvoice[]
   eWayBills            EWayBill[]
+  /// The design it prints with; null = the organisation's default template. Can change after posting.
+  templateId           String?                  @map("template_id") @db.Uuid
+  template             InvoiceTemplate?         @relation(fields: [templateId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_template_fk")
+  signatures           DocumentSignature[]
 
   @@unique([orgId, kind, number])
   @@unique([id, orgId])
@@ -2672,4 +2679,94 @@ model LoanEvent {
   @@unique([loanId, seq])
   @@index([orgId, kind, date])
   @@map("loan_events")
+}
+
+enum InvoiceTemplateEngine {
+  /// Built from a theme, a palette and sections.
+  LAYOUT
+  /// The organisation's own HTML with placeholders.
+  HTML
+}
+
+enum SignatureKind {
+  DRAWN
+  UPLOADED
+  TYPED
+}
+
+/// A design for printed invoices and credit notes.
+model InvoiceTemplate {
+  id          String                @id @default(uuid()) @db.Uuid
+  orgId       String                @map("org_id") @db.Uuid
+  name        String                @db.VarChar(120)
+  /// The country preset it started from (IN_GST, AE_VAT, ...); its rules drive the warnings.
+  presetId    String                @map("preset_id") @db.VarChar(20)
+  engine      InvoiceTemplateEngine @default(LAYOUT)
+  /// Theme, palette, font, labels and sections (see the engine's LayoutConfig). Also used by HTML templates for page size, dates and labels.
+  layout      Json
+  /// HTML engine only: the page body with placeholders.
+  html        String?
+  logo        Bytes?
+  logoType    String?               @map("logo_type") @db.VarChar(20)
+  logoSha256  String?               @map("logo_sha256") @db.Char(64)
+  isDefault   Boolean               @default(false) @map("is_default")
+  archivedAt  DateTime?             @map("archived_at") @db.Timestamptz(6)
+  createdById String                @map("created_by_id") @db.Uuid
+  updatedById String?               @map("updated_by_id") @db.Uuid
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  documents   Document[]
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("invoice_templates")
+}
+
+/// A member's e-signature in an organisation: drawn, uploaded or typed, kept as a PNG/JPEG/WebP image.
+model UserSignature {
+  id          String              @id @default(uuid()) @db.Uuid
+  orgId       String              @map("org_id") @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  kind        SignatureKind
+  signerName  String              @map("signer_name") @db.VarChar(120)
+  designation String?             @db.VarChar(120)
+  image       Bytes
+  imageType   String              @map("image_type") @db.VarChar(20)
+  imageSha256 String              @map("image_sha256") @db.Char(64)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Replaced or removed; invoices already signed keep their own copy.
+  revokedAt   DateTime?           @map("revoked_at") @db.Timestamptz(6)
+  org         Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  uses        DocumentSignature[]
+
+  @@unique([id, orgId])
+  @@index([orgId, userId])
+  @@map("user_signatures")
+}
+
+/// An e-signature placed on a posted invoice or credit note, with a copy of the image and a hash of what was signed.
+model DocumentSignature {
+  id             String        @id @default(uuid()) @db.Uuid
+  orgId          String        @map("org_id") @db.Uuid
+  documentId     String        @map("document_id") @db.Uuid
+  signatureId    String        @map("signature_id") @db.Uuid
+  signedById     String        @map("signed_by_id") @db.Uuid
+  signerName     String        @map("signer_name") @db.VarChar(120)
+  designation    String?       @db.VarChar(120)
+  image          Bytes
+  imageType      String        @map("image_type") @db.VarChar(20)
+  /// SHA-256 of the engine's canonicalInvoiceContent at signing.
+  contentHash    String        @map("content_hash") @db.Char(64)
+  signedAt       DateTime      @default(now()) @map("signed_at") @db.Timestamptz(6)
+  userAgent      String?       @map("user_agent") @db.VarChar(300)
+  withdrawnAt    DateTime?     @map("withdrawn_at") @db.Timestamptz(6)
+  withdrawnById  String?       @map("withdrawn_by_id") @db.Uuid
+  withdrawReason String?       @map("withdraw_reason") @db.VarChar(300)
+  org            Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  document       Document      @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Restrict, map: "document_signatures_document_fk")
+  signature      UserSignature @relation(fields: [signatureId, orgId], references: [id, orgId], onDelete: Restrict, map: "document_signatures_signature_fk")
+
+  @@index([orgId, documentId])
+  @@map("document_signatures")
 }

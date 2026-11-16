@@ -19,6 +19,8 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
       { href: '/sales/receipts', label: 'Receipts' },
       { href: '/sales/ageing', label: 'Receivables ageing' },
       { href: '/sales/collections', label: 'Collections', perm: 'collections.manage' },
+      { href: '/settings/invoice-templates', label: 'Invoice templates' },
+      { href: '/settings/signature', label: 'My signature', perm: 'documents.sign' },
     ],
   },
   {
