@@ -26,6 +26,8 @@ import { DocumentsService } from './ledgers/documents.service';
 import { PurchasesController, SalesController } from './ledgers/ledger.controllers';
 import { SubledgerService } from './ledgers/subledger.service';
 import { TaxRatesController } from './tax-rates/tax-rates.controller';
+import { CountryModuleController, CountryModulesCatalogueController } from './country-modules/country-modules.controller';
+import { CountryModulesService } from './country-modules/country-modules.service';
 import { TaxRatesService } from './tax-rates/tax-rates.service';
 import { prismaProvider } from './common/prisma.service';
 import { AppConfig, CONFIG } from './config';
@@ -144,6 +146,8 @@ export class AppModule {
         AuditController,
         ContactsController,
         TaxRatesController,
+        CountryModulesCatalogueController,
+        CountryModuleController,
         SalesController,
         PurchasesController,
         BankingController,
@@ -208,6 +212,7 @@ export class AppModule {
         SubledgerService,
         ContactsService,
         TaxRatesService,
+        CountryModulesService,
         DocumentsService,
         BankingService,
         AttachmentsService,

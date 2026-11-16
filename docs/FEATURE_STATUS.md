@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 905 |
+| Not started | 902 |
 | Designed | 0 |
-| Implementing | 62 |
+| Implementing | 61 |
 | Implemented | 32 |
-| Tested | 332 |
+| Tested | 336 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 30 | 13 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 7 | 17 |
-| Global taxation engine | M3 | 54 | 31 | 23 |
+| Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
@@ -52,10 +52,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 0 | 11 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
-| Internationalization | M8 | 16 | 2 | 14 |
+| Internationalization | M8 | 16 | 1 | 15 |
 | Integration marketplace | M6 | 50 | 44 | 6 |
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
-| User experience and onboarding | M1 | 22 | 17 | 5 |
+| User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
 | Platform super admin | M9 | 22 | 21 | 1 |
@@ -777,9 +777,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### TAX-004 — Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements
 
 - Module: Global taxation engine
-- Status: **Implementing**
-- Notes: India GST documents its rules, limitations, sources, tests and maintenance. No other country module exists yet.
+- Status: **Tested**
+- Notes: Every country module lists nine areas with status and notes, its limitations, sources (tax authority pages), review date and maintenance steps; tests check each module has them. India GST documents its rules and tests in depth.
 - Evidence:
+  - packages/accounting-engine/src/countries.ts
+  - packages/accounting-engine/test/countries.test.ts
+  - apps/api/src/country-modules/country-modules.service.ts
+  - apps/api/test/country-modules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
+  - docs/COUNTRY_MODULES.md
   - docs/TAX_ENGINE_INDIA_GST.md
 
 ### TAX-005 — GST
@@ -982,6 +989,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/tax-engine/src/india/withholding.ts
   - packages/accounting-engine/src/documents.ts
+
+### TAX-042 — Do not claim worldwide compliance without verified, maintained country modules
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Each country shows its level (full, starter, accounting only) at onboarding and on the Country module page; India-only pages are hidden elsewhere and the API refuses that work. Nothing claims compliance outside India.
+- Evidence:
+  - packages/accounting-engine/src/countries.ts
+  - packages/accounting-engine/test/countries.test.ts
+  - apps/api/src/country-modules/country-modules.service.ts
+  - apps/api/test/country-modules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
+  - docs/COUNTRY_MODULES.md
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 
@@ -4139,6 +4160,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/locale.test.ts
   - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
 
+### I18N-005 — Country-specific tax configurations
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: India has its full GST engine. UAE, UK, Singapore, Australia, Germany and Canada have starter modules whose standard national sales-tax rates can be added as ordinary tax rates posting to Output Tax Payable and Input Tax Receivable. The US and other countries are accounting only. No returns, schemes or rule checks outside India.
+- Evidence:
+  - packages/accounting-engine/src/countries.ts
+  - packages/accounting-engine/test/countries.test.ts
+  - apps/api/src/country-modules/country-modules.service.ts
+  - apps/api/test/country-modules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
+  - docs/COUNTRY_MODULES.md
+
 ### I18N-006 — Country-specific invoice formats
 
 - Module: Internationalization
@@ -4525,6 +4560,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding
   - apps/web/src/app/onboarding
   - apps/web/e2e/ledger-flow.test.mjs
+
+### UX-003 — Select country
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Onboarding offers the eight country modules, fills in the usual currency and financial-year start, and shows what Talk2Tax covers in the chosen country before the organisation is created. The country cannot be changed later.
+- Evidence:
+  - apps/web/src/app/onboarding/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
 
 ### UX-007 — Configure fiscal year
 

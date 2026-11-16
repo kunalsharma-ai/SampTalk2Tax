@@ -7,9 +7,8 @@ import { signOut } from '@/lib/api';
 import { setOrganisationTimeZone } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { useOrg, useOrgs } from '@/lib/org';
-import { can } from '@/lib/types';
 import { Logo } from './brand';
-import { EMPLOYEE_NAV, NAV } from '@/lib/nav';
+import { navFor } from '@/lib/nav';
 
 export function Shell({ children }: { children: ReactNode }) {
   const { org, orgId, isLoading } = useOrg();
@@ -24,11 +23,11 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const nav = (
     <nav aria-label={t('Main')} className="flex flex-col gap-6">
-      {(org?.role === 'EMPLOYEE' ? EMPLOYEE_NAV : NAV.filter((g) => g.group !== 'Payroll' || can(org?.role, 'payroll.read'))).map((g) => (
+      {navFor(org).map((g) => (
         <div key={g.group}>
           <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{t(g.group)}</p>
           <ul className="mt-2 flex flex-col gap-0.5">
-            {g.items.filter((i) => !i.perm || can(org?.role, i.perm)).map((i) => {
+            {g.items.map((i) => {
               const href = `${base}${i.href}`;
               const active = i.href === '' ? pathname === base : pathname.startsWith(href);
               return (
