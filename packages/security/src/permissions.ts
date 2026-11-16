@@ -73,6 +73,8 @@ export const PERMISSIONS = [
   'policies.manage',
   /** Build, change and delete dashboards, and draft them with the AI. Anyone with reports.read can view them. */
   'dashboards.manage',
+  /** Design report layouts, produce monthly reports, write and finalise their commentary, with or without the AI. Anyone with reports.read can read them. */
+  'reports.design',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -126,6 +128,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'decisions.manage',
     'policies.manage',
     'dashboards.manage',
+    'reports.design',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve', 'decisions.manage']),
   VIEWER: new Set<Permission>(READ_ONLY),

@@ -32,3 +32,4 @@ export * from './forecast-lab';
 export * from './disaster';
 export * from './policies';
 export * from './dashboards';
+export * from './report-designer';

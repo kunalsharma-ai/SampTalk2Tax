@@ -59,11 +59,12 @@ export class AiControlService {
   /** Tokens (input plus output) each agent used since the start of this month, India time. */
   async usage(orgId: string, since = monthStartIst().since) {
     const where = { orgId, createdAt: { gte: since } };
-    const [copilotChat, policyDrafts, dashboardDrafts, collections, banking, close, cfo] = await Promise.all([
+    const [copilotChat, policyDrafts, dashboardDrafts, reportCalls, collections, banking, close, cfo] = await Promise.all([
       this.prisma.copilotMessage.aggregate({ where: { ...where, role: 'ASSISTANT' }, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
-      // Drafting policies and dashboards is done by the copilot and counts towards its budget.
+      // Drafting policies, dashboards and reports is done by the copilot and counts towards its budget.
       this.prisma.policyAiDraft.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.dashboardAiDraft.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
+      this.prisma.reportAiCall.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.collectionDraft.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.bankAiSuggestion.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
       this.prisma.closeAiReview.aggregate({ where, _count: true, _sum: { inputTokens: true, outputTokens: true } }),
@@ -75,7 +76,7 @@ export class AiControlService {
       outputTokens: a._sum.outputTokens ?? 0,
       tokens: (a._sum.inputTokens ?? 0) + (a._sum.outputTokens ?? 0),
     });
-    const parts = [copilotChat, policyDrafts, dashboardDrafts];
+    const parts = [copilotChat, policyDrafts, dashboardDrafts, reportCalls];
     const copilot = { _count: parts.reduce((a, p) => a + p._count, 0), _sum: { inputTokens: parts.reduce((a, p) => a + (p._sum.inputTokens ?? 0), 0), outputTokens: parts.reduce((a, p) => a + (p._sum.outputTokens ?? 0), 0) } };
     return { COPILOT: u(copilot), COLLECTIONS: u(collections), BANKING: u(banking), CLOSE: u(close), CFO: u(cfo) } as Record<AiAgent, ReturnType<typeof u>>;
   }
@@ -149,7 +150,8 @@ export class AiControlService {
           this.prisma.copilotMessage.count({ where: { orgId, role: 'ASSISTANT', status: 'FAILED', createdAt: { gte: since } } }),
           this.prisma.policyAiDraft.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
           this.prisma.dashboardAiDraft.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
-        ]).then(([a, b, c]) => a + b + c),
+          this.prisma.reportAiCall.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
+        ]).then((n) => n.reduce((a, b) => a + b, 0)),
         this.prisma.collectionDraft.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
         this.prisma.bankAiSuggestion.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),
         this.prisma.closeAiReview.count({ where: { orgId, status: 'FAILED', createdAt: { gte: since } } }),

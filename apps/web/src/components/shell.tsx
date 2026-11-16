@@ -74,6 +74,7 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
       { href: '/graph', label: 'Relationship explorer' },
       { href: '/reports/kpis', label: 'KPIs' },
       { href: '/reports/management', label: 'Management reports' },
+      { href: '/reports/designer', label: 'Report designer' },
       { href: '/consolidation', label: 'Group consolidation' },
     ],
   },
