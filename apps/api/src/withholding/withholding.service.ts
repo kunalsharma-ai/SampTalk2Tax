@@ -6,7 +6,9 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { checkPan, computeWithholding, depositDueDate, TDS_TEMPLATES, tanIssue, thresholdWindow, WithholdingResult, WithholdingRule } from '@talk2tax/tax-engine';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 
@@ -69,6 +71,7 @@ export class WithholdingService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly chart: ChartService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -180,10 +183,11 @@ export class WithholdingService {
     if (input.issueDate < fromDbDate(section.validFrom)) throw new DomainError('DOCUMENT_INVALID', `${section.kind} section ${section.code} applies from ${fromDbDate(section.validFrom)}`);
     const w = thresholdWindow(section.thresholdWindow, input.issueDate);
     const exclude = input.excludeDocumentId ?? '00000000-0000-0000-0000-000000000000';
-    const [h] = await db.$queryRaw<{ subject: Prisma.Decimal | null; base: Prisma.Decimal | null }[]>`
-      SELECT SUM(withholding_subject) AS subject, SUM(withholding_base) AS base FROM documents
-      WHERE org_id = ${orgId}::uuid AND contact_id = ${input.contact.id}::uuid AND withholding_section_id = ${section.id}::uuid
-        AND status = 'POSTED' AND issue_date BETWEEN ${toDbDate(w.from)}::date AND ${toDbDate(w.to)}::date AND id <> ${exclude}::uuid`;
+    const { _sum: sum } = await db.document.aggregate({
+      where: { orgId, contactId: input.contact.id, withholdingSectionId: section.id, status: 'POSTED', issueDate: { gte: toDbDate(w.from), lte: toDbDate(w.to) }, id: { not: exclude } },
+      _sum: { withholdingSubject: true, withholdingBase: true },
+    });
+    const h = { subject: sum.withholdingSubject, base: sum.withholdingBase };
     const pan = input.contact.pan;
     const result = computeWithholding(ruleOf(section), input.amount, { aggregateBefore: h?.subject?.toFixed() ?? '0', taxedBefore: h?.base?.toFixed() ?? '0' }, pan, 'INR');
     return { section, kind, accountId: kind === 'TDS' ? settings.tdsPayableAccountId : settings.tcsPayableAccountId, pan, result };
@@ -275,20 +279,13 @@ export class WithholdingService {
   private async ledgerCheck(org: WithholdingOrg, kind: WithholdingKind, settings: WithholdingSettings, to: string) {
     const accountId = kind === 'TDS' ? settings.tdsPayableAccountId : settings.tcsPayableAccountId;
     const t = toDbDate(to);
-    const [bal] = await this.prisma.$queryRaw<{ cr: Prisma.Decimal | null; dr: Prisma.Decimal | null }[]>`
-      SELECT SUM(l.functional_credit) AS cr, SUM(l.functional_debit) AS dr FROM journal_lines l JOIN journal_entries e ON e.id = l.entry_id
-      WHERE l.org_id = ${org.id}::uuid AND l.account_id = ${accountId}::uuid AND e.status = 'POSTED' AND e.date <= ${t}::date`;
-    const [w] = await this.prisma.$queryRaw<{ s: Prisma.Decimal | null }[]>`
-      SELECT SUM(withholding_amount) AS s FROM documents
-      WHERE org_id = ${org.id}::uuid AND withholding_kind = ${kind}::"WithholdingKind" AND issue_date <= ${t}::date
-        AND (status = 'POSTED' OR (status = 'VOID' AND void_date > ${t}::date))`;
-    const [d] = await this.prisma.$queryRaw<{ s: Prisma.Decimal | null }[]>`
-      SELECT SUM(tax_amount) AS s FROM withholding_deposits
-      WHERE org_id = ${org.id}::uuid AND kind = ${kind}::"WithholdingKind" AND deposit_date <= ${t}::date
-        AND (status = 'POSTED' OR (status = 'VOID' AND void_date > ${t}::date))`;
+    const [bal] = await lineSums(this.store, org.id, { entry: postedBetween(null, t), line: { accountId }, by: {} });
+    const live = { OR: [{ status: 'POSTED' as const }, { status: 'VOID' as const, voidDate: { gt: t } }] };
+    const w = await this.prisma.document.aggregate({ where: { orgId: org.id, withholdingKind: kind, issueDate: { lte: t }, ...live }, _sum: { withholdingAmount: true } });
+    const d = await this.prisma.withholdingDeposit.aggregate({ where: { orgId: org.id, kind, depositDate: { lte: t }, ...live }, _sum: { taxAmount: true } });
     const scale = minorUnits(org.functionalCurrency);
-    const ledger = new D(bal?.cr?.toFixed() ?? '0').minus(bal?.dr?.toFixed() ?? '0');
-    const expected = new D(w?.s?.toFixed() ?? '0').minus(d?.s?.toFixed() ?? '0');
+    const ledger = bal ? bal.credit.minus(bal.debit) : new D(0);
+    const expected = new D(w._sum.withholdingAmount?.toFixed() ?? '0').minus(d._sum.taxAmount?.toFixed() ?? '0');
     const account = await this.prisma.account.findUniqueOrThrow({ where: { id: accountId }, select: { id: true, code: true, name: true } });
     return { asOf: to, account, balance: ledger.toFixed(scale), expected: expected.toFixed(scale), agrees: ledger.eq(expected) };
   }

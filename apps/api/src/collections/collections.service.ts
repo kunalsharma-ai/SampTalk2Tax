@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { NOT_DISPUTED } from '../disputes/disputes.service';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { checkDraft, CustomerFacts, customerFacts, D, draftPasses, factsForModel, RISK_LEVELS, RiskLevel } from '@talk2tax/accounting-engine';
@@ -10,6 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { todayIst } from '../cash-flow/cash-flow.service';
 import { fromDbDate, istDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { disputedIds, roundPg, withOpen } from '../db/subledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
@@ -196,23 +196,23 @@ export class CollectionsService {
 
   /** Customers with overdue posted invoices still to be paid, most overdue first. */
   private async overdueCustomers(tx: Tx, orgId: string, today: string) {
-    return tx.$queryRaw<{ contact_id: string; name: string; email: string | null; overdue: Prisma.Decimal }[]>`
-      SELECT c.id AS contact_id, c.name, c.email, SUM(x.open) AS overdue FROM (
-        SELECT d.contact_id, ROUND((d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0)) * d.exchange_rate, 2) AS open
-        FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND d.due_date < ${toDbDate(today)}::date AND ${NOT_DISPUTED}) x
-      JOIN contacts c ON c.id = x.contact_id
-      WHERE x.open > 0
-      GROUP BY c.id, c.name, c.email
-      ORDER BY SUM(x.open) DESC, c.name`;
+    const docs = await tx.document.findMany({ where: { orgId, kind: 'INVOICE', status: 'POSTED', dueDate: { lt: toDbDate(today) } }, select: { id: true, contactId: true, total: true, exchangeRate: true } });
+    const disputed = await disputedIds(tx, orgId, docs.map((d) => d.id));
+    const per = new Map<string, Prisma.Decimal>();
+    for (const d of await withOpen(tx, orgId, docs.filter((d) => !disputed.has(d.id)))) {
+      const open = roundPg(d.open.times(d.exchangeRate), 2);
+      if (open.gt(0)) per.set(d.contactId, (per.get(d.contactId) ?? new Prisma.Decimal(0)).plus(open));
+    }
+    const contacts = per.size ? await tx.contact.findMany({ where: { orgId, id: { in: [...per.keys()] } }, select: { id: true, name: true, email: true } }) : [];
+    return contacts
+      .map((c) => ({ contact_id: c.id, name: c.name, email: c.email, overdue: per.get(c.id)! }))
+      .sort((a, b) => b.overdue.cmp(a.overdue) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   }
 
   private async factsFor(tx: Tx, orgId: string, contact: { id: string; name: string }, today: string, currency: string): Promise<CustomerFacts> {
-    const all = await tx.$queryRaw<{ number: string; issue_date: Date; due_date: Date; total: Prisma.Decimal; open: Prisma.Decimal; reference: string | null; last_paid: Date | null; currency: string }[]>`
-      SELECT d.number, d.issue_date, d.due_date, d.total, d.reference, d.currency::text AS currency,
-        d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open,
-        (SELECT MAX(a.date) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL) AS last_paid
-      FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.contact_id = ${contact.id}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND ${NOT_DISPUTED}
-      ORDER BY d.due_date`;
+    const docs = await tx.document.findMany({ where: { orgId, contactId: contact.id, kind: 'INVOICE', status: 'POSTED' }, orderBy: { dueDate: 'asc' }, select: { id: true, number: true, issueDate: true, dueDate: true, total: true, reference: true, currency: true } });
+    const disputed = await disputedIds(tx, orgId, docs.map((d) => d.id));
+    const all = (await withOpen(tx, orgId, docs.filter((d) => !disputed.has(d.id)))).map((d) => ({ number: d.number!, issue_date: d.issueDate, due_date: d.dueDate, total: d.total, open: d.open, reference: d.reference, last_paid: d.lastAllocated, currency: d.currency as string }));
     // A reminder is in one currency: that of the oldest invoice still open (usually the customer's only one).
     const firstOpen = all.find((i) => new D(i.open.toString()).gt(0));
     if (firstOpen && firstOpen.currency !== currency) currency = firstOpen.currency;

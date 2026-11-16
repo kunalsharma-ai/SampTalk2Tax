@@ -5,7 +5,10 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { byCode } from '../db/subledger-queries';
 import { JournalsService } from '../journals/journals.service';
 
 type Actor = { id: string };
@@ -44,6 +47,7 @@ export class YearEndService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   can(org: YearEndOrg) {
@@ -229,18 +233,17 @@ export class YearEndService {
   }
 
   private async balances(db: Tx | PrismaService, orgId: string, from: string, to: string): Promise<Row[]> {
-    return db.$queryRaw<Row[]>`
-      SELECT a.id AS account_id, a.code, a.name, a.type::text AS type,
-             COALESCE(SUM(l.functional_debit) FILTER (WHERE e.type <> 'CLOSING'), 0) AS debit,
-             COALESCE(SUM(l.functional_credit) FILTER (WHERE e.type <> 'CLOSING'), 0) AS credit,
-             COALESCE(SUM(l.functional_debit) FILTER (WHERE e.type = 'CLOSING'), 0) AS closing_debit,
-             COALESCE(SUM(l.functional_credit) FILTER (WHERE e.type = 'CLOSING'), 0) AS closing_credit
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND a.type IN ('REVENUE', 'EXPENSE')
-        AND e.date >= ${toDbDate(from)}::date AND e.date <= ${toDbDate(to)}::date
-      GROUP BY a.id, a.code, a.name, a.type`;
+    const accounts = (await db.account.findMany({ where: { orgId, type: { in: ['REVENUE', 'EXPENSE'] } }, select: { id: true, code: true, name: true, type: true } })).sort(byCode);
+    if (!accounts.length) return [];
+    const sums = await lineSums(this.store, orgId, { entry: postedBetween(toDbDate(from), toDbDate(to)), line: { accountId: { $in: accounts.map((a) => a.id) } }, by: { accountId: 'lines.accountId', closing: { $eq: ['$type', 'CLOSING'] } } });
+    const dec = (v: { toFixed(): string } | undefined) => new Prisma.Decimal(v?.toFixed() ?? '0');
+    return accounts.flatMap((a) => {
+      const own = sums.filter((s) => s.key.accountId === a.id);
+      if (!own.length) return [];
+      const regular = own.find((s) => !s.key.closing);
+      const closing = own.find((s) => s.key.closing);
+      return [{ account_id: a.id, code: a.code, name: a.name, type: a.type as Row['type'], debit: dec(regular?.debit), credit: dec(regular?.credit), closing_debit: dec(closing?.debit), closing_credit: dec(closing?.credit) }];
+    });
   }
 
   private async year(db: Tx | PrismaService, orgId: string, fiscalYear: number, lock = false) {

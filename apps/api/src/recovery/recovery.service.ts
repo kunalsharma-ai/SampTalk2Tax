@@ -5,6 +5,8 @@ import { AuditService } from '../audit/audit.service';
 import { todayIst } from '../cash-flow/cash-flow.service';
 import { toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { contactNames, documentEntrySums, lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService } from '../common/prisma.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { TwinService } from '../twin/twin.service';
@@ -36,6 +38,7 @@ export class RecoveryService {
     private readonly audit: AuditService,
     private readonly twin: TwinService,
     private readonly subledger: SubledgerService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   /** Everything the engine needs, read from the posted books. */
@@ -66,13 +69,12 @@ export class RecoveryService {
     const ap = await this.subledger.ageing(org, 'PURCHASES', today);
     const owed = new Map(ap.rows.map((r) => [r.contactId, (r as unknown as Record<string, string>).balance ?? '0']));
     const spend = org.apAccountId
-      ? await this.prisma.$queryRaw<{ contact_id: string; name: string; amount: Prisma.Decimal }[]>`
-          SELECT d.contact_id, c.name, SUM(l.functional_credit - l.functional_debit) AS amount
-          FROM documents d
-          JOIN contacts c ON c.id = d.contact_id AND c.org_id = d.org_id
-          JOIN journal_lines l ON l.entry_id = d.journal_entry_id AND l.org_id = d.org_id AND l.account_id = ${org.apAccountId}::uuid
-          WHERE d.org_id = ${orgId}::uuid AND d.kind = 'BILL' AND d.status = 'POSTED' AND d.issue_date BETWEEN ${from}::date AND ${to}::date
-          GROUP BY d.contact_id, c.name`
+      ? await documentEntrySums(this.prisma, this.store, orgId, { kind: 'BILL', status: 'POSTED', issueDate: { gte: from, lte: to } }, [org.apAccountId]).then(async (lines) => {
+          const names = await contactNames(this.prisma, orgId, lines.map((l) => l.contactId));
+          const per = new Map<string, Prisma.Decimal>();
+          for (const l of lines) per.set(l.contactId, (per.get(l.contactId) ?? new Prisma.Decimal(0)).plus(l.credit.minus(l.debit).toFixed()));
+          return [...per.entries()].map(([id, amount]) => ({ contact_id: id, name: names.get(id) ?? '', amount }));
+        })
       : [];
     const suppliers: RecoverySupplier[] = spend.map((s) => ({
       contactId: s.contact_id,
@@ -81,14 +83,12 @@ export class RecoveryService {
       balance: owed.get(s.contact_id) ?? (0).toFixed(scale),
     }));
 
-    const lines = await this.prisma.$queryRaw<{ id: string; code: string; name: string; amount: Prisma.Decimal }[]>`
-      SELECT a.id, a.code, a.name, SUM(l.functional_debit - l.functional_credit) AS amount
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND a.type = 'EXPENSE' AND a.subtype = 'OPERATING_EXPENSE'
-        AND e.date BETWEEN ${from}::date AND ${to}::date
-      GROUP BY a.id, a.code, a.name`;
+    const opex = await this.prisma.account.findMany({ where: { orgId, type: 'EXPENSE', subtype: 'OPERATING_EXPENSE' }, select: { id: true, code: true, name: true } });
+    const opexSums = opex.length ? await lineSums(this.store, orgId, { entry: postedBetween(from, to, { excludeClosing: true }), line: { accountId: { $in: opex.map((x) => x.id) } }, by: { accountId: 'lines.accountId' } }) : [];
+    const lines = opexSums.map((r) => {
+      const x = opex.find((o) => o.id === r.key.accountId)!;
+      return { id: x.id, code: x.code, name: x.name, amount: r.debit.minus(r.credit).toFixed() };
+    });
     const expenses: RecoveryExpense[] = lines.map((x) => ({ accountId: x.id, code: x.code, name: x.name, monthly: new Prisma.Decimal(x.amount).div(q.baselineMonths).toFixed(scale) }));
 
     return { baseline: a, horizonMonths: q.horizonMonths, cashBuffer, customers, suppliers, expenses };

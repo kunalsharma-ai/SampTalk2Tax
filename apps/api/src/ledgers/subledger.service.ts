@@ -53,42 +53,45 @@ export class SubledgerService {
     const fc = (await db.organization.findUniqueOrThrow({ where: { id: orgId }, select: { functionalCurrency: true } })).functionalCurrency;
     const k = KINDS[ledger];
     const d = toDbDate(asOf);
-    const contactFilter = contactId ? Prisma.sql`AND x.contact_id = ${contactId}::uuid` : Prisma.empty;
-    const rows = await db.$queryRaw<
-      { id: string; contact_id: string; contact_name: string; number: string; date: Date; due_date: Date | null; total: Prisma.Decimal; used: Prisma.Decimal; parts: string[]; currency: string; exchange_rate: Prisma.Decimal; type: string }[]
-    >`
-      SELECT x.id, x.contact_id, c.name AS contact_name, x.number, x.issue_date AS date, x.due_date, x.total,
-        COALESCE((SELECT SUM(a.amount) FROM allocations a
-                  WHERE a.target_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)), 0) AS used,
-        ARRAY(SELECT a.amount::text FROM allocations a
-              WHERE a.target_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)) AS parts,
-        x.currency::text AS currency, x.exchange_rate,
-        'charge' AS type
-      FROM documents x JOIN contacts c ON c.id = x.contact_id
-      WHERE x.org_id = ${orgId}::uuid AND x.kind = ${k.charge}::"DocumentKind" AND x.issue_date <= ${d}::date
-        AND (x.status = 'POSTED' OR (x.status = 'VOID' AND x.void_date > ${d}::date)) ${contactFilter}
-      UNION ALL
-      SELECT x.id, x.contact_id, c.name, x.number, x.issue_date, NULL, x.total,
-        COALESCE((SELECT SUM(a.amount) FROM allocations a
-                  WHERE a.credit_document_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)), 0),
-        ARRAY(SELECT a.amount::text FROM allocations a
-              WHERE a.credit_document_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)) AS parts,
-        x.currency::text AS currency, x.exchange_rate,
-        'credit'
-      FROM documents x JOIN contacts c ON c.id = x.contact_id
-      WHERE x.org_id = ${orgId}::uuid AND x.kind = ${k.credit}::"DocumentKind" AND x.issue_date <= ${d}::date
-        AND (x.status = 'POSTED' OR (x.status = 'VOID' AND x.void_date > ${d}::date)) ${contactFilter}
-      UNION ALL
-      SELECT x.id, x.contact_id, c.name, x.number, x.date, NULL, x.amount,
-        COALESCE((SELECT SUM(a.amount) FROM allocations a
-                  WHERE a.payment_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)), 0),
-        ARRAY(SELECT a.amount::text FROM allocations a
-              WHERE a.payment_id = x.id AND a.date <= ${d}::date AND (a.removed_on IS NULL OR a.removed_on > ${d}::date)) AS parts,
-        x.currency::text AS currency, x.exchange_rate,
-        'payment'
-      FROM payments x JOIN contacts c ON c.id = x.contact_id
-      WHERE x.org_id = ${orgId}::uuid AND x.kind = ${k.payment}::"PaymentKind" AND x.date <= ${d}::date
-        AND (x.status = 'POSTED' OR x.void_date > ${d}::date) ${contactFilter}`;
+    const byContact = contactId ? { contactId } : {};
+    const live = { OR: [{ status: 'POSTED' as const }, { status: 'VOID' as const, voidDate: { gt: d } }] };
+    const docSelect = { id: true, contactId: true, number: true, issueDate: true, dueDate: true, total: true, currency: true, exchangeRate: true } as const;
+    const [charges, credits, payments] = await Promise.all([
+      db.document.findMany({ where: { orgId, kind: k.charge, issueDate: { lte: d }, ...live, ...byContact }, select: docSelect }),
+      db.document.findMany({ where: { orgId, kind: k.credit, issueDate: { lte: d }, ...live, ...byContact }, select: docSelect }),
+      db.payment.findMany({ where: { orgId, kind: k.payment, date: { lte: d }, OR: [{ status: 'POSTED' }, { voidDate: { gt: d } }], ...byContact }, select: { id: true, contactId: true, number: true, date: true, amount: true, currency: true, exchangeRate: true } }),
+    ]);
+    // Allocations in force on the date, against each item: charges as targets, credits and payments as sources.
+    const allocs = await db.allocation.findMany({
+      where: {
+        orgId,
+        date: { lte: d },
+        AND: [
+          { OR: [{ removedOn: null }, { removedOn: { gt: d } }] },
+          { OR: [{ targetId: { in: charges.map((x) => x.id) } }, { creditDocumentId: { in: credits.map((x) => x.id) } }, { paymentId: { in: payments.map((x) => x.id) } }] },
+        ],
+      },
+      select: { targetId: true, creditDocumentId: true, paymentId: true, amount: true },
+    });
+    const partsOf = new Map<string, Prisma.Decimal[]>();
+    const put = (id: string | null, v: Prisma.Decimal) => id && partsOf.set(id, [...(partsOf.get(id) ?? []), v]);
+    const chargeIds = new Set(charges.map((x) => x.id));
+    for (const a of allocs) {
+      if (chargeIds.has(a.targetId)) put(a.targetId, a.amount);
+      put(a.creditDocumentId, a.amount);
+      put(a.paymentId, a.amount);
+    }
+    const contactIds = [...new Set([...charges, ...credits, ...payments].map((x) => x.contactId))];
+    const names = new Map((contactIds.length ? await db.contact.findMany({ where: { orgId, id: { in: contactIds } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+    const row = (x: { id: string; contactId: string; number: string | null; currency: string; exchangeRate: Prisma.Decimal }, date: Date, dueDate: Date | null, total: Prisma.Decimal, type: string) => {
+      const parts = partsOf.get(x.id) ?? [];
+      return { id: x.id, contact_id: x.contactId, contact_name: names.get(x.contactId) ?? '', number: x.number ?? '', date, due_date: dueDate, total, used: parts.reduce((t, v) => t.plus(v), new Prisma.Decimal(0)), parts: parts.map((v) => v.toFixed()), currency: x.currency as string, exchange_rate: x.exchangeRate, type };
+    };
+    const rows = [
+      ...charges.map((x) => row(x, x.issueDate, x.dueDate, x.total, 'charge')),
+      ...credits.map((x) => row(x, x.issueDate, null, x.total, 'credit')),
+      ...payments.map((x) => row(x, x.date, null, x.amount, 'payment')),
+    ];
     return rows
       .map((r) => {
         const rate = r.exchange_rate.toFixed();

@@ -7,6 +7,7 @@ import {
   checkSummaryFigures,
   clientProfitability,
   D,
+  type Dec,
   expensesToInvestigate,
   factsForSummary,
   fiscalYearForDate,
@@ -35,7 +36,10 @@ import { BudgetsService } from '../budgets/budgets.service';
 import { CashFlowService, todayIst } from '../cash-flow/cash-flow.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { byCode, daysBetween, roundPg, withOpen } from '../db/subledger-queries';
 import { tenantStorage } from '../common/tenant-context';
 import { ComplianceService } from '../compliance/compliance.service';
 import { AppConfig, CONFIG } from '../config';
@@ -115,6 +119,7 @@ export class CfoService {
     private readonly guard: AiControlService,
     private readonly integrations: IntegrationsService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ reading the books
@@ -127,14 +132,15 @@ export class CfoService {
   private async accountMonths(orgId: string, months: string[]): Promise<CfoAccountMonths[]> {
     const from = toDbDate(`${months[0]}-01`);
     const to = toDbDate(monthEnd(months[months.length - 1]));
-    const rows = await this.prisma.$queryRaw<{ code: string; name: string; type: 'REVENUE' | 'EXPENSE'; subtype: string | null; month: string; amount: Prisma.Decimal }[]>`
-      SELECT a.code, a.name, a.type::text AS type, a.subtype, to_char(e.date, 'YYYY-MM') AS month,
-             SUM(CASE WHEN a.type = 'REVENUE' THEN l.functional_credit - l.functional_debit ELSE l.functional_debit - l.functional_credit END) AS amount
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND a.type IN ('REVENUE', 'EXPENSE') AND e.date BETWEEN ${from}::date AND ${to}::date
-      GROUP BY a.code, a.name, a.type, a.subtype, 5`;
+    const pl = await this.prisma.account.findMany({ where: { orgId, type: { in: ['REVENUE', 'EXPENSE'] } }, select: { id: true, code: true, name: true, type: true, subtype: true } });
+    const acc = new Map(pl.map((a) => [a.id, a]));
+    const sums = pl.length
+      ? await lineSums(this.store, orgId, { entry: postedBetween(from, to, { excludeClosing: true }), line: { accountId: { $in: pl.map((a) => a.id) } }, by: { accountId: 'lines.accountId', month: { $dateToString: { date: '$date', format: '%Y-%m' } } } })
+      : [];
+    const rows = sums.map((x) => {
+      const a = acc.get(x.key.accountId as string)!;
+      return { code: a.code, name: a.name, type: a.type as 'REVENUE' | 'EXPENSE', subtype: a.subtype, month: x.key.month as string, amount: a.type === 'REVENUE' ? x.credit.minus(x.debit) : x.debit.minus(x.credit) };
+    });
     const byCode = new Map<string, CfoAccountMonths>();
     for (const r of rows) {
       const a = byCode.get(r.code) ?? { code: r.code, name: r.name, type: r.type, subtype: r.subtype, amounts: months.map(() => '0') };
@@ -149,18 +155,26 @@ export class CfoService {
   private async customers(orgId: string, today: string, scale: number): Promise<CfoCustomer[]> {
     const y1 = toDbDate(addDays(today, -365));
     const y2 = toDbDate(addDays(today, -730));
-    const revenue = await this.prisma.$queryRaw<{ id: string; name: string; recent: Prisma.Decimal; before: Prisma.Decimal }[]>`
-      SELECT c.id, c.name,
-             SUM(CASE WHEN e.date > ${y1}::date THEN l.functional_credit - l.functional_debit ELSE 0 END) AS recent,
-             SUM(CASE WHEN e.date <= ${y1}::date THEN l.functional_credit - l.functional_debit ELSE 0 END) AS before
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      JOIN documents d ON d.org_id = e.org_id AND (d.journal_entry_id = e.id OR d.void_journal_entry_id = e.id)
-      JOIN contacts c ON c.id = d.contact_id AND c.org_id = d.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND a.type = 'REVENUE' AND a.subtype IS DISTINCT FROM 'OTHER_INCOME'
-        AND d.kind IN ('INVOICE', 'CREDIT_NOTE') AND e.date > ${y2}::date AND e.date <= ${toDbDate(today)}::date
-      GROUP BY c.id, c.name`;
+    const sales = await this.prisma.account.findMany({ where: { orgId, type: 'REVENUE', OR: [{ subtype: null }, { subtype: { not: 'OTHER_INCOME' } }] }, select: { id: true } });
+    const perEntry = sales.length
+      ? await lineSums(this.store, orgId, { entry: { status: 'POSTED', date: { $gt: y2, $lte: toDbDate(today) } }, line: { accountId: { $in: sales.map((a) => a.id) } }, by: { id: '_id', date: 'date' } })
+      : [];
+    const entryIds = perEntry.map((x) => x.key.id as string);
+    const docs = entryIds.length
+      ? await this.prisma.document.findMany({ where: { orgId, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, OR: [{ journalEntryId: { in: entryIds } }, { voidJournalEntryId: { in: entryIds } }] }, select: { contactId: true, journalEntryId: true, voidJournalEntryId: true } })
+      : [];
+    const per = new Map<string, { recent: Dec; before: Dec }>();
+    for (const x of perEntry) {
+      const net = x.credit.minus(x.debit);
+      for (const d of docs.filter((d) => d.journalEntryId === x.key.id || d.voidJournalEntryId === x.key.id)) {
+        const t = per.get(d.contactId) ?? { recent: new D(0), before: new D(0) };
+        if ((x.key.date as Date) > y1) t.recent = t.recent.plus(net);
+        else t.before = t.before.plus(net);
+        per.set(d.contactId, t);
+      }
+    }
+    const names = per.size ? await this.prisma.contact.findMany({ where: { orgId, id: { in: [...per.keys()] } }, select: { id: true, name: true } }) : [];
+    const revenue = names.map((c) => ({ id: c.id, name: c.name, ...per.get(c.id)! }));
     const history = await this.paymentHistory(orgId, today);
     const open = await this.openInvoices(orgId, today);
     const overdue = new Map<string, Prisma.Decimal>();
@@ -173,26 +187,30 @@ export class CfoService {
 
   /** For each customer: invoices paid in full in the last 12 months and, on average, how many days after the due date. */
   private async paymentHistory(orgId: string, today: string) {
-    const rows = await this.prisma.$queryRaw<{ contact_id: string; n: number; late: number | null }[]>`
-      SELECT x.contact_id, COUNT(*)::int AS n, ROUND(AVG(x.paid - x.due_date))::int AS late FROM (
-        SELECT d.contact_id, d.due_date, d.total,
-          (SELECT MAX(a.date) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL) AS paid,
-          d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open
-        FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED') x
-      WHERE x.open <= 0 AND x.paid IS NOT NULL AND x.paid > ${toDbDate(addDays(today, -365))}::date
-      GROUP BY x.contact_id`;
+    const since = toDbDate(addDays(today, -365));
+    const invoices = await withOpen(this.prisma, orgId, await this.prisma.document.findMany({ where: { orgId, kind: 'INVOICE', status: 'POSTED' }, select: { id: true, contactId: true, dueDate: true, total: true } }));
+    const per = new Map<string, number[]>();
+    for (const x of invoices) {
+      if (!x.open.lte(0) || !x.lastAllocated || !(x.lastAllocated > since) || !x.dueDate) continue;
+      per.set(x.contactId, [...(per.get(x.contactId) ?? []), daysBetween(x.dueDate, x.lastAllocated)]);
+    }
+    // ROUND(AVG(...)) in PostgreSQL rounds half away from zero.
+    const rows = [...per.entries()].map(([contact_id, days]) => ({ contact_id, n: days.length, late: roundPg(new Prisma.Decimal(days.reduce((t, d) => t + d, 0)).div(days.length), 0).toNumber() }));
     return new Map(rows.map((r) => [r.contact_id, { count: r.n, late: r.late }]));
   }
 
   private async openInvoices(orgId: string, today: string) {
-    return this.prisma.$queryRaw<{ id: string; number: string; contact_id: string; name: string; due_date: Date; open: Prisma.Decimal }[]>`
-      SELECT x.id, x.number, x.contact_id, c.name, x.due_date, x.open FROM (
-        SELECT d.id, d.number, d.contact_id, d.due_date,
-          ROUND((d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0)) * d.exchange_rate, 2) AS open
-        FROM documents d WHERE d.org_id = ${orgId}::uuid AND d.kind = 'INVOICE' AND d.status = 'POSTED' AND d.issue_date <= ${toDbDate(today)}::date) x
-      JOIN contacts c ON c.id = x.contact_id
-      WHERE x.open > 0
-      ORDER BY x.due_date, x.number`;
+    const docs = await withOpen(
+      this.prisma,
+      orgId,
+      await this.prisma.document.findMany({ where: { orgId, kind: 'INVOICE', status: 'POSTED', issueDate: { lte: toDbDate(today) } }, select: { id: true, number: true, contactId: true, dueDate: true, total: true, exchangeRate: true } }),
+    );
+    const open = docs.map((d) => ({ ...d, open: roundPg(d.open.times(d.exchangeRate), 2) })).filter((d) => d.open.gt(0));
+    const names = new Map((open.length ? await this.prisma.contact.findMany({ where: { orgId, id: { in: [...new Set(open.map((d) => d.contactId))] } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+    return open
+      .filter((d) => names.has(d.contactId))
+      .map((d) => ({ id: d.id, number: d.number!, contact_id: d.contactId, name: names.get(d.contactId)!, due_date: d.dueDate!, open: d.open }))
+      .sort((a, b) => a.due_date.getTime() - b.due_date.getTime() || (a.number < b.number ? -1 : a.number > b.number ? 1 : 0));
   }
 
   private async forecast(orgId: string): Promise<CfoInput['forecast']> {
@@ -299,24 +317,18 @@ export class CfoService {
         return salaryRise({ ...c, base, withRise, percent: '10' });
       }
       case 'VENDOR_PRICES': {
-        const lines = await this.prisma.$queryRaw<{ vendor: string; item: string; date: Date; quantity: Prisma.Decimal; unit_price: Prisma.Decimal }[]>`
-          SELECT c.name AS vendor, COALESCE(NULLIF(TRIM(l.description), ''), a.name) AS item, d.issue_date AS date, l.quantity, l.unit_price
-          FROM document_lines l
-          JOIN documents d ON d.id = l.document_id AND d.org_id = l.org_id
-          JOIN contacts c ON c.id = d.contact_id AND c.org_id = d.org_id
-          JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-          WHERE l.org_id = ${org.id}::uuid AND d.kind = 'BILL' AND d.status = 'POSTED' AND d.currency = ${o.functionalCurrency}
-            AND d.issue_date > ${toDbDate(addDays(today, -365))}::date AND d.issue_date <= ${toDbDate(today)}::date AND l.quantity > 0`;
+        const bills = await this.prisma.document.findMany({
+          where: { orgId: org.id, kind: 'BILL', status: 'POSTED', currency: o.functionalCurrency, issueDate: { gt: toDbDate(addDays(today, -365)), lte: toDbDate(today) } },
+          select: { issueDate: true, contact: { select: { name: true } }, lines: { where: { quantity: { gt: 0 } }, select: { description: true, quantity: true, unitPrice: true, accountId: true } } },
+        });
+        const accNames = new Map((await this.prisma.account.findMany({ where: { orgId: org.id }, select: { id: true, name: true } })).map((a) => [a.id, a.name]));
+        const lines = bills.flatMap((b) => b.lines.map((l) => ({ vendor: b.contact.name, item: l.description?.trim() || accNames.get(l.accountId) || '', date: b.issueDate, quantity: l.quantity, unit_price: l.unitPrice })));
         return vendorPrices({ ...c, lines: lines.map((l) => ({ vendor: l.vendor, item: l.item, date: fromDbDate(l.date), quantity: l.quantity.toString(), unitPrice: l.unit_price.toString() })) });
       }
       case 'TAX_EXPOSURE': {
-        const payable = await this.prisma.$queryRaw<{ code: string; name: string; balance: Prisma.Decimal }[]>`
-          SELECT a.code, a.name, COALESCE(SUM(l.functional_credit - l.functional_debit), 0) AS balance
-          FROM accounts a
-          LEFT JOIN journal_lines l ON l.account_id = a.id AND l.org_id = a.org_id
-            AND EXISTS (SELECT 1 FROM journal_entries e WHERE e.id = l.entry_id AND e.org_id = l.org_id AND e.status = 'POSTED' AND e.date <= ${toDbDate(today)}::date)
-          WHERE a.org_id = ${org.id}::uuid AND a.type = 'LIABILITY' AND a.subtype = 'TAX_PAYABLE'
-          GROUP BY a.code, a.name ORDER BY a.code`;
+        const taxAccounts = await this.prisma.account.findMany({ where: { orgId: org.id, type: 'LIABILITY', subtype: 'TAX_PAYABLE' }, select: { id: true, code: true, name: true } });
+        const taxSums = new Map((taxAccounts.length ? await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(today)), line: { accountId: { $in: taxAccounts.map((a) => a.id) } }, by: { accountId: 'lines.accountId' } }) : []).map((x) => [x.key.accountId as string, x.credit.minus(x.debit)]));
+        const payable = taxAccounts.map((a) => ({ code: a.code, name: a.name, balance: taxSums.get(a.id) ?? new D(0) })).sort(byCode);
         return taxExposure({ ...c, compliance: await this.complianceItems(org.id, today), payable: payable.map((p) => ({ code: p.code, name: p.name, balance: new D(p.balance.toString()).toFixed(scale) })) });
       }
       case 'LATE_INVOICES': {

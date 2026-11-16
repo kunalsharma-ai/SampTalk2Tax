@@ -9,6 +9,9 @@ import { AuditService } from '../audit/audit.service';
 import { BankingService, BankOrg } from '../banking/banking.service';
 import { fromDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { ledgerLines } from '../db/ledger-queries';
+import { withOpen } from '../db/subledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
@@ -112,6 +115,7 @@ export class BankAiService {
     private readonly banking: BankingService,
     @Inject(CONFIG) private readonly config: AppConfig,
     private readonly integrations: IntegrationsService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ reading
@@ -222,11 +226,9 @@ export class BankAiService {
     ).map((r, i) => ({ ref: `L${i + 1}`, ...r }));
 
     const kind: 'INVOICE' | 'BILL' = amount.gt(0) ? 'INVOICE' : 'BILL';
-    const docs = await tx.$queryRaw<{ id: string; number: string; contact_id: string; contact_name: string; due_date: Date | null; reference: string | null; open: Prisma.Decimal }[]>`
-      SELECT d.id, d.number, d.contact_id, c.name AS contact_name, d.due_date, d.reference,
-        d.total - COALESCE((SELECT SUM(a.amount) FROM allocations a WHERE a.target_id = d.id AND a.removed_on IS NULL), 0) AS open
-      FROM documents d JOIN contacts c ON c.id = d.contact_id
-      WHERE d.org_id = ${org.id}::uuid AND d.kind = ${kind}::"DocumentKind" AND d.status = 'POSTED' AND d.currency = ${org.functionalCurrency}`;
+    const posted = await tx.document.findMany({ where: { orgId: org.id, kind, status: 'POSTED', currency: org.functionalCurrency }, select: { id: true, number: true, contactId: true, dueDate: true, reference: true, total: true } });
+    const names = new Map((posted.length ? await tx.contact.findMany({ where: { orgId: org.id, id: { in: [...new Set(posted.map((d) => d.contactId))] } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+    const docs = (await withOpen(tx, org.id, posted)).map((d) => ({ id: d.id, number: d.number ?? '', contact_id: d.contactId, contact_name: names.get(d.contactId) ?? '', due_date: d.dueDate as Date | null, reference: d.reference, open: d.open }));
     const ranked = rankCandidates(
       me,
       docs.filter((d) => new D(d.open.toString()).gt(0)).map((d) => ({ id: d.id, number: d.number, contactId: d.contact_id, contactName: d.contact_name, dueDate: d.due_date ? fromDbDate(d.due_date) : null, reference: d.reference, amount: new D(d.open.toString()).toFixed(2), date: d.due_date ? fromDbDate(d.due_date) : null, text: `${d.contact_name} ${d.number} ${d.reference ?? ''}` })),
@@ -248,16 +250,23 @@ export class BankAiService {
       orderBy: { code: 'asc' },
       select: { id: true, code: true, name: true, type: true },
     });
-    const history = await tx.$queryRaw<{ date: Date; description: string; amount: Prisma.Decimal; code: string; name: string }[]>`
-      SELECT sl.date, sl.description, sl.amount, a.code, a.name
-      FROM bank_matches m
-      JOIN bank_statement_lines sl ON sl.id = m.statement_line_id
-      JOIN journal_lines bl ON bl.id = m.journal_line_id
-      JOIN journal_lines ol ON ol.entry_id = bl.entry_id AND ol.id <> bl.id
-      JOIN accounts a ON a.id = ol.account_id
-      WHERE m.org_id = ${orgId}::uuid AND m.origin = 'CREATED_ENTRY' AND m.removed_at IS NULL
-      ORDER BY m.created_at DESC
-      LIMIT ${HISTORY_SHOWN}`;
+    // The other side of entries made from bank lines, newest first.
+    const matches = await tx.bankMatch.findMany({ where: { orgId, origin: 'CREATED_ENTRY', removedAt: null }, orderBy: { createdAt: 'desc' }, take: HISTORY_SHOWN * 2, select: { statementLineId: true, journalLineId: true } });
+    const bankLines = matches.length ? await ledgerLines(this.store, orgId, { line: { id: { $in: matches.map((m) => m.journalLineId) } } }) : [];
+    const entryOf = new Map(bankLines.map((l) => [l.id, l.entry_id]));
+    const entryLines = bankLines.length ? await ledgerLines(this.store, orgId, { entry: { _id: { $in: [...new Set(entryOf.values())] } } }) : [];
+    const stmt = new Map((matches.length ? await tx.bankStatementLine.findMany({ where: { orgId, id: { in: matches.map((m) => m.statementLineId) } }, select: { id: true, date: true, description: true, amount: true } }) : []).map((l) => [l.id, l]));
+    const accountOf = new Map((entryLines.length ? await tx.account.findMany({ where: { orgId, id: { in: [...new Set(entryLines.map((l) => l.account_id))] } }, select: { id: true, code: true, name: true } }) : []).map((a) => [a.id, a]));
+    const history = matches
+      .flatMap((m) => {
+        const sl = stmt.get(m.statementLineId);
+        const entry = entryOf.get(m.journalLineId);
+        if (!sl || !entry) return [];
+        return entryLines
+          .filter((l) => l.entry_id === entry && l.id !== m.journalLineId && accountOf.has(l.account_id))
+          .map((l) => ({ date: sl.date, description: sl.description, amount: sl.amount, code: accountOf.get(l.account_id)!.code, name: accountOf.get(l.account_id)!.name }));
+      })
+      .slice(0, HISTORY_SHOWN);
     return {
       accounts: accounts.map((a) => ({ code: a.code, id: a.id, name: a.name, type: a.type })),
       history: history.map((h) => ({ date: fromDbDate(h.date), text: h.description.slice(0, 200), amount: new D(h.amount.toString()).toFixed(2), accountCode: h.code, accountName: h.name })),

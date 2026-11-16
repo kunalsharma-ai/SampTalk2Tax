@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { checkGstin, supplierTaxIssues, type RegistrationStatus, type SupplierFacts, type SupplierIssue, type TaxpayerType } from '@talk2tax/tax-engine';
+import { Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
@@ -40,13 +41,17 @@ export class SupplierTaxService {
     const from = ymd(today, -365);
     const ids = onlyId ? [onlyId] : vendors.map((v) => v.id);
     const bills = ids.length
-      ? await this.prisma.$queryRaw<{ id: string; contact_id: string; number: string; issue_date: Date; counterparty_gstin: string | null; supplier_state: string | null; place_of_supply: string | null; reverse_charge: boolean; cgst: string; sgst: string; igst: string }[]>`
-          SELECT d.id, d.contact_id, d.number, d.issue_date, d.counterparty_gstin, d.supplier_state, d.place_of_supply, d.reverse_charge,
-                 COALESCE(SUM(l.cgst_amount), 0)::text AS cgst, COALESCE(SUM(l.sgst_amount), 0)::text AS sgst, COALESCE(SUM(l.igst_amount), 0)::text AS igst
-          FROM documents d LEFT JOIN document_lines l ON l.document_id = d.id
-          WHERE d.org_id = ${orgId}::uuid AND d.kind = 'BILL' AND d.status = 'POSTED' AND d.issue_date >= ${toDbDate(from)}::date
-            AND d.contact_id = ANY(${ids}::uuid[])
-          GROUP BY d.id ORDER BY d.issue_date, d.number`
+      ? (
+          await this.prisma.document.findMany({
+            where: { orgId, kind: 'BILL', status: 'POSTED', issueDate: { gte: toDbDate(from) }, contactId: { in: ids } },
+            orderBy: [{ issueDate: 'asc' }, { number: 'asc' }],
+            select: { id: true, contactId: true, number: true, issueDate: true, counterpartyGstin: true, supplierState: true, placeOfSupply: true, reverseCharge: true, lines: { select: { cgstAmount: true, sgstAmount: true, igstAmount: true } } },
+          })
+        ).map((d) => {
+          // As PostgreSQL printed SUM of numeric(24,6): six places, or 0 for a bill with no lines.
+          const total = (k: 'cgstAmount' | 'sgstAmount' | 'igstAmount') => (d.lines.length ? d.lines.reduce((t, l) => t.plus(l[k]), new Prisma.Decimal(0)).toFixed(6) : '0');
+          return { id: d.id, contact_id: d.contactId, number: d.number ?? '', issue_date: d.issueDate, counterparty_gstin: d.counterpartyGstin, supplier_state: d.supplierState, place_of_supply: d.placeOfSupply, reverse_charge: d.reverseCharge, cgst: total('cgstAmount'), sgst: total('sgstAmount'), igst: total('igstAmount') };
+        })
       : [];
     const checks = await this.prisma.supplierGstinCheck.findMany({ where: { orgId, contactId: { in: ids } }, orderBy: [{ checkedOn: 'desc' }, { createdAt: 'desc' }] });
     const byGstin = new Map<string, string[]>();

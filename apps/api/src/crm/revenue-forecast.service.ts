@@ -4,7 +4,7 @@ import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, todayIso, toDbDate } from '../common/dates';
-import { PrismaService } from '../common/prisma.service';
+import { PrismaService, Tx } from '../common/prisma.service';
 
 export interface ForecastOrg {
   id: string;
@@ -35,28 +35,13 @@ export class RevenueForecastService {
         select: { id: true, number: true, title: true, contactId: true, startDate: true, endDate: true, frequency: true, timing: true, nextPeriodNo: true, autoRenew: true, subtotal: true },
         orderBy: { number: 'asc' },
       }),
-      this.prisma.$queryRaw<{ order_id: string; number: number; contact_id: string; quantity: Prisma.Decimal; net_amount: Prisma.Decimal; billed: Prisma.Decimal }[]>`
-        SELECT o.id AS order_id, o.number, o.contact_id, l.quantity, l.net_amount,
-               COALESCE((SELECT SUM(b.quantity) FROM sales_order_billings b JOIN documents d ON d.id = b.document_id
-                         WHERE b.order_line_id = l.id AND d.status <> 'VOID'), 0) AS billed
-        FROM sales_orders o JOIN sales_order_lines l ON l.order_id = o.id AND l.org_id = o.org_id
-        WHERE o.org_id = ${org.id}::uuid AND o.status = 'OPEN'`,
+      this.openOrderLines(org.id),
       this.prisma.crmDeal.findMany({
         where: { orgId: org.id, stage: { in: ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION'] } },
         select: { id: true, number: true, name: true, contactId: true, amount: true, probability: true, expectedCloseDate: true },
       }),
       // Revenue by month and whether it came from a contract or an order.
-      this.prisma.$queryRaw<{ month: string; other: boolean; revenue: Prisma.Decimal }[]>`
-        SELECT to_char(x.issue_date, 'YYYY-MM') AS month,
-               NOT (EXISTS (SELECT 1 FROM sales_contract_periods p WHERE p.document_id = x.id)
-                    OR EXISTS (SELECT 1 FROM sales_order_billings b WHERE b.document_id = x.id)) AS other,
-               SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE -l.net_amount END) AS revenue
-        FROM documents x
-        JOIN document_lines l ON l.document_id = x.id AND l.org_id = x.org_id
-        JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-        WHERE x.org_id = ${org.id}::uuid AND x.kind IN ('INVOICE', 'CREDIT_NOTE') AND x.status = 'POSTED' AND a.type = 'REVENUE'
-          AND x.issue_date >= ${runFrom}::date AND x.issue_date <= ${toDbDate(today)}::date
-        GROUP BY month, other`,
+      this.revenueLines(this.prisma, org.id, runFrom, toDbDate(today)).then((rows) => this.byMonthAndSource(org.id, rows)),
     ]);
     const contactIds = [...new Set([...contracts.map((c) => c.contactId), ...orderLines.map((o) => o.contact_id), ...deals.map((d) => d.contactId)])];
     const names = new Map((await this.prisma.contact.findMany({ where: { orgId: org.id, id: { in: contactIds } }, select: { id: true, name: true } })).map((c) => [c.id, c.name]));
@@ -138,7 +123,7 @@ export class RevenueForecastService {
     };
   }
 
-  async get(org: ForecastOrg, id: string, today = todayIso(), db: Pick<PrismaService, 'revenueForecast' | '$queryRaw' | 'user'> = this.prisma) {
+  async get(org: ForecastOrg, id: string, today = todayIso(), db: Tx | PrismaService = this.prisma) {
     const r = await db.revenueForecast.findFirst({ where: { id, orgId: org.id } });
     if (!r) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Saved forecast not found' });
     const actual = await this.actualByMonth(org, fromDbDate(r.asOf), today, db);
@@ -173,16 +158,58 @@ export class RevenueForecastService {
     return revenueForecastAccuracy(data.months, r.actualSoFar.toFixed(), actual, today.slice(0, 7), minorUnits(org.functionalCurrency));
   }
 
-  private async actualByMonth(org: ForecastOrg, from: string, today: string, db: Pick<PrismaService, '$queryRaw'> = this.prisma) {
-    const rows = await db.$queryRaw<{ month: string; revenue: Prisma.Decimal }[]>`
-      SELECT to_char(x.issue_date, 'YYYY-MM') AS month, SUM(CASE WHEN x.kind = 'INVOICE' THEN l.net_amount ELSE -l.net_amount END) AS revenue
-      FROM documents x
-      JOIN document_lines l ON l.document_id = x.id AND l.org_id = x.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE x.org_id = ${org.id}::uuid AND x.kind IN ('INVOICE', 'CREDIT_NOTE') AND x.status = 'POSTED' AND a.type = 'REVENUE'
-        AND x.issue_date >= ${toDbDate(`${from.slice(0, 7)}-01`)}::date AND x.issue_date <= ${toDbDate(today)}::date
-      GROUP BY month`;
+  private async actualByMonth(org: ForecastOrg, from: string, today: string, db: Tx | PrismaService = this.prisma) {
+    const per = new Map<string, Prisma.Decimal>();
+    for (const r of await this.revenueLines(db, org.id, toDbDate(`${from.slice(0, 7)}-01`), toDbDate(today))) per.set(r.month, (per.get(r.month) ?? new Prisma.Decimal(0)).plus(r.revenue));
+    const rows = [...per.entries()].map(([month, revenue]) => ({ month, revenue }));
     return new Map(rows.map((r) => [r.month, r.revenue.toFixed()]));
+  }
+
+  /** Revenue lines of posted invoices (less credit notes) issued between the dates, per document, by month. */
+  private async revenueLines(db: Tx | PrismaService, orgId: string, from: Date, to: Date) {
+    const revenue = new Set((await db.account.findMany({ where: { orgId, type: 'REVENUE' }, select: { id: true } })).map((a) => a.id));
+    const docs = await db.document.findMany({ where: { orgId, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { gte: from, lte: to } }, select: { id: true, kind: true, issueDate: true, lines: { select: { accountId: true, netAmount: true } } } });
+    return docs
+      .map((d) => {
+        const lines = d.lines.filter((l) => revenue.has(l.accountId));
+        const sum = lines.reduce((t, l) => (d.kind === 'INVOICE' ? t.plus(l.netAmount) : t.minus(l.netAmount)), new Prisma.Decimal(0));
+        return { documentId: d.id, month: fromDbDate(d.issueDate).slice(0, 7), revenue: sum, lines: lines.length };
+      })
+      .filter((r) => r.lines > 0);
+  }
+
+  /** Revenue by month and whether it came from a contract or an order (`other` when from neither). */
+  private async byMonthAndSource(orgId: string, rows: { documentId: string; month: string; revenue: Prisma.Decimal }[]) {
+    const ids = rows.map((r) => r.documentId);
+    const [periods, billings] = ids.length
+      ? await Promise.all([
+          this.prisma.salesContractPeriod.findMany({ where: { orgId, documentId: { in: ids } }, select: { documentId: true } }),
+          this.prisma.salesOrderBilling.findMany({ where: { orgId, documentId: { in: ids } }, select: { documentId: true } }),
+        ])
+      : [[], []];
+    const linked = new Set([...periods.map((p) => p.documentId), ...billings.map((b) => b.documentId)]);
+    const out = new Map<string, { month: string; other: boolean; revenue: Prisma.Decimal }>();
+    for (const r of rows) {
+      const other = !linked.has(r.documentId);
+      const k = `${r.month}|${other}`;
+      out.set(k, { month: r.month, other, revenue: (out.get(k)?.revenue ?? new Prisma.Decimal(0)).plus(r.revenue) });
+    }
+    return [...out.values()];
+  }
+
+  /** Lines of open sales orders with the quantity billed on documents that are not void. */
+  private async openOrderLines(orgId: string) {
+    const lines = await this.prisma.salesOrderLine.findMany({ where: { orgId, order: { status: 'OPEN' } }, select: { id: true, quantity: true, netAmount: true, order: { select: { id: true, number: true, contactId: true } } } });
+    const billings = lines.length ? await this.prisma.salesOrderBilling.findMany({ where: { orgId, orderLineId: { in: lines.map((l) => l.id) } }, select: { orderLineId: true, documentId: true, quantity: true } }) : [];
+    const voided = new Set((billings.length ? await this.prisma.document.findMany({ where: { orgId, id: { in: [...new Set(billings.map((b) => b.documentId))] }, status: 'VOID' }, select: { id: true } }) : []).map((d) => d.id));
+    return lines.map((l) => ({
+      order_id: l.order.id,
+      number: l.order.number,
+      contact_id: l.order.contactId,
+      quantity: l.quantity,
+      net_amount: l.netAmount,
+      billed: billings.filter((b) => b.orderLineId === l.id && !voided.has(b.documentId)).reduce((t, b) => t.plus(b.quantity), new Prisma.Decimal(0)),
+    }));
   }
 
   private async userNames(ids: string[]) {

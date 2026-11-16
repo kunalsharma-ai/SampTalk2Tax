@@ -20,6 +20,8 @@ import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { BANK_IMPORTS, BANK_LINES, BANK_MATCHES, BANK_RECONCILIATIONS } from '../db/collections/banking';
 import { MovedTables } from '../db/moved-table';
+import { DocumentStoreService } from '../common/document-store.service';
+import { ledgerLines, lineSums, postedBetween, type LedgerLine } from '../db/ledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { DocumentsService } from '../ledgers/documents.service';
@@ -37,6 +39,8 @@ const BANK_SUBTYPES = ['BANK', 'CASH'];
 const entryNo = (n: number | null) => (n ? `JE-${String(n).padStart(6, '0')}` : null);
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 const addDay = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
+const toRow = (l: LedgerLine): LedgerLineRow => ({ id: l.id, entry_id: l.entry_id, entry_number: l.entry_number, date: l.date, memo: l.memo, reference: l.reference, description: l.description, source: l.source, reverses_entry_id: l.reverses_entry_id, net: new Prisma.Decimal(l.net.toFixed()) });
 
 interface LedgerLineRow {
   id: string;
@@ -68,6 +72,7 @@ export class BankingService {
     private readonly journals: JournalsService,
     private readonly documents: DocumentsService,
     private readonly moved: MovedTables,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------- accounts
@@ -80,14 +85,11 @@ export class BankingService {
     const ids = accounts.map((a) => a.id);
     if (!ids.length) return [];
     const [ledger, lines, recs] = await Promise.all([
-      this.prisma.$queryRaw<{ account_id: string; net: Prisma.Decimal }[]>`
-        SELECT jl.account_id, SUM(jl.functional_debit - jl.functional_credit) AS net
-        FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id
-        WHERE jl.org_id = ${org.id}::uuid AND je.status = 'POSTED' AND jl.account_id = ANY(${ids}::uuid[])
-        GROUP BY jl.account_id`,
-      this.prisma.$queryRaw<{ account_id: string; unmatched: bigint; total: bigint; last_date: Date | null }[]>`
-        SELECT account_id, COUNT(*) FILTER (WHERE status = 'UNMATCHED') AS unmatched, COUNT(*) AS total, MAX(date) AS last_date
-        FROM bank_statement_lines WHERE org_id = ${org.id}::uuid GROUP BY account_id`,
+      lineSums(this.store, org.id, { entry: { status: 'POSTED' }, line: { accountId: { $in: ids } }, by: { accountId: 'lines.accountId' } }).then((r) => r.map((x) => ({ account_id: x.key.accountId as string, net: x.debit.minus(x.credit) }))),
+      Promise.all([
+        this.prisma.bankStatementLine.groupBy({ by: ['accountId'], where: { orgId: org.id }, _count: true, _max: { date: true } }),
+        this.prisma.bankStatementLine.groupBy({ by: ['accountId'], where: { orgId: org.id, status: 'UNMATCHED' }, _count: true }),
+      ]).then(([all, open]) => all.map((g) => ({ account_id: g.accountId, total: g._count, unmatched: open.find((o) => o.accountId === g.accountId)?._count ?? 0, last_date: g._max.date }))),
       this.prisma.bankReconciliation.findMany({ where: { orgId: org.id, status: 'COMPLETED' }, orderBy: { statementDate: 'desc' } }),
     ]);
     const scale = minorUnits(org.functionalCurrency);
@@ -475,25 +477,20 @@ export class BankingService {
     const movement = inRange.filter((l) => l.status !== 'EXCLUDED').reduce((s, l) => s.plus(l.amount.toString()), new D(0));
     const unmatched = inRange.filter((l) => l.status === 'UNMATCHED');
 
-    const [{ net }] = await db.$queryRaw<{ net: Prisma.Decimal | null }[]>`
-      SELECT SUM(jl.functional_debit - jl.functional_credit) AS net
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id
-      WHERE jl.org_id = ${org.id}::uuid AND jl.account_id = ${accountId}::uuid AND je.status = 'POSTED' AND je.date <= ${toDbDate(statementDate)}::date`;
-    const ledgerBalance = new D((net ?? 0).toString());
+    const [bal] = await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(statementDate)), line: { accountId }, by: {} });
+    const ledgerBalance = bal ? bal.debit.minus(bal.credit) : new D(0);
 
-    const uncleared = await db.$queryRaw<LedgerLineRow[]>`
-      SELECT jl.id, jl.entry_id, je.entry_number, je.date, je.memo, je.reference, jl.description, je.source::text AS source, je.reverses_entry_id,
-             (jl.functional_debit - jl.functional_credit) AS net
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id
-      WHERE jl.org_id = ${org.id}::uuid AND jl.account_id = ${accountId}::uuid AND je.status = 'POSTED'
-        AND je.date <= ${toDbDate(statementDate)}::date
-        AND NOT EXISTS (
-          SELECT 1 FROM bank_matches m JOIN bank_statement_lines s ON s.id = m.statement_line_id
-          WHERE m.journal_line_id = jl.id AND m.removed_at IS NULL AND s.date <= ${toDbDate(statementDate)}::date)
-        AND (je.date >= ${toDbDate(clearedBefore)}::date OR EXISTS (
-          SELECT 1 FROM bank_matches m JOIN bank_statement_lines s ON s.id = m.statement_line_id
-          WHERE m.journal_line_id = jl.id AND m.removed_at IS NULL))
-      ORDER BY je.date, je.entry_number`;
+    const onAccount = await ledgerLines(this.store, org.id, { entry: postedBetween(null, toDbDate(statementDate)), line: { accountId } });
+    const matchedOn = await this.activeMatchDates(db, org.id, onAccount.map((l) => l.id));
+    const cutoff = toDbDate(statementDate);
+    const before = toDbDate(clearedBefore);
+    const uncleared = onAccount
+      .filter((l) => {
+        const dates = matchedOn.get(l.id) ?? [];
+        if (dates.some((d) => d <= cutoff)) return false;
+        return l.date >= before || dates.length > 0;
+      })
+      .map(toRow);
     const outstanding = dropReversalPairs(uncleared);
     const unclearedTotal = outstanding.reduce((s, r) => s.plus(r.net.toString()), new D(0));
 
@@ -522,12 +519,11 @@ export class BankingService {
     this.assertOpen(line);
     const ids = [...new Set(journalLineIds)];
     if (!ids.length) throw new DomainError('INVALID_MATCH', 'Choose at least one ledger line');
-    const rows = await tx.$queryRaw<{ id: string; account_id: string; status: string; net: Prisma.Decimal; matched: boolean }[]>`
-      SELECT jl.id, jl.account_id, je.status::text AS status, (jl.functional_debit - jl.functional_credit) AS net,
-             EXISTS (SELECT 1 FROM bank_matches m WHERE m.journal_line_id = jl.id AND m.removed_at IS NULL) AS matched
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id
-      WHERE jl.org_id = ${org.id}::uuid AND jl.id = ANY(${ids}::uuid[])
-      FOR UPDATE OF jl`;
+    // The PostgreSQL copy of the lines is still locked, so two matches of one line wait for each other.
+    await tx.$queryRaw`SELECT jl.id FROM journal_lines jl WHERE jl.org_id = ${org.id}::uuid AND jl.id = ANY(${ids}::uuid[]) FOR UPDATE`;
+    const found = await ledgerLines(this.store, org.id, { line: { id: { $in: ids } } });
+    const active = await this.activeMatchDates(tx, org.id, ids);
+    const rows = found.map((l) => ({ id: l.id, account_id: l.account_id, status: l.status, net: l.net, matched: (active.get(l.id) ?? []).length > 0 }));
     const issues: string[] = [];
     if (rows.length !== ids.length) issues.push('Some ledger lines were not found');
     for (const r of rows) {
@@ -555,18 +551,24 @@ export class BankingService {
     );
   }
 
-  unmatchedLedgerLines(db: Tx | PrismaService, orgId: string, accountId: string, q: { from: string; to: string; search?: string }) {
-    const search = q.search?.trim() ? Prisma.sql`AND (je.memo ILIKE ${'%' + q.search.trim() + '%'} OR je.reference ILIKE ${'%' + q.search.trim() + '%'} OR jl.description ILIKE ${'%' + q.search.trim() + '%'})` : Prisma.empty;
-    return db.$queryRaw<LedgerLineRow[]>`
-      SELECT jl.id, jl.entry_id, je.entry_number, je.date, je.memo, je.reference, jl.description, je.source::text AS source, je.reverses_entry_id,
-             (jl.functional_debit - jl.functional_credit) AS net
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id
-      WHERE jl.org_id = ${orgId}::uuid AND jl.account_id = ${accountId}::uuid AND je.status = 'POSTED'
-        AND je.date BETWEEN ${toDbDate(q.from)}::date AND ${toDbDate(q.to)}::date
-        AND NOT EXISTS (SELECT 1 FROM bank_matches m WHERE m.journal_line_id = jl.id AND m.removed_at IS NULL)
-        ${search}
-      ORDER BY je.date, je.entry_number
-      LIMIT 1000`;
+  async unmatchedLedgerLines(db: Tx | PrismaService, orgId: string, accountId: string, q: { from: string; to: string; search?: string }) {
+    const term = q.search?.trim().toLowerCase();
+    const lines = await ledgerLines(this.store, orgId, { entry: postedBetween(toDbDate(q.from), toDbDate(q.to)), line: { accountId } });
+    const matched = await this.activeMatchDates(db, orgId, lines.map((l) => l.id));
+    return lines
+      .filter((l) => !matched.has(l.id))
+      .filter((l) => !term || [l.memo, l.reference, l.description].some((t) => t?.toLowerCase().includes(term)))
+      .slice(0, 1000)
+      .map(toRow);
+  }
+
+  /** For each journal line, the statement dates of the bank matches on it that are not removed. */
+  private async activeMatchDates(db: Tx | PrismaService, orgId: string, journalLineIds: string[]) {
+    const out = new Map<string, Date[]>();
+    if (!journalLineIds.length) return out;
+    const matches = await db.bankMatch.findMany({ where: { orgId, journalLineId: { in: journalLineIds }, removedAt: null }, select: { journalLineId: true, statementLine: { select: { date: true } } } });
+    for (const m of matches) out.set(m.journalLineId, [...(out.get(m.journalLineId) ?? []), m.statementLine.date]);
+    return out;
   }
 
   private async serializeLines(

@@ -395,16 +395,26 @@ export class AlertsService {
         const month = shiftMonth(today.slice(0, 7), -1);
         const from = `${shiftMonth(month, -lookback)}-01`;
         const to = `${shiftMonth(month, 1)}-01`;
-        const rows = await this.prisma.$queryRaw<{ contact_id: string; name: string; month: string; amount: Prisma.Decimal; n: bigint; last_id: string; last_number: string }[]>`
-          SELECT d.contact_id, c.name, to_char(d.issue_date, 'YYYY-MM') AS month,
-                 SUM(CASE WHEN d.kind = 'INVOICE' THEN d.subtotal ELSE -d.subtotal END) AS amount,
-                 COUNT(*) FILTER (WHERE d.kind = 'INVOICE') AS n,
-                 (array_agg(d.id::text ORDER BY d.issue_date DESC, d.number DESC) FILTER (WHERE d.kind = 'INVOICE'))[1] AS last_id,
-                 (array_agg(d.number ORDER BY d.issue_date DESC, d.number DESC) FILTER (WHERE d.kind = 'INVOICE'))[1] AS last_number
-          FROM documents d JOIN contacts c ON c.id = d.contact_id
-          WHERE d.org_id = ${orgId}::uuid AND d.kind IN ('INVOICE', 'CREDIT_NOTE') AND d.status = 'POSTED'
-            AND d.issue_date >= ${toDbDate(from)}::date AND d.issue_date < ${toDbDate(to)}::date
-          GROUP BY 1, 2, 3`;
+        const docs = await this.prisma.document.findMany({
+          where: { orgId, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { gte: toDbDate(from), lt: toDbDate(to) } },
+          select: { id: true, kind: true, contactId: true, number: true, issueDate: true, subtotal: true },
+        });
+        const contactName = new Map((docs.length ? await this.prisma.contact.findMany({ where: { orgId, id: { in: [...new Set(docs.map((d) => d.contactId))] } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+        // By customer and month: invoices less credit notes, and the latest invoice (by date, then number).
+        const groups = new Map<string, { contact_id: string; name: string; month: string; amount: Prisma.Decimal; n: number; last: (typeof docs)[number] | null }>();
+        for (const d of docs) {
+          const month = fromDbDate(d.issueDate).slice(0, 7);
+          const k = `${d.contactId}|${month}`;
+          const g = groups.get(k) ?? { contact_id: d.contactId, name: contactName.get(d.contactId) ?? '', month, amount: new Prisma.Decimal(0), n: 0, last: null };
+          g.amount = d.kind === 'INVOICE' ? g.amount.plus(d.subtotal) : g.amount.minus(d.subtotal);
+          if (d.kind === 'INVOICE') {
+            g.n += 1;
+            const l = g.last;
+            if (!l || d.issueDate > l.issueDate || (d.issueDate.getTime() === l.issueDate.getTime() && (d.number ?? '') > (l.number ?? ''))) g.last = d;
+          }
+          groups.set(k, g);
+        }
+        const rows = [...groups.values()].map((g) => ({ ...g, last_id: g.last?.id ?? null, last_number: g.last?.number ?? '' }));
         const name = new Map(rows.map((r) => [r.contact_id, r.name]));
         const last = new Map<string, { id: string; number: string; month: string }>();
         for (const r of rows) if (r.last_id && (!last.has(r.contact_id) || last.get(r.contact_id)!.month < r.month)) last.set(r.contact_id, { id: r.last_id, number: r.last_number, month: r.month });

@@ -5,6 +5,8 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService } from '../common/prisma.service';
 
 export interface DimOrg {
@@ -34,6 +36,7 @@ export class DimensionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   private serialize(v: { id: string; type: DimensionType; code: string; name: string; description: string | null; customer: string | null; contactId: string | null; contact?: { name: string } | null; startDate: Date | null; endDate: Date | null; isActive: boolean; createdAt: Date }, usage?: { lines: number }) {
@@ -57,9 +60,10 @@ export class DimensionsService {
   /** Every department and project, with how many posted journal lines use each. */
   async list(org: DimOrg, type?: DimensionType) {
     const rows = await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, ...(type ? { type } : {}) }, include: { contact: { select: { name: true } } }, orderBy: [{ type: 'asc' }, { code: 'asc' }] });
-    const counts = await this.prisma.$queryRaw<{ id: string; n: bigint }[]>`
-      SELECT v.id, (SELECT COUNT(*) FROM journal_lines l WHERE l.org_id = v.org_id AND (l.department_id = v.id OR l.project_id = v.id)) AS n
-      FROM dimension_values v WHERE v.org_id = ${org.id}::uuid`;
+    const tagged = await lineSums(this.store, org.id, { entry: { $or: [{ 'lines.departmentId': { $type: 'string' } }, { 'lines.projectId': { $type: 'string' } }] }, by: { department: 'lines.departmentId', project: 'lines.projectId' } });
+    const counted = new Map<string, number>();
+    for (const t of tagged) for (const id of [t.key.department, t.key.project]) if (typeof id === 'string') counted.set(id, (counted.get(id) ?? 0) + t.lines);
+    const counts = [...counted.entries()].map(([id, n]) => ({ id, n }));
     const n = new Map(counts.map((c) => [c.id, Number(c.n)]));
     return { values: rows.map((v) => this.serialize(v, { lines: n.get(v.id) ?? 0 })), can: { manage: hasPermission(org.role, 'accounts.manage') } };
   }
@@ -152,16 +156,14 @@ export class DimensionsService {
   async profit(org: DimOrg, q: { type: DimensionType; from: string; to: string; includeInactive?: boolean }) {
     if (q.from > q.to) throw new DomainError('INVALID_RANGE', 'The start must be on or before the end');
     const values = await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, type: q.type }, orderBy: { code: 'asc' } });
-    const col = q.type === 'DEPARTMENT' ? Prisma.sql`l.department_id` : Prisma.sql`l.project_id`;
-    const rows = await this.prisma.$queryRaw<{ account_id: string; code: string; name: string; type: 'REVENUE' | 'EXPENSE'; value_id: string | null; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
-      SELECT a.id AS account_id, a.code, a.name, a.type::text AS type, ${col} AS value_id,
-             SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id
-      WHERE l.org_id = ${org.id}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND a.type IN ('REVENUE', 'EXPENSE')
-        AND e.date >= ${toDbDate(q.from)}::date AND e.date <= ${toDbDate(q.to)}::date
-      GROUP BY a.id, a.code, a.name, a.type, ${col}`;
+    const accounts = new Map((await this.prisma.account.findMany({ where: { orgId: org.id, type: { in: ['REVENUE', 'EXPENSE'] } }, select: { id: true, code: true, name: true, type: true } })).map((a) => [a.id, a]));
+    const sums = accounts.size
+      ? await lineSums(this.store, org.id, { entry: postedBetween(toDbDate(q.from), toDbDate(q.to), { excludeClosing: true }), line: { accountId: { $in: [...accounts.keys()] } }, by: { accountId: 'lines.accountId', valueId: q.type === 'DEPARTMENT' ? 'lines.departmentId' : 'lines.projectId' } })
+      : [];
+    const rows = sums.map((r) => {
+      const a = accounts.get(r.key.accountId as string)!;
+      return { account_id: a.id, code: a.code, name: a.name, type: a.type as 'REVENUE' | 'EXPENSE', value_id: (r.key.valueId as string | null) ?? null, debit: r.debit, credit: r.credit };
+    });
     const used = new Set(rows.map((r) => r.value_id).filter(Boolean));
     const shown = values.filter((v) => v.isActive || q.includeInactive || used.has(v.id));
     const report = profitByDimension(

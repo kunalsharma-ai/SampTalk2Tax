@@ -151,49 +151,50 @@ export class DocumentsService {
     const kinds = q.kind ? [q.kind] : [k.charge, k.credit];
     this.assertKinds(ledger, kinds);
     const today = toDbDate(todayIso());
-    const view = {
-      all: Prisma.empty,
-      draft: Prisma.sql`AND d.status = 'DRAFT'`,
-      void: Prisma.sql`AND d.status = 'VOID'`,
-      open: Prisma.sql`AND d.status = 'POSTED' AND d.total > COALESCE(a.used, 0)`,
-      overdue: Prisma.sql`AND d.status = 'POSTED' AND d.total > COALESCE(a.used, 0) AND d.due_date < ${today}::date AND d.kind IN ('INVOICE', 'BILL')`,
-      paid: Prisma.sql`AND d.status = 'POSTED' AND d.total = COALESCE(a.used, 0)`,
-    }[q.view];
-    const contact = q.contactId ? Prisma.sql`AND d.contact_id = ${q.contactId}::uuid` : Prisma.empty;
-    const kindList = Prisma.join(kinds.map((x) => Prisma.sql`${x}::"DocumentKind"`));
-    const base = Prisma.sql`
-      FROM documents d
-      JOIN contacts c ON c.id = d.contact_id
-      LEFT JOIN LATERAL (
-        SELECT SUM(amount) AS used FROM allocations al
-        WHERE al.removed_on IS NULL AND (al.target_id = d.id OR al.credit_document_id = d.id)
-      ) a ON true
-      WHERE d.org_id = ${org.id}::uuid AND d.kind IN (${kindList}) ${view} ${contact}`;
-    const [{ count }] = await this.prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) AS count ${base}`;
-    const rows = await this.prisma.$queryRaw<
-      {
-        id: string;
-        kind: DocumentKind;
-        status: string;
-        number: string | null;
-        contact_id: string;
-        contact_name: string;
-        issue_date: Date;
-        due_date: Date;
-        reference: string | null;
-        currency: string;
-        exchange_rate: Prisma.Decimal;
-        subtotal: Prisma.Decimal;
-        tax_total: Prisma.Decimal;
-        total: Prisma.Decimal;
-        used: Prisma.Decimal | null;
-        debit_note: boolean;
-      }[]
-    >`SELECT d.id, d.kind, d.status::text AS status, d.number, (d.debit_note_for_id IS NOT NULL) AS debit_note, d.contact_id, c.name AS contact_name, d.issue_date, d.due_date, d.reference,
-             d.currency, d.exchange_rate, d.subtotal, d.tax_total, d.total, a.used
-      ${base}
-      ORDER BY d.issue_date DESC, d.number DESC NULLS FIRST, d.created_at DESC
-      LIMIT ${q.limit} OFFSET ${q.offset}`;
+    const docs = await this.prisma.document.findMany({
+      where: {
+        orgId: org.id,
+        kind: { in: kinds },
+        ...(q.contactId ? { contactId: q.contactId } : {}),
+        ...(q.view === 'draft' ? { status: 'DRAFT' } : q.view === 'void' ? { status: 'VOID' } : q.view === 'all' ? {} : { status: 'POSTED' }),
+        ...(q.view === 'overdue' ? { dueDate: { lt: today }, kind: { in: kinds.filter((x) => x === 'INVOICE' || x === 'BILL') } } : {}),
+      },
+      select: { id: true, kind: true, status: true, number: true, debitNoteForId: true, contactId: true, issueDate: true, dueDate: true, reference: true, currency: true, exchangeRate: true, subtotal: true, taxTotal: true, total: true, createdAt: true },
+    });
+    // What has been used of each: allocations to it, or (for a credit) from it.
+    const ids = docs.map((d) => d.id);
+    const allocs = ids.length ? await this.prisma.allocation.findMany({ where: { orgId: org.id, removedOn: null, OR: [{ targetId: { in: ids } }, { creditDocumentId: { in: ids } }] }, select: { targetId: true, creditDocumentId: true, amount: true } }) : [];
+    const used = new Map<string, Prisma.Decimal>();
+    const add = (id: string | null, v: Prisma.Decimal) => id && used.set(id, (used.get(id) ?? new Prisma.Decimal(0)).plus(v));
+    for (const a of allocs) {
+      add(a.targetId, a.amount);
+      if (a.creditDocumentId !== a.targetId) add(a.creditDocumentId, a.amount);
+    }
+    const usedOf = (id: string) => used.get(id) ?? new Prisma.Decimal(0);
+    const shown = docs.filter((d) => (q.view === 'open' || q.view === 'overdue' ? d.total.gt(usedOf(d.id)) : q.view === 'paid' ? d.total.eq(usedOf(d.id)) : true));
+    // As PostgreSQL ordered them: newest first, then number descending with drafts (no number) first, then newest created.
+    shown.sort((a, b) => b.issueDate.getTime() - a.issueDate.getTime() || (a.number === b.number ? 0 : a.number === null ? -1 : b.number === null ? 1 : a.number < b.number ? 1 : -1) || b.createdAt.getTime() - a.createdAt.getTime());
+    const count = shown.length;
+    const page = shown.slice(q.offset, q.offset + q.limit);
+    const names = new Map((page.length ? await this.prisma.contact.findMany({ where: { orgId: org.id, id: { in: [...new Set(page.map((d) => d.contactId))] } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+    const rows = page.map((d) => ({
+      id: d.id,
+      kind: d.kind,
+      status: d.status as string,
+      number: d.number,
+      contact_id: d.contactId,
+      contact_name: names.get(d.contactId) ?? '',
+      issue_date: d.issueDate,
+      due_date: d.dueDate,
+      reference: d.reference,
+      currency: d.currency as string,
+      exchange_rate: d.exchangeRate,
+      subtotal: d.subtotal,
+      tax_total: d.taxTotal,
+      total: d.total,
+      used: used.has(d.id) ? usedOf(d.id) : null,
+      debit_note: d.debitNoteForId !== null,
+    }));
     const todayIsoStr = todayIso();
     return {
       total: Number(count),
@@ -715,10 +716,11 @@ export class DocumentsService {
     const dueDate = !isCharge ? input.issueDate : (input.dueDate ?? addDays(input.issueDate, contact.paymentTermsDays));
     if (dueDate < input.issueDate) throw new DomainError('INVALID_DATE', 'The due date cannot be before the issue date');
     if (input.kind === 'BILL' && input.reference) {
-      const dup = await tx.$queryRaw<{ number: string | null }[]>`
-        SELECT number FROM documents WHERE org_id = ${org.id}::uuid AND contact_id = ${input.contactId}::uuid AND kind = 'BILL'
-          AND status <> 'VOID' AND lower(reference) = lower(${input.reference})
-          AND id <> ${excludeId ?? '00000000-0000-0000-0000-000000000000'}::uuid LIMIT 1`;
+      const dup = await tx.document.findMany({
+        where: { orgId: org.id, contactId: input.contactId, kind: 'BILL', status: { not: 'VOID' }, reference: { equals: input.reference, mode: 'insensitive' }, id: { not: excludeId ?? '00000000-0000-0000-0000-000000000000' } },
+        select: { number: true },
+        take: 1,
+      });
       if (dup[0]) {
         throw new DomainError('DUPLICATE_BILL', `This vendor's invoice "${input.reference}" is already entered${dup[0].number ? ` as ${dup[0].number}` : ' as a draft'}`, HttpStatus.CONFLICT);
       }
