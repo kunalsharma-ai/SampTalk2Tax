@@ -68,7 +68,20 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 
 The control-account trigger also refuses bank-entry journals (`source = BANK`) on the receivables / payables accounts; money from customers and to vendors is recorded as a receipt or payment instead.
 
-All are exercised by `apps/api/test/ledger.e2e.test.ts` and `apps/api/test/sales-purchases.e2e.test.ts`, including direct-SQL tampering attempts. The M2 triggers are in migrations `20261031171500_sales_purchases` and `20261031180000_banking` (exercised by `apps/api/test/banking.e2e.test.ts`) `20261031190000_attachments_approvals` (exercised by `apps/api/test/attachments-approvals.e2e.test.ts`) `20261031200000_expense_claims` (exercised by `apps/api/test/expenses.e2e.test.ts`) and `20261031210000_auth_sessions` (exercised by `apps/api/test/sessions-security.e2e.test.ts`).
+All are exercised by `apps/api/test/ledger.e2e.test.ts` and `apps/api/test/sales-purchases.e2e.test.ts`, including direct-SQL tampering attempts. The M2 triggers are in migrations `20261031171500_sales_purchases` and `20261031180000_banking` (exercised by `apps/api/test/banking.e2e.test.ts`) `20261031190000_attachments_approvals` (exercised by `apps/api/test/attachments-approvals.e2e.test.ts`) `20261031200000_expense_claims` (exercised by `apps/api/test/expenses.e2e.test.ts`) `20261031210000_auth_sessions` (exercised by `apps/api/test/sessions-security.e2e.test.ts`) and `20261031220000_row_level_security` (exercised by `apps/api/test/row-level-security.e2e.test.ts`).
+
+## Row-level security
+
+Migration `20261031220000_row_level_security` enables and forces row-level security on every table with an `org_id`, plus `organizations`. Policies compare rows with `t2t_current_org()`, `t2t_current_user()` and `t2t_rls_bypass()`, which read the transaction-local settings the API sets (see SECURITY.md). Summary:
+
+| Table | Visible / writable when |
+|---|---|
+| tables with `org_id` (22) | `org_id` is the current organisation |
+| `audit_events` | `org_id` is the current organisation; the global chain (`org_id` NULL) only with system access |
+| `memberships` | read: current organisation or the current user's own; write: current organisation |
+| `organizations` | read: current organisation or one the user belongs to; write: current organisation |
+
+Foreign-key checks are not affected (PostgreSQL runs them without row security). **Data migrations** that touch tenant rows must first run `SELECT set_config('t2t.bypass', 'on', true);` or they will see no rows.
 
 ## Entity relationships
 
@@ -88,4 +101,4 @@ accounts (bank) 1─* bank_reconciliations 1─* bank_statement_lines
 
 ## Planned additions
 
-Dimension masters (cost centre, department, project, location), recurring journal templates, exchange-rate tables, tax rules with effective dating (M3), row-level security policies.
+Dimension masters (cost centre, department, project, location), recurring journal templates, exchange-rate tables, tax rules with effective dating (M3).

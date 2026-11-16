@@ -61,7 +61,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Per-IP limits depend on the reverse proxy in front of the web app setting `X-Forwarded-For`; without one, the address can be faked (see SECURITY.md).
 * A session's "last active" time moves when its access token is renewed (every 15 minutes of use), not on every request.
 * Lockout is per email, so someone can keep an account locked by failing on purpose; there is no CAPTCHA or per-IP backoff on top yet.
-* Tenant isolation is enforced in the application and by composite foreign keys; PostgreSQL row-level security is not enabled yet.
+* Tenant isolation is enforced in the application, by composite foreign keys and by PostgreSQL row-level security. `users`, `auth_sessions` and `login_throttles` are not tenant data and have no policies. Every statement outside a transaction costs one extra round trip for the tenant settings.
 * Members are added by existing email only; no invitation emails.
 * Segregation of duties (creator ≠ poster) is possible through roles but not enforced as a policy.
 

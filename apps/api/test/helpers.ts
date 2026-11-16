@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { createApp } from '../src/bootstrap';
+import { allowSystemAccessOutsideRequests } from '../src/common/tenant-context';
 import { loadConfig } from '../src/config';
 import { PrismaService } from '../src/common/prisma.service';
 
@@ -10,6 +11,9 @@ export interface Ctx {
   http: () => ReturnType<typeof request>;
   prisma: PrismaService;
 }
+
+/** Tests read and tamper with the database directly, as the system. */
+allowSystemAccessOutsideRequests();
 
 export async function bootApp(overrides: Record<string, string> = {}): Promise<Ctx> {
   const config = loadConfig({

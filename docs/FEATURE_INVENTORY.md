@@ -1261,7 +1261,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-032 | AI Security | capability | AI action logging | Not started |
 | SEC-033 | AI Security | capability | AI usage controls | Not started |
 | SEC-034 | AI Security | capability | Model access policies | Not started |
-| SEC-035 | AI Security | capability | Cross-tenant data leakage tests | Not started |
+| SEC-035 | AI Security | capability | Cross-tenant data leakage tests | Tested |
 | SEC-036 | AI Security | capability | Human approval gates | Implementing |
 | SEC-037 | AI Security | capability | Agent execution limits | Not started |
 | SEC-038 | AI Security | capability | AI emergency shutdown | Not started |

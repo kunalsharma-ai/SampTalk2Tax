@@ -46,6 +46,10 @@ Integration tests never drop or reset data. Each test registers its own users an
 | Tax-inclusive split | engine `splits the tax out of tax-inclusive amounts, half-even` |
 | Void preserves history | `voids only after allocations are removed, and posts an exact reversal` |
 
+## Tenant isolation below the application
+
+`apps/api/test/row-level-security.e2e.test.ts` skips the application's own filters, as a bug would: unfiltered queries, another tenant's id, raw SQL, inserts and updates aimed at another organisation, a stray root-client call inside a transaction, and a service patched to ignore its `orgId` during a real HTTP request. PostgreSQL must return only the caller's rows and refuse the writes. It also checks every `org_id` table has row security enabled and forced, and that the API's role cannot bypass it.
+
 ## Browser end-to-end tests
 
 `apps/web/e2e/ledger-flow.test.mjs` signs up a new user and walks the M1 flow in Chromium: signed-out redirect, registration and onboarding, an unbalanced journal that the form refuses, posting once it balances, the trial balance and dashboard reflecting the posting, reversing it, adding an account (and the server refusing a duplicate code), locking a period so posting fails and unlocking it, verifying the audit chain, the proxy refusing writes without the CSRF header, and no unexpected console errors. Responses the test provokes on purpose (409, 403, 404) are removed from the console check only for those steps.

@@ -12,12 +12,11 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: talk2tax
-          POSTGRES_PASSWORD: talk2tax
-          POSTGRES_DB: talk2tax_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U talk2tax"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       DATABASE_URL: postgresql://talk2tax:talk2tax@localhost:5432/talk2tax_test?schema=public
@@ -30,6 +29,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # The app connects as an ordinary role: a superuser would bypass row-level security.
+      - name: Create the application database role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE talk2tax LOGIN PASSWORD 'talk2tax' NOSUPERUSER NOBYPASSRLS NOCREATEROLE"
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE talk2tax_test OWNER talk2tax"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@talk2tax/database';
-import { PrismaService, Tx } from '../common/prisma.service';
+import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 
 export interface AuditInput {
   orgId: string | null;
@@ -32,6 +32,13 @@ export class AuditService {
    * advisory lock serialises appends per organisation so the chain cannot fork.
    */
   async append(tx: Tx, input: AuditInput): Promise<void> {
+    // Events with no organisation form one global chain shared by every user; reading its
+    // last link crosses tenants, so it is done with system access for this step only.
+    if (input.orgId === null) return withSystemAccess(tx, () => this.appendRow(tx, input));
+    return this.appendRow(tx, input);
+  }
+
+  private async appendRow(tx: Tx, input: AuditInput): Promise<void> {
     const chainKey = input.orgId ?? 'global';
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'audit:' + chainKey}))`;
     const prev = await tx.auditEvent.findFirst({

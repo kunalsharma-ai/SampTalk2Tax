@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1181 |
+| Not started | 1180 |
 | Designed | 0 |
 | Implementing | 29 |
 | Implemented | 30 |
-| Tested | 103 |
+| Tested | 104 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 21 | 0 |
 | Internationalization | M8 | 16 | 13 | 3 |
 | Integration marketplace | M6 | 50 | 50 | 0 |
-| Security and enterprise governance | M1 | 38 | 27 | 11 |
+| Security and enterprise governance | M1 | 38 | 26 | 12 |
 | User experience and onboarding | M1 | 22 | 17 | 5 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 32 | 0 |
@@ -933,10 +933,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Tested**
-- Notes: Application-level scoping plus database foreign keys. PostgreSQL row-level security is not enabled yet (see KNOWN_LIMITATIONS).
+- Notes: Application-level scoping, composite foreign keys, and PostgreSQL row-level security (forced, transaction-local tenant settings) on every tenant table.
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
   - Composite (id, org_id) foreign keys in schema
+  - packages/database/prisma/migrations/20261031220000_row_level_security
+  - apps/api/test/row-level-security.e2e.test.ts
 
 ### SEC-002 — Organization-level access controls
 
@@ -1019,6 +1021,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries
   - zod schemas on every endpoint
+
+### SEC-035 — Cross-tenant data leakage tests
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Covers API probes (404) and database-level checks that bypass application filters. No AI features exist yet, so AI-specific leakage tests are not applicable.
+- Evidence:
+  - apps/api/test/row-level-security.e2e.test.ts
+  - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
 
 ### SEC-036 — Human approval gates
 
