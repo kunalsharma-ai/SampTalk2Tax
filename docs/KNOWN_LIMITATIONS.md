@@ -79,7 +79,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Alerts and leakage checks (M4, slice 4)
 
-* Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run on request or when alerts are opened and the last run is over an hour old: no background schedule, and no email, push or chat notifications. No assignment, due dates or snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
+* Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run in the background (at most hourly per organisation, 20 organisations a pass), on request, and when alerts are opened. Priority is a fixed, explained formula, not learned. New alerts become tasks for a role by one setting for all checks; there are no email, push or chat notifications, no assignment to one person and no snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
 
 ## AI copilot (M4, slice 5)
 

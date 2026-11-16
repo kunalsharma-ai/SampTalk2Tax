@@ -50,6 +50,7 @@ import { CashFlowService } from './cash-flow/cash-flow.service';
 import { KpisController } from './kpis/kpis.controller';
 import { KpisService } from './kpis/kpis.service';
 import { AlertsController } from './alerts/alerts.controller';
+import { AlertsRunnerService } from './alerts/alerts-runner.service';
 import { AlertsService } from './alerts/alerts.service';
 import { BankAiController } from './bank-ai/bank-ai.controller';
 import { BankAiService } from './bank-ai/bank-ai.service';
@@ -220,6 +221,7 @@ export class AppModule {
         CashFlowService,
         KpisService,
         AlertsService,
+        AlertsRunnerService,
         CopilotTools,
         CopilotActionsService,
         CopilotService,

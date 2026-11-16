@@ -31,6 +31,14 @@ export interface Alert {
   lastSeenAt: string;
   clearedAt: string | null;
   reopenCount: number;
+  priority: Priority;
+}
+export type Band = 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW';
+export interface Priority {
+  /** 0 to 100; higher needs attention sooner. */
+  score: number;
+  band: Band;
+  reasons: string[];
 }
 export interface AlertDetail extends Alert {
   ruleDescription: string | null;
@@ -54,7 +62,18 @@ export interface AlertList {
   staleAfterMinutes: number;
   lastScan: Scan | null;
   summary: { open: number; acknowledged: number; dismissed: number; cleared: number; critical: number; warning: number; info: number };
+  /** Average monthly revenue the amounts were judged against; null with no revenue yet. */
+  monthlyRevenue: string | null;
+  bands: { urgent: number; high: number; normal: number; low: number };
   alerts: Alert[];
+}
+export interface NotificationSetting {
+  minSeverity: 'CRITICAL' | 'WARNING' | 'OFF';
+  taskRole: 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'APPROVER';
+  dueDays: number;
+  isDefault: boolean;
+  updatedBy: string | null;
+  updatedAt: string | null;
 }
 export interface AlertRule {
   key: string;
@@ -72,6 +91,12 @@ export const SEVERITY: Record<Severity, { label: string; tone: 'negative' | 'war
   CRITICAL: { label: 'Critical', tone: 'negative', bar: 'bg-negative' },
   WARNING: { label: 'Warning', tone: 'warning', bar: 'bg-warning' },
   INFO: { label: 'Info', tone: 'accent', bar: 'bg-accent' },
+};
+export const BAND: Record<Band, { label: string; tone: 'negative' | 'warning' | 'neutral' | 'accent' }> = {
+  URGENT: { label: 'Urgent', tone: 'negative' },
+  HIGH: { label: 'High', tone: 'warning' },
+  NORMAL: { label: 'Normal', tone: 'accent' },
+  LOW: { label: 'Low', tone: 'neutral' },
 };
 export const STATUS: Record<AlertStatus, { label: string; tone: 'neutral' | 'accent' | 'positive' | 'violet' }> = {
   OPEN: { label: 'Open', tone: 'neutral' },

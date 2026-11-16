@@ -389,6 +389,7 @@ export class CloseService {
           dueDate: due,
           link: { type: 'PERIOD_CLOSE', id: periodId },
           createdById: actor.id,
+          source: 'CLOSE',
         });
         existing[check.key] = t.id;
         created.push(check.key);

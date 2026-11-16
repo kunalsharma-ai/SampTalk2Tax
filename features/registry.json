@@ -32425,16 +32425,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/alerts.ts",
         "packages/accounting-engine/test/alerts.test.ts",
         "apps/api/src/alerts",
         "apps/api/test/alerts.e2e.test.ts",
+        "apps/api/test/continuous-alerts.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/alerts",
         "apps/web/e2e/alerts-flow.test.mjs",
-        "apps/web/src/app/orgs/[orgId]/alerts"
+        "apps/web/e2e/continuous-alerts-flow.test.mjs",
+        "docs/ALERTS_AND_LEAKAGE.md"
       ],
-      "notes": "Nine checks run on demand and automatically when alerts are opened and the last run is over an hour old, ordered by severity. No background schedule or notifications yet."
+      "notes": "Nine checks run in the background (ALERTS_RUNNER_INTERVAL_SECONDS, default 300; organisations with posted entries not checked in the last hour, oldest first, 20 a pass), on demand, and when alerts are opened. Every alert has a priority score 0-100 with its reasons (severity, money at stake against average monthly revenue, days open, times it came back, minus 15 when acknowledged) and the list is ordered by it. New and reopened alerts become tasks by a per-organisation setting (critical or warnings, role, due days), closed automatically when the alert clears or is dismissed. No email or push notifications yet."
     },
     {
       "id": "INNOV-006",
@@ -32454,14 +32457,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/src/tasks",
         "apps/web/src/app/orgs/[orgId]/tasks",
+        "apps/api/test/continuous-alerts.e2e.test.ts",
         "apps/api/test/workflows.e2e.test.ts",
-        "apps/web/e2e/automations-flow.test.mjs"
+        "apps/web/e2e/continuous-alerts-flow.test.mjs",
+        "apps/web/e2e/automations-flow.test.mjs",
+        "docs/ALERTS_AND_LEAKAGE.md"
       ],
-      "notes": "Task queue for people and automations: tasks for a person or a role, due dates, overdue, links to the record, done or cancelled with a note, audit trail. Tasks from AI agents are later work."
+      "notes": "One work queue for tasks from people, automations, the AI assistant (confirmed actions), alerts and the month-end close. Each task records its source (backfilled for earlier tasks), shows it, and the queue filters by it; tasks for a person or a role, due dates, overdue, links to the record, done or cancelled with a note, audit trail. Alert tasks close themselves."
     },
     {
       "id": "INNOV-007",
