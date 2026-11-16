@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
+import { pgOf } from '../src/db/mirror-writes';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
@@ -377,15 +378,15 @@ describe('one answer at a time, privacy and guards', () => {
     await ctx.http().post(`${C}/conversations/${mine[0].id}/messages`).set(viewer.auth).send({ question: 'Peek' }).expect(404);
     await ctx.http().delete(`${C}/conversations/${mine[0].id}`).set(viewer.auth).expect(404);
     await ctx.http().get(`${C}/conversations/${mine[0].id}`).set(stranger.auth).expect(404);
-    // Row-level security hides them from another member even inside the organisation.
+    // Row-level security hides them from another member even inside the organisation (PostgreSQL's own check, until it goes).
     const seen = await ctx.prisma.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', '', true), set_config('t2t.org_id', $1, true), set_config('t2t.user_id', $2, true)`, org.orgId, viewer.id);
-      return [await tx.copilotConversation.count(), await tx.copilotMessage.count()];
+      return [await pgOf(tx.copilotConversation as never).count(), await pgOf(tx.copilotMessage as never).count()];
     });
     expect(seen).toEqual([0, 0]);
     const own = await ctx.prisma.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', '', true), set_config('t2t.org_id', $1, true), set_config('t2t.user_id', $2, true)`, org.orgId, owner.id);
-      return tx.copilotConversation.count();
+      return pgOf(tx.copilotConversation as never).count();
     });
     expect(own).toBe(mine.length);
     // A viewer can use it too, and the tools respect what a viewer may see.

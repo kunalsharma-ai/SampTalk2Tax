@@ -3,6 +3,7 @@ import { defineCollection, type AnyCollectionDef } from '@talk2tax/document-db';
 type Document = Record<string, unknown>;
 import type { DocumentStore } from '@talk2tax/document-db';
 import { runAsSystem, runInOrg } from '../common/tenant-context';
+import { mongoReadOps } from './mongo-reads';
 
 /**
  * Keeps MongoDB in step with every PostgreSQL write to the tables listed in MIRRORED_MODELS
@@ -29,7 +30,7 @@ export interface MirrorInfo {
   scalars: Field[];
   tenant: boolean;
   /** Mirrored models whose rows PostgreSQL deletes or detaches when one of these is deleted. */
-  children: { info: () => MirrorInfo; fk: string; onDelete: 'Cascade' | 'SetNull' }[];
+  children: { info: () => MirrorInfo; local: string[]; remote: string[]; onDelete: 'Cascade' | 'SetNull' }[];
 }
 
 const lowerFirst = (s: string) => s[0].toLowerCase() + s.slice(1);
@@ -117,12 +118,14 @@ export function mirrorModels(names: readonly string[]): MirrorInfo[] {
       if (f.kind !== 'object' || !f.relationFromFields?.length || !INFOS.has(f.type)) continue;
       const onDelete = f.relationOnDelete as string | undefined;
       if (onDelete !== 'Cascade' && onDelete !== 'SetNull') continue;
-      const fk = f.relationFromFields.find((x) => x !== 'orgId') ?? f.relationFromFields[0];
-      INFOS.get(f.type)!.children.push({ info: () => child, fk, onDelete });
+      INFOS.get(f.type)!.children.push({ info: () => child, local: [...f.relationFromFields], remote: [...f.relationToFields!], onDelete });
     }
   }
   return names.map((n) => INFOS.get(n)!);
 }
+
+/** The mirrored model of this name, if it is mirrored. */
+export const modelInfo = (name: string): MirrorInfo | undefined => INFOS.get(name);
 
 export const mirrorByDelegate = () => new Map([...INFOS.values()].map((i) => [i.delegate, i]));
 
@@ -141,19 +144,23 @@ async function loadForeignKeys(tx: unknown): Promise<void> {
     const rows = (await (tx as { $queryRawUnsafe: (q: string) => Promise<unknown[]> }).$queryRawUnsafe(`
       SELECT cl.relname AS child, pl.relname AS parent, c.confdeltype AS action,
              (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(c.conkey) WITH ORDINALITY k(n, ord)
-                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.n) AS columns
+                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.n) AS columns,
+             (SELECT array_agg(a.attname::text ORDER BY k.ord) FROM unnest(c.confkey) WITH ORDINALITY k(n, ord)
+                JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.n) AS parent_columns
         FROM pg_constraint c JOIN pg_class cl ON cl.oid = c.conrelid JOIN pg_class pl ON pl.oid = c.confrelid
-       WHERE c.contype = 'f' AND c.confdeltype IN ('c', 'n')`)) as { child: string; parent: string; action: string; columns: string[] }[];
+       WHERE c.contype = 'f' AND c.confdeltype IN ('c', 'n')`)) as { child: string; parent: string; action: string; columns: string[]; parent_columns: string[] }[];
     const byTable = new Map([...INFOS.values()].map((i) => [i.def.name, i]));
+    const fieldOf = (scalars: Field[] | undefined, col: string) => scalars?.find((f) => (f.dbName ?? f.name) === col)?.name ?? (col === 'id' ? 'id' : col === 'org_id' ? 'orgId' : undefined);
     for (const r of rows) {
       const child = byTable.get(r.child);
       if (!child) continue;
-      const cols = r.columns.filter((c) => c !== 'org_id');
-      const field = child.scalars.find((f) => (f.dbName ?? f.name) === (cols[0] ?? r.columns[0]));
-      if (!field) continue;
-      const entry: Child = { info: () => child, fk: field.name, onDelete: r.action === 'c' ? 'Cascade' : 'SetNull' };
-      const list = byTable.get(r.parent)?.children ?? (BY_TABLE.get(r.parent) ?? BY_TABLE.set(r.parent, []).get(r.parent)!);
-      if (!list.some((x) => x.info() === child && x.fk === entry.fk)) list.push(entry);
+      const parentModel = byTable.get(r.parent);
+      const local = r.columns.map((c) => fieldOf(child.scalars, c));
+      const remote = r.parent_columns.map((c) => fieldOf(parentModel?.scalars, c));
+      if (local.some((x) => !x) || remote.some((x) => !x)) continue;
+      const entry: Child = { info: () => child, local: local as string[], remote: remote as string[], onDelete: r.action === 'c' ? 'Cascade' : 'SetNull' };
+      const list = parentModel?.children ?? (BY_TABLE.get(r.parent) ?? BY_TABLE.set(r.parent, []).get(r.parent)!);
+      if (!list.some((x) => x.info() === child && x.local.join() === entry.local.join())) list.push(entry);
     }
   })();
   await catalog;
@@ -165,7 +172,7 @@ async function loadForeignKeys(tx: unknown): Promise<void> {
  */
 export async function mirrorParentDeleted(tx: unknown, store: Store, table: string, orgId: string, ids: string[]) {
   await loadForeignKeys(tx);
-  for (const id of ids) await applyChildren(store, BY_TABLE.get(table) ?? [], orgId, id);
+  for (const id of ids) await applyChildren(store, BY_TABLE.get(table) ?? [], orgId, { id, orgId });
 }
 
 // ------------------------------------------------------------------ the write path
@@ -208,18 +215,25 @@ async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record
 async function dropRows(store: Store, info: MirrorInfo, keys: Record<string, unknown>[]) {
   for (const k of keys) {
     const id = docId(info, k);
-    await applyChildren(store, info.children, k.orgId, id);
+    // The parent as MongoDB still has it: a foreign key may point at columns other than the id.
+    const parent = ((await inContext(info, k.orgId, () => store.collection(info.def).findOne({ id }))) as Record<string, unknown> | null) ?? k;
+    await applyChildren(store, info.children, k.orgId, parent);
     await inContext(info, k.orgId, () => store.collection(info.def).deleteOne({ id }));
   }
 }
 
-async function applyChildren(store: Store, children: Child[], orgId: unknown, id: string) {
+async function applyChildren(store: Store, children: Child[], orgId: unknown, parent: Record<string, unknown>) {
   for (const c of children) {
+    const values = c.remote.map((r) => (r === 'id' ? (parent.id ?? parent._id) : parent[r]));
+    if (values.some((v) => v === undefined || v === null)) continue;
+    const match = Object.fromEntries(c.local.map((l, i) => [l, values[i]]));
     const child = c.info();
     const coll = () => store.collection(child.def);
-    if (c.onDelete === 'SetNull') await inContext(child, orgId, () => coll().updateMany({ [c.fk]: id }, { $set: { [c.fk]: null } }));
-    else {
-      const gone = (await inContext(child, orgId, () => coll().find({ [c.fk]: id }))) as Record<string, unknown>[];
+    if (c.onDelete === 'SetNull') {
+      const cleared = Object.fromEntries(c.local.filter((l) => l !== 'orgId').map((l) => [l, null]));
+      await inContext(child, orgId, () => coll().updateMany(match, { $set: cleared }));
+    } else {
+      const gone = (await inContext(child, orgId, () => coll().find(match))) as Record<string, unknown>[];
       await dropRows(store, child, gone.map((g) => ({ ...g, orgId: g.orgId ?? orgId })));
     }
   }
@@ -242,7 +256,7 @@ async function syncNested(tx: Record<string, Delegate>, store: Store, info: Mirr
     const i = back.relationToFields!.findIndex((x) => x !== 'orgId');
     const fk = back.relationFromFields![i < 0 ? 0 : i];
     const parentKey = row[back.relationToFields![i < 0 ? 0 : i]];
-    const cd = tx[child.delegate];
+    const cd = pgOf(tx[child.delegate]);
     const keep = (await cd.findMany({ where: { [fk]: parentKey }, select: pkSelect(child) })) as Record<string, unknown>[];
     const had = (await inContext(child, row.orgId, () => store.collection(child.def).find({ [fk]: parentKey }))) as Record<string, unknown>[];
     const kept = new Set(keep.map((k) => docId(child, k)));
@@ -268,7 +282,21 @@ const stripKeys = <T>(row: T, strip: string[]) => {
 };
 
 /** A model delegate whose writes also land in MongoDB. Reads pass straight through. */
-export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx: Record<string, Delegate>): Delegate {
+/**
+ * Runs a transaction's MongoDB work one call at a time. PostgreSQL code often runs reads side by
+ * side (`Promise.all`) inside a transaction; MongoDB refuses two operations at once in one.
+ */
+export function oneAtATime() {
+  let tail: Promise<unknown> = Promise.resolve();
+  return <R>(fn: () => Promise<R>): Promise<R> => {
+    const run = tail.then(fn, fn);
+    tail = run.catch(() => undefined);
+    return run;
+  };
+}
+type Serial = ReturnType<typeof oneAtATime>;
+
+export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx: Record<string, Delegate>, serial: Serial = oneAtATime()): Delegate {
   const ops: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
     async create(args) {
       const { args: a, strip } = withKeys(info, args);
@@ -330,9 +358,12 @@ export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx
       return r;
     },
   };
+  const reads = MONGO_READS() ? mongoReadOps(d, info, store) : {};
   return new Proxy(d, {
     get(target, prop, receiver) {
-      if (typeof prop === 'string' && prop in ops) return ops[prop];
+      if (prop === PG) return target;
+      if (typeof prop === 'string' && prop in ops) return (args: Record<string, unknown>) => serial(() => ops[prop](args));
+      if (typeof prop === 'string' && prop in reads) return (args: Record<string, unknown>) => serial(() => reads[prop](args));
       return Reflect.get(target, prop, receiver);
     },
   });
@@ -345,7 +376,7 @@ export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx
 export async function mirrorRowsWhere(tx: unknown, store: Store, model: string, where: Record<string, unknown>) {
   const info = INFOS.get(model);
   if (!info) return;
-  const d = (tx as Record<string, Delegate>)[info.delegate];
+  const d = pgOf((tx as Record<string, Delegate>)[info.delegate]);
   const keys = (await d.findMany({ where, select: pkSelect(info) })) as Record<string, unknown>[];
   await putRows(store, d, info, keys);
 }
@@ -358,27 +389,107 @@ export async function mirrorRowsWhere(tx: unknown, store: Store, model: string, 
 export function mirrorClient<T extends object>(client: T, store: Store, runInTx?: (fn: (tx: unknown) => Promise<unknown>) => Promise<unknown>): T {
   const byDelegate = mirrorByDelegate();
   const cache = new Map<string, unknown>();
+  const serial = oneAtATime();
   return new Proxy(client, {
     get(target, prop, receiver) {
       const value = Reflect.get(target, prop, receiver);
+      if (prop === '$executeRaw' || prop === '$executeRawUnsafe') {
+        const run = value as (...a: unknown[]) => Promise<number>;
+        return (...a: unknown[]) => {
+          const table = writtenTable(prop === '$executeRawUnsafe' ? String(a[0]) : sqlText(a));
+          if (!table) return run.apply(target, a);
+          // Outside a transaction, run it in one so MongoDB is brought in step with it.
+          if (runInTx) return runInTx((tx) => (tx as Record<string, (...x: unknown[]) => Promise<number>>)[prop](...a));
+          return serial(async () => {
+            const n = await run.apply(target, a);
+            await syncAfterSql(receiver, store, table);
+            return n;
+          });
+        };
+      }
       if (typeof prop !== 'string' || !byDelegate.has(prop)) return value;
       if (!cache.has(prop)) {
         const info = byDelegate.get(prop)!;
         if (runInTx) {
           // Top-level client: run the write inside a transaction (whose client is wrapped).
-          const reads = value as Delegate;
-          cache.set(prop, new Proxy(reads, {
+          const pg = value as Delegate;
+          const reads: Record<string, (a: unknown) => Promise<unknown>> = MONGO_READS() ? (mongoReadOps(pg, info, store) as never) : {};
+          cache.set(prop, new Proxy(pg, {
             get(t, op, r) {
+              if (op === PG) return t;
               if (typeof op === 'string' && WRITES.has(op)) return (args: unknown) => runInTx((tx) => ((tx as Record<string, Delegate>)[prop] as Delegate)[op](args));
+              if (typeof op === 'string' && op in reads) return reads[op];
               return Reflect.get(t, op, r);
             },
           }));
-        } else cache.set(prop, mirroredDelegate(value as Delegate, info, store, receiver as Record<string, Delegate>));
+        } else cache.set(prop, mirroredDelegate(value as Delegate, info, store, receiver as Record<string, Delegate>, serial));
       }
       return cache.get(prop);
     },
   });
 }
+
+// ------------------------------------------------------------------ raw SQL
+
+const sqlText = (a: unknown[]): string => {
+  const first = a[0] as { sql?: string; strings?: string[] } | string[];
+  if (Array.isArray(first)) return first.join('?');
+  return first?.sql ?? first?.strings?.join('?') ?? '';
+};
+
+/** The mirrored table a raw INSERT, UPDATE or DELETE writes, if it writes one. */
+function writtenTable(sql: string): { info: MirrorInfo; deletes: boolean } | null {
+  const m = /^\s*(?:(INSERT\s+INTO)|(UPDATE)|(DELETE\s+FROM))\s+(?:"?public"?\.)?"?([a-z_][a-z0-9_]*)"?/i.exec(sql);
+  if (!m) return null;
+  const info = [...INFOS.values()].find((i) => i.def.name === m[4]);
+  return info ? { info, deletes: !!m[3] } : null;
+}
+
+/**
+ * After a raw write in a transaction: the rows it inserted or updated carry the transaction's
+ * id in xmin, so they are found and written to MongoDB (with rows triggers changed in the same
+ * transaction). After a raw DELETE, documents whose rows are gone are removed.
+ */
+async function syncAfterSql(tx: unknown, store: Store, { info, deletes }: { info: MirrorInfo; deletes: boolean }) {
+  const q = tx as { $queryRawUnsafe<R>(sql: string): Promise<R> };
+  const cols = info.pk.map((k) => `"${info.scalars.find((f) => f.name === k)?.dbName ?? k}"`);
+  const orgCol = info.tenant ? `, "${info.scalars.find((f) => f.name === 'orgId')?.dbName ?? 'org_id'}" AS "orgId"` : '';
+  const asKeys = (rows: Record<string, unknown>[]) => rows.map((r) => Object.fromEntries([...info.pk.map((k, i) => [k, r[`k${i}`]]), ...(info.tenant ? [['orgId', r.orgId]] : [])]));
+  const select = `SELECT ${cols.map((c, i) => `${c}::text AS "k${i}"`).join(', ')}${orgCol} FROM "${info.def.name}"`;
+  const [{ before }] = await q.$queryRawUnsafe<{ before: string | null }[]>(`SELECT current_setting('t2t.bypass', true) AS before`);
+  await q.$queryRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
+  // No reset when this fails: the transaction is aborted then, and a reset would hide why.
+  {
+    if (deletes) {
+      const kept = new Set(asKeys(await q.$queryRawUnsafe<Record<string, unknown>[]>(select)).map((k) => docId(info, k)));
+      const docs = (await runAsSystem(() => store.collection(info.def).find({}, { projection: { _id: 1, ...(info.tenant ? { orgId: 1 } : {}), ...Object.fromEntries(info.pk.map((k) => [k, 1])) } }))) as Record<string, unknown>[];
+      await dropRows(store, info, docs.filter((d) => !kept.has(String(d.id))));
+    } else {
+      const rows = await q.$queryRawUnsafe<Record<string, unknown>[]>(`${select} WHERE xmin::text = (pg_current_xact_id()::text::bigint % 4294967296)::text`);
+      await putRows(store, pgOf((tx as Record<string, Delegate>)[info.delegate]), info, asKeys(rows).map((k) => castKeys(info, k)));
+    }
+  }
+  await q.$queryRawUnsafe(`SELECT set_config('t2t.bypass', '${before === 'on' ? 'on' : ''}', true)`);
+}
+
+/** Keys read as text, back in their column types for a Prisma where. */
+function castKeys(info: MirrorInfo, k: Record<string, unknown>) {
+  const out: Record<string, unknown> = { ...k };
+  for (const f of info.scalars) {
+    if (!(f.name in out) || out[f.name] === null) continue;
+    if (f.type === 'Int') out[f.name] = Number(out[f.name]);
+    else if (f.type === 'BigInt') out[f.name] = BigInt(String(out[f.name]));
+    else if (f.type === 'DateTime') out[f.name] = new Date(String(out[f.name]));
+  }
+  return out;
+}
+
+/** The PostgreSQL delegate behind a wrapped one: reading back what PostgreSQL holds must not go to MongoDB. */
+const PG = Symbol('postgres delegate');
+export const pgOf = (d: Delegate): Delegate => ((d as unknown as Record<symbol, Delegate>)[PG] ?? d);
+
+/** Reads of mirrored tables come from MongoDB unless MONGO_READS=off (step 8). */
+const MONGO_READS = () => process.env.MONGO_READS !== 'off';
 
 const WRITES = new Set(['create', 'update', 'upsert', 'delete', 'createMany', 'createManyAndReturn', 'updateMany', 'updateManyAndReturn', 'deleteMany']);
 
@@ -389,9 +500,11 @@ const WRITES = new Set(['create', 'update', 'upsert', 'delete', 'createMany', 'c
 export async function copyMirroredTables(
   read: (model: string, page: { skip: number; take: number; orderBy: Record<string, 'asc'>[] }) => Promise<Record<string, unknown>[]>,
   store: Store,
+  only?: readonly string[],
 ): Promise<Record<string, number>> {
   const copied: Record<string, number> = {};
   for (const info of INFOS.values()) {
+    if (only && !only.includes(info.model)) continue;
     let n = 0;
     for (let skip = 0; ; skip += 1000) {
       const rows = await read(info.delegate, { skip, take: 1000, orderBy: info.pk.map((k) => ({ [k]: 'asc' as const })) });

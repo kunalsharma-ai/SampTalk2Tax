@@ -18,7 +18,7 @@ module follows when it moves.
 | 5 | `journal_entries` (lines inside each entry) | Done (#94) |
 | 6 | Sales and purchases: `contacts`, `documents` (lines inside), `payments`, `allocations`, `approval_policies`, `approval_requests`, `attachments`, `expense_claims` (lines inside), `bank_statement_imports`, `bank_statement_lines`, `bank_matches`, `bank_reconciliations` | Writes moved (#98); reads still on the copy |
 | 7 | Every other table (166): tax, payroll, planning, CRM, orders, AI, platform, the latest modules | Writes kept in step (this step); rules and reads still in PostgreSQL |
-| 8 | Reads and reports as MongoDB queries; Prisma, PostgreSQL, RLS and the copies removed | After 7 |
+| 8 | Reads and reports as MongoDB queries; Prisma, PostgreSQL, RLS and the copies removed | In progress: reads of the step-7 tables come from MongoDB |
 
 ## Why these choices
 
@@ -158,6 +158,23 @@ step 8 turns them into guards, together with the reads.
 table's rows from the organisations made in that run with MongoDB, field by field, and fails
 the run with the list in `apps/api/mirror-differences.txt`. Tests that write PostgreSQL
 directly (to simulate a change made past the API) sync the rows with `mirrorRows` afterwards.
+
+**Reads (step 8).** Prisma reads of the step-7 tables (`findMany`, `findFirst`,
+`findUnique`, their `OrThrow` forms, `count`) are answered from MongoDB
+(`apps/api/src/db/mongo-reads.ts`). Filters become MongoDB filters, keeping PostgreSQL's NULL
+rules (`not` and `notIn` never match NULL); relation filters through mirrored tables become id
+lists; ordering keeps PostgreSQL's NULL placement and orders enums by declaration; includes of
+mirrored relations are loaded a query per relation. Rows come back as Prisma returns them
+(Prisma.Decimal, bigint, Uint8Array). A query that cannot be translated yet (a relation to a
+table moved by hand, `_count`, `distinct`) still reads PostgreSQL; run the tests with
+`READ_FALLBACKS_FILE=path` to list them. Set `MONGO_READS=off` to read PostgreSQL again.
+
+* A transaction's MongoDB work runs one call at a time, because MongoDB refuses two
+  operations at once in one transaction and PostgreSQL code often reads with `Promise.all`.
+* `withSystemAccess` also opens the tenant context to every organisation, as the PostgreSQL
+  bypass does.
+* Raw `INSERT`, `UPDATE` and `DELETE` statements on mirrored tables bring MongoDB in step by
+  themselves: rows the transaction wrote are found by `xmin`, deleted ones by comparing ids.
 
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
