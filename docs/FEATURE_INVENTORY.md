@@ -673,7 +673,7 @@ Part 19 · M6 · priority P2 · depends on: GL
 | ENT-005 |  | capability | Multi-currency accounting | Not started |
 | ENT-006 |  | capability | Multi-language interfaces | Not started |
 | ENT-007 |  | capability | Consolidated financial statements | Tested |
-| ENT-008 |  | capability | Intercompany transactions | Not started |
+| ENT-008 |  | capability | Intercompany transactions | Tested |
 | ENT-009 |  | capability | Intercompany elimination | Tested |
 | ENT-010 |  | capability | Minority interest support | Tested |
 | ENT-011 |  | capability | Foreign currency translation | Tested |

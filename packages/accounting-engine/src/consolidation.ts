@@ -15,6 +15,9 @@ import { D, Dec, dec, minorUnits, sum } from './money';
  *     payable, sales with purchases, investment with share capital). Both translated balances are
  *     removed; if they do not cancel, the difference stays in an "intercompany differences" line
  *     so the consolidated trial balance still balances and the mismatch is visible.
+ *     Intercompany transactions posted through the intercompany ledger are eliminated by their
+ *     exact amounts instead (see intercompanyEliminations), with any translation difference shown
+ *     the same way.
  *  4. Accounts are combined by code. Every column of the worksheet sums to zero.
  *  5. Non-controlling interests: an entity owned less than 100% is still fully consolidated; the
  *     outside shareholders' share of its translated net assets (and of its profit for the period)
@@ -61,6 +64,19 @@ export interface EliminationRule {
   right: { entityId: string; code: string };
 }
 
+/**
+ * An elimination of specific amounts recorded in the intercompany ledger, rather than of a whole
+ * account balance. Each side is a signed net debit in its entity's currency: BALANCE amounts are
+ * translated at the closing rate, PERIOD amounts (revenue and expense) at the average rate.
+ */
+export interface LedgerElimination {
+  id: string;
+  name: string;
+  basis: 'BALANCE' | 'PERIOD';
+  left: { entityId: string; code: string; netDebit: string };
+  right: { entityId: string; code: string; netDebit: string };
+}
+
 export type WorksheetRowKind = 'ACCOUNT' | 'EARNINGS_BROUGHT_FORWARD' | 'TRANSLATION_RESERVE' | 'INTERCOMPANY_DIFFERENCE';
 
 export interface WorksheetRow {
@@ -78,6 +94,8 @@ export interface WorksheetRow {
 export interface EliminationResult {
   ruleId: string;
   name: string;
+  /** RULE removes whole account balances; LEDGER removes amounts posted as intercompany transactions. */
+  source: 'RULE' | 'LEDGER';
   left: { entityId: string; code: string; name: string | null; amount: string };
   right: { entityId: string; code: string; name: string | null; amount: string };
   /** left + right as signed net debits: zero when the two sides agree. */
@@ -175,8 +193,9 @@ const SYNTHETIC: Record<Exclude<WorksheetRowKind, 'ACCOUNT'>, { code: string; na
   INTERCOMPANY_DIFFERENCE: { code: '', name: 'Intercompany differences to resolve' },
 };
 
-export function consolidate(input: { currency: string; entities: ConsolidationEntity[]; rules: EliminationRule[] }): ConsolidationResult {
+export function consolidate(input: { currency: string; entities: ConsolidationEntity[]; rules: EliminationRule[]; ledger?: LedgerElimination[] }): ConsolidationResult {
   const { currency, entities, rules } = input;
+  const ledger = input.ledger ?? [];
   const scale = minorUnits(currency);
   const round = (d: Dec) => d.toDecimalPlaces(scale, D.ROUND_HALF_UP);
   const fmt = (d: Dec) => d.toFixed(scale);
@@ -293,8 +312,44 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
     eliminations.push({
       ruleId: rule.id,
       name: rule.name,
+      source: 'RULE',
       left: { ...rule.left, name: l.r?.name ?? null, amount: fmt(l.amount) },
       right: { ...rule.right, name: r.r?.name ?? null, amount: fmt(r.amount) },
+      difference: fmt(difference),
+      matched: difference.isZero() && !problems.length,
+      problem: problems.length ? problems.join('; ') : null,
+    });
+  }
+
+  for (const le of ledger) {
+    const side = (s: LedgerElimination['left']) => {
+      const i = index.get(s.entityId);
+      const r = rows.get(s.code);
+      const e = i === undefined ? undefined : entities[i]!;
+      const has = !!e && (e.closing.some((a) => a.code === s.code) || e.period.some((a) => a.code === s.code));
+      const rate = !e || e.currency === currency ? new D(1) : dec(e.rates![le.basis === 'BALANCE' ? 'closing' : 'average']);
+      return { i, r: has ? r : undefined, amount: has ? round(dec(s.netDebit).times(rate)) : new D(0) };
+    };
+    const l = side(le.left);
+    const r = side(le.right);
+    const problems: string[] = [];
+    for (const [x, s, which] of [[l, le.left, 'first'], [r, le.right, 'second']] as const) {
+      if (x.i === undefined) problems.push(`the ${which} organisation is no longer in the group`);
+      else if (!x.r) problems.push(`${entities[x.i]!.name} has no balance on account ${s.code}`);
+    }
+    if (l.r && l.i !== undefined) l.r.elimination = l.r.elimination.minus(l.amount);
+    if (r.r && r.i !== undefined) r.r.elimination = r.r.elimination.minus(r.amount);
+    const difference = l.amount.plus(r.amount);
+    if (!difference.isZero()) {
+      const d = synthetic('INTERCOMPANY_DIFFERENCE');
+      d.elimination = d.elimination.plus(difference);
+    }
+    eliminations.push({
+      ruleId: le.id,
+      name: le.name,
+      source: 'LEDGER',
+      left: { entityId: le.left.entityId, code: le.left.code, name: l.r?.name ?? null, amount: fmt(l.amount) },
+      right: { entityId: le.right.entityId, code: le.right.code, name: r.r?.name ?? null, amount: fmt(r.amount) },
       difference: fmt(difference),
       matched: difference.isZero() && !problems.length,
       problem: problems.length ? problems.join('; ') : null,
@@ -359,4 +414,84 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
       balanced: totalAssets.equals(totalLiabilities.plus(totalEquity)),
     },
   };
+}
+
+/** A posted intercompany transaction, as the ledger eliminations need it. */
+export interface IntercompanyTransaction {
+  id: string;
+  kind: 'CHARGE' | 'SETTLEMENT';
+  /** The seller (charges) or the company receiving the money (settlements). */
+  fromEntityId: string;
+  /** The buyer, or the company paying. */
+  toEntityId: string;
+  date: string;
+  /** Date of the reversal, if reversed. */
+  reversedOn?: string | null;
+  /** In the first company's currency. */
+  amount: string;
+  /** In the second company's currency (equal to amount when they share a currency). */
+  toAmount: string;
+  /** Account codes the entries were posted to (revenue and expense only for charges). */
+  fromReceivableCode: string;
+  toPayableCode: string;
+  fromRevenueCode?: string | null;
+  toExpenseCode?: string | null;
+}
+
+/**
+ * Turns the intercompany ledger into eliminations for one period: per pair of companies and
+ * accounts, the balance still owed at the end date (charges less settlements, translated at the
+ * closing rate) and the charges within the period (at the average rate). A reversal counts as an
+ * opposite movement on its own date.
+ */
+export function intercompanyEliminations(txns: IntercompanyTransaction[], range: { from: string; to: string }, names: Map<string, string> = new Map()): LedgerElimination[] {
+  const name = (id: string) => names.get(id) ?? 'another company';
+  const out = new Map<string, LedgerElimination & { l: Dec; r: Dec }>();
+  const add = (key: string, init: () => LedgerElimination, l: Dec, r: Dec) => {
+    let e = out.get(key);
+    if (!e) {
+      e = { ...init(), l: new D(0), r: new D(0) };
+      out.set(key, e);
+    }
+    e.l = e.l.plus(l);
+    e.r = e.r.plus(r);
+  };
+  for (const t of txns) {
+    const events: [string, 1 | -1][] = [[t.date, 1]];
+    if (t.reversedOn) events.push([t.reversedOn, -1]);
+    for (const [date, sign] of events) {
+      const charge = t.kind === 'CHARGE' ? 1 : -1;
+      if (date <= range.to) {
+        add(
+          `B|${t.fromEntityId}|${t.toEntityId}|${t.fromReceivableCode}|${t.toPayableCode}`,
+          () => ({
+            id: `ic-balance:${t.fromEntityId}:${t.toEntityId}:${t.fromReceivableCode}:${t.toPayableCode}`,
+            name: `Intercompany balance: ${name(t.toEntityId)} owes ${name(t.fromEntityId)}`,
+            basis: 'BALANCE',
+            left: { entityId: t.fromEntityId, code: t.fromReceivableCode, netDebit: '0' },
+            right: { entityId: t.toEntityId, code: t.toPayableCode, netDebit: '0' },
+          }),
+          dec(t.amount).times(sign * charge),
+          dec(t.toAmount).times(-sign * charge),
+        );
+      }
+      if (t.kind === 'CHARGE' && t.fromRevenueCode && t.toExpenseCode && date >= range.from && date <= range.to) {
+        add(
+          `P|${t.fromEntityId}|${t.toEntityId}|${t.fromRevenueCode}|${t.toExpenseCode}`,
+          () => ({
+            id: `ic-charges:${t.fromEntityId}:${t.toEntityId}:${t.fromRevenueCode}:${t.toExpenseCode}`,
+            name: `Intercompany charges: ${name(t.fromEntityId)} to ${name(t.toEntityId)}`,
+            basis: 'PERIOD',
+            left: { entityId: t.fromEntityId, code: t.fromRevenueCode!, netDebit: '0' },
+            right: { entityId: t.toEntityId, code: t.toExpenseCode!, netDebit: '0' },
+          }),
+          dec(t.amount).times(-sign),
+          dec(t.toAmount).times(sign),
+        );
+      }
+    }
+  }
+  return [...out.values()]
+    .filter((e) => !e.l.isZero() || !e.r.isZero())
+    .map(({ l, r, ...e }) => ({ ...e, left: { ...e.left, netDebit: l.toFixed() }, right: { ...e.right, netDebit: r.toFixed() } }));
 }

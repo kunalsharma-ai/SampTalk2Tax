@@ -7,12 +7,42 @@ export interface GroupSummary {
   updatedAt: string;
 }
 
+export interface IntercompanyAccounts {
+  receivable: string | null;
+  payable: string | null;
+  revenue: string | null;
+  expense: string | null;
+}
+
+export interface IntercompanySide {
+  orgId: string;
+  name: string | null;
+  currency: string;
+  amount: string;
+  entry: { id: string; entryNumber: number | null } | null;
+  reversal: { id: string; entryNumber: number | null } | null;
+}
+
+export interface IntercompanyTxn {
+  id: string;
+  number: number;
+  reference: string;
+  kind: 'CHARGE' | 'SETTLEMENT';
+  date: string;
+  description: string;
+  from: IntercompanySide;
+  to: IntercompanySide;
+  accounts: { fromReceivable: string; toPayable: string; fromRevenue: string | null; toExpense: string | null; fromBank: string | null; toBank: string | null };
+  reversedOn: string | null;
+  createdAt: string;
+}
+
 export interface GroupDetail {
   id: string;
   name: string;
   currency: string;
   parentOrgId: string;
-  members: { orgId: string; name: string | null; currency: string | null; isParent: boolean; ownershipPercent: string; yourRole: string | null; canReadReports: boolean; addedAt: string }[];
+  members: { orgId: string; name: string | null; currency: string | null; isParent: boolean; ownershipPercent: string; intercompanyAccounts: IntercompanyAccounts; yourRole: string | null; canReadReports: boolean; addedAt: string }[];
   rates: { id: string; memberOrgId: string; memberName: string | null; periodEnd: string; closing: string; average: string; historical: string; updatedAt: string }[];
   rules: { id: string; name: string; left: { orgId: string; name: string | null; code: string }; right: { orgId: string; name: string | null; code: string }; isActive: boolean }[];
   candidates: { orgId: string; name: string | null; currency: string | null }[];
@@ -29,7 +59,7 @@ export interface ConsolidationReport {
   currency: string;
   entities: { id: string; name: string; currency: string; rates: { closing: string; average: string; historical: string } | null; translationReserve: string; netIncome: string; ownershipPercent: string; netAssets: string; nonControllingNetAssets: string; nonControllingProfit: string }[];
   rows: { kind: RowKind; code: string; name: string; type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE'; amounts: string[]; elimination: string; consolidated: string }[];
-  eliminations: { ruleId: string; name: string; left: { entityId: string; code: string; name: string | null; amount: string }; right: { entityId: string; code: string; name: string | null; amount: string }; difference: string; matched: boolean; problem: string | null }[];
+  eliminations: { ruleId: string; name: string; source: 'RULE' | 'LEDGER'; left: { entityId: string; code: string; name: string | null; amount: string }; right: { entityId: string; code: string; name: string | null; amount: string }; difference: string; matched: boolean; problem: string | null }[];
   balanced: boolean;
   incomeStatement: { revenue: Line[]; expenses: Line[]; totalRevenue: string; totalExpenses: string; netIncome: string; attributableToOwners: string; attributableToNonControlling: string };
   balanceSheet: { assets: Line[]; liabilities: Line[]; equity: Line[]; periodEarnings: string; totalAssets: string; totalLiabilities: string; totalEquity: string; nonControllingInterests: string; equityAttributableToOwners: string; balanced: boolean };

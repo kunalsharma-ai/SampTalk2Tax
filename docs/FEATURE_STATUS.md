@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1047 |
+| Not started | 1046 |
 | Designed | 0 |
 | Implementing | 54 |
 | Implemented | 31 |
-| Tested | 203 |
+| Tested | 204 |
 | Integration pending | 8 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -38,7 +38,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
-| Enterprise financial management | M6 | 29 | 16 | 13 |
+| Enterprise financial management | M6 | 29 | 15 | 14 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 13 | 0 |
@@ -1794,6 +1794,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/consolidation.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/consolidation
   - apps/web/e2e/consolidation-flow.test.mjs
+  - docs/CONSOLIDATION.md
+
+### ENT-008 — Intercompany transactions
+
+- Module: Enterprise financial management
+- Status: **Tested**
+- Notes: Charges and settlements posted in both companies in one database transaction, reversed together, and eliminated by their exact amounts. Journals only: no GST/VAT, stock or unrealised profit.
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)
+  - packages/database/prisma/migrations/20261103180000_intercompany/migration.sql
+  - apps/api/src/consolidation/intercompany.service.ts
+  - apps/web/src/components/consolidation/intercompany.tsx
+  - packages/accounting-engine/test/consolidation.test.ts
+  - apps/api/test/intercompany.e2e.test.ts
+  - apps/web/e2e/intercompany-flow.test.mjs
   - docs/CONSOLIDATION.md
 
 ### ENT-009 — Intercompany elimination
