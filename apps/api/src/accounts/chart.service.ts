@@ -1,3 +1,4 @@
+import { postgresOnly } from '../db/mirror-writes';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { isDuplicateKeyError } from '@talk2tax/document-db';
 import { AuditService } from '../audit/audit.service';
@@ -99,7 +100,7 @@ export class ChartService {
 
   /** Makes sure PostgreSQL has its copy; the first copy is when the account is audited as created. */
   private async copied(tx: Tx, orgId: string, actorId: string, a: AccountDoc, reason: string) {
-    const present = await tx.account.findFirst({ where: { id: a.id, orgId }, select: { id: true } });
+    const present = await postgresOnly(tx).account.findFirst({ where: { id: a.id, orgId }, select: { id: true } });
     if (present) return a;
     await this.mirror.accounts([...(a.parentId ? [a.parentId] : []), a.id], tx);
     await this.audit.append(tx, { orgId, actorId, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, subtype: a.subtype, reason } });

@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { thenInPostgres } from '../src/db/postgres-mirror.service';
 import { bootApp, Ctx, registerUser } from './helpers';
+import { postgresOnly } from '../src/db/mirror-writes';
+
+/** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
+const pg = () => postgresOnly(ctx.prisma);
 
 const PASSWORD = 'a-very-long-test-password';
 let ctx: Ctx;
@@ -22,11 +26,11 @@ describe('people and sessions live in MongoDB', () => {
     expect(session?.userId).toBe(u.id);
 
     // Modules still on PostgreSQL point at people with foreign keys, so the copy must exist.
-    expect(await ctx.prisma.user.findUnique({ where: { id: u.id }, select: { email: true } })).toEqual({ email: u.email });
+    expect(await pg().user.findUnique({ where: { id: u.id }, select: { email: true } })).toEqual({ email: u.email });
     await ctx.http().put('/v1/auth/me/preferences').set(u.auth).send({ language: 'hi', numberFormat: 'IN', dateFormat: 'DMY', timeZone: 'Europe/London' }).expect(200);
-    expect(await ctx.prisma.user.findUnique({ where: { id: u.id }, select: { language: true, timeZone: true } })).toEqual({ language: 'hi', timeZone: 'Europe/London' });
+    expect(await pg().user.findUnique({ where: { id: u.id }, select: { language: true, timeZone: true } })).toEqual({ language: 'hi', timeZone: 'Europe/London' });
     // Its sign-up is in the audit trail, as before.
-    expect(await ctx.prisma.auditEvent.findFirst({ where: { action: 'user.registered', entityId: u.id } })).toBeTruthy();
+    expect(await pg().auditEvent.findFirst({ where: { action: 'user.registered', entityId: u.id } })).toBeTruthy();
   });
 
   it('two registrations racing for one address: exactly one wins', async () => {
@@ -79,5 +83,6 @@ describe('copying records made before the move', () => {
     const again = await copyFromPostgres(ctx.prisma, ctx.store, () => undefined);
     expect(again).toMatchObject({ users: 0, journal_entries: 0, documents: 0, expense_claims: 0, tax_rates: 0, pay_runs: 0, crm_leads: 0 });
     expect(Object.entries(again).filter(([, n]) => n !== 0)).toEqual([]);
-  });
+    // The copy runs over the whole shared test database, which grows with every run.
+  }, 120_000);
 });

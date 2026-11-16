@@ -1,4 +1,5 @@
 import { mirrorClient, mirrorRowsWhere } from '../db/mirror-writes';
+import '../db/readable-models';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
 import { PrismaClient } from '@talk2tax/database';
 import { isTransientTransactionError, type DocumentStore } from '@talk2tax/document-db';
@@ -119,6 +120,9 @@ export function mirrorRows(prisma: PrismaService, model: string, where: Record<s
  */
 export async function useOrgInTx(tx: Tx, orgId: string): Promise<void> {
   await tx.$executeRaw`SELECT set_config('t2t.org_id', ${orgId}, true)`;
+  // MongoDB reads in this transaction follow it to the same organisation.
+  const ctx = tenantStorage.getStore();
+  if (ctx?.inTx) ctx.orgId = orgId;
 }
 
 /**

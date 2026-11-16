@@ -5,7 +5,7 @@ import { runAsSystem } from '../common/tenant-context';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { journalEntries } from './collections/ledger';
 import { users } from './collections/identity';
-import { mirrorParentDeleted } from './mirror-writes';
+import { mirrorParentDeleted, pgOf } from './mirror-writes';
 import { memberships, organizations } from './collections/tenancy';
 
 /**
@@ -125,7 +125,7 @@ export class PostgresMirrorService {
     if (!ids.length) return;
     const rows = await runAsSystem(() => this.store.collection(journalEntries).find({ id: { $in: [...new Set(ids)] } }));
     for (const { id, lines, orgId, ...e } of rows) {
-      const existing = await tx.journalEntry.findFirst({ where: { id, orgId }, select: { status: true } });
+      const existing = (await pgOf(tx.journalEntry as never).findFirst({ where: { id, orgId }, select: { status: true } })) as { status: string } | null;
       if (existing?.status === 'POSTED') continue;
       const header = { ...e, status: 'DRAFT' as const, entryNumber: null, postedAt: null, postedById: null, type: e.type as never, source: e.source as never };
       if (existing) {

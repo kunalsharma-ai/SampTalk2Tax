@@ -2,6 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runInOrg } from '../src/common/tenant-context';
 import { journalEntries } from '../src/db/collections/ledger';
 import { bootApp, createOrg, Ctx, registerUser, today } from './helpers';
+import { postgresOnly } from '../src/db/mirror-writes';
+
+/** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
+const pg = () => postgresOnly(ctx.prisma);
 
 let ctx: Ctx;
 beforeAll(async () => {
@@ -30,7 +34,7 @@ describe('the ledger lives in MongoDB', () => {
     expect(doc?.status).toBe('POSTED');
     expect(doc?.totalDebit?._bsontype).toBe('Decimal128');
     expect(doc?.totalDebit.toString()).toBe('1250.5');
-    const copy = await ctx.prisma.journalEntry.findUniqueOrThrow({ where: { id: res.body.id }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
+    const copy = await pg().journalEntry.findUniqueOrThrow({ where: { id: res.body.id }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
     expect(copy).toMatchObject({ status: 'POSTED', entryNumber: res.body.entryNumber });
     expect(copy.lines.map((l) => l.id)).toEqual((doc!.lines as { id: string }[]).map((l) => l.id));
     // Reports still read the copy.
@@ -43,10 +47,10 @@ describe('the ledger lives in MongoDB', () => {
     const org = await createOrg(ctx, owner);
     const draft = (await ctx.http().post(`${org.base}/journals`).set(owner.auth).send(je(org.acc, '6200', '2200', '10.00', { post: false })).expect(201)).body;
     await ctx.http().put(`${org.base}/journals/${draft.id}`).set(owner.auth).send({ date: today(), type: 'STANDARD', lines: je(org.acc, '6200', '2200', '12.00').lines }).expect(200);
-    expect((await ctx.prisma.journalEntry.findUniqueOrThrow({ where: { id: draft.id } })).totalDebit.toFixed(2)).toBe('12.00');
+    expect((await pg().journalEntry.findUniqueOrThrow({ where: { id: draft.id } })).totalDebit.toFixed(2)).toBe('12.00');
     await ctx.http().delete(`${org.base}/journals/${draft.id}`).set(owner.auth).expect((r) => expect([200, 204]).toContain(r.status));
     expect(await ctx.db.collection('journal_entries').countDocuments({ _id: draft.id })).toBe(0);
-    expect(await ctx.prisma.journalEntry.count({ where: { id: draft.id } })).toBe(0);
+    expect(await pg().journalEntry.count({ where: { id: draft.id } })).toBe(0);
   });
 
   it('the data layer keeps the rules the PostgreSQL triggers kept', async () => {

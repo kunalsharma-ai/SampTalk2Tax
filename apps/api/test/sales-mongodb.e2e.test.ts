@@ -2,6 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runInOrg } from '../src/common/tenant-context';
 import { allocations, contacts, documents, payments } from '../src/db/collections/sales';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { postgresOnly } from '../src/db/mirror-writes';
+
+/** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
+const pg = () => postgresOnly(ctx.prisma);
 
 let ctx: Ctx;
 let owner: TestUser;
@@ -27,7 +31,7 @@ describe('sales and purchases live in MongoDB', () => {
     expect(doc?.creditLimit.toString()).toBe('50000');
     await ctx.http().patch(`${org.base}/contacts/${customer.id}`).set(owner.auth).send({ paymentTermsDays: 45 }).expect(200);
     expect((await ctx.db.collection('contacts').findOne({ _id: customer.id as never }))?.paymentTermsDays).toBe(45);
-    expect((await ctx.prisma.contact.findUniqueOrThrow({ where: { id: customer.id } })).paymentTermsDays).toBe(45);
+    expect((await pg().contact.findUniqueOrThrow({ where: { id: customer.id } })).paymentTermsDays).toBe(45);
   });
 
   it('a draft keeps its lines inside it; editing replaces them in both databases; deleting removes both', async () => {
@@ -38,13 +42,13 @@ describe('sales and purchases live in MongoDB', () => {
     expect(stored?.lines).toHaveLength(1);
     await ctx.http().put(`${org.base}/sales/documents/${draft.id}`).set(owner.auth).send(invoice('150.00')).expect(200);
     const after = await ctx.db.collection('documents').findOne({ _id: draft.id });
-    const copy = await ctx.prisma.document.findUniqueOrThrow({ where: { id: draft.id }, include: { lines: true } });
+    const copy = await pg().document.findUniqueOrThrow({ where: { id: draft.id }, include: { lines: true } });
     expect(copy.total.toFixed(2)).toBe('300.00');
     expect(copy.lines.map((l) => l.id)).toEqual((after!.lines as { id: string }[]).map((l) => l.id));
     expect(after!.lines[0].id).not.toBe(stored!.lines[0].id);
     await ctx.http().delete(`${org.base}/sales/documents/${draft.id}`).set(owner.auth).expect((r) => expect([200, 204]).toContain(r.status));
     expect(await ctx.db.collection('documents').countDocuments({ _id: draft.id })).toBe(0);
-    expect(await ctx.prisma.document.count({ where: { id: draft.id } })).toBe(0);
+    expect(await pg().document.count({ where: { id: draft.id } })).toBe(0);
   });
 
   it('posting, a receipt, its allocation and voiding are all written to MongoDB first', async () => {
@@ -66,7 +70,7 @@ describe('sales and purchases live in MongoDB', () => {
     expect((await ctx.db.collection('payments').findOne({ _id: recId }))?.status).toBe('VOID');
     await ctx.http().post(`${org.base}/sales/documents/${posted.id}/void`).set(owner.auth).send({ date: today(), reason: 'Issued in error' }).expect(200);
     expect((await ctx.db.collection('documents').findOne({ _id: posted.id }))?.status).toBe('VOID');
-    expect((await ctx.prisma.document.findUniqueOrThrow({ where: { id: posted.id } })).status).toBe('VOID');
+    expect((await pg().document.findUniqueOrThrow({ where: { id: posted.id } })).status).toBe('VOID');
   });
 
   it('the data layer keeps the rules the PostgreSQL constraints and triggers kept', async () => {
@@ -91,14 +95,14 @@ describe('sales and purchases live in MongoDB', () => {
     const stored = await ctx.db.collection('expense_claims').findOne({ _id: claim.id });
     expect(stored?.lines).toHaveLength(1);
     expect(stored?.total.toString()).toBe('420');
-    const copy = await ctx.prisma.expenseClaim.findUniqueOrThrow({ where: { id: claim.id }, include: { lines: true } });
+    const copy = await pg().expenseClaim.findUniqueOrThrow({ where: { id: claim.id }, include: { lines: true } });
     expect(copy.lines.map((l) => l.id)).toEqual((stored!.lines as { id: string }[]).map((l) => l.id));
 
     const pdf = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n');
     const att = (await ctx.http().post(`${org.base}/attachments?entityType=EXPENSE_CLAIM&entityId=${claim.id}&fileName=taxi.pdf`).set(owner.auth).set('Content-Type', 'application/pdf').send(pdf).expect(201)).body;
     const file = await ctx.db.collection('attachments').findOne({ _id: att.id });
     expect(Buffer.from(file!.content.buffer).equals(pdf)).toBe(true);
-    expect(Buffer.from((await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: att.id } })).content).equals(pdf)).toBe(true);
+    expect(Buffer.from((await pg().attachment.findUniqueOrThrow({ where: { id: att.id } })).content).equals(pdf)).toBe(true);
 
     const csv = ['Date,Narration,Ref,Amount', `${today().split('-').reverse().join('/')},Coffee beans,CB1,-250.00`].join('\n');
     await ctx.http().post(`${org.base}/banking/accounts/${org.acc['1120']}/imports`).set(owner.auth).send({ fileName: 'nov.csv', csv, mapping: { date: 0, description: 1, reference: 2, amount: 3, dateFormat: 'DD/MM/YYYY', hasHeader: true } }).expect(201);
@@ -106,6 +110,6 @@ describe('sales and purchases live in MongoDB', () => {
     expect(line?.amount.toString()).toBe('-250');
     await ctx.http().post(`${org.base}/banking/lines/${line!._id}/exclude`).set(owner.auth).send({ reason: 'Personal' }).expect((r) => expect([200, 201]).toContain(r.status));
     expect((await ctx.db.collection('bank_statement_lines').findOne({ _id: line!._id }))?.status).toBe('EXCLUDED');
-    expect((await ctx.prisma.bankStatementLine.findUniqueOrThrow({ where: { id: line!._id as unknown as string } })).status).toBe('EXCLUDED');
+    expect((await pg().bankStatementLine.findUniqueOrThrow({ where: { id: line!._id as unknown as string } })).status).toBe('EXCLUDED');
   });
 });
