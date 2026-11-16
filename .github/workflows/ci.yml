@@ -92,7 +92,7 @@ jobs:
         run: tail -n 100 /tmp/api.log /tmp/web.log || true
       - name: Keep server logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-logs
           path: /tmp/*.log
