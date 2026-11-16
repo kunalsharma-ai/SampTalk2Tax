@@ -85,10 +85,18 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Not yet run against the live Claude API: no `ANTHROPIC_API_KEY` has been provided. The full path up to the HTTP call is tested with the official SDK against a local stand-in. Answers appear whole when finished (no streaming of text). Read-only questions only: no drafting of journals, invoices, reminders or filings, no document reading, no web search, no payroll. No platform screen for the model or spend; per-member hourly limit only. Answers come from tool results but a language model can still misread or miscalculate, so the screen asks members to check the linked reports. English only. See [`AI_COPILOT.md`](AI_COPILOT.md).
 
+## Workflow automations and tasks (M5, slice 1)
+
+* Event triggers only: no schedules, no "became overdue" or balance triggers (use "An alert opens"), no branches, waits or parallel paths.
+* Actions are tasks and signed webhooks only: no email or chat notifications, no actions that post or approve, no AI agent steps, no custom webhook headers or bodies.
+* The runner runs inside the API process (every 10 seconds by default); no separate worker or dead-letter view beyond the run log, and no load test yet.
+* Tasks have no reminders, comments, reassignment or navigation count.
+* See [`WORKFLOW_AUTOMATIONS.md`](WORKFLOW_AUTOMATIONS.md) › Not supported yet.
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.
-* No global search, command palette, notifications, light theme (the app has one dark theme) or per-user locale setting.
+* No global search, command palette, notifications (automations can send webhooks), light theme (the app has one dark theme) or per-user locale setting.
 * Layouts are responsive, but there is no automated accessibility audit (axe) or visual regression test yet.
 * Invitations are links the inviter copies and sends; Talk2Tax does not send email yet. A member cannot leave an organisation by themself; an owner or admin removes them.
 

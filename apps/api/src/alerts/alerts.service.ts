@@ -507,6 +507,8 @@ export class AlertsService {
         const f = byKey.get(`${c.rule}\u0000${c.fingerprint}`)!;
         const a = await tx.alert.create({ data: { orgId, rule: f.rule, fingerprint: f.fingerprint, ...content(f), firstSeenAt: now, lastSeenAt: now } });
         await tx.alertEvent.create({ data: { orgId, alertId: a.id, action: 'OPENED', actorId: actor?.id ?? null } });
+        // Recorded in the audit trail so that automations can act on a new alert.
+        await this.audit.append(tx, { orgId, actorId: null, action: 'alert.opened', entityType: 'alert', entityId: a.id, data: { rule: f.rule, title: a.title, severity: f.severity, reopened: false } });
       }
       const ruleOf = new Map(existing.map((e) => [e.id, e.rule]));
       for (const r of sync.refresh) {
@@ -515,7 +517,10 @@ export class AlertsService {
           where: { id: r.id },
           data: { ...content(f), lastSeenAt: now, ...(r.reopen ? { status: 'OPEN', clearedAt: null, statusNote: null, statusById: null, statusAt: now, reopenCount: { increment: 1 } } : {}) },
         });
-        if (r.reopen) await tx.alertEvent.create({ data: { orgId, alertId: r.id, action: 'REOPENED', actorId: actor?.id ?? null, note: 'Found again by the checks' } });
+        if (r.reopen) {
+          await tx.alertEvent.create({ data: { orgId, alertId: r.id, action: 'REOPENED', actorId: actor?.id ?? null, note: 'Found again by the checks' } });
+          await this.audit.append(tx, { orgId, actorId: null, action: 'alert.opened', entityType: 'alert', entityId: r.id, data: { rule: f.rule, title: f.title.slice(0, 300), severity: f.severity, reopened: true } });
+        }
       }
       const offIds = existing.filter((e) => off.includes(e.rule as AlertRuleKey) && (e.status === 'OPEN' || e.status === 'ACKNOWLEDGED')).map((e) => e.id);
       for (const [ids, note] of [

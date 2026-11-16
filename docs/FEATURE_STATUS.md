@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1113 |
+| Not started | 1101 |
 | Designed | 0 |
-| Implementing | 43 |
+| Implementing | 47 |
 | Implemented | 30 |
-| Tested | 156 |
+| Tested | 164 |
 | Integration pending | 1 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -37,7 +37,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 59 | 1 |
-| Autonomous financial workflows | M5 | 22 | 21 | 1 |
+| Autonomous financial workflows | M5 | 22 | 11 | 11 |
 | Enterprise financial management | M6 | 29 | 29 | 0 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
@@ -63,8 +63,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 17 | 1 |
-| Navigation structure | M1 | 48 | 37 | 11 |
+| Additional differentiating innovations | M7 | 18 | 16 | 2 |
+| Navigation structure | M1 | 48 | 36 | 12 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
@@ -1254,6 +1254,47 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/copilot
   - packages/database/prisma/migrations/20261102090000_ai_copilot
 
+### WFLOW-001 — Create a visual no-code and low-code workflow automation builder
+
+- Module: Autonomous financial workflows
+- Status: **Implementing**
+- Notes: Form-based builder: one trigger, conditions that must all hold, and up to five actions (task or webhook). No visual canvas, branches or drag and drop yet.
+- Evidence:
+  - apps/web/src/components/workflows/editor.tsx
+  - apps/web/src/app/orgs/[orgId]/automations
+  - apps/web/e2e/automations-flow.test.mjs
+
+### WFLOW-002 — Trigger-based automation
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: Eight triggers read from the audit trail (a transactional outbox): invoice or bill posted, invoice or bill voided, customer payment, vendor payment, manual journal, expense claim submitted, alert opened. A workflow acts only on events after it is turned on.
+- Evidence:
+  - apps/api/src/workflows
+  - packages/accounting-engine/test/workflows.test.ts
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-flow.test.mjs
+
+### WFLOW-004 — Event-based automation
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: Runner in the API process (WORKFLOW_RUNNER_INTERVAL_SECONDS) with a per-organisation cursor locked FOR UPDATE SKIP LOCKED; one live run per workflow and event, enforced by a unique index.
+- Evidence:
+  - apps/api/src/workflows/workflow-runner.service.ts
+  - apps/api/src/workflows/workflow-facts.ts
+  - apps/api/test/workflows.e2e.test.ts
+
+### WFLOW-005 — Conditional branching
+
+- Module: Autonomous financial workflows
+- Status: **Implementing**
+- Notes: Conditions on the event’s facts (money, text, date, choice), all of which must hold. No either/or branches yet.
+- Evidence:
+  - packages/accounting-engine/src/workflows.ts
+  - packages/accounting-engine/test/workflows.test.ts
+  - apps/api/test/workflows.e2e.test.ts
+
 ### WFLOW-006 — Approval workflows
 
 - Module: Autonomous financial workflows
@@ -1262,6 +1303,67 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
   - apps/web/e2e/approvals-flow.test.mjs
+
+### WFLOW-012 — Webhooks
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: POST with JSON, signed HMAC-SHA256 (t2t-signature: t=,v1=), same delivery id and bytes on every retry, 10-second timeout, no redirects. Public https only in production: DNS answers are checked and the connection is pinned to the checked address.
+- Evidence:
+  - apps/api/src/workflows/webhook.ts
+  - apps/api/test/webhook.test.ts
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-flow.test.mjs
+
+### WFLOW-014 — Retry policies
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: Six attempts: retries after 1 min, 5 min, 30 min, 2 h and 6 h for network errors, timeouts, 408, 429 and 5xx; other answers end the delivery.
+- Evidence:
+  - packages/accounting-engine/src/workflows.ts
+  - packages/accounting-engine/test/workflows.test.ts
+  - apps/api/test/workflows.e2e.test.ts
+
+### WFLOW-015 — Failure recovery
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: Failed runs say which action failed and why; an owner or admin can send a failed webhook again from the run log. A task for someone who has left fails that action only.
+- Evidence:
+  - apps/api/src/workflows/workflows.service.ts
+  - apps/api/test/workflows.e2e.test.ts
+
+### WFLOW-016 — Workflow versioning
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: A change to trigger, conditions or actions makes a new immutable version (database trigger); runs keep their version; stale edits are refused.
+- Evidence:
+  - apps/api/src/workflows/workflows.service.ts
+  - packages/database/prisma/migrations/20261102120000_workflow_automations
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-flow.test.mjs
+
+### WFLOW-017 — Workflow testing
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: Dry run on the latest real event (or a chosen one): facts, each condition with its actual value, and the task each action would create. Webhooks are sent only when asked, marked "test": true.
+- Evidence:
+  - apps/api/src/workflows/workflows.service.ts
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-flow.test.mjs
+
+### WFLOW-018 — Execution logs
+
+- Module: Autonomous financial workflows
+- Status: **Tested**
+- Notes: Run log per workflow: event, version, conditions, each action with its attempts, answers and timings. Runs and actions are append-only in the database.
+- Evidence:
+  - apps/web/src/app/orgs/[orgId]/automations/[workflowId]
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-flow.test.mjs
 
 ### RISK-001 — Duplicate invoice detection
 
@@ -2013,6 +2115,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
 
+### INNOV-006 — Provide a centralized queue of tasks generated by users, rules and AI agents
+
+- Module: Additional differentiating innovations
+- Status: **Implementing**
+- Notes: Task queue for people and automations: tasks for a person or a role, due dates, overdue, links to the record, done or cancelled with a note, audit trail. Tasks from AI agents are later work.
+- Evidence:
+  - apps/api/src/tasks
+  - apps/web/src/app/orgs/[orgId]/tasks
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-flow.test.mjs
+
 ### NAV-001 — Create a premium sidebar and global navigation system
 
 - Module: Navigation structure
@@ -2075,6 +2188,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Implemented**
 - Evidence:
   - apps/web/src
+
+### NAV-036 — Automation Studio
+
+- Module: Navigation structure
+- Status: **Implementing**
+- Notes: Automations list, builder, test, run log, versions and webhook signing secret for owners and admins.
+- Evidence:
+  - apps/web/src/app/orgs/[orgId]/automations
+  - apps/web/e2e/automations-flow.test.mjs
 
 ### NAV-042 — User Management
 

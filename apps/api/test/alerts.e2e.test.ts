@@ -227,7 +227,7 @@ describe('acting on alerts', () => {
     expect(re).toMatchObject({ status: 'OPEN', reopenCount: 1, statusNote: null });
     expect(re.history.at(-1)).toMatchObject({ action: 'REOPENED', by: 'Alert Owner', note: 'Granite says the second was a repeat' });
 
-    const audit = await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, entityType: 'alert' }, orderBy: { createdAt: 'asc' }, select: { action: true } });
+    const audit = await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, entityType: 'alert', action: { not: 'alert.opened' } }, orderBy: { createdAt: 'asc' }, select: { action: true } });
     expect(audit.map((a) => a.action)).toEqual(['alert.acknowledged', 'alert.dismissed', 'alert.reopened']);
   });
 

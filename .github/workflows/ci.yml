@@ -56,6 +56,10 @@ jobs:
           # for the Messages API (test-support/anthropic-stand-in.mjs); nothing reaches Anthropic.
           ANTHROPIC_API_KEY: ci-stand-in-key-not-real
           ANTHROPIC_BASE_URL: http://127.0.0.1:4555
+          # The automations browser test runs a webhook receiver on localhost, and waits for the
+          # runner, so the runner looks every second and may reach private addresses here only.
+          WORKFLOW_RUNNER_INTERVAL_SECONDS: 1
+          WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true'
         run: |
           (cd apps/api && node dist/main.js > /tmp/api.log 2>&1 &)
           (cd apps/web && npx next start -p 3000 > /tmp/web.log 2>&1 &)

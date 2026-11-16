@@ -228,6 +228,12 @@ model Organization {
   copilotSettings      CopilotSettings?
   copilotConversations CopilotConversation[]
   copilotMessages      CopilotMessage[]
+  workflows            Workflow[]
+  workflowVersions     WorkflowVersion[]
+  workflowRuns         WorkflowRun[]
+  workflowActionRuns   WorkflowActionRun[]
+  workflowCursor       WorkflowCursor?
+  tasks                Task[]
 
   @@map("organizations")
 }
@@ -1777,4 +1783,165 @@ model CopilotMessage {
   @@unique([conversationId, seq])
   @@index([orgId, status])
   @@map("copilot_messages")
+}
+
+// ---------------------------------------------------------------- workflow automations and tasks (M5)
+
+enum WorkflowRunStatus {
+  /// The conditions did not match: nothing was done.
+  SKIPPED
+  /// Actions are still being carried out (a webhook waiting for delivery or a retry).
+  RUNNING
+  SUCCEEDED
+  /// At least one action failed for good.
+  FAILED
+  /// A test run: conditions checked and actions shown, nothing done.
+  TEST
+}
+
+enum WorkflowActionStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  /// Not carried out: a test run, or a webhook cancelled by a person.
+  SKIPPED
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  CANCELLED
+}
+
+/// One automation. Its definition lives in versions; editing adds a version.
+model Workflow {
+  id                String            @id @default(uuid()) @db.Uuid
+  orgId             String            @map("org_id") @db.Uuid
+  name              String            @db.VarChar(120)
+  description       String?           @db.VarChar(1000)
+  enabled           Boolean           @default(false)
+  currentVersion    Int               @map("current_version")
+  /// Events at or before this audit-trail id are never acted on (set when the workflow is turned on), so turning a workflow on never replays history.
+  activeFromEventId BigInt?           @map("active_from_event_id")
+  /// Secret for signing webhook deliveries (HMAC-SHA256).
+  signingSecret     String            @map("signing_secret") @db.VarChar(100)
+  createdById       String            @map("created_by_id") @db.Uuid
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org               Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  versions          WorkflowVersion[]
+  runs              WorkflowRun[]
+
+  @@unique([id, orgId])
+  @@index([orgId, enabled])
+  @@map("workflows")
+}
+
+model WorkflowVersion {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  workflowId  String       @map("workflow_id") @db.Uuid
+  version     Int
+  trigger     String       @db.VarChar(40)
+  conditions  Json
+  actions     Json
+  note        String?      @db.VarChar(500)
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  workflow    Workflow     @relation(fields: [workflowId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([workflowId, version])
+  @@map("workflow_versions")
+}
+
+/// One event looked at by one workflow version (or a test run).
+model WorkflowRun {
+  id         String              @id @default(uuid()) @db.Uuid
+  orgId      String              @map("org_id") @db.Uuid
+  workflowId String              @map("workflow_id") @db.Uuid
+  version    Int
+  trigger    String              @db.VarChar(40)
+  /// The audit-trail event that started the run (null for a test run without one).
+  eventId    BigInt?             @map("event_id")
+  entityType String?             @map("entity_type") @db.VarChar(40)
+  entityId   String?             @map("entity_id") @db.VarChar(64)
+  facts      Json
+  /// Each condition with its result and the value it saw.
+  conditions Json
+  status     WorkflowRunStatus
+  error      String?             @db.VarChar(1000)
+  testedById String?             @map("tested_by_id") @db.Uuid
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt DateTime?           @map("finished_at") @db.Timestamptz(6)
+  org        Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  workflow   Workflow            @relation(fields: [workflowId, orgId], references: [id, orgId], onDelete: Restrict)
+  actions    WorkflowActionRun[]
+
+  @@unique([id, orgId])
+  @@index([orgId, workflowId, createdAt])
+  @@map("workflow_runs")
+}
+
+model WorkflowActionRun {
+  id            String               @id @default(uuid()) @db.Uuid
+  orgId         String               @map("org_id") @db.Uuid
+  runId         String               @map("run_id") @db.Uuid
+  position      Int
+  type          String               @db.VarChar(20)
+  status        WorkflowActionStatus
+  /// What the action was given: the rendered task, or the webhook address and body.
+  input         Json
+  /// What happened: the task created, or each delivery attempt with its HTTP status.
+  result        Json                 @default("{}")
+  attempts      Int                  @default(0)
+  nextAttemptAt DateTime?            @map("next_attempt_at") @db.Timestamptz(6)
+  /// A delivery in progress holds the action until this time, so two runners never send it twice at once.
+  lockedUntil   DateTime?            @map("locked_until") @db.Timestamptz(6)
+  error         String?              @db.VarChar(1000)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt    DateTime?            @map("finished_at") @db.Timestamptz(6)
+  org           Organization         @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  run           WorkflowRun          @relation(fields: [runId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([runId, position])
+  @@index([status, nextAttemptAt])
+  @@map("workflow_action_runs")
+}
+
+/// How far through the organisation's audit trail the workflows have read.
+model WorkflowCursor {
+  orgId       String       @id @map("org_id") @db.Uuid
+  lastEventId BigInt       @map("last_event_id")
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("workflow_cursors")
+}
+
+/// A to-do for a person or a role, made by a person or by a workflow.
+model Task {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  title          String       @db.VarChar(200)
+  description    String?      @db.VarChar(2000)
+  status         TaskStatus   @default(OPEN)
+  assigneeUserId String?      @map("assignee_user_id") @db.Uuid
+  assigneeRole   String?      @map("assignee_role") @db.VarChar(20)
+  dueDate        DateTime?    @map("due_date") @db.Date
+  /// What the task is about, for a link: DOCUMENT, PAYMENT, JOURNAL, EXPENSE_CLAIM or ALERT.
+  linkType       String?      @map("link_type") @db.VarChar(20)
+  linkId         String?      @map("link_id") @db.VarChar(64)
+  workflowRunId  String?      @map("workflow_run_id") @db.Uuid
+  createdById    String?      @map("created_by_id") @db.Uuid
+  closedById     String?      @map("closed_by_id") @db.Uuid
+  closedAt       DateTime?    @map("closed_at") @db.Timestamptz(6)
+  closeNote      String?      @map("close_note") @db.VarChar(1000)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, status])
+  @@index([orgId, assigneeUserId, status])
+  @@map("tasks")
 }

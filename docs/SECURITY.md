@@ -47,8 +47,12 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | expenses.reimburse | ✓ | ✓ | ✓ | | |
 | audit.read | ✓ | ✓ | ✓ | ✓ | |
 | copilot.use (ask the AI copilot; only one's own conversations) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| workflows.manage (automations, their webhooks and signing secrets; every task) | ✓ | ✓ | | | |
+| tasks.use (tasks for oneself or one's role; give tasks) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 The AI copilot sends questions and the figures it reads to Anthropic only when the server has `ANTHROPIC_API_KEY` **and** an owner or admin has turned it on for the organisation. Its tools are read-only and check the asking member's permissions; conversations are private to their author, down to row-level security. See [`AI_COPILOT.md`](AI_COPILOT.md).
+
+Workflow webhooks (`docs/WORKFLOW_AUTOMATIONS.md`) are signed with a per-workflow HMAC-SHA256 secret. Outside development they may only reach public https addresses: the address is checked when saved, the host name is resolved when sending, every resolved address is checked against loopback, private, link-local (cloud metadata), CGNAT, reserved and IPv4-mapped forms, and the connection is pinned to the checked address. Redirects are not followed. `WEBHOOK_ALLOW_PRIVATE_NETWORKS` must stay false in production.
 
 The EMPLOYEE role has only `org.read` and `expenses.submit`.
 

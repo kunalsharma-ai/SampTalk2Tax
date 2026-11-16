@@ -43,6 +43,10 @@ export const PERMISSIONS = [
   'alerts.manage',
   /** Ask the AI copilot questions about the books. It only reads; it never changes anything. */
   'copilot.use',
+  /** Set up workflow automations (and their webhooks), see every task and retry failed deliveries. */
+  'workflows.manage',
+  /** See and work on tasks given to oneself or one's role, and give tasks to others. */
+  'tasks.use',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -59,6 +63,7 @@ const READ_ONLY: Permission[] = [
   'banking.read',
   'expenses.read',
   'copilot.use',
+  'tasks.use',
 ];
 
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>>> = Object.freeze({
