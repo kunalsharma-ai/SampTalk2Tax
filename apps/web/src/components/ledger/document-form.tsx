@@ -25,6 +25,8 @@ interface LineState {
   hsnCode: string;
   departmentId: string;
   projectId: string;
+  /** Bills made from a purchase order: the order line this line bills (kept through edits). */
+  purchaseOrderLineId: string;
 }
 
 const QTY = /^\d{0,12}(\.\d{0,6})?$/;
@@ -54,7 +56,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
   const qc = useQueryClient();
   const c = org?.functionalCurrency ?? 'INR';
   const nextKey = useRef(2);
-  const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '', departmentId: '', projectId: '' });
+  const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '', departmentId: '', projectId: '', purchaseOrderLineId: '' });
   const isCharge = kind === l.charge.kind;
   const label = debitNoteFor ? 'Debit note' : isCharge ? l.charge.label : l.credit.label;
 
@@ -65,7 +67,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
   const [memo, setMemo] = useState(existing?.memo ?? '');
   const [lines, setLines] = useState<LineState[]>(
     existing
-      ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '', departmentId: x.departmentId ?? '', projectId: x.projectId ?? '' }))
+      ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '', departmentId: x.departmentId ?? '', projectId: x.projectId ?? '', purchaseOrderLineId: x.purchaseOrderLineId ?? '' }))
       : [blank(1)],
   );
   const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? debitNoteFor?.placeOfSupply ?? '');
@@ -113,7 +115,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
   const defaultDue = selectedContact && issueDate ? addDays(issueDate, selectedContact.paymentTermsDays) : '';
 
   const filled = lines.filter((x) => x.accountId || x.unitPrice || x.description);
-  const payloadLines = filled.map((x) => ({ accountId: x.accountId, description: x.description || undefined, quantity: x.quantity || '0', unitPrice: x.unitPrice || '0', taxRateId: x.taxRateId || null, hsnCode: x.hsnCode.trim() || null, departmentId: x.departmentId || null, projectId: x.projectId || null }));
+  const payloadLines = filled.map((x) => ({ accountId: x.accountId, description: x.description || undefined, quantity: x.quantity || '0', unitPrice: x.unitPrice || '0', taxRateId: x.taxRateId || null, hsnCode: x.hsnCode.trim() || null, departmentId: x.departmentId || null, projectId: x.projectId || null, ...(x.purchaseOrderLineId ? { purchaseOrderLineId: x.purchaseOrderLineId } : {}) }));
 
   // Same calculation the server runs, so the totals shown are the totals that post.
   const calc = useMemo(() => {
@@ -174,6 +176,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
         currency,
         exchangeRate: foreign ? rate.trim() || null : null,
         debitNoteFor: debitNoteFor?.id,
+        purchaseOrderId: existing?.purchaseOrderId ?? undefined,
         lines: payloadLines,
       };
       const base = `/v1/orgs/${orgId}/${l.api}/documents`;
@@ -186,6 +189,8 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
       await qc.invalidateQueries({ queryKey: ['document', orgId] });
       await qc.invalidateQueries({ queryKey: ['contacts', orgId] });
       await qc.invalidateQueries({ queryKey: ['dashboard', orgId] });
+      await qc.invalidateQueries({ queryKey: ['bill-match', orgId] });
+      await qc.invalidateQueries({ queryKey: ['purchase-orders', orgId] });
       router.push(`/orgs/${orgId}/${l.docsPath}/${d.id}`);
     },
   });

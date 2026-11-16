@@ -672,6 +672,8 @@ model Document {
   debitNoteForId       String?                  @map("debit_note_for_id") @db.Uuid
   debitNoteFor         Document?                @relation("DebitNotes", fields: [debitNoteForId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_debit_note_for_fk")
   debitNotes           Document[]               @relation("DebitNotes")
+  /// A bill matched to this purchase order (AP-015); its lines point at the order's lines.
+  purchaseOrderId      String?                  @map("purchase_order_id") @db.Uuid
 
   @@unique([orgId, kind, number])
   @@unique([id, orgId])
@@ -701,6 +703,8 @@ model DocumentLine {
   igstAmount   Decimal  @default(0) @map("igst_amount") @db.Decimal(24, 6)
   departmentId String?  @map("department_id") @db.Uuid
   projectId    String?  @map("project_id") @db.Uuid
+  /// Bills: the purchase order line this line bills.
+  purchaseOrderLineId String? @map("purchase_order_line_id") @db.Uuid
   document     Document @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Cascade)
   account      Account  @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
   tax          TaxRate? @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
@@ -5051,4 +5055,136 @@ model ProFormaInvoiceLine {
 
   @@unique([proFormaId, lineNo])
   @@map("pro_forma_invoice_lines")
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  ISSUED
+  CLOSED
+  CANCELLED
+}
+
+enum MatchMode {
+  TWO_WAY
+  THREE_WAY
+}
+
+enum GoodsReceiptStatus {
+  RECORDED
+  CANCELLED
+}
+
+/// AP-015: what was ordered from a vendor. Shown as PO-0001. Fixed once issued.
+model PurchaseOrder {
+  id                       String              @id @default(uuid()) @db.Uuid
+  orgId                    String              @map("org_id") @db.Uuid
+  number                   Int
+  contactId                String              @map("contact_id") @db.Uuid
+  orderDate                DateTime            @map("order_date") @db.Date
+  expectedDate             DateTime?           @map("expected_date") @db.Date
+  placeOfSupply            String?             @map("place_of_supply") @db.Char(2)
+  /// The vendor's quotation or reference.
+  reference                String?             @db.VarChar(100)
+  terms                    String?             @db.VarChar(4000)
+  memo                     String?             @db.VarChar(1000)
+  currency                 String              @db.Char(3)
+  subtotal                 Decimal             @db.Decimal(24, 6)
+  taxTotal                 Decimal             @map("tax_total") @db.Decimal(24, 6)
+  total                    Decimal             @db.Decimal(24, 6)
+  status                   PurchaseOrderStatus @default(DRAFT)
+  matchMode                MatchMode           @default(THREE_WAY) @map("match_mode")
+  priceTolerancePercent    Decimal             @default(0) @map("price_tolerance_percent") @db.Decimal(5, 2)
+  quantityTolerancePercent Decimal             @default(0) @map("quantity_tolerance_percent") @db.Decimal(5, 2)
+  issuedAt                 DateTime?           @map("issued_at") @db.Timestamptz(6)
+  closedAt                 DateTime?           @map("closed_at") @db.Timestamptz(6)
+  closeReason              String?             @map("close_reason") @db.VarChar(500)
+  cancelledAt              DateTime?           @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason             String?             @map("cancel_reason") @db.VarChar(500)
+  createdById              String              @map("created_by_id") @db.Uuid
+  createdAt                DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lines                    PurchaseOrderLine[]
+  receipts                 GoodsReceipt[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id          String             @id @default(uuid()) @db.Uuid
+  orgId       String             @map("org_id") @db.Uuid
+  orderId     String             @map("order_id") @db.Uuid
+  lineNo      Int                @map("line_no")
+  description String?            @db.VarChar(500)
+  accountId   String             @map("account_id") @db.Uuid
+  quantity    Decimal            @db.Decimal(24, 6)
+  unitPrice   Decimal            @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?            @map("tax_rate_id") @db.Uuid
+  hsnCode     String?            @map("hsn_code")
+  netAmount   Decimal            @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal            @map("tax_amount") @db.Decimal(24, 6)
+  order       PurchaseOrder      @relation(fields: [orderId, orgId], references: [id, orgId], onDelete: Cascade)
+  received    GoodsReceiptLine[]
+
+  @@unique([orderId, lineNo])
+  @@unique([id, orgId])
+  @@map("purchase_order_lines")
+}
+
+/// AP-016: goods received against a purchase order. Shown as GRN-0001. Never edited; cancelled instead.
+model GoodsReceipt {
+  id           String             @id @default(uuid()) @db.Uuid
+  orgId        String             @map("org_id") @db.Uuid
+  number       Int
+  orderId      String             @map("order_id") @db.Uuid
+  receiptDate  DateTime           @map("receipt_date") @db.Date
+  /// The vendor's delivery note or challan.
+  reference    String?            @db.VarChar(100)
+  memo         String?            @db.VarChar(1000)
+  status       GoodsReceiptStatus @default(RECORDED)
+  cancelledAt  DateTime?          @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason String?            @map("cancel_reason") @db.VarChar(500)
+  createdById  String             @map("created_by_id") @db.Uuid
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  order        PurchaseOrder      @relation(fields: [orderId, orgId], references: [id, orgId], onDelete: Restrict)
+  lines        GoodsReceiptLine[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, orderId])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptLine {
+  id          String            @id @default(uuid()) @db.Uuid
+  orgId       String            @map("org_id") @db.Uuid
+  receiptId   String            @map("receipt_id") @db.Uuid
+  orderLineId String            @map("order_line_id") @db.Uuid
+  /// Accepted into stock or use.
+  quantity    Decimal           @db.Decimal(24, 6)
+  rejected    Decimal           @default(0) @db.Decimal(24, 6)
+  note        String?           @db.VarChar(500)
+  receipt     GoodsReceipt      @relation(fields: [receiptId, orgId], references: [id, orgId], onDelete: Restrict)
+  orderLine   PurchaseOrderLine @relation(fields: [orderLineId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([receiptId, orderLineId])
+  @@index([orderLineId])
+  @@map("goods_receipt_lines")
+}
+
+/// AP-017: why a bill that does not match its purchase order is accepted. Applies only to the differences it records.
+model BillMatchAcceptance {
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  documentId   String   @map("document_id") @db.Uuid
+  fingerprint  String
+  reason       String   @db.VarChar(1000)
+  acceptedById String   @map("accepted_by_id") @db.Uuid
+  acceptedAt   DateTime @default(now()) @map("accepted_at") @db.Timestamptz(6)
+
+  @@index([orgId, documentId])
+  @@map("bill_match_acceptances")
 }

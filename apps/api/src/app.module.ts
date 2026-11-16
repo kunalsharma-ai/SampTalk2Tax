@@ -161,6 +161,8 @@ import { CrmService } from './crm/crm.service';
 import { SalesOrdersService } from './sales-orders/sales-orders.service';
 import { ProFormaController } from './sales-orders/pro-forma.controller';
 import { ProFormaService } from './sales-orders/pro-forma.service';
+import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
+import { PurchaseOrdersService } from './purchase-orders/purchase-orders.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
 import { DimensionsService } from './dimensions/dimensions.service';
 import { CloseService } from './close/close.service';
@@ -262,6 +264,8 @@ export class AppModule {
         PaymentScheduleController,
         DisputesController,
         ProFormaController,
+    PurchaseOrdersController,
+    BillMatchController,
         VendorBankDetailsController,
         InvoiceTemplatesController,
         InvoicePrintController,
@@ -358,6 +362,7 @@ export class AppModule {
         PaymentScheduleService,
         DisputesService,
         ProFormaService,
+    PurchaseOrdersService,
         JournalTemplatesRunnerService,
         RecurringBillsService,
         RecurringBillsRunnerService,

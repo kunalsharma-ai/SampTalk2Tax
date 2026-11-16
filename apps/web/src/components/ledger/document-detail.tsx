@@ -19,6 +19,7 @@ import { useOrg } from '@/lib/org';
 import { LineDimensionTags } from '@/components/dimensions/line-dimensions';
 import { useDimensions } from '@/lib/dimensions';
 import { DISPUTE_REASON_LABEL, type DisputeList } from '@/lib/disputes';
+import { BillMatchPanel } from '@/components/purchase-orders/bill-match-panel';
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
 import { DocumentForm } from './document-form';
 import { DocStatus } from './documents-table';
@@ -52,7 +53,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
   const disputes = useQuery({ enabled: disputable, queryKey: ['disputes', orgId, 'invoice', documentId], queryFn: () => api<DisputeList>(`/v1/orgs/${orgId}/sales/disputes?status=open&documentId=${documentId}`) });
   const openDispute = disputable ? disputes.data?.disputes[0] : undefined;
   const refresh = async () => {
-    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill', 'disputes']) await qc.invalidateQueries({ queryKey: [k, orgId] });
+    for (const k of ['document', 'documents', 'contacts', 'contact', 'dashboard', 'payments', 'ageing', 'approval', 'approvals', 'einvoice', 'ewaybill', 'disputes', 'bill-match', 'purchase-orders']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
   const post = useMutation({ mutationFn: () => api<FinancialDocument>(`${base}/documents/${documentId}/post`, { method: 'POST', body: { overrideCreditLimit: override } }), onSuccess: refresh });
   const remove = useMutation({
@@ -192,6 +193,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           Raises the value of <Link className="text-accent hover:underline" href={`/orgs/${orgId}/${l.docsPath}/${d.debitNoteFor.id}`}>invoice {d.debitNoteFor.number}</Link> of {date(d.debitNoteFor.issueDate)} (<Money value={d.debitNoteFor.total} currency={c} />). It is owed and paid like an invoice and reported as a debit note in GST returns.
         </p>
       ) : null}
+      {d.purchaseOrderId ? <BillMatchPanel documentId={d.id} currency={c} /> : null}
       {d.debitNotes.length ? (
         <p className="mt-4 text-sm">
           Debit notes on this invoice:{' '}

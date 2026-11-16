@@ -60,3 +60,4 @@ export * from './contracts';
 export * from './customer-insights';
 export * from './revenue-forecast';
 export * from './crm-api';
+export * from './purchase-orders';

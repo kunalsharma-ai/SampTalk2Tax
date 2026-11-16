@@ -38,6 +38,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Purchases',
     items: [
       { href: '/purchases/vendors', label: 'Vendors' },
+      { href: '/purchases/orders', label: 'Purchase orders' },
       { href: '/purchases/bills', label: 'Bills' },
       { href: '/purchases/payments', label: 'Payments' },
       { href: '/purchases/recurring-bills', label: 'Recurring bills' },

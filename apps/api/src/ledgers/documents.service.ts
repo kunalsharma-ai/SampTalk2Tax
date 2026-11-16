@@ -38,6 +38,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
 import { JournalsService } from '../journals/journals.service';
 import { WithholdingFacts, WithholdingService } from '../withholding/withholding.service';
+import { assertBillMatches, checkBillOrder } from '../purchase-orders/matching';
 import { ledgerKinds, SubledgerService } from './subledger.service';
 
 export interface LedgerOrg {
@@ -69,6 +70,8 @@ export interface DocumentInput {
   exchangeRate?: string | null;
   /** Sales: makes this invoice a debit note raising the value of this earlier posted invoice (DN- series). */
   debitNoteFor?: string | null;
+  /** Bills: the purchase order this bill is matched to; its lines can point at the order's lines. */
+  purchaseOrderId?: string | null;
   lines: DocumentLineInput[];
 }
 
@@ -269,6 +272,7 @@ export class DocumentsService {
         currency: prepared.currency,
         exchangeRate: prepared.rate,
         debitNoteForId: prepared.debitNoteFor?.id ?? null,
+        purchaseOrderId: prepared.purchaseOrderId,
         ...gstColumns(prepared.gst),
         ...taxColumns(prepared.computed, prepared.withholding),
         subtotal: prepared.computed.subtotal.toFixed(),
@@ -300,6 +304,12 @@ export class DocumentsService {
     return { computed: p.computed, gst: p.gst };
   }
 
+  /** A purchase's lines and totals worked out by the bill rules, without saving anything (purchase orders). */
+  async computePurchase(tx: Tx, org: LedgerOrg, input: Omit<DocumentInput, 'kind' | 'withholdingSectionId' | 'reverseCharge' | 'reference' | 'purchaseOrderId'>) {
+    const p = await this.prepare(tx, org, 'PURCHASES', { ...input, kind: 'BILL' });
+    return { computed: p.computed, gst: p.gst };
+  }
+
   async updateDraft(org: LedgerOrg, actor: Actor, ledger: Ledger, id: string, input: DocumentInput) {
     return this.prisma.$transaction(async (tx) => {
       const existing = await this.lockDocument(tx, org.id, ledger, id);
@@ -318,6 +328,7 @@ export class DocumentsService {
           currency: prepared.currency,
           exchangeRate: prepared.rate,
           debitNoteForId: prepared.debitNoteFor?.id ?? null,
+          purchaseOrderId: prepared.purchaseOrderId,
           ...gstColumns(prepared.gst),
           ...taxColumns(prepared.computed, prepared.withholding),
           subtotal: prepared.computed.subtotal.toFixed(),
@@ -544,7 +555,8 @@ export class DocumentsService {
       currency: doc.currency,
       exchangeRate: doc.exchangeRate.toFixed(),
       debitNoteFor: doc.debitNoteForId,
-      lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode, departmentId: l.departmentId, projectId: l.projectId })),
+      purchaseOrderId: doc.purchaseOrderId,
+      lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode, departmentId: l.departmentId, projectId: l.projectId, purchaseOrderLineId: l.purchaseOrderLineId })),
     };
     const { computed, gst, withholding, debitNoteFor } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
     if (withholding && !new D(withholding.result.amount).eq(doc.withholdingAmount.toFixed())) {
@@ -553,6 +565,8 @@ export class DocumentsService {
     if (!computed.total.eq(doc.total.toFixed()) || !sameGstTax(computed.lines, doc.lines)) {
       throw new DomainError('TOTAL_CHANGED', 'A tax rate on this draft changed since it was saved. Open and save the draft again to review the new total.', HttpStatus.CONFLICT);
     }
+    // AP-017: a bill matched to a purchase order posts only when it agrees, or its differences are accepted.
+    if (doc.kind === 'BILL' && doc.purchaseOrderId) await assertBillMatches(tx, org.id, id);
     if ((await policyFor(tx, org.id, doc.kind, doc.total.times(doc.exchangeRate).toFixed())) && !(await currentApproval(tx, id, doc.total.toFixed()))) {
       throw new DomainError('APPROVAL_REQUIRED', 'This document needs an approval before it can post. Submit it for approval first.', HttpStatus.CONFLICT);
     }
@@ -678,7 +692,8 @@ export class DocumentsService {
         throw new DomainError('DUPLICATE_BILL', `This vendor's invoice "${input.reference}" is already entered${dup[0].number ? ` as ${dup[0].number}` : ' as a draft'}`, HttpStatus.CONFLICT);
       }
     }
-    return { computed, dueDate, gst, withholding, currency, rate, debitNoteFor };
+    const purchaseOrderId = await checkBillOrder(tx, org.id, input);
+    return { computed, dueDate, gst, withholding, currency, rate, debitNoteFor, purchaseOrderId };
   }
 
   /** The posted invoice a debit note raises the value of: same customer, not itself a debit note, not after the note. */
@@ -936,6 +951,7 @@ export class DocumentsService {
       voidDate: d.voidDate ? fromDbDate(d.voidDate) : null,
       voidReason: d.voidReason,
       /** Set when this invoice is a debit note: the invoice it raises the value of. */
+      purchaseOrderId: d.purchaseOrderId,
       debitNoteFor: d.debitNoteFor ? { id: d.debitNoteFor.id, number: d.debitNoteFor.number, issueDate: fromDbDate(d.debitNoteFor.issueDate), total: d.debitNoteFor.total.toFixed(scale) } : null,
       debitNotes: d.debitNotes.map((n) => ({ id: n.id, number: n.number, status: n.status, issueDate: fromDbDate(n.issueDate), total: n.total.toFixed(scale) })),
       postedAt: d.postedAt?.toISOString() ?? null,
@@ -961,6 +977,7 @@ export class DocumentsService {
         taxAmount: l.taxAmount.toFixed(scale),
         departmentId: l.departmentId,
         projectId: l.projectId,
+        purchaseOrderLineId: l.purchaseOrderLineId,
       })),
       allocations: isCharge
         ? d.allocationsIn.map((a) => ({
@@ -1033,6 +1050,7 @@ function lineRows(lines: ReturnType<typeof computeDocument>['lines']) {
     taxAmount: l.taxAmount.toFixed(),
     departmentId: l.departmentId,
     projectId: l.projectId,
+    purchaseOrderLineId: l.purchaseOrderLineId,
     ...gstLineColumns(l),
   }));
 }
