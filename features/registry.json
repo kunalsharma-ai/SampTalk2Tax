@@ -9742,9 +9742,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/budgets"
+      ],
+      "notes": "Annual budgets per fiscal year for revenue and expense accounts, as numbered versions (empty, copied, or last year's actuals with a percentage change), with an annual amount spread evenly over the months to the paisa. See docs/BUDGETS.md."
     },
     {
       "id": "FPA-003",
@@ -9792,9 +9799,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/budgets/[budgetId]"
+      ],
+      "notes": "Twelve monthly amounts per account, entered in a grid or spread from an annual amount; quarters are a reporting view only (no entry by quarter). See docs/BUDGETS.md."
     },
     {
       "id": "FPA-005",
@@ -10042,9 +10056,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/budget-vs-actual"
+      ],
+      "notes": "Budget vs actual by month, quarter or year against posted journals: variance, percentage and favourable/unfavourable per account and for revenue, expenses and net income, year to date, periods in progress, unbudgeted accounts flagged. No drill-down or export yet."
     },
     {
       "id": "FPA-015",
@@ -10267,9 +10288,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "packages/database/prisma/migrations/20261101260000_budgets"
+      ],
+      "notes": "Submit, withdraw, send back with a reason, approve by someone other than the submitter (API and CHECK); one approved version per year, earlier one superseded; approved versions immutable (triggers). Single approval step."
     },
     {
       "id": "FPA-024",

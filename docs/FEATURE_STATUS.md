@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1144 |
+| Not started | 1140 |
 | Designed | 0 |
 | Implementing | 42 |
 | Implemented | 28 |
-| Tested | 129 |
+| Tested | 133 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -33,7 +33,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
 | Treasury management | M6 | 28 | 28 | 0 |
-| Financial planning and analysis | M4 | 35 | 35 | 0 |
+| Financial planning and analysis | M4 | 35 | 31 | 4 |
 | Financial digital twin | M7 | 28 | 28 | 0 |
 | AI Virtual CFO | M7 | 35 | 35 | 0 |
 | Multi-agent AI finance workforce | M5 | 60 | 60 | 0 |
@@ -1058,6 +1058,58 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy.
 - Evidence:
   - apps/web/src/components/expenses/claim-detail.tsx
+
+### FPA-002 — Annual budgets
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: Annual budgets per fiscal year for revenue and expense accounts, as numbered versions (empty, copied, or last year's actuals with a percentage change), with an annual amount spread evenly over the months to the paisa. See docs/BUDGETS.md.
+- Evidence:
+  - packages/accounting-engine/src/budgets.ts
+  - packages/accounting-engine/test/budgets.test.ts
+  - apps/api/src/budgets
+  - apps/api/test/budgets.e2e.test.ts
+  - apps/web/e2e/budgets-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/budgets
+
+### FPA-004 — Monthly budgets
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: Twelve monthly amounts per account, entered in a grid or spread from an annual amount; quarters are a reporting view only (no entry by quarter). See docs/BUDGETS.md.
+- Evidence:
+  - packages/accounting-engine/src/budgets.ts
+  - packages/accounting-engine/test/budgets.test.ts
+  - apps/api/src/budgets
+  - apps/api/test/budgets.e2e.test.ts
+  - apps/web/e2e/budgets-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/budgets/[budgetId]
+
+### FPA-014 — Variance analysis
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: Budget vs actual by month, quarter or year against posted journals: variance, percentage and favourable/unfavourable per account and for revenue, expenses and net income, year to date, periods in progress, unbudgeted accounts flagged. No drill-down or export yet.
+- Evidence:
+  - packages/accounting-engine/src/budgets.ts
+  - packages/accounting-engine/test/budgets.test.ts
+  - apps/api/src/budgets
+  - apps/api/test/budgets.e2e.test.ts
+  - apps/web/e2e/budgets-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/planning/budget-vs-actual
+
+### FPA-023 — Budget approvals
+
+- Module: Financial planning and analysis
+- Status: **Tested**
+- Notes: Submit, withdraw, send back with a reason, approve by someone other than the submitter (API and CHECK); one approved version per year, earlier one superseded; approved versions immutable (triggers). Single approval step.
+- Evidence:
+  - packages/accounting-engine/src/budgets.ts
+  - packages/accounting-engine/test/budgets.test.ts
+  - apps/api/src/budgets
+  - apps/api/test/budgets.e2e.test.ts
+  - apps/web/e2e/budgets-flow.test.mjs
+  - packages/database/prisma/migrations/20261101260000_budgets
 
 ### WFLOW-006 — Approval workflows
 

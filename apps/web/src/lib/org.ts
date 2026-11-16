@@ -83,3 +83,8 @@ export function useEWayBillSettings() {
   const orgId = useOrgId();
   return useQuery({ queryKey: ['ewaybill-settings', orgId], queryFn: () => api<EWayBillSettings>(`/v1/orgs/${orgId}/e-way-bills/settings`) });
 }
+
+/** The signed-in user (for "you submitted this" checks; the API enforces the rules). */
+export function useMe() {
+  return useQuery({ queryKey: ['me'], queryFn: () => api<{ user: { id: string; name: string; email: string } }>('/v1/auth/me'), staleTime: 5 * 60_000 });
+}

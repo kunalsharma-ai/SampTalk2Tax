@@ -11,7 +11,7 @@ import { BankingService } from '../banking/banking.service';
 import { todayIso } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
 import { loadConfig } from '../config';
-import { addDays, D } from '@talk2tax/accounting-engine';
+import { addDays, D, fiscalYearForDate, spreadEvenly } from '@talk2tax/accounting-engine';
 import { ContactsService } from '../contacts/contacts.service';
 import { JournalsService } from '../journals/journals.service';
 import { DocumentsService } from '../ledgers/documents.service';
@@ -24,6 +24,7 @@ import { OrganizationsService } from '../organizations/organizations.service';
 import { PayrollService } from '../payroll/payroll.service';
 import { ComplianceService } from '../compliance/compliance.service';
 import { EInvoicingService } from '../e-invoicing/e-invoicing.service';
+import { BudgetsService } from '../budgets/budgets.service';
 import { EWayBillsService } from '../e-way-bills/e-way-bills.service';
 
 /**
@@ -483,6 +484,23 @@ async function main() {
     ewbs++;
   }
   console.log(`  E-way bills: ${ewbs} synthetic e-way bill (not from the portal)`);
+
+  // SYNTHETIC budgets: an approved FY budget (submitted by the demo owner, approved by a
+  // synthetic approver) and a draft revision, so budget vs actual has something to compare.
+  const budgets = app.get(BudgetsService);
+  const approverUser = (await app.get(AuthService).register({ email: 'finance.approver@talk2tax.local', name: 'Finance Approver (synthetic)', password: randomBytes(24).toString('base64url') }, { userAgent: 'demo seed' })).user;
+  await prisma.membership.create({ data: { orgId: org.id, userId: approverUser.id, role: 'APPROVER' } });
+  const budgetYear = fiscalYearForDate(today, 4);
+  const acc = Object.fromEntries((await prisma.account.findMany({ where: { orgId: org.id } })).map((x) => [x.code, x.id]));
+  const plan: [string, string][] = [['4100', '5000000'], ['4200', '4200000'], ['5000', '3000000'], ['6100', '6600000'], ['6110', '90000'], ['6200', '540000'], ['6300', '96000'], ['6400', '300000'], ['6500', '240000']];
+  const v1 = await budgets.create(org.id, actor, { basis: 'EMPTY', fiscalYear: budgetYear, name: 'Original plan', note: 'Synthetic demo budget' });
+  await budgets.saveLines(org.id, actor, v1.budget.id, { lines: plan.filter(([code]) => acc[code]).map(([code, total]) => ({ accountId: acc[code], amounts: spreadEvenly(total) })) });
+  await budgets.submit(org.id, actor, v1.budget.id);
+  await budgets.approve(org.id, approverUser, v1.budget.id);
+  const v2 = await budgets.create(org.id, actor, { basis: 'COPY', fiscalYear: budgetYear, name: 'Revision: two more engineers', sourceBudgetId: v1.budget.id });
+  const salaries = spreadEvenly('6600000').map((m, i) => (i >= 8 ? new D(m).plus('120000').toFixed(2) : m));
+  await budgets.saveLines(org.id, actor, v2.budget.id, { lines: [{ accountId: acc['6100'], amounts: salaries }] });
+  console.log(`  Budgets: FY${budgetYear} v1 approved by a synthetic approver, v2 draft`);
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);

@@ -452,9 +452,9 @@ Part 14 · M4 · priority P2 · depends on: GL, RPT
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | FPA-001 |  | rule | Create a comprehensive FP&A platform | Not started |
-| FPA-002 |  | capability | Annual budgets | Not started |
+| FPA-002 |  | capability | Annual budgets | Tested |
 | FPA-003 |  | capability | Quarterly budgets | Not started |
-| FPA-004 |  | capability | Monthly budgets | Not started |
+| FPA-004 |  | capability | Monthly budgets | Tested |
 | FPA-005 |  | capability | Rolling forecasts | Not started |
 | FPA-006 |  | capability | Revenue forecasting | Not started |
 | FPA-007 |  | capability | Expense forecasting | Not started |
@@ -464,7 +464,7 @@ Part 14 · M4 · priority P2 · depends on: GL, RPT
 | FPA-011 |  | capability | Project budgets | Not started |
 | FPA-012 |  | capability | Capital expenditure planning | Not started |
 | FPA-013 |  | capability | Operating expenditure planning | Not started |
-| FPA-014 |  | capability | Variance analysis | Not started |
+| FPA-014 |  | capability | Variance analysis | Tested |
 | FPA-015 |  | capability | Scenario modeling | Not started |
 | FPA-016 |  | capability | Driver-based planning | Not started |
 | FPA-017 |  | capability | Sensitivity analysis | Not started |
@@ -473,7 +473,7 @@ Part 14 · M4 · priority P2 · depends on: GL, RPT
 | FPA-020 |  | capability | Unit economics | Not started |
 | FPA-021 |  | capability | Financial KPI management | Not started |
 | FPA-022 |  | capability | Forecast version control | Not started |
-| FPA-023 |  | capability | Budget approvals | Not started |
+| FPA-023 |  | capability | Budget approvals | Tested |
 | FPA-024 |  | capability | Forecast accuracy monitoring | Not started |
 | FPA-025 | Three-Statement Financial Modeling | capability | Income statement | Not started |
 | FPA-026 | Three-Statement Financial Modeling | capability | Balance sheet | Not started |

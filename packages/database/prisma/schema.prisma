@@ -214,6 +214,8 @@ model Organization {
   eWayBillVehicles     EWayBillVehicleUpdate[]
   employees            Employee[]
   payRuns              PayRun[]
+  budgets              Budget[]
+  budgetLines          BudgetLine[]
 
   @@map("organizations")
 }
@@ -277,6 +279,7 @@ model Account {
   statementImports BankStatementImport[]
   statementLines   BankStatementLine[]
   reconciliations  BankReconciliation[]
+  budgetLines      BudgetLine[]
 
   @@unique([orgId, code])
   @@unique([id, orgId])
@@ -1390,4 +1393,66 @@ model EWayBillVehicleUpdate {
 
   @@index([eWayBillId])
   @@map("e_way_bill_vehicle_updates")
+}
+
+// ---------------------------------------------------------------- budgets (M4)
+
+enum BudgetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  SUPERSEDED
+}
+
+/// One version of a fiscal year's budget. Versions are numbered per year; a new version
+/// starts empty, from another version or from last year's actuals. Only drafts change.
+/// At most one version per year is APPROVED; approving another supersedes it.
+model Budget {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  /// Labelled by the calendar year the fiscal year ends in (FY2027 = Apr 2026 to Mar 2027).
+  fiscalYear     Int          @map("fiscal_year")
+  version        Int
+  name           String
+  note           String?
+  /// EMPTY, COPY (of sourceBudgetId) or PRIOR_ACTUALS (with changePercent).
+  basis          String
+  sourceBudgetId String?      @map("source_budget_id") @db.Uuid
+  changePercent  Decimal?     @map("change_percent") @db.Decimal(7, 2)
+  status         BudgetStatus @default(DRAFT)
+  createdById    String       @map("created_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  submittedById  String?      @map("submitted_by_id") @db.Uuid
+  submittedAt    DateTime?    @map("submitted_at") @db.Timestamptz(6)
+  approvedById   String?      @map("approved_by_id") @db.Uuid
+  approvedAt     DateTime?    @map("approved_at") @db.Timestamptz(6)
+  supersededAt   DateTime?    @map("superseded_at") @db.Timestamptz(6)
+  /// The last time it was sent back, by whom and why (the audit trail keeps every one).
+  returnedById   String?      @map("returned_by_id") @db.Uuid
+  returnedAt     DateTime?    @map("returned_at") @db.Timestamptz(6)
+  returnReason   String?      @map("return_reason")
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines          BudgetLine[]
+
+  @@unique([orgId, fiscalYear, version])
+  @@unique([id, orgId])
+  @@map("budgets")
+}
+
+/// One account's amount for one month of a budget, on the account's normal side.
+model BudgetLine {
+  id        String       @id @default(uuid()) @db.Uuid
+  orgId     String       @map("org_id") @db.Uuid
+  budgetId  String       @map("budget_id") @db.Uuid
+  accountId String       @map("account_id") @db.Uuid
+  periodNo  Int          @map("period_no") @db.SmallInt
+  amount    Decimal      @db.Decimal(18, 2)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  budget    Budget       @relation(fields: [budgetId, orgId], references: [id, orgId], onDelete: Restrict)
+  account   Account      @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([budgetId, accountId, periodNo])
+  @@index([accountId])
+  @@map("budget_lines")
 }

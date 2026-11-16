@@ -1542,6 +1542,54 @@
         "apps/web/src/components/e-way-bill.tsx"
       ],
       "notes": "India e-way bills for outward supplies on tax invoices: which invoices need one (goods value with GST over Rs 50,000 or a state's own intra-state threshold; services and exempt goods left out; 180-day document limit), the portal's bulk JSON with Part B, validity under Rule 138(10), recording the number, vehicle changes kept in order, cancellation within 24 hours, and no void with a live e-way bill (API and trigger). No portal/GSP connection, exports, inward or job-work movements, extensions or consolidated bills; see docs/E_WAY_BILLS_INDIA.md."
+    },
+    "FPA-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/budgets"
+      ],
+      "notes": "Annual budgets per fiscal year for revenue and expense accounts, as numbered versions (empty, copied, or last year's actuals with a percentage change), with an annual amount spread evenly over the months to the paisa. See docs/BUDGETS.md."
+    },
+    "FPA-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/budgets/[budgetId]"
+      ],
+      "notes": "Twelve monthly amounts per account, entered in a grid or spread from an annual amount; quarters are a reporting view only (no entry by quarter). See docs/BUDGETS.md."
+    },
+    "FPA-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/planning/budget-vs-actual"
+      ],
+      "notes": "Budget vs actual by month, quarter or year against posted journals: variance, percentage and favourable/unfavourable per account and for revenue, expenses and net income, year to date, periods in progress, unbudgeted accounts flagged. No drill-down or export yet."
+    },
+    "FPA-023": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/budgets.ts",
+        "packages/accounting-engine/test/budgets.test.ts",
+        "apps/api/src/budgets",
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs",
+        "packages/database/prisma/migrations/20261101260000_budgets"
+      ],
+      "notes": "Submit, withdraw, send back with a reason, approve by someone other than the submitter (API and CHECK); one approved version per year, earlier one superseded; approved versions immutable (triggers). Single approval step."
     }
   }
 }

@@ -65,6 +65,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * No direct connection to the e-way bill portal: the user uploads the JSON and records the number and validity. Only outward supplies on tax invoices, one invoice at a time: no exports, inward supplies, job work, delivery challans, branch transfers, validity extensions, consolidated or multi-vehicle e-way bills. The state's own threshold is whatever the user enters. See [`E_WAY_BILLS_INDIA.md`](E_WAY_BILLS_INDIA.md).
 
+## Budgets (M4, slice 1)
+
+* Monthly budgets for revenue and expense accounts only: no departments or projects (no dimensions yet), balance sheet or cash budgets, driver-based lines, spreadsheet import or approval chains. Budget vs actual reads posted journals with no drill-down or export. See [`BUDGETS.md`](BUDGETS.md).
+
 ## Web app
 * One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
 * Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.
