@@ -77,6 +77,8 @@ import { GraphController } from './graph/graph.controller';
 import { GraphService } from './graph/graph.service';
 import { DecisionsController } from './decisions/decisions.controller';
 import { DecisionsService } from './decisions/decisions.service';
+import { ForecastLabController } from './forecast-lab/forecast-lab.controller';
+import { ForecastLabService } from './forecast-lab/forecast-lab.service';
 import { RecoveryController } from './recovery/recovery.controller';
 import { RecoveryService } from './recovery/recovery.service';
 import { TwinController } from './twin/twin.controller';
@@ -160,6 +162,7 @@ export class AppModule {
         BenchmarkingController,
         GraphController,
         DecisionsController,
+        ForecastLabController,
         IntegrationsController,
         SignaturesController,
         DimensionsController,
@@ -217,6 +220,7 @@ export class AppModule {
         BenchmarkingService,
         GraphService,
         DecisionsService,
+        ForecastLabService,
         IntegrationsService,
         DimensionsService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },

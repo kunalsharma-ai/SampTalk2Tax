@@ -275,6 +275,7 @@ model Organization {
   closeCertifications    CloseCertification[]
   closeAiReviews         CloseAiReview[]
   closeAdjustments       CloseAdjustment[]
+  forecastLabRuns        ForecastLabRun[]
 
   @@map("organizations")
 }
@@ -3257,4 +3258,28 @@ model Decision {
   @@unique([id, orgId], map: "decisions_id_org_key")
   @@index([orgId, status])
   @@map("decisions")
+}
+
+/// Forecast evaluation lab: a saved run. It keeps the backtest results as they were and every
+/// model's forecasts for the following months, so they can be measured later against what the
+/// books show. Never changed or deleted.
+model ForecastLabRun {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  number      Int
+  /// YYYY-MM: the last complete month the run saw.
+  baseMonth   String       @map("base_month") @db.Char(7)
+  window      Int
+  note        String?      @db.VarChar(1000)
+  /// Backtest results by series (statistics only).
+  results     Json
+  /// [{ series, model, month, horizon, value }]
+  forecasts   Json
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@index([orgId, baseMonth])
+  @@map("forecast_lab_runs")
 }

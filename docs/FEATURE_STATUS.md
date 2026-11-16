@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 926 |
+| Not started | 925 |
 | Designed | 0 |
 | Implementing | 61 |
 | Implemented | 32 |
-| Tested | 313 |
+| Tested | 314 |
 | Integration pending | 11 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -63,7 +63,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Performance and scalability | M9 | 21 | 19 | 2 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 13 | 5 |
+| Additional differentiating innovations | M7 | 18 | 12 | 6 |
 | Navigation structure | M1 | 48 | 34 | 14 |
 | Design system | M1 | 36 | 35 | 1 |
 | Absolute quality rules | All | 20 | 8 | 12 |
@@ -4695,6 +4695,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
   - apps/web/src/app/orgs/[orgId]/reports/balance-sheet/page.tsx
   - apps/web/src/app/orgs/[orgId]/reports/trial-balance/page.tsx
+
+### INNOV-009 — Compare forecast models against historical outcomes and track accuracy
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Eight forecasting methods (last month, 3/6/12-month averages, same month last year, last month plus trend, straight-line trend, exponential smoothing) backtested with a rolling origin over 6, 12 or 18 months on revenue, cost of sales, operating expenses, net income and net cash flow; ranked by WAPE with MAE, bias, within-10% and error by months ahead; saved runs are immutable and their forecasts are measured against the books once each month is over.
+- Evidence:
+  - packages/accounting-engine/src/forecast-lab.ts
+  - packages/accounting-engine/test/forecast-lab.test.ts
+  - packages/database/prisma/migrations/20261105150000_forecast_lab/migration.sql
+  - apps/api/src/forecast-lab
+  - apps/api/test/forecast-lab.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/planning/forecast-lab
+  - apps/web/e2e/forecast-lab-flow.test.mjs
+  - docs/FORECAST_LAB.md
 
 ### NAV-001 — Create a premium sidebar and global navigation system
 
