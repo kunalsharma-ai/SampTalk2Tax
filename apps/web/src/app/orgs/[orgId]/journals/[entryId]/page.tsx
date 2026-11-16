@@ -118,7 +118,7 @@ export default function JournalDetailPage() {
       </div>
       {j.source !== 'MANUAL' ? (
         <div className="mt-4">
-          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : j.source === 'CLOSE' ? 'an AI-proposed month-end adjustment a person approved' : j.source === 'ASSET' ? 'the fixed asset register' : j.source === 'DEFERRAL' ? 'a prepaid or deferred revenue schedule' : j.source === 'ACCRUAL' ? 'a month-end accrual' : j.source === 'LOAN' ? 'a loan' : j.source === 'INTERCOMPANY' ? 'an intercompany transaction' : j.source === 'BAD_DEBT' ? 'a bad-debt provision or write-off' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
+          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : j.source === 'CLOSE' ? 'an AI-proposed month-end adjustment a person approved' : j.source === 'ASSET' ? 'the fixed asset register' : j.source === 'DEFERRAL' ? 'a prepaid or deferred revenue schedule' : j.source === 'ACCRUAL' ? 'a month-end accrual' : j.source === 'LOAN' ? 'a loan' : j.source === 'INTERCOMPANY' ? 'an intercompany transaction' : j.source === 'BAD_DEBT' ? 'a bad-debt provision or write-off' : j.source === 'YEAR_END' ? 'the year-end close' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
             {j.source === 'PAYROLL'
               ? 'This entry was posted by a pay run or a payroll payment. To correct it, void the payment or the pay run (Payroll → Pay runs).'
               : j.source === 'TAX'
@@ -137,6 +137,8 @@ export default function JournalDetailPage() {
               ? 'Posted from a loan: the money received, an installment or a prepayment (Banking → Loans). To correct it, reverse the latest entry on the loan.'
               : j.source === 'INTERCOMPANY'
               ? 'Posted together with the matching entry in the other group company, from the intercompany transactions of the group (Reports → Group consolidation). To correct it, reverse the transaction there, which reverses both entries.'
+              : j.source === 'YEAR_END'
+              ? 'A closing entry: the year\'s revenue and expense accounts brought to nil and the profit or loss moved to retained earnings (Accounting → Year-end close). Profit and loss reports leave closing entries out. To undo it, reopen the year there.'
               : j.source === 'BAD_DEBT'
               ? 'Posted from Bad debts: a provision for doubtful debts or an invoice written off (Sales → Bad debts). To correct a write-off, reverse it there; a provision is corrected by the next provision, which posts only the difference.'
               : j.source === 'BANK'

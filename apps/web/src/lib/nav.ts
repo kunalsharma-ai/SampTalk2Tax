@@ -69,6 +69,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/accruals', label: 'Accruals' },
       { href: '/dimensions', label: 'Departments and projects' },
       { href: '/close', label: 'Month-end close' },
+      { href: '/year-end', label: 'Year-end close' },
       { href: '/periods', label: 'Fiscal periods' },
       { href: '/fx', label: 'Exchange rates', plan: 'MULTI_CURRENCY' },
     ],

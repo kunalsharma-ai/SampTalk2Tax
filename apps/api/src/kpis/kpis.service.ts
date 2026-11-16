@@ -84,7 +84,7 @@ export class KpisService {
       FROM journal_lines l
       JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
       JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.date <= ${toDbDate(lastTo)}::date
+      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND e.date <= ${toDbDate(lastTo)}::date
         AND (e.date >= ${toDbDate(`${first}-01`)}::date OR a.type IN ('ASSET', 'LIABILITY'))
       GROUP BY 1, 2, 3`;
     const key = (r: { type: string; subtype: string | null }) => `${r.type}|${r.subtype ?? ''}`;

@@ -56,7 +56,7 @@ All problems are collected and returned together. An entry is valid only if:
 
 * **Trial balance** (`buildTrialBalance`): per account total debits, credits, net in one column and balance on the normal side; `balanced` flag. Optional `from` for period movement.
 * **Income statement** (`buildIncomeStatement`): revenue and expense movement in a date range; net income.
-* **Balance sheet** (`buildBalanceSheet`): cumulative balances to a date; current-period earnings not yet closed to retained earnings are shown as `unclosedEarnings` within equity; `balanced` = assets = liabilities + equity.
+* **Balance sheet** (`buildBalanceSheet`): cumulative balances to a date; current-period earnings not yet closed to retained earnings are shown as `unclosedEarnings` within equity (years closed by the year-end close, `year-end.ts`, carry theirs in retained earnings; profit-and-loss reports leave CLOSING journals out); `balanced` = assets = liabilities + equity.
 * **Account ledger** (`buildAccountLedger`): opening balance, entries in date/number order, running balance on the normal side.
 
 All reports use functional-currency amounts of POSTED entries only.
@@ -68,4 +68,4 @@ All reports use functional-currency amounts of POSTED entries only.
 
 ## Not yet built
 
-Recurring templates and schedules, accrual auto-reversal, year-end close to retained earnings, exchange-rate tables and revaluation, dimension masters, subsidiary ledgers, intercompany and consolidation, cash-basis reporting.
+Recurring templates and schedules, accrual auto-reversal, exchange-rate tables and revaluation, dimension masters, subsidiary ledgers, intercompany and consolidation, cash-basis reporting.

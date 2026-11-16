@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 827 |
+| Not started | 826 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 401 |
+| Tested | 402 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 10 | 34 |
+| General ledger and accounting engine | M1 | 44 | 9 | 35 |
 | Accounts receivable | M2 | 43 | 24 | 19 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
@@ -169,6 +169,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
   - apps/web/src
+
+### GL-011 — Closing balances
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Year-end close: revenue and expense accounts closed to a chosen retained earnings account by a CLOSING journal (YE-) on the year's last day, previewed line by line; closing again posts only what changed; reopening reverses the closes. Profit-and-loss reports, KPIs, budgets, dimensions, CFO, recovery and month-end checks leave CLOSING journals out; balance sheet and trial balance include them. Not yet: closing by department or project, automatic lock after closing.
+- Evidence:
+  - packages/accounting-engine/src/year-end.ts
+  - packages/accounting-engine/test/year-end.test.ts
+  - packages/database/prisma/migrations/20261126090000_year_end_close/migration.sql
+  - apps/api/src/year-end/year-end.service.ts
+  - apps/api/test/year-end.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/year-end/page.tsx
+  - apps/web/e2e/year-end-flow.test.mjs
+  - docs/YEAR_END_CLOSE.md
 
 ### GL-012 — Journal templates
 

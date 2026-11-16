@@ -267,6 +267,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add departments and projects. Link a project to a customer so its costs count against that customer\'s profit.',
     where: 'Accounting. Tags are used on invoices, bills and journals, and in Profit by department and Customer 360.',
   },
+  'year-end': {
+    what: 'Closing each fiscal year: its revenue and expense accounts brought to nil and the profit or loss moved to retained earnings.',
+    how: 'Once a year has ended, choose Close the year, check the closing journal and post it. If something is posted to the year later, close it again: only the difference is posted. Reopen reverses the year\'s closes.',
+    where: 'Accounting. The closing journal is dated the year\'s last day. Profit and loss reports leave it out; the balance sheet shows the profit in retained earnings.',
+  },
   close: {
     what: 'The month-end close: a checklist to finish a month, with an AI review, then lock it.',
     how: 'Open the month, work through each check, record adjustments, run the AI review, and certify. Closing locks the month against changes.',

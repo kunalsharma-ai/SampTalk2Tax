@@ -107,6 +107,8 @@ import { ContractsController } from './sales-orders/contracts.controller';
 import { ContractsRunnerService } from './sales-orders/contracts-runner.service';
 import { BadDebtsController } from './bad-debts/bad-debts.controller';
 import { BadDebtsService } from './bad-debts/bad-debts.service';
+import { YearEndController } from './year-end/year-end.controller';
+import { YearEndService } from './year-end/year-end.service';
 import { JournalTemplatesController } from './journal-templates/journal-templates.controller';
 import { JournalTemplatesRunnerService } from './journal-templates/journal-templates-runner.service';
 import { JournalTemplatesService } from './journal-templates/journal-templates.service';
@@ -243,6 +245,7 @@ export class AppModule {
         ContractsController,
         JournalTemplatesController,
         BadDebtsController,
+        YearEndController,
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
@@ -333,6 +336,7 @@ export class AppModule {
         ContractsRunnerService,
         JournalTemplatesService,
         BadDebtsService,
+        YearEndService,
         JournalTemplatesRunnerService,
         InvoiceTemplatesService,
         ReportExportService,

@@ -133,7 +133,7 @@ export class CfoService {
       FROM journal_lines l
       JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
       JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND a.type IN ('REVENUE', 'EXPENSE') AND e.date BETWEEN ${from}::date AND ${to}::date
+      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND a.type IN ('REVENUE', 'EXPENSE') AND e.date BETWEEN ${from}::date AND ${to}::date
       GROUP BY a.code, a.name, a.type, a.subtype, 5`;
     const byCode = new Map<string, CfoAccountMonths>();
     for (const r of rows) {

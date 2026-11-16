@@ -215,7 +215,7 @@ export class JournalsService {
         // Month-end adjustments are journals a person approved with nothing else attached: reversed like manual ones.
         if (original.source !== 'CLOSE') assertManual(original);
         if (original.status !== 'POSTED') throw new DomainError('NOT_POSTED', 'Only posted entries can be reversed; delete the draft instead', HttpStatus.CONFLICT);
-        if (original.type === 'REVERSING') throw new DomainError('IS_REVERSAL', 'A reversing entry cannot itself be reversed; post a new entry instead', HttpStatus.CONFLICT);
+        if (original.type === 'REVERSING' || original.reversesEntryId) throw new DomainError('IS_REVERSAL', 'A reversing entry cannot itself be reversed; post a new entry instead', HttpStatus.CONFLICT);
         const already = await tx.journalEntry.findFirst({ where: { reversesEntryId: id }, select: { id: true } });
         if (already) throw new DomainError('ALREADY_REVERSED', 'Entry has already been reversed', HttpStatus.CONFLICT, { reversalId: already.id });
         if (input.date < fromDbDate(original.date)) throw new DomainError('INVALID_DATE', 'Reversal date cannot be before the original entry date');
@@ -243,7 +243,8 @@ export class JournalsService {
             orgId: org.id,
             date: toDbDate(input.date),
             periodId: period.id,
-            type: 'REVERSING',
+            // A reversed closing entry stays a closing entry: neither ever counts in profit and loss.
+            type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
             memo: input.memo ?? `Reversal of JE-${original.entryNumber}`,
             reference: original.reference,
             functionalCurrency: org.functionalCurrency,
@@ -283,7 +284,7 @@ export class JournalsService {
     tx: Tx,
     org: OrgInfo,
     actor: Actor,
-    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT'; lines: JournalLineInput[] },
+    input: { date: string; memo?: string; reference?: string; source: 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT' | 'YEAR_END'; type?: 'CLOSING'; lines: JournalLineInput[] },
   ): Promise<{ id: string; entryNumber: number }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
@@ -293,7 +294,7 @@ export class JournalsService {
         orgId: org.id,
         date: toDbDate(input.date),
         periodId: period.id,
-        type: 'STANDARD',
+        type: input.type ?? 'STANDARD',
         source: input.source,
         memo: input.memo,
         reference: input.reference,
@@ -343,7 +344,7 @@ export class JournalsService {
         orgId: org.id,
         date: toDbDate(input.date),
         periodId: period.id,
-        type: 'REVERSING',
+        type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
         source: original.source,
         memo: input.memo,
         reference: original.reference,

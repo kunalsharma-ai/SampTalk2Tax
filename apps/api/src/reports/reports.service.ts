@@ -38,7 +38,11 @@ export class ReportsService {
     private readonly graph: GraphService,
   ) {}
 
-  private async movements(orgId: string, from: string | null, to: string, dims: { departmentId?: string | null; projectId?: string | null } = {}): Promise<AccountMovement[]> {
+  /**
+   * Movements by account. `profitAndLoss` leaves out closing entries (year-end closes to retained earnings), which
+   * are not part of any period's profit; balances to a date keep them.
+   */
+  private async movements(orgId: string, from: string | null, to: string, dims: { departmentId?: string | null; projectId?: string | null } = {}, profitAndLoss = false): Promise<AccountMovement[]> {
     const fromDate = from ? toDbDate(from) : null;
     const dept = dims.departmentId ?? null;
     const project = dims.projectId ?? null;
@@ -52,6 +56,7 @@ export class ReportsService {
         JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
         WHERE l.org_id = ${orgId}::uuid
           AND e.status = 'POSTED'
+          AND (NOT ${profitAndLoss} OR e.type <> 'CLOSING')
           AND e.date <= ${toDbDate(to)}::date
           AND (${fromDate}::date IS NULL OR e.date >= ${fromDate}::date)
           AND (${dept}::uuid IS NULL OR l.department_id = ${dept}::uuid)
@@ -103,7 +108,7 @@ export class ReportsService {
   async incomeStatement(orgId: string, q: { from: string; to: string; departmentId?: string; projectId?: string }) {
     const ccy = await this.currency(orgId);
     const f = (d: Dec) => d.toFixed(minorUnits(ccy));
-    const is = buildIncomeStatement(await this.movements(orgId, q.from, q.to, q));
+    const is = buildIncomeStatement(await this.movements(orgId, q.from, q.to, q, true));
     const line = (l: { accountId: string; code: string; name: string; subtype?: string | null; amount: Dec }) => ({ ...l, subtype: l.subtype ?? null, amount: f(l.amount) });
     return {
       currency: ccy,
@@ -149,7 +154,7 @@ export class ReportsService {
     const ccy = org.functionalCurrency;
     const f = (d: Dec | null) => (d === null ? null : d.toFixed(minorUnits(ccy)));
     const formatId = q.format ?? defaultStatutoryFormat(org.countryCode);
-    const run = async (from: string, to: string) => buildStatutoryStatements(formatId, await this.movements(orgId, null, to), await this.movements(orgId, from, to));
+    const run = async (from: string, to: string) => buildStatutoryStatements(formatId, await this.movements(orgId, null, to), await this.movements(orgId, from, to, {}, true));
     const now = await run(q.from, q.to);
     const prevRange = { from: yearBefore(q.from), to: yearBefore(q.to) };
     const prev = q.comparative ? await run(prevRange.from, prevRange.to) : null;
@@ -243,7 +248,7 @@ export class ReportsService {
       FROM journal_lines l
       JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
       JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.date <= ${asOf}::date
+      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.type <> 'CLOSING' AND e.date <= ${asOf}::date
       GROUP BY 1, 2`;
 
     const zero = () => new D(0);
