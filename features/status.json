@@ -256,11 +256,20 @@
       ]
     },
     "GL-030": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts"
+        "packages/accounting-engine/src/dimensions.ts",
+        "packages/accounting-engine/test/dimensions.test.ts",
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/src/dimensions/check.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
+        "apps/web/src/components/dimensions/line-dimensions.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "docs/FINANCIAL_DIMENSIONS.md"
       ],
-      "notes": "Journal lines accept free-form dimension key/values (stored as JSON). Dimension masters (cost centers, departments, etc.), validation and reporting by dimension are not done."
+      "notes": "Departments and projects as masters (code unique per kind, never deleted, made inactive instead) tagging journal, invoice, credit note, bill and vendor credit lines; tags checked by organisation, kind and active state in the API and by the database, carried from document lines to the journal and kept on reversals. The older free-form JSON dimensions on journal lines remain but are not reported. Not built: location or custom dimensions, required tags per account."
     },
     "GL-037": {
       "status": "Tested",
@@ -2372,6 +2381,106 @@
         "docs/PREPAID_AND_DEFERRED.md"
       ],
       "notes": "Month-end accruals of expense or income: posted on the last day of the month with the automatic reversal on the first day of the next; cancelling posts the opposite entries on both dates. Not built: recurring accruals, other reversal dates, accruals suggested from history (the month-end close AI review can propose accrual entries separately)."
+    },
+    "ENT-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dimensions.ts",
+        "packages/accounting-engine/test/dimensions.test.ts",
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/src/dimensions/check.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
+        "apps/web/src/components/dimensions/line-dimensions.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "docs/FINANCIAL_DIMENSIONS.md"
+      ],
+      "notes": "Departments and projects as masters (code unique per kind, never deleted, made inactive instead) tagging journal, invoice, credit note, bill and vendor credit lines; tags checked by organisation, kind and active state in the API and by the database, carried from document lines to the journal and kept on reversals. Not built: more than two dimensions, cost allocation across departments, splitting one line across projects."
+    },
+    "RPT-027": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/profit-by-dimension/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "docs/FINANCIAL_DIMENSIONS.md"
+      ],
+      "notes": "Profit and loss with a column per department or project plus Not assigned, totals, net profit and margin per column; the profit and loss filtered by department and project. Not built: trial balance, balance sheet, general ledger and budgets by dimension."
+    },
+    "GL-026": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dimensions.ts",
+        "packages/accounting-engine/test/dimensions.test.ts",
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/src/dimensions/check.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
+        "apps/web/src/components/dimensions/line-dimensions.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "docs/FINANCIAL_DIMENSIONS.md"
+      ],
+      "notes": "Departments: code, name, description, active; tag any journal or document line; profit and loss by department."
+    },
+    "GL-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dimensions.ts",
+        "packages/accounting-engine/test/dimensions.test.ts",
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/src/dimensions/check.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
+        "apps/web/src/components/dimensions/line-dimensions.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "docs/FINANCIAL_DIMENSIONS.md"
+      ],
+      "notes": "Projects: code, name, customer, start and end dates, active; tag any journal or document line; profit and loss by project. Not built: project budgets, time or billing by project."
+    },
+    "GL-024": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/dimensions.ts",
+        "packages/accounting-engine/test/dimensions.test.ts",
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/src/dimensions/check.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
+        "apps/web/src/components/dimensions/line-dimensions.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "docs/FINANCIAL_DIMENSIONS.md"
+      ],
+      "notes": "Departments serve as cost centres: expenses tagged to a department are its costs and the report shows them per department. Not built: a separate cost centre hierarchy, cost allocation rules, cost centre budgets."
+    },
+    "RPT-014": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/profit-by-dimension/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "docs/FINANCIAL_DIMENSIONS.md"
+      ],
+      "notes": "Department profitability: revenue, expenses, net profit and margin per department for any date range, with untagged activity under Not assigned."
+    },
+    "RPT-013": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/dimensions/dimensions.service.ts",
+        "apps/api/test/dimensions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/profit-by-dimension/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx",
+        "apps/web/e2e/dimensions-flow.test.mjs",
+        "docs/FINANCIAL_DIMENSIONS.md"
+      ],
+      "notes": "Project profitability: revenue, expenses, net profit and margin per project for any date range. Not built: budget vs actual per project, work in progress, percentage of completion."
     }
   }
 }

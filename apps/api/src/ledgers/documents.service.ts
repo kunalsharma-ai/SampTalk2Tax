@@ -25,6 +25,7 @@ import { GstCategory, gstHeads, gstSplitter, hsnIssue } from '@talk2tax/tax-engi
 import { currentApproval, policyFor } from '../approvals/approval-rules';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
+import { checkLineDimensions } from '../dimensions/check';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
@@ -482,7 +483,7 @@ export class DocumentsService {
       placeOfSupply: doc.placeOfSupply,
       reverseCharge: doc.reverseCharge,
       withholdingSectionId: doc.withholdingSectionId,
-      lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
+      lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode, departmentId: l.departmentId, projectId: l.projectId })),
     };
     const { computed, gst, withholding } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
     if (withholding && !new D(withholding.result.amount).eq(doc.withholdingAmount.toFixed())) {
@@ -560,6 +561,7 @@ export class DocumentsService {
       else if (a.id === o.arAccountId || a.id === o.apAccountId || a.id === o.claimsAccountId) issues.push(`Line ${i + 1}: ${a.code} is a control account and cannot be used on a document line`);
     });
     if (issues.length) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+    await checkLineDimensions(tx, org.id, input.lines, { code: 'DOCUMENT_INVALID' });
     const taxIds = [...new Set(input.lines.map((l) => l.taxRateId).filter((x): x is string => !!x))];
     const taxes = await tx.taxRate.findMany({ where: { orgId: org.id, id: { in: taxIds }, isActive: true } });
     const taxMap = new Map<string, TaxRateInfo>(
@@ -813,6 +815,8 @@ export class DocumentsService {
         taxRate: l.taxRate.toFixed(),
         netAmount: l.netAmount.toFixed(scale),
         taxAmount: l.taxAmount.toFixed(scale),
+        departmentId: l.departmentId,
+        projectId: l.projectId,
       })),
       allocations: isCharge
         ? d.allocationsIn.map((a) => ({
@@ -875,6 +879,8 @@ function lineRows(lines: ReturnType<typeof computeDocument>['lines']) {
     taxRate: l.taxRate.toFixed(),
     netAmount: l.netAmount.toFixed(),
     taxAmount: l.taxAmount.toFixed(),
+    departmentId: l.departmentId,
+    projectId: l.projectId,
     ...gstLineColumns(l),
   }));
 }

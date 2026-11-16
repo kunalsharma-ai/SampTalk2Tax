@@ -45,7 +45,7 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `POST /v1/orgs/:orgId/journals/:id/post` | journals.post | Post a draft |
 | `POST /v1/orgs/:orgId/journals/:id/reverse` | journals.reverse | Post a reversing entry |
 | `GET /v1/orgs/:orgId/reports/trial-balance?asOf=&from=&includeZero=` | reports.read | Trial balance |
-| `GET /v1/orgs/:orgId/reports/income-statement?from=&to=` | reports.read | Income statement |
+| `GET /v1/orgs/:orgId/reports/income-statement?from=&to=&departmentId=&projectId=` | reports.read | Income statement, optionally for one department or project |
 | `GET /v1/orgs/:orgId/reports/balance-sheet?asOf=` | reports.read | Balance sheet |
 | `GET /v1/orgs/:orgId/reports/general-ledger?accountId=&from=&to=` | reports.read | Account ledger |
 | `GET /v1/orgs/:orgId/contacts?role=customer\|vendor&q=&includeInactive=` | contacts.read | Customers / vendors with outstanding, overdue and unapplied balances |
@@ -191,6 +191,9 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `POST …/fixed-assets`; `PUT …/:id`; `POST …/:id/dispose`; `POST …/depreciation/runs`; `POST …/depreciation/runs/:id/reverse` | assets.manage | Add or change an asset (purchase optionally posted), dispose with gain or loss, post a month's depreciation (with catch-up), reverse the latest run |
 | `GET /v1/orgs/:orgId/deferrals`; `GET …/:id`; `GET …/accounts`; `GET …/releases?month=`; `GET …/accruals?month=` | journals.read | Prepaid expense and deferred revenue schedules, one schedule with its releases, accounts by role, release runs and the preview of a month, accruals. See [`PREPAID_AND_DEFERRED.md`](PREPAID_AND_DEFERRED.md) |
 | `POST …/deferrals`; `PUT …/:id`; `POST …/:id/end`; `POST …/releases/runs`; `POST …/releases/runs/:id/reverse`; `POST …/accruals`; `POST …/accruals/:id/cancel` | deferrals.manage | Add or change a schedule (payment or receipt optionally posted), end it early, post a month's releases (with catch-up), reverse the latest run, post an accrual with its automatic reversal, cancel an accrual |
+| `GET /v1/orgs/:orgId/dimensions?type=` | journals.read | Departments and projects with how many lines use each. See [`FINANCIAL_DIMENSIONS.md`](FINANCIAL_DIMENSIONS.md) |
+| `GET …/dimensions/profit?type=&from=&to=&includeInactive=` | reports.read | Profit and loss with a column per department or project and Not assigned |
+| `POST …/dimensions`; `PUT …/dimensions/:id` | accounts.manage | Add or change a department or project, or make it inactive. Journal and document lines take `departmentId` and `projectId` |
 | `GET /v1/orgs/:orgId/tasks?scope=mine|all&status=OPEN|DONE|CANCELLED|ALL` | tasks.use | Tasks for me and my role (`all`: every task, owners and admins only), with counts of my open and overdue tasks; each with assignee, due date, `overdue`, link (path and label), the workflow that made it, who closed it and the note, `canClose` |
 | `GET /v1/orgs/:orgId/tasks/count`; `GET …/tasks/:id` | tasks.use | My open tasks; one task I can see (404 otherwise) |
 | `POST /v1/orgs/:orgId/tasks` | tasks.use | `title`, `description`, `assignTo` {`role`} or {`userId`} (a member who can take tasks; `422 ASSIGNEE_NOT_MEMBER`), `dueDate` |

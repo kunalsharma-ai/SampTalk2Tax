@@ -238,6 +238,7 @@ model Organization {
   deferralRuns         DeferralRun[]
   deferralLines        DeferralLine[]
   accruals             Accrual[]
+  dimensionValues      DimensionValue[]
   copilotConversations CopilotConversation[]
   copilotMessages      CopilotMessage[]
   workflows            Workflow[]
@@ -396,6 +397,9 @@ model JournalLine {
   functionalCredit Decimal      @default(0) @map("functional_credit") @db.Decimal(24, 6)
   description      String?
   dimensions       Json?
+  /// Financial dimensions: department (cost centre) and project.
+  departmentId     String?      @map("department_id") @db.Uuid
+  projectId        String?      @map("project_id") @db.Uuid
   entry            JournalEntry @relation(fields: [entryId, orgId], references: [id, orgId], onDelete: Restrict)
   account          Account      @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
   bankMatches      BankMatch[]
@@ -403,6 +407,8 @@ model JournalLine {
   @@unique([entryId, lineNo])
   @@unique([id, orgId])
   @@index([orgId, accountId])
+  @@index([orgId, departmentId])
+  @@index([orgId, projectId])
   @@map("journal_lines")
 }
 
@@ -581,26 +587,28 @@ model Document {
 }
 
 model DocumentLine {
-  id          String   @id @default(uuid()) @db.Uuid
-  orgId       String   @map("org_id") @db.Uuid
-  documentId  String   @map("document_id") @db.Uuid
-  lineNo      Int      @map("line_no")
-  description String?
-  accountId   String   @map("account_id") @db.Uuid
-  quantity    Decimal  @db.Decimal(24, 6)
-  unitPrice   Decimal  @map("unit_price") @db.Decimal(24, 6)
-  taxRateId   String?  @map("tax_rate_id") @db.Uuid
-  taxRate     Decimal  @default(0) @map("tax_rate") @db.Decimal(9, 6)
-  netAmount   Decimal  @map("net_amount") @db.Decimal(24, 6)
-  taxAmount   Decimal  @map("tax_amount") @db.Decimal(24, 6)
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  documentId   String   @map("document_id") @db.Uuid
+  lineNo       Int      @map("line_no")
+  description  String?
+  accountId    String   @map("account_id") @db.Uuid
+  quantity     Decimal  @db.Decimal(24, 6)
+  unitPrice    Decimal  @map("unit_price") @db.Decimal(24, 6)
+  taxRateId    String?  @map("tax_rate_id") @db.Uuid
+  taxRate      Decimal  @default(0) @map("tax_rate") @db.Decimal(9, 6)
+  netAmount    Decimal  @map("net_amount") @db.Decimal(24, 6)
+  taxAmount    Decimal  @map("tax_amount") @db.Decimal(24, 6)
   /// India GST: HSN (goods) or SAC (services) code, and the tax by head. Their sum equals taxAmount on GST lines.
-  hsnCode     String?  @map("hsn_code")
-  cgstAmount  Decimal  @default(0) @map("cgst_amount") @db.Decimal(24, 6)
-  sgstAmount  Decimal  @default(0) @map("sgst_amount") @db.Decimal(24, 6)
-  igstAmount  Decimal  @default(0) @map("igst_amount") @db.Decimal(24, 6)
-  document    Document @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Cascade)
-  account     Account  @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
-  tax         TaxRate? @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
+  hsnCode      String?  @map("hsn_code")
+  cgstAmount   Decimal  @default(0) @map("cgst_amount") @db.Decimal(24, 6)
+  sgstAmount   Decimal  @default(0) @map("sgst_amount") @db.Decimal(24, 6)
+  igstAmount   Decimal  @default(0) @map("igst_amount") @db.Decimal(24, 6)
+  departmentId String?  @map("department_id") @db.Uuid
+  projectId    String?  @map("project_id") @db.Uuid
+  document     Document @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Cascade)
+  account      Account  @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+  tax          TaxRate? @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
 
   @@unique([documentId, lineNo])
   @@map("document_lines")
@@ -2526,4 +2534,34 @@ model Accrual {
   @@unique([id, orgId])
   @@index([orgId, month])
   @@map("accruals")
+}
+
+// ---------------------------------------------------------------- financial dimensions
+
+enum DimensionType {
+  DEPARTMENT
+  PROJECT
+}
+
+/// A department (cost centre) or project that journal and document lines can be tagged with.
+model DimensionValue {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  type        DimensionType
+  code        String        @db.VarChar(20)
+  name        String        @db.VarChar(120)
+  description String?       @db.VarChar(500)
+  /// Projects: who it is for, and when it runs.
+  customer    String?       @db.VarChar(200)
+  startDate   DateTime?     @map("start_date") @db.Date
+  endDate     DateTime?     @map("end_date") @db.Date
+  isActive    Boolean       @default(true) @map("is_active")
+  createdById String        @map("created_by_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([id, orgId])
+  @@index([orgId, type])
+  @@map("dimension_values")
 }

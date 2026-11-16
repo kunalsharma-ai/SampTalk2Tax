@@ -176,3 +176,18 @@ describe('validateJournal', () => {
     }
   });
 });
+
+describe('department and project tags', () => {
+  it('keeps them on validated lines and on reversals', () => {
+    const j = validateJournal(
+      [
+        { accountId: 'cash', debit: '500.00' },
+        { accountId: 'rev', credit: '500.00', departmentId: 'd-sales', projectId: 'p-portal' },
+      ],
+      ctx,
+    );
+    expect(j.lines.map((l) => [l.departmentId, l.projectId])).toEqual([[null, null], ['d-sales', 'p-portal']]);
+    const rev = buildReversalLines([{ accountId: 'rev', currency: 'INR', exchangeRate: '1', debit: '0.00', credit: '500.00', departmentId: 'd-sales', projectId: 'p-portal' }]);
+    expect(rev[0]).toMatchObject({ debit: '500.00', departmentId: 'd-sales', projectId: 'p-portal' });
+  });
+});

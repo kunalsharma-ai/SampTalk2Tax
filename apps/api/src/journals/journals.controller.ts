@@ -15,6 +15,8 @@ const Line = z.object({
   exchangeRate: decimalString.optional(),
   description: z.string().max(500).optional(),
   dimensions: z.record(z.string().regex(/^[a-z][a-z0-9_]{0,31}$/), z.string().max(100)).optional(),
+  departmentId: z.uuid().nullable().optional(),
+  projectId: z.uuid().nullable().optional(),
 });
 const JournalBody = z.object({
   date: isoDate,

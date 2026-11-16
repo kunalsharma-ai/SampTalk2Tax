@@ -48,6 +48,7 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
       { href: '/fixed-assets', label: 'Fixed assets' },
       { href: '/deferrals', label: 'Prepaid and deferred' },
       { href: '/accruals', label: 'Accruals' },
+      { href: '/dimensions', label: 'Departments and projects' },
       { href: '/close', label: 'Month-end close' },
       { href: '/periods', label: 'Fiscal periods' },
     ],
@@ -57,6 +58,7 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
     items: [
       { href: '/reports/trial-balance', label: 'Trial balance' },
       { href: '/reports/income-statement', label: 'Profit and loss' },
+      { href: '/reports/profit-by-dimension', label: 'Profit by department' },
       { href: '/reports/balance-sheet', label: 'Balance sheet' },
       { href: '/reports/general-ledger', label: 'General ledger' },
       { href: '/reports/kpis', label: 'KPIs' },

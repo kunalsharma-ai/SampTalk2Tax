@@ -15,6 +15,9 @@ export interface JournalLineInput {
   exchangeRate?: string;
   description?: string;
   dimensions?: Record<string, string>;
+  /** Financial dimensions: the department (cost centre) and project the line belongs to. */
+  departmentId?: string | null;
+  projectId?: string | null;
 }
 
 export interface PostingAccount {
@@ -41,6 +44,8 @@ export interface NormalizedJournalLine {
   functionalCredit: Dec;
   description?: string;
   dimensions?: Record<string, string>;
+  departmentId: string | null;
+  projectId: string | null;
 }
 
 export interface NormalizedJournal {
@@ -152,6 +157,8 @@ export function validateJournal(lines: readonly JournalLineInput[], ctx: Journal
       functionalCredit: roundToCurrency(credit.times(rate), ctx.functionalCurrency),
       description: line.description,
       dimensions: line.dimensions,
+      departmentId: line.departmentId ?? null,
+      projectId: line.projectId ?? null,
     });
   });
 
@@ -186,6 +193,8 @@ export interface PostedLineLike {
   credit: string;
   description?: string | null;
   dimensions?: Record<string, string> | null;
+  departmentId?: string | null;
+  projectId?: string | null;
 }
 
 /**
@@ -202,5 +211,7 @@ export function buildReversalLines(original: readonly PostedLineLike[]): Journal
     credit: l.debit,
     description: l.description ? `Reversal: ${l.description}` : 'Reversal',
     dimensions: l.dimensions ?? undefined,
+    departmentId: l.departmentId ?? null,
+    projectId: l.projectId ?? null,
   }));
 }

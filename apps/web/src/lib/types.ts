@@ -50,6 +50,8 @@ export interface JournalLine {
   functionalDebit: string;
   functionalCredit: string;
   description: string | null;
+  departmentId: string | null;
+  projectId: string | null;
 }
 
 export interface Journal {
@@ -267,6 +269,8 @@ export interface DocumentLine {
   taxRate: string;
   netAmount: string;
   taxAmount: string;
+  departmentId: string | null;
+  projectId: string | null;
 }
 
 export interface FinancialDocument extends DocumentSummary {

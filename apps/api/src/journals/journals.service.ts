@@ -4,6 +4,7 @@ import { buildReversalLines, JournalLineInput, minorUnits, NormalizedJournal, Po
 import { Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
+import { checkLineDimensions } from '../dimensions/check';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 
@@ -214,6 +215,8 @@ export class JournalsService {
             credit: l.credit.toFixed(),
             description: l.description,
             dimensions: (l.dimensions as Record<string, string> | null) ?? null,
+            departmentId: l.departmentId,
+            projectId: l.projectId,
           })),
         );
         const normalized = await this.validate(tx, org, lines, { allowInactive: true });
@@ -312,6 +315,8 @@ export class JournalsService {
         debit: l.debit.toFixed(),
         credit: l.credit.toFixed(),
         description: l.description,
+        departmentId: l.departmentId,
+        projectId: l.projectId,
       })),
     );
     const normalized = await this.validate(tx, org, lines, { allowInactive: true });
@@ -396,7 +401,9 @@ export class JournalsService {
     const map = new Map<string, PostingAccount>(
       accounts.map((a) => [a.id, { id: a.id, code: a.code, type: a.type, isPostable: a.isPostable, isActive: opts.allowInactive ? true : a.isActive }]),
     );
-    return validateJournal(lines, { functionalCurrency: org.functionalCurrency, accounts: map });
+    const normalized = validateJournal(lines, { functionalCurrency: org.functionalCurrency, accounts: map });
+    await checkLineDimensions(tx, org.id, lines, { allowInactive: opts.allowInactive });
+    return normalized;
   }
 
   private async markPosted(tx: Tx, orgId: string, entryId: string, actorId: string): Promise<number> {
@@ -435,6 +442,8 @@ function lineRows(j: NormalizedJournal) {
     functionalCredit: l.functionalCredit.toFixed(),
     description: l.description,
     dimensions: l.dimensions ?? undefined,
+    departmentId: l.departmentId,
+    projectId: l.projectId,
   }));
 }
 
@@ -473,6 +482,8 @@ function serialize(e: EntryWithLines) {
       functionalCredit: l.functionalCredit.toFixed(fScale),
       description: l.description,
       dimensions: l.dimensions,
+      departmentId: l.departmentId,
+      projectId: l.projectId,
     })),
   };
 }
