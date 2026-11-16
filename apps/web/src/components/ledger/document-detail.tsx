@@ -82,7 +82,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
   if (!d) return <p className="text-sm text-fg-muted">Loading…</p>;
   const c = d.currency;
   const canManage = can(org.role, l.managePermission);
-  const label = kindLabel(l, d.kind);
+  const label = d.debitNoteFor ? 'Debit note' : kindLabel(l, d.kind);
   const err = post.error ?? remove.error ?? unallocate.error;
   const creditLimitHit = post.error instanceof ApiError && post.error.code === 'CREDIT_LIMIT_EXCEEDED';
   const needsApproval = d.status === 'DRAFT' && approval.data ? !approval.data.readyToPost : false;
@@ -91,7 +91,7 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
     return (
       <>
         <PageHeader title={`Edit draft ${label.toLowerCase()}`} actions={<Button variant="ghost" onClick={() => setEditing(false)}>Back</Button>} />
-        <DocumentForm l={l} kind={d.kind} existing={d} />
+        <DocumentForm l={l} kind={d.kind} existing={d} debitNoteFor={d.debitNoteFor ? { id: d.debitNoteFor.id, number: d.debitNoteFor.number ?? '' } : undefined} />
       </>
     );
   }
@@ -123,6 +123,9 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
                   <Link href={`/orgs/${orgId}/sales/bad-debts?writeOff=${d.id}`}><Button variant="ghost">Write off…</Button></Link>
                 ) : null}
               </>
+            ) : null}
+            {d.status === 'POSTED' && canManage && d.kind === 'INVOICE' && !d.debitNoteFor ? (
+              <Link href={`/orgs/${orgId}/${l.docsPath}/new?debitNoteFor=${d.id}`}><Button variant="ghost">Raise debit note…</Button></Link>
             ) : null}
             {d.status === 'POSTED' && canManage && can(org.role, 'journals.reverse') ? (
               <Button variant="ghost" onClick={() => { voidDoc.reset(); setVoidOpen(true); }}>Void…</Button>
@@ -163,6 +166,20 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           <p className="mt-2 text-sm"><Money value={d.amountDue} currency={c} className={d.isOverdue ? 'text-negative' : ''} /></p>
         </Card>
       </div>
+      {d.debitNoteFor ? (
+        <p className="mt-4 text-sm">
+          Raises the value of <Link className="text-accent hover:underline" href={`/orgs/${orgId}/${l.docsPath}/${d.debitNoteFor.id}`}>invoice {d.debitNoteFor.number}</Link> of {date(d.debitNoteFor.issueDate)} (<Money value={d.debitNoteFor.total} currency={c} />). It is owed and paid like an invoice and reported as a debit note in GST returns.
+        </p>
+      ) : null}
+      {d.debitNotes.length ? (
+        <p className="mt-4 text-sm">
+          Debit notes on this invoice:{' '}
+          {d.debitNotes.map((n, i) => (
+            <span key={n.id}>{i ? ', ' : ''}<Link className="text-accent hover:underline" href={`/orgs/${orgId}/${l.docsPath}/${n.id}`}>{n.number ?? 'Draft'}</Link> <Money value={n.total} currency={c} />{n.status === 'VOID' ? ' (void)' : n.status === 'DRAFT' ? ' (draft)' : ''}</span>
+          ))}
+          .
+        </p>
+      ) : null}
       {d.reference || d.memo || d.journalEntryId ? (
         <p className="mt-4 text-sm text-fg-muted">
           {d.reference ? <>Reference {d.reference}. </> : null}

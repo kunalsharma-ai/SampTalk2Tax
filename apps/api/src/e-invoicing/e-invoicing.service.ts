@@ -151,7 +151,7 @@ export class EInvoicingService {
     const parsed = parseIrpResponse(raw);
     if (!parsed.response) throw new DomainError('INVALID_IRP_RESPONSE', 'That is not an IRP response', HttpStatus.UNPROCESSABLE_ENTITY, { issues: parsed.issues });
     const res = parsed.response;
-    const mismatch = matchIrpResponse(res, { sellerGstin: ctx.gst.gstin, buyerGstin: d.counterpartyGstin!, number: d.number!, kind: d.kind as 'INVOICE' | 'CREDIT_NOTE', issueDate: fromDbDate(d.issueDate), total: d.total.toFixed() });
+    const mismatch = matchIrpResponse(res, { sellerGstin: ctx.gst.gstin, buyerGstin: d.counterpartyGstin!, number: d.number!, kind: d.debitNoteForId ? 'DEBIT_NOTE' : (d.kind as 'INVOICE' | 'CREDIT_NOTE'), issueDate: fromDbDate(d.issueDate), total: d.total.toFixed() });
     if (mismatch.length) throw new DomainError('IRP_RESPONSE_MISMATCH', 'The IRP response is not for this document', HttpStatus.UNPROCESSABLE_ENTITY, { issues: mismatch });
     if (Date.parse(res.ackDate) > Date.now() + 5 * 60_000) throw new DomainError('INVALID_IRP_RESPONSE', 'The acknowledgement date is in the future');
     let verified = false;
@@ -215,7 +215,7 @@ export class EInvoicingService {
   private build(ctx: Context, d: Doc) {
     const addr = (d.contact.address ?? '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
     const input: EInvoiceInput = {
-      kind: d.kind as 'INVOICE' | 'CREDIT_NOTE',
+      kind: d.debitNoteForId ? 'DEBIT_NOTE' : (d.kind as 'INVOICE' | 'CREDIT_NOTE'),
       number: d.number ?? '',
       issueDate: fromDbDate(d.issueDate),
       currency: d.currency,
@@ -247,7 +247,7 @@ export class EInvoicingService {
     const deadline = reportingDeadline(issueDate, ctx.settings.aatoTenCroreOrMore);
     const base = {
       documentId: d.id,
-      kind: d.kind,
+      kind: d.debitNoteForId ? ('DEBIT_NOTE' as const) : d.kind,
       number: d.number,
       issueDate,
       documentStatus: d.status,

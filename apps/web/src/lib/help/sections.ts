@@ -151,7 +151,7 @@ export const SECTION_HELP: Record<string, Help> = {
   '6.1 Payment of tax': { what: 'Tax payable after setting off input credit, and what must be paid in cash.', how: 'Pay the cash amount before the due date.' },
   '7 B2C others': { what: 'Sales to consumers not reported invoice by invoice, by rate and state (GSTR-1 table 7).', how: 'Amounts come from posted invoices without a buyer GSTIN.' },
   '8 Nil-rated, exempt and non-GST supplies': { what: 'Sales with no GST, split by kind (GSTR-1 table 8).', how: 'Set the tax rate on each line correctly so they land here.' },
-  '13 Documents issued': { what: 'The ranges of invoice and credit note numbers issued in the month (GSTR-1 table 13).', how: 'Cancelled documents are counted separately.' },
+  '13 Documents issued': { what: 'The ranges of invoice, debit note and credit note numbers issued in the month (GSTR-1 table 13).', how: 'Cancelled documents are counted separately.' },
   'By section': { what: 'Tax withheld or collected, by section of the Income-tax Act.', how: 'Check each section\'s total before paying and filing.' },
   Deductor: { what: 'Your TAN and the details of the person responsible for deducting tax.', how: 'Enter them as registered; returns and certificates use them.' },
   'Templates: Income-tax Act 2025, s.393(1)': { what: 'Ready-made settings for common TDS sections and their rates.', how: 'Add the sections you use; adjust thresholds if needed.' },

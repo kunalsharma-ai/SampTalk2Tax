@@ -195,7 +195,7 @@ export class GstService {
   private async returnDocuments(orgId: string, kinds: GstReturnDocument['kind'][], from: string, to: string): Promise<GstReturnDocument[]> {
     const docs = await this.prisma.document.findMany({
       where: { orgId, kind: { in: kinds }, status: { in: ['POSTED', 'VOID'] }, placeOfSupply: { not: null }, issueDate: { gte: toDbDate(from), lte: toDbDate(to) } },
-      include: { contact: { select: { name: true } }, lines: { orderBy: { lineNo: 'asc' }, include: { tax: { select: { gstCategory: true } } } } },
+      include: { contact: { select: { name: true } }, debitNoteFor: { select: { number: true } }, lines: { orderBy: { lineNo: 'asc' }, include: { tax: { select: { gstCategory: true } } } } },
       orderBy: [{ issueDate: 'asc' }, { number: 'asc' }],
     });
     // Returns are in rupees: a document in another currency is converted at its own rate.
@@ -215,6 +215,7 @@ export class GstService {
       total: inr(d.subtotal.plus(d.taxTotal)),
       reverseCharge: d.reverseCharge,
       supplierState: d.supplierState ?? undefined,
+      ...(d.debitNoteForId ? { debitNote: true, originalNumber: d.debitNoteFor?.number ?? null } : {}),
       lines: d.lines.map((l) => ({
         hsnCode: l.hsnCode,
         quantity: l.quantity.toFixed(),

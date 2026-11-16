@@ -47,8 +47,13 @@ export interface EInvoiceLineInput {
   igst: string;
 }
 
+/** The IRP document types: INV, CRN and DBN (debit note). */
+export type EInvoiceDocKind = 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE';
+const DOC_TYP: Record<EInvoiceDocKind, string> = { INVOICE: 'INV', CREDIT_NOTE: 'CRN', DEBIT_NOTE: 'DBN' };
+const DOC_LABEL: Record<EInvoiceDocKind, string> = { INVOICE: 'invoice', CREDIT_NOTE: 'credit note', DEBIT_NOTE: 'debit note' };
+
 export interface EInvoiceInput {
-  kind: 'INVOICE' | 'CREDIT_NOTE';
+  kind: EInvoiceDocKind;
   number: string;
   issueDate: string;
   currency: string;
@@ -161,7 +166,7 @@ export function buildEInvoice(input: EInvoiceInput): { payload: Record<string, u
   const payload = {
     Version: EINVOICE_SCHEMA_VERSION,
     TranDtls: { TaxSch: 'GST', SupTyp: 'B2B', RegRev: 'N', IgstOnIntra: 'N' },
-    DocDtls: { Typ: input.kind === 'INVOICE' ? 'INV' : 'CRN', No: input.number, Dt: fmtDate(input.issueDate) },
+    DocDtls: { Typ: DOC_TYP[input.kind], No: input.number, Dt: fmtDate(input.issueDate) },
     SellerDtls: party(input.seller),
     BuyerDtls: { ...party(input.buyer), Pos: input.placeOfSupply },
     ItemList: items,
@@ -315,7 +320,7 @@ export function parseIrpResponse(raw: unknown): { response: IrpResponse | null; 
  */
 export function matchIrpResponse(
   response: IrpResponse,
-  doc: { sellerGstin: string; buyerGstin: string; number: string; kind: 'INVOICE' | 'CREDIT_NOTE'; issueDate: string; total: string },
+  doc: { sellerGstin: string; buyerGstin: string; number: string; kind: EInvoiceDocKind; issueDate: string; total: string },
 ): string[] {
   const issues: string[] = [];
   let qr: QrData;
@@ -330,7 +335,7 @@ export function matchIrpResponse(
   if (!same(qr.BuyerGstin, doc.buyerGstin)) issues.push(`The QR code is for buyer ${qr.BuyerGstin}, not ${doc.buyerGstin}`);
   // Document numbers are case-insensitive at the IRP.
   if (!same(qr.DocNo, doc.number)) issues.push(`The QR code is for document ${qr.DocNo}, not ${doc.number}`);
-  if (!same(qr.DocTyp, doc.kind === 'INVOICE' ? 'INV' : 'CRN')) issues.push(`The QR code is for a ${qr.DocTyp}, not this ${doc.kind === 'INVOICE' ? 'invoice' : 'credit note'}`);
+  if (!same(qr.DocTyp, DOC_TYP[doc.kind])) issues.push(`The QR code is for a ${qr.DocTyp}, not this ${DOC_LABEL[doc.kind]}`);
   if (String(qr.DocDt ?? '') !== fmtDate(doc.issueDate)) issues.push(`The QR code is dated ${qr.DocDt}, not ${fmtDate(doc.issueDate)}`);
   if (qr.TotInvVal === undefined || !new D(String(qr.TotInvVal)).minus(doc.total).abs().lte('0.01')) issues.push(`The QR code total ${qr.TotInvVal} does not match ${new D(doc.total).toFixed(2)}`);
   if (response.signedInvoice) {

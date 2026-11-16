@@ -63,7 +63,7 @@ export interface SignatureState {
 }
 
 export interface PrintData {
-  document: { id: string; kind: 'INVOICE' | 'CREDIT_NOTE'; status: 'DRAFT' | 'POSTED' | 'VOID'; number: string | null; templateId: string | null; contactName: string };
+  document: { id: string; kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE'; status: 'DRAFT' | 'POSTED' | 'VOID'; number: string | null; templateId: string | null; contactName: string };
   source: InvoicePrintSource;
   template: ResolvedTemplate;
   templates: { id: string; name: string; isDefault: boolean; engine: TemplateEngine }[];

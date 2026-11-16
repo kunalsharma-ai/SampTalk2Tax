@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 822 |
+| Not started | 821 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 406 |
+| Tested | 407 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 22 | 21 |
+| Accounts receivable | M2 | 43 | 21 | 22 |
 | Accounts payable | M2 | 36 | 23 | 13 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -540,6 +540,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › applies a credit note and settles the invoice
   - packages/accounting-engine/test/documents.test.ts
+
+### AR-017 — Debit notes
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Debit notes DN-000001: an INVOICE linked to an earlier posted invoice (same customer, currency, place of supply, not before it); owed, aged and paid like an invoice; GSTR-1 9B type D with the original number, table 13 own series, GSTR-3B outward tax, e-invoice DBN, print titled Debit note with Against invoice. Invoice cannot be voided while a debit note stands (trigger). Sales side only.
+- Evidence:
+  - packages/database/prisma/migrations/20261128090000_debit_notes/migration.sql
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/test/debit-notes.e2e.test.ts
+  - packages/tax-engine/src/india/returns.ts
+  - packages/tax-engine/test/returns.test.ts
+  - apps/web/src/components/ledger/new-document.tsx
+  - apps/web/e2e/debit-notes-flow.test.mjs
+  - docs/DEBIT_NOTES.md
 
 ### AR-019 — Payment allocation
 

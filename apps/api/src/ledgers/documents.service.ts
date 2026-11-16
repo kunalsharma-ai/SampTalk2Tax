@@ -22,6 +22,7 @@ import {
   computeDocument,
   dec,
   documentNumber,
+  debitNoteNumber,
   ledgerOf,
   minorUnits,
 } from '@talk2tax/accounting-engine';
@@ -66,6 +67,8 @@ export interface DocumentInput {
   currency?: string | null;
   /** Functional currency per one unit; the recorded rate on or before the issue date when left out. */
   exchangeRate?: string | null;
+  /** Sales: makes this invoice a debit note raising the value of this earlier posted invoice (DN- series). */
+  debitNoteFor?: string | null;
   lines: DocumentLineInput[];
 }
 
@@ -94,6 +97,8 @@ const DOC_INCLUDE = {
   allocationsOut: { where: { removedOn: null }, orderBy: { createdAt: 'asc' }, include: { target: { select: { id: true, number: true, kind: true } } } },
   withholdingSection: { select: { id: true, code: true, name: true } },
   depositItems: { where: { active: true }, include: { deposit: { select: { id: true, number: true, depositDate: true, challanReference: true } } } },
+  debitNoteFor: { select: { id: true, number: true, issueDate: true, total: true } },
+  debitNotes: { orderBy: { createdAt: 'asc' }, select: { id: true, number: true, status: true, issueDate: true, total: true } },
 } satisfies Prisma.DocumentInclude;
 type DocWithAll = Prisma.DocumentGetPayload<{ include: typeof DOC_INCLUDE }>;
 
@@ -172,8 +177,9 @@ export class DocumentsService {
         tax_total: Prisma.Decimal;
         total: Prisma.Decimal;
         used: Prisma.Decimal | null;
+        debit_note: boolean;
       }[]
-    >`SELECT d.id, d.kind, d.status::text AS status, d.number, d.contact_id, c.name AS contact_name, d.issue_date, d.due_date, d.reference,
+    >`SELECT d.id, d.kind, d.status::text AS status, d.number, (d.debit_note_for_id IS NOT NULL) AS debit_note, d.contact_id, c.name AS contact_name, d.issue_date, d.due_date, d.reference,
              d.currency, d.exchange_rate, d.subtotal, d.tax_total, d.total, a.used
       ${base}
       ORDER BY d.issue_date DESC, d.number DESC NULLS FIRST, d.created_at DESC
@@ -205,6 +211,7 @@ export class DocumentsService {
           allocated: used.toFixed(scale),
           amountDue: open.toFixed(scale),
           paymentStatus: paymentStatus(r.status, total, used),
+          isDebitNote: r.debit_note,
           isOverdue: r.status === 'POSTED' && (r.kind === 'INVOICE' || r.kind === 'BILL') && open.gt(0) && due < todayIsoStr,
         };
       }),
@@ -261,6 +268,7 @@ export class DocumentsService {
         memo: input.memo || null,
         currency: prepared.currency,
         exchangeRate: prepared.rate,
+        debitNoteForId: prepared.debitNoteFor?.id ?? null,
         ...gstColumns(prepared.gst),
         ...taxColumns(prepared.computed, prepared.withholding),
         subtotal: prepared.computed.subtotal.toFixed(),
@@ -276,7 +284,7 @@ export class DocumentsService {
       action: 'document.draft_created',
       entityType: 'document',
       entityId: doc.id,
-      data: { kind: input.kind, total: prepared.computed.total.toFixed(), contactId: input.contactId },
+      data: { kind: input.kind, total: prepared.computed.total.toFixed(), contactId: input.contactId, ...(prepared.debitNoteFor ? { debitNoteFor: prepared.debitNoteFor.number } : {}) },
     });
     return doc;
   }
@@ -304,6 +312,7 @@ export class DocumentsService {
           memo: input.memo || null,
           currency: prepared.currency,
           exchangeRate: prepared.rate,
+          debitNoteForId: prepared.debitNoteFor?.id ?? null,
           ...gstColumns(prepared.gst),
           ...taxColumns(prepared.computed, prepared.withholding),
           subtotal: prepared.computed.subtotal.toFixed(),
@@ -345,6 +354,8 @@ export class DocumentsService {
       if (doc.status !== 'POSTED') throw new DomainError('NOT_POSTED', doc.status === 'VOID' ? 'Document is already void' : 'Drafts are deleted, not voided', HttpStatus.CONFLICT);
       const active = await tx.allocation.count({ where: { orgId: org.id, removedOn: null, OR: [{ targetId: id }, { creditDocumentId: id }] } });
       if (active > 0) throw new DomainError('HAS_ALLOCATIONS', 'Remove the payments and credits applied to this document before voiding it', HttpStatus.CONFLICT);
+      const notes = await tx.document.findMany({ where: { orgId: org.id, debitNoteForId: id, status: { not: 'VOID' } }, select: { number: true } });
+      if (notes.length) throw new DomainError('HAS_DEBIT_NOTES', `${doc.number} has ${notes.length === 1 ? 'a debit note' : 'debit notes'} (${notes.map((n) => n.number ?? 'a draft').join(', ')}); void or delete ${notes.length === 1 ? 'it' : 'them'} first`, HttpStatus.CONFLICT);
       const deposited = await tx.withholdingDepositItem.findFirst({ where: { documentId: id, active: true }, include: { deposit: { select: { number: true } } } });
       if (deposited) throw new DomainError('TAX_DEPOSITED', `The ${doc.withholdingKind} on this document was deposited in ${deposited.deposit.number}; void that deposit first`, HttpStatus.CONFLICT);
       const irn = await tx.eInvoice.findFirst({ where: { orgId: org.id, documentId: id, status: 'ACTIVE' }, select: { irn: true } });
@@ -527,9 +538,10 @@ export class DocumentsService {
       withholdingSectionId: doc.withholdingSectionId,
       currency: doc.currency,
       exchangeRate: doc.exchangeRate.toFixed(),
+      debitNoteFor: doc.debitNoteForId,
       lines: doc.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode, departmentId: l.departmentId, projectId: l.projectId })),
     };
-    const { computed, gst, withholding } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
+    const { computed, gst, withholding, debitNoteFor } = await this.prepare(tx, org, ledger, { ...input, reference: doc.reference }, id);
     if (withholding && !new D(withholding.result.amount).eq(doc.withholdingAmount.toFixed())) {
       throw new DomainError('TOTAL_CHANGED', `The ${withholding.kind} on this draft is now ${withholding.result.amount} (${withholding.result.reason}), not ${doc.withholdingAmount.toFixed(2)}. Open and save the draft again to review it.`, HttpStatus.CONFLICT);
     }
@@ -557,12 +569,12 @@ export class DocumentsService {
       }
     }
     const control = await this.controlAccount(tx, org.id, ledger);
-    const n = await this.nextNumber(tx, org.id, doc.kind);
-    const number = documentNumber(doc.kind, n);
+    // Debit notes have their own series (GSTR-1 table 13 reports each series).
+    const number = debitNoteFor ? debitNoteNumber(await this.nextNumber(tx, org.id, 'DEBIT_NOTE')) : documentNumber(doc.kind, await this.nextNumber(tx, org.id, doc.kind));
     const je = await this.journals.postSystemEntry(tx, org, actor, {
       date: fromDbDate(doc.issueDate),
       source: 'DOCUMENT',
-      memo: `${number} · ${doc.contact.name}${doc.reference ? ` · ${doc.reference}` : ''}`,
+      memo: `${number} · ${doc.contact.name}${debitNoteFor ? ` · debit note on ${debitNoteFor.number}` : ''}${doc.reference ? ` · ${doc.reference}` : ''}`,
       reference: number,
       lines: atRate(buildDocumentJournal(doc.kind, computed, control, doc.currency), doc.currency, doc.exchangeRate.toFixed(), org.functionalCurrency, doc.currency === org.functionalCurrency ? null : await this.fxAccount(tx, org.id)),
     });
@@ -599,6 +611,11 @@ export class DocumentsService {
 
   private async prepare(tx: Tx, org: LedgerOrg, ledger: Ledger, input: DocumentInput, excludeId?: string) {
     const contact = await this.checkContact(tx, org.id, ledger, input.contactId);
+    const debitNoteFor = input.debitNoteFor ? await this.checkDebitNote(tx, org, input, excludeId) : null;
+    if (debitNoteFor) {
+      // A debit note is charged in the invoice's currency and, under GST, at its place of supply.
+      input = { ...input, currency: debitNoteFor.currency, placeOfSupply: input.placeOfSupply ?? debitNoteFor.placeOfSupply };
+    }
     const { currency, rate } = await this.currencyAndRate(tx, org, input.currency, input.exchangeRate, input.issueDate);
     const foreign = currency !== org.functionalCurrency;
     if (foreign && input.withholdingSectionId) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues: [`TDS and TCS are not worked out on ${currency} documents yet; record this one in ${org.functionalCurrency}`] });
@@ -656,7 +673,23 @@ export class DocumentsService {
         throw new DomainError('DUPLICATE_BILL', `This vendor's invoice "${input.reference}" is already entered${dup[0].number ? ` as ${dup[0].number}` : ' as a draft'}`, HttpStatus.CONFLICT);
       }
     }
-    return { computed, dueDate, gst, withholding, currency, rate };
+    return { computed, dueDate, gst, withholding, currency, rate, debitNoteFor };
+  }
+
+  /** The posted invoice a debit note raises the value of: same customer, not itself a debit note, not after the note. */
+  private async checkDebitNote(tx: Tx, org: LedgerOrg, input: DocumentInput, excludeId?: string) {
+    const issue = (m: string) => new DomainError('DEBIT_NOTE_INVALID', m, HttpStatus.UNPROCESSABLE_ENTITY);
+    if (input.kind !== 'INVOICE') throw issue('Only an invoice can be a debit note');
+    const o = await tx.document.findFirst({ where: { id: input.debitNoteFor!, orgId: org.id } });
+    if (!o || o.kind !== 'INVOICE') throw issue('A debit note adjusts an invoice; that invoice was not found');
+    if (o.id === excludeId) throw issue('A debit note cannot adjust itself');
+    if (o.debitNoteForId) throw issue(`${o.number} is itself a debit note; raise the debit note on the original invoice`);
+    if (o.status !== 'POSTED') throw issue(o.status === 'VOID' ? `${o.number} is void` : 'Post the invoice before raising a debit note on it');
+    if (o.contactId !== input.contactId) throw issue(`A debit note must be to the same customer as ${o.number}`);
+    if (input.currency && input.currency !== o.currency) throw issue(`A debit note on ${o.number} is in ${o.currency}, like the invoice`);
+    if (input.issueDate < fromDbDate(o.issueDate)) throw issue(`A debit note cannot be dated before ${o.number} (${fromDbDate(o.issueDate)})`);
+    if (o.placeOfSupply && input.placeOfSupply && input.placeOfSupply !== o.placeOfSupply) throw issue(`The place of supply must be the invoice's (${o.placeOfSupply})`);
+    return o;
   }
 
   /**
@@ -897,6 +930,9 @@ export class DocumentsService {
       voidJournalEntryId: d.voidJournalEntryId,
       voidDate: d.voidDate ? fromDbDate(d.voidDate) : null,
       voidReason: d.voidReason,
+      /** Set when this invoice is a debit note: the invoice it raises the value of. */
+      debitNoteFor: d.debitNoteFor ? { id: d.debitNoteFor.id, number: d.debitNoteFor.number, issueDate: fromDbDate(d.debitNoteFor.issueDate), total: d.debitNoteFor.total.toFixed(scale) } : null,
+      debitNotes: d.debitNotes.map((n) => ({ id: n.id, number: n.number, status: n.status, issueDate: fromDbDate(n.issueDate), total: n.total.toFixed(scale) })),
       postedAt: d.postedAt?.toISOString() ?? null,
       createdAt: d.createdAt.toISOString(),
       lines: d.lines.map((l) => ({

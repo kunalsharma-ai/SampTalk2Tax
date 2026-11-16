@@ -666,11 +666,16 @@ model Document {
   templateId           String?                  @map("template_id") @db.Uuid
   template             InvoiceTemplate?         @relation(fields: [templateId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_template_fk")
   signatures           DocumentSignature[]
+  /// A debit note (an INVOICE row, numbered DN-) raising the value of this earlier posted invoice.
+  debitNoteForId       String?                  @map("debit_note_for_id") @db.Uuid
+  debitNoteFor         Document?                @relation("DebitNotes", fields: [debitNoteForId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_debit_note_for_fk")
+  debitNotes           Document[]               @relation("DebitNotes")
 
   @@unique([orgId, kind, number])
   @@unique([id, orgId])
   @@index([orgId, kind, status])
   @@index([orgId, contactId])
+  @@index([orgId, debitNoteForId])
   @@map("documents")
 }
 

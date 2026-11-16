@@ -6068,6 +6068,20 @@
         "apps/web/src/app/orgs/[orgId]/sales/orders/[orderId]/page.tsx"
       ],
       "notes": "Same feature as CRM-007: Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal."
+    },
+    "AR-017": {
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261128090000_debit_notes/migration.sql",
+        "apps/api/src/ledgers/documents.service.ts",
+        "apps/api/test/debit-notes.e2e.test.ts",
+        "packages/tax-engine/src/india/returns.ts",
+        "packages/tax-engine/test/returns.test.ts",
+        "apps/web/src/components/ledger/new-document.tsx",
+        "apps/web/e2e/debit-notes-flow.test.mjs",
+        "docs/DEBIT_NOTES.md"
+      ],
+      "notes": "Debit notes DN-000001: an INVOICE linked to an earlier posted invoice (same customer, currency, place of supply, not before it); owed, aged and paid like an invoice; GSTR-1 9B type D with the original number, table 13 own series, GSTR-3B outward tax, e-invoice DBN, print titled Debit note with Against invoice. Invoice cannot be voided while a debit note stands (trigger). Sales side only."
     }
   }
 }
