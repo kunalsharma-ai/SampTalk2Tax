@@ -1,0 +1,20 @@
+{
+  "name": "@talk2tax/accounting-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure, framework-free double-entry accounting rules: money, journals, trial balance, statements",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "decimal.js": "10.6.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

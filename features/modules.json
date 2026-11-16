@@ -1,0 +1,645 @@
+{
+  "_comment": "Per-part module metadata used by scripts/generate-feature-registry.mjs. AIGW = AI gateway (packages/ai-orchestration, not yet built).",
+  "statusDefinitions": {
+    "Not started": "No design or code yet.",
+    "Designed": "Documented design exists (docs/), no working code.",
+    "Implementing": "Some working code exists (e.g. backend and tests) but not every layer (API, persistence, UI) is done.",
+    "Implemented": "Business logic, persistence, API and UI all functional.",
+    "Tested": "Implemented and covered by automated tests that pass.",
+    "Integration pending": "Built, awaiting an external provider integration.",
+    "External approval required": "Needs credentials, regulatory or commercial approval outside the codebase.",
+    "Blocked": "Cannot proceed; reason in notes.",
+    "Production ready": "Acceptance criteria met and all required tests pass."
+  },
+  "modules": {
+    "4": {
+      "code": "COMP",
+      "name": "Competitive benchmarking",
+      "milestone": "M0",
+      "priority": "P0",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "5": {
+      "code": "GL",
+      "name": "General ledger and accounting engine",
+      "milestone": "M1",
+      "priority": "P0",
+      "dependencies": [
+        "SEC",
+        "I18N"
+      ],
+      "database": "Tenant-scoped tables with composite (id, org_id) foreign keys; NUMERIC money columns; DB triggers for immutability and balance.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "6": {
+      "code": "AR",
+      "name": "Accounts receivable",
+      "milestone": "M2",
+      "priority": "P1",
+      "dependencies": [
+        "GL",
+        "DOC",
+        "WFLOW"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "7": {
+      "code": "AP",
+      "name": "Accounts payable",
+      "milestone": "M2",
+      "priority": "P1",
+      "dependencies": [
+        "GL",
+        "DOC",
+        "WFLOW",
+        "PROC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "8": {
+      "code": "BANK",
+      "name": "Banking and reconciliation",
+      "milestone": "M2",
+      "priority": "P1",
+      "dependencies": [
+        "GL",
+        "INTG"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "9": {
+      "code": "TAX",
+      "name": "Global taxation engine",
+      "milestone": "M3",
+      "priority": "P1",
+      "dependencies": [
+        "GL",
+        "AR",
+        "AP"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "10": {
+      "code": "PAY",
+      "name": "Payroll and workforce finance",
+      "milestone": "M3",
+      "priority": "P2",
+      "dependencies": [
+        "GL",
+        "TAX",
+        "WFLOW"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "11": {
+      "code": "PROC",
+      "name": "Procurement and spend management",
+      "milestone": "M2",
+      "priority": "P2",
+      "dependencies": [
+        "GL",
+        "WFLOW"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "12": {
+      "code": "EXP",
+      "name": "Expense management",
+      "milestone": "M2",
+      "priority": "P1",
+      "dependencies": [
+        "GL",
+        "WFLOW",
+        "DOC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "13": {
+      "code": "TRS",
+      "name": "Treasury management",
+      "milestone": "M6",
+      "priority": "P2",
+      "dependencies": [
+        "GL",
+        "BANK"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "14": {
+      "code": "FPA",
+      "name": "Financial planning and analysis",
+      "milestone": "M4",
+      "priority": "P2",
+      "dependencies": [
+        "GL",
+        "RPT"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "15": {
+      "code": "TWIN",
+      "name": "Financial digital twin",
+      "milestone": "M7",
+      "priority": "P3",
+      "dependencies": [
+        "FPA",
+        "AIGW"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "16": {
+      "code": "VCFO",
+      "name": "AI Virtual CFO",
+      "milestone": "M7",
+      "priority": "P3",
+      "dependencies": [
+        "RPT",
+        "AIGW"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "17": {
+      "code": "AGENT",
+      "name": "Multi-agent AI finance workforce",
+      "milestone": "M5",
+      "priority": "P3",
+      "dependencies": [
+        "AIGW",
+        "WFLOW"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "18": {
+      "code": "WFLOW",
+      "name": "Autonomous financial workflows",
+      "milestone": "M5",
+      "priority": "P2",
+      "dependencies": [
+        "SEC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "19": {
+      "code": "ENT",
+      "name": "Enterprise financial management",
+      "milestone": "M6",
+      "priority": "P2",
+      "dependencies": [
+        "GL"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "20": {
+      "code": "INV",
+      "name": "Inventory, manufacturing and service finance",
+      "milestone": "M6",
+      "priority": "P3",
+      "dependencies": [
+        "GL",
+        "PROC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "21": {
+      "code": "PROJ",
+      "name": "Project financial management",
+      "milestone": "M6",
+      "priority": "P3",
+      "dependencies": [
+        "GL"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "22": {
+      "code": "CRM",
+      "name": "CRM and finance integration",
+      "milestone": "M6",
+      "priority": "P3",
+      "dependencies": [
+        "AR",
+        "INTG"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "23": {
+      "code": "RISK",
+      "name": "Financial fraud and risk intelligence",
+      "milestone": "M4",
+      "priority": "P2",
+      "dependencies": [
+        "GL",
+        "AP",
+        "BANK"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "24": {
+      "code": "AUDIT",
+      "name": "Continuous audit and governance",
+      "milestone": "M6",
+      "priority": "P1",
+      "dependencies": [
+        "GL",
+        "SEC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "25": {
+      "code": "DOC",
+      "name": "Document intelligence",
+      "milestone": "M2",
+      "priority": "P2",
+      "dependencies": [
+        "AIGW"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "26": {
+      "code": "RPT",
+      "name": "Advanced financial reporting",
+      "milestone": "M6",
+      "priority": "P1",
+      "dependencies": [
+        "GL"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "27": {
+      "code": "DASH",
+      "name": "Dashboard design",
+      "milestone": "M1",
+      "priority": "P1",
+      "dependencies": [
+        "RPT",
+        "DS"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "28": {
+      "code": "CMD",
+      "name": "Executive financial command center",
+      "milestone": "M4",
+      "priority": "P2",
+      "dependencies": [
+        "DASH",
+        "RPT"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "29": {
+      "code": "WAR",
+      "name": "AI financial war room",
+      "milestone": "M7",
+      "priority": "P3",
+      "dependencies": [
+        "VCFO"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "30": {
+      "code": "LEAK",
+      "name": "Revenue leakage and profit optimization",
+      "milestone": "M4",
+      "priority": "P3",
+      "dependencies": [
+        "AR",
+        "RPT"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "31": {
+      "code": "RECOV",
+      "name": "Financial recovery planner",
+      "milestone": "M7",
+      "priority": "P3",
+      "dependencies": [
+        "FPA",
+        "TWIN"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "32": {
+      "code": "BENCH",
+      "name": "Privacy-preserving financial benchmarking",
+      "milestone": "M7",
+      "priority": "P3",
+      "dependencies": [
+        "RPT",
+        "SEC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "33": {
+      "code": "I18N",
+      "name": "Internationalization",
+      "milestone": "M8",
+      "priority": "P2",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "34": {
+      "code": "INTG",
+      "name": "Integration marketplace",
+      "milestone": "M6",
+      "priority": "P2",
+      "dependencies": [
+        "SEC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "35": {
+      "code": "SEC",
+      "name": "Security and enterprise governance",
+      "milestone": "M1",
+      "priority": "P0",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "36": {
+      "code": "UX",
+      "name": "User experience and onboarding",
+      "milestone": "M1",
+      "priority": "P1",
+      "dependencies": [
+        "DS"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "37": {
+      "code": "MIGR",
+      "name": "Accounting data migration",
+      "milestone": "M6",
+      "priority": "P2",
+      "dependencies": [
+        "GL"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "38": {
+      "code": "SUBS",
+      "name": "Subscription and monetization engine",
+      "milestone": "M9",
+      "priority": "P2",
+      "dependencies": [
+        "SEC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "39": {
+      "code": "ADMIN",
+      "name": "Platform super admin",
+      "milestone": "M9",
+      "priority": "P2",
+      "dependencies": [
+        "SEC"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "40": {
+      "code": "MOB",
+      "name": "Mobile experience",
+      "milestone": "M8",
+      "priority": "P3",
+      "dependencies": [
+        "DS"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "41": {
+      "code": "PERF",
+      "name": "Performance and scalability",
+      "milestone": "M9",
+      "priority": "P1",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "42": {
+      "code": "QA",
+      "name": "Testing and quality assurance",
+      "milestone": "M1",
+      "priority": "P0",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "43": {
+      "code": "DEMO",
+      "name": "Demonstration data",
+      "milestone": "M1",
+      "priority": "P1",
+      "dependencies": [
+        "GL"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "44": {
+      "code": "INNOV",
+      "name": "Additional differentiating innovations",
+      "milestone": "M7",
+      "priority": "P3",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "45": {
+      "code": "NAV",
+      "name": "Navigation structure",
+      "milestone": "M1",
+      "priority": "P1",
+      "dependencies": [
+        "DS"
+      ],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "46": {
+      "code": "DS",
+      "name": "Design system",
+      "milestone": "M1",
+      "priority": "P1",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    },
+    "50": {
+      "code": "RULE",
+      "name": "Absolute quality rules",
+      "milestone": "All",
+      "priority": "P0",
+      "dependencies": [],
+      "database": "Tenant-scoped tables (org_id on every row, composite foreign keys), NUMERIC for money, audit events for every mutation.",
+      "api": "Versioned REST endpoints under /v1/orgs/:orgId with zod validation, OpenAPI docs and permission checks.",
+      "ui": "Role-appropriate screens in apps/web using the design system, with accessible tables behind every chart.",
+      "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
+      "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
+    }
+  }
+}

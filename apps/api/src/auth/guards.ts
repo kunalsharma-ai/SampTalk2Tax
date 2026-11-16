@@ -1,0 +1,58 @@
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { hasPermission, Permission, RoleName } from '@talk2tax/security';
+import { z } from 'zod';
+import { PrismaService } from '../common/prisma.service';
+import { IS_PUBLIC, PERMISSION } from './decorators';
+import { TokensService } from './tokens.service';
+
+/** Global guard: authenticates the bearer token, then enforces tenant membership and permission. */
+@Injectable()
+export class AuthGuard implements CanActivate {
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly tokens: TokensService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const targets = [ctx.getHandler(), ctx.getClass()];
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, targets)) return true;
+
+    const req = ctx.switchToHttp().getRequest();
+    const header: string | undefined = req.headers['authorization'];
+    const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+    if (!token) throw new UnauthorizedException({ error: 'UNAUTHENTICATED', message: 'Missing bearer token' });
+    const userId = await this.tokens.verify(token);
+    if (!userId) throw new UnauthorizedException({ error: 'UNAUTHENTICATED', message: 'Invalid or expired token' });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, name: true, isActive: true } });
+    if (!user || !user.isActive) throw new UnauthorizedException({ error: 'UNAUTHENTICATED', message: 'User is not active' });
+    req.user = { id: user.id, email: user.email, name: user.name };
+
+    const permission = this.reflector.getAllAndOverride<Permission | undefined>(PERMISSION, targets);
+    const orgId: string | undefined = req.params?.orgId;
+    if (orgId !== undefined) {
+      if (!z.uuid().safeParse(orgId).success) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
+      const membership = await this.prisma.membership.findUnique({
+        where: { orgId_userId: { orgId, userId: user.id } },
+        include: { org: { select: { functionalCurrency: true, fiscalYearStartMonth: true } } },
+      });
+      // Non-members get 404, not 403, so organization ids cannot be probed.
+      if (!membership) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
+      const role = membership.role as RoleName;
+      if (!permission) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Route has no permission declared' });
+      if (!hasPermission(role, permission)) {
+        throw new ForbiddenException({ error: 'FORBIDDEN', message: `Your role (${role}) does not have ${permission}` });
+      }
+      req.org = {
+        id: orgId,
+        role,
+        functionalCurrency: membership.org.functionalCurrency,
+        fiscalYearStartMonth: membership.org.fiscalYearStartMonth,
+      };
+    } else if (permission) {
+      throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Organization-scoped route is missing :orgId' });
+    }
+    return true;
+  }
+}

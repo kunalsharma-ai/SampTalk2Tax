@@ -1,0 +1,225 @@
+// Talk2Tax authoritative transactional schema.
+// Financial invariants are enforced twice: in the accounting engine and in
+// PostgreSQL itself (see the hand-written SQL appended to the first migration).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  APPROVER
+  VIEWER
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum PeriodStatus {
+  OPEN
+  LOCKED
+  CLOSED
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+}
+
+enum JournalType {
+  STANDARD
+  ADJUSTING
+  REVERSING
+  OPENING
+  CLOSING
+  RECURRING
+}
+
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  email        String       @unique
+  name         String
+  passwordHash String       @map("password_hash")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships  Membership[]
+
+  @@map("users")
+}
+
+model Organization {
+  id                   String          @id @default(uuid()) @db.Uuid
+  name                 String
+  legalName            String?         @map("legal_name")
+  countryCode          String          @map("country_code") @db.Char(2)
+  functionalCurrency   String          @map("functional_currency") @db.Char(3)
+  fiscalYearStartMonth Int             @map("fiscal_year_start_month") @db.SmallInt
+  isDemo               Boolean         @default(false) @map("is_demo")
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships          Membership[]
+  accounts             Account[]
+  periods              FiscalPeriod[]
+  journalEntries       JournalEntry[]
+  counters             OrgCounter[]
+  auditEvents          AuditEvent[]
+
+  @@map("organizations")
+}
+
+model Membership {
+  id        String       @id @default(uuid()) @db.Uuid
+  orgId     String       @map("org_id") @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  role      Role
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model Account {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  code        String
+  name        String
+  type        AccountType
+  subtype     String?
+  description String?
+  parentId    String?       @map("parent_id") @db.Uuid
+  isPostable  Boolean       @default(true) @map("is_postable")
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  parent      Account?      @relation("AccountHierarchy", fields: [parentId, orgId], references: [id, orgId], onDelete: Restrict)
+  children    Account[]     @relation("AccountHierarchy")
+  lines       JournalLine[]
+
+  @@unique([orgId, code])
+  @@unique([id, orgId])
+  @@index([orgId, type])
+  @@map("accounts")
+}
+
+model FiscalPeriod {
+  id         String         @id @default(uuid()) @db.Uuid
+  orgId      String         @map("org_id") @db.Uuid
+  fiscalYear Int            @map("fiscal_year")
+  periodNo   Int            @map("period_no") @db.SmallInt
+  name       String
+  startDate  DateTime       @map("start_date") @db.Date
+  endDate    DateTime       @map("end_date") @db.Date
+  status     PeriodStatus   @default(OPEN)
+  lockedAt   DateTime?      @map("locked_at") @db.Timestamptz(6)
+  lockedById String?        @map("locked_by_id") @db.Uuid
+  org        Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  entries    JournalEntry[]
+
+  @@unique([orgId, fiscalYear, periodNo])
+  @@unique([id, orgId])
+  @@index([orgId, startDate])
+  @@map("fiscal_periods")
+}
+
+model JournalEntry {
+  id               String        @id @default(uuid()) @db.Uuid
+  orgId            String        @map("org_id") @db.Uuid
+  entryNumber      Int?          @map("entry_number")
+  date             DateTime      @db.Date
+  periodId         String        @map("period_id") @db.Uuid
+  type             JournalType   @default(STANDARD)
+  status           JournalStatus @default(DRAFT)
+  memo             String?
+  reference        String?
+  functionalCurrency String      @map("functional_currency") @db.Char(3)
+  totalDebit       Decimal       @default(0) @map("total_debit") @db.Decimal(24, 6)
+  totalCredit      Decimal       @default(0) @map("total_credit") @db.Decimal(24, 6)
+  idempotencyKey   String?       @map("idempotency_key")
+  idempotencyHash  String?       @map("idempotency_hash")
+  reversesEntryId  String?       @unique @map("reverses_entry_id") @db.Uuid
+  createdById      String        @map("created_by_id") @db.Uuid
+  postedById       String?       @map("posted_by_id") @db.Uuid
+  postedAt         DateTime?     @map("posted_at") @db.Timestamptz(6)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org              Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  period           FiscalPeriod  @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
+  reverses         JournalEntry? @relation("Reversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
+  reversedBy       JournalEntry? @relation("Reversal")
+  lines            JournalLine[]
+
+  @@unique([orgId, entryNumber])
+  @@unique([orgId, idempotencyKey])
+  @@unique([id, orgId])
+  @@index([orgId, date])
+  @@index([orgId, status])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id               String       @id @default(uuid()) @db.Uuid
+  orgId            String       @map("org_id") @db.Uuid
+  entryId          String       @map("entry_id") @db.Uuid
+  lineNo           Int          @map("line_no")
+  accountId        String       @map("account_id") @db.Uuid
+  currency         String       @db.Char(3)
+  exchangeRate     Decimal      @map("exchange_rate") @db.Decimal(24, 10)
+  debit            Decimal      @default(0) @db.Decimal(24, 6)
+  credit           Decimal      @default(0) @db.Decimal(24, 6)
+  functionalDebit  Decimal      @default(0) @map("functional_debit") @db.Decimal(24, 6)
+  functionalCredit Decimal      @default(0) @map("functional_credit") @db.Decimal(24, 6)
+  description      String?
+  dimensions       Json?
+  entry            JournalEntry @relation(fields: [entryId, orgId], references: [id, orgId], onDelete: Restrict)
+  account          Account      @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([entryId, lineNo])
+  @@index([orgId, accountId])
+  @@map("journal_lines")
+}
+
+model OrgCounter {
+  orgId String       @map("org_id") @db.Uuid
+  key   String
+  value Int          @default(0)
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@id([orgId, key])
+  @@map("org_counters")
+}
+
+/// Append-only, hash-chained audit trail. UPDATE/DELETE are blocked by trigger.
+model AuditEvent {
+  id         BigInt        @id @default(autoincrement())
+  orgId      String?       @map("org_id") @db.Uuid
+  actorId    String?       @map("actor_id") @db.Uuid
+  action     String
+  entityType String        @map("entity_type")
+  entityId   String?       @map("entity_id")
+  data       Json?
+  prevHash   String?       @map("prev_hash")
+  hash       String
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  org        Organization? @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, createdAt])
+  @@index([orgId, entityType, entityId])
+  @@map("audit_events")
+}
