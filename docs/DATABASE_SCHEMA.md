@@ -243,3 +243,10 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 * `subscription_events`: immutable history per organisation (trigger), forced RLS. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
 * `platform_payment_gateways` (Stripe, Razorpay: mode, currencies, sealed keys and webhook secrets, last test) and `platform_billing_profile` (one row: seller details on invoices). Platform data, no RLS; read and changed only through platform administration.
 * `subscription_invoices`: payment requests and tax invoices per organisation (one open at a time; final once paid or void, trigger; no deletes), forced RLS. `subscription_invoice_counters`: tax invoice running numbers per Indian financial year. `payment_webhook_events`: every gateway notice with its signature check and outcome, unique per provider and event id. See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md).
+
+## Support (M9, slice 4)
+
+* `support_tickets`: per organisation, a global running `number` (shown as `T-000123`), subject, topic, urgency, state (`OPEN`, `PENDING`, `RESOLVED`, `CLOSED`; closed iff `closed_at`), who opened it, the support assignee, first answer, resolution and close times. Forced RLS.
+* `support_messages`: the conversation (`CUSTOMER` or `SUPPORT` side; internal notes only on the support side), composite FK to the ticket and its organisation, append-only (trigger), forced RLS.
+* `support_access_grants`: read-only support access to the books: reason, who granted it, at most 72 hours (check), optional ticket; can only be revoked, once (trigger); no deletes. Forced RLS.
+* `support_access_views`: every request support made under a grant (path, who, when), append-only, forced RLS. See [`SUPPORT.md`](SUPPORT.md).

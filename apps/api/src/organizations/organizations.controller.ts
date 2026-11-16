@@ -44,8 +44,9 @@ export class OrganizationsController {
 
   @Get(':orgId')
   @RequirePermission('org.read')
-  get(@Param('orgId') orgId: string) {
-    return this.orgs.get(orgId);
+  async get(@Param('orgId') orgId: string, @CurrentOrg() org: OrgContext) {
+    // Support staff reading under a grant are told so, with when their access ends.
+    return { ...(await this.orgs.get(orgId)), role: org.role, viaSupport: org.viaSupport ? { expiresAt: org.viaSupport.expiresAt } : null };
   }
 
   /** The time zone moments are shown in (display only; business dates follow the country module). */

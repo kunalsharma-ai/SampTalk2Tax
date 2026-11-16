@@ -3838,3 +3838,74 @@ model PaymentWebhookEvent {
   @@index([receivedAt])
   @@map("payment_webhook_events")
 }
+
+/// A support ticket between an organisation and the people who run Talk2Tax (M9 slice 4).
+model SupportTicket {
+  id              String           @id @db.Uuid
+  orgId           String           @map("org_id") @db.Uuid
+  number          Int              @unique @default(autoincrement())
+  subject         String           @db.VarChar(200)
+  category        String           @db.VarChar(12)
+  priority        String           @db.VarChar(8)
+  status          String           @default("OPEN") @db.VarChar(8)
+  createdBy       String           @map("created_by") @db.Uuid
+  assigneeId      String?          @map("assignee_id") @db.Uuid
+  firstResponseAt DateTime?        @map("first_response_at") @db.Timestamptz(6)
+  resolvedAt      DateTime?        @map("resolved_at") @db.Timestamptz(6)
+  closedAt        DateTime?        @map("closed_at") @db.Timestamptz(6)
+  lastMessageAt   DateTime         @default(now()) @map("last_message_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  messages        SupportMessage[]
+
+  @@unique([id, orgId])
+  @@index([orgId, createdAt])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+/// One message on a ticket. Never edited or deleted; internal notes are never shown to the organisation.
+model SupportMessage {
+  id        String        @id @db.Uuid
+  ticketId  String        @map("ticket_id") @db.Uuid
+  orgId     String        @map("org_id") @db.Uuid
+  ticket    SupportTicket @relation(fields: [ticketId, orgId], references: [id, orgId], onDelete: Restrict)
+  authorId  String        @map("author_id") @db.Uuid
+  side      String        @db.VarChar(8)
+  internal  Boolean       @default(false)
+  body      String
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
+}
+
+/// Time-limited read-only support access to an organisation's books, granted by the organisation.
+model SupportAccessGrant {
+  id        String    @id @db.Uuid
+  orgId     String    @map("org_id") @db.Uuid
+  ticketId  String?   @map("ticket_id") @db.Uuid
+  reason    String    @db.VarChar(500)
+  grantedBy String    @map("granted_by") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedBy String?   @map("revoked_by") @db.Uuid
+
+  @@unique([id, orgId])
+  @@index([orgId, expiresAt])
+  @@map("support_access_grants")
+}
+
+/// Each request support made under a grant. Append-only.
+model SupportAccessView {
+  id        BigInt   @id @default(autoincrement())
+  grantId   String   @map("grant_id") @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  path      String   @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, createdAt])
+  @@map("support_access_views")
+}

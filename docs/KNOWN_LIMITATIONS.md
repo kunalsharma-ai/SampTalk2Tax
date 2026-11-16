@@ -254,7 +254,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Platform administration
 
-* No controlled support access to an organisation's data yet (ADMIN-022): an administrator who needs the books must be invited as a member. Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Plans, billing, support tickets, usage and monitoring are later M9 slices. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+* Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Usage metering and monitoring are later M9 slices. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
 
 ## Plans and subscriptions
 

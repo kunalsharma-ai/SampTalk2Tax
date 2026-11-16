@@ -39,6 +39,9 @@ import { HealthController } from './health/health.controller';
 import { RegionsController } from './regions/regions.controller';
 import { AdminController, AnnouncementsController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
+import { PlatformSupportController, SupportController } from './support/support.controller';
+import { SupportService } from './support/support.service';
+import { SupportAccessService } from './support/support-access.service';
 import { BillingController } from './billing/billing.controller';
 import { BillingService } from './billing/billing.service';
 import { PlatformBillingController } from './billing/platform-billing.controller';
@@ -152,6 +155,8 @@ export class AppModule {
         HealthController,
         RegionsController,
         AdminController,
+        SupportController,
+        PlatformSupportController,
         AnnouncementsController,
         BillingController,
         PlatformBillingController,
@@ -221,6 +226,8 @@ export class AppModule {
       providers: [
         RegionsService,
         AdminService,
+        SupportService,
+        SupportAccessService,
         BillingService,
         PlatformBillingService,
         PaymentSettingsService,

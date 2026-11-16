@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { signOut } from '@/lib/api';
-import { setOrganisationTimeZone } from '@/lib/format';
+import { dateTime, setOrganisationTimeZone } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { useOrg, useOrgs } from '@/lib/org';
 import { Logo } from './brand';
@@ -87,6 +87,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 {o.dataRegion && !o.dataRegion.here ? `${o.name} (${o.dataRegion.name})` : o.name}
               </option>
             ))}
+            {org?.viaSupport ? <option value={org.id}>{org.name}</option> : null}
             <option value="__new">{t('+ New organisation…')}</option>
           </select>
           <span className="hidden items-center gap-2 sm:flex">
@@ -112,6 +113,12 @@ export function Shell({ children }: { children: ReactNode }) {
             {a.message}
           </p>
         ))}
+        {org?.viaSupport ? (
+          <p role="alert" className="border-b border-violet/30 bg-violet/10 px-4 py-2 text-center text-sm text-fg print:hidden" data-testid="support-access-banner">
+            {t('You are reading {name} through its support access, until {until}. Nothing can be changed, and the organisation sees every page you open.', { name: org.name, until: dateTime(org.viaSupport.expiresAt) })}{' '}
+            <Link className="text-accent hover:underline" href="/admin/support">{t('Back to the support queue')}</Link>
+          </p>
+        ) : null}
         {org?.subscription ? <PlanBanner orgId={org.id} access={org.subscription.access} /> : null}
         {org?.suspended ? (
           <p role="alert" className="border-b border-negative/30 bg-negative/10 px-4 py-2 text-center text-sm text-negative print:hidden" data-testid="suspended-banner">

@@ -30496,9 +30496,22 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/support.ts",
+        "packages/accounting-engine/test/support.test.ts",
+        "packages/database/prisma/migrations/20261114090000_support/migration.sql",
+        "apps/api/src/support/support.service.ts",
+        "apps/api/src/support/support.controller.ts",
+        "apps/api/test/support.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/support/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/support/[ticketId]/page.tsx",
+        "apps/web/src/app/admin/support/page.tsx",
+        "apps/web/src/app/admin/support/[ticketId]/page.tsx",
+        "apps/web/e2e/support-flow.test.mjs",
+        "docs/SUPPORT.md"
+      ],
+      "notes": "Tickets with topic and urgency, first-answer and resolution targets by urgency (1h/8h urgent to 72h/7d low, clock hours), a queue ordered by whose turn it is and the nearest target, assignment, internal notes never shown to the customer, replies emailed through the organisation's mail set-up, append-only messages, every status change in the organisation's audit chain."
     },
     {
       "id": "ADMIN-013",
@@ -30745,9 +30758,10 @@
         "apps/api/test/platform-admin.e2e.test.ts",
         "apps/web/src/app/admin/layout.tsx",
         "apps/web/e2e/platform-admin-flow.test.mjs",
-        "docs/PLATFORM_ADMINISTRATION.md"
+        "docs/PLATFORM_ADMINISTRATION.md",
+        "apps/api/test/support.e2e.test.ts"
       ],
-      "notes": "Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals."
+      "notes": "Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals. Since M9 slice 4 the one exception is support access the organisation grants itself (ADMIN-022): read-only, time-limited and logged."
     },
     {
       "id": "ADMIN-022",
@@ -30769,9 +30783,27 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/support.ts",
+        "packages/accounting-engine/test/support.test.ts",
+        "packages/database/prisma/migrations/20261114090000_support/migration.sql",
+        "apps/api/src/support/support.service.ts",
+        "apps/api/src/support/support.controller.ts",
+        "apps/api/test/support.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/support/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/support/[ticketId]/page.tsx",
+        "apps/web/src/app/admin/support/page.tsx",
+        "apps/web/src/app/admin/support/[ticketId]/page.tsx",
+        "apps/web/e2e/support-flow.test.mjs",
+        "docs/SUPPORT.md",
+        "apps/api/src/support/support-access.service.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/web/src/components/support/access-card.tsx",
+        "apps/web/src/components/shell.tsx",
+        "apps/web/src/lib/org.ts"
+      ],
+      "notes": "Only an owner or admin can grant; 1 to 72 hours with a reason, optionally tied to a ticket; one grant at a time; revocable; support staff get viewer rights for GET requests only (writes 403 SUPPORT_READ_ONLY); every request logged in an append-only table the organisation sees; grants can only be revoked once (database trigger)."
     },
     {
       "id": "MOB-001",
@@ -34536,9 +34568,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/lib/nav.ts",
+        "apps/web/src/app/orgs/[orgId]/support/page.tsx",
+        "apps/web/e2e/support-flow.test.mjs"
+      ],
+      "notes": "Help and support in the Governance group (and for staff who only claim expenses)."
     },
     {
       "id": "NAV-045",
