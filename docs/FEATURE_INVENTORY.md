@@ -1367,9 +1367,9 @@ Part 39 · M9 · priority P2 · depends on: SEC
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| ADMIN-001 |  | rule | Create a dedicated SaaS administration application | Not started |
-| ADMIN-002 |  | capability | Tenant management | Not started |
-| ADMIN-003 |  | capability | Organization management | Not started |
+| ADMIN-001 |  | rule | Create a dedicated SaaS administration application | Tested |
+| ADMIN-002 |  | capability | Tenant management | Tested |
+| ADMIN-003 |  | capability | Organization management | Tested |
 | ADMIN-004 |  | capability | User management | Tested |
 | ADMIN-005 |  | capability | Subscription management | Not started |
 | ADMIN-006 |  | capability | Plan management | Not started |
@@ -1385,9 +1385,9 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-016 |  | capability | Product analytics | Not started |
 | ADMIN-017 |  | capability | Error monitoring | Not started |
 | ADMIN-018 |  | capability | Security alerts | Not started |
-| ADMIN-019 |  | capability | System announcements | Not started |
+| ADMIN-019 |  | capability | System announcements | Tested |
 | ADMIN-020 |  | capability | Maintenance controls | Not started |
-| ADMIN-021 |  | rule | Super Admin access must not automatically grant unrestricted access to tenant financial data | Not started |
+| ADMIN-021 |  | rule | Super Admin access must not automatically grant unrestricted access to tenant financial data | Tested |
 | ADMIN-022 |  | rule | Implement controlled support access with explicit authorization, logging and expiration | Not started |
 
 ## Mobile experience

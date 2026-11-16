@@ -29847,9 +29847,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/admin/admin.service.ts",
+        "apps/api/src/admin/admin.controller.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/test/platform-admin.e2e.test.ts",
+        "apps/web/src/app/admin/layout.tsx",
+        "apps/web/e2e/platform-admin-flow.test.mjs",
+        "docs/PLATFORM_ADMINISTRATION.md"
+      ],
+      "notes": "A dedicated platform administration area (/admin) of the web app with its own layout and API (/v1/admin), for people with a platform role (SUPER_ADMIN, SUPPORT); first administrator via the admin:grant command."
     },
     {
       "id": "ADMIN-002",
@@ -29871,9 +29880,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/admin/admin.service.ts",
+        "apps/api/src/admin/admin.controller.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/test/platform-admin.e2e.test.ts",
+        "apps/web/src/app/admin/layout.tsx",
+        "apps/web/e2e/platform-admin-flow.test.mjs",
+        "docs/PLATFORM_ADMINISTRATION.md",
+        "apps/web/src/app/admin/organisations/page.tsx"
+      ],
+      "notes": "Tenants (organisations) listed and searched by name, member email or id, with country, region, members, owners and status; overview counts."
     },
     {
       "id": "ADMIN-003",
@@ -29895,9 +29914,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/admin/admin.service.ts",
+        "apps/api/src/admin/admin.controller.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/test/platform-admin.e2e.test.ts",
+        "apps/web/src/app/admin/layout.tsx",
+        "apps/web/e2e/platform-admin-flow.test.mjs",
+        "docs/PLATFORM_ADMINISTRATION.md",
+        "apps/web/src/app/admin/organisations/[id]/page.tsx"
+      ],
+      "notes": "Organisation detail (metadata and members only), suspension with a reason shown to members (read-only, 423 ORG_SUSPENDED on changes) and reinstatement, written to the organisation's own audit trail."
     },
     {
       "id": "ADMIN-004",
@@ -29925,9 +29954,12 @@
         "apps/api/test/invitations.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/members",
         "apps/web/src/app/invite",
-        "apps/web/e2e/members-flow.test.mjs"
+        "apps/web/e2e/members-flow.test.mjs",
+        "apps/api/src/admin/admin.service.ts",
+        "apps/web/src/app/admin/people/page.tsx",
+        "apps/web/e2e/platform-admin-flow.test.mjs"
       ],
-      "notes": "Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link."
+      "notes": "Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link. Platform administration adds people search, disable/enable with reason, sign out everywhere and platform roles (at least one super admin kept)."
     },
     {
       "id": "ADMIN-005",
@@ -30285,9 +30317,20 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/admin/admin.service.ts",
+        "apps/api/src/admin/admin.controller.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/test/platform-admin.e2e.test.ts",
+        "apps/web/src/app/admin/layout.tsx",
+        "apps/web/e2e/platform-admin-flow.test.mjs",
+        "docs/PLATFORM_ADMINISTRATION.md",
+        "apps/web/src/app/admin/announcements/page.tsx",
+        "apps/web/src/components/shell.tsx"
+      ],
+      "notes": "Announcements with tone, start and optional end, withdrawn early if needed, shown on every page to everyone signed in."
     },
     {
       "id": "ADMIN-020",
@@ -30333,9 +30376,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/admin/admin.service.ts",
+        "apps/api/src/admin/admin.controller.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/test/platform-admin.e2e.test.ts",
+        "apps/web/src/app/admin/layout.tsx",
+        "apps/web/e2e/platform-admin-flow.test.mjs",
+        "docs/PLATFORM_ADMINISTRATION.md"
+      ],
+      "notes": "Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals."
     },
     {
       "id": "ADMIN-022",

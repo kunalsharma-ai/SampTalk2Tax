@@ -1,3 +1,4 @@
+import type { PlatformRole } from './decorators';
 import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService, Tx } from '../common/prisma.service';
@@ -58,13 +59,13 @@ export class SessionsService {
   async validate(claims: AccessClaims) {
     const s = await this.prisma.authSession.findUnique({
       where: { id: claims.sessionId },
-      select: { userId: true, revokedAt: true, expiresAt: true, user: { select: { id: true, email: true, name: true, isActive: true } } },
+      select: { userId: true, revokedAt: true, expiresAt: true, user: { select: { id: true, email: true, name: true, isActive: true, platformRole: true } } },
     });
     if (!s || s.userId !== claims.userId) return { ok: false as const, code: 'UNAUTHENTICATED', message: 'Session not found' };
     if (s.revokedAt) return { ok: false as const, code: 'SESSION_REVOKED', message: 'This session was signed out' };
     if (s.expiresAt <= new Date()) return { ok: false as const, code: 'SESSION_EXPIRED', message: 'This session has expired' };
     if (!s.user.isActive) return { ok: false as const, code: 'UNAUTHENTICATED', message: 'User is not active' };
-    return { ok: true as const, user: { id: s.user.id, email: s.user.email, name: s.user.name } };
+    return { ok: true as const, user: { id: s.user.id, email: s.user.email, name: s.user.name, platformRole: (s.user.platformRole as PlatformRole | null) ?? null } };
   }
 
   async refresh(refreshToken: string, meta: ClientMeta): Promise<IssuedSession> {

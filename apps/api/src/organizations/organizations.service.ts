@@ -156,6 +156,8 @@ function serializeOrg(o: {
   claimsAccountId: string | null;
   timeZone: string;
   createdAt: Date;
+  suspendedAt: Date | null;
+  suspendedReason: string | null;
 }) {
   return {
     id: o.id,
@@ -170,5 +172,7 @@ function serializeOrg(o: {
     apAccountId: o.apAccountId,
     claimsAccountId: o.claimsAccountId,
     createdAt: o.createdAt.toISOString(),
+    /** Suspended by the platform: readable, not changeable. */
+    suspended: o.suspendedAt ? { at: o.suspendedAt.toISOString(), reason: o.suspendedReason } : null,
   };
 }

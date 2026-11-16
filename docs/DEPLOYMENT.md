@@ -74,6 +74,10 @@ docker compose --profile app up --build   # API + Postgres
 | `T2T_API_URL` | web | API base URL used by the web app's server-side proxy. Default `http://localhost:4000` |
 | `WEB_URL` | e2e | Web app address for browser tests. Default `http://localhost:3000` |
 
+## First platform administrator
+
+Register in the app, then on the API host run `pnpm --filter @talk2tax/api admin:grant --email you@example.com`. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+
 ## Production (not done yet)
 
 Managed PostgreSQL with PITR backups, secrets from a secrets manager, TLS termination, migrations as a gated release step, health checks on `/health`, structured logs and metrics, and a staging environment. Tracked under M9.

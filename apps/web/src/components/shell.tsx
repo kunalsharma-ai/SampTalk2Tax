@@ -10,6 +10,7 @@ import { useOrg, useOrgs } from '@/lib/org';
 import { Logo } from './brand';
 import { navFor } from '@/lib/nav';
 import type { DataRegion } from '@/lib/types';
+import { useAnnouncements, useMeWithRole } from '@/lib/admin';
 
 export function Shell({ children }: { children: ReactNode }) {
   const { org, orgId, isLoading } = useOrg();
@@ -18,6 +19,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const t = useT();
+  const me = useMeWithRole();
+  const announcements = useAnnouncements();
   const base = `/orgs/${orgId}`;
   // Moments are shown in the organisation's time zone unless the person chose their own.
   setOrganisationTimeZone(org?.timeZone ?? null);
@@ -90,6 +93,11 @@ export function Shell({ children }: { children: ReactNode }) {
             {org?.isDemo ? <Badge tone="warning">{t('Synthetic demo data')}</Badge> : null}
           </span>
           <div className="ml-auto flex shrink-0 items-center gap-1">
+            {me.data?.user.platformRole ? (
+              <Link href="/admin" className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg">
+                {t('Platform admin')}
+              </Link>
+            ) : null}
             <Link href={`/orgs/${orgId}/account`} className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg">
               {t('Account')}
             </Link>
@@ -98,6 +106,16 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
+        {(announcements.data ?? []).map((a) => (
+          <p key={a.id} role="status" className={cn('border-b px-4 py-2 text-center text-sm print:hidden', a.tone === 'WARNING' ? 'border-warning/30 bg-warning/10 text-warning' : 'border-accent/30 bg-accent/10 text-fg')} data-testid="announcement">
+            {a.message}
+          </p>
+        ))}
+        {org?.suspended ? (
+          <p role="alert" className="border-b border-negative/30 bg-negative/10 px-4 py-2 text-center text-sm text-negative print:hidden" data-testid="suspended-banner">
+            {t('This organisation is suspended: {reason}. You can read and export its records, but nothing can be changed.', { reason: org.suspended.reason })}
+          </p>
+        ) : null}
         {org?.isDemo ? <p className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-xs text-warning sm:hidden">{t('Synthetic demo data')}</p> : null}
         <main id="main" key={org?.timeZone ?? ""} className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
           {isLoading ? <p className="text-sm text-fg-muted">{t('Loading…')}</p> : !org ? <p className="text-sm text-fg-muted">{t('Organisation not found or you do not have access.')}</p> : elsewhere ? <RegionElsewhere orgId={org.id} name={org.name} region={elsewhere} /> : children}

@@ -16,6 +16,8 @@ export interface Org {
   timeZone: string;
   /** The region this organisation's data lives in, and whether this deployment serves it. */
   dataRegion: DataRegion;
+  /** Suspended by the platform: readable, not changeable. */
+  suspended: { at: string; reason: string } | null;
   role: Role;
 }
 

@@ -251,3 +251,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Regional deployment
 
 * Moving an organisation between regions is an operator command plus a manual database copy; there is no automated copy or in-app request. Sign-in accounts are per region. No cloud regions are provisioned by the repository. See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
+
+## Platform administration
+
+* No controlled support access to an organisation's data yet (ADMIN-022): an administrator who needs the books must be invited as a member. Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Plans, billing, support tickets, usage and monitoring are later M9 slices. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).

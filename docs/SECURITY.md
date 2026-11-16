@@ -121,3 +121,7 @@ API keys and SMTP passwords that owners and admins enter in Settings → Integra
 ## Data residency
 
 Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
+
+## Platform administration
+
+Platform roles (`SUPER_ADMIN`, `SUPPORT`) are separate from organisation roles and never grant access to an organisation's routes: those still need membership. Admin views read organisation metadata (name, country, region, members, status) as the system and select no financial columns. The first administrator is named with the `admin:grant` command on the API host; the platform keeps at least one active super admin; every platform action is audited, and suspensions are written to the organisation's own audit trail. Suspended organisations are read-only (`423 ORG_SUSPENDED` on any change). See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
