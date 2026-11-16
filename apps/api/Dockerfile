@@ -24,11 +24,12 @@ RUN --mount=type=secret,id=extra_ca,required=false NODE_EXTRA_CA_CERTS=/run/secr
   && cp -r /repo/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma /out/node_modules/.pnpm/@prisma+client@*/node_modules/ \
   && cd /out && node -e "const { PrismaClient } = require(require.resolve('@prisma/client', { paths: [require.resolve('@talk2tax/database')] })); new PrismaClient()"
 
-# Release step: `prisma migrate deploy` against DATABASE_URL, run once before new API containers start.
+# Release step, run once before new API containers start: `prisma migrate deploy` against
+# DATABASE_URL, then the MongoDB migrations against MONGODB_URL (while both databases are in use).
 FROM build AS migrate
 WORKDIR /repo/packages/database
 USER node
-CMD ["npx", "--no-install", "prisma", "migrate", "deploy"]
+CMD ["sh", "-c", "npx --no-install prisma migrate deploy && node /repo/apps/api/dist/db/migrate.js"]
 
 # The API server: distroless (no shell or package manager), as a non-root user.
 FROM gcr.io/distroless/nodejs22-debian12:nonroot AS api

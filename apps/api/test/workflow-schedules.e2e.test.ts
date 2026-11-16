@@ -326,8 +326,8 @@ describe('on a schedule', () => {
 
 describe('without a mail server', () => {
   it('says email is not set up, and an email action fails with that reason', async () => {
-    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'smtp://localhost:25', EMAIL_FROM: '' })).toThrow(/EMAIL_FROM is required when SMTP_URL is set/);
-    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'http://mail', EMAIL_FROM: 'a@b' })).toThrow(/SMTP_URL must start with smtp:\/\//);
+    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', MONGODB_URL: 'mongodb://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'smtp://localhost:25', EMAIL_FROM: '' })).toThrow(/EMAIL_FROM is required when SMTP_URL is set/);
+    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', MONGODB_URL: 'mongodb://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'http://mail', EMAIL_FROM: 'a@b' })).toThrow(/SMTP_URL must start with smtp:\/\//);
 
     // No mail server of the organisation's own and none on the server.
     const appMailer = ctx.app.get(MailerService);

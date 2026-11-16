@@ -23,5 +23,14 @@ export default function setup() {
     stdio: 'pipe',
   });
   process.env.DATABASE_URL = url;
+
+  // MongoDB: same rule, the database name must say "test". Migrations run once per test run.
+  const mongoUrl = process.env.TEST_MONGODB_URL;
+  if (!mongoUrl) throw new Error('TEST_MONGODB_URL must be set for integration tests (see .env.example)');
+  const dbName = new URL(mongoUrl.replace(/^mongodb(\+srv)?:/, 'http:')).pathname.slice(1);
+  if (!/test/i.test(dbName)) throw new Error('Refusing to run integration tests against a MongoDB database whose name does not contain "test"');
+  if (!existsSync(resolve(__dirname, '../dist/db/migrate.js'))) throw new Error('Build the API first (pnpm build): the tests apply MongoDB migrations with dist/db/migrate.js');
+  execSync('node dist/db/migrate.js', { cwd: resolve(__dirname, '..'), env: { ...process.env, MONGODB_URL: mongoUrl }, stdio: 'pipe' });
+  process.env.MONGODB_URL = mongoUrl;
   process.env.JWT_SECRET ??= 'test-secret-that-is-long-enough-for-hs256-signing';
 }

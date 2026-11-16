@@ -23,13 +23,13 @@ Talk2Tax is planned as an AI-native accounting, tax and finance platform. This r
 ```bash
 corepack enable                      # pnpm 10
 cp .env.example .env                 # set JWT_SECRET (openssl rand -base64 48)
-docker compose up -d postgres
+docker compose up -d postgres mongo
 pnpm install && pnpm build
 pnpm db:migrate
 pnpm db:seed                         # optional, prints demo login
 pnpm dev:api                         # http://localhost:4000/docs
 pnpm dev:web                         # http://localhost:3000
-pnpm test                            # unit + integration (needs Postgres)
+pnpm test                            # unit + integration (needs Postgres and MongoDB)
 pnpm e2e                             # browser tests (API and web app running)
 ```
 
@@ -60,7 +60,7 @@ docs/                       PRD, architecture, schema, engine, security, API, te
 
 ## Documentation
 
-[Product requirements](docs/PRODUCT_REQUIREMENTS.md) · [Architecture & ADRs](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_SCHEMA.md) · [Accounting engine](docs/ACCOUNTING_ENGINE.md) · [API](docs/API_DOCUMENTATION.md) · [Security](docs/SECURITY.md) · [Tests](docs/TEST_STRATEGY.md) · [Roadmap](docs/IMPLEMENTATION_ROADMAP.md) · [Feature inventory](docs/FEATURE_INVENTORY.md) · [Competitive matrix (framework)](docs/COMPETITIVE_FEATURE_MATRIX.md) · [Master directive](docs/MASTER_DIRECTIVE.md)
+[Product requirements](docs/PRODUCT_REQUIREMENTS.md) · [Architecture & ADRs](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_SCHEMA.md) · [MongoDB move](docs/MONGODB.md) · [Accounting engine](docs/ACCOUNTING_ENGINE.md) · [API](docs/API_DOCUMENTATION.md) · [Security](docs/SECURITY.md) · [Tests](docs/TEST_STRATEGY.md) · [Roadmap](docs/IMPLEMENTATION_ROADMAP.md) · [Feature inventory](docs/FEATURE_INVENTORY.md) · [Competitive matrix (framework)](docs/COMPETITIVE_FEATURE_MATRIX.md) · [Master directive](docs/MASTER_DIRECTIVE.md)
 
 ## Updating feature status
 

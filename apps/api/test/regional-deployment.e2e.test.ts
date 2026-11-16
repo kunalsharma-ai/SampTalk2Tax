@@ -41,7 +41,7 @@ describe('a deployment says which region it serves', () => {
   });
 
   it('refuses a region code or directory that is not well formed', () => {
-    const base = { DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40) };
+    const base = { DATABASE_URL: 'postgres://x', MONGODB_URL: 'mongodb://x', JWT_SECRET: 'x'.repeat(40) };
     expect(() => loadConfig({ ...base, DEPLOYMENT_REGION: 'EU West' })).toThrow(/DEPLOYMENT_REGION/);
     expect(() => loadConfig({ ...base, REGION_DIRECTORY: '{not json' })).toThrow(/REGION_DIRECTORY must be JSON/);
     expect(() => loadConfig({ ...base, REGION_DIRECTORY: JSON.stringify({ eu: { name: 'EU', appUrl: 'ftp://eu' } }) })).toThrow(/REGION_DIRECTORY/);
