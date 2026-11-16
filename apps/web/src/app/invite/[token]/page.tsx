@@ -7,6 +7,7 @@ import { Logo } from '@/components/brand';
 import { api, signOut } from '@/lib/api';
 import { date } from '@/lib/format';
 import type { InvitationPreview } from '@/lib/types';
+import { PageHelp } from '@/components/help';
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
@@ -31,7 +32,10 @@ export default function InvitePage() {
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-sm text-fg-muted">{inv.invitedBy ? `${inv.invitedBy} invited you to join` : 'You are invited to join'}</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">{inv.organization.name}</h1>
+              <div className="mt-1 flex items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight">{inv.organization.name}</h1>
+                <PageHelp title="Invitation" />
+              </div>
               <p className="mt-2 text-sm">
                 as <Badge tone="violet">{inv.role.toLowerCase()}</Badge> {inv.organization.isDemo ? <Badge tone="warning">Synthetic demo data</Badge> : null}
               </p>

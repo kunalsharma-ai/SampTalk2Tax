@@ -63,7 +63,7 @@ test('the employee sees only their claims and writes one with live totals', asyn
   await employee.waitForURL(/\/expenses$/);
   await employee.getByRole('heading', { name: 'My expense claims' }).waitFor();
   const nav = await employee.getByRole('navigation', { name: 'Main' }).getByRole('link').allTextContents();
-  assert.deepEqual(nav, ['My expense claims', 'Help and support']);
+  assert.deepEqual(nav, ['My expense claims', 'Feature guide', 'Help and support']);
   await employee.getByText('No claims yet').waitFor();
 
   await employee.getByRole('link', { name: 'New claim' }).click();

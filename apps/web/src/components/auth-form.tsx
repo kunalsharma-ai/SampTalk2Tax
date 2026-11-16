@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { ApiError, session } from '@/lib/api';
+import { PageHelp } from '@/components/help';
 
 const loginSchema = z.object({ email: z.email('Enter a valid email'), password: z.string().min(1, 'Enter your password') });
 const registerSchema = z.object({
@@ -40,7 +41,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold tracking-tight">{mode === 'login' ? 'Sign in' : 'Create your account'}</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-2xl font-semibold tracking-tight">{mode === 'login' ? 'Sign in' : 'Create your account'}</h2>
+        <PageHelp title={mode === 'login' ? 'Sign in' : 'Create your account'} />
+      </div>
       <p className="mt-1 text-sm text-fg-muted">{mode === 'login' ? 'Welcome back to your finance workspace.' : 'Set up your workspace in a minute.'}</p>
       <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4" noValidate>
         {error ? <Alert title={mode === 'login' ? 'Sign-in failed' : 'Could not create account'}>{error}</Alert> : null}

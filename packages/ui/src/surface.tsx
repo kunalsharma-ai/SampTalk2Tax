@@ -1,15 +1,24 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from './cn';
+import { SectionHelpSlot } from './help';
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn('rounded-[var(--t2t-radius-lg)] border border-line bg-surface shadow-[var(--t2t-shadow)]', className)} {...props} />;
 }
 
-export function CardHeader({ title, description, actions }: { title: ReactNode; description?: ReactNode; actions?: ReactNode }) {
+/**
+ * help: the (i) control beside the title. Left out, a text title gets the app's help for it (see
+ * SectionHelpContext); pass null for none.
+ */
+export function CardHeader({ title, description, actions, help }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; help?: ReactNode }) {
+  const tip = help !== undefined ? help : typeof title === 'string' ? <SectionHelpSlot title={title} /> : null;
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
       <div>
-        <h2 className="text-sm font-semibold text-fg">{title}</h2>
+        <div className="flex items-center gap-1.5">
+          <h2 className="text-sm font-semibold text-fg">{title}</h2>
+          {tip}
+        </div>
         {description ? <p className="mt-0.5 text-xs text-fg-muted">{description}</p> : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}

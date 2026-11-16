@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Logo } from '@/components/brand';
 import { api, ApiError } from '@/lib/api';
 import type { Org } from '@/lib/types';
+import { PageHelp } from '@/components/help';
 
 const COUNTRIES = COUNTRY_MODULES;
 const LEVEL: Record<ModuleLevel, { label: string; tone: 'positive' | 'accent' | 'neutral' }> = {
@@ -49,7 +50,10 @@ export default function OnboardingPage() {
   return (
     <main id="main" className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6 py-12">
       <Logo size="lg" animated className="self-start" />
-      <h1 className="mt-8 text-3xl font-semibold tracking-tight">Set up your organisation</h1>
+      <div className="mt-8 flex items-center gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight">Set up your organisation</h1>
+        <PageHelp title="Set up your organisation" />
+      </div>
       <p className="mt-2 text-sm text-fg-muted">This creates your books: a starter chart of accounts and the current fiscal year, split into monthly periods. You can change accounts later.</p>
       <Card className="mt-8 p-6">
         <form className="grid gap-5 sm:grid-cols-2" onSubmit={form.handleSubmit((v) => create.mutate(v))} noValidate>
