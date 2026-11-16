@@ -4358,9 +4358,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/vendor-performance.ts",
+        "packages/accounting-engine/test/vendor-performance.test.ts",
+        "packages/database/prisma/migrations/20261209090000_vendor_performance/migration.sql",
+        "apps/api/src/vendor-performance/vendor-performance.service.ts",
+        "apps/api/test/vendor-performance.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-performance/page.tsx",
+        "apps/web/src/components/vendor-performance/performance-card.tsx",
+        "apps/web/e2e/vendor-performance-flow.test.mjs",
+        "docs/VENDOR_PERFORMANCE.md"
+      ],
+      "notes": "Scorecard per vendor and period from purchase orders, goods receipts, posted bills and vendor credits: on-time delivery (40), rejected goods by value (30), bills matched without accepted differences (20), team reviews (10), reweighted over what can be measured, grades A-D; overcharge above order price, spend and credits shown. Reviews 1-5 by aspect, optional PO, note needed at 1-2, append-only, withdrawn only by their author. Not built: external risk data."
     },
     {
       "id": "AP-022",

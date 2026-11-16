@@ -43,6 +43,7 @@ export const hi: Record<string, string> = {
   Retainers: 'रिटेनर',
   'Customer onboarding': 'ग्राहक ऑनबोर्डिंग',
   'Vendor onboarding': 'विक्रेता ऑनबोर्डिंग',
+  'Vendor performance': 'विक्रेता प्रदर्शन',
   'Payment links': 'भुगतान लिंक',
   Collections: 'वसूली',
   'Invoice templates': 'इनवॉइस टेम्पलेट',
