@@ -44,6 +44,12 @@ export class ReportsController {
     return this.reports.balanceSheet(org.id, q);
   }
 
+  @Get('dashboard')
+  @RequirePermission('reports.read')
+  dashboard(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(AsOfQuery)) q: z.infer<typeof AsOfQuery>) {
+    return this.reports.dashboard(org.id, q);
+  }
+
   @Get('general-ledger')
   @RequirePermission('reports.read')
   ledger(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(LedgerQuery)) q: z.infer<typeof LedgerQuery>) {

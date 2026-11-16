@@ -263,6 +263,22 @@ describe('financial reports', () => {
   });
 });
 
+describe('dashboard', () => {
+  it('summarises balances and year-to-date figures consistently with the statements', async () => {
+    const d = (await ctx.http().get(`${org.base}/reports/dashboard?asOf=${today()}`).set(owner.auth).expect(200)).body;
+    const t = await tb(org.base, owner);
+    const bal = (code: string) => t.rows.find((r: { code: string }) => r.code === code)?.balance ?? '0.00';
+    const cents = (s: string) => Math.round(Number(s) * 100);
+    expect(cents(d.balances.cash)).toBe(cents(bal('1110')) + cents(bal('1120')));
+    expect(d.balances.receivables).toBe(bal('1200'));
+    expect(d.balances.payables).toBe(bal('2100'));
+    const is = (await ctx.http().get(`${org.base}/reports/income-statement?from=${d.fiscalYearStart}&to=${today()}`).set(owner.auth).expect(200)).body;
+    expect(d.yearToDate.netIncome).toBe(is.netIncome);
+    expect(d.periods[d.periods.length - 1].closingCash).toBe(d.balances.cash);
+    expect(cents(d.yearToDate.revenue)).toBe(d.periods.reduce((s: number, p: { revenue: string }) => s + cents(p.revenue), 0));
+  });
+});
+
 describe('audit trail', () => {
   it('records actions in a verifiable hash chain that cannot be altered', async () => {
     const events = await ctx.http().get(`${org.base}/audit-events?limit=500`).set(owner.auth).expect(200);

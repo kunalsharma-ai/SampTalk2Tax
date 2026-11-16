@@ -36,3 +36,22 @@ jobs:
       - run: pnpm test
       - name: Feature registry is up to date
         run: node scripts/generate-feature-registry.mjs --check
+      - name: Install Chromium for browser tests
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+      - name: Start API and web app
+        env:
+          PORT: 4000
+          T2T_API_URL: http://localhost:4000
+        run: |
+          (cd apps/api && node dist/main.js > /tmp/api.log 2>&1 &)
+          (cd apps/web && npx next start -p 3000 > /tmp/web.log 2>&1 &)
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:4000/health >/dev/null && curl -s -o /dev/null http://localhost:3000/login && break
+            sleep 1
+          done
+      - name: Browser end-to-end tests
+        run: pnpm e2e
+      - name: Server logs on failure
+        if: failure()
+        run: tail -n 100 /tmp/api.log /tmp/web.log || true

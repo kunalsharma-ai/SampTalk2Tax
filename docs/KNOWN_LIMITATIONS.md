@@ -3,8 +3,8 @@
 Honest list of what does not exist or is incomplete. Kept current with each milestone.
 
 ## Product scope
-* **No web UI yet.** Everything is API-only. Login, onboarding, accounting workspace and dashboards are the next milestone. For that reason no feature is marked "Implemented" in `FEATURE_STATUS.md`.
-* Of 1,343 registry entries, 70 have progress (39 Tested rules/invariants and test capabilities, 31 Implementing). The rest are Not started.
+* The web app covers M1 only: sign-in, onboarding, dashboard, journals, chart of accounts, periods, four reports, audit trail and members. Every other module in the directive has no screen, and the sidebar does not show them.
+* Of 1,343 registry entries, 97 have progress (63 Tested, 21 Implemented, 13 Implementing). The rest are Not started.
 * No AR, AP, banking, tax, payroll, procurement, expenses, treasury, FP&A, AI, agents, workflows, documents, integrations, subscriptions or admin modules yet.
 * No AI functionality of any kind exists yet, and none is claimed.
 
@@ -15,8 +15,15 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * The chart template is a generic SMB chart, not a statutory chart (e.g. Schedule III presentation is not implemented).
 * Period CLOSED status exists but there is no close workflow; LOCKED/OPEN toggling is available to OWNER/ADMIN.
 
+## Web app
+* One dashboard chart (revenue, expenses and net income by period, with a table). No drill-down, filters, forecasts or other dashboards.
+* Journal entry is a form with line rows, not a spreadsheet-style grid; no CSV import, attachments, templates or recurring entries.
+* No global search, command palette, notifications, light theme (the app has one dark theme) or per-user locale setting.
+* Layouts are responsive, but there is no automated accessibility audit (axe) or visual regression test yet.
+* Member screen adds existing users by email; there are no invitation emails or role changes in the UI.
+
 ## Security
-* Access tokens only (no refresh, revocation or logout); no MFA/SSO; no rate limiting or lockout on login.
+* Access tokens only (no refresh or server-side revocation). Signing out clears the web session cookie, but the token stays valid until it expires (1 h by default). No MFA/SSO; no rate limiting or lockout on login.
 * Tenant isolation is enforced in the application and by composite foreign keys; PostgreSQL row-level security is not enabled yet.
 * Members are added by existing email only; no invitation emails.
 * Segregation of duties (creator ≠ poster) is possible through roles but not enforced as a policy.

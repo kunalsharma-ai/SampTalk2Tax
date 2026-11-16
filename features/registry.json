@@ -1140,12 +1140,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/test/journal.test.ts",
-        "apps/api/test/ledger.e2e.test.ts › journal posting"
+        "apps/api/test/ledger.e2e.test.ts › journal posting",
+        "apps/web/src/app/orgs/[orgId]/journals",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-003",
@@ -1168,12 +1170,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › chart of accounts rules",
-        "POST/PATCH /v1/orgs/:orgId/accounts"
+        "POST/PATCH /v1/orgs/:orgId/accounts",
+        "apps/web/src/app/orgs/[orgId]/accounts",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. A generic SMB template is applied on onboarding; statutory charts per country are not done."
+      "notes": null
     },
     {
       "id": "GL-004",
@@ -1196,11 +1200,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness"
+        "apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness",
+        "apps/web/src/app/orgs/[orgId]/accounts",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-005",
@@ -1223,11 +1229,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness"
+        "apps/api/test/ledger.e2e.test.ts › validates hierarchy, subtype and uniqueness",
+        "apps/web/src/app/orgs/[orgId]/accounts",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-006",
@@ -1250,12 +1258,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › journal posting",
-        "POST /v1/orgs/:orgId/journals (draft, edit, delete, post)"
+        "POST /v1/orgs/:orgId/journals (draft, edit, delete, post)",
+        "apps/web/src/app/orgs/[orgId]/journals",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-007",
@@ -1303,11 +1313,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts"
+        "apps/api/test/ledger.e2e.test.ts",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. ADJUSTING is a journal type; dedicated adjustment workflow (e.g. auto-reverse next period) not done."
+      "notes": "Adjusting journals are ordinary posted journals with a memo; there is no separate adjusting-entry type or period-end workflow yet."
     },
     {
       "id": "GL-009",
@@ -1330,12 +1341,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › reverses a posted entry exactly once and nets it to zero",
-        "packages/accounting-engine/test/journal.test.ts › builds a reversal that nets the original to zero"
+        "packages/accounting-engine/test/journal.test.ts › builds a reversal that nets the original to zero",
+        "apps/web/src/app/orgs/[orgId]/journals",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-010",
@@ -1358,11 +1371,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts"
+        "apps/api/test/ledger.e2e.test.ts",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. OPENING is a journal type; an opening-balance import wizard is not done."
+      "notes": "Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet."
     },
     {
       "id": "GL-011",
@@ -1487,12 +1501,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › creates further fiscal years",
-        "packages/accounting-engine/test/periods.test.ts"
+        "packages/accounting-engine/test/periods.test.ts",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-016",
@@ -1515,12 +1530,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/test/periods.test.ts",
-        "apps/api/test/ledger.e2e.test.ts › period locks"
+        "apps/api/test/ledger.e2e.test.ts › period locks",
+        "apps/web/src/app/orgs/[orgId]/periods",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-017",
@@ -1543,11 +1560,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
-        "packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year"
+        "packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Monthly calendars with any start month; 4-4-5 and custom calendars not done."
+      "notes": null
     },
     {
       "id": "GL-018",
@@ -1570,12 +1588,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › blocks posting into a locked period and allows it again after unlock",
-        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)"
+        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)",
+        "apps/web/src/app/orgs/[orgId]/periods",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-019",
@@ -1598,12 +1618,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
         "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
-        "apps/api/test/ledger.e2e.test.ts › journal posting"
+        "apps/api/test/ledger.e2e.test.ts › journal posting",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Draft → post with separate permissions; configurable approval policies not done."
+      "notes": null
     },
     {
       "id": "GL-020",
@@ -1626,11 +1647,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › audit trail"
+        "apps/api/test/ledger.e2e.test.ts › audit trail",
+        "apps/web/src/app/orgs/[orgId]/audit",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-021",
@@ -1653,12 +1676,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › financial reports",
-        "packages/accounting-engine/test/reports.test.ts"
+        "packages/accounting-engine/test/reports.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/trial-balance",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-022",
@@ -1681,11 +1706,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances"
+        "apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "GL-023",
@@ -16798,12 +16824,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › audit trail",
-        "GET /v1/orgs/:orgId/audit-events, /verify"
+        "GET /v1/orgs/:orgId/audit-events, /verify",
+        "apps/web/src/app/orgs/[orgId]/audit",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Append-only, SHA-256 hash-chained per organization."
+      "notes": null
     },
     {
       "id": "AUDIT-005",
@@ -16826,11 +16854,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts"
+        "apps/api/test/ledger.e2e.test.ts",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "AUDIT-006",
@@ -19410,9 +19439,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Original palette and wordmark in packages/design-system; full brand system and illustration set not done."
     },
     {
       "id": "DASH-014",
@@ -19435,9 +19466,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/design-system/src/tokens.ts",
+        "packages/design-system/test/contrast.test.mjs"
+      ],
+      "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     {
       "id": "DASH-015",
@@ -19460,9 +19494,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/design-system/src/tokens.ts",
+        "packages/design-system/test/contrast.test.mjs"
+      ],
+      "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     {
       "id": "DASH-016",
@@ -19485,9 +19522,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/design-system/src/tokens.ts",
+        "packages/design-system/test/contrast.test.mjs"
+      ],
+      "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     {
       "id": "DASH-017",
@@ -19510,9 +19550,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/design-system/src/tokens.ts",
+        "packages/design-system/test/contrast.test.mjs"
+      ],
+      "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     {
       "id": "DASH-018",
@@ -19535,9 +19578,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/design-system/src/tokens.ts",
+        "packages/design-system/test/contrast.test.mjs"
+      ],
+      "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     {
       "id": "DASH-019",
@@ -19560,9 +19606,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/design-system/src/tokens.ts",
+        "packages/design-system/test/contrast.test.mjs"
+      ],
+      "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     {
       "id": "DASH-020",
@@ -19585,9 +19634,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/design-system/src/tokens.ts",
+        "packages/design-system/test/contrast.test.mjs"
+      ],
+      "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     {
       "id": "DASH-021",
@@ -20085,9 +20137,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Dashboard chart has a matching data table; other charts are not built yet."
     },
     {
       "id": "DASH-041",
@@ -20110,9 +20164,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Chart animation and CSS transitions are disabled under prefers-reduced-motion."
     },
     {
       "id": "DASH-042",
@@ -23386,9 +23442,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Amounts use Intl.NumberFormat on exact decimal strings (en-IN style grouping for INR). A per-user locale setting is not built."
     },
     {
       "id": "I18N-004",
@@ -23540,11 +23598,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
-        "packages/accounting-engine/test/periods.test.ts"
+        "packages/accounting-engine/test/periods.test.ts",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "I18N-011",
@@ -25060,9 +25119,10 @@
       },
       "status": "Implementing",
       "evidence": [
-        "apps/api/src/auth/tokens.service.ts"
+        "apps/api/src/auth/tokens.service.ts",
+        "apps/web/src"
       ],
-      "notes": "Short-lived JWT access tokens only. Refresh tokens, revocation and session listing are not done."
+      "notes": "Short-lived JWT held in an httpOnly SameSite=Lax cookie by the web app. Refresh tokens, revocation and session listing are not done."
     },
     {
       "id": "SEC-009",
@@ -25195,11 +25255,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › audit trail"
+        "apps/api/test/ledger.e2e.test.ts › audit trail",
+        "apps/web/src/app/orgs/[orgId]/audit",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "SEC-015",
@@ -25778,11 +25840,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding"
+        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding",
+        "apps/web/src/app/onboarding",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "UX-003",
@@ -25900,11 +25964,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding"
+        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding",
+        "apps/web/src/app/onboarding",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "UX-008",
@@ -25926,11 +25992,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding"
+        "apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding",
+        "apps/web/src/app/onboarding",
+        "apps/web/e2e/ledger-flow.test.mjs"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented."
+      "notes": null
     },
     {
       "id": "UX-009",
@@ -26096,11 +26164,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Implemented",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions"
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
+        "apps/web/src"
       ],
-      "notes": "Backend logic, persistence, REST API and automated tests are done. The web UI is not built yet, so this is not Implemented. Existing users can be added with a role; email invitations are not done."
+      "notes": "Members screen lists members and adds an existing user by email with a role. Invitation emails and role changes are not built."
     },
     {
       "id": "UX-016",
@@ -28066,9 +28135,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Layouts are responsive and checked at phone width; no dedicated mobile navigation pattern yet."
     },
     {
       "id": "MOB-002",
@@ -29017,9 +29088,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/ledger-flow.test.mjs"
+      ],
+      "notes": "Playwright browser tests drive the real web app against the real API and PostgreSQL in CI."
     },
     {
       "id": "QA-006",
@@ -29157,7 +29230,8 @@
       },
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions"
+        "packages/accounting-engine/test/reports.test.ts",
+        "apps/api/test/ledger.e2e.test.ts › reports"
       ],
       "notes": null
     },
@@ -29181,7 +29255,7 @@
       },
       "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation"
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions"
       ],
       "notes": null
     },
@@ -29203,8 +29277,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation"
+      ],
       "notes": null
     },
     {
@@ -29617,9 +29693,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "The demo seed and test fixtures are deterministic; a shared fixture library for all scenarios is not done."
     },
     {
       "id": "DEMO-001",
@@ -30545,9 +30623,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Sidebar and org switcher exist for the M1 modules; global search and command palette are not built."
     },
     {
       "id": "NAV-002",
@@ -30569,8 +30649,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
       "notes": null
     },
     {
@@ -30641,8 +30723,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
       "notes": null
     },
     {
@@ -30665,8 +30749,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
       "notes": null
     },
     {
@@ -31217,8 +31303,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
       "notes": null
     },
     {
@@ -31313,8 +31401,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
       "notes": null
     },
     {
@@ -31529,9 +31619,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Member list and add-by-email with a role; invitation emails and role changes are not built."
     },
     {
       "id": "NAV-043",
@@ -31625,8 +31717,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
       "notes": null
     },
     {
@@ -31649,9 +31743,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Sidebar only shows modules that exist today."
     },
     {
       "id": "NAV-048",
@@ -32487,9 +32583,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "Every button in the web app calls a working API; screens for unbuilt modules are not shown."
     },
     {
       "id": "RULE-002",
@@ -32509,9 +32607,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
+      "notes": "The dashboard reads GET /reports/dashboard, computed from posted journals."
     },
     {
       "id": "RULE-003",
@@ -32531,8 +32631,10 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
+      "status": "Implemented",
+      "evidence": [
+        "apps/web/src"
+      ],
       "notes": null
     },
     {

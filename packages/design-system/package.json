@@ -1,0 +1,17 @@
+{
+  "name": "@talk2tax/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Talk2Tax design tokens (colours, type, spacing, motion) as CSS variables and TypeScript",
+  "main": "src/tokens.ts",
+  "types": "src/tokens.ts",
+  "exports": {
+    ".": "./src/tokens.ts",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test test/contrast.test.mjs"
+  },
+  "devDependencies": { "typescript": "5.9.3" }
+}

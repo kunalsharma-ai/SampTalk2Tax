@@ -2,7 +2,7 @@
 
 **Talk to Your Numbers. Automate Your Finance. Predict Your Future.**
 
-Talk2Tax is planned as an AI-native accounting, tax and finance platform. This repository is at **Milestone 1 (backend)**: a working, tested double-entry accounting foundation. There is no web UI or AI yet. See [Status](#status).
+Talk2Tax is planned as an AI-native accounting, tax and finance platform. This repository is at **Milestone 1**: a working, tested double-entry accounting foundation with a web app on top of it. There is no AI yet. See [Status](#status).
 
 ## What works today
 
@@ -11,6 +11,7 @@ Talk2Tax is planned as an AI-native accounting, tax and finance platform. This r
 * **General ledger:** hierarchical chart of accounts, draft → post journals, multi-currency lines with exchange rates, reversals, period lock/unlock, idempotent and concurrency-safe posting with gap-free numbers.
 * **Reports:** trial balance, income statement, balance sheet, account ledger, all from posted entries.
 * **Controls:** PostgreSQL triggers make posted entries immutable and refuse unbalanced postings even outside the API; append-only, hash-chained audit trail with a verify endpoint.
+* **Web app:** sign up and sign in, an onboarding wizard, an owner dashboard computed from posted journals, journal entry with a live balance check, chart of accounts, periods with lock/unlock, the four reports, the audit trail with an integrity check, and members.
 * **Demo data:** a clearly labelled synthetic Indian trading company.
 
 ## Quick start
@@ -23,7 +24,9 @@ pnpm install && pnpm build
 pnpm db:migrate
 pnpm db:seed                         # optional, prints demo login
 pnpm dev:api                         # http://localhost:4000/docs
+pnpm dev:web                         # http://localhost:3000
 pnpm test                            # unit + integration (needs Postgres)
+pnpm e2e                             # browser tests (API and web app running)
 ```
 
 Details: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
@@ -32,6 +35,9 @@ Details: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ```
 apps/api                    NestJS REST API (+ seed, integration tests)
+apps/web                    Next.js web app (+ Playwright browser tests)
+packages/ui                 Accessible React components
+packages/design-system      Colour and type tokens with a contrast test
 packages/accounting-engine  Pure double-entry rules (money, journals, periods, reports)
 packages/database           Prisma schema and SQL migrations with integrity triggers
 packages/security           Roles/permissions, password hashing
@@ -43,9 +49,9 @@ docs/                       PRD, architecture, schema, engine, security, API, te
 
 | | |
 |---|---|
-| Milestone | M1 backend complete; M1 web UI next |
-| Feature registry | 1,343 requirements from the master directive; 39 Tested, 31 Implementing, 1,273 Not started — [FEATURE_STATUS.md](docs/FEATURE_STATUS.md) |
-| Tests | 30 unit + 24 integration, all passing |
+| Milestone | M1 backend and web app built; M1 hardening next |
+| Feature registry | 1,343 requirements from the master directive; 63 Tested, 21 Implemented, 13 Implementing, 1,246 Not started — [FEATURE_STATUS.md](docs/FEATURE_STATUS.md) |
+| Tests | 35 unit + 25 integration + 10 browser end-to-end, all passing |
 | Known gaps | [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
 
 ## Documentation
