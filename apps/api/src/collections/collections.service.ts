@@ -457,7 +457,13 @@ export class CollectionsService {
       this.prisma.collectionDraft.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: limit, include: { contact: { select: { name: true } }, run: { select: { startedById: true } } } }),
     ]);
     const bank = await this.prisma.bankAiSuggestion.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: limit, include: { statementLine: { select: { description: true, amount: true, accountId: true } }, run: { select: { startedById: true } } } });
-    const names = await this.names([...answers.map((a) => a.conversation.userId), ...drafts.flatMap((d) => [d.run.startedById, d.decidedById]), ...bank.flatMap((b) => [b.run.startedById, b.decidedById])]);
+    const close = await this.prisma.closeAiReview.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: limit, include: { close: { select: { periodId: true, period: { select: { name: true } } } }, adjustments: { select: { status: true } } } });
+    const names = await this.names([...answers.map((a) => a.conversation.userId), ...drafts.flatMap((d) => [d.run.startedById, d.decidedById]), ...bank.flatMap((b) => [b.run.startedById, b.decidedById]), ...close.map((c) => c.startedById)]);
+    const closeDecision = (adj: { status: string }[]) => {
+      const n = (s: string) => adj.filter((a) => a.status === s).length;
+      const parts = [n('POSTED') && `${n('POSTED')} posted`, n('REJECTED') && `${n('REJECTED')} rejected`, n('READY') && `${n('READY')} waiting for review`, n('SUPERSEDED') && `${n('SUPERSEDED')} superseded`].filter(Boolean);
+      return parts.length ? `Entries: ${parts.join(', ')}` : null;
+    };
     const ACTION: Record<string, string> = { MATCH: 'match to the books', PAYMENT: 'a receipt or payment', ENTRY: 'an entry' };
     const rows = [
       ...answers.map((a) => ({
@@ -506,6 +512,21 @@ export class CollectionsService {
         decision:
           b.status === 'ACCEPTED' ? `Accepted by ${names.get(b.decidedById!) ?? 'a former member'}` : b.status === 'DISMISSED' ? `Dismissed by ${names.get(b.decidedById!) ?? 'a former member'}` : b.status === 'READY' ? 'Waiting for review' : null,
         link: `/banking/${b.statementLine.accountId}/ai?suggestion=${b.id}`,
+      })),
+      ...close.map((c) => ({
+        id: c.id,
+        feature: 'CLOSE' as const,
+        at: c.createdAt.toISOString(),
+        by: names.get(c.startedById) ?? 'Former member',
+        what: `Reviewed the ${c.close.period.name} close${c.status === 'DONE' ? `: ${c.adjustments.length} adjusting ${c.adjustments.length === 1 ? 'entry' : 'entries'} proposed` : ''}`,
+        model: c.model,
+        servedModel: c.servedModel,
+        inputTokens: c.inputTokens,
+        outputTokens: c.outputTokens,
+        outcome: c.status === 'DONE' ? 'COMPLETE' : c.status === 'RUNNING' ? 'PENDING' : 'FAILED',
+        error: c.errorCode,
+        decision: closeDecision(c.adjustments),
+        link: `/close/${c.close.periodId}`,
       })),
     ];
     rows.sort((a, b) => b.at.localeCompare(a.at));

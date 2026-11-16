@@ -75,7 +75,7 @@ export default function JournalDetailPage() {
               </>
             ) : null}
             {j.status === 'DRAFT' && can(org.role, 'journals.post') ? <Button loading={post.isPending} onClick={() => post.mutate()}>Post</Button> : null}
-            {j.status === 'POSTED' && j.source === 'MANUAL' && !j.reversedBy && j.type !== 'REVERSING' && can(org.role, 'journals.reverse') ? (
+            {j.status === 'POSTED' && (j.source === 'MANUAL' || j.source === 'CLOSE') && !j.reversedBy && j.type !== 'REVERSING' && can(org.role, 'journals.reverse') ? (
               <Button variant="secondary" onClick={() => setReverseOpen(true)}>Reverse…</Button>
             ) : null}
           </>
@@ -102,13 +102,15 @@ export default function JournalDetailPage() {
       </div>
       {j.source !== 'MANUAL' ? (
         <div className="mt-4">
-          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
+          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : j.source === 'CLOSE' ? 'an AI-proposed month-end adjustment a person approved' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
             {j.source === 'PAYROLL'
               ? 'This entry was posted by a pay run or a payroll payment. To correct it, void the payment or the pay run (Payroll → Pay runs).'
               : j.source === 'TAX'
               ? 'This entry was posted when TDS or TCS was deposited with the government. To correct it, void the deposit (Tax → TDS and TCS).'
               : j.source === 'EXPENSE'
               ? 'This entry was posted when an expense claim was approved or reimbursed. To correct an approved, unpaid claim, void the claim.'
+              : j.source === 'CLOSE'
+              ? 'An adjusting entry the AI model proposed at month end, checked against the books and posted when a person approved it (Accounting → Month-end close). To correct it, reverse it like a manual journal.'
               : j.source === 'BANK'
               ? 'This entry was posted from a bank statement line. To correct it, unmatch that line on the bank account screen, which reverses this entry.'
               : `This entry stays in step with its ${j.source === 'DOCUMENT' ? 'document' : 'payment'}. To correct it, void the ${j.source === 'DOCUMENT' ? 'document' : 'payment'} instead of reversing this journal.`}

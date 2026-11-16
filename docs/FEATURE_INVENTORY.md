@@ -574,7 +574,7 @@ Part 17 · M5 · priority P3 · depends on: AIGW, WFLOW
 | AGENT-002 | Accounting Agents | capability | General Ledger Agent | Not started |
 | AGENT-003 | Accounting Agents | capability | Journal Entry Agent | Not started |
 | AGENT-004 | Accounting Agents | capability | Bank Reconciliation Agent | Integration pending |
-| AGENT-005 | Accounting Agents | capability | Month-End Closing Agent | Not started |
+| AGENT-005 | Accounting Agents | capability | Month-End Closing Agent | Integration pending |
 | AGENT-006 | Accounting Agents | capability | Accounting Policy Agent | Not started |
 | AGENT-007 | Accounting Agents | capability | Financial Statement Agent | Not started |
 | AGENT-008 | Tax Agents | capability | GST Agent | Not started |
@@ -657,7 +657,7 @@ Part 18 · M5 · priority P2 · depends on: SEC
 | WFLOW-018 |  | capability | Execution logs | Tested |
 | WFLOW-019 | Invoice Collection | rule | Invoice becomes overdue → AI assesses risk → Drafts reminder → Checks communication policy → Sends approved reminder → Monitors response → Updates collections dashboard | Implementing |
 | WFLOW-020 | Vendor Invoice Processing | rule | Invoice received → Document extracted → Supplier validated → Duplicate check → PO matching → Tax validation → Approval → Ledger posting → Payment scheduling | Not started |
-| WFLOW-021 | Financial Close | rule | Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked | Not started |
+| WFLOW-021 | Financial Close | rule | Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked | Implementing |
 | WFLOW-022 | Tax Compliance | rule | Filing deadline approaches → Required records collected → Reconciliation performed → Exceptions highlighted → Tax professional reviews → Filing package prepared → Authorized submission → Confirmation stored | Not started |
 
 ## Enterprise financial management
@@ -830,7 +830,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-012 |  | capability | Remediation workflows | Not started |
 | AUDIT-013 |  | capability | Control ownership | Not started |
 | AUDIT-014 |  | capability | Segregation-of-duties checks | Not started |
-| AUDIT-015 |  | capability | Period-close certification | Not started |
+| AUDIT-015 |  | capability | Period-close certification | Tested |
 | AUDIT-016 |  | capability | AI action history | Tested |
 | AUDIT-017 |  | capability | Financial transaction replay | Not started |
 | AUDIT-018 | Explainable AI Ledger | capability | Agent identity | Not started |

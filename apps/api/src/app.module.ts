@@ -53,6 +53,8 @@ import { AlertsController } from './alerts/alerts.controller';
 import { AlertsService } from './alerts/alerts.service';
 import { BankAiController } from './bank-ai/bank-ai.controller';
 import { BankAiService } from './bank-ai/bank-ai.service';
+import { CloseController } from './close/close.controller';
+import { CloseService } from './close/close.service';
 import { CollectionsController } from './collections/collections.controller';
 import { CollectionsService } from './collections/collections.service';
 import { CopilotController } from './copilot/copilot.controller';
@@ -112,6 +114,7 @@ export class AppModule {
         CopilotController,
         CollectionsController,
         BankAiController,
+        CloseController,
         EInvoicingController,
         EWayBillsController,
         WorkflowsController,
@@ -151,6 +154,7 @@ export class AppModule {
         CopilotService,
         CollectionsService,
         BankAiService,
+        CloseService,
         { provide: COPILOT_MODEL, useValue: copilotModel === undefined ? copilotModelFromConfig(config) : copilotModel },
         EInvoicingService,
         EWayBillsService,

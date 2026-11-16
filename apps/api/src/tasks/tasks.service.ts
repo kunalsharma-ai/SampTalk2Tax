@@ -154,6 +154,7 @@ export class TasksService {
       if (l.type === 'JOURNAL') return { path: `/journals/${l.id}`, label: 'Journal entry' };
       if (l.type === 'EXPENSE_CLAIM') return { path: `/expenses/${l.id}`, label: 'Expense claim' };
       if (l.type === 'ALERT') return { path: `/alerts?alert=${l.id}`, label: 'Alert' };
+      if (l.type === 'PERIOD_CLOSE') return { path: `/close/${l.id}`, label: 'Month-end close' };
       return null;
     };
   }

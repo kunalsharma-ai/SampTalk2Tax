@@ -76,6 +76,21 @@ AI collections agent (M5 slice 3): `apps/api/test/collections.e2e.test.ts` (14 t
 
 AI reconciliation (M5 slice 4): `apps/api/test/bank-ai.e2e.test.ts` (10 tests) uses a scripted model that picks references out of the text it is sent: no key, AI off and permissions; references and never ids, no bank or control accounts offered; a line with an exact match left out; a receipt split over two invoices, a deposit matched to two receipts and an entry, each accepted through the by-hand code; "cannot tell" and an over-allocated bill refused; dismissal; database guards; the next run shown the accepted entry as an example; a suggestion refused after its line was excluded; a refusal, a rate limit and one run at a time; the AI activity log. `apps/web/e2e/bank-ai-flow.test.mjs` accepts an AI receipt (the invoice is paid and the line matched) and dismisses an AI entry through the real SDK against the stand-in. Engine tests cover every check and the text the model reads.
 
+Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) builds real books (rent in three earlier months but not the month, equipment, sales, a draft journal and an unmatched bank line). It checks:
+
+* the checklist and tasks made once;
+* no key, AI off and permissions;
+* what the scripted model is shown;
+* four proposed entries, two failing their checks;
+* an accrual posted with its reversal through the journal code;
+* rejection and database guards;
+* closing refused, then closed with a note: the period is locked, unlocking it is refused, and the certification totals are right;
+* reopening and reversing a posted adjustment;
+* a refusal, a rate limit and one review at a time;
+* the AI activity log.
+
+`apps/web/e2e/close-flow.test.mjs` runs the whole flow in the browser through the real SDK against the stand-in. Engine tests cover every check and the text the model reads.
+
 Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, automated accessibility audits (axe), visual regression, load.
 
 ## Running

@@ -49,6 +49,8 @@ export const PERMISSIONS = [
   'tasks.use',
   /** Have the AI model draft payment reminders for overdue customers, and send (or reject) them. */
   'collections.manage',
+  /** Prepare a month-end close: tasks for open checks, the AI review, and deciding on its adjusting entries. */
+  'close.manage',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -91,6 +93,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, ReadonlySet<Permission>
     'budgets.manage',
     'alerts.manage',
     'collections.manage',
+    'close.manage',
   ]),
   APPROVER: new Set<Permission>([...READ_ONLY, 'journals.post', 'audit.read', 'approvals.decide', 'expenses.submit']),
   VIEWER: new Set<Permission>(READ_ONLY),

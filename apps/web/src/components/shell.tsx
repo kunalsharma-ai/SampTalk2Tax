@@ -45,6 +45,7 @@ const NAV: { group: string; items: { href: string; label: string; perm?: string 
     items: [
       { href: '/journals', label: 'Journals' },
       { href: '/accounts', label: 'Chart of accounts' },
+      { href: '/close', label: 'Month-end close' },
       { href: '/periods', label: 'Fiscal periods' },
     ],
   },

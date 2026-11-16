@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import { dateTime, type AiActivity } from '@/lib/collections';
 import { useOrg } from '@/lib/org';
 
-const FEATURE = { COPILOT: 'Copilot', COLLECTIONS: 'Collections', BANKING: 'Bank reconciliation' } as const;
+const FEATURE = { COPILOT: 'Copilot', COLLECTIONS: 'Collections', BANKING: 'Bank reconciliation', CLOSE: 'Month-end close' } as const;
 const OUTCOME_TONE: Record<string, 'neutral' | 'positive' | 'warning' | 'negative' | 'accent'> = {
   COMPLETE: 'positive',
   SENT: 'positive',
@@ -54,6 +54,7 @@ export default function AiActivityPage() {
               <option value="COPILOT">Copilot</option>
               <option value="COLLECTIONS">Collections</option>
               <option value="BANKING">Bank reconciliation</option>
+              <option value="CLOSE">Month-end close</option>
             </Select>
           </label>
           {rows.length ? (
@@ -95,7 +96,7 @@ export default function AiActivityPage() {
             </Card>
           ) : (
             <Card>
-              <EmptyState title="No AI calls yet">Calls appear here when someone asks the copilot a question, drafts payment reminders or asks for bank suggestions.</EmptyState>
+              <EmptyState title="No AI calls yet">Calls appear here when someone asks the copilot a question, drafts payment reminders, asks for bank suggestions or has a month-end close reviewed.</EmptyState>
             </Card>
           )}
         </>

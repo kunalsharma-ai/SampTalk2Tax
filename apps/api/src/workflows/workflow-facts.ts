@@ -4,7 +4,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { Tx } from '../common/prisma.service';
 
 /** What a task or a run links back to. */
-export type LinkType = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL' | 'EXPENSE_CLAIM' | 'ALERT';
+export type LinkType = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL' | 'EXPENSE_CLAIM' | 'ALERT' | 'PERIOD_CLOSE';
 
 export interface EventFacts {
   trigger: WorkflowTrigger;
