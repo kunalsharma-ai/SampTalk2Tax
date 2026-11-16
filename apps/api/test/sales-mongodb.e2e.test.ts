@@ -3,6 +3,7 @@ import { runInOrg } from '../src/common/tenant-context';
 import { allocations, contacts, documents, payments } from '../src/db/collections/sales';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 import { postgresOnly } from '../src/db/mirror-writes';
+import { postgresOff } from '../src/db/counters';
 
 /** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
 const pg = () => postgresOnly(ctx.prisma);
@@ -24,7 +25,8 @@ afterAll(async () => {
 
 const invoice = (unitPrice: string) => ({ kind: 'INVOICE', contactId: customer.id, issueDate: today(), lines: [{ accountId: org.acc['4100'], description: 'Consulting', quantity: '2', unitPrice }] });
 
-describe('sales and purchases live in MongoDB', () => {
+// These check the PostgreSQL copy kept while both databases run, so only while PostgreSQL does.
+describe.skipIf(postgresOff())('sales and purchases live in MongoDB', () => {
   it('contacts are stored in MongoDB with a decimal credit limit, and copied to PostgreSQL', async () => {
     const doc = await ctx.db.collection('contacts').findOne({ _id: customer.id as never });
     expect(doc?.creditLimit?._bsontype).toBe('Decimal128');
@@ -78,7 +80,9 @@ describe('sales and purchases live in MongoDB', () => {
     const id = inv.status === 'POSTED' ? inv.id : (await ctx.http().post(`${org.base}/sales/documents/${inv.id}/post`).set(owner.auth).send({}).expect(200)).body.id;
     const docs = () => ctx.store.collection(documents);
     await expect(runInOrg(org.orgId, () => docs().updateOne({ id }, { $set: { total: '1' } }))).rejects.toThrow(/immutable/);
-    await expect(runInOrg(org.orgId, () => docs().updateOne({ id }, { $set: { memo: 'changed' } }))).resolves.toBeTruthy();
+    // Staying posted, only its template may change.
+    await expect(runInOrg(org.orgId, () => docs().updateOne({ id }, { $set: { memo: 'changed' } }))).rejects.toThrow(/immutable/);
+    await expect(runInOrg(org.orgId, () => docs().updateOne({ id }, { $set: { templateId: null } }))).resolves.toBeTruthy();
     await expect(runInOrg(org.orgId, () => docs().deleteOne({ id }))).rejects.toThrow(/cannot be deleted/);
     // An allocation above what is due is refused, as is one from another contact.
     const rec = (await ctx.http().post(`${org.base}/sales/payments`).set(owner.auth).send({ contactId: customer.id, date: today(), bankAccountId: org.acc['1120'], amount: '900.00', allocations: [] }).expect(201)).body;

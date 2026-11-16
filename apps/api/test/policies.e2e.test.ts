@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * The policy studio against the real API and database: a policy written by an accountant with
@@ -171,8 +172,8 @@ describe('writing and approving a policy', () => {
   });
 
   it('keeps every version as it was', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE policy_versions SET note = 'changed' WHERE policy_id = '${policyId}'`)).rejects.toThrow(/cannot be changed/i);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM policy_versions WHERE policy_id = '${policyId}'`)).rejects.toThrow(/cannot be changed/i);
+    await expect(sqlWrite(ctx, `UPDATE policy_versions SET note = 'changed' WHERE policy_id = '${policyId}'`)).rejects.toThrow(/cannot be changed/i);
+    await expect(sqlWrite(ctx, `DELETE FROM policy_versions WHERE policy_id = '${policyId}'`)).rejects.toThrow(/cannot be changed/i);
   });
 });
 

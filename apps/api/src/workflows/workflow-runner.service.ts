@@ -29,6 +29,8 @@ import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { sendWebhook, signPayload, WebhookResult } from './webhook';
 import { dueDocuments, EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, WATCHED_ACTIONS } from './workflow-facts';
 import { lockRow } from '../db/locks';
+import { postgresOff, withLease } from '../db/counters';
+import { claimRecords } from '../db/mirror-writes';
 
 /** Events read for one organisation in one transaction. */
 const EVENT_BATCH = 200;
@@ -150,16 +152,38 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
   }
 
   private async processOrgBatch(orgId: string): Promise<{ runs: number; more: boolean }> {
+    // One process at a time works through an organisation's events: a lease once PostgreSQL is off.
+    if (postgresOff()) {
+      return withLease(`workflow-events:${orgId}`, 120, { runs: 0, more: false }, () =>
+        this.prisma.$transaction(
+          async (tx) => {
+            const cur = (await tx.workflowCursor.findFirst({ where: { orgId } })) ?? (await tx.workflowCursor.create({ data: { orgId, lastEventId: 0n } }));
+            return this.eventBatch(tx, orgId, cur.lastEventId);
+          },
+          { timeout: 60_000 },
+        ),
+      );
+    }
     return this.prisma.$transaction(
       async (tx) => {
         await tx.$executeRaw`INSERT INTO workflow_cursors (org_id, last_event_id, updated_at) VALUES (${orgId}::uuid, 0, now()) ON CONFLICT (org_id) DO NOTHING`;
         const cur = await tx.$queryRaw<{ last_event_id: bigint }[]>`SELECT last_event_id FROM workflow_cursors WHERE org_id = ${orgId}::uuid FOR UPDATE SKIP LOCKED`;
         if (!cur.length) return { runs: 0, more: false }; // another process has this organisation
+        return this.eventBatch(tx, orgId, cur[0].last_event_id);
+      },
+      { timeout: 60_000 },
+    );
+  }
+
+  /** The next batch of an organisation's events after `last`: runs started, and the cursor moved on. */
+  private async eventBatch(tx: Tx, orgId: string, last: bigint): Promise<{ runs: number; more: boolean }> {
+    {
+      {
         const workflows = (await this.enabledWorkflows(tx, orgId)).filter((w) => triggerDef(w.versions[0].trigger).kind === 'event');
         if (!workflows.length) return { runs: 0, more: false };
         // Nothing before the earliest "turned on" point can start a run, so skip straight past it.
         const earliest = workflows.reduce((m, w) => (w.activeFromEventId! < m ? w.activeFromEventId! : m), workflows[0].activeFromEventId!);
-        const from = cur[0].last_event_id > earliest ? cur[0].last_event_id : earliest;
+        const from = last > earliest ? last : earliest;
         // Audit ids are committed in order within an organisation (appends hold a per-organisation
         // lock until commit), so every event up to the highest visible id is already visible.
         const hi = (await tx.auditEvent.aggregate({ where: { orgId }, _max: { id: true } }))._max.id ?? from;
@@ -185,9 +209,8 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
         const next = more ? events[events.length - 1].id : hi > from ? hi : from;
         await tx.workflowCursor.update({ where: { orgId }, data: { lastEventId: next } });
         return { runs, more };
-      },
-      { timeout: 60_000 },
-    );
+      }
+    }
   }
 
   /** Organisations with at least one workflow on whose trigger is of this kind. */
@@ -221,10 +244,18 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
   }
 
   private async scheduleOrg(orgId: string, now: Date): Promise<number> {
+    // One process at a time: a lease once PostgreSQL is off, a transaction's advisory lock before.
+    if (postgresOff()) return withLease(`workflow-schedule:${orgId}`, 120, 0, () => this.scheduleRuns(orgId, now, false));
+    return this.scheduleRuns(orgId, now, true);
+  }
+
+  private async scheduleRuns(orgId: string, now: Date, advisoryLock: boolean): Promise<number> {
     return this.prisma.$transaction(
       async (tx) => {
-        const [lock] = await tx.$queryRaw<{ ok: boolean }[]>`SELECT pg_try_advisory_xact_lock(hashtext(${'workflow-schedule:' + orgId})) AS ok`;
-        if (!lock.ok) return 0; // another process has this organisation
+        if (advisoryLock) {
+          const [lock] = await tx.$queryRaw<{ ok: boolean }[]>`SELECT pg_try_advisory_xact_lock(hashtext(${'workflow-schedule:' + orgId})) AS ok`;
+          if (!lock.ok) return 0; // another process has this organisation
+        }
         const workflows = (await this.enabledWorkflows(tx, orgId)).filter((w) => triggerDef(w.versions[0].trigger).kind === 'schedule' && w.activatedAt);
         const today = istDate(now);
         let runs = 0;
@@ -408,7 +439,10 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
 
   /** Claims webhooks and emails that are due and sends them. Returns how many were attempted. */
   async deliverDue(): Promise<number> {
-    const claimed = await tenantStorage.run({ bypass: true }, async () =>
+    const now = new Date();
+    const claimed = postgresOff()
+      ? await claimRecords(this.prisma, 'WorkflowActionRun', { status: 'PENDING', type: { $in: ['WEBHOOK', 'SEND_EMAIL'] }, nextAttemptAt: { $lte: now }, $or: [{ lockedUntil: null }, { lockedUntil: { $lt: now } }] }, 'nextAttemptAt', DELIVERY_BATCH, { lockedUntil: new Date(now.getTime() + CLAIM_SECONDS * 1000) })
+      : await tenantStorage.run({ bypass: true }, async () =>
       this.prisma.$transaction(
         (tx) => tx.$queryRaw<{ id: string; org_id: string }[]>`
           UPDATE workflow_action_runs SET locked_until = now() + make_interval(secs => ${CLAIM_SECONDS})
@@ -419,7 +453,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
           RETURNING id, org_id`,
       ),
     );
-    if (claimed.length) await tenantStorage.run({ bypass: true }, () => mirrorRows(this.prisma, 'WorkflowActionRun', { id: { in: claimed.map((c) => c.id) } }));
+    if (claimed.length && !postgresOff()) await tenantStorage.run({ bypass: true }, () => mirrorRows(this.prisma, 'WorkflowActionRun', { id: { in: claimed.map((c) => c.id) } }));
     for (const c of claimed) {
       try {
         await tenantStorage.run({ orgId: c.org_id }, () => this.deliverOne(c.org_id, c.id));

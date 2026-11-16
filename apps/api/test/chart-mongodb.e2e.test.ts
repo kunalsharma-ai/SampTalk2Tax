@@ -4,6 +4,7 @@ import { runInOrg } from '../src/common/tenant-context';
 import { accounts, fiscalPeriods } from '../src/db/collections/chart';
 import { bootApp, createOrg, Ctx, registerUser, today } from './helpers';
 import { postgresOnly } from '../src/db/mirror-writes';
+import { postgresOff } from '../src/db/counters';
 
 /** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
 const pg = () => postgresOnly(ctx.prisma);
@@ -18,7 +19,8 @@ afterAll(async () => {
 
 const gstin = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
 
-describe('the chart of accounts and fiscal periods live in MongoDB', () => {
+// These check the PostgreSQL copy kept while both databases run, so only while PostgreSQL does.
+describe.skipIf(postgresOff())('the chart of accounts and fiscal periods live in MongoDB', () => {
   it('a new organisation gets its chart and fiscal year in MongoDB, copied to PostgreSQL', async () => {
     const owner = await registerUser(ctx, 'Chart Owner');
     const { orgId, acc } = await createOrg(ctx, owner, { chartTemplate: 'GENERIC_SMB' });

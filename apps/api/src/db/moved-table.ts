@@ -3,7 +3,7 @@ import type { CollectionDef } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../common/document-store.service';
 import { Tx, withSystemAccess } from '../common/prisma.service';
 import { runAsSystem, runInOrg } from '../common/tenant-context';
-import { mirrorParentDeleted, mirrorRowsWhere, pgOf } from './mirror-writes';
+import { mirrorParentDeleted, mirrorRowsWhere, mongoRows, pgOf, POSTGRES_OFF } from './mirror-writes';
 
 /**
  * Writes for a table that has moved to MongoDB while its readers have not (docs/MONGODB.md ›
@@ -47,12 +47,18 @@ export class MovedTables {
   /** Deletes the document and its copy (children go with the copy's cascade). */
   async remove(tx: Tx, table: MovedTable, orgId: string, id: string): Promise<void> {
     await runInOrg(orgId, () => this.store.collection(table.def).deleteOne({ id }));
-    await withSystemAccess(tx, () => delegate(tx, table).deleteMany({ where: { id } }));
+    if (!POSTGRES_OFF()) await withSystemAccess(tx, () => delegate(tx, table).deleteMany({ where: { id } }));
     await mirrorParentDeleted(tx, this.store, table.def.name, orgId, [id]);
   }
 
   /** Copies these documents into PostgreSQL inside `tx`, and returns the copies. */
   async copy(tx: Tx, table: MovedTable, ids: string[]): Promise<unknown[]> {
+    // With PostgreSQL off there is no copy: the records are returned as MongoDB has them.
+    if (POSTGRES_OFF()) {
+      const rows = await mongoRows(this.store, table.model, { id: { in: ids } });
+      await table.afterWrite?.(tx, rows);
+      return ids.map((id) => rows.find((r) => r.id === id)).filter(Boolean);
+    }
     const docs = await runAsSystem(() => this.store.collection(table.def).find({ id: { $in: ids } }));
     const out: unknown[] = [];
     await withSystemAccess(tx, async () => {
@@ -92,6 +98,8 @@ export interface MovedTable {
   children?: { field: string; model: string; parentKey: string; toRow?: (item: Record<string, unknown>) => Record<string, unknown> };
   /** Rows a PostgreSQL trigger writes when the copy changes (a new customer's onboarding), kept in step in MongoDB. */
   triggers?: { model: string; key: string }[];
+  /** With PostgreSQL off, what those triggers did: run after each write with the records as written. */
+  afterWrite?: (tx: Tx, rows: Record<string, unknown>[]) => Promise<void>;
 }
 
 /**

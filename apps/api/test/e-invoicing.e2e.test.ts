@@ -3,6 +3,7 @@ import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { CompactSign, exportSPKI, generateKeyPair } from 'jose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 // Synthetic, format-valid GSTINs (made-up PANs). The organisation is in Maharashtra (27), the customer in Karnataka (29).
 const gstin = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
@@ -188,12 +189,12 @@ describe('recording the IRP response', () => {
   it('blocks voiding a document with a live IRN', async () => {
     const r = await ctx.http().post(`${org.base}/sales/documents/${doc.id}/void`).set(owner.auth).send({ reason: 'Wrong buyer' }).expect(409);
     expect(r.body.error).toBe('HAS_IRN');
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE documents SET status = 'VOID' WHERE id = '${doc.id}'`)).rejects.toThrow(/has an IRN/);
+    await expect(sqlWrite(ctx, `UPDATE documents SET status = 'VOID' WHERE id = '${doc.id}'`)).rejects.toThrow(/has an IRN/);
   });
 
   it('keeps e-invoice records immutable in the database', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE e_invoices SET ack_no = '1' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM e_invoices WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE e_invoices SET ack_no = '1' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `DELETE FROM e_invoices WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be deleted/);
   });
 
   it('records a cancellation within 24 hours, after which the document can be voided', async () => {
@@ -215,7 +216,7 @@ describe('recording the IRP response', () => {
     const r = await ctx.http().post(`${org.base}/e-invoicing/documents/${late.id}/irn/cancel`).set(owner.auth).send({ reason: '3', remark: 'Order cancelled' }).expect(409);
     expect(r.body.error).toBe('CANCEL_WINDOW_CLOSED');
     // Backdating the cancellation does not get round the database check either.
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE e_invoices SET status = 'CANCELLED', cancelled_at = now(), cancel_reason = '3', cancel_remark = 'x', cancelled_by_id = created_by_id WHERE document_id = '${late.id}'`)).rejects.toThrow();
+    await expect(sqlWrite(ctx, `UPDATE e_invoices SET status = 'CANCELLED', cancelled_at = now(), cancel_reason = '3', cancel_remark = 'x', cancelled_by_id = created_by_id WHERE document_id = '${late.id}'`)).rejects.toThrow();
   });
 });
 

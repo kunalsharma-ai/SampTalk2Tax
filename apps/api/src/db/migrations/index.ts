@@ -14,6 +14,7 @@ import vendorRisk from './20261215100000_vendor_risk';
 import unbilledRevenue from './20261216100000_unbilled_revenue';
 import vendorPortal from './20261217100000_vendor_portal';
 import rowLocks from './20261218100000_row_locks';
+import auditEvents from './20261219100000_audit_events';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents];

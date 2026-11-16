@@ -1,6 +1,6 @@
 import { Prisma } from '@talk2tax/database';
 import type { Tx } from '../common/prisma.service';
-import { coordinationStore } from './counters';
+import { coordinationOf, coordinationStore, postgresOff } from './counters';
 
 /**
  * Locks one record for the rest of the transaction, so changes to it take turns (posting a
@@ -14,9 +14,10 @@ import { coordinationStore } from './counters';
  */
 export async function lockRow<T = { id: string }>(tx: Tx, table: string, id: string, orgId?: string): Promise<T[]> {
   if (!/^[a-z_]+$/.test(table)) throw new Error(`Not a table name: ${table}`);
+  if (postgresOff()) return lockDocument<T>(tx, table, id, orgId);
   const byOrg = orgId === undefined ? Prisma.empty : Prisma.sql` AND org_id = ${orgId}::uuid`;
   const rows = await tx.$queryRaw<T[]>`SELECT id FROM ${Prisma.raw(`"${table}"`)} WHERE id = ${id}::uuid${byOrg} FOR UPDATE`;
-  if (rows.length) await coordinationStore()?.lock(`${table}:${id}`);
+  if (rows.length) await (coordinationStore() ? coordinationOf(tx) : undefined)?.lock(`${table}:${id}`);
   return rows;
 }
 
@@ -26,8 +27,9 @@ export async function lockRow<T = { id: string }>(tx: Tx, table: string, id: str
  * `pg_advisory_xact_lock(hashtext(name))`, which it still takes while PostgreSQL runs.
  */
 export async function lockName(tx: Tx, name: string): Promise<void> {
+  if (postgresOff()) return void (await coordinationOf(tx).lock(`name:${name}`));
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${name}))`;
-  await coordinationStore()?.lock(`name:${name}`);
+  await (coordinationStore() ? coordinationOf(tx) : undefined)?.lock(`name:${name}`);
 }
 
 /**
@@ -36,4 +38,12 @@ export async function lockName(tx: Tx, name: string): Promise<void> {
  */
 export async function holdLock(name: string): Promise<void> {
   await coordinationStore()?.lock(name);
+}
+
+/** With PostgreSQL off: the record is looked up in MongoDB, and only its lock document is taken. */
+async function lockDocument<T>(tx: Tx, table: string, id: string, orgId?: string): Promise<T[]> {
+  const { tableHolder } = await import('./mirror-writes');
+  if (!(await tableHolder(tx, table, id, orgId))) return [];
+  await coordinationOf(tx).lock(`${table}:${id}`);
+  return [{ id } as T];
 }

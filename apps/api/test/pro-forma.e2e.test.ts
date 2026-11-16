@@ -7,6 +7,7 @@
 import { addDays } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 let ctx: Ctx;
 let owner: TestUser;
@@ -19,11 +20,7 @@ let customer: string;
 let otherCustomer: string;
 let pf: any;
 const P = () => `${org.base}/sales/pro-formas`;
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const body = (extra: Record<string, unknown> = {}) => ({
   contactId: customer,
   issueDate: T,

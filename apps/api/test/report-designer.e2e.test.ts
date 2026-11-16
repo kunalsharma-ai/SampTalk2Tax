@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * The report designer against the real API and database: layouts checked by the engine, reports
@@ -126,7 +127,7 @@ describe('reports', () => {
     expect(f).toMatchObject({ status: 'FINAL', finalisedBy: 'Report Owner' });
     await ctx.http().put(`${R()}/reports/${reportId}/commentary`).set(owner.auth).send({ section: 1, text: 'x', baseVersion: 4 }).expect(409);
     await ctx.http().delete(`${R()}/reports/${reportId}`).set(owner.auth).expect(409);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE report_runs SET title = 'changed' WHERE id = '${reportId}'`)).rejects.toThrow(/final report cannot be changed/);
+    await expect(sqlWrite(ctx, `UPDATE report_runs SET title = 'changed' WHERE id = '${reportId}'`)).rejects.toThrow(/final report cannot be changed/);
     // Its figures stay as they were, even after the books change.
     const acme = (await ctx.prisma.contact.findFirst({ where: { orgId: org.orgId, name: 'Acme Retail' } }))!.id;
     await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: acme, issueDate: `${L}-20`, dueDate: `${L}-20`, post: true, lines: [{ accountId: org.acc['4100'], quantity: '1', unitPrice: '1000.00' }] }).expect(201);

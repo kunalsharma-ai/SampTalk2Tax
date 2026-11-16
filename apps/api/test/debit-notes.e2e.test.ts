@@ -7,6 +7,7 @@
 import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 const synthetic = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
 const OWN = synthetic('29', 'ZZZCZ0101Z');
@@ -92,7 +93,7 @@ describe('debit notes', () => {
   it('keeps the invoice from being voided while the debit note stands, and the link fixed', async () => {
     const r = await ctx.http().post(`${S()}/${inv.id}/void`).set(owner.auth).send({ reason: 'Wrong customer' }).expect(409);
     expect(r.body.error).toBe('HAS_DEBIT_NOTES');
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE documents SET debit_note_for_id = NULL WHERE id = '${dn.id}'`)).rejects.toThrow(/cannot change/);
+    await expect(sqlWrite(ctx, `UPDATE documents SET debit_note_for_id = NULL WHERE id = '${dn.id}'`)).rejects.toThrow(/cannot change/);
     // A debit note cannot adjust another debit note.
     const chained = await ctx.http().post(S()).set(owner.auth).send({ kind: 'INVOICE', contactId: mh, issueDate: today(), debitNoteFor: dn.id, lines: [line('10')] }).expect(422);
     expect(chained.body.message).toMatch(/itself a debit note/);

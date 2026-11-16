@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Vendor risk monitoring (AP-024) against the real API and database: the risk factors found from
@@ -19,11 +20,7 @@ let outsider: TestUser;
 let org: Awaited<ReturnType<typeof createOrg>>;
 const v: Record<string, { id: string; name: string }> = {};
 const R = () => `${org.base}/purchases/vendor-risk`;
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const bill = (contactId: string, amount: string) =>
   ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId, issueDate: T, dueDate: addDays(T, 30), lines: [{ accountId: org.acc['6600'], description: 'Supplies', quantity: '1', unitPrice: amount }], post: true }).expect(201);
 const bank = (contactId: string, accountNumber: string) =>

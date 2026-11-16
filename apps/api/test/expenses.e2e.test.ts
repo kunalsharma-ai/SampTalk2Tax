@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, setOrgFields, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /** Employee expense claims, from a draft to reimbursement, against a real database. */
 let ctx: Ctx;
@@ -136,8 +137,8 @@ describe('a claim from draft to reimbursement', () => {
       .set(owner.auth)
       .send({ date: today(), memo: 'Sneaky', post: true, lines: [{ accountId: org.acc['2250'], debit: '1630.50' }, { accountId: org.acc['1120'], credit: '1630.50' }] });
     expect(res.status).toBeGreaterThanOrEqual(409);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE expense_claim_lines SET amount = 1 WHERE claim_id = '${claimId}'`)).rejects.toThrow(/cannot be changed/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM expense_claims WHERE id = '${claimId}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE expense_claim_lines SET amount = 1 WHERE claim_id = '${claimId}'`)).rejects.toThrow(/cannot be changed/);
+    await expect(sqlWrite(ctx, `DELETE FROM expense_claims WHERE id = '${claimId}'`)).rejects.toThrow(/cannot be deleted/);
   });
 
   it('is reimbursed from a bank account, which clears what is owed', async () => {
@@ -183,7 +184,7 @@ describe('other paths', () => {
     await act(owner, c.id, 'submit').expect(200);
     expect((await act(owner, c.id, 'approve').expect(403)).body.error).toBe('SAME_PERSON');
     await expect(
-      ctx.prisma.$executeRawUnsafe(
+      sqlWrite(ctx, 
         `UPDATE expense_claims SET status = 'APPROVED', decided_by_id = '${owner.id}', decided_at = now(), journal_entry_id = (SELECT id FROM journal_entries WHERE org_id = '${org.orgId}' LIMIT 1), posting_date = current_date WHERE id = '${c.id}'`,
       ),
     ).rejects.toThrow(/someone other than the claimant|duplicate key/);

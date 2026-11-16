@@ -2,6 +2,7 @@ import { addDays, addMonthsAnchored, fiscalYearForDate, forecastMonths } from '@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { RevenueForecastService } from '../src/crm/revenue-forecast.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * CRM slice 5 against the real API and database: the revenue forecast from an active contract,
@@ -93,12 +94,7 @@ describe('the revenue forecast', () => {
     ]);
     expect(g.accuracy.wape).toBe('9.625');
 
-    await expect(
-      ctx.prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-        return tx.$executeRawUnsafe(`UPDATE revenue_forecasts SET note = 'x' WHERE id = '${savedId}'`);
-      }),
-    ).rejects.toThrow(/never changes/);
+    await expect(sqlWrite(ctx, `UPDATE revenue_forecasts SET note = 'x' WHERE id = '${savedId}'`, [], { bypass: true })).rejects.toThrow(/never changes/);
   });
 
   it('keeps forecasts to their organisation', async () => {

@@ -3,9 +3,9 @@ import { mirrorModels } from './mirror-writes';
 /**
  * Every table not yet moved by hand (steps 2 to 6), in schema order. Their writes are kept in
  * step in MongoDB by mirror-writes.ts until the last step moves their reads and rules. Left
- * out: org_counters, subscription_invoice_counters and workflow_cursors (numbering and
- * claiming, replaced by sequences in the last step), audit_events (the
- * audit trail moves in the last step) and the line tables kept inside their parents.
+ * out: org_counters and subscription_invoice_counters (numbering,
+ * replaced by sequences in the last step) and the line tables kept inside their
+ * parents.
  */
 export const MIRRORED_MODEL_NAMES = [
   'TaxRate',
@@ -182,6 +182,8 @@ export const MIRRORED_MODEL_NAMES = [
   'UnbilledRevenueDismissal',
   'VendorPortalLink',
   'VendorPortalSubmission',
+  'AuditEvent',
+  'WorkflowCursor',
 ] as const;
 
 export const MIRRORED = mirrorModels(MIRRORED_MODEL_NAMES);

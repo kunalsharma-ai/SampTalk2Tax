@@ -2,6 +2,7 @@ import { Prisma } from '@talk2tax/database';
 import { defineCollection, GuardViolation, type GuardContext } from '@talk2tax/document-db';
 import { accounts, fiscalPeriods } from './chart';
 import { checkLineDimensions } from './mirrored-refs';
+import { organizations } from './tenancy';
 
 /** The general ledger: journal entries with their lines inside them. */
 
@@ -86,6 +87,22 @@ async function checkReferences(e: JournalEntryDoc, ctx: GuardContext) {
   if (bad) throw new GuardViolation(`Account ${bad.code} is not postable or inactive`);
 }
 
+/**
+ * Was journal_lines_control_account_check: manual and bank journals keep off the receivables,
+ * payables and employee reimbursements control accounts (new or changed lines only).
+ */
+async function checkControlAccounts(e: JournalEntryDoc, before: JournalEntryDoc | null, ctx: GuardContext) {
+  if (e.source !== 'MANUAL' && e.source !== 'BANK') return;
+  const was = new Map((before?.lines ?? []).map((l) => [l.id, l.accountId]));
+  const lines = e.lines.filter((l) => was.get(l.id) !== l.accountId);
+  if (!lines.length) return;
+  const o = await ctx.collection(organizations).findOne({ id: e.orgId });
+  for (const l of lines) {
+    if (l.accountId === o?.arAccountId || l.accountId === o?.apAccountId) throw new GuardViolation(`Account ${l.accountId} is a receivables/payables control account; Cannot post a manual journal to it`);
+    if (l.accountId === o?.claimsAccountId) throw new GuardViolation(`Account ${l.accountId} holds amounts owed to employees; Cannot post a manual journal to it, use an expense claim`);
+  }
+}
+
 export const journalEntries = defineCollection<JournalEntryDoc>({
   name: 'journal_entries',
   scope: 'tenant',
@@ -137,15 +154,18 @@ export const journalEntries = defineCollection<JournalEntryDoc>({
     async beforeInsert(e, ctx) {
       checkLines(e);
       await checkReferences(e, ctx);
+      await checkControlAccounts(e, null, ctx);
       await checkLineDimensions(e.orgId, e.lines, null, ctx);
     },
     async afterUpdate(before, after, ctx) {
+      // The line checks first, as PostgreSQL's line triggers ran in name order before journal_lines_guard.
+      await checkControlAccounts(after, before, ctx);
+      await checkLineDimensions(after.orgId, after.lines, before.lines, ctx);
       // Was t2t_guard_journal_entry, t2t_guard_journal_line and t2t_guard_closing_type.
       if (before.status === 'POSTED') throw new GuardViolation('A posted journal entry is immutable; post a reversal or adjustment instead');
       if (after.orgId !== before.orgId || after.createdById !== before.createdById) throw new GuardViolation('An entry keeps its organisation and author');
       checkLines(after);
       await checkReferences(after, ctx);
-      await checkLineDimensions(after.orgId, after.lines, before.lines, ctx);
     },
     beforeDelete(e) {
       if (e.status === 'POSTED') throw new GuardViolation('A posted journal entry cannot be deleted; post a reversal instead');

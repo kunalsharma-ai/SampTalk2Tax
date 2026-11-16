@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { tenantStorage } from '../src/common/tenant-context';
 import { CrmWebhooksService } from '../src/crm-api/crm-webhooks.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * CRM slice 6 against the real API and database: API keys made in the app (shown once, hashed,
@@ -77,12 +78,9 @@ describe('API keys', () => {
     const list = (await ctx.http().get(`${org.base}/crm-connection/keys`).set(owner.auth).expect(200)).body;
     expect(list.keys).toHaveLength(2);
     expect(JSON.stringify(list)).not.toContain(readKey);
-    const stored = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      return tx.$queryRawUnsafe<{ key_hash: string }[]>(`SELECT key_hash FROM api_keys WHERE id = '${r.id}'`);
-    });
-    expect(stored[0]!.key_hash).toHaveLength(64);
-    expect(stored[0]!.key_hash).not.toContain(readKey.slice(13));
+    const stored = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.apiKey.findUniqueOrThrow({ where: { id: r.id } }));
+    expect(stored.keyHash).toHaveLength(64);
+    expect(stored.keyHash).not.toContain(readKey.slice(13));
   });
 
   it('let another system read and write CRM records within their scopes', async () => {
@@ -112,10 +110,7 @@ describe('API keys', () => {
     expect(customers.map((c: { name: string }) => c.name).sort()).toEqual(['Asha Traders', 'Kumar Foods']);
 
     // The audit trail names the key next to its creator.
-    const ev = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      return tx.auditEvent.findFirst({ where: { orgId: org.orgId, action: 'crm.deal.won' } });
-    });
+    const ev = await tenantStorage.run({ bypass: true }, async () => await ctx.prisma.auditEvent.findFirst({ where: { orgId: org.orgId, action: 'crm.deal.won' } }));
     expect(ev?.data).toMatchObject({ viaApiKey: { id: writeKeyId } });
 
     // Keys never reach another organisation's records.
@@ -143,12 +138,7 @@ describe('API keys', () => {
     expect((await api(writeKey).get('/me').expect(401)).body.message).toMatch(/revoked/);
     const list = (await ctx.http().get(`${org.base}/crm-connection/keys`).set(owner.auth).expect(200)).body;
     expect(list.keys.find((k: { id: string }) => k.id === writeKeyId)).toMatchObject({ status: 'REVOKED', revokedBy: 'Connector Owner' });
-    await expect(
-      ctx.prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-        return tx.$executeRawUnsafe(`DELETE FROM api_keys WHERE id = '${writeKeyId}'`);
-      }),
-    ).rejects.toThrow(/never deleted/);
+    await expect(sqlWrite(ctx, `DELETE FROM api_keys WHERE id = '${writeKeyId}'`, [], { bypass: true })).rejects.toThrow(/never deleted/);
   });
 });
 
@@ -194,10 +184,7 @@ describe('CRM webhooks', () => {
     let d = (await ctx.http().get(`${org.base}/crm-connection/webhooks/${hookId}/deliveries`).set(owner.auth).expect(200)).body.deliveries[0];
     expect(d).toMatchObject({ event: 'lead.created', status: 'PENDING', attempts: 1, statusCode: 503 });
     // Due again after a minute: brought forward here instead of waiting.
-    await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      await tx.$executeRawUnsafe(`UPDATE crm_webhook_deliveries SET next_attempt_at = now() WHERE id = '${d.id}'`);
-    });
+    await sqlWrite(ctx, `UPDATE crm_webhook_deliveries SET next_attempt_at = now() WHERE id = '${d.id}'`, [], { bypass: true });
     await tick();
     d = (await ctx.http().get(`${org.base}/crm-connection/webhooks/${hookId}/deliveries`).set(owner.auth).expect(200)).body.deliveries[0];
     expect(d).toMatchObject({ status: 'SUCCEEDED', attempts: 2, statusCode: 200 });

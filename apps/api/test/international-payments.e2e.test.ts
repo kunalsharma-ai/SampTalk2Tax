@@ -1,6 +1,7 @@
 import { addDays } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AP-023 international payments against the real API and database: a vendor's bank account abroad
@@ -18,11 +19,7 @@ let vendor: { id: string };
 let bills: { id: string; number: string }[] = [];
 
 const IP = () => `${org.base}/purchases/international-payments`;
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 async function postBill(amount: string, ref: string) {
   const d = (await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId: vendor.id, issueDate: T, dueDate: addDays(T, 30), currency: 'USD', reference: ref, lines: [{ accountId: org.acc['6600'], description: 'Software consultancy', quantity: '1', unitPrice: amount }] }).expect(201)).body;
   return (await ctx.http().post(`${org.base}/purchases/documents/${d.id}/post`).set(owner.auth).send({}).expect(200)).body;

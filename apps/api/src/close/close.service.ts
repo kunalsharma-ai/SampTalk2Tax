@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { postgresOff } from '../db/counters';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import {
@@ -390,7 +391,7 @@ export class CloseService {
   }
 
   private async openClose(tx: Tx, orgId: string, periodId: string) {
-    await tx.$queryRaw`SELECT id FROM period_closes WHERE period_id = ${periodId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    if (!postgresOff()) await tx.$queryRaw`SELECT id FROM period_closes WHERE period_id = ${periodId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
     await holdLock(`period_closes:period:${periodId}`);
     const c = await tx.periodClose.findFirst({ where: { orgId, periodId } });
     if (!c) throw new DomainError('CLOSE_NOT_STARTED', 'Start the close of this month first', HttpStatus.CONFLICT);

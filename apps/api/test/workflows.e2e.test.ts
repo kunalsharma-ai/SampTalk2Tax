@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { tenantStorage } from '../src/common/tenant-context';
 import { WorkflowRunnerService } from '../src/workflows/workflow-runner.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Workflow automations and tasks against the real API and database, with a real HTTP
@@ -38,11 +39,7 @@ let hookUrl: string;
 
 // Run as the server does: outside any request, where the default context sees no tenant rows.
 const tick = () => tenantStorage.run({}, () => runner.tick());
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const invoice = async (who: string, amount: string, extra: Record<string, unknown> = {}) =>
   (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: c[who], issueDate: T, dueDate: addDays(T, 30), post: true, lines: [{ accountId: org.acc['4100'], quantity: '1', unitPrice: amount }], ...extra }).expect(201)).body;
 const tasksOf = async (u: TestUser, q: Record<string, string> = {}) => (await ctx.http().get(`${org.base}/tasks`).query(q).set(u.auth).expect(200)).body;
@@ -272,7 +269,7 @@ describe('workflow automations', () => {
     await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId: c['Teak Supplies'], issueDate: T, reference: 'TS-1', post: true, lines: [{ accountId: org.acc['6400'], quantity: '1', unitPrice: '999.00' }] }).expect(201);
     await tick();
     for (let i = 0; i < 5; i++) {
-      await raw(`UPDATE workflow_action_runs a SET next_attempt_at = now() - interval '1 second' FROM workflow_runs r WHERE r.id = a.run_id AND r.workflow_id = $1::uuid AND a.status = 'PENDING'`, dead.body.id);
+      await raw(`UPDATE workflow_action_runs SET next_attempt_at = now() - interval '1 second' WHERE status = 'PENDING' AND run_id IN (SELECT id FROM workflow_runs WHERE workflow_id = $1::uuid)`, dead.body.id);
       await tick();
     }
     const [run] = await runsOf(dead.body.id);
@@ -413,11 +410,10 @@ describe('tasks', () => {
 
     // Another organisation sees none of these rows, even reading the tables directly.
     const other = await createOrg(ctx, stranger, { name: 'Other Co' });
-    const seen = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', '', true), set_config('t2t.org_id', $1, true)`, other.orgId);
-      const rows = await tx.$queryRawUnsafe<{ n: bigint }[]>(`SELECT (SELECT count(*) FROM tasks) + (SELECT count(*) FROM workflows) + (SELECT count(*) FROM workflow_runs) + (SELECT count(*) FROM workflow_action_runs) + (SELECT count(*) FROM workflow_versions) + (SELECT count(*) FROM workflow_cursors) AS n`);
-      return Number(rows[0].n);
-    });
+    const p = ctx.prisma;
+    const seen = await tenantStorage.run({ orgId: other.orgId }, async () =>
+      [await p.task.count(), await p.workflow.count(), await p.workflowRun.count(), await p.workflowActionRun.count(), await p.workflowVersion.count(), await p.workflowCursor.count()].reduce((a, b) => a + b, 0),
+    );
     expect(seen).toBe(0);
     await ctx.http().get(`${org.base}/tasks/${taskId}`).set(stranger.auth).expect(404);
   });

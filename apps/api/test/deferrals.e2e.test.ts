@@ -1,6 +1,7 @@
 import { addMonth, deferralSchedule, fiscalYearForDate, firstOfNextMonth, monthEnd } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Prepaid expenses, deferred revenue and accruals against the real API and database: schedules
@@ -24,11 +25,7 @@ let insurance: string;
 let support: string;
 const supportTerms = { amount: '36500.00', startDate: `${M1}-15`, months: 12, method: 'DAILY' as const };
 
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const schedule = async (id: string) => (await ctx.http().get(`${F}/${id}`).set(owner.auth).expect(200)).body;
 const rel = async (month?: string) => (await ctx.http().get(`${F}/releases${month ? `?month=${month}` : ''}`).set(owner.auth).expect(200)).body;
 const entry = async (number: number) => {

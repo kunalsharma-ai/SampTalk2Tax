@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AR-015 retainers against the real API and database: terms, receipts recorded into a retainer
@@ -18,11 +19,7 @@ let other: Awaited<ReturnType<typeof createOrg>>;
 let customer: { id: string };
 let otherCustomer: { id: string };
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const invoice = async (amount: string, dueDate: string, contactId = customer.id) => {
   const d = (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId, issueDate: T, dueDate, lines: [{ accountId: org.acc['4100'], description: 'Advisory', quantity: '1', unitPrice: amount }] }).expect(201)).body;
   return (await ctx.http().post(`${org.base}/sales/documents/${d.id}/post`).set(owner.auth).send({}).expect(200)).body;

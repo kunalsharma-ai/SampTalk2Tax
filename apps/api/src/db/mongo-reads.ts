@@ -127,13 +127,28 @@ async function toFilter(store: Store, info: MirrorInfo, where: unknown): Promise
       parts.push(await toFilter(store, info, cond));
       continue;
     }
-    if (f.name === 'id' && f.type !== 'String') parts.push(scalarFilter({ ...f, type: 'String' } as Field, stringIds(cond)));
+    if (f.name === 'id' && f.type !== 'String') parts.push(...numericIdFilter(f, cond));
     else if (f.kind === 'scalar' || f.kind === 'enum') parts.push(scalarFilter(f, cond));
     else parts.push(await relationFilter(store, info, f, cond));
   }
   const clean = parts.filter((p) => Object.keys(p).length);
   if (!clean.length) return {};
   return clean.length === 1 ? clean[0] : { $and: clean };
+}
+
+/**
+ * A numeric id is stored as its text in _id (see docId) and as a number in idNumber: equality
+ * and lists compare the text, ranges the number.
+ */
+function numericIdFilter(f: Field, cond: unknown): Doc[] {
+  if (cond === null || typeof cond !== 'object') return [scalarFilter({ ...f, type: 'String' } as Field, stringIds(cond))];
+  const text: Doc = {};
+  const range: Doc = {};
+  for (const [k, v] of Object.entries(cond as Doc)) {
+    if (['gt', 'gte', 'lt', 'lte'].includes(k)) range[`$${k}`] = Number(v);
+    else text[k] = v;
+  }
+  return [...(Object.keys(text).length ? [scalarFilter({ ...f, type: 'String' } as Field, stringIds(text))] : []), ...(Object.keys(range).length ? [{ idNumber: range }] : [])];
 }
 
 /** A numeric id is stored as its text in _id (see docId), so filters on it compare text. */
@@ -252,7 +267,7 @@ function sortStages(info: MirrorInfo, order: Order[]): Doc[] {
       // PostgreSQL orders an enum by the order its values were declared in, not by name.
       add[`__e${i}`] = { $indexOfArray: [ENUM_VALUES.get(f.type) ?? [], `$${k}`] };
       sort[`__e${i}`] = dir;
-    } else sort[k === 'id' ? '_id' : k] = dir;
+    } else sort[k === 'id' ? (f.type === 'String' ? '_id' : 'idNumber') : k] = dir;
   });
   return [...(Object.keys(add).length ? [{ $addFields: add }] : []), { $sort: sort }];
 }
@@ -282,7 +297,12 @@ const POLICIES: Record<string, { cross: boolean; filter: (store: Store, ctx: { o
   },
   // Benchmark contributions are pooled across organisations and read only by system work.
   BenchmarkContribution: { cross: false, filter: async () => ({ _id: { $exists: false } }) },
+  // Shared tables whose organisation is optional: a tenant sees its own rows, rows of no organisation only system work.
+  AuditEvent: { cross: false, filter: async (_s, c) => ownRows(c) },
+  ErrorEvent: { cross: false, filter: async (_s, c) => ownRows(c) },
 };
+
+const ownRows = (c: { orgId?: string }): Doc => (c.orgId ? { orgId: c.orgId } : { _id: { $exists: false } });
 
 async function myOrgs(store: Store, userId: string | undefined): Promise<string[]> {
   if (!userId) return [];
@@ -607,8 +627,8 @@ async function groupRows(store: Store, info: MirrorInfo, args: Doc): Promise<Doc
 
 type Delegate = Record<string, (args?: unknown) => Promise<unknown>>;
 
-const notFound = (model: string) =>
-  new Prisma.PrismaClientKnownRequestError(`No ${model} found`, { code: 'P2025', clientVersion: Prisma.prismaVersion.client, meta: { modelName: model, cause: 'No record was found for a query.' } });
+export const notFound = (model: string, cause = 'No record was found for a query.') =>
+  new Prisma.PrismaClientKnownRequestError(`No ${model} found`, { code: 'P2025', clientVersion: Prisma.prismaVersion.client, meta: { modelName: model, cause } });
 
 /** Read operations of `info`'s model from MongoDB, falling back to `pg` for what cannot be translated yet. */
 export function mongoReadOps(pg: Delegate, info: MirrorInfo, store: Store): Record<string, (args: Doc) => Promise<unknown>> {
@@ -617,6 +637,8 @@ export function mongoReadOps(pg: Delegate, info: MirrorInfo, store: Store): Reco
       return await run();
     } catch (e) {
       if (!(e instanceof Untranslatable)) throw e;
+      // With PostgreSQL off there is nothing to fall back to.
+      if (process.env.T2T_POSTGRES === 'off') throw new Error(`${info.model}.${op} cannot be read from MongoDB: ${e.message}`);
       const key = `${info.model}.${op}: ${e.message}`;
       if (!FALLBACKS.has(key)) noteFallback(key);
       FALLBACKS.set(key, (FALLBACKS.get(key) ?? 0) + 1);

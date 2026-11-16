@@ -160,6 +160,28 @@ export class DocumentStore {
       .updateOne({ _id: name }, { $inc: { n: 1 }, $set: { at: new Date() } }, { upsert: true, session: this.sessions.getStore() });
   }
 
+  /**
+   * Takes a lease on a name for `seconds`, outside any transaction, if no one holds it: true
+   * when taken. For work one process at a time picks up (what SKIP LOCKED did); `release`
+   * gives it back, and a holder that dies loses it when the time runs out.
+   */
+  async lease(name: string, seconds: number): Promise<boolean> {
+    const now = new Date();
+    try {
+      await this.db()
+        .collection<{ _id: string; until: Date }>('_leases')
+        .updateOne({ _id: name, until: { $lt: now } }, { $set: { until: new Date(now.getTime() + seconds * 1000) } }, { upsert: true });
+      return true;
+    } catch (e) {
+      if ((e as { code?: unknown }).code === 11000) return false; // held: the upsert met the holder's document
+      throw e;
+    }
+  }
+
+  async release(name: string): Promise<void> {
+    await this.db().collection<{ _id: string }>('_leases').deleteOne({ _id: name });
+  }
+
   /** Next value of a counter kept per organisation (document numbers and the like). */
   async nextTenantSequence(name: string): Promise<number> {
     const { orgId } = this.options.context();

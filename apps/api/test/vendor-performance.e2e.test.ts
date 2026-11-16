@@ -1,6 +1,7 @@
 import { addDays } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AP-021 vendor performance against the real API and database: on-time delivery from goods
@@ -19,11 +20,7 @@ let good: string;
 let slow: string;
 
 const P = () => `${org.base}/purchases`;
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 
 /** An issued order of 100 cartons at 40 and 10 rolls at 250, expected `expectIn` days after `orderDaysAgo` days ago. */
 async function order(contactId: string, orderDaysAgo: number, expectIn: number) {

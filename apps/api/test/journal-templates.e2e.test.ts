@@ -2,6 +2,7 @@ import { addDays } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { JournalTemplatesService } from '../src/journal-templates/journal-templates.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * GL-007 / GL-012 against the real API and database: templates checked on save, used by hand
@@ -21,11 +22,7 @@ let other: Awaited<ReturnType<typeof createOrg>>;
 let fyStart: string;
 let periods: { id: string; startDate: string; endDate: string; status: string }[];
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const rent = (extra: Record<string, unknown> = {}) => ({
   name: 'Office rent accrual',
   description: 'Rent for the Pune office, paid in arrears',

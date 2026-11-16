@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '@talk2tax/database';
 
 /**
@@ -326,6 +327,10 @@ class Parser {
         this.expectKw('END');
         return { k: 'case', subject, whens, else: els };
       }
+      // A typed literal: DATE '2026-04-01', TIMESTAMPTZ '...', INTERVAL '1 day'.
+      if (['DATE', 'TIMESTAMP', 'TIMESTAMPTZ', 'INTERVAL'].includes(up) && this.peek().t === 'str') {
+        return { k: 'cast', a: { k: 'lit', v: this.next().v }, type: up === 'TIMESTAMPTZ' ? 'timestamp with time zone' : up.toLowerCase() };
+      }
       if (up === 'POSITION' && this.isOp('(')) {
         this.i++;
         const needle = this.concat();
@@ -514,6 +519,8 @@ function call(fn: string, args: Value[]): Value {
       return new Prisma.Decimal(a.length);
     case '__index':
       return a === null || b === null ? null : ((a as unknown[])[toDec(b).toNumber() - 1] ?? null);
+    case 'gen_random_uuid':
+      return randomUUID();
     case 'now':
       return new Date();
     case '__at_time_zone':
@@ -702,6 +709,21 @@ function cmp(op: string, a: Value, b: Value): Value {
       return toDec(a).mod(toDec(b));
     default:
       throw new Error(`The operator ${op} is not supported in checks`);
+  }
+}
+
+/** An expression's value for a record (an index key such as `lower(name)`). */
+export function valueOf(expr: Node, row: Record<string, unknown>): unknown {
+  return evaluate(expr, row);
+}
+
+/** Whether a predicate is TRUE for the record (a partial index holds only those rows). */
+export function holds(predicate: Node, row: Record<string, unknown>): boolean {
+  try {
+    return evaluate(predicate, row) === true;
+  } catch (e) {
+    if (e instanceof SqlError) return false;
+    throw e;
   }
 }
 

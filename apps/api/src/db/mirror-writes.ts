@@ -4,11 +4,13 @@ type Document = Record<string, unknown>;
 import type { DocumentStore } from '@talk2tax/document-db';
 import { currentTenantContext, runAsSystem, runInOrg } from '../common/tenant-context';
 import { appendFileSync } from 'node:fs';
-import { mongoReadOps } from './mongo-reads';
+import { isDuplicateKeyError } from '@talk2tax/document-db';
+import { mongoReadOps, notFound } from './mongo-reads';
 import { differences, flatWhere, FROM_SEQUENCE, fromSequence, hasAutoincrement, planCreate, planUpdate, useAutoincrement, type PlannedRow } from './mongo-writes';
 import { foreignKeys } from './constraints/catalog';
-import { enforceChecks, enforceNoReferrers, enforceReferences, type TableInfo } from './constraints/enforce';
+import { enforceChecks, enforceNoReferrers, enforceReferences, keyIn, uniqueKeys, uniqueViolation, type TableInfo } from './constraints/enforce';
 import { allowedInTx } from './guards/allow';
+import { coordinationStore } from './counters';
 import { changedExcept, strict, type GuardContext, type Reader } from './guards/guard';
 import { asColumns, GUARDS } from './guards';
 import './guards/rules';
@@ -76,6 +78,11 @@ function collectionFor(m: Model): AnyCollectionDef {
     const partial = nullable.length ? Object.fromEntries(nullable.map((x) => [x, { $type: typeName(byName.get(x)!) }])) : undefined;
     return { key: Object.fromEntries(fields.map((x) => [x, 1])), name: `uniq_${fields.join('_')}`.slice(0, 120), unique: true, ...(partial ? { partialFilterExpression: partial } : {}) };
   });
+  // A numeric id is kept as text in _id (docId) and as a number in idNumber, for order and ranges.
+  if (numericId(m)) {
+    properties.idNumber = { bsonType: ['long', 'int', 'double'] };
+    indexes.push({ key: { idNumber: 1 }, name: 'id_number' } as never);
+  }
   if (tenant) indexes.push({ key: { orgId: 1 }, name: 'org' } as never);
   return defineCollection({
     name: tableOf(m),
@@ -84,6 +91,12 @@ function collectionFor(m: Model): AnyCollectionDef {
     schema: { bsonType: 'object', properties },
     indexes,
   });
+}
+
+/** A table keyed by a sequence number (audit events, usage events): `id` is Int or BigInt. */
+export function numericId(m: Model): boolean {
+  const pk = pkOf(m);
+  return pk.length === 1 && pk[0] === 'id' && ['Int', 'BigInt'].includes(m.fields.find((f) => f.name === 'id')!.type);
 }
 
 function typeName(f: Field): string {
@@ -167,6 +180,52 @@ function tableNamed(table: string): TableInfo | undefined {
   return TABLES.get(table);
 }
 
+/** Whether MongoDB holds this record of a table (by id, and organisation when given): what a lock needs to know. */
+export async function tableHolder(client: unknown, table: string, id: string, orgId?: string): Promise<boolean> {
+  const t = tableNamed(table);
+  if (!t) throw new Error(`${table} is not held in MongoDB`);
+  const field = t.embedded ? `${t.embedded.path}.id` : 'id';
+  const filter: Record<string, unknown> = { [field]: id, ...(orgId !== undefined ? { orgId } : {}) };
+  const store = storeOf(client);
+  if (!store) throw new Error('No MongoDB store for locks');
+  return runAsSystem(async () => !!(await store.collection(t.embedded ? t.embedded.parent : t.def).findOne(filter, { projection: { _id: 1 } })));
+}
+let lockStore: Store | undefined;
+/** The store locks look records up in when the client does not say (set at start-up). */
+export function useLockStore(s: Store) {
+  lockStore = s;
+}
+
+const STORE = Symbol.for('talk2tax.documentStore');
+/**
+ * The MongoDB store a (transaction) client writes through: locks, numbering and lookups made
+ * for a transaction go through it, so they are part of that transaction (an API process can
+ * hold more than one app, as the tests do).
+ */
+export function storeOf<S = Store>(client: unknown): S | undefined {
+  return ((client as Record<symbol, unknown> | null | undefined)?.[STORE] as S | undefined) ?? (lockStore as S | undefined);
+}
+
+/**
+ * Claims up to `take` records of a model that match `due` (a MongoDB filter on field names),
+ * soonest `order` first, by setting `lease` on each: one process gets each record, as with
+ * UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED). Outside any transaction.
+ */
+export async function claimRecords(client: unknown, model: string, due: Record<string, unknown>, order: string, take: number, lease: Record<string, unknown>): Promise<{ id: string; org_id: string }[]> {
+  const info = modelInfo(model);
+  const store = storeOf(client);
+  if (!info || !store) throw new Error(`${model} cannot be claimed in MongoDB`);
+  const coll = store.collection(info.def);
+  return runAsSystem(async () => {
+    const out: { id: string; org_id: string }[] = [];
+    for (const c of (await coll.find(due, { sort: { [order]: 1 }, limit: take, projection: { _id: 1 } })) as { id: string }[]) {
+      const got = (await coll.findOneAndUpdate({ ...due, id: c.id }, { $set: lease })) as { id: string; orgId: string } | null;
+      if (got) out.push({ id: String(got.id), org_id: String(got.orgId) });
+    }
+    return out;
+  });
+}
+
 /** The model of this name as MongoDB holds it: mirrored, or moved by hand. */
 export const modelInfo = (name: string): MirrorInfo | undefined => INFOS.get(name) ?? READABLE.get(name);
 const readableByDelegate = () => new Map([...READABLE.values()].map((i) => [i.delegate, i]));
@@ -236,6 +295,7 @@ function forMongo(info: MirrorInfo, row: Record<string, unknown>): Record<string
     else if (typeof v === 'bigint') v = Number(v);
     out[f.name] = v;
   }
+  if (row.id !== undefined && row.id !== null && numericId(MODELS.get(info.model)!)) out.idNumber = Number(row.id);
   return out;
 }
 
@@ -254,18 +314,102 @@ async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record
   const rows = (await d.findMany({ where: pkWhere(info, keys) })) as Record<string, unknown>[];
   // `guards_off` stands in for a test's ALTER TABLE ... DISABLE TRIGGER (moving dates back as time would).
   const guard = allowedInTx('guards_off') ? undefined : GUARDS[info.model];
-  for (const r of rows) {
-    if (guard) {
-      const before = (await beforeRow(info, store, r)) as Record<string, unknown> | null;
-      if (allWritten || !before || changedExcept(before, r, [])) await inContext(info, r.orgId, async () => await guard(before ? 'UPDATE' : 'INSERT', strict(asColumns(info.model, before), info.model), strict(asColumns(info.model, r), info.model), guardContext(store)));
-    }
-    // The table's CHECK constraints and foreign keys, as PostgreSQL enforced them.
-    const t = tableInfoOf(info);
-    const cols = asColumns(info.model, r)!;
-    enforceChecks(t.table, cols);
-    await enforceReferences(store, t, cols, tableNamed, asColumns(info.model, (await beforeRow(info, store, r)) as Record<string, unknown> | null));
-    await inContext(info, r.orgId, () => store.collection(info.def).updateOne({ id: docId(info, r) }, { $set: forMongo(info, r) }, { upsert: true }));
+  for (const r of rows) await storeRow(store, info, r, allWritten ? 'checked' : 'changed', guard);
+}
+
+/**
+ * Writes one record (by field name, complete) into MongoDB after its guard, CHECK constraints
+ * and foreign keys. `insert` refuses a record whose key is already there, as an INSERT would.
+ */
+async function storeRow(store: Store, info: MirrorInfo, r: Record<string, unknown>, mode: 'checked' | 'changed' | 'insert', guard = allowedInTx('guards_off') ? undefined : GUARDS[info.model]) {
+  if (POSTGRES_OFF()) writePolicy(info, r);
+  const before = (await beforeRow(info, store, r)) as Record<string, unknown> | null;
+  if (info.readOnly) return storeMoved(store, info, r, mode === 'insert' || !before);
+  if (mode === 'insert' && before) throw duplicateKey(info, info.pk);
+  if (guard && (mode !== 'changed' || !before || changedExcept(before, r, []))) {
+    await inContext(info, r.orgId, async () => await guard(before ? 'UPDATE' : 'INSERT', strict(asColumns(info.model, before), info.model), strict(asColumns(info.model, r), info.model), guardContext(store)));
   }
+  // The table's CHECK constraints and foreign keys, as PostgreSQL enforced them.
+  const t = tableInfoOf(info);
+  const cols = asColumns(info.model, r)!;
+  enforceChecks(t.table, cols);
+  await enforceReferences(store, t, cols, tableNamed, asColumns(info.model, before));
+  await enforceUniques(store, info, t.table, r, cols);
+  try {
+    await inContext(info, r.orgId, () => store.collection(info.def).updateOne({ id: docId(info, r) }, { $set: forMongo(info, r) }, { upsert: true }));
+  } catch (e) {
+    if (!isDuplicateKeyError(e)) throw e;
+    const pattern = Object.keys((e as { keyPattern?: Record<string, unknown> }).keyPattern ?? {});
+    throw duplicateKey(info, pattern.map((x) => (x === 'id' ? info.pk : [x])).flat());
+  }
+}
+
+/**
+ * A record of a table moved by hand, written through its collection (whose guards are its
+ * rules). Only with PostgreSQL off: before that its writes go through MovedTables.
+ */
+async function storeMoved(store: Store, info: MirrorInfo, r: Record<string, unknown>, insert: boolean) {
+  if (info.embedded) throw new Error(`${info.model} is written with its ${info.embedded.parent.name} record`);
+  const doc: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(r)) if (v !== undefined) doc[k] = Prisma.Decimal.isDecimal(v) ? (v as Prisma.Decimal).toFixed() : v;
+  try {
+    if (insert) await inContext(info, r.orgId, () => store.collection(info.def).insertOne(doc as never));
+    else {
+      const { id, orgId: _org, ...set } = doc;
+      await inContext(info, r.orgId, () => store.collection(info.def).updateOne({ id } as never, { $set: set } as never));
+    }
+  } catch (e) {
+    if (!isDuplicateKeyError(e)) throw e;
+    const pattern = Object.keys((e as { keyPattern?: Record<string, unknown> }).keyPattern ?? {});
+    throw duplicateKey(info, pattern.map((x) => (x === 'id' ? info.pk : [x])).flat());
+  }
+}
+
+/**
+ * Row-level security's WITH CHECK, for writes with PostgreSQL off (docs/SECURITY.md ›
+ * Row-level security): outside system work a record must belong to the current organisation,
+ * a copilot conversation to the current member, and the benchmark pool is the system's alone.
+ */
+function writePolicy(info: MirrorInfo, r: Record<string, unknown>) {
+  const c = currentTenantContext();
+  if (c.bypass) return;
+  const ok =
+    info.model === 'BenchmarkContribution'
+      ? false
+      : (!(info.tenant || ['AuditEvent', 'ErrorEvent'].includes(info.model)) || (!!c.orgId && r.orgId === c.orgId)) && (info.model !== 'CopilotConversation' || (!!c.userId && r.userId === c.userId));
+  if (!ok) throw new Error(`new row violates row-level security policy for table "${info.def.name}"`);
+}
+
+/**
+ * The unique indexes MongoDB's own indexes do not hold (partial, on expressions, or written by
+ * hand in SQL): no other record of the table may have the same key. A lock document on the key
+ * makes two transactions writing it take turns, so the second sees the first's record.
+ */
+async function enforceUniques(store: Store, info: MirrorInfo, table: string, r: Record<string, unknown>, cols: Record<string, unknown>) {
+  const m = MODELS.get(info.model)!;
+  const fieldOf = (c: string) => info.scalars.find((f) => (f.dbName ?? f.name) === c)?.name;
+  const covered = (columns: string[]) => {
+    const fields = columns.map(fieldOf);
+    if (fields.some((f) => !f)) return false;
+    const set = new Set(fields as string[]);
+    if (info.pk.every((k) => set.has(k))) return true;
+    return m.uniqueFields.some((u) => u.length === set.size && u.every((x) => set.has(x))) || (set.size === 1 && info.scalars.some((f) => f.isUnique && set.has(f.name)));
+  };
+  for (const { index, key, plain } of uniqueKeys(table, cols, covered)) {
+    await coordinationStore()?.lock(`unique:${index.name}:${key}`);
+    const where = Object.fromEntries(Object.keys(plain).map((c) => [fieldOf(c)!, r[fieldOf(c)!]]));
+    const others = (await runAsSystem(() => guardReads(info, store).findMany({ where: { ...where, ...(info.tenant ? { orgId: r.orgId } : {}) } }))) as Record<string, unknown>[];
+    for (const o of others) if (docId(info, o) !== docId(info, r) && keyIn(index, asColumns(info.model, o)!) === key) throw uniqueViolation(index);
+  }
+}
+
+/** As Prisma reports a unique constraint failed (P2002), with the fields of the key. */
+function duplicateKey(info: MirrorInfo, fields: string[]) {
+  return new Prisma.PrismaClientKnownRequestError(`Unique constraint failed on the fields: (${fields.map((f) => `\`${f}\``).join(',')})`, {
+    code: 'P2002',
+    clientVersion: Prisma.prismaVersion.client,
+    meta: { modelName: info.model, target: fields },
+  });
 }
 
 /**
@@ -280,6 +424,13 @@ function beforeRow(info: MirrorInfo, store: Store, key: Record<string, unknown>)
 function guardReads(info: MirrorInfo, store: Store) {
   const refuse = new Proxy({}, { get: () => () => Promise.reject(new Error(`A guard read of ${info.model} could not be translated`)) }) as Delegate;
   return mongoReadOps(refuse, info, store) as unknown as { findFirst(a: unknown): Promise<unknown>; findMany(a: unknown): Promise<unknown>; count(a: unknown): Promise<unknown> };
+}
+
+/** Records of a model (by its delegate name) as Prisma gives them, read from MongoDB alone. */
+export function mongoRows(store: Store, delegate: string, where: Record<string, unknown>): Promise<Record<string, unknown>[]> {
+  const info = mirrorByDelegate().get(delegate) ?? readableByDelegate().get(delegate);
+  if (!info) throw new Error(`${delegate} is not held in MongoDB`);
+  return runAsSystem(() => guardReads(info, store).findMany({ where })) as Promise<Record<string, unknown>[]>;
 }
 
 function guardContext(store: Store): GuardContext {
@@ -442,8 +593,140 @@ const updatePlans = async (model: string, before: Row | null, data: Row): Promis
   return [{ model, row: u.row, before }, ...u.children];
 };
 
+// ------------------------------------------------------------------ MongoDB alone
+
+/** PostgreSQL takes no writes (T2T_POSTGRES=off): mirrored models are written to MongoDB alone. */
+export const POSTGRES_OFF = () => process.env.T2T_POSTGRES === 'off';
+
+/** Next value of an autoincrement column, from a MongoDB sequence raised once to the highest value held. */
+const raisedSerials = new Set<string>();
+async function nextSerial(store: Store, model: string, field: string): Promise<number> {
+  const info = modelInfo(model)!;
+  const own = store as Partial<Pick<DocumentStore, 'nextSequence' | 'raiseSequence'>>;
+  const seq = own.nextSequence && own.raiseSequence ? (own as Pick<DocumentStore, 'nextSequence' | 'raiseSequence'>) : coordinationStore();
+  if (!seq) throw new Error(`${model}.${field} needs MongoDB's sequences`);
+  const name = `serial:${info.def.name}.${field}`;
+  if (!raisedSerials.has(name)) {
+    const path = field === 'id' ? 'idNumber' : field;
+    const [top] = await runAsSystem(() => store.collection(info.def).aggregate<{ top: number | null }>([{ $group: { _id: null, top: { $max: `$${path}` } } }]));
+    if (top?.top) await seq.raiseSequence(name, Number(top.top));
+    raisedSerials.add(name);
+  }
+  return seq.nextSequence(name);
+}
+
+type Ops = Record<string, (args: Record<string, unknown>) => Promise<unknown>>;
+
+/**
+ * The writes of a mirrored model with PostgreSQL out of the way: each is planned
+ * (mongo-writes.ts), checked as the database checked it (guards, CHECK constraints, foreign
+ * keys, unique keys) and stored; the result is read back in the shape the caller asked for.
+ */
+function mongoOnlyOps(info: MirrorInfo, store: Store, reads: Ops): Ops {
+  const shape = (args: Row) => ({ ...(args.select ? { select: args.select } : {}), ...(args.include ? { include: args.include } : {}) });
+  const shaped = (row: Row, args: Row) => reads.findFirst({ where: keyOf(info, row), ...shape(args) });
+  const write = async (plans: PlannedRow[]) => {
+    for (const p of plans) {
+      const target = modelInfo(p.model);
+      if (!target) throw new Error(`${p.model} is not held in MongoDB`);
+      await storeRow(store, target, p.row, p.before ? 'checked' : 'insert');
+    }
+  };
+  const create = async (data: Row) => {
+    const plans = await planCreate(info.model, data, new Date());
+    await write(plans);
+    return plans[0].row;
+  };
+  const update = async (before: Row, data: Row) => {
+    const u = await planUpdate(info.model, before, data, new Date());
+    for (const del of u.nestedDeletes) {
+      const child = modelInfo(del.model)!;
+      const gone = (await guardReads(child, store).findMany({ where: del.where })) as Row[];
+      await dropRows(store, child, gone);
+    }
+    await write([{ model: info.model, row: u.row, before }, ...u.children]);
+    return u.row;
+  };
+  const remove = async (rows: Row[]) => {
+    await loadForeignKeys();
+    await dropRows(store, info, rows);
+  };
+  const createRows = async (args: Row) => {
+    const out: Row[] = [];
+    for (const data of ([] as Row[]).concat((args.data ?? []) as Row[])) {
+      try {
+        out.push(await create({ ...data }));
+      } catch (e) {
+        if (!(args.skipDuplicates && e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) throw e;
+      }
+    }
+    return out;
+  };
+  const updateRows = async (args: Row) => {
+    const out: Row[] = [];
+    for (const before of (await reads.findMany({ where: args.where ?? {} })) as Row[]) out.push(await update(before, args.data as Row));
+    return out;
+  };
+  const first = (args: Row) => reads.findFirst({ where: flatWhere(info.model, (args.where ?? {}) as Row) }) as Promise<Row | null>;
+  return {
+    async create(args) {
+      return shaped(await create(args.data as Row), args);
+    },
+    async update(args) {
+      const before = await first(args);
+      if (!before) throw notFound(info.model, 'Record to update not found.');
+      return shaped(await update(before, args.data as Row), args);
+    },
+    async upsert(args) {
+      const before = await first(args);
+      return shaped(before ? await update(before, args.update as Row) : await create(args.create as Row), args);
+    },
+    async delete(args) {
+      const before = await first(args);
+      if (!before) throw notFound(info.model, 'Record to delete does not exist.');
+      const result = await shaped(before, args);
+      await remove([before]);
+      return result;
+    },
+    async deleteMany(args) {
+      const rows = (await reads.findMany({ where: args.where ?? {} })) as Row[];
+      await remove(rows);
+      return { count: rows.length };
+    },
+    async createMany(args) {
+      return { count: (await createRows(args)).length };
+    },
+    async createManyAndReturn(args) {
+      const rows = await createRows(args);
+      return rows.length ? reads.findMany({ where: pkWhere(info, rows), ...shape(args) }) : [];
+    },
+    async updateMany(args) {
+      return { count: (await updateRows(args)).length };
+    },
+    async updateManyAndReturn(args) {
+      const rows = await updateRows(args);
+      return rows.length ? reads.findMany({ where: pkWhere(info, rows), ...shape(args) }) : [];
+    },
+  };
+}
+
+const keyOf = (info: MirrorInfo, row: Row) => Object.fromEntries(info.pk.map((k) => [k, row[k]]));
+
 export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx: Record<string, Delegate>, serial: Serial = oneAtATime()): Delegate {
   const label = (op: string) => `${info.model}.${op}`;
+  const reads = MONGO_READS() || POSTGRES_OFF() ? mongoReadOps(d, info, store) : {};
+  if (POSTGRES_OFF()) {
+    if (!hasAutoincrement()) useAutoincrement((model, field) => nextSerial(store, model, field));
+    const mongo = mongoOnlyOps(info, store, reads as Ops);
+    return new Proxy(d, {
+      get(target, prop, receiver) {
+        if (prop === PG) return target;
+        if (typeof prop === 'string' && prop in mongo) return (args: Record<string, unknown>) => serial(() => mongo[prop](args ?? {}));
+        if (typeof prop === 'string' && prop in reads) return (args: Record<string, unknown>) => serial(() => reads[prop](args));
+        return Reflect.get(target, prop, receiver);
+      },
+    });
+  }
   const ops: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
     async create(args) {
       const plans = PLAN_CHECK() ? await tryPlan(label('create'), () => planCreate(info.model, args.data as Row, new Date(), true)) : null;
@@ -536,7 +819,6 @@ export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx
       return r;
     },
   };
-  const reads = MONGO_READS() ? mongoReadOps(d, info, store) : {};
   return new Proxy(d, {
     get(target, prop, receiver) {
       if (prop === PG) return target;
@@ -571,12 +853,14 @@ export function mirrorClient<T extends object>(client: T, store: Store, runInTx?
   const serial = oneAtATime();
   return new Proxy(client, {
     get(target, prop, receiver) {
+      if (prop === STORE) return store;
       const value = Reflect.get(target, prop, receiver);
       if (prop === '$executeRaw' || prop === '$executeRawUnsafe') {
         const run = value as (...a: unknown[]) => Promise<number>;
         return (...a: unknown[]) => {
           const table = writtenTable(prop === '$executeRawUnsafe' ? String(a[0]) : sqlText(a));
           if (!table) return run.apply(target, a);
+          if (POSTGRES_OFF()) return Promise.reject(new Error(`A raw SQL write to ${table.info.def.name} with PostgreSQL off`));
           // Outside a transaction, run it in one so MongoDB is brought in step with it.
           if (runInTx) return runInTx((tx) => (tx as Record<string, (...x: unknown[]) => Promise<number>>)[prop](...a));
           return serial(async () => {
@@ -592,9 +876,14 @@ export function mirrorClient<T extends object>(client: T, store: Store, runInTx?
           if (!cache.has(prop)) {
             const pg = value as Delegate;
             const reads = mongoReadOps(pg, ro, store);
+            // With PostgreSQL off, writes to a table moved by hand go to its collection.
+            const writes = POSTGRES_OFF() && !ro.embedded ? mongoOnlyOps(ro, store, reads as Ops) : {};
             cache.set(prop, new Proxy(pg, {
               get(t, op, r) {
                 if (op === PG) return t;
+                if (typeof op === 'string' && op in writes) {
+                  return (args: Record<string, unknown>) => (runInTx ? runInTx((tx) => ((tx as Record<string, Delegate>)[prop] as Delegate)[op](args)) : serial(() => writes[op](args ?? {})));
+                }
                 if (typeof op === 'string' && op in reads) return (args: Record<string, unknown>) => (runInTx ? (strayInTx() ? (t as Delegate)[op](args) : reads[op](args)) : serial(() => reads[op](args)));
                 return Reflect.get(t, op, r);
               },
@@ -695,9 +984,10 @@ export const pgOf = (d: Delegate): Delegate => ((d as unknown as Record<symbol, 
 
 /**
  * A call on the root client from inside a transaction's callback. PostgreSQL answers it with no
- * tenant settings, so it sees nothing; it still goes there, so it keeps seeing nothing.
+ * tenant settings, so it sees nothing; it still goes there, so it keeps seeing nothing. With
+ * PostgreSQL off it reads MongoDB like any other call.
  */
-const strayInTx = () => !!currentTenantContext().inTx;
+const strayInTx = () => !!currentTenantContext().inTx && !POSTGRES_OFF();
 
 /** Reads of mirrored tables come from MongoDB unless MONGO_READS=off (step 8). */
 const MONGO_READS = () => process.env.MONGO_READS !== 'off';

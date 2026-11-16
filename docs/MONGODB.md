@@ -240,6 +240,39 @@ write is also planned and compared field by field with the row PostgreSQL stored
 go to `plan-differences.txt` (or `PLAN_DIFFERENCES_FILE`). The whole API suite runs with none.
 Values PostgreSQL's sequences draw are left out of the comparison until counters take them over.
 
+**PostgreSQL switched off (step 10b).** With `T2T_POSTGRES=off` the API writes nothing to
+PostgreSQL:
+- Mirrored models are written to MongoDB alone. The planned record is checked by its guard,
+  its CHECK constraints, foreign keys and unique keys, stored, and read back in the shape the
+  caller asked for. Duplicates answer P2002 and missing records P2025, as Prisma did.
+- The unique indexes MongoDB cannot hold itself are enforced by the API from the catalog, under
+  a lock document on the key: partial ones such as one open dispute per invoice, ones on
+  expressions such as codes unique ignoring case, and ones written by hand in SQL.
+- Autoincrement columns draw from MongoDB sequences (`serial:<table>.<column>`), raised once to
+  the highest value held. Numeric ids are also kept as numbers (`idNumber`) for order and ranges.
+- Numbering and locks use only their MongoDB halves, taken through the transaction's own store.
+  The SKIP LOCKED claims (workflow deliveries, CRM webhook deliveries) and the workflow and
+  webhook cursors use leases (`_leases`) and conditional updates instead.
+- The tables moved by hand get no PostgreSQL copies. The one trigger that wrote rows (a new
+  customer's onboarding) runs in the API.
+- The audit trail and workflow cursors are mirrored too. A read MongoDB cannot answer is an
+  error rather than a PostgreSQL fallback, and so is a raw SQL write to a mirrored table.
+- Row-level security's WITH CHECK is kept by the data layer: outside system work a record must
+  belong to the current organisation (a copilot conversation to the current member), and the
+  benchmark pool is the system's alone. Prisma writes to the tables moved by hand go to their
+  collections, whose guards are their rules.
+
+**Tests with PostgreSQL off (step 10c).** Tests that tamper with a table directly do it with
+`sqlWrite` (test/sql-writes.ts): the same SQL runs against PostgreSQL while it runs, and with it
+off is carried out through the data layer (the WHERE clause evaluated on each record, then each
+change or delete made as the API would, so guards and checks apply). It takes INSERT (VALUES or
+SELECT), UPDATE and DELETE, with `IN (SELECT ...)` and scalar subqueries. Where the two
+databases word a refusal differently, the guard's message carries PostgreSQL's words, and
+guards run their checks in the order PostgreSQL's triggers did (by name, CHECKs last). Tests of
+PostgreSQL itself (its copies, its catalog, its connection settings) are skipped with it off.
+
+The API suite runs both ways: 815 of 815 with PostgreSQL on, and 792 with it off (23 skipped).
+
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
 moved tables' rows into MongoDB and leaves records already there alone, so it is safe to

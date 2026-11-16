@@ -3,6 +3,8 @@ import { registerGuards } from './index';
 
 /** Accruals, alerts, API keys, bad debts, bank AI, bills, budgets, cash forecasts, CFO reports, the month-end close, collections, compliance. */
 registerGuards({
+  // audit_events_append_only
+  audit_events: appendOnlyRule('audit_events is append-only'),
   // accruals_guard
   accruals: (op, o, n) => {
     if (op === 'INSERT') return;

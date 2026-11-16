@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AR-003 customer onboarding against the real API and database: the organisation's checklist,
@@ -17,11 +18,7 @@ let outsider: TestUser;
 let org: Awaited<ReturnType<typeof createOrg>>;
 let other: Awaited<ReturnType<typeof createOrg>>;
 
-const raw = (sql: string) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const S = () => `${org.base}/sales`;
 const draft = async (contactId: string, by = owner) => (await ctx.http().post(`${S()}/documents`).set(by.auth).send({ kind: 'INVOICE', contactId, issueDate: T, dueDate: T, lines: [{ accountId: org.acc['4100'], description: 'Setup', quantity: '1', unitPrice: '1000' }] }).expect(201)).body;
 const upload = async (onboardingId: string, name: string) =>

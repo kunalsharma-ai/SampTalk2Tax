@@ -396,9 +396,8 @@ export class PayrollService {
     if (!hasPermission(org.role, 'journals.reverse')) throw new DomainError('FORBIDDEN', `Your role (${org.role}) cannot void payments; it needs journals.reverse`, HttpStatus.FORBIDDEN);
     return this.prisma.$transaction(async (tx) => {
       await this.lockRun(tx, org.id, runId);
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM payroll_remittances WHERE id = ${remittanceId}::uuid AND org_id = ${org.id}::uuid AND pay_run_id = ${runId}::uuid FOR UPDATE`;
-      if (rows[0]) await holdLock(`payroll_remittances:${remittanceId}`);
-      if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });
+      const locked = await lockRow(tx, 'payroll_remittances', remittanceId, org.id);
+      if (!locked.length || !(await tx.payrollRemittance.count({ where: { id: remittanceId, orgId: org.id, payRunId: runId } }))) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });
       const r = await tx.payrollRemittance.findUniqueOrThrow({ where: { id: remittanceId } });
       if (r.status !== 'POSTED') throw new DomainError('ALREADY_VOID', 'Payment is already void', HttpStatus.CONFLICT);
       if (input.date < fromDbDate(r.date)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the payment date');

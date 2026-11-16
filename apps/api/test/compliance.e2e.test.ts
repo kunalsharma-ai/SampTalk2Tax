@@ -1,6 +1,7 @@
 import { gstinCheckCharacter, openStatus } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 // Months inside the fiscal year created at onboarding (April to March of the current year).
 const t = today();
@@ -103,8 +104,8 @@ describe('marking returns filed', () => {
   });
 
   it('keeps filing records immutable in the database', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE compliance_filings SET reference = 'X' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM compliance_filings WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE compliance_filings SET reference = 'X' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `DELETE FROM compliance_filings WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be deleted/);
   });
 });
 

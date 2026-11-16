@@ -9826,5 +9826,2448 @@
    "references": "users",
    "table": "year_end_closes"
   }
+ ],
+ "uniques": [
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "accounts_id_org_id_key",
+   "table": "accounts",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "code"
+   ],
+   "name": "accounts_org_id_code_key",
+   "table": "accounts",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "accruals_id_org_id_key",
+   "table": "accruals",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "accruals_org_id_number_key",
+   "table": "accruals",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "alert_notification_settings_org_id_key",
+   "table": "alert_notification_settings",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "rule"
+   ],
+   "name": "alert_rule_settings_org_id_rule_key",
+   "table": "alert_rule_settings",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "alerts_id_org_id_key",
+   "table": "alerts",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "rule",
+    "fingerprint"
+   ],
+   "name": "alerts_org_id_rule_fingerprint_key",
+   "table": "alerts",
+   "where": null
+  },
+  {
+   "keys": [
+    "fx_journal_entry_id"
+   ],
+   "name": "allocations_fx_journal_entry_id_key",
+   "table": "allocations",
+   "where": null
+  },
+  {
+   "keys": [
+    "fx_reversal_journal_entry_id"
+   ],
+   "name": "allocations_fx_reversal_journal_entry_id_key",
+   "table": "allocations",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "api_keys_id_org_id_key",
+   "table": "api_keys",
+   "where": null
+  },
+  {
+   "keys": [
+    "key_hash"
+   ],
+   "name": "api_keys_key_hash_key",
+   "table": "api_keys",
+   "where": null
+  },
+  {
+   "keys": [
+    "prefix"
+   ],
+   "name": "api_keys_prefix_key",
+   "table": "api_keys",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "document_kind"
+   ],
+   "name": "approval_policies_org_id_document_kind_key",
+   "table": "approval_policies",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "approval_requests_id_org_id_key",
+   "table": "approval_requests",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "approval_requests_open_uniq",
+   "table": "approval_requests",
+   "where": "status = ANY (ARRAY['PENDING'::\"ApprovalStatus\", 'APPROVED'::\"ApprovalStatus\"])"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "attachments_id_org_id_key",
+   "table": "attachments",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "bad_debt_provisions_journal_entry_id_key",
+   "table": "bad_debt_provisions",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "bad_debt_provisions_org_id_number_key",
+   "table": "bad_debt_provisions",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "bad_debt_write_offs_id_org_id_key",
+   "table": "bad_debt_write_offs",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "bad_debt_write_offs_journal_entry_id_key",
+   "table": "bad_debt_write_offs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "bad_debt_write_offs_org_id_number_key",
+   "table": "bad_debt_write_offs",
+   "where": null
+  },
+  {
+   "keys": [
+    "reversal_journal_entry_id"
+   ],
+   "name": "bad_debt_write_offs_reversal_journal_entry_id_key",
+   "table": "bad_debt_write_offs",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "bank_ai_runs_id_org_id_key",
+   "table": "bank_ai_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "bank_ai_runs_one_running",
+   "table": "bank_ai_runs",
+   "where": "status = 'RUNNING'::\"BankAiRunStatus\""
+  },
+  {
+   "keys": [
+    "statement_line_id"
+   ],
+   "name": "bank_ai_suggestions_one_open",
+   "table": "bank_ai_suggestions",
+   "where": "status = ANY (ARRAY['DRAFTING'::\"BankAiSuggestionStatus\", 'READY'::\"BankAiSuggestionStatus\"])"
+  },
+  {
+   "keys": [
+    "journal_line_id"
+   ],
+   "name": "bank_matches_active_journal_line_uniq",
+   "table": "bank_matches",
+   "where": "removed_at IS NULL"
+  },
+  {
+   "keys": [
+    "org_id",
+    "account_id",
+    "statement_date"
+   ],
+   "name": "bank_reconciliations_completed_uniq",
+   "table": "bank_reconciliations",
+   "where": "status = 'COMPLETED'::\"ReconciliationStatus\""
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "bank_reconciliations_id_org_id_key",
+   "table": "bank_reconciliations",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "bank_statement_imports_id_org_id_key",
+   "table": "bank_statement_imports",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "bank_statement_lines_id_org_id_key",
+   "table": "bank_statement_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "account_id",
+    "fingerprint"
+   ],
+   "name": "bank_statement_lines_org_id_account_id_fingerprint_key",
+   "table": "bank_statement_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "participant_key"
+   ],
+   "name": "benchmark_contributions_participant_key_key",
+   "table": "benchmark_contributions",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "benchmark_participations_org_id_key",
+   "table": "benchmark_participations",
+   "where": null
+  },
+  {
+   "keys": [
+    "participant_key"
+   ],
+   "name": "benchmark_participations_participant_key_key",
+   "table": "benchmark_participations",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "bill_payment_plans_document_id_key",
+   "table": "bill_payment_plans",
+   "where": null
+  },
+  {
+   "keys": [
+    "budget_id",
+    "account_id",
+    "period_no"
+   ],
+   "name": "budget_lines_budget_id_account_id_period_no_key",
+   "table": "budget_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "budgets_id_org_id_key",
+   "table": "budgets",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "fiscal_year"
+   ],
+   "name": "budgets_one_approved_uniq",
+   "table": "budgets",
+   "where": "status = 'APPROVED'::\"BudgetStatus\""
+  },
+  {
+   "keys": [
+    "org_id",
+    "fiscal_year",
+    "version"
+   ],
+   "name": "budgets_org_id_fiscal_year_version_key",
+   "table": "budgets",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "cash_flow_items_id_org_id_key",
+   "table": "cash_flow_items",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kind",
+    "month"
+   ],
+   "name": "cfo_reports_org_id_kind_month_key",
+   "table": "cfo_reports",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "close_ai_reviews_id_org_id_key",
+   "table": "close_ai_reviews",
+   "where": null
+  },
+  {
+   "keys": [
+    "close_id"
+   ],
+   "name": "close_ai_reviews_one_running",
+   "table": "close_ai_reviews",
+   "where": "status = 'RUNNING'::\"CloseReviewStatus\""
+  },
+  {
+   "keys": [
+    "close_id"
+   ],
+   "name": "close_certifications_one_current",
+   "table": "close_certifications",
+   "where": "reopened_at IS NULL"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "collection_runs_id_org_id_key",
+   "table": "collection_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "collection_runs_one_running",
+   "table": "collection_runs",
+   "where": "status = 'RUNNING'::\"CollectionRunStatus\""
+  },
+  {
+   "keys": [
+    "org_id",
+    "obligation_key"
+   ],
+   "name": "compliance_filings_live_uniq",
+   "table": "compliance_filings",
+   "where": "status = 'FILED'::\"ComplianceFilingStatus\""
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "consolidation_groups_id_org_id_key",
+   "table": "consolidation_groups",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "consolidation_groups_org_id_name_key",
+   "table": "consolidation_groups",
+   "where": null
+  },
+  {
+   "keys": [
+    "group_id",
+    "member_org_id"
+   ],
+   "name": "consolidation_members_group_id_member_org_id_key",
+   "table": "consolidation_members",
+   "where": null
+  },
+  {
+   "keys": [
+    "group_id",
+    "member_org_id",
+    "period_end"
+   ],
+   "name": "consolidation_rates_group_id_member_org_id_period_end_key",
+   "table": "consolidation_rates",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "contacts_id_org_id_key",
+   "table": "contacts",
+   "where": null
+  },
+  {
+   "keys": [
+    "contract_id",
+    "code"
+   ],
+   "name": "contract_meters_contract_id_code_key",
+   "table": "contract_meters",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "contract_meters_id_org_id_key",
+   "table": "contract_meters",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "copilot_conversations_id_org_id_key",
+   "table": "copilot_conversations",
+   "where": null
+  },
+  {
+   "keys": [
+    "conversation_id",
+    "seq"
+   ],
+   "name": "copilot_messages_conversation_id_seq_key",
+   "table": "copilot_messages",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "crm_deals_id_org_id_key",
+   "table": "crm_deals",
+   "where": null
+  },
+  {
+   "keys": [
+    "lead_id"
+   ],
+   "name": "crm_deals_lead_key",
+   "table": "crm_deals",
+   "where": "lead_id IS NOT NULL"
+  },
+  {
+   "keys": [
+    "org_id",
+    "external_ref"
+   ],
+   "name": "crm_deals_org_id_external_ref_key",
+   "table": "crm_deals",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "crm_deals_org_id_number_key",
+   "table": "crm_deals",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "crm_leads_id_org_id_key",
+   "table": "crm_leads",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "external_ref"
+   ],
+   "name": "crm_leads_org_id_external_ref_key",
+   "table": "crm_leads",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "crm_leads_org_id_number_key",
+   "table": "crm_leads",
+   "where": null
+  },
+  {
+   "keys": [
+    "webhook_id",
+    "event_id"
+   ],
+   "name": "crm_webhook_deliveries_webhook_id_event_id_key",
+   "table": "crm_webhook_deliveries",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "crm_webhooks_id_org_id_key",
+   "table": "crm_webhooks",
+   "where": null
+  },
+  {
+   "keys": [
+    "onboarding_id",
+    "requirement_id"
+   ],
+   "name": "customer_onboarding_checks_onboarding_requirement_key",
+   "table": "customer_onboarding_checks",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "customer_onboarding_requirements_id_org_id_key",
+   "table": "customer_onboarding_requirements",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "customer_onboardings_id_org_id_key",
+   "table": "customer_onboardings",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "contact_id",
+    "party"
+   ],
+   "name": "customer_onboardings_org_id_contact_id_party_key",
+   "table": "customer_onboardings",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "customer_portal_links_id_org_id_key",
+   "table": "customer_portal_links",
+   "where": null
+  },
+  {
+   "keys": [
+    "token_hash"
+   ],
+   "name": "customer_portal_links_token_hash_key",
+   "table": "customer_portal_links",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "dashboards_org_id_name_key",
+   "table": "dashboards",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "dashboards_org_id_number_key",
+   "table": "dashboards",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "decisions_id_org_key",
+   "table": "decisions",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "decisions_org_id_number_key",
+   "table": "decisions",
+   "where": null
+  },
+  {
+   "keys": [
+    "run_id",
+    "schedule_id",
+    "month"
+   ],
+   "name": "deferral_lines_run_id_schedule_id_month_key",
+   "table": "deferral_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "deferral_runs_id_org_id_key",
+   "table": "deferral_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "month"
+   ],
+   "name": "deferral_runs_one_posted",
+   "table": "deferral_runs",
+   "where": "status = 'POSTED'::\"DeferralRunStatus\""
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "deferral_schedules_id_org_id_key",
+   "table": "deferral_schedules",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kind",
+    "number"
+   ],
+   "name": "deferral_schedules_org_id_kind_number_key",
+   "table": "deferral_schedules",
+   "where": null
+  },
+  {
+   "keys": [
+    "run_id",
+    "asset_id",
+    "month"
+   ],
+   "name": "depreciation_lines_run_id_asset_id_month_key",
+   "table": "depreciation_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "depreciation_runs_id_org_id_key",
+   "table": "depreciation_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "month"
+   ],
+   "name": "depreciation_runs_one_posted",
+   "table": "depreciation_runs",
+   "where": "status = 'POSTED'::\"DepreciationRunStatus\""
+  },
+  {
+   "keys": [
+    "org_id",
+    "type",
+    "upper(code::text)"
+   ],
+   "name": "dimension_values_code_key",
+   "table": "dimension_values",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "dimension_values_id_org_id_key",
+   "table": "dimension_values",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "disaster_simulations_org_id_name_key",
+   "table": "disaster_simulations",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "disaster_simulations_org_id_number_key",
+   "table": "disaster_simulations",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id",
+    "line_no"
+   ],
+   "name": "document_lines_document_id_line_no_key",
+   "table": "document_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "document_signatures_one_active",
+   "table": "document_signatures",
+   "where": "withdrawn_at IS NULL"
+  },
+  {
+   "keys": [
+    "org_id",
+    "contact_id",
+    "lower(reference)"
+   ],
+   "name": "documents_bill_reference_uniq",
+   "table": "documents",
+   "where": "kind = 'BILL'::\"DocumentKind\" AND status <> 'VOID'::\"DocumentStatus\" AND reference IS NOT NULL"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "documents_id_org_id_key",
+   "table": "documents",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "documents_journal_entry_id_key",
+   "table": "documents",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kind",
+    "number"
+   ],
+   "name": "documents_org_id_kind_number_key",
+   "table": "documents",
+   "where": null
+  },
+  {
+   "keys": [
+    "void_journal_entry_id"
+   ],
+   "name": "documents_void_journal_entry_id_key",
+   "table": "documents",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "doubtful_invoices_document_id_key",
+   "table": "doubtful_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "e_invoices_document_live_uniq",
+   "table": "e_invoices",
+   "where": "status = 'ACTIVE'::\"EInvoiceStatus\""
+  },
+  {
+   "keys": [
+    "org_id",
+    "irn"
+   ],
+   "name": "e_invoices_org_id_irn_key",
+   "table": "e_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "e_way_bills_document_live_uniq",
+   "table": "e_way_bills",
+   "where": "status = 'ACTIVE'::\"EWayBillStatus\""
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "e_way_bills_id_org_id_key",
+   "table": "e_way_bills",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "e_way_bills_org_id_number_key",
+   "table": "e_way_bills",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "employees_id_org_id_key",
+   "table": "employees",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "code"
+   ],
+   "name": "employees_org_id_code_key",
+   "table": "employees",
+   "where": null
+  },
+  {
+   "keys": [
+    "fingerprint"
+   ],
+   "name": "error_groups_fingerprint_key",
+   "table": "error_groups",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "currency",
+    "date"
+   ],
+   "name": "exchange_rates_org_id_currency_date_key",
+   "table": "exchange_rates",
+   "where": null
+  },
+  {
+   "keys": [
+    "claim_id",
+    "line_no"
+   ],
+   "name": "expense_claim_lines_claim_id_line_no_key",
+   "table": "expense_claim_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "expense_claims_id_org_id_key",
+   "table": "expense_claims",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "expense_claims_journal_entry_id_key",
+   "table": "expense_claims",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "expense_claims_org_id_number_key",
+   "table": "expense_claims",
+   "where": null
+  },
+  {
+   "keys": [
+    "reimbursement_journal_entry_id"
+   ],
+   "name": "expense_claims_reimbursement_journal_entry_id_key",
+   "table": "expense_claims",
+   "where": null
+  },
+  {
+   "keys": [
+    "void_journal_entry_id"
+   ],
+   "name": "expense_claims_void_journal_entry_id_key",
+   "table": "expense_claims",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "fiscal_periods_id_org_id_key",
+   "table": "fiscal_periods",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "fiscal_year",
+    "period_no"
+   ],
+   "name": "fiscal_periods_org_id_fiscal_year_period_no_key",
+   "table": "fiscal_periods",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "fixed_assets_id_org_id_key",
+   "table": "fixed_assets",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "fixed_assets_org_id_number_key",
+   "table": "fixed_assets",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "forecast_lab_runs_org_id_number_key",
+   "table": "forecast_lab_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "fx_revaluations_journal_entry_id_key",
+   "table": "fx_revaluations",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "date"
+   ],
+   "name": "fx_revaluations_org_id_date_key",
+   "table": "fx_revaluations",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "fx_revaluations_org_id_number_key",
+   "table": "fx_revaluations",
+   "where": null
+  },
+  {
+   "keys": [
+    "reversal_entry_id"
+   ],
+   "name": "fx_revaluations_reversal_entry_id_key",
+   "table": "fx_revaluations",
+   "where": null
+  },
+  {
+   "keys": [
+    "receipt_id",
+    "order_line_id"
+   ],
+   "name": "goods_receipt_lines_receipt_id_order_line_id_key",
+   "table": "goods_receipt_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "goods_receipts_id_org_id_key",
+   "table": "goods_receipts",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "goods_receipts_org_id_number_key",
+   "table": "goods_receipts",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "impact_assessments_org_id_name_key",
+   "table": "impact_assessments",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "impact_assessments_org_id_number_key",
+   "table": "impact_assessments",
+   "where": null
+  },
+  {
+   "keys": [
+    "group_id",
+    "number"
+   ],
+   "name": "intercompany_transactions_group_id_number_key",
+   "table": "intercompany_transactions",
+   "where": null
+  },
+  {
+   "keys": [
+    "remittance_id",
+    "document_id"
+   ],
+   "name": "international_payment_items_remittance_document_key",
+   "table": "international_payment_items",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "international_payments_id_org_id_key",
+   "table": "international_payments",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "international_payments_org_id_number_key",
+   "table": "international_payments",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "email"
+   ],
+   "name": "invitations_one_open",
+   "table": "invitations",
+   "where": "accepted_at IS NULL AND revoked_at IS NULL"
+  },
+  {
+   "keys": [
+    "token_hash"
+   ],
+   "name": "invitations_token_hash_key",
+   "table": "invitations",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "invoice_disputes_id_org_id_key",
+   "table": "invoice_disputes",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "invoice_disputes_one_open",
+   "table": "invoice_disputes",
+   "where": "status::text = 'OPEN'::text"
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "invoice_disputes_org_id_number_key",
+   "table": "invoice_disputes",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id",
+    "line_no"
+   ],
+   "name": "invoice_line_recognition_document_id_line_no_key",
+   "table": "invoice_line_recognition",
+   "where": null
+  },
+  {
+   "keys": [
+    "schedule_id"
+   ],
+   "name": "invoice_line_recognition_schedule_id_key",
+   "table": "invoice_line_recognition",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "invoice_templates_id_org_id_key",
+   "table": "invoice_templates",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "lower(name::text)"
+   ],
+   "name": "invoice_templates_name_unique",
+   "table": "invoice_templates",
+   "where": "archived_at IS NULL"
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "invoice_templates_one_default",
+   "table": "invoice_templates",
+   "where": "is_default"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "journal_entries_id_org_id_key",
+   "table": "journal_entries",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "entry_number"
+   ],
+   "name": "journal_entries_org_id_entry_number_key",
+   "table": "journal_entries",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "idempotency_key"
+   ],
+   "name": "journal_entries_org_id_idempotency_key_key",
+   "table": "journal_entries",
+   "where": null
+  },
+  {
+   "keys": [
+    "reverses_entry_id"
+   ],
+   "name": "journal_entries_reverses_entry_id_key",
+   "table": "journal_entries",
+   "where": null
+  },
+  {
+   "keys": [
+    "entry_id",
+    "line_no"
+   ],
+   "name": "journal_lines_entry_id_line_no_key",
+   "table": "journal_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "journal_lines_id_org_id_key",
+   "table": "journal_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "template_id",
+    "line_no"
+   ],
+   "name": "journal_template_lines_template_id_line_no_key",
+   "table": "journal_template_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "template_id",
+    "run_no"
+   ],
+   "name": "journal_template_runs_template_id_run_no_key",
+   "table": "journal_template_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "journal_templates_id_org_id_key",
+   "table": "journal_templates",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "journal_templates_org_id_number_key",
+   "table": "journal_templates",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kpi"
+   ],
+   "name": "kpi_targets_org_id_kpi_key",
+   "table": "kpi_targets",
+   "where": null
+  },
+  {
+   "keys": [
+    "loan_id",
+    "seq"
+   ],
+   "name": "loan_events_loan_id_seq_key",
+   "table": "loan_events",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "loans_id_org_id_key",
+   "table": "loans",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "loans_org_id_number_key",
+   "table": "loans",
+   "where": null
+  },
+  {
+   "keys": [
+    "(true)"
+   ],
+   "name": "maintenance_windows_one_open",
+   "table": "maintenance_windows",
+   "where": "ended_at IS NULL"
+  },
+  {
+   "keys": [
+    "org_id",
+    "month"
+   ],
+   "name": "management_reports_org_id_month_key",
+   "table": "management_reports",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "user_id"
+   ],
+   "name": "memberships_org_id_user_id_key",
+   "table": "memberships",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kind"
+   ],
+   "name": "org_integrations_org_id_kind_key",
+   "table": "org_integrations",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "provider"
+   ],
+   "name": "org_payment_gateways_org_id_provider_key",
+   "table": "org_payment_gateways",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "pay_runs_id_org_id_key",
+   "table": "pay_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "pay_runs_journal_entry_id_key",
+   "table": "pay_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "pay_runs_org_id_number_key",
+   "table": "pay_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "period"
+   ],
+   "name": "pay_runs_period_live_uniq",
+   "table": "pay_runs",
+   "where": "status <> 'VOID'::\"PayRunStatus\""
+  },
+  {
+   "keys": [
+    "void_journal_entry_id"
+   ],
+   "name": "pay_runs_void_journal_entry_id_key",
+   "table": "pay_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "batch_id",
+    "document_id"
+   ],
+   "name": "payment_batch_items_batch_id_document_id_key",
+   "table": "payment_batch_items",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "payment_batch_items_open_document_key",
+   "table": "payment_batch_items",
+   "where": "open"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "payment_batches_id_org_id_key",
+   "table": "payment_batches",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "payment_batches_org_id_number_key",
+   "table": "payment_batches",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "provider",
+    "event_id"
+   ],
+   "name": "payment_link_notices_org_id_provider_event_id_key",
+   "table": "payment_link_notices",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "payment_links_one_open",
+   "table": "payment_links",
+   "where": "status::text = 'OPEN'::text"
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "payment_links_org_id_number_key",
+   "table": "payment_links",
+   "where": null
+  },
+  {
+   "keys": [
+    "payment_id"
+   ],
+   "name": "payment_links_payment_id_key",
+   "table": "payment_links",
+   "where": null
+  },
+  {
+   "keys": [
+    "provider",
+    "gateway_ref"
+   ],
+   "name": "payment_links_provider_gateway_ref_key",
+   "table": "payment_links",
+   "where": null
+  },
+  {
+   "keys": [
+    "provider",
+    "event_id"
+   ],
+   "name": "payment_webhook_events_provider_event_id_key",
+   "table": "payment_webhook_events",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "payments_id_org_id_key",
+   "table": "payments",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "payments_journal_entry_id_key",
+   "table": "payments",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "idempotency_key"
+   ],
+   "name": "payments_org_id_idempotency_key_key",
+   "table": "payments",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kind",
+    "number"
+   ],
+   "name": "payments_org_id_kind_number_key",
+   "table": "payments",
+   "where": null
+  },
+  {
+   "keys": [
+    "void_journal_entry_id"
+   ],
+   "name": "payments_void_journal_entry_id_key",
+   "table": "payments",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "payroll_remittances_journal_entry_id_key",
+   "table": "payroll_remittances",
+   "where": null
+  },
+  {
+   "keys": [
+    "pay_run_id",
+    "liability"
+   ],
+   "name": "payroll_remittances_live_uniq",
+   "table": "payroll_remittances",
+   "where": "status = 'POSTED'::\"PaymentStatus\""
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "payroll_remittances_org_id_number_key",
+   "table": "payroll_remittances",
+   "where": null
+  },
+  {
+   "keys": [
+    "void_journal_entry_id"
+   ],
+   "name": "payroll_remittances_void_journal_entry_id_key",
+   "table": "payroll_remittances",
+   "where": null
+  },
+  {
+   "keys": [
+    "pay_run_id",
+    "employee_id"
+   ],
+   "name": "payslips_pay_run_id_employee_id_key",
+   "table": "payslips",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "period_closes_id_org_id_key",
+   "table": "period_closes",
+   "where": null
+  },
+  {
+   "keys": [
+    "period_id"
+   ],
+   "name": "period_closes_period_id_key",
+   "table": "period_closes",
+   "where": null
+  },
+  {
+   "keys": [
+    "period_id",
+    "org_id"
+   ],
+   "name": "period_closes_period_id_org_id_key",
+   "table": "period_closes",
+   "where": null
+  },
+  {
+   "keys": [
+    "code"
+   ],
+   "name": "plans_code_key",
+   "table": "plans",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "id"
+   ],
+   "name": "policies_org_id_id_key",
+   "table": "policies",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "policies_org_id_name_key",
+   "table": "policies",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "policies_org_id_number_key",
+   "table": "policies",
+   "where": null
+  },
+  {
+   "keys": [
+    "policy_id",
+    "version",
+    "event"
+   ],
+   "name": "policy_versions_policy_version_event_key",
+   "table": "policy_versions",
+   "where": null
+  },
+  {
+   "keys": [
+    "pro_forma_id",
+    "line_no"
+   ],
+   "name": "pro_forma_invoice_lines_pro_forma_id_line_no_key",
+   "table": "pro_forma_invoice_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "pro_forma_invoices_id_org_id_key",
+   "table": "pro_forma_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "invoice_id"
+   ],
+   "name": "pro_forma_invoices_invoice_id_key",
+   "table": "pro_forma_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "pro_forma_invoices_org_id_number_key",
+   "table": "pro_forma_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "purchase_order_lines_id_org_id_key",
+   "table": "purchase_order_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "order_id",
+    "line_no"
+   ],
+   "name": "purchase_order_lines_order_id_line_no_key",
+   "table": "purchase_order_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "purchase_orders_id_org_id_key",
+   "table": "purchase_orders",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "purchase_orders_org_id_number_key",
+   "table": "purchase_orders",
+   "where": null
+  },
+  {
+   "keys": [
+    "plan_id",
+    "option_key"
+   ],
+   "name": "recovery_actions_plan_id_option_key_key",
+   "table": "recovery_actions",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "recovery_plans_id_org_key",
+   "table": "recovery_plans",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "recovery_plans_org_id_name_key",
+   "table": "recovery_plans",
+   "where": null
+  },
+  {
+   "keys": [
+    "recurring_bill_id",
+    "line_no"
+   ],
+   "name": "recurring_bill_lines_recurring_bill_id_line_no_key",
+   "table": "recurring_bill_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "recurring_bill_id",
+    "run_no"
+   ],
+   "name": "recurring_bill_runs_recurring_bill_id_run_no_key",
+   "table": "recurring_bill_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "recurring_bills_id_org_id_key",
+   "table": "recurring_bills",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "recurring_bills_org_id_number_key",
+   "table": "recurring_bills",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "id"
+   ],
+   "name": "report_designs_org_id_id_key",
+   "table": "report_designs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "report_designs_org_id_name_key",
+   "table": "report_designs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "report_designs_org_id_number_key",
+   "table": "report_designs",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "report_runs_org_id_number_key",
+   "table": "report_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "payment_id"
+   ],
+   "name": "retainer_receipts_payment_id_key",
+   "table": "retainer_receipts",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "retainers_id_org_id_key",
+   "table": "retainers",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "retainers_org_id_number_key",
+   "table": "retainers",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "revenue_forecasts_id_org_id_key",
+   "table": "revenue_forecasts",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "revenue_forecasts_org_id_number_key",
+   "table": "revenue_forecasts",
+   "where": null
+  },
+  {
+   "keys": [
+    "structure_id",
+    "code"
+   ],
+   "name": "salary_components_structure_id_code_key",
+   "table": "salary_components",
+   "where": null
+  },
+  {
+   "keys": [
+    "employee_id",
+    "effective_from"
+   ],
+   "name": "salary_structures_employee_id_effective_from_key",
+   "table": "salary_structures",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "salary_structures_id_org_id_key",
+   "table": "salary_structures",
+   "where": null
+  },
+  {
+   "keys": [
+    "contract_id",
+    "line_no"
+   ],
+   "name": "sales_contract_lines_contract_id_line_no_key",
+   "table": "sales_contract_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "sales_contract_lines_id_org_id_key",
+   "table": "sales_contract_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "contract_id",
+    "period_no"
+   ],
+   "name": "sales_contract_periods_contract_id_period_no_key",
+   "table": "sales_contract_periods",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "sales_contracts_id_org_id_key",
+   "table": "sales_contracts",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "sales_contracts_org_id_number_key",
+   "table": "sales_contracts",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "sales_order_lines_id_org_id_key",
+   "table": "sales_order_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "order_id",
+    "line_no"
+   ],
+   "name": "sales_order_lines_order_id_line_no_key",
+   "table": "sales_order_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "sales_order_milestones_id_org_id_key",
+   "table": "sales_order_milestones",
+   "where": null
+  },
+  {
+   "keys": [
+    "order_id",
+    "seq"
+   ],
+   "name": "sales_order_milestones_order_id_seq_key",
+   "table": "sales_order_milestones",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "sales_order_progress_claims_document_id_key",
+   "table": "sales_order_progress_claims",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "sales_orders_id_org_id_key",
+   "table": "sales_orders",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "sales_orders_org_id_number_key",
+   "table": "sales_orders",
+   "where": null
+  },
+  {
+   "keys": [
+    "quote_id"
+   ],
+   "name": "sales_orders_quote_id_key",
+   "table": "sales_orders",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "sales_quote_lines_id_org_id_key",
+   "table": "sales_quote_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "quote_id",
+    "line_no"
+   ],
+   "name": "sales_quote_lines_quote_id_line_no_key",
+   "table": "sales_quote_lines",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "sales_quotes_id_org_id_key",
+   "table": "sales_quotes",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number",
+    "revision"
+   ],
+   "name": "sales_quotes_org_id_number_revision_key",
+   "table": "sales_quotes",
+   "where": null
+  },
+  {
+   "keys": [
+    "previous_id"
+   ],
+   "name": "sales_quotes_previous_key",
+   "table": "sales_quotes",
+   "where": "previous_id IS NOT NULL"
+  },
+  {
+   "keys": [
+    "gateway",
+    "checkout_ref"
+   ],
+   "name": "subscription_invoices_checkout_key",
+   "table": "subscription_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "number"
+   ],
+   "name": "subscription_invoices_number_key",
+   "table": "subscription_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "subscription_invoices_one_open",
+   "table": "subscription_invoices",
+   "where": "status::text = 'OPEN'::text"
+  },
+  {
+   "keys": [
+    "reference"
+   ],
+   "name": "subscription_invoices_reference_key",
+   "table": "subscription_invoices",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "support_access_grants_id_org_id_key",
+   "table": "support_access_grants",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "support_tickets_id_org_id_key",
+   "table": "support_tickets",
+   "where": null
+  },
+  {
+   "keys": [
+    "number"
+   ],
+   "name": "support_tickets_number_key",
+   "table": "support_tickets",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "tax_rates_id_org_id_key",
+   "table": "tax_rates",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "tax_rates_org_id_name_key",
+   "table": "tax_rates",
+   "where": null
+  },
+  {
+   "keys": [
+    "scenario_id",
+    "version"
+   ],
+   "name": "twin_scenario_versions_scenario_id_version_key",
+   "table": "twin_scenario_versions",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "twin_scenarios_id_org_key",
+   "table": "twin_scenarios",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "name"
+   ],
+   "name": "twin_scenarios_org_id_name_key",
+   "table": "twin_scenarios",
+   "where": null
+  },
+  {
+   "keys": [
+    "meter_id",
+    "reference"
+   ],
+   "name": "usage_records_meter_reference_key",
+   "table": "usage_records",
+   "where": "reference IS NOT NULL AND voided_at IS NULL"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "user_signatures_id_org_id_key",
+   "table": "user_signatures",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "user_id"
+   ],
+   "name": "user_signatures_one_active",
+   "table": "user_signatures",
+   "where": "revoked_at IS NULL"
+  },
+  {
+   "keys": [
+    "email"
+   ],
+   "name": "users_email_key",
+   "table": "users",
+   "where": null
+  },
+  {
+   "keys": [
+    "contact_id",
+    "org_id"
+   ],
+   "name": "vendor_bank_details_contact_id_org_id_key",
+   "table": "vendor_bank_details",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "vendor_portal_links_id_org_id_key",
+   "table": "vendor_portal_links",
+   "where": null
+  },
+  {
+   "keys": [
+    "token_hash"
+   ],
+   "name": "vendor_portal_links_token_hash_key",
+   "table": "vendor_portal_links",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "document_id"
+   ],
+   "name": "vendor_portal_submissions_document_key",
+   "table": "vendor_portal_submissions",
+   "where": "document_id IS NOT NULL"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "vendor_portal_submissions_id_org_id_key",
+   "table": "vendor_portal_submissions",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "contact_id",
+    "number_key"
+   ],
+   "name": "vendor_portal_submissions_live_number_key",
+   "table": "vendor_portal_submissions",
+   "where": "status::text <> 'REJECTED'::text"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "vendor_reviews_id_org_id_key",
+   "table": "vendor_reviews",
+   "where": null
+  },
+  {
+   "keys": [
+    "document_id"
+   ],
+   "name": "withholding_deposit_items_active_uniq",
+   "table": "withholding_deposit_items",
+   "where": "active"
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "withholding_deposits_id_org_id_key",
+   "table": "withholding_deposits",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "withholding_deposits_journal_entry_id_key",
+   "table": "withholding_deposits",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kind",
+    "number"
+   ],
+   "name": "withholding_deposits_org_id_kind_number_key",
+   "table": "withholding_deposits",
+   "where": null
+  },
+  {
+   "keys": [
+    "void_journal_entry_id"
+   ],
+   "name": "withholding_deposits_void_journal_entry_id_key",
+   "table": "withholding_deposits",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "withholding_sections_id_org_id_key",
+   "table": "withholding_sections",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "kind",
+    "code"
+   ],
+   "name": "withholding_sections_org_id_kind_code_key",
+   "table": "withholding_sections",
+   "where": null
+  },
+  {
+   "keys": [
+    "run_id",
+    "\"position\""
+   ],
+   "name": "workflow_action_runs_run_id_position_key",
+   "table": "workflow_action_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "workflow_runs_id_org_id_key",
+   "table": "workflow_runs",
+   "where": null
+  },
+  {
+   "keys": [
+    "workflow_id",
+    "event_id"
+   ],
+   "name": "workflow_runs_once_per_event",
+   "table": "workflow_runs",
+   "where": "status <> 'TEST'::\"WorkflowRunStatus\""
+  },
+  {
+   "keys": [
+    "workflow_id",
+    "occurrence_key"
+   ],
+   "name": "workflow_runs_once_per_occurrence",
+   "table": "workflow_runs",
+   "where": "status <> 'TEST'::\"WorkflowRunStatus\" AND occurrence_key IS NOT NULL"
+  },
+  {
+   "keys": [
+    "workflow_id",
+    "version"
+   ],
+   "name": "workflow_versions_workflow_id_version_key",
+   "table": "workflow_versions",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "workflows_id_org_id_key",
+   "table": "workflows",
+   "where": null
+  },
+  {
+   "keys": [
+    "id",
+    "org_id"
+   ],
+   "name": "year_end_closes_id_org_id_key",
+   "table": "year_end_closes",
+   "where": null
+  },
+  {
+   "keys": [
+    "journal_entry_id"
+   ],
+   "name": "year_end_closes_journal_entry_id_key",
+   "table": "year_end_closes",
+   "where": null
+  },
+  {
+   "keys": [
+    "org_id",
+    "number"
+   ],
+   "name": "year_end_closes_org_id_number_key",
+   "table": "year_end_closes",
+   "where": null
+  },
+  {
+   "keys": [
+    "reversal_journal_entry_id"
+   ],
+   "name": "year_end_closes_reversal_journal_entry_id_key",
+   "table": "year_end_closes",
+   "where": null
+  }
  ]
 }

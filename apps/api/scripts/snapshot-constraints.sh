@@ -1,5 +1,5 @@
 #!/bin/bash
-# Writes the PostgreSQL CHECK constraints and foreign keys of the public schema to
+# Writes the PostgreSQL CHECK constraints, foreign keys and unique indexes of the public schema to
 # src/db/constraints/catalog.json, which the API enforces in MongoDB. Run it against a database
 # with every migration applied: scripts/snapshot-constraints.sh postgresql://...
 set -euo pipefail
@@ -17,7 +17,13 @@ SELECT json_build_object(
         'onDelete', CASE c.confdeltype WHEN 'c' THEN 'CASCADE' WHEN 'n' THEN 'SET NULL' WHEN 'd' THEN 'SET DEFAULT' WHEN 'r' THEN 'RESTRICT' ELSE 'NO ACTION' END,
         'onUpdate', CASE c.confupdtype WHEN 'c' THEN 'CASCADE' WHEN 'n' THEN 'SET NULL' WHEN 'd' THEN 'SET DEFAULT' WHEN 'r' THEN 'RESTRICT' ELSE 'NO ACTION' END,
         'deferrable', c.condeferrable) ORDER BY c.conrelid::regclass::text, c.conname)
-      FROM pg_constraint c WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace)
+      FROM pg_constraint c WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace),
+  'uniques', (SELECT json_agg(json_build_object(
+        'name', ic.relname, 'table', i.indrelid::regclass::text,
+        'keys', (SELECT json_agg(pg_get_indexdef(i.indexrelid, k, true) ORDER BY k) FROM generate_series(1, i.indnkeyatts) k),
+        'where', pg_get_expr(i.indpred, i.indrelid, true)) ORDER BY i.indrelid::regclass::text, ic.relname)
+      FROM pg_index i JOIN pg_class ic ON ic.oid = i.indexrelid
+      WHERE i.indisunique AND NOT i.indisprimary AND ic.relnamespace = 'public'::regnamespace)
 );
 SQL
 echo "wrote $OUT"

@@ -4,6 +4,7 @@ import { BenchmarkingService } from '../src/benchmarking/benchmarking.service';
 import { todayIst } from '../src/cash-flow/cash-flow.service';
 import { PrismaService } from '../src/common/prisma.service';
 import { bootApp, createOrg, Ctx, registerUser, setOrgFields, TestUser } from './helpers';
+import { tenantStorage } from '../src/common/tenant-context';
 
 /**
  * Benchmarking against the real API and database: an organisation's own metrics from posted
@@ -103,15 +104,11 @@ describe('benchmarking', () => {
   });
 
   it('keeps the pool away from tenants', async () => {
-    const seen = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('t2t.org_id', ${org.orgId}, true), set_config('t2t.bypass', '', true)`;
-      return tx.$queryRaw<{ n: number }[]>`SELECT COUNT(*)::int AS n FROM benchmark_contributions`;
-    });
-    expect(seen[0]!.n).toBe(0);
-    const write = prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('t2t.org_id', ${org.orgId}, true), set_config('t2t.bypass', '', true)`;
-      await tx.$executeRaw`INSERT INTO benchmark_contributions (id, participant_key, period, industry, size_band, country_code, currency, is_synthetic, metrics, updated_at) VALUES (gen_random_uuid(), gen_random_uuid(), ${L}, 'RETAIL', 'SMALL', 'IN', 'INR', false, '{}', now())`;
-    });
+    const seen = await tenantStorage.run({ orgId: org.orgId }, async () => await prisma.benchmarkContribution.count());
+    expect(seen).toBe(0);
+    const write = tenantStorage.run({ orgId: org.orgId }, async () =>
+      await prisma.benchmarkContribution.create({ data: { participantKey: randomUUID(), period: L, industry: 'RETAIL', sizeBand: 'SMALL', countryCode: 'IN', currency: 'INR', isSynthetic: false, metrics: {} } }),
+    );
     await expect(write).rejects.toThrow(/row-level security/);
     // Another organisation sees its own (empty) figures and no participation.
     const o = await get(outsider, other);

@@ -14,7 +14,7 @@ import { runInOrg } from '../common/tenant-context';
 import { accounts as accountsColl } from '../db/collections/chart';
 import { journalEntries, type JournalEntryDoc } from '../db/collections/ledger';
 import { PostgresMirrorService } from '../db/postgres-mirror.service';
-import { nextCounter } from '../db/counters';
+import { nextCounter, postgresOff } from '../db/counters';
 import { lockRow } from '../db/locks';
 
 export type CreatableJournalType = 'STANDARD' | 'ADJUSTING' | 'OPENING' | 'CLOSING' | 'RECURRING';
@@ -451,6 +451,12 @@ export class JournalsService {
 
   /** Find the period containing a date and hold it FOR SHARE so it cannot be locked mid-posting. */
   private async lockPeriodForDate(tx: Tx, orgId: string, date: string) {
+    if (postgresOff()) {
+      // MongoDB has no shared lock, so the period is read as it stands (TODO step 10c: make a period lock wait for postings).
+      const p = await tx.fiscalPeriod.findFirst({ where: { orgId, startDate: { lte: toDbDate(date) }, endDate: { gte: toDbDate(date) } }, select: { id: true, name: true, status: true } });
+      if (!p) throw new DomainError('NO_FISCAL_PERIOD', `No fiscal period covers ${date}. Create the fiscal year first.`);
+      return { ...p, status: String(p.status) };
+    }
     const rows = await tx.$queryRaw<{ id: string; name: string; status: string }[]>`
       SELECT id, name, status::text AS status FROM fiscal_periods
       WHERE org_id = ${orgId}::uuid AND ${toDbDate(date)}::date BETWEEN start_date AND end_date
