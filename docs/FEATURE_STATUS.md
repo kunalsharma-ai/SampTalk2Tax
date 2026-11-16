@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 814 |
+| Not started | 811 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 414 |
+| Tested | 417 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 19 | 24 |
+| Accounts receivable | M2 | 43 | 16 | 27 |
 | Accounts payable | M2 | 36 | 18 | 18 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -477,6 +477,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/QUOTES_AND_ORDERS.md
   - apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx
 
+### AR-006 — Estimates
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Estimates are the quotations of CRM slice 2 (QT-0001, revisions -R2): worked out by the invoice rules, sent, revised, declined, expired, accepted into sales orders; pro forma invoices made from them (AR-008).
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/accounting-engine/test/sales-orders.test.ts
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/sales/quotes/[quoteId]/page.tsx
+  - docs/QUOTES_AND_ORDERS.md
+
 ### AR-007 — Sales orders
 
 - Module: Accounts receivable
@@ -547,6 +561,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/contracts-flow.test.mjs
   - docs/CONTRACTS.md
   - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
+### AR-013 — Milestone billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Sales orders billed by milestones: plan named shares (<=100%), mark reached, make a draft invoice for the share of every line (cumulative target; the last takes what is left). Invoiced milestones locked (API + trigger); void frees. Method fixed once anything is billed. Invoices round per line, so totals can differ from the order by a paisa per line and invoice.
+- Evidence:
+  - packages/accounting-engine/src/project-billing.ts
+  - packages/accounting-engine/test/project-billing.test.ts
+  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/project-billing.e2e.test.ts
+  - apps/web/src/components/sales-orders/project-billing.tsx
+  - apps/web/e2e/project-billing-flow.test.mjs
+  - docs/MILESTONE_AND_PROGRESS_BILLING.md
+
+### AR-014 — Progress billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Sales orders billed by progress: each claim (percent complete above the previous live claim, <=100) makes a draft invoice billing every line up to that share less earlier claims; 100% bills the rest. Claims immutable (trigger); voided claims no longer count, deleting the draft removes the claim. Retentions not built.
+- Evidence:
+  - packages/accounting-engine/src/project-billing.ts
+  - packages/accounting-engine/test/project-billing.test.ts
+  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/project-billing.e2e.test.ts
+  - apps/web/src/components/sales-orders/project-billing.tsx
+  - apps/web/e2e/project-billing-flow.test.mjs
+  - docs/MILESTONE_AND_PROGRESS_BILLING.md
 
 ### AR-016 — Credit notes
 

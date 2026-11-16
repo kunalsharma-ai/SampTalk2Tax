@@ -81,8 +81,29 @@ export interface Order {
 
 export interface OrderList { orders: Order[]; totals: { open: number; toBill: string }; can: { manage: boolean } }
 
+export type BillingMethod = 'DELIVERY' | 'MILESTONES' | 'PROGRESS';
+export interface OrderInvoiceRef { id: string; number: string | null; status: string; total: string }
+export interface OrderMilestone {
+  id: string;
+  seq: number;
+  name: string;
+  percent: string;
+  value: string;
+  dueDate: string | null;
+  reached: boolean;
+  completedAt: string | null;
+  invoice: OrderInvoiceRef | null;
+  voidInvoice: OrderInvoiceRef | null;
+}
+export interface OrderProgressClaim { id: string; percentComplete: string; note: string | null; createdAt: string; invoice: OrderInvoiceRef | null; void: boolean }
+
 export interface OrderDetail extends Order {
   lines: (SalesLine & { billed: string; remaining: string })[];
+  billingMethod: BillingMethod;
+  milestones: OrderMilestone[];
+  milestonesTotal: string;
+  milestonesInvoiced: string;
+  progress: { claimed: string; claims: OrderProgressClaim[] };
   quote: { id: string; reference: string } | null;
   invoices: { id: string; number: string | null; status: string; issueDate: string; total: string; lines: { lineNo: number; quantity: string }[] }[];
   can: { manage: boolean; cancel: boolean };

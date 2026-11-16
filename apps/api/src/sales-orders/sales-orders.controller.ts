@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
-import { QUOTE_STATUSES } from '@talk2tax/accounting-engine';
+import { BILLING_METHODS, QUOTE_STATUSES } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { decimalString, isoDate, openApi, ZodPipe } from '../common/zod';
@@ -28,6 +28,13 @@ const OrderBody = z
 const AcceptBody = z.object({ orderDate: isoDate.nullish(), reference: text(100) }).strict();
 const ReasonBody = z.object({ reason: z.string().trim().min(1, 'Give a reason').max(500) }).strict();
 const BillBody = z.object({ issueDate: isoDate, dueDate: isoDate.nullish(), lines: z.array(z.object({ orderLineId: z.string().uuid(), quantity: decimalString }).strict()).max(200).nullish() }).strict();
+const MethodBody = z.object({ method: z.enum(BILLING_METHODS) }).strict();
+const PlanBody = z
+  .object({ milestones: z.array(z.object({ id: id.nullish(), name: z.string().trim().min(1, 'Give the milestone a name').max(200), percent: decimalString, dueDate: isoDate.nullish() }).strict()).min(1, 'Add at least one milestone').max(50) })
+  .strict();
+const DoneBody = z.object({ done: z.boolean() }).strict();
+const InvoiceBody = z.object({ issueDate: isoDate, dueDate: isoDate.nullish() }).strict();
+const ClaimBody = z.object({ percentComplete: decimalString, issueDate: isoDate, dueDate: isoDate.nullish(), note: text(500) }).strict();
 const QuoteQuery = z.object({ status: z.enum(QUOTE_STATUSES).optional(), contactId: id.optional(), dealId: id.optional() });
 const OrderQuery = z.object({ view: z.enum(['open', 'billed', 'cancelled', 'all']).optional(), contactId: id.optional(), dealId: id.optional() });
 
@@ -140,5 +147,45 @@ export class SalesOrdersController {
   @ApiBody({ schema: openApi(ReasonBody) })
   cancel(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) orderId: string, @Body(new ZodPipe(ReasonBody)) b: z.infer<typeof ReasonBody>) {
     return this.sales.cancelOrder(org, user, orderId, b.reason);
+  }
+
+  /** Bill by delivery, milestones or progress; only while nothing on the order is billed. */
+  @Put('orders/:id/billing-method')
+  @RequirePermission('sales.manage')
+  @ApiBody({ schema: openApi(MethodBody) })
+  method(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) orderId: string, @Body(new ZodPipe(MethodBody)) b: z.infer<typeof MethodBody>) {
+    return this.sales.setBillingMethod(org, user, orderId, b.method);
+  }
+
+  /** Save the milestone plan (shares in percent of the order, at most 100 in all). */
+  @Put('orders/:id/milestones')
+  @RequirePermission('sales.manage')
+  @ApiBody({ schema: openApi(PlanBody) })
+  plan(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) orderId: string, @Body(new ZodPipe(PlanBody)) b: z.infer<typeof PlanBody>) {
+    return this.sales.planMilestones(org, user, orderId, b.milestones);
+  }
+
+  @Post('orders/:id/milestones/:mid/complete')
+  @HttpCode(200)
+  @RequirePermission('sales.manage')
+  @ApiBody({ schema: openApi(DoneBody) })
+  complete(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) orderId: string, @Param('mid', new ZodPipe(id)) mid: string, @Body(new ZodPipe(DoneBody)) b: z.infer<typeof DoneBody>) {
+    return this.sales.completeMilestone(org, user, orderId, mid, b.done);
+  }
+
+  /** A draft invoice for a reached milestone's share of every line. */
+  @Post('orders/:id/milestones/:mid/invoice')
+  @RequirePermission('sales.manage')
+  @ApiBody({ schema: openApi(InvoiceBody) })
+  invoiceMilestone(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) orderId: string, @Param('mid', new ZodPipe(id)) mid: string, @Body(new ZodPipe(InvoiceBody)) b: z.infer<typeof InvoiceBody>) {
+    return this.sales.invoiceMilestone(org, user, orderId, mid, b);
+  }
+
+  /** A draft invoice billing every line up to the percent complete, less earlier claims. */
+  @Post('orders/:id/progress-claims')
+  @RequirePermission('sales.manage')
+  @ApiBody({ schema: openApi(ClaimBody) })
+  claim(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) orderId: string, @Body(new ZodPipe(ClaimBody)) b: z.infer<typeof ClaimBody>) {
+    return this.sales.claimProgress(org, user, orderId, b);
   }
 }

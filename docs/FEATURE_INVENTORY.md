@@ -124,15 +124,15 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-003 |  | capability | Customer onboarding | Not started |
 | AR-004 |  | capability | Customer credit limits | Tested |
 | AR-005 |  | capability | Quotations | Tested |
-| AR-006 |  | capability | Estimates | Not started |
+| AR-006 |  | capability | Estimates | Tested |
 | AR-007 |  | capability | Sales orders | Tested |
 | AR-008 |  | capability | Pro forma invoices | Tested |
 | AR-009 |  | capability | Tax invoices | Tested |
 | AR-010 |  | capability | Recurring invoices | Tested |
 | AR-011 |  | capability | Subscription billing | Implementing |
 | AR-012 |  | capability | Usage-based billing | Not started |
-| AR-013 |  | capability | Milestone billing | Not started |
-| AR-014 |  | capability | Progress billing | Not started |
+| AR-013 |  | capability | Milestone billing | Tested |
+| AR-014 |  | capability | Progress billing | Tested |
 | AR-015 |  | capability | Retainer billing | Not started |
 | AR-016 |  | capability | Credit notes | Tested |
 | AR-017 |  | capability | Debit notes | Tested |
