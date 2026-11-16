@@ -26352,12 +26352,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
-        "apps/web/src"
+        "apps/api/src/organizations/invitations.service.ts",
+        "apps/api/test/invitations.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/members",
+        "apps/web/src/app/invite",
+        "apps/web/e2e/members-flow.test.mjs"
       ],
-      "notes": "Members screen lists members and adds an existing user by email with a role. Invitation emails and role changes are not built."
+      "notes": "Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link."
     },
     {
       "id": "UX-016",
@@ -27870,9 +27873,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/organizations/invitations.service.ts",
+        "apps/api/test/invitations.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/members",
+        "apps/web/src/app/invite",
+        "apps/web/e2e/members-flow.test.mjs"
+      ],
+      "notes": "Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link."
     },
     {
       "id": "ADMIN-005",
@@ -31818,11 +31827,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "apps/api/src/organizations/invitations.service.ts",
+        "apps/api/test/invitations.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/members",
+        "apps/web/src/app/invite",
+        "apps/web/e2e/members-flow.test.mjs"
       ],
-      "notes": "Member list and add-by-email with a role; invitation emails and role changes are not built."
+      "notes": "Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link."
     },
     {
       "id": "NAV-043",

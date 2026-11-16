@@ -23,6 +23,13 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/orgs` | auth | My organisations |
 | `GET /v1/orgs/:orgId` | org.read | Organisation |
 | `GET/POST /v1/orgs/:orgId/members` | members.read / members.manage | List / add existing user with role |
+| `PUT /v1/orgs/:orgId/members/:userId` | members.manage | `{ role }`: change a role (only to and from roles the caller may grant; 409 `LAST_OWNER`) |
+| `DELETE /v1/orgs/:orgId/members/:userId` | members.manage | Remove a member (409 `LAST_OWNER`) |
+| `GET /v1/orgs/:orgId/invitations` | members.read | Invitations with status PENDING / EXPIRED / ACCEPTED / REVOKED |
+| `POST /v1/orgs/:orgId/invitations` | members.manage | `{ email, role }` → `{ invitation, token }`. The token is returned once; the link is `/invite/<token>`. 409 `ALREADY_MEMBER`, `INVITE_EXISTS` |
+| `POST /v1/orgs/:orgId/invitations/:id/renew` · `/revoke` | members.manage | New link and 7 more days (old link stops working) / revoke |
+| `GET /v1/invitations/:token` | auth | Preview: organisation, role, inviter, status, `forYou`, `alreadyMember` |
+| `POST /v1/invitations/:token/accept` | auth | Join with the invited role. Only for the invited email (403 `INVITE_OTHER_EMAIL`); 410 `INVITE_EXPIRED` / `INVITE_REVOKED` / `INVITE_ACCEPTED` |
 | `GET /v1/orgs/:orgId/accounts` | accounts.read | Chart of accounts (`?type=`, `?includeInactive=true`) |
 | `GET /v1/orgs/:orgId/accounts/:id` | accounts.read | One account |
 | `POST /v1/orgs/:orgId/accounts` | accounts.manage | Create account |

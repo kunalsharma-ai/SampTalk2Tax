@@ -1286,7 +1286,7 @@ Part 36 · M1 · priority P1 · depends on: DS
 | UX-012 | Onboarding Wizard | capability | Import opening balances | Not started |
 | UX-013 | Onboarding Wizard | capability | Connect banking providers | Not started |
 | UX-014 | Onboarding Wizard | capability | Configure tax settings | Not started |
-| UX-015 | Onboarding Wizard | capability | Configure team roles | Implemented |
+| UX-015 | Onboarding Wizard | capability | Configure team roles | Tested |
 | UX-016 | Onboarding Wizard | capability | Configure approval policies | Tested |
 | UX-017 | Onboarding Wizard | capability | Select AI automation preferences | Not started |
 | UX-018 | Onboarding Wizard | capability | Review setup validation | Not started |
@@ -1370,7 +1370,7 @@ Part 39 · M9 · priority P2 · depends on: SEC
 | ADMIN-001 |  | rule | Create a dedicated SaaS administration application | Not started |
 | ADMIN-002 |  | capability | Tenant management | Not started |
 | ADMIN-003 |  | capability | Organization management | Not started |
-| ADMIN-004 |  | capability | User management | Not started |
+| ADMIN-004 |  | capability | User management | Tested |
 | ADMIN-005 |  | capability | Subscription management | Not started |
 | ADMIN-006 |  | capability | Plan management | Not started |
 | ADMIN-007 |  | capability | Feature flags | Not started |
@@ -1579,7 +1579,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-039 |  | capability | Integrations | Not started |
 | NAV-040 |  | capability | Subscription Management | Not started |
 | NAV-041 |  | capability | Organization Settings | Not started |
-| NAV-042 |  | capability | User Management | Implemented |
+| NAV-042 |  | capability | User Management | Tested |
 | NAV-043 |  | capability | Security Center | Not started |
 | NAV-044 |  | capability | Support | Not started |
 | NAV-045 |  | capability | Super Admin | Not started |
