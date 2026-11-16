@@ -98,6 +98,17 @@ const schema = z.object({
     .pipe(z.string().min(32, 'INTEGRATIONS_ENCRYPTION_KEY must be at least 32 characters').optional()),
   /** Days a new organisation's trial (of every module) lasts. */
   PLAN_TRIAL_DAYS: z.coerce.number().int().min(1).max(90).default(14),
+  /**
+   * Payment gateways are set up in Platform administration → Payments (keys are stored
+   * encrypted). These only point the API at another address of the gateway's API, which the
+   * tests use for a local stand-in; leave them unset in production.
+   */
+  PAYMENTS_STRIPE_API_URL: z.string().url().default('https://api.stripe.com'),
+  PAYMENTS_RAZORPAY_API_URL: z.string().url().default('https://api.razorpay.com'),
+  /** Seconds to wait for a payment gateway to answer. */
+  PAYMENTS_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(120).default(20),
+  /** How often renewals are issued and reminders sent (seconds); 0 turns the runner off. */
+  BILLING_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
   /** The web app's address, used for links in emails to members. */
   APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
   /**

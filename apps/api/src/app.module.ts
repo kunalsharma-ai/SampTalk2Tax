@@ -43,6 +43,10 @@ import { BillingController } from './billing/billing.controller';
 import { BillingService } from './billing/billing.service';
 import { PlatformBillingController } from './billing/platform-billing.controller';
 import { PlatformBillingService } from './billing/platform-billing.service';
+import { PaymentSettingsService } from './billing/payments/payment-settings.service';
+import { RenewalsRunnerService } from './billing/payments/renewals-runner.service';
+import { PaymentWebhooksController, PlatformPaymentsController, SubscriptionPaymentsController } from './billing/payments/subscription-payments.controller';
+import { SubscriptionPaymentsService } from './billing/payments/subscription-payments.service';
 import { RegionsService } from './regions/regions.service';
 import { JournalsController } from './journals/journals.controller';
 import { JournalsService } from './journals/journals.service';
@@ -151,6 +155,9 @@ export class AppModule {
         AnnouncementsController,
         BillingController,
         PlatformBillingController,
+        SubscriptionPaymentsController,
+        PlatformPaymentsController,
+        PaymentWebhooksController,
         AuthController,
         OrganizationsController,
         InvitationLinksController,
@@ -216,6 +223,9 @@ export class AppModule {
         AdminService,
         BillingService,
         PlatformBillingService,
+        PaymentSettingsService,
+        SubscriptionPaymentsService,
+        RenewalsRunnerService,
         { provide: CONFIG, useValue: config },
         prismaProvider,
         TokensService,

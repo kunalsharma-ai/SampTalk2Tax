@@ -14,9 +14,10 @@ import { AppConfig } from './config';
  * ANTHROPIC_API_KEY is set). The API tests use it to drive the copilot with a scripted model.
  */
 export async function createApp(config: AppConfig, opts: { logger?: boolean; copilotModel?: CopilotModel | null } = {}): Promise<INestApplication> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(config, opts.copilotModel), { logger: opts.logger === false ? false : undefined });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(config, opts.copilotModel), { logger: opts.logger === false ? false : undefined, rawBody: true });
   // Bank statement files are sent as JSON text; allow up to ~3 MB (5,000 lines is far below this).
   app.useBodyParser('json', { limit: '3mb' });
+  // Payment gateway webhooks are signed over the exact bytes sent; rawBody: true keeps them (req.rawBody).
   // Attachments are uploaded as raw bytes. The limit sits above the 5 MB file cap so the
   // service can answer with a clear FILE_TOO_LARGE error for files a little over it.
   app.useBodyParser('raw', { limit: '6mb', type: ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'] });

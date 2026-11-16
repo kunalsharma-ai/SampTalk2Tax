@@ -90,8 +90,9 @@ Owners and admins open **Settings → Subscription**. It shows:
 
 From there they **request** a plan, and can withdraw the request.
 
-**Online payment is not built in this slice.** The page says so: Talk2Tax sends an invoice
-and activates the plan when payment is received. Until then nothing changes.
+When a payment gateway takes the organisation's currency, choosing a plan shows the price with
+tax and a **Pay now** button; see [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). Without
+one, the plan is requested and Talk2Tax activates it when payment is received.
 
 Platform administrators open **Platform administration → Subscriptions**, where they can:
 
@@ -120,11 +121,8 @@ Organisations in `GET /v1/orgs` carry `subscription: { plan: { code, name, featu
 
 ## Not built yet (next slices)
 
-* Online checkout with a payment gateway, set up in the app.
-* Automatic renewal, payment-failure handling and dunning.
-* Subscription invoices, and tax on subscriptions.
+* Online checkout, renewals, dunning, subscription invoices and tax: built in slice 3, see
+  [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md).
 * Coupons and promotional prices.
 * Add-ons.
-* Proration on upgrade. The engine's `upgradeCharge` is ready for it, but no checkout uses it
-  yet.
 * Counting AI requests and uploads against their limits.
