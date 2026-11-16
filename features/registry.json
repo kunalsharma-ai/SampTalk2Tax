@@ -17727,9 +17727,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/revenue-forecast.ts",
+        "packages/database/prisma/migrations/20261121090000_revenue_forecasts/migration.sql",
+        "apps/api/src/crm/revenue-forecast.service.ts",
+        "apps/api/test/revenue-forecast.e2e.test.ts",
+        "apps/web/e2e/revenue-forecast-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/sales/revenue-forecast/page.tsx",
+        "docs/REVENUE_FORECAST.md"
+      ],
+      "notes": "Deterministic forecast by month from active contracts (by invoice date, auto-renew runs on), open orders (left to bill, this month), open deals (weighted/full at close month) and the 3-month run rate of other sales; committed/expected/best; itemised; saved forecasts RF-0001 (immutable) compared with actual revenue (WAPE). AI explanation not built yet."
     },
     {
       "id": "RISK-001",

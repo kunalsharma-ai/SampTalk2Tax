@@ -95,6 +95,8 @@ import { LoansController } from './loans/loans.controller';
 import { CrmController } from './crm/crm.controller';
 import { CustomerInsightsController } from './crm/customer-insights.controller';
 import { CustomerInsightsService } from './crm/customer-insights.service';
+import { RevenueForecastController } from './crm/revenue-forecast.controller';
+import { RevenueForecastService } from './crm/revenue-forecast.service';
 import { ContractsController } from './sales-orders/contracts.controller';
 import { ContractsRunnerService } from './sales-orders/contracts-runner.service';
 import { ContractsService } from './sales-orders/contracts.service';
@@ -223,6 +225,7 @@ export class AppModule {
         LoansController,
         CrmController,
         CustomerInsightsController,
+        RevenueForecastController,
         SalesOrdersController,
         ContractsController,
         InvoiceTemplatesController,
@@ -305,6 +308,7 @@ export class AppModule {
         LoansService,
         CrmService,
         CustomerInsightsService,
+        RevenueForecastService,
         SalesOrdersService,
         ContractsService,
         ContractsRunnerService,

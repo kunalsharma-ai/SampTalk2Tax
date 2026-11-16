@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 836 |
+| Not started | 835 |
 | Designed | 0 |
 | Implementing | 66 |
 | Implemented | 34 |
-| Tested | 393 |
+| Tested | 394 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -41,7 +41,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Enterprise financial management | M6 | 29 | 14 | 15 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
-| CRM and finance integration | M6 | 13 | 3 | 10 |
+| CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
@@ -3147,6 +3147,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/crm/customer-360.tsx
   - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
   - docs/CUSTOMER_360.md
+
+### CRM-013 — Revenue forecasting
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Deterministic forecast by month from active contracts (by invoice date, auto-renew runs on), open orders (left to bill, this month), open deals (weighted/full at close month) and the 3-month run rate of other sales; committed/expected/best; itemised; saved forecasts RF-0001 (immutable) compared with actual revenue (WAPE). AI explanation not built yet.
+- Evidence:
+  - packages/accounting-engine/src/revenue-forecast.ts
+  - packages/database/prisma/migrations/20261121090000_revenue_forecasts/migration.sql
+  - apps/api/src/crm/revenue-forecast.service.ts
+  - apps/api/test/revenue-forecast.e2e.test.ts
+  - apps/web/e2e/revenue-forecast-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/sales/revenue-forecast/page.tsx
+  - docs/REVENUE_FORECAST.md
 
 ### RISK-001 — Duplicate invoice detection
 

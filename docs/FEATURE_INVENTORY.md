@@ -782,7 +782,7 @@ Part 22 · M6 · priority P3 · depends on: AR, INTG
 | CRM-010 |  | capability | Customer profitability | Tested |
 | CRM-011 |  | capability | Customer lifetime value | Tested |
 | CRM-012 |  | capability | Credit risk | Tested |
-| CRM-013 |  | capability | Revenue forecasting | Not started |
+| CRM-013 |  | capability | Revenue forecasting | Tested |
 
 ## Financial fraud and risk intelligence
 

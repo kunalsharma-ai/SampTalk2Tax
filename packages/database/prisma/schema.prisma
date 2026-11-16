@@ -286,6 +286,7 @@ model Organization {
   salesQuotes              SalesQuote[]
   salesOrders              SalesOrder[]
   salesContracts           SalesContract[]
+  revenueForecasts            RevenueForecast[]
   loanEvents               LoanEvent[]
   dimensionValues          DimensionValue[]
   copilotConversations     CopilotConversation[]
@@ -4417,4 +4418,29 @@ model SalesContractEvent {
 
   @@index([contractId, createdAt])
   @@map("sales_contract_events")
+}
+
+/// A revenue forecast as it stood on a day (RF-0001), kept to compare with what was invoiced. Never changes.
+model RevenueForecast {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  number         Int
+  asOf           DateTime     @map("as_of") @db.Date
+  months         Int
+  currency       String       @db.Char(3)
+  actualSoFar    Decimal      @map("actual_so_far") @db.Decimal(24, 6)
+  committedTotal Decimal      @map("committed_total") @db.Decimal(24, 6)
+  expectedTotal  Decimal      @map("expected_total") @db.Decimal(24, 6)
+  bestTotal      Decimal      @map("best_total") @db.Decimal(24, 6)
+  /// { months: ForecastMonth[], items: ForecastItem[] } as worked out that day.
+  data           Json
+  note           String?      @db.VarChar(500)
+  createdById    String       @map("created_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, asOf])
+  @@map("revenue_forecasts")
 }
