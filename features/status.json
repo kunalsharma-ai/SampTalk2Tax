@@ -334,11 +334,20 @@
       "notes": "Transaction currency + rate per line, functional currency per org. Rate tables, revaluation and multi-currency reporting are not done."
     },
     "I18N-003": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
       ],
-      "notes": "Amounts use Intl.NumberFormat on exact decimal strings (en-IN style grouping for INR). A per-user locale setting is not built."
+      "notes": "Each person chooses how numbers are shown: follow the currency (Indian grouping for INR), Indian, international, European or spaces. Exact decimal strings are formatted without floating point. Every amount shown through the shared Money/money formatter follows it."
     },
     "I18N-010": {
       "status": "Implemented",
@@ -2600,19 +2609,29 @@
       "notes": "Templates per organisation: five themes, eight palettes plus custom colours, fonts, editable and reorderable sections and columns, logos, and HTML templates with safe placeholders. Covers invoices and credit notes; quotes, statements, receipts and payslips do not use templates yet."
     },
     "I18N-004": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/src/invoice-templates.ts",
-        "packages/accounting-engine/test/invoice-templates.test.ts",
         "apps/api/src/invoice-templates/invoice-templates.service.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
         "apps/api/test/invoice-templates.e2e.test.ts",
-        "apps/web/src/app/orgs/[orgId]/settings/invoice-templates",
-        "apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
         "apps/web/e2e/invoice-templates-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql",
-        "docs/INVOICE_TEMPLATES.md"
+        "apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/settings/invoice-templates",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "docs/INVOICE_TEMPLATES.md",
+        "docs/LANGUAGES_AND_FORMATS.md",
+        "packages/accounting-engine/src/invoice-templates.ts",
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/invoice-templates.test.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql"
       ],
-      "notes": "Printed invoices use the template's date style (02 Nov 2026, Nov 2, 2026 or 2026-11-02). The app's own screens still use one format."
+      "notes": "Each person chooses how dates are shown (06 Nov 2026, 06/11/2026, 11/06/2026 or 2026-11-06); month names follow the language. Invoice templates keep their own per-template date style for the printed document."
     },
     "RPT-033": {
       "status": "Tested",
@@ -4630,6 +4649,134 @@
         "docs/OPPORTUNITY_INTELLIGENCE.md"
       ],
       "notes": "Four kinds found in twelve months of posted books (lapsed customers to win back, revenue lines to cross-sell to active customers, the best-margin department or project, slipped gross margin restored by price), each with named evidence, user-set rates, confidence and reason, measured on the twin via the business impact engine, ranked by extra net profit; every kind that finds nothing says why; an opportunity can be taken forward as a saved impact assessment. Needs reports.read and sales.read."
+    },
+    "I18N-001": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "Each person chooses the interface language (English or Hindi) on Account and preferences; the navigation, header, roles and the preferences page are translated; other pages are still in English and fall back to English text."
+    },
+    "I18N-008": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "Each organisation has a time zone (owners and admins set it, audited) and each person may choose their own; moments (times things happened) are shown in it. Business dates such as today, due dates and periods are still calculated in India time for every organisation."
+    },
+    "I18N-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "English text is the key; a catalogue per language maps it, and missing text falls back to English. Tests check that every navigation label is translated, that no two different labels share a translation and that placeholders are kept."
+    },
+    "I18N-012": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "The page direction (dir) comes from the language's metadata, so a right-to-left language can be added; no right-to-left language is offered yet and layouts are not yet mirrored."
+    },
+    "I18N-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "English is the default and the source text."
+    },
+    "I18N-014": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator."
+    },
+    "I18N-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "A language is a catalogue in the web app plus its code in the engine's LANGUAGES list and the database check; formats and time zones are independent of language."
+    },
+    "I18N-016": {
+      "status": "Implemented",
+      "evidence": [
+        "packages/accounting-engine/src/locale.ts",
+        "packages/accounting-engine/test/locale.test.ts",
+        "apps/api/test/display-preferences.e2e.test.ts",
+        "apps/web/src/lib/i18n.tsx",
+        "apps/web/src/lib/format.ts",
+        "apps/web/src/components/preferences.tsx",
+        "apps/web/test/format.test.ts",
+        "apps/web/test/i18n.test.ts",
+        "apps/web/e2e/display-preferences-flow.test.mjs",
+        "docs/LANGUAGES_AND_FORMATS.md"
+      ],
+      "notes": "Language and formats are display-only and stored per person; tax and legal behaviour follows the organisation's country and settings, never the interface language. Tax terms and return names stay as the law writes them in every language."
     }
   }
 }

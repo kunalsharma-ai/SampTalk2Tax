@@ -131,6 +131,14 @@ model User {
   name         String
   passwordHash String        @map("password_hash")
   isActive     Boolean       @default(true) @map("is_active")
+  /// Interface language: en or hi.
+  language     String        @default("en") @db.VarChar(8)
+  /// AUTO (by currency), IN, INTL, EU or SPACE.
+  numberFormat String        @default("AUTO") @map("number_format") @db.VarChar(8)
+  /// D_MON_Y, DMY, MDY or YMD.
+  dateFormat   String        @default("D_MON_Y") @map("date_format") @db.VarChar(8)
+  /// IANA time zone for this person; null = the organisation's.
+  timeZone     String?       @map("time_zone") @db.VarChar(64)
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships  Membership[]
@@ -181,6 +189,8 @@ model Organization {
   id                       String                    @id @default(uuid()) @db.Uuid
   name                     String
   legalName                String?                   @map("legal_name")
+  /// IANA time zone moments are shown in for this organisation.
+  timeZone                 String                    @default("Asia/Kolkata") @map("time_zone") @db.VarChar(64)
   countryCode              String                    @map("country_code") @db.Char(2)
   functionalCurrency       String                    @map("functional_currency") @db.Char(3)
   fiscalYearStartMonth     Int                       @map("fiscal_year_start_month") @db.SmallInt

@@ -61,7 +61,7 @@ test('an expired access cookie is renewed without signing in again', async () =>
   const before = await cookie(laptopCtx, 't2t_refresh');
   await laptopCtx.clearCookies({ name: 't2t_session' });
   await laptop.goto(`${WEB}/orgs/${orgId}/account`);
-  await laptop.getByRole('heading', { name: 'Sign-in and security' }).waitFor();
+  await laptop.getByRole('heading', { name: 'Account and preferences' }).waitFor();
   await laptop.getByText('Chrome on macOS').waitFor();
   assert.ok(await cookie(laptopCtx, 't2t_session'), 'a new access cookie was set');
   const after = await cookie(laptopCtx, 't2t_refresh');

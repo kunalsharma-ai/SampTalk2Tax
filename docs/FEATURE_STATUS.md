@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 913 |
+| Not started | 905 |
 | Designed | 0 |
-| Implementing | 60 |
-| Implemented | 31 |
-| Tested | 327 |
+| Implementing | 62 |
+| Implemented | 32 |
+| Tested | 332 |
 | Integration pending | 12 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -52,7 +52,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 0 | 11 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
-| Internationalization | M8 | 16 | 10 | 6 |
+| Internationalization | M8 | 16 | 2 | 14 |
 | Integration marketplace | M6 | 50 | 44 | 6 |
 | Security and enterprise governance | M1 | 38 | 24 | 14 |
 | User experience and onboarding | M1 | 22 | 17 | 5 |
@@ -4071,6 +4071,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/benchmarking-flow.test.mjs
   - docs/BENCHMARKING.md
 
+### I18N-001 — Multi-language UI
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: Each person chooses the interface language (English or Hindi) on Account and preferences; the navigation, header, roles and the preferences page are translated; other pages are still in English and fall back to English text.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
 ### I18N-002 — Multi-currency accounting
 
 - Module: Internationalization
@@ -4082,26 +4099,45 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### I18N-003 — Regional number formats
 
 - Module: Internationalization
-- Status: **Implementing**
-- Notes: Amounts use Intl.NumberFormat on exact decimal strings (en-IN style grouping for INR). A per-user locale setting is not built.
+- Status: **Tested**
+- Notes: Each person chooses how numbers are shown: follow the currency (Indian grouping for INR), Indian, international, European or spaces. Exact decimal strings are formatted without floating point. Every amount shown through the shared Money/money formatter follows it.
 - Evidence:
-  - apps/web/src
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
 
 ### I18N-004 — Regional date formats
 
 - Module: Internationalization
-- Status: **Implementing**
-- Notes: Printed invoices use the template's date style (02 Nov 2026, Nov 2, 2026 or 2026-11-02). The app's own screens still use one format.
+- Status: **Tested**
+- Notes: Each person chooses how dates are shown (06 Nov 2026, 06/11/2026, 11/06/2026 or 2026-11-06); month names follow the language. Invoice templates keep their own per-template date style for the printed document.
 - Evidence:
-  - packages/accounting-engine/src/invoice-templates.ts
-  - packages/accounting-engine/test/invoice-templates.test.ts
   - apps/api/src/invoice-templates/invoice-templates.service.ts
+  - apps/api/test/display-preferences.e2e.test.ts
   - apps/api/test/invoice-templates.e2e.test.ts
-  - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
-  - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
+  - apps/web/e2e/display-preferences-flow.test.mjs
   - apps/web/e2e/invoice-templates-flow.test.mjs
-  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
+  - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
+  - apps/web/src/components/preferences.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
   - docs/INVOICE_TEMPLATES.md
+  - docs/LANGUAGES_AND_FORMATS.md
+  - packages/accounting-engine/src/invoice-templates.ts
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/invoice-templates.test.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
 
 ### I18N-006 — Country-specific invoice formats
 
@@ -4118,6 +4154,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/invoice-templates-flow.test.mjs
   - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
   - docs/INVOICE_TEMPLATES.md
+
+### I18N-008 — Time-zone awareness
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: Each organisation has a time zone (owners and admins set it, audited) and each person may choose their own; moments (times things happened) are shown in it. Business dates such as today, due dates and periods are still calculated in India time for every organisation.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
 
 ### I18N-009 — Regional document templates
 
@@ -4142,6 +4195,108 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/test/periods.test.ts
   - apps/web/src
+
+### I18N-011 — Localization framework
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: English text is the key; a catalogue per language maps it, and missing text falls back to English. Tests check that every navigation label is translated, that no two different labels share a translation and that placeholders are kept.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-012 — Right-to-left layout support where needed
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: The page direction (dir) comes from the language's metadata, so a right-to-left language can be added; no right-to-left language is offered yet and layouts are not yet mirrored.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-013 — English
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: English is the default and the source text.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-014 — Hindi
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-015 — Architect for later support of additional languages
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: A language is a catalogue in the web app plus its code in the engine's LANGUAGES list and the database check; formats and time zones are independent of language.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-016 — Do not equate UI translation with legal or tax localization
+
+- Module: Internationalization
+- Status: **Implemented**
+- Notes: Language and formats are display-only and stored per person; tax and legal behaviour follows the organisation's country and settings, never the interface language. Tax terms and return names stay as the law writes them in every language.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
 
 ### INTG-032 — Email providers
 

@@ -1147,22 +1147,22 @@ Part 33 · M8 · priority P2 · depends on: none
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| I18N-001 |  | capability | Multi-language UI | Not started |
+| I18N-001 |  | capability | Multi-language UI | Implementing |
 | I18N-002 |  | capability | Multi-currency accounting | Implementing |
-| I18N-003 |  | capability | Regional number formats | Implementing |
-| I18N-004 |  | capability | Regional date formats | Implementing |
+| I18N-003 |  | capability | Regional number formats | Tested |
+| I18N-004 |  | capability | Regional date formats | Tested |
 | I18N-005 |  | capability | Country-specific tax configurations | Not started |
 | I18N-006 |  | capability | Country-specific invoice formats | Tested |
 | I18N-007 |  | capability | Local financial reporting | Not started |
-| I18N-008 |  | capability | Time-zone awareness | Not started |
+| I18N-008 |  | capability | Time-zone awareness | Implementing |
 | I18N-009 |  | capability | Regional document templates | Tested |
 | I18N-010 |  | capability | Configurable fiscal years | Implemented |
-| I18N-011 |  | capability | Localization framework | Not started |
-| I18N-012 |  | capability | Right-to-left layout support where needed | Not started |
-| I18N-013 |  | capability | English | Not started |
-| I18N-014 |  | capability | Hindi | Not started |
-| I18N-015 |  | rule | Architect for later support of additional languages | Not started |
-| I18N-016 |  | rule | Do not equate UI translation with legal or tax localization | Not started |
+| I18N-011 |  | capability | Localization framework | Tested |
+| I18N-012 |  | capability | Right-to-left layout support where needed | Implementing |
+| I18N-013 |  | capability | English | Tested |
+| I18N-014 |  | capability | Hindi | Implementing |
+| I18N-015 |  | rule | Architect for later support of additional languages | Tested |
+| I18N-016 |  | rule | Do not equate UI translation with legal or tax localization | Implemented |
 
 ## Integration marketplace
 

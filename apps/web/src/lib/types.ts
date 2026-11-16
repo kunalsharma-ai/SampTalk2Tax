@@ -12,6 +12,8 @@ export interface Org {
   arAccountId: string | null;
   apAccountId: string | null;
   claimsAccountId: string | null;
+  /** IANA time zone moments are shown in. */
+  timeZone: string;
   role: Role;
 }
 
