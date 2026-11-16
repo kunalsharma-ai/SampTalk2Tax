@@ -5234,3 +5234,42 @@ model SalesOrderProgressClaim {
   @@index([orgId, orderId])
   @@map("sales_order_progress_claims")
 }
+
+/// Money a customer keeps on account at an agreed level (AR-015), shown as RT-0001.
+model Retainer {
+  id             String            @id @default(uuid()) @db.Uuid
+  orgId          String            @map("org_id") @db.Uuid
+  number         Int
+  contactId      String            @map("contact_id") @db.Uuid
+  name           String            @db.VarChar(200)
+  amount         Decimal           @db.Decimal(24, 6)
+  minimumBalance Decimal           @default(0) @map("minimum_balance") @db.Decimal(24, 6)
+  startDate      DateTime          @map("start_date") @db.Date
+  terms          String?           @db.VarChar(2000)
+  status         String            @default("ACTIVE") @db.VarChar(10)
+  closedAt       DateTime?         @map("closed_at") @db.Timestamptz(6)
+  closeReason    String?           @map("close_reason") @db.VarChar(500)
+  createdById    String            @map("created_by_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  receipts       RetainerReceipt[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, contactId])
+  @@map("retainers")
+}
+
+/// A customer receipt that makes up part of a retainer.
+model RetainerReceipt {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  retainerId  String   @map("retainer_id") @db.Uuid
+  paymentId   String   @unique @map("payment_id") @db.Uuid
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  retainer    Retainer @relation(fields: [retainerId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, retainerId])
+  @@map("retainer_receipts")
+}

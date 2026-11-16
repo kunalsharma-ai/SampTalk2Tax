@@ -602,7 +602,7 @@ export class DocumentsService {
     await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.posted', entityType: 'document', entityId: id, data: { number, total: computed.total.toFixed(), journalEntryId: je.id } });
   }
 
-  private async allocateInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, paymentId: string, allocations: { documentId: string; amount: string }[]) {
+  async allocateInTx(tx: Tx, org: LedgerOrg, actor: Actor, ledger: Ledger, paymentId: string, allocations: { documentId: string; amount: string }[]) {
     if (!allocations.length) return;
     const ids = allocations.map((a) => a.documentId);
     if (new Set(ids).size !== ids.length) throw new DomainError('INVALID_ALLOCATION', 'Each document can appear only once');

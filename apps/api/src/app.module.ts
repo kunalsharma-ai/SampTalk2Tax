@@ -161,6 +161,8 @@ import { CrmService } from './crm/crm.service';
 import { SalesOrdersService } from './sales-orders/sales-orders.service';
 import { ProFormaController } from './sales-orders/pro-forma.controller';
 import { ProFormaService } from './sales-orders/pro-forma.service';
+import { RetainersController } from './sales-orders/retainers.controller';
+import { RetainersService } from './sales-orders/retainers.service';
 import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
 import { PurchaseOrdersService } from './purchase-orders/purchase-orders.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
@@ -264,6 +266,7 @@ export class AppModule {
         PaymentScheduleController,
         DisputesController,
         ProFormaController,
+    RetainersController,
     PurchaseOrdersController,
     BillMatchController,
         VendorBankDetailsController,
@@ -362,6 +365,7 @@ export class AppModule {
         PaymentScheduleService,
         DisputesService,
         ProFormaService,
+    RetainersService,
     PurchaseOrdersService,
         JournalTemplatesRunnerService,
         RecurringBillsService,

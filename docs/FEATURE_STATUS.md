@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 811 |
+| Not started | 810 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 417 |
+| Tested | 418 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 9 | 35 |
-| Accounts receivable | M2 | 43 | 16 | 27 |
+| Accounts receivable | M2 | 43 | 15 | 28 |
 | Accounts payable | M2 | 36 | 18 | 18 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
@@ -591,6 +591,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/sales-orders/project-billing.tsx
   - apps/web/e2e/project-billing-flow.test.mjs
   - docs/MILESTONE_AND_PROGRESS_BILLING.md
+
+### AR-015 — Retainer billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Retainers RT-0001: agreed amount and minimum per customer; held as ordinary unapplied receipts linked to the retainer (recorded into it or added); drawn down onto invoices with ordinary allocations, oldest receipt first, oldest due invoice first by default; top-up due below the minimum; close only when empty; triggers keep links permanent. Functional currency only; no GST on advances; top-up requests not emailed.
+- Evidence:
+  - packages/accounting-engine/src/retainers.ts
+  - packages/accounting-engine/test/retainers.test.ts
+  - packages/database/prisma/migrations/20261205090000_retainers/migration.sql
+  - apps/api/src/sales-orders/retainers.service.ts
+  - apps/api/test/retainers.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/retainers/[retainerId]/page.tsx
+  - apps/web/e2e/retainers-flow.test.mjs
+  - docs/RETAINERS.md
 
 ### AR-016 — Credit notes
 

@@ -40,6 +40,7 @@ export const hi: Record<string, string> = {
   'Bad debts': 'डूबत ऋण',
   Disputes: 'विवाद',
   'Pro forma invoices': 'प्रोफ़ॉर्मा चालान',
+  Retainers: 'रिटेनर',
   Collections: 'वसूली',
   'Invoice templates': 'इनवॉइस टेम्पलेट',
   'My signature': 'मेरे हस्ताक्षर',
