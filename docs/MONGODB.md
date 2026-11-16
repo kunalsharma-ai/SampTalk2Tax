@@ -218,6 +218,18 @@ what voiding needs first) are in the guards of those collections. One trigger ch
 row it checked (new vendor bank details lost their verification); the service now clears
 those fields itself and the guard refuses a write that does not.
 
+**CHECK constraints and foreign keys (step 10a).** `apps/api/src/db/constraints/catalog.json`
+is a snapshot of PostgreSQL's 325 CHECK constraints and 543 foreign keys
+(`apps/api/scripts/snapshot-constraints.sh`); after PostgreSQL goes, a new rule is added there
+by hand. Every write to a mirrored table evaluates its table's checks with a small SQL
+expression evaluator (`constraints/sql-expr.ts`, three-valued logic as in SQL: only FALSE fails)
+and refuses with PostgreSQL's own wording. It also confirms each foreign key points at a record
+MongoDB holds, and after a delete and its cascades, that nothing still points at the deleted
+record through a RESTRICT or NO ACTION key (P2003, answered as 409 `REFERENCE_CONFLICT`). The
+cascades themselves now come from the snapshot too. `test/check-constraints.test.ts` keeps the
+evaluator honest: on real records of every checked table, and on copies with each named column
+set to edge values, its verdict must equal PostgreSQL's.
+
 **Existing data.** An installation with data from before a step runs
 `pnpm --filter @talk2tax/api run db:copy-to-mongo` once after deploying it. That copies the
 moved tables' rows into MongoDB and leaves records already there alone, so it is safe to
