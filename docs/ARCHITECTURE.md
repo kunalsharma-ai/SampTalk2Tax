@@ -12,6 +12,7 @@ Talk2Tax starts as one deployable API (`apps/api`, NestJS) over one PostgreSQL d
 │ AuthGuard (JWT → user → membership → permission)   ErrorFilter   zod validation │
 │                                                                                   │
 │  auth   organizations   accounts   periods   journals   reports   audit   health │
+│  contacts   tax-rates   ledgers (sales + purchases documents, payments, ageing)   │
 │    │          │             │          │         │          │        │            │
 │    └──────────┴──── domain rules from packages/accounting-engine (pure TS) ────┘  │
 │                         packages/security (roles, permissions, passwords)         │
@@ -92,6 +93,13 @@ The directive's full target layout (`apps/web|admin|mobile|documentation`, `pack
 * The journal form runs `validateJournal` from `packages/accounting-engine` in the browser for live feedback. The API and database still enforce every rule; the browser check is only a hint.
 * Money stays a decimal string end to end; `Intl.NumberFormat` formats the string directly, without converting through floating point.
 * Permission checks in the UI (hiding buttons a role cannot use) are hints. The API decides.
+
+## Subledgers (M2)
+
+Sales and purchases share one implementation (`apps/api/src/ledgers`), parameterised by ledger, so receivables and payables cannot drift apart. Documents and payments never touch balances directly: posting builds a journal with `packages/accounting-engine/src/documents.ts` and posts it through `JournalsService.postSystemEntry` inside the same transaction, so the period, balance and immutability rules of the general ledger apply unchanged. The control accounts (`organizations.ar_account_id` / `ap_account_id`) are closed to manual journals, which keeps the subledger and the general ledger equal by construction; the ageing report recomputes that equality on every request and shows any difference. Allocations carry no journal: they only move amounts between open items of the same contact.
+
+### ADR-009 Control accounts closed to manual journals
+*Decision:* only document and payment postings may touch the receivables and payables control accounts; enforced in the API and by a trigger. *Why:* otherwise the ageing can silently disagree with the balance sheet. *Cost:* corrections go through credit notes or voids, which is also the auditable path.
 
 ## Planned components (not built yet)
 

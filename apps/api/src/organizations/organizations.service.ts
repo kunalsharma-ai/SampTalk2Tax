@@ -36,7 +36,10 @@ export class OrganizationsService {
         },
       });
       await tx.membership.create({ data: { orgId: org.id, userId, role: 'OWNER' } });
-      if (input.chartTemplate === 'GENERIC_SMB') await this.applyGenericChart(tx, org.id);
+      if (input.chartTemplate === 'GENERIC_SMB') {
+        const ids = await this.applyGenericChart(tx, org.id);
+        await tx.organization.update({ where: { id: org.id }, data: { arAccountId: ids.get('1200'), apAccountId: ids.get('2100') } });
+      }
       const fy = fiscalYearForDate(today, input.fiscalYearStartMonth);
       await this.createFiscalYear(tx, org.id, fy, input.fiscalYearStartMonth);
       await this.audit.append(tx, {
@@ -67,6 +70,7 @@ export class OrganizationsService {
       });
       idByCode.set(a.code, created.id);
     }
+    return idByCode;
   }
 
   async createFiscalYear(tx: Tx, orgId: string, fiscalYear: number, startMonth: number) {
@@ -119,7 +123,18 @@ export class OrganizationsService {
   }
 }
 
-function serializeOrg(o: { id: string; name: string; legalName: string | null; countryCode: string; functionalCurrency: string; fiscalYearStartMonth: number; isDemo: boolean; createdAt: Date }) {
+function serializeOrg(o: {
+  id: string;
+  name: string;
+  legalName: string | null;
+  countryCode: string;
+  functionalCurrency: string;
+  fiscalYearStartMonth: number;
+  isDemo: boolean;
+  arAccountId: string | null;
+  apAccountId: string | null;
+  createdAt: Date;
+}) {
   return {
     id: o.id,
     name: o.name,
@@ -128,6 +143,8 @@ function serializeOrg(o: { id: string; name: string; legalName: string | null; c
     functionalCurrency: o.functionalCurrency,
     fiscalYearStartMonth: o.fiscalYearStartMonth,
     isDemo: o.isDemo,
+    arAccountId: o.arAccountId,
+    apAccountId: o.apAccountId,
     createdAt: o.createdAt.toISOString(),
   };
 }

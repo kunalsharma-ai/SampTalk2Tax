@@ -12,6 +12,14 @@ describe('permissions', () => {
     expect(hasPermission('ADMIN', 'periods.lock')).toBe(true);
     expect(hasPermission('APPROVER', 'members.manage')).toBe(false);
   });
+  it('lets accountants prepare sales and purchases, approvers only post, viewers only read', () => {
+    expect(hasPermission('ACCOUNTANT', 'sales.manage')).toBe(true);
+    expect(hasPermission('ACCOUNTANT', 'purchases.manage')).toBe(true);
+    expect(hasPermission('APPROVER', 'sales.manage')).toBe(false);
+    expect(hasPermission('APPROVER', 'journals.post')).toBe(true);
+    expect(hasPermission('VIEWER', 'sales.read')).toBe(true);
+    expect(hasPermission('VIEWER', 'contacts.manage')).toBe(false);
+  });
   it('restricts role assignment', () => {
     expect(canAssignRole('ADMIN', 'OWNER')).toBe(false);
     expect(canAssignRole('ADMIN', 'ACCOUNTANT')).toBe(true);

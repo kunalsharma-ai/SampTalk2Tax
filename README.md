@@ -11,7 +11,8 @@ Talk2Tax is planned as an AI-native accounting, tax and finance platform. This r
 * **General ledger:** hierarchical chart of accounts, draft → post journals, multi-currency lines with exchange rates, reversals, period lock/unlock, idempotent and concurrency-safe posting with gap-free numbers.
 * **Reports:** trial balance, income statement, balance sheet, account ledger, all from posted entries.
 * **Controls:** PostgreSQL triggers make posted entries immutable and refuse unbalanced postings even outside the API; append-only, hash-chained audit trail with a verify endpoint.
-* **Web app:** sign up and sign in, an onboarding wizard, an owner dashboard computed from posted journals, journal entry with a live balance check, chart of accounts, periods with lock/unlock, the four reports, the audit trail with an integrity check, and members.
+* **Receivables & payables (M2, first slice):** customers and vendors, tenant tax rates, invoices, credit notes, bills and vendor credits (draft → post → void), receipts and payments with allocation and idempotency, credit limits, duplicate vendor-invoice detection, customer/vendor statements, and ageing that reconciles to the control accounts.
+* **Web app:** sign up and sign in, an onboarding wizard, an owner dashboard computed from posted journals, journal entry with a live balance check, chart of accounts, periods with lock/unlock, the four reports, the audit trail with an integrity check, members, and the sales, purchases and tax-rate screens.
 * **Demo data:** a clearly labelled synthetic Indian trading company.
 
 ## Quick start
@@ -49,9 +50,9 @@ docs/                       PRD, architecture, schema, engine, security, API, te
 
 | | |
 |---|---|
-| Milestone | M1 backend and web app built; M1 hardening next |
-| Feature registry | 1,343 requirements from the master directive; 63 Tested, 21 Implemented, 13 Implementing, 1,246 Not started — [FEATURE_STATUS.md](docs/FEATURE_STATUS.md) |
-| Tests | 35 unit + 25 integration + 10 browser end-to-end, all passing |
+| Milestone | M1 built; M2 slice 1 (receivables and payables) built; banking and reconciliation next |
+| Feature registry | 1,343 requirements from the master directive; 78 Tested, 25 Implemented, 14 Implementing, 1,226 Not started — [FEATURE_STATUS.md](docs/FEATURE_STATUS.md) |
+| Tests | 49 unit + 47 integration + 19 browser end-to-end, all passing |
 | Known gaps | [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) |
 
 ## Documentation

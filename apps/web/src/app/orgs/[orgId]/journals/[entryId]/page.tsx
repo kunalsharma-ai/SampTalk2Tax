@@ -74,7 +74,7 @@ export default function JournalDetailPage() {
               </>
             ) : null}
             {j.status === 'DRAFT' && can(org.role, 'journals.post') ? <Button loading={post.isPending} onClick={() => post.mutate()}>Post</Button> : null}
-            {j.status === 'POSTED' && !j.reversedBy && j.type !== 'REVERSING' && can(org.role, 'journals.reverse') ? (
+            {j.status === 'POSTED' && j.source === 'MANUAL' && !j.reversedBy && j.type !== 'REVERSING' && can(org.role, 'journals.reverse') ? (
               <Button variant="secondary" onClick={() => setReverseOpen(true)}>Reverse…</Button>
             ) : null}
           </>
@@ -99,6 +99,13 @@ export default function JournalDetailPage() {
           <p className="mt-2 text-sm"><Money value={j.totalDebit} currency={c} /></p>
         </Card>
       </div>
+      {j.source !== 'MANUAL' ? (
+        <div className="mt-4">
+          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
+            This entry stays in step with its {j.source === 'DOCUMENT' ? 'document' : 'payment'}. To correct it, void the {j.source === 'DOCUMENT' ? 'document' : 'payment'} instead of reversing this journal.
+          </Alert>
+        </div>
+      ) : null}
       {j.reversesEntryId ? (
         <div className="mt-4">
           <Alert tone="violet" title="This entry reverses another journal">

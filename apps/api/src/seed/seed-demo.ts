@@ -6,7 +6,11 @@ import { AuthService } from '../auth/auth.service';
 import { todayIso } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
 import { loadConfig } from '../config';
+import { D } from '@talk2tax/accounting-engine';
+import { ContactsService } from '../contacts/contacts.service';
 import { JournalsService } from '../journals/journals.service';
+import { DocumentsService } from '../ledgers/documents.service';
+import { TaxRatesService } from '../tax-rates/tax-rates.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 
 /**
@@ -53,7 +57,8 @@ async function main() {
   const ctx = { id: org.id, functionalCurrency: 'INR' };
   const actor = { id: user.id };
   const rand = rng(20261031);
-  const amt = (min: number, max: number) => (Math.round((min + rand() * (max - min)) * 100) / 100).toFixed(2);
+  // Synthetic amounts: a pseudo-random integer number of paise, converted to a decimal string without floating-point money arithmetic.
+  const amt = (min: number, max: number) => new D(Math.round((min + rand() * (max - min)) * 100)).dividedBy(100).toFixed(2);
   const post = (date: string, memo: string, lines: { accountId: string; debit?: string; credit?: string; currency?: string; exchangeRate?: string }[]) =>
     journals.create(ctx, actor, { date, type: 'STANDARD', memo, lines }, { post: true, idempotencyKey: `seed-${date}-${memo}`.replace(/[^A-Za-z0-9_\-:.]/g, '-').slice(0, 128) });
 
@@ -68,6 +73,29 @@ async function main() {
     { accountId: a['1120'], credit: '600000.00' },
   ]);
   count += 2;
+
+  // Sales and purchases go through the same document services as the API, so the
+  // receivables and payables ledgers tie to their control accounts.
+  const contacts = app.get(ContactsService);
+  const docs = app.get(DocumentsService);
+  const ledgerOrg = { id: org.id, role: 'OWNER' as const, functionalCurrency: 'INR' };
+  const taxRate = await app.get(TaxRatesService).create(org.id, actor, { name: 'Sample tax 18% (synthetic)', rate: '18', salesAccountId: a['2300'], purchaseAccountId: a['1450'] });
+  const customers = await Promise.all(
+    [
+      ['Asterix Retail Stores (synthetic)', 30, '1500000.00'],
+      ['Brightline Distributors (synthetic)', 45, null],
+      ['Coastal Hospitality Group (synthetic)', 15, null],
+      ['Overseas Services Client (synthetic)', 30, null],
+    ].map(([name, terms, limit]) => contacts.create(ctx, actor, { name: name as string, isCustomer: true, paymentTermsDays: terms as number, creditLimit: limit as string | null })),
+  );
+  const vendors = await Promise.all(
+    [
+      ['Delta Wholesale Supplies (synthetic)', 30],
+      ['Evergreen Logistics (synthetic)', 15],
+    ].map(([name, terms]) => contacts.create(ctx, actor, { name: name as string, isVendor: true, paymentTermsDays: terms as number })),
+  );
+  const money = (min: number, max: number) => new D(amt(min, max));
+
   for (const p of periods) {
     const start = p.startDate.toISOString().slice(0, 10);
     if (start > today) break;
@@ -76,63 +104,83 @@ async function main() {
       const iso = `${ym}-${String(d).padStart(2, '0')}`;
       return iso > today ? today : iso;
     };
-    const sales = amt(380000, 620000);
-    const tax = (Number(sales) * 0.18).toFixed(2);
-    const gross = (Number(sales) + Number(tax)).toFixed(2);
-    await post(day(5), `Sales invoices ${ym}`, [
-      { accountId: a['1200'], debit: gross },
-      { accountId: a['4100'], credit: sales },
-      { accountId: a['2300'], credit: tax },
-    ]);
-    const cogs = (Number(sales) * (0.52 + rand() * 0.08)).toFixed(2);
+    // Three tax invoices and one service invoice a month.
+    const invoices = [];
+    for (const [i, c] of customers.slice(0, 3).entries()) {
+      const qty = String(40 + Math.floor(rand() * 60));
+      const price = money(1500, 2500).toFixed(2);
+      const inv = await docs.create(
+        ledgerOrg,
+        actor,
+        'SALES',
+        { kind: 'INVOICE', contactId: c.id, issueDate: day(5 + i), reference: `PO-${ym}-${i + 1}`, lines: [{ accountId: a['4100'], description: 'Trade goods', quantity: qty, unitPrice: price, taxRateId: taxRate.id }] },
+        { post: true, overrideCreditLimit: true },
+      );
+      invoices.push(inv);
+      count += 1;
+    }
+    const svc = await docs.create(
+      ledgerOrg,
+      actor,
+      'SALES',
+      { kind: 'INVOICE', contactId: customers[3].id, issueDate: day(12), lines: [{ accountId: a['4200'], description: 'Consulting services (billed in INR)', quantity: '1', unitPrice: money(160000, 480000).toFixed(2) }] },
+      { post: true },
+    );
+    invoices.push(svc);
+    count += 1;
+    const sales = invoices.slice(0, 3).reduce((s, x) => s.plus(x.subtotal), new D(0));
+    const cogs = sales.times(new D('0.52').plus(new D(rand().toFixed(4)).times('0.08'))).toDecimalPlaces(2);
     await post(day(6), `Cost of goods sold ${ym}`, [
-      { accountId: a['5000'], debit: cogs },
-      { accountId: a['1300'], credit: cogs },
+      { accountId: a['5000'], debit: cogs.toFixed(2) },
+      { accountId: a['1300'], credit: cogs.toFixed(2) },
     ]);
-    const purchases = amt(220000, 340000);
-    await post(day(3), `Inventory purchases ${ym}`, [
-      { accountId: a['1300'], debit: purchases },
-      { accountId: a['2100'], credit: purchases },
-    ]);
-    const usd = amt(2000, 6000);
-    const rate = (82.5 + rand() * 2).toFixed(4);
-    const inr = (Number(usd) * Number(rate)).toFixed(2);
-    await post(day(12), `Export service invoice ${ym}`, [
-      { accountId: a['1200'], debit: usd, currency: 'USD', exchangeRate: rate },
-      { accountId: a['4200'], credit: inr },
-    ]);
-    const collected = (Number(gross) * (0.7 + rand() * 0.25)).toFixed(2);
-    await post(day(18), `Customer receipts ${ym}`, [
-      { accountId: a['1120'], debit: collected },
-      { accountId: a['1200'], credit: collected },
-    ]);
-    const paid = (Number(purchases) * (0.75 + rand() * 0.2)).toFixed(2);
-    await post(day(20), `Supplier payments ${ym}`, [
-      { accountId: a['2100'], debit: paid },
-      { accountId: a['1120'], credit: paid },
-    ]);
-    const salaries = amt(140000, 160000);
-    const rent = '45000.00';
-    const utilities = amt(6000, 11000);
-    const software = amt(9000, 15000);
-    const marketing = amt(15000, 40000);
-    const charges = amt(300, 900);
-    const total = [salaries, rent, utilities, software, marketing, charges].reduce((s, x) => s + Math.round(Number(x) * 100), 0);
-    await post(day(28), `Operating expenses ${ym}`, [
-      { accountId: a['6100'], debit: salaries },
-      { accountId: a['6200'], debit: rent },
-      { accountId: a['6300'], debit: utilities },
-      { accountId: a['6400'], debit: software },
-      { accountId: a['6500'], debit: marketing },
-      { accountId: a['6900'], debit: charges },
-      { accountId: a['1120'], credit: (total / 100).toFixed(2) },
-    ]);
-    count += 7;
+    count += 1;
+    // Customers pay most invoices; the most recent months stay partly open so the ageing has something to show.
+    const isRecent = start >= periods.filter((x) => x.startDate.toISOString().slice(0, 10) <= today).slice(-2)[0].startDate.toISOString().slice(0, 10);
+    for (const inv of invoices) {
+      if (isRecent && rand() < 0.6) continue;
+      const share = rand() < 0.25 ? new D('0.5') : new D(1);
+      const amount = new D(inv.total).times(share).toDecimalPlaces(2);
+      await docs.createPayment(ledgerOrg, actor, 'SALES', { contactId: inv.contact.id, date: day(25), bankAccountId: a['1120'], amount: amount.toFixed(2), reference: `UTR${ym.replace('-', '')}${inv.number?.slice(-3)}`, allocations: [{ documentId: inv.id, amount: amount.toFixed(2) }] });
+      count += 1;
+    }
+    // Stock purchases and freight bills, mostly paid.
+    for (const [i, v] of vendors.entries()) {
+      const bill = await docs.create(
+        ledgerOrg,
+        actor,
+        'PURCHASES',
+        {
+          kind: 'BILL',
+          contactId: v.id,
+          issueDate: day(3 + i),
+          reference: `${i === 0 ? 'DWS' : 'EVL'}/${ym}/${100 + i}`,
+          lines: [{ accountId: i === 0 ? a['1300'] : a['5000'], description: i === 0 ? 'Stock purchase' : 'Freight inward', quantity: '1', unitPrice: (i === 0 ? money(220000, 340000) : money(15000, 30000)).toFixed(2), taxRateId: taxRate.id }],
+        },
+        { post: true },
+      );
+      count += 1;
+      if (!isRecent || rand() < 0.4) {
+        await docs.createPayment(ledgerOrg, actor, 'PURCHASES', { contactId: v.id, date: day(20), bankAccountId: a['1120'], amount: bill.total, allocations: [{ documentId: bill.id, amount: bill.total }] });
+        count += 1;
+      }
+    }
+    const lines = [
+      [a['6100'], money(140000, 160000)],
+      [a['6200'], new D('45000.00')],
+      [a['6300'], money(6000, 11000)],
+      [a['6400'], money(9000, 15000)],
+      [a['6500'], money(15000, 40000)],
+      [a['6900'], money(300, 900)],
+    ] as const;
+    const total = lines.reduce((s, [, x]) => s.plus(x), new D(0));
+    await post(day(28), `Operating expenses ${ym}`, [...lines.map(([accountId, x]) => ({ accountId, debit: x.toFixed(2) })), { accountId: a['1120'], credit: total.toFixed(2) }]);
+    count += 1;
   }
   await app.close();
   console.log('Seeded SYNTHETIC demo organization (not real financial activity).');
   console.log(`  Organization: ${org.name} (${org.id})`);
-  console.log(`  Journals posted: ${count}`);
+  console.log(`  Journals, documents and payments posted: ${count}`);
   console.log(`  Login: ${DEMO_EMAIL}`);
   if (!process.env.DEMO_PASSWORD) console.log(`  Password (generated, shown once): ${password}`);
 }

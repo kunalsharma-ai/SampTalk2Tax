@@ -10,6 +10,24 @@ import { Logo } from './brand';
 const NAV: { group: string; items: { href: string; label: string }[] }[] = [
   { group: 'Overview', items: [{ href: '', label: 'Dashboard' }] },
   {
+    group: 'Sales',
+    items: [
+      { href: '/sales/customers', label: 'Customers' },
+      { href: '/sales/invoices', label: 'Invoices' },
+      { href: '/sales/receipts', label: 'Receipts' },
+      { href: '/sales/ageing', label: 'Receivables ageing' },
+    ],
+  },
+  {
+    group: 'Purchases',
+    items: [
+      { href: '/purchases/vendors', label: 'Vendors' },
+      { href: '/purchases/bills', label: 'Bills' },
+      { href: '/purchases/payments', label: 'Payments' },
+      { href: '/purchases/ageing', label: 'Payables ageing' },
+    ],
+  },
+  {
     group: 'Accounting',
     items: [
       { href: '/journals', label: 'Journals' },
@@ -26,7 +44,7 @@ const NAV: { group: string; items: { href: string; label: string }[] }[] = [
       { href: '/reports/general-ledger', label: 'General ledger' },
     ],
   },
-  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }] },
+  { group: 'Governance', items: [{ href: '/audit', label: 'Audit trail' }, { href: '/members', label: 'Team and roles' }, { href: '/settings/tax-rates', label: 'Tax rates' }] },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -70,7 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[256px_1fr]">
-      <aside className={cn('fixed inset-y-0 left-0 z-30 w-64 border-r border-line bg-surface/95 p-4 backdrop-blur lg:static lg:block', open ? 'block' : 'hidden')}>
+      <aside className={cn('fixed inset-y-0 left-0 z-30 w-64 overflow-y-auto border-r border-line bg-surface/95 p-4 backdrop-blur lg:sticky lg:top-0 lg:block lg:h-screen', open ? 'block' : 'hidden')}>
         <div className="flex h-10 items-center px-2">
           <Link href="/">
             <Logo />

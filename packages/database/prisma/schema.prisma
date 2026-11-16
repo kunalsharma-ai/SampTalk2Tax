@@ -38,6 +38,35 @@ enum JournalStatus {
   POSTED
 }
 
+enum JournalSource {
+  MANUAL
+  DOCUMENT
+  PAYMENT
+}
+
+enum DocumentKind {
+  INVOICE
+  CREDIT_NOTE
+  BILL
+  VENDOR_CREDIT
+}
+
+enum DocumentStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+enum PaymentKind {
+  RECEIPT
+  PAYMENT
+}
+
+enum PaymentStatus {
+  POSTED
+  VOID
+}
+
 enum JournalType {
   STANDARD
   ADJUSTING
@@ -61,21 +90,28 @@ model User {
 }
 
 model Organization {
-  id                   String          @id @default(uuid()) @db.Uuid
+  id                   String         @id @default(uuid()) @db.Uuid
   name                 String
-  legalName            String?         @map("legal_name")
-  countryCode          String          @map("country_code") @db.Char(2)
-  functionalCurrency   String          @map("functional_currency") @db.Char(3)
-  fiscalYearStartMonth Int             @map("fiscal_year_start_month") @db.SmallInt
-  isDemo               Boolean         @default(false) @map("is_demo")
-  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legalName            String?        @map("legal_name")
+  countryCode          String         @map("country_code") @db.Char(2)
+  functionalCurrency   String         @map("functional_currency") @db.Char(3)
+  fiscalYearStartMonth Int            @map("fiscal_year_start_month") @db.SmallInt
+  isDemo               Boolean        @default(false) @map("is_demo")
+  /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
+  arAccountId          String?        @map("ar_account_id") @db.Uuid
+  apAccountId          String?        @map("ap_account_id") @db.Uuid
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   memberships          Membership[]
   accounts             Account[]
   periods              FiscalPeriod[]
   journalEntries       JournalEntry[]
   counters             OrgCounter[]
   auditEvents          AuditEvent[]
+  contacts             Contact[]
+  taxRates             TaxRate[]
+  documents            Document[]
+  payments             Payment[]
 
   @@map("organizations")
 }
@@ -95,22 +131,24 @@ model Membership {
 }
 
 model Account {
-  id          String        @id @default(uuid()) @db.Uuid
-  orgId       String        @map("org_id") @db.Uuid
-  code        String
-  name        String
-  type        AccountType
-  subtype     String?
-  description String?
-  parentId    String?       @map("parent_id") @db.Uuid
-  isPostable  Boolean       @default(true) @map("is_postable")
-  isActive    Boolean       @default(true) @map("is_active")
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  parent      Account?      @relation("AccountHierarchy", fields: [parentId, orgId], references: [id, orgId], onDelete: Restrict)
-  children    Account[]     @relation("AccountHierarchy")
-  lines       JournalLine[]
+  id              String         @id @default(uuid()) @db.Uuid
+  orgId           String         @map("org_id") @db.Uuid
+  code            String
+  name            String
+  type            AccountType
+  subtype         String?
+  description     String?
+  parentId        String?        @map("parent_id") @db.Uuid
+  isPostable      Boolean        @default(true) @map("is_postable")
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org             Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  parent          Account?       @relation("AccountHierarchy", fields: [parentId, orgId], references: [id, orgId], onDelete: Restrict)
+  children        Account[]      @relation("AccountHierarchy")
+  lines           JournalLine[]
+  documentLines   DocumentLine[]
+  paymentsViaBank Payment[]
 
   @@unique([orgId, code])
   @@unique([id, orgId])
@@ -139,31 +177,32 @@ model FiscalPeriod {
 }
 
 model JournalEntry {
-  id               String        @id @default(uuid()) @db.Uuid
-  orgId            String        @map("org_id") @db.Uuid
-  entryNumber      Int?          @map("entry_number")
-  date             DateTime      @db.Date
-  periodId         String        @map("period_id") @db.Uuid
-  type             JournalType   @default(STANDARD)
-  status           JournalStatus @default(DRAFT)
-  memo             String?
-  reference        String?
-  functionalCurrency String      @map("functional_currency") @db.Char(3)
-  totalDebit       Decimal       @default(0) @map("total_debit") @db.Decimal(24, 6)
-  totalCredit      Decimal       @default(0) @map("total_credit") @db.Decimal(24, 6)
-  idempotencyKey   String?       @map("idempotency_key")
-  idempotencyHash  String?       @map("idempotency_hash")
-  reversesEntryId  String?       @unique @map("reverses_entry_id") @db.Uuid
-  createdById      String        @map("created_by_id") @db.Uuid
-  postedById       String?       @map("posted_by_id") @db.Uuid
-  postedAt         DateTime?     @map("posted_at") @db.Timestamptz(6)
-  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org              Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  period           FiscalPeriod  @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
-  reverses         JournalEntry? @relation("Reversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
-  reversedBy       JournalEntry? @relation("Reversal")
-  lines            JournalLine[]
+  id                 String        @id @default(uuid()) @db.Uuid
+  orgId              String        @map("org_id") @db.Uuid
+  entryNumber        Int?          @map("entry_number")
+  date               DateTime      @db.Date
+  periodId           String        @map("period_id") @db.Uuid
+  type               JournalType   @default(STANDARD)
+  source             JournalSource @default(MANUAL)
+  status             JournalStatus @default(DRAFT)
+  memo               String?
+  reference          String?
+  functionalCurrency String        @map("functional_currency") @db.Char(3)
+  totalDebit         Decimal       @default(0) @map("total_debit") @db.Decimal(24, 6)
+  totalCredit        Decimal       @default(0) @map("total_credit") @db.Decimal(24, 6)
+  idempotencyKey     String?       @map("idempotency_key")
+  idempotencyHash    String?       @map("idempotency_hash")
+  reversesEntryId    String?       @unique @map("reverses_entry_id") @db.Uuid
+  createdById        String        @map("created_by_id") @db.Uuid
+  postedById         String?       @map("posted_by_id") @db.Uuid
+  postedAt           DateTime?     @map("posted_at") @db.Timestamptz(6)
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  period             FiscalPeriod  @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
+  reverses           JournalEntry? @relation("Reversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
+  reversedBy         JournalEntry? @relation("Reversal")
+  lines              JournalLine[]
 
   @@unique([orgId, entryNumber])
   @@unique([orgId, idempotencyKey])
@@ -222,4 +261,163 @@ model AuditEvent {
   @@index([orgId, createdAt])
   @@index([orgId, entityType, entityId])
   @@map("audit_events")
+}
+
+/// Customers and vendors. One contact can be both.
+model Contact {
+  id               String       @id @default(uuid()) @db.Uuid
+  orgId            String       @map("org_id") @db.Uuid
+  name             String
+  email            String?
+  phone            String?
+  taxId            String?      @map("tax_id")
+  address          String?
+  isCustomer       Boolean      @default(false) @map("is_customer")
+  isVendor         Boolean      @default(false) @map("is_vendor")
+  paymentTermsDays Int          @default(30) @map("payment_terms_days")
+  creditLimit      Decimal?     @map("credit_limit") @db.Decimal(24, 6)
+  isActive         Boolean      @default(true) @map("is_active")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org              Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  documents        Document[]
+  payments         Payment[]
+
+  @@unique([id, orgId])
+  @@index([orgId, name])
+  @@map("contacts")
+}
+
+/// A tenant-configured percentage tax. Not a statutory tax engine.
+model TaxRate {
+  id                String         @id @default(uuid()) @db.Uuid
+  orgId             String         @map("org_id") @db.Uuid
+  name              String
+  rate              Decimal        @db.Decimal(9, 6)
+  salesAccountId    String?        @map("sales_account_id") @db.Uuid
+  purchaseAccountId String?        @map("purchase_account_id") @db.Uuid
+  isActive          Boolean        @default(true) @map("is_active")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  org               Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines             DocumentLine[]
+
+  @@unique([orgId, name])
+  @@unique([id, orgId])
+  @@map("tax_rates")
+}
+
+/// Invoices, customer credit notes, bills and vendor credits.
+model Document {
+  id                 String         @id @default(uuid()) @db.Uuid
+  orgId              String         @map("org_id") @db.Uuid
+  kind               DocumentKind
+  status             DocumentStatus @default(DRAFT)
+  number             String?
+  contactId          String         @map("contact_id") @db.Uuid
+  issueDate          DateTime       @map("issue_date") @db.Date
+  dueDate            DateTime       @map("due_date") @db.Date
+  reference          String?
+  memo               String?
+  currency           String         @db.Char(3)
+  subtotal           Decimal        @db.Decimal(24, 6)
+  taxTotal           Decimal        @map("tax_total") @db.Decimal(24, 6)
+  total              Decimal        @db.Decimal(24, 6)
+  journalEntryId     String?        @unique @map("journal_entry_id") @db.Uuid
+  voidJournalEntryId String?        @unique @map("void_journal_entry_id") @db.Uuid
+  voidDate           DateTime?      @map("void_date") @db.Date
+  voidReason         String?        @map("void_reason")
+  createdById        String         @map("created_by_id") @db.Uuid
+  postedById         String?        @map("posted_by_id") @db.Uuid
+  postedAt           DateTime?      @map("posted_at") @db.Timestamptz(6)
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  contact            Contact        @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict)
+  lines              DocumentLine[]
+  allocationsIn      Allocation[]   @relation("AllocationTarget")
+  allocationsOut     Allocation[]   @relation("AllocationCreditSource")
+
+  @@unique([orgId, kind, number])
+  @@unique([id, orgId])
+  @@index([orgId, kind, status])
+  @@index([orgId, contactId])
+  @@map("documents")
+}
+
+model DocumentLine {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  documentId  String   @map("document_id") @db.Uuid
+  lineNo      Int      @map("line_no")
+  description String?
+  accountId   String   @map("account_id") @db.Uuid
+  quantity    Decimal  @db.Decimal(24, 6)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?  @map("tax_rate_id") @db.Uuid
+  taxRate     Decimal  @default(0) @map("tax_rate") @db.Decimal(9, 6)
+  netAmount   Decimal  @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal  @map("tax_amount") @db.Decimal(24, 6)
+  document    Document @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Cascade)
+  account     Account  @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
+  tax         TaxRate? @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([documentId, lineNo])
+  @@map("document_lines")
+}
+
+/// Money received from a customer (RECEIPT) or paid to a vendor (PAYMENT).
+model Payment {
+  id                 String        @id @default(uuid()) @db.Uuid
+  orgId              String        @map("org_id") @db.Uuid
+  kind               PaymentKind
+  status             PaymentStatus @default(POSTED)
+  number             String
+  contactId          String        @map("contact_id") @db.Uuid
+  date               DateTime      @db.Date
+  bankAccountId      String        @map("bank_account_id") @db.Uuid
+  currency           String        @db.Char(3)
+  amount             Decimal       @db.Decimal(24, 6)
+  reference          String?
+  memo               String?
+  journalEntryId     String        @unique @map("journal_entry_id") @db.Uuid
+  voidJournalEntryId String?       @unique @map("void_journal_entry_id") @db.Uuid
+  voidDate           DateTime?     @map("void_date") @db.Date
+  idempotencyKey     String?       @map("idempotency_key")
+  idempotencyHash    String?       @map("idempotency_hash")
+  createdById        String        @map("created_by_id") @db.Uuid
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  org                Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  contact            Contact       @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict)
+  bankAccount        Account       @relation(fields: [bankAccountId, orgId], references: [id, orgId], onDelete: Restrict)
+  allocations        Allocation[]
+
+  @@unique([orgId, kind, number])
+  @@unique([orgId, idempotencyKey])
+  @@unique([id, orgId])
+  @@index([orgId, contactId])
+  @@map("payments")
+}
+
+/// Applies a payment or a credit document against an invoice or bill.
+/// Rows are never deleted; removing an allocation stamps removed_on.
+model Allocation {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  targetId         String    @map("target_id") @db.Uuid
+  paymentId        String?   @map("payment_id") @db.Uuid
+  creditDocumentId String?   @map("credit_document_id") @db.Uuid
+  amount           Decimal   @db.Decimal(24, 6)
+  date             DateTime  @db.Date
+  createdById      String    @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  removedOn        DateTime? @map("removed_on") @db.Date
+  removedById      String?   @map("removed_by_id") @db.Uuid
+  target           Document  @relation("AllocationTarget", fields: [targetId, orgId], references: [id, orgId], onDelete: Restrict)
+  payment          Payment?  @relation(fields: [paymentId, orgId], references: [id, orgId], onDelete: Restrict)
+  creditDocument   Document? @relation("AllocationCreditSource", fields: [creditDocumentId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@index([orgId, targetId])
+  @@index([orgId, paymentId])
+  @@index([orgId, creditDocumentId])
+  @@map("allocations")
 }

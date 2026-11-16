@@ -9,6 +9,13 @@ import { AuthService } from './auth/auth.service';
 import { AuthGuard } from './auth/guards';
 import { TokensService } from './auth/tokens.service';
 import { ErrorFilter } from './common/errors';
+import { ContactsController } from './contacts/contacts.controller';
+import { ContactsService } from './contacts/contacts.service';
+import { DocumentsService } from './ledgers/documents.service';
+import { PurchasesController, SalesController } from './ledgers/ledger.controllers';
+import { SubledgerService } from './ledgers/subledger.service';
+import { TaxRatesController } from './tax-rates/tax-rates.controller';
+import { TaxRatesService } from './tax-rates/tax-rates.service';
 import { PrismaService } from './common/prisma.service';
 import { AppConfig, CONFIG } from './config';
 import { HealthController } from './health/health.controller';
@@ -39,6 +46,10 @@ export class AppModule {
         JournalsController,
         ReportsController,
         AuditController,
+        ContactsController,
+        TaxRatesController,
+        SalesController,
+        PurchasesController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -51,6 +62,10 @@ export class AppModule {
         PeriodsService,
         JournalsService,
         ReportsService,
+        SubledgerService,
+        ContactsService,
+        TaxRatesService,
+        DocumentsService,
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: ErrorFilter },
       ],

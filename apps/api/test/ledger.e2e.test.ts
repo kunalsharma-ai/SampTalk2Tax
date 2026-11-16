@@ -66,7 +66,7 @@ describe('journal posting', () => {
 
   it('keeps drafts out of balances until posted, and allows editing and deleting drafts only', async () => {
     const before = await tb(org.base, owner);
-    const draft = await ctx.http().post(`${org.base}/journals`).set(owner.auth).send({ ...je(org.acc, '6200', '2100', '25000.00'), post: false }).expect(201);
+    const draft = await ctx.http().post(`${org.base}/journals`).set(owner.auth).send({ ...je(org.acc, '6200', '2200', '25000.00'), post: false }).expect(201);
     expect(draft.body.entryNumber).toBeNull();
     expect((await tb(org.base, owner)).totals.debit).toBe(before.totals.debit);
 
@@ -74,7 +74,7 @@ describe('journal posting', () => {
       .http()
       .put(`${org.base}/journals/${draft.body.id}`)
       .set(owner.auth)
-      .send({ date: today(), memo: 'Office rent', lines: [{ accountId: org.acc['6200'], debit: '30000.00' }, { accountId: org.acc['2100'], credit: '30000.00' }] })
+      .send({ date: today(), memo: 'Office rent', lines: [{ accountId: org.acc['6200'], debit: '30000.00' }, { accountId: org.acc['2200'], credit: '30000.00' }] })
       .expect(200);
     expect(edited.body.totalDebit).toBe('30000.00');
 
@@ -97,9 +97,9 @@ describe('journal posting', () => {
       .send({
         date: today(),
         post: true,
-        memo: 'Export sale invoiced in USD',
+        memo: 'Prepaid annual licence billed in USD',
         lines: [
-          { accountId: org.acc['1200'], debit: '1000.00', currency: 'USD', exchangeRate: '83.4567' },
+          { accountId: org.acc['1400'], debit: '1000.00', currency: 'USD', exchangeRate: '83.4567' },
           { accountId: org.acc['4100'], credit: '83456.70' },
         ],
       })
