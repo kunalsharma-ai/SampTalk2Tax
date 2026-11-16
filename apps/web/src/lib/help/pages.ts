@@ -240,6 +240,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Enter the keys from the gateway\'s dashboard, choose the currencies and the bank account, save, then Test connection. Add the webhook address shown here at the gateway so payments are confirmed straight away.',
     where: 'Governance. Keys are stored encrypted and never shown again. Each currency is paid through one gateway.',
   },
+  'purchases/onboarding': {
+    what: 'Vendor onboarding: new vendors\' tax details, verified bank account, documents and payment terms, collected and approved before their bills are posted or they are paid, with the organisation\'s own checklist.',
+    how: 'Switch on onboarding for new vendors and set the checklist at the bottom. Open a vendor to tick items off, attach files, verify their bank details, propose payment terms and submit; someone with approval rights approves or rejects.',
+    where: 'Purchases. Approval sets the vendor\'s payment terms. Bills from a vendor whose onboarding is not approved cannot be posted, and they cannot be paid.',
+  },
   'sales/onboarding': {
     what: 'Customer onboarding: new customers\' details, documents and credit terms, collected and approved before they are invoiced, with the organisation\'s own checklist.',
     how: 'Switch on onboarding for new customers and set the checklist at the bottom. Open a customer to tick items off, attach files, propose credit terms and submit; someone with approval rights approves or rejects.',

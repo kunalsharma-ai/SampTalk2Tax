@@ -443,6 +443,11 @@ export class DocumentsService {
     const kind = ledgerKinds(ledger).payment;
     const { idempotencyKey, hash } = opts;
     await this.checkContact(tx, org.id, ledger, input.contactId);
+    // AP-002: a vendor being onboarded is paid once the onboarding is approved.
+    if (ledger === 'PURCHASES') {
+      const v = await tx.contact.findFirst({ where: { id: input.contactId, orgId: org.id }, select: { id: true, name: true } });
+      if (v) await CustomerOnboardingService.assertCanPayOrBill(tx, org.id, v, 'payments');
+    }
     const bank = await tx.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
     if (!bank || !bank.isPostable || !bank.isActive || !['BANK', 'CASH'].includes(bank.subtype ?? '')) {
       throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
@@ -576,6 +581,7 @@ export class DocumentsService {
     }
     // AR-003: a customer being onboarded is invoiced once the onboarding is approved.
     if (doc.kind === 'INVOICE') await CustomerOnboardingService.assertCanInvoice(tx, org.id, doc.contact);
+    if (doc.kind === 'BILL') await CustomerOnboardingService.assertCanPayOrBill(tx, org.id, doc.contact, 'bills');
     if (doc.kind === 'INVOICE' && doc.contact.creditLimit) {
       const bal = (await this.subledger.balances(tx, org.id, 'SALES', '9999-12-31', doc.contactId)).get(doc.contactId);
       const exposure = (bal ? bal.outstanding.minus(bal.unapplied) : new D(0)).plus(toFunctional(computed.total, doc.exchangeRate.toFixed(), org.functionalCurrency));

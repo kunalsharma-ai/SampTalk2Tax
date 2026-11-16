@@ -6,7 +6,7 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { api, uploadFile } from '@/lib/api';
 import { dateTime } from '@/lib/format';
-import { ONBOARDING_STATUS, type ContactOnboarding, type Onboarding } from '@/lib/onboarding';
+import { ONBOARDING_STATUS, PARTY, type ContactOnboarding, type Onboarding, type Party } from '@/lib/onboarding';
 
 const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp';
 
@@ -18,24 +18,25 @@ function Tick({ done }: { done: boolean }) {
  * A customer's onboarding on their page: details read from the customer, the organisation's
  * checklist with files, proposed credit terms, and submitting, approving or rejecting it.
  */
-export function OnboardingPanel({ orgId, contactId, currency, onChange }: { orgId: string; contactId: string; currency: string; onChange: () => void }) {
+export function OnboardingPanel({ orgId, contactId, currency, onChange, party = 'CUSTOMER' }: { orgId: string; contactId: string; currency: string; onChange: () => void; party?: Party }) {
+  const P = PARTY[party];
   const qc = useQueryClient();
-  const key = ['onboarding', orgId, contactId];
-  const q = useQuery({ queryKey: key, queryFn: () => api<ContactOnboarding>(`/v1/orgs/${orgId}/sales/customers/${contactId}/onboarding`) });
-  const base = `/v1/orgs/${orgId}/sales/onboardings`;
+  const key = ['onboarding', orgId, party, contactId];
+  const q = useQuery({ queryKey: key, queryFn: () => api<ContactOnboarding>(`/v1/orgs/${orgId}/${P.api}/${P.path}/${contactId}/onboarding`) });
+  const base = `/v1/orgs/${orgId}/${P.api}/onboardings`;
   const set = (o: Onboarding) => {
     qc.setQueryData(key, (old: ContactOnboarding | undefined) => ({ can: old?.can ?? { manage: false, decide: false, setUp: false }, onboarding: o }));
     void qc.invalidateQueries({ queryKey: ['onboardings', orgId] });
     onChange();
   };
-  const start = useMutation({ mutationFn: () => api<Onboarding>(`/v1/orgs/${orgId}/sales/customers/${contactId}/onboarding`, { method: 'POST' }), onSuccess: set });
+  const start = useMutation({ mutationFn: () => api<Onboarding>(`/v1/orgs/${orgId}/${P.api}/${P.path}/${contactId}/onboarding`, { method: 'POST' }), onSuccess: set });
   const d = q.data;
   if (!d) return <ErrorAlert title="Could not load the onboarding" error={q.error} />;
   if (!d.onboarding) {
     if (!d.can.start) return null;
     return (
-      <Card className="mt-6" role="region" aria-label="Customer onboarding">
-        <CardHeader title="Customer onboarding" description="Collect this customer's details, documents and credit terms and have them approved. Until it is approved, invoices to them cannot be posted." />
+      <Card className="mt-6" role="region" aria-label={P.title}>
+        <CardHeader title={P.title} description={P.startText} />
         <div className="px-5 pb-5">
           <Button variant="secondary" loading={start.isPending} onClick={() => start.mutate()}>Start onboarding</Button>
           <ErrorAlert title="Could not start" error={start.error} />
@@ -43,10 +44,12 @@ export function OnboardingPanel({ orgId, contactId, currency, onChange }: { orgI
       </Card>
     );
   }
-  return <OnboardingBody key={d.onboarding.id} o={d.onboarding} can={d.can} base={base} orgId={orgId} currency={currency} set={set} />;
+  return <OnboardingBody key={d.onboarding.id} o={d.onboarding} can={d.can} base={base} orgId={orgId} currency={currency} set={set} party={party} />;
 }
 
-function OnboardingBody({ o, can, base, orgId, currency, set }: { o: Onboarding; can: ContactOnboarding['can']; base: string; orgId: string; currency: string; set: (o: Onboarding) => void }) {
+function OnboardingBody({ o, can, base, orgId, currency, set, party }: { o: Onboarding; can: ContactOnboarding['can']; base: string; orgId: string; currency: string; set: (o: Onboarding) => void; party: Party }) {
+  const P = PARTY[party];
+  const vendor = party === 'VENDOR';
   const [terms, setTerms] = useState({ creditLimit: o.creditLimit ?? '', paymentTermsDays: o.paymentTermsDays === null ? '' : String(o.paymentTermsDays), notes: o.notes ?? '' });
   const [note, setNote] = useState('');
   const [fileFor, setFileFor] = useState<string | null>(null);
@@ -54,7 +57,7 @@ function OnboardingBody({ o, can, base, orgId, currency, set }: { o: Onboarding;
   const url = `${base}/${o.id}`;
   const open = o.status === 'OPEN';
   const manage = can.manage && open;
-  const save = useMutation({ mutationFn: () => api<Onboarding>(url, { method: 'PUT', body: { creditLimit: terms.creditLimit.trim() || null, paymentTermsDays: terms.paymentTermsDays.trim() === '' ? null : Number(terms.paymentTermsDays), notes: terms.notes } }), onSuccess: set });
+  const save = useMutation({ mutationFn: () => api<Onboarding>(url, { method: 'PUT', body: { ...(vendor ? {} : { creditLimit: terms.creditLimit.trim() || null }), paymentTermsDays: terms.paymentTermsDays.trim() === '' ? null : Number(terms.paymentTermsDays), notes: terms.notes } }), onSuccess: set });
   const tick = useMutation({ mutationFn: (v: { id: string; done: boolean; attachmentId?: string | null }) => api<Onboarding>(`${url}/checks/${v.id}`, { method: 'PUT', body: { done: v.done, ...(v.attachmentId !== undefined ? { attachmentId: v.attachmentId } : {}) } }), onSuccess: set });
   const attach = useMutation({
     mutationFn: async ({ checkId, file }: { checkId: string; file: File }) => {
@@ -67,10 +70,10 @@ function OnboardingBody({ o, can, base, orgId, currency, set }: { o: Onboarding;
   const decide = useMutation({ mutationFn: (approve: boolean) => api<Onboarding>(`${url}/decide`, { method: 'POST', body: { approve, note: note.trim() || null } }), onSuccess: (r) => (setNote(''), set(r)) });
   const st = ONBOARDING_STATUS[o.status];
   return (
-    <Card className="mt-6" role="region" aria-label="Customer onboarding">
+    <Card className="mt-6" role="region" aria-label={P.title}>
       <CardHeader
-        title="Customer onboarding"
-        description="The details, documents and credit terms collected about this customer. Invoices to them post once it is approved, and approval sets their credit limit and payment terms."
+        title={P.title}
+        description={P.bodyText}
         actions={<Badge tone={st.tone}>{st.label}</Badge>}
       />
       <div className="space-y-5 px-5 pb-5">
@@ -81,7 +84,7 @@ function OnboardingBody({ o, can, base, orgId, currency, set }: { o: Onboarding;
           </div>
         </div>
 
-        <ul className="space-y-2 text-sm" aria-label="Customer details">
+        <ul className="space-y-2 text-sm" aria-label={party === "VENDOR" ? "Vendor details" : "Customer details"}>
           {o.details.map((x) => (
             <li key={x.key} className="flex items-start gap-3">
               <Tick done={x.done} />
@@ -131,14 +134,14 @@ function OnboardingBody({ o, can, base, orgId, currency, set }: { o: Onboarding;
         <div className="border-t border-line pt-4">
           {manage ? (
             <form className="grid gap-3 sm:grid-cols-3" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
-              <Field label={`Credit limit (${currency})`} hint="0 means payment in advance.">{(p) => <Input {...p} inputMode="decimal" value={terms.creditLimit} onChange={(e) => setTerms({ ...terms, creditLimit: e.target.value })} />}</Field>
+              {vendor ? null : <Field label={`Credit limit (${currency})`} hint="0 means payment in advance.">{(p) => <Input {...p} inputMode="decimal" value={terms.creditLimit} onChange={(e) => setTerms({ ...terms, creditLimit: e.target.value })} />}</Field>}
               <Field label="Payment terms (days)">{(p) => <Input {...p} inputMode="numeric" value={terms.paymentTermsDays} onChange={(e) => setTerms({ ...terms, paymentTermsDays: e.target.value })} />}</Field>
               <div className="flex items-end"><Button type="submit" variant="secondary" loading={save.isPending}>Save terms</Button></div>
               <div className="sm:col-span-3"><Field label="Notes (optional)">{(p) => <Textarea {...p} rows={2} value={terms.notes} onChange={(e) => setTerms({ ...terms, notes: e.target.value })} />}</Field></div>
             </form>
           ) : (
             <p className="text-sm">
-              Proposed credit limit {o.creditLimit !== null ? <Money value={o.creditLimit} currency={currency} /> : '—'} · payment terms {o.paymentTermsDays ?? '—'} days{o.notes ? <span className="block text-fg-muted">{o.notes}</span> : null}
+              {vendor ? null : <>Proposed credit limit {o.creditLimit !== null ? <Money value={o.creditLimit} currency={currency} /> : '—'} · payment terms </>}{vendor ? 'Payment terms ' : null}{o.paymentTermsDays ?? '—'} days{o.notes ? <span className="block text-fg-muted">{o.notes}</span> : null}
             </p>
           )}
         </div>

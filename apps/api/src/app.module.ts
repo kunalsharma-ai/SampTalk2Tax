@@ -164,7 +164,7 @@ import { ProFormaService } from './sales-orders/pro-forma.service';
 import { RetainersController } from './sales-orders/retainers.controller';
 import { PaymentLinksController, PaymentLinkWebhooksController } from './payment-links/payment-links.controller';
 import { PaymentLinksService } from './payment-links/payment-links.service';
-import { CustomerOnboardingController } from './customer-onboarding/customer-onboarding.controller';
+import { CustomerOnboardingController, VendorOnboardingController } from './customer-onboarding/customer-onboarding.controller';
 import { CustomerOnboardingService } from './customer-onboarding/customer-onboarding.service';
 import { RetainersService } from './sales-orders/retainers.service';
 import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
@@ -273,6 +273,7 @@ export class AppModule {
     RetainersController,
     PaymentLinksController,
     CustomerOnboardingController,
+    VendorOnboardingController,
     PaymentLinkWebhooksController,
     PurchaseOrdersController,
     BillMatchController,

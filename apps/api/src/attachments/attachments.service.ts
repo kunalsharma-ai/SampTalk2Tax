@@ -154,11 +154,11 @@ export class AttachmentsService {
         break;
       }
       case 'CUSTOMER_ONBOARDING': {
-        const o = await this.prisma.customerOnboarding.findFirst({ where: { id, orgId: org.id }, select: { status: true } });
-        if (!o) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Customer onboarding not found' });
+        const o = await this.prisma.customerOnboarding.findFirst({ where: { id, orgId: org.id }, select: { status: true, party: true } });
+        if (!o) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Onboarding not found' });
         // The files behind an onboarding stay as they were once it is submitted.
         if (access === 'manage' && o.status !== 'OPEN') throw new DomainError('ONBOARDING_NOT_OPEN', 'Files can be added or removed only while the onboarding is in progress', HttpStatus.CONFLICT);
-        permission = `sales.${access}`;
+        permission = `${o.party === 'VENDOR' ? 'purchases' : 'sales'}.${access}`;
         break;
       }
       case 'EXPENSE_CLAIM':
