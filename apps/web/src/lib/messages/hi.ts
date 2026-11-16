@@ -56,6 +56,7 @@ export const hi: Record<string, string> = {
   'Payment schedule': 'भुगतान अनुसूची',
   'Purchase orders': 'क्रय आदेश',
   'Payment batches': 'भुगतान बैच',
+  'International payments': 'अंतरराष्ट्रीय भुगतान',
   'Payables ageing': 'देय राशि की आयु',
   // Banking
   'Bank accounts': 'बैंक खाते',

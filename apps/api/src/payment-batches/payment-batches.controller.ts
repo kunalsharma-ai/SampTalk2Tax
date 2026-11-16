@@ -11,6 +11,18 @@ const CreateBody = z.object({ bankAccountId: z.string().uuid('Choose the bank ac
 const UpdateBody = z.object({ bankAccountId: z.string().uuid().optional(), paymentDate: isoDate.optional(), memo: z.string().trim().max(400).nullish(), items: z.array(Item).max(500).optional() }).strict();
 const CancelBody = z.object({ reason: z.string().trim().min(3, 'Give a reason').max(500) }).strict();
 const BankBody = z.object({ accountName: z.string().trim().min(1).max(140), accountNumber: z.string().trim().min(1).max(60), ifsc: z.string().trim().max(20), bankName: z.string().trim().max(140).nullish() }).strict();
+const IntlBankBody = z
+  .object({
+    accountName: z.string().trim().min(1).max(140),
+    accountNumber: z.string().trim().min(1).max(60),
+    swiftBic: z.string().trim().max(20),
+    bankCountry: z.string().trim().max(2),
+    bankName: z.string().trim().max(140).nullish(),
+    bankAddress: z.string().trim().max(300).nullish(),
+    routingCode: z.string().trim().max(20).nullish(),
+    intermediarySwift: z.string().trim().max(20).nullish(),
+  })
+  .strict();
 const VerifyBody = z.object({ note: z.string().trim().min(3, 'Say how the details were confirmed').max(500) }).strict();
 const BillsQuery = z.object({ currency: z.string().regex(/^[A-Z]{3}$/).optional() });
 
@@ -122,6 +134,14 @@ export class VendorBankDetailsController {
   @ApiBody({ schema: openApi(BankBody) })
   save(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('contactId', ParseUUIDPipe) id: string, @Body(new ZodPipe(BankBody)) body: z.infer<typeof BankBody>) {
     return this.batches.saveBankDetails(this.org(org), user, id, body);
+  }
+
+  /** AP-023: the vendor's bank account abroad, replacing any domestic details (verification starts again). */
+  @Put('international')
+  @RequirePermission('contacts.manage')
+  @ApiBody({ schema: openApi(IntlBankBody) })
+  saveInternational(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('contactId', ParseUUIDPipe) id: string, @Body(new ZodPipe(IntlBankBody)) body: z.infer<typeof IntlBankBody>) {
+    return this.batches.saveInternationalBankDetails(this.org(org), user, id, body);
   }
 
   @Post('verify')

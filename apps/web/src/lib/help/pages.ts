@@ -175,6 +175,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose New batch, pick the bank account, the date and the bills. Someone else approves it. Download the bank file, upload it to your bank, and record the payments once the bank has paid.',
     where: 'Purchases. Recording a batch posts one payment per vendor with the batch reference, which settles the bills and shows on bank reconciliation.',
   },
+  'purchases/international-payments': {
+    what: 'Payments to vendors abroad in their currency (outward remittances): the bills, the RBI purpose code, who pays the bank charges and, from India, which part of Form 15CA is needed and whether a Form 15CB is.',
+    how: 'Choose a vendor and currency, tick the bills and the purpose, then prepare the payment. Someone else approves it. Download the bank instruction, give it to the bank with the forms, and record the payment at the bank\'s rate once paid.',
+    where: 'Purchases. Recording the payment posts it in the foreign currency at the bank\'s rate, settles the bills and books any exchange difference. Talk2Tax never moves money itself.',
+  },
+  'purchases/international-payments/[id]': {
+    what: 'One international payment: its bills, the vendor\'s bank abroad, the Form 15CA and 15CB position, and who prepared, approved, sent and recorded it.',
+    how: 'While a draft, set the purpose, charges, expected rate and the Form 15CA acknowledgement and 15CB numbers, then approve. Download the instruction (this marks it sent) and record it as paid at the bank\'s rate.',
+    where: 'Purchases. The recorded payment links here and appears on bank reconciliation.',
+  },
   'purchases/payment-batches/new': {
     what: 'A new payment batch: the bank account, the payment date and the bills it pays.',
     how: 'Tick each bill to pay and change the amount to pay part of it. Vendors without verified bank details are flagged and block approval.',

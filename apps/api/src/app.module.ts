@@ -167,6 +167,8 @@ import { PaymentLinksService } from './payment-links/payment-links.service';
 import { CustomerOnboardingController, VendorOnboardingController } from './customer-onboarding/customer-onboarding.controller';
 import { CustomerOnboardingService } from './customer-onboarding/customer-onboarding.service';
 import { VendorPerformanceController } from './vendor-performance/vendor-performance.controller';
+import { InternationalPaymentsController } from './international-payments/international-payments.controller';
+import { InternationalPaymentsService } from './international-payments/international-payments.service';
 import { VendorPerformanceService } from './vendor-performance/vendor-performance.service';
 import { RetainersService } from './sales-orders/retainers.service';
 import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
@@ -276,6 +278,7 @@ export class AppModule {
     PaymentLinksController,
     CustomerOnboardingController,
     VendorPerformanceController,
+    InternationalPaymentsController,
     VendorOnboardingController,
     PaymentLinkWebhooksController,
     PurchaseOrdersController,
@@ -380,6 +383,7 @@ export class AppModule {
     PaymentLinksService,
     CustomerOnboardingService,
     VendorPerformanceService,
+    InternationalPaymentsService,
     PurchaseOrdersService,
         JournalTemplatesRunnerService,
         RecurringBillsService,

@@ -4789,8 +4789,16 @@ model VendorBankDetails {
   orgId            String    @map("org_id") @db.Uuid
   accountName      String    @map("account_name") @db.VarChar(140)
   accountNumber    String    @map("account_number") @db.VarChar(34)
-  ifsc             String    @db.Char(11)
+  /// Null for international bank details (AP-023).
+  ifsc             String?   @db.Char(11)
   bankName         String?   @map("bank_name") @db.VarChar(140)
+  /// DOMESTIC (IFSC) or INTERNATIONAL (SWIFT/BIC, IBAN or account number, bank country).
+  kind             String    @default("DOMESTIC") @db.VarChar(13)
+  swiftBic         String?   @map("swift_bic") @db.VarChar(11)
+  bankCountry      String?   @map("bank_country") @db.Char(2)
+  bankAddress      String?   @map("bank_address") @db.VarChar(300)
+  routingCode      String?   @map("routing_code") @db.VarChar(20)
+  intermediarySwift String?  @map("intermediary_swift") @db.VarChar(11)
   changedById      String    @map("changed_by_id") @db.Uuid
   changedAt        DateTime  @default(now()) @map("changed_at") @db.Timestamptz(6)
   verifiedById     String?   @map("verified_by_id") @db.Uuid
@@ -5443,4 +5451,63 @@ model VendorReview {
   @@unique([id, orgId])
   @@index([orgId, contactId, reviewDate])
   @@map("vendor_reviews")
+}
+
+/// AP-023: an outward remittance to one vendor abroad in their currency (IP-0001).
+model InternationalPayment {
+  id             String                     @id @default(uuid()) @db.Uuid
+  orgId          String                     @map("org_id") @db.Uuid
+  number         Int
+  contactId      String                     @map("contact_id") @db.Uuid
+  bankAccountId  String                     @map("bank_account_id") @db.Uuid
+  paymentDate    DateTime                   @map("payment_date") @db.Date
+  currency       String                     @db.Char(3)
+  amount         Decimal                    @default(0) @db.Decimal(24, 6)
+  estimateRate   Decimal?                   @map("estimate_rate") @db.Decimal(24, 10)
+  purposeCode    String?                    @map("purpose_code") @db.VarChar(5)
+  purpose        String?                    @db.VarChar(200)
+  charges        String                     @default("OUR") @db.VarChar(3)
+  taxableInIndia Boolean                    @default(true) @map("taxable_in_india")
+  hasTaxOrder    Boolean                    @default(false) @map("has_tax_order")
+  form15Part     String                     @default("NONE") @map("form15_part") @db.VarChar(4)
+  needs15cb      Boolean                    @default(false) @map("needs_15cb")
+  form15caAck    String?                    @map("form15ca_ack") @db.VarChar(40)
+  form15cbNumber String?                    @map("form15cb_number") @db.VarChar(40)
+  memo           String?                    @db.VarChar(500)
+  status         String                     @default("DRAFT") @db.VarChar(10)
+  createdById    String                     @map("created_by_id") @db.Uuid
+  createdAt      DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  approvedById   String?                    @map("approved_by_id") @db.Uuid
+  approvedAt     DateTime?                  @map("approved_at") @db.Timestamptz(6)
+  selfApproved   Boolean                    @default(false) @map("self_approved")
+  sentById       String?                    @map("sent_by_id") @db.Uuid
+  sentAt         DateTime?                  @map("sent_at") @db.Timestamptz(6)
+  paidRate       Decimal?                   @map("paid_rate") @db.Decimal(24, 10)
+  bankReference  String?                    @map("bank_reference") @db.VarChar(60)
+  paymentId      String?                    @map("payment_id") @db.Uuid
+  paidById       String?                    @map("paid_by_id") @db.Uuid
+  paidAt         DateTime?                  @map("paid_at") @db.Timestamptz(6)
+  cancelledById  String?                    @map("cancelled_by_id") @db.Uuid
+  cancelledAt    DateTime?                  @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason   String?                    @map("cancel_reason") @db.VarChar(500)
+  items          InternationalPaymentItem[]
+
+  @@unique([id, orgId])
+  @@unique([orgId, number])
+  @@index([orgId, status])
+  @@map("international_payments")
+}
+
+model InternationalPaymentItem {
+  id           String               @id @default(uuid()) @db.Uuid
+  orgId        String               @map("org_id") @db.Uuid
+  remittanceId String               @map("remittance_id") @db.Uuid
+  documentId   String               @map("document_id") @db.Uuid
+  amount       Decimal              @db.Decimal(24, 6)
+  remittance   InternationalPayment @relation(fields: [remittanceId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([remittanceId, documentId], map: "international_payment_items_remittance_document_key")
+  @@index([orgId, documentId], map: "international_payment_items_org_id_idx")
+  @@map("international_payment_items")
 }

@@ -6299,6 +6299,22 @@
         "docs/VENDOR_PERFORMANCE.md"
       ],
       "notes": "Scorecard per vendor and period from purchase orders, goods receipts, posted bills and vendor credits: on-time delivery (40), rejected goods by value (30), bills matched without accepted differences (20), team reviews (10), reweighted over what can be measured, grades A-D; overcharge above order price, spend and credits shown. Reviews 1-5 by aspect, optional PO, note needed at 1-2, append-only, withdrawn only by their author. Not built: external risk data."
+    },
+    "AP-023": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/international-payments.ts",
+        "packages/accounting-engine/test/international-payments.test.ts",
+        "packages/database/prisma/migrations/20261210090000_international_payments/migration.sql",
+        "apps/api/src/international-payments/international-payments.service.ts",
+        "apps/api/test/international-payments.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/international-payments/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/international-payments/[paymentId]/page.tsx",
+        "apps/web/src/components/purchases/vendor-bank-card.tsx",
+        "apps/web/e2e/international-payments-flow.test.mjs",
+        "docs/INTERNATIONAL_PAYMENTS.md"
+      ],
+      "notes": "Vendor bank abroad (IBAN mod-97, SWIFT country, ABA checksum, second-person verification); remittance per vendor and currency against posted foreign-currency bills with RBI purpose code, charges OUR/SHA/BEN and Form 15CA part A/B/C/D plus 15CB above Rs 5 lakh per vendor per financial year; approval by another person; CSV remittance instruction marks it sent; recorded at the bank's rate settling the bills. Purpose codes and 15CA rules not reviewed by a banker or CA. Not built: bank API/MT103, section 195 TDS, forwards."
     }
   }
 }

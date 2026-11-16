@@ -191,7 +191,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-020 |  | capability | Expense classification | Not started |
 | AP-021 |  | capability | Vendor performance tracking | Tested |
 | AP-022 |  | capability | Payment reconciliation | Tested |
-| AP-023 |  | capability | International payment preparation | Not started |
+| AP-023 |  | capability | International payment preparation | Tested |
 | AP-024 |  | capability | Vendor risk monitoring | Not started |
 | AP-025 | Advanced AP AI | capability | Invoice document extraction | Not started |
 | AP-026 | Advanced AP AI | capability | AI invoice coding | Not started |

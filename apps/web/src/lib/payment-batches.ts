@@ -72,8 +72,15 @@ export interface VendorBankDetails {
   details: {
     accountName: string;
     accountNumberMasked: string;
-    ifsc: string;
+    ifsc: string | null;
     bankName: string | null;
+    /** DOMESTIC (IFSC) or INTERNATIONAL (AP-023). */
+    kind: 'DOMESTIC' | 'INTERNATIONAL';
+    swiftBic: string | null;
+    bankCountry: string | null;
+    bankAddress: string | null;
+    routingCode: string | null;
+    intermediarySwift: string | null;
     changedBy: string | null;
     changedById: string;
     changedAt: string;
