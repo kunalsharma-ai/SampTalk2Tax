@@ -89,7 +89,7 @@ describe('workflow automations', () => {
 
   it('offers triggers, facts, operators and the members a task can go to, to owners and admins only', async () => {
     const cat = (await ctx.http().get(`${org.base}/workflows/catalogue`).set(owner.auth).expect(200)).body;
-    expect(cat.triggers.map((t: { key: string }) => t.key)).toEqual(['INVOICE_POSTED', 'BILL_POSTED', 'DOCUMENT_VOIDED', 'RECEIPT_RECORDED', 'VENDOR_PAYMENT_RECORDED', 'JOURNAL_POSTED', 'EXPENSE_CLAIM_SUBMITTED', 'ALERT_OPENED']);
+    expect(cat.triggers.map((t: { key: string }) => t.key)).toEqual(['INVOICE_POSTED', 'BILL_POSTED', 'DOCUMENT_VOIDED', 'RECEIPT_RECORDED', 'VENDOR_PAYMENT_RECORDED', 'JOURNAL_POSTED', 'EXPENSE_CLAIM_SUBMITTED', 'ALERT_OPENED', 'SCHEDULE', 'INVOICE_OVERDUE', 'BILL_DUE_SOON']);
     expect(cat.triggers[0].facts.find((f: { key: string }) => f.key === 'total')).toEqual({ key: 'total', label: 'Total', type: 'money' });
     expect(cat.operators.money.map((o: { op: string }) => o.op)).toEqual(['gt', 'gte', 'lt', 'lte', 'eq']);
     // Employees cannot be given tasks.

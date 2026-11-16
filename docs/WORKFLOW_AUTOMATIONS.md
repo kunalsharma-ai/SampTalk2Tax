@@ -1,8 +1,9 @@
-# Workflow automations and tasks (M5, slice 1)
+# Workflow automations and tasks (M5, slices 1 and 2)
 
-**Automations** let owners and admins say: *when* something happens in the books, *only if* some conditions hold, *do* these things. A workflow can:
+**Automations** let owners and admins say: *when* something happens in the books, a schedule comes round, or an invoice or bill reaches a date, *only if* some conditions hold, *do* these things. A workflow can:
 
 * **give someone a task**, linked to the record it is about;
+* **send an email** to everyone with a role, one member, or the customer or vendor the record is about;
 * **send a webhook**, a signed HTTP POST, to another system such as a CRM, a chat tool or an internal service.
 
 **Tasks** are a shared to-do list. People give tasks to each other, and automations give tasks too. Each member sees the tasks given to them or to their role.
@@ -10,12 +11,13 @@
 | Part | Where |
 |---|---|
 | Rules: triggers, facts, conditions, validation, templates, retry schedule | `packages/accounting-engine/src/workflows.ts` |
-| Runner and webhook delivery | `apps/api/src/workflows/workflow-runner.service.ts`, `workflow-facts.ts`, `webhook.ts` |
+| Runner, schedules, webhook and email delivery | `apps/api/src/workflows/workflow-runner.service.ts`, `workflow-facts.ts`, `webhook.ts`, `email.ts` |
 | Workflows: building, versions, testing, run log, retry | `apps/api/src/workflows/workflows.service.ts`, `workflows.controller.ts` |
 | Tasks | `apps/api/src/tasks` |
 | Web | **Governance → Automations** (`apps/web/src/app/orgs/[orgId]/automations`) and **Overview → My tasks** (`…/tasks`) |
-| Database | Migration `20261102120000_workflow_automations` |
-| Tests | `packages/accounting-engine/test/workflows.test.ts`, `apps/api/test/workflows.e2e.test.ts`, `apps/api/test/webhook.test.ts`, `apps/web/e2e/automations-flow.test.mjs` |
+| Database | Migrations `20261102120000_workflow_automations`, `20261102150000_workflow_schedules_email` |
+| Tests | `packages/accounting-engine/test/workflows.test.ts`, `apps/api/test/workflows.e2e.test.ts`, `apps/api/test/workflow-schedules.e2e.test.ts`, `apps/api/test/webhook.test.ts`, `apps/web/e2e/automations-flow.test.mjs`, `apps/web/e2e/automations-schedule-email.test.mjs` |
+| Local SMTP server for tests | `test-support/smtp-stand-in.mjs` |
 
 ## Triggers and their facts
 
@@ -33,6 +35,22 @@ Each trigger offers **facts**: the values that conditions test and that task tit
 | An alert opens | `alert.opened`: a new alert, or one that cleared and came back | severity, check, title, amount (at stake) |
 
 Credit notes and vendor credits being posted, and journals made by other modules (invoices, payments, payroll and so on), start nothing.
+
+The invoice, bill, receipt and payment triggers also offer **contactEmail**, the email address saved on the customer or vendor.
+
+### Schedule triggers
+
+| Trigger | Settings | Acts | Facts |
+|---|---|---|---|
+| On a schedule | Every day, every week on a weekday, or every month on day 1–28; at a time, India time | Once each time the schedule comes round | date, weekday, overdueReceivables, overduePayables, receivablesOutstanding, payablesOutstanding (as of that date; open amounts on posted invoices and bills, overdue meaning due before the date) |
+| An invoice is overdue | 1–365 days after the due date | Once per invoice, on the day it is that many days overdue and still has something to pay | number, contactName, contactEmail, total, balance (still to pay), issueDate, dueDate, reference |
+| A bill is due soon | 0–90 days before the due date | Once per bill, on the day it is that many days from due and still has something to pay | number, contactName, contactEmail, total, balance, issueDate, dueDate, reference |
+
+* **No backlog.** A schedule trigger acts only on times and dates from when the workflow was last turned on (`activated_at`). Turning on "3 days overdue" does not email every invoice that was already 3 or more days overdue; it emails each invoice that reaches 3 days from then on. An invoice posted late, whose day already passed while the workflow was on, is picked up on the next pass.
+* **Once per occurrence.** Each run of a schedule trigger has an occurrence key, `at:<time>` for a schedule and `doc:<document id>:<days>` for a date trigger, and a unique index allows one live run per workflow and key. Turning a workflow off and on again never repeats a reminder for the same document and days. Changing the number of days makes a different key, so the same invoice can be reminded again at the new number of days.
+* **Paid in full means no run.** The open amount is the total less allocations of receipts, payments and credits, as of that India date. Voided documents are left out.
+* If the API was down when a schedule came round, the next pass acts on the latest time it came round (once), not on every time missed.
+* Times are India time (UTC+05:30, no daylight saving). The workflow page shows when a schedule comes round next.
 
 ## Conditions
 
@@ -56,14 +74,17 @@ A workflow has one to five actions, carried out in order.
   * The task is created in the same transaction as the run.
   * If the member has left the organisation, that action fails with a reason. The rest of the run still happens.
 * **Send a webhook** to an address. The webhook is queued and sent straight after (see below).
+* **Send an email** (see below) to everyone with a role, one member, or the customer or vendor (on triggers that have one). Subject and message use `{{fact}}` placeholders. The email is queued and sent straight after the run commits.
 
 A definition is checked when it is saved, and every problem is listed:
 
 * unknown facts or placeholders;
 * the wrong test for a fact;
 * an amount or date that is not valid;
-* a member who cannot take tasks;
-* a webhook address that is not public https.
+* a member who cannot take tasks, or an email to someone who is not a member;
+* a webhook address that is not public https;
+* schedule settings that are missing or out of range, and settings given to a trigger that takes none (dropped; the database refuses them too);
+* an email with no subject or message, a subject on more than one line, or an email to "the customer or vendor" on a trigger without one.
 
 ## How the runner works
 
@@ -72,16 +93,32 @@ A definition is checked when it is saved, and every problem is listed:
    * Every `WORKFLOW_RUNNER_INTERVAL_SECONDS` (default 10), the runner locks each organisation's cursor with `FOR UPDATE SKIP LOCKED`, so two API processes never handle the same events.
    * It reads up to 200 newer events, starts runs, and moves the cursor forward, all in one transaction.
    * Audit ids are committed in order within an organisation, because appends hold a per-organisation lock until commit. So the cursor can never pass an event that is still to commit.
-3. **A run per workflow and event.**
+3. **Schedules.** In the same pass, for each organisation with a schedule workflow on, the runner takes a per-organisation advisory lock (`pg_try_advisory_xact_lock`), works out the latest time each schedule came round and the invoices or bills that reach their date, skips occurrences that already have a run, and starts the rest, in one transaction.
+4. **A run per workflow and event.**
    * A workflow acts only on events **after it was turned on**. Turning a workflow on records the newest event id while holding the organisation's audit lock. Turning it on never replays history.
    * Every event a workflow listens to gets a **run**, including runs whose conditions did not hold (recorded as *Conditions not met*, with each condition's actual value).
    * A unique index allows one live run per workflow and event.
-4. **Webhooks are sent after the transaction.**
-   * Each webhook action is stored as *pending*. The delivery loop claims due deliveries with `FOR UPDATE SKIP LOCKED` and a two-minute reservation, sends them, and records the answer.
+5. **Webhooks and emails are sent after the transaction.**
+   * Each webhook and email action is stored as *pending*. The delivery loop claims due deliveries with `FOR UPDATE SKIP LOCKED` and a two-minute reservation, sends them, and records the answer.
    * A run is *Done* when every action succeeded, and *Failed* when any action failed for good.
-   * While a webhook is waiting, the run is *Sending*.
+   * While a webhook or email is waiting, the run is *Sending*.
 
-The runner runs inside the API process. Tests set the interval to 0 and call `tick()` themselves.
+The runner runs inside the API process. Tests set the interval to 0 and call `tick()` themselves, with a chosen clock for schedules (`tick({ now })`).
+
+## Emails
+
+* **Sending.** Plain text over SMTP with nodemailer, one connection per message, through `SMTP_URL` from `EMAIL_FROM` (see `DEPLOYMENT.md`). Without them, email actions fail with "Email is not set up on this server", and the builder and workflow page say so.
+* **What is sent.** When the run starts, the addresses, subject and message are worked out and kept with the action, so every attempt sends the same email and the run log shows exactly what went:
+  * amounts are written for people, such as `₹1,50,000.00` (Indian grouping for rupees) or `USD 1,234.50`, and dates as `2 Nov 2026`;
+  * emails to members end with the automation's name, the organisation and a link to the record (`APP_URL`);
+  * emails to a customer or vendor end with "Sent by <organisation>" and no link into the app.
+* **Who it goes to.**
+  * *A role:* every member with that role, in one email (up to 50 addresses).
+  * *One member:* their account's email. If they have left, the action fails.
+  * *The customer or vendor:* the email saved on the contact. If there is none, that action fails with "<name> has no email address"; other actions still happen.
+* **Headers.** `Auto-Submitted: auto-generated`, `X-Auto-Response-Suppress: All`, and a Message-ID that is the same on every attempt of one delivery.
+* **Retries.** The same schedule as webhooks (1 minute, 5 minutes, 30 minutes, 2 hours, 6 hours; six attempts). No answer, or a 4xx answer (such as 451, try later), is tried again; a 5xx answer (such as 550, no such mailbox) ends the delivery. An owner or admin can send a failed email again from the run log once the cause is fixed. If some addresses are refused and the rest accepted, the email counts as sent and the refused addresses are listed.
+* **Tests.** "Test and email me" (or "Test and send") sends each email to the person testing only, with `[Test]` in front of the subject and a first line saying who the real email would go to. Customers and vendors never receive test emails.
 
 ## Webhooks
 
@@ -123,13 +160,13 @@ The runner runs inside the API process. Tests set the interval to 0 and call `ti
 ## Building, testing and changing a workflow
 
 * **A new workflow starts off.**
-* **Test.** **Test** runs the workflow on the most recent real event its trigger listens to (or a chosen event id), as a dry run. It shows:
-  * the facts;
-  * each condition, whether it holds, and the actual value;
-  * the exact task each action would create.
+* **Test.** **Test** runs the workflow as a dry run on:
+  * for an event trigger, the most recent real event it listens to (or a chosen event id);
+  * for a schedule, the latest time it came round, with today's figures;
+  * for "an invoice is overdue", the most recently overdue invoice still to be paid; for "a bill is due soon", the next bill to fall due that is still to be paid.
 
-  Nothing is created. **Test and send webhooks** also sends each webhook once, with `"test": true`. Test runs are kept in the run log, marked *Test*.
-* **Versions.** A change to the trigger, conditions or actions makes a **new version**.
+  It shows the facts, each condition with whether it holds and the actual value, and the exact task and email each action would make. Nothing is created. **Test and send webhooks** (or **Test and email me**, **Test and send**) also sends each webhook once, with `"test": true`, and each email to the tester only. Test runs are kept in the run log, marked *Test*.
+* **Versions.** A change to the trigger, its settings, the conditions or the actions makes a **new version**.
   * Versions are never changed or deleted (database trigger).
   * Each run keeps the version it ran.
   * The editor sends the version it started from, so two people editing at once cannot overwrite each other (`409 WORKFLOW_CHANGED`).
@@ -156,7 +193,7 @@ The runner runs inside the API process. Tests set the interval to 0 and call `ti
 
 | Action | Permission |
 |---|---|
-| Everything under Automations: build, test, turn on or off, see runs, retry, signing secret | `workflows.manage` (Owner, Admin) |
+| Everything under Automations: build, test, turn on or off, see runs, retry, signing secret, emails to customers and vendors | `workflows.manage` (Owner, Admin) |
 | Tasks | `tasks.use` (Owner, Admin, Accountant, Approver, Viewer) |
 
 The audit trail records:
@@ -174,17 +211,17 @@ All six tables have row-level security by organisation (forced).
   * A trigger keeps the organisation, author and creation time, and the version only goes up.
   * Workflows are never deleted.
 * **`workflow_versions`:**
-  * CHECKs: a known trigger; condition and action lists of the right size.
+  * CHECKs: a known trigger; settings only on schedule triggers (a frequency for schedules, days for date triggers); condition and action lists of the right size; action types task, webhook or email (on actions).
   * Never changed or deleted.
 * **`workflow_runs`:**
-  * CHECKs: a test run has a tester and a live run has an event; *Sending* exactly when not finished; a failure has a reason.
-  * Unique per workflow and event for live runs.
+  * CHECKs: a test run has a tester; a live run has an event or an occurrence, never both; *Sending* exactly when not finished; a failure has a reason.
+  * Unique per workflow and event, and per workflow and occurrence, for live runs.
   * Never deleted.
   * Only a running run changes, once. A failed run goes back to running only for a retry.
-  * What it ran on (facts, conditions, version, event) never changes.
+  * What it ran on (facts, conditions, version, event or occurrence) never changes.
 * **`workflow_action_runs`:**
   * An action keeps what it was asked to do.
-  * A finished action never changes, except that a failed webhook goes back to pending on a retry.
+  * A finished action never changes, except that a failed webhook or email goes back to pending on a retry.
   * Attempts only go up.
 * **`workflow_cursors`:** only move forward.
 * **`tasks`:**
@@ -193,13 +230,12 @@ All six tables have row-level security by organisation (forced).
 
 ## Not supported yet (do not rely on these)
 
-* **No scheduled triggers.** Examples are "every Monday" and "3 days before a due date". Triggers fire on events only.
-* **No other "became true" triggers.** "Invoice became overdue", "bank balance below X" and similar are not triggers. Alerts cover some of these: use **An alert opens**.
-* **No branches, loops, waits or parallel paths.** One list of conditions, then the actions in order.
-* **No email, SMS or chat notifications.** Talk2Tax does not send email yet. Use a webhook to a chat or email service.
-* **No actions that change the books.** No posting, approving, sending invoices, AI agent steps or general API calls; tasks and webhooks only.
+* **No other "became true" triggers.** "Bank balance below X" and similar are not triggers. Alerts cover some of these: use **An alert opens**, or a schedule with a condition on its figures.
+* **No branches, loops, waits or parallel paths.** One list of conditions, then the actions in order. No reminder sequences (use one workflow per step, such as 3, 10 and 30 days overdue).
+* **Email is plain text only, and not yet checked against a real mail provider.** It has been tested end to end against a local SMTP server. No HTML, attachments (such as the invoice PDF), reply tracking, bounce handling, unsubscribe or per-contact opt-out. No SMS or chat; use a webhook to a chat service.
+* **No actions that change the books.** No posting, approving, sending invoices, AI agent steps or general API calls; tasks, emails and webhooks only.
 * **No custom webhook headers or bodies, and no signing secrets per address.** The body and headers are fixed.
-* **The runner is in the API process.** It needs a running API. There is no separate worker, queue or dead-letter view beyond the run log.
-* **Not tested at volume.** The runner reads 200 events per organisation per pass and sends 20 webhooks per pass. It has not been load-tested.
-* **No notifications for tasks.** Tasks have no email reminders, comments, attachments, reassignment or count in the navigation yet.
+* **The runner is in the API process.** It needs a running API. There is no separate worker, queue or dead-letter view beyond the run log. A schedule missed while the API was down acts once, at the next pass.
+* **Not tested at volume.** The runner reads 200 events per organisation per pass, starts up to 200 date-trigger runs per workflow per pass, and sends 20 deliveries per pass. It has not been load-tested.
+* **No notifications for tasks.** Tasks have no email reminders of their own, comments, attachments, reassignment or count in the navigation yet. An automation can email the people a task is for.
 * **Facts are read at run time.** A record changed between the event and the run (normally a few seconds) is read as it is then. Payments, posted documents and journals do not change after posting, apart from being voided.

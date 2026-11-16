@@ -2942,9 +2942,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Integration pending",
+      "evidence": [
+        "apps/api/test/workflow-schedules.e2e.test.ts",
+        "apps/web/e2e/automations-schedule-email.test.mjs",
+        "docs/WORKFLOW_AUTOMATIONS.md"
+      ],
+      "notes": "Collection reminders as an automation: \"An invoice is overdue\" (N days after the due date, still not fully paid) can email the customer and give a task, once per invoice. Waiting on a real SMTP server for a live check. No reminder sequences, escalation by age or tracking of replies yet."
     },
     {
       "id": "AR-025",
@@ -13773,11 +13777,12 @@
       },
       "status": "Implementing",
       "evidence": [
-        "apps/web/src/components/workflows/editor.tsx",
+        "apps/web/e2e/automations-flow.test.mjs",
+        "apps/web/e2e/automations-schedule-email.test.mjs",
         "apps/web/src/app/orgs/[orgId]/automations",
-        "apps/web/e2e/automations-flow.test.mjs"
+        "apps/web/src/components/workflows/editor.tsx"
       ],
-      "notes": "Form-based builder: one trigger, conditions that must all hold, and up to five actions (task or webhook). No visual canvas, branches or drag and drop yet."
+      "notes": "Form-based builder: one trigger (an event, a schedule, or a date an invoice or bill reaches), conditions that must all hold, and up to five actions (task, email or webhook). No visual canvas, branches or drag and drop yet."
     },
     {
       "id": "WFLOW-002",
@@ -13828,9 +13833,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/workflows.ts",
+        "apps/api/src/workflows/workflow-runner.service.ts",
+        "packages/accounting-engine/test/workflows.test.ts",
+        "apps/api/test/workflow-schedules.e2e.test.ts",
+        "apps/web/e2e/automations-schedule-email.test.mjs",
+        "packages/database/prisma/migrations/20261102150000_workflow_schedules_email"
+      ],
+      "notes": "Three schedule triggers: on a schedule (every day, every week on a weekday, or every month on day 1-28, at a time in India time), an invoice N days overdue, and a bill due in N days. Each acts once per occurrence (unique index on workflow and occurrence), only on times and dates from when it was turned on, so turning one on never sends a backlog. Schedule facts include overdue and outstanding receivables and payables."
     },
     {
       "id": "WFLOW-004",
@@ -13983,9 +13995,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Integration pending",
+      "evidence": [
+        "apps/api/src/workflows/email.ts",
+        "apps/api/src/workflows/workflow-runner.service.ts",
+        "apps/api/test/workflow-schedules.e2e.test.ts",
+        "apps/web/e2e/automations-schedule-email.test.mjs",
+        "test-support/smtp-stand-in.mjs"
+      ],
+      "notes": "Email action: plain-text email to everyone with a role, one member, or the customer or vendor on the record, with {{placeholders}}, amounts like ₹1,50,000.00 and dates like 2 Nov 2026. Sent over SMTP (nodemailer, SMTP_URL and EMAIL_FROM) after the run commits, with the webhook retry schedule for 4xx answers or no answer; 5xx is final. Tests send to a local SMTP server; not yet run against a real mail provider. No SMS, chat or in-app notifications."
     },
     {
       "id": "WFLOW-010",
@@ -14110,11 +14128,12 @@
       },
       "status": "Tested",
       "evidence": [
+        "apps/api/test/workflow-schedules.e2e.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
         "packages/accounting-engine/src/workflows.ts",
-        "packages/accounting-engine/test/workflows.test.ts",
-        "apps/api/test/workflows.e2e.test.ts"
+        "packages/accounting-engine/test/workflows.test.ts"
       ],
-      "notes": "Six attempts: retries after 1 min, 5 min, 30 min, 2 h and 6 h for network errors, timeouts, 408, 429 and 5xx; other answers end the delivery."
+      "notes": "Six attempts: retries after 1 min, 5 min, 30 min, 2 h and 6 h. Webhooks: network errors, timeouts, 408, 429 and 5xx; other answers end the delivery. Emails: no answer or a 4xx SMTP answer; 5xx ends it."
     },
     {
       "id": "WFLOW-015",
@@ -14139,9 +14158,10 @@
       "status": "Tested",
       "evidence": [
         "apps/api/src/workflows/workflows.service.ts",
+        "apps/api/test/workflow-schedules.e2e.test.ts",
         "apps/api/test/workflows.e2e.test.ts"
       ],
-      "notes": "Failed runs say which action failed and why; an owner or admin can send a failed webhook again from the run log. A task for someone who has left fails that action only."
+      "notes": "Failed runs say which action failed and why; an owner or admin can send a failed webhook or email again from the run log. A task for someone who has left, or an email with no address, fails that action only."
     },
     {
       "id": "WFLOW-016",
@@ -14195,10 +14215,12 @@
       "status": "Tested",
       "evidence": [
         "apps/api/src/workflows/workflows.service.ts",
+        "apps/api/test/workflow-schedules.e2e.test.ts",
         "apps/api/test/workflows.e2e.test.ts",
-        "apps/web/e2e/automations-flow.test.mjs"
+        "apps/web/e2e/automations-flow.test.mjs",
+        "apps/web/e2e/automations-schedule-email.test.mjs"
       ],
-      "notes": "Dry run on the latest real event (or a chosen one): facts, each condition with its actual value, and the task each action would create. Webhooks are sent only when asked, marked \"test\": true."
+      "notes": "Dry run on the latest real event (or a chosen one), the latest time a schedule came round, or a real open invoice or bill: facts, each condition with its actual value, the task and the email each action would make. Webhooks are sent only when asked, marked \"test\": true; test emails go to the tester only, with [Test] in the subject."
     },
     {
       "id": "WFLOW-018",
@@ -32070,10 +32092,11 @@
       },
       "status": "Implementing",
       "evidence": [
-        "apps/web/src/app/orgs/[orgId]/automations",
-        "apps/web/e2e/automations-flow.test.mjs"
+        "apps/web/e2e/automations-flow.test.mjs",
+        "apps/web/e2e/automations-schedule-email.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/automations"
       ],
-      "notes": "Automations list, builder, test, run log, versions and webhook signing secret for owners and admins."
+      "notes": "Automations list, builder (events, schedules, dates), test (emails go to the tester only), run log with each email and webhook attempt, versions and webhook signing secret for owners and admins."
     },
     {
       "id": "NAV-037",

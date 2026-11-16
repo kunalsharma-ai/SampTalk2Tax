@@ -61,6 +61,10 @@ docker compose --profile app up --build   # API + Postgres
 | `WORKFLOW_RUNNER_INTERVAL_SECONDS` | no | How often the automation runner looks for events and due webhooks. Default 10; 0 turns the runner off |
 | `WEBHOOK_ALLOW_PRIVATE_NETWORKS` | no | `true` lets webhooks use http:// and reach private and loopback addresses. Development and tests only; must be false (the default) in production |
 | `WEBHOOK_TIMEOUT_SECONDS` | no | Longest a webhook delivery may take. Default 10 |
+| `SMTP_URL` | for email | The SMTP server automations send email through: `smtp://user:password@host:587` (STARTTLS when offered; add `?requireTLS=true` to insist) or `smtps://user:password@host:465`. Unset: email actions fail with "Email is not set up" |
+| `EMAIL_FROM` | with `SMTP_URL` | The sender of every email, such as `Talk2Tax <no-reply@example.com>`. Required when `SMTP_URL` is set. Set up SPF and DKIM for its domain with your mail provider |
+| `SMTP_TIMEOUT_SECONDS` | no | Longest one SMTP delivery may take. Default 20 |
+| `APP_URL` | no | The web app's public address, for links in emails to members. Default `http://localhost:3000` |
 | `TEST_DATABASE_URL` | tests | Must contain "test" |
 | `DEMO_PASSWORD` | no | Fixed password for the seeded demo user |
 | `T2T_API_URL` | web | API base URL used by the web app's server-side proxy. Default `http://localhost:4000` |

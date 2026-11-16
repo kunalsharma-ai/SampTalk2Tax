@@ -142,7 +142,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-021 |  | capability | Advance payments | Tested |
 | AR-022 |  | capability | Customer statements | Tested |
 | AR-023 |  | capability | Receivable aging | Tested |
-| AR-024 |  | capability | Collection reminders | Not started |
+| AR-024 |  | capability | Collection reminders | Integration pending |
 | AR-025 |  | capability | Dispute management | Not started |
 | AR-026 |  | capability | Bad debt provisions | Not started |
 | AR-027 |  | capability | Write-offs | Not started |
@@ -639,13 +639,13 @@ Part 18 · M5 · priority P2 · depends on: SEC
 |---|---|---|---|---|
 | WFLOW-001 |  | rule | Create a visual no-code and low-code workflow automation builder | Implementing |
 | WFLOW-002 |  | capability | Trigger-based automation | Tested |
-| WFLOW-003 |  | capability | Scheduled automation | Not started |
+| WFLOW-003 |  | capability | Scheduled automation | Tested |
 | WFLOW-004 |  | capability | Event-based automation | Tested |
 | WFLOW-005 |  | capability | Conditional branching | Implementing |
 | WFLOW-006 |  | capability | Approval workflows | Implementing |
 | WFLOW-007 |  | capability | Parallel tasks | Not started |
 | WFLOW-008 |  | capability | Escalations | Not started |
-| WFLOW-009 |  | capability | Notifications | Not started |
+| WFLOW-009 |  | capability | Notifications | Integration pending |
 | WFLOW-010 |  | capability | Document generation | Not started |
 | WFLOW-011 |  | capability | API calls | Not started |
 | WFLOW-012 |  | capability | Webhooks | Tested |
