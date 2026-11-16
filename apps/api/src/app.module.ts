@@ -43,6 +43,8 @@ import { ReportsController } from './reports/reports.controller';
 import { ReportsService } from './reports/reports.service';
 import { PayrollController } from './payroll/payroll.controller';
 import { PayrollService } from './payroll/payroll.service';
+import { ComplianceController } from './compliance/compliance.controller';
+import { ComplianceService } from './compliance/compliance.service';
 import { WithholdingController } from './withholding/withholding.controller';
 import { WithholdingService } from './withholding/withholding.service';
 
@@ -76,6 +78,7 @@ export class AppModule {
         GstController,
         WithholdingController,
         PayrollController,
+        ComplianceController,
       ],
       providers: [
         { provide: CONFIG, useValue: config },
@@ -102,6 +105,7 @@ export class AppModule {
         GstService,
         WithholdingService,
         PayrollService,
+        ComplianceService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },

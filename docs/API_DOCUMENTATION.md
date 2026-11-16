@@ -128,6 +128,10 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `POST /v1/orgs/:orgId/payroll/runs/:id/void` | payroll.manage + journals.reverse | Void (`reason`, optional `date`); refused while a later run is posted or a payment stands |
 | `POST /v1/orgs/:orgId/payroll/runs/:id/payments` | payroll.manage + journals.post | Record a payment of `liability` (NET_PAY, PF, ESI, PT, TDS) from `bankAccountId` on `date` with `reference`; posts Dr payable, Cr bank |
 | `POST /v1/orgs/:orgId/payroll/runs/:id/payments/:paymentId/void` | payroll.manage + journals.reverse | Void a payment (`reason`) |
+| `GET` / `PUT /v1/orgs/:orgId/compliance/settings` | reports.read / accounts.manage | GST return frequency (`MONTHLY` or `QUARTERLY` for QRMP) and `advanceTaxFrom` (or null); the GET also shows which areas apply and from when |
+| `GET /v1/orgs/:orgId/compliance/calendar?from=&to=` | reports.read | Obligations due in the window (at most 400 days) with status, amount, paid, outstanding, evidence and filing, plus `overdueBefore` (open items from up to two years earlier) and a summary |
+| `GET` / `POST /v1/orgs/:orgId/compliance/filings` | reports.read / accounts.manage | List filing records; mark a return filed or advance tax paid (`key` such as `GSTR3B:2026-10`, `filedOn`, `reference`, optional `note`). Payments are refused (`SETTLED_BY_RECORDS`) |
+| `POST /v1/orgs/:orgId/compliance/filings/:id/void` | accounts.manage | Void a filing record (`reason`) |
 | `GET /v1/orgs/:orgId/audit-events` | audit.read | Audit events (newest first) |
 | `GET /v1/orgs/:orgId/audit-events/verify` | audit.read | Recompute the hash chain |
 

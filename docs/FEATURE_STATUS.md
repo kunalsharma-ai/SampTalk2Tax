@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 1150 |
+| Not started | 1147 |
 | Designed | 0 |
-| Implementing | 39 |
+| Implementing | 41 |
 | Implemented | 28 |
-| Tested | 126 |
+| Tested | 127 |
 | Integration pending | 0 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,8 +28,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 33 | 10 |
 | Accounts payable | M2 | 36 | 25 | 11 |
 | Banking and reconciliation | M2 | 24 | 9 | 15 |
-| Global taxation engine | M3 | 54 | 36 | 18 |
-| Payroll and workforce finance | M3 | 34 | 21 | 13 |
+| Global taxation engine | M3 | 54 | 34 | 20 |
+| Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
 | Treasury management | M6 | 28 | 28 | 0 |
@@ -773,15 +773,37 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/withholding.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/tax/tds-tcs
 
+### TAX-021 — Advance tax calculations
+
+- Module: Global taxation engine
+- Status: **Implementing**
+- Notes: Advance tax instalment dates (15/45/75/100%) are tracked and can be marked paid with the challan. The tax itself is not calculated.
+- Evidence:
+  - packages/tax-engine/src/india/calendar.ts
+  - apps/api/test/compliance.e2e.test.ts
+
 ### TAX-022 — Tax payment tracking
 
 - Module: Global taxation engine
 - Status: **Implementing**
-- Notes: TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet.
+- Notes: TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet. The compliance calendar shows each monthly TDS/TCS, PF, ESI and PT payment as done when its challan or payroll payment is recorded; advance tax and GST payments are marked paid/filed by hand.
 - Evidence:
   - apps/api/src/withholding/withholding.service.ts
+  - apps/api/test/compliance.e2e.test.ts
   - apps/api/test/withholding.e2e.test.ts
   - apps/web/e2e/withholding-flow.test.mjs
+
+### TAX-023 — Statutory deadline calendars
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: India compliance calendar: GST (monthly or QRMP, GSTR-9), TDS/TCS deposits and quarterly statements (Forms 138/140/143), PF, ESI, Maharashtra PT and advance tax, from the organisation set-up. Payments are settled by records in the books; returns are marked filed with the acknowledgement (void-only records). No holiday shifts or notified extensions; see docs/COMPLIANCE_CALENDAR_INDIA.md.
+- Evidence:
+  - packages/tax-engine/src/india/calendar.ts
+  - packages/tax-engine/test/calendar.test.ts
+  - apps/api/test/compliance.e2e.test.ts
+  - apps/web/e2e/compliance-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/tax/compliance
 
 ### TAX-037 — Withholding taxes
 
@@ -829,6 +851,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/payroll.e2e.test.ts
   - apps/web/e2e/payroll-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/payroll/employees/[employeeId]
+
+### PAY-004 — Payroll calendars
+
+- Module: Payroll and workforce finance
+- Status: **Implementing**
+- Notes: Payroll statutory due dates (PF, ESI, PT, TDS on salary, Form 138) are on the compliance calendar. No pay calendars or pay frequencies other than monthly.
+- Evidence:
+  - apps/api/test/compliance.e2e.test.ts
 
 ### PAY-005 — Earnings
 
