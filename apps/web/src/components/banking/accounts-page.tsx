@@ -1,12 +1,12 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { date } from '@/lib/format';
 import { useAccounts, useOrg } from '@/lib/org';
 import { can, type BankAccountSummary } from '@/lib/types';
@@ -65,8 +65,67 @@ export function BankAccountsPage() {
           </Table>
         )}
       </Card>
+      {(q.data ?? []).length > 1 ? <TransferSuggestions /> : null}
       <NewBankAccountDialog open={open} onOpenChange={setOpen} />
     </>
+  );
+}
+
+interface TransferSide {
+  id: string;
+  accountId: string;
+  account: string;
+  date: string;
+  description: string;
+  reference: string | null;
+}
+interface TransferSuggestion {
+  amount: string;
+  days: number;
+  reasons: string[];
+  unique: boolean;
+  out: TransferSide;
+  in: TransferSide;
+}
+
+/** BANK-007: money out of one of your accounts and the same amount into another, recorded as one transfer. */
+function TransferSuggestions() {
+  const { org, orgId } = useOrg();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['bank-transfers', orgId], queryFn: () => api<{ items: TransferSuggestion[] }>(`/v1/orgs/${orgId}/banking/transfers/suggestions`) });
+  const record = useMutation({
+    mutationFn: (s: TransferSuggestion) => api(`/v1/orgs/${orgId}/banking/transfers`, { method: 'POST', body: { outLineId: s.out.id, inLineId: s.in.id } }),
+    onSuccess: async () => {
+      for (const k of ['bank-transfers', 'bank-accounts', 'bank-lines', 'journals']) await qc.invalidateQueries({ queryKey: [k, orgId] });
+    },
+  });
+  if (!org) return null;
+  const items = q.data?.items ?? [];
+  const manage = can(org.role, 'banking.manage') && can(org.role, 'journals.post');
+  return (
+    <Card className="mt-6" role="region" aria-label="Transfers between your accounts">
+      <CardHeader
+        title="Transfers between your accounts"
+        description={items.length ? 'Money out of one of your accounts and the same amount into another within three days. Recording one posts a single transfer entry and matches both statement lines, so neither is booked as income or an expense.' : 'No likely transfers among the unmatched statement lines.'}
+      />
+      {record.error ? <div className="px-5 pb-3"><Alert title="Transfer not recorded">{record.error.message}{record.error instanceof ApiError && record.error.issues.length ? <ul className="mt-1 list-disc pl-5">{record.error.issues.map((i) => <li key={i}>{i}</li>)}</ul> : null}</Alert></div> : null}
+      {items.length ? (
+        <Table>
+          <thead><tr><Th>From</Th><Th>To</Th><Th numeric>Amount</Th><Th>Why</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
+          <tbody>
+            {items.map((s) => (
+              <Tr key={`${s.out.id}-${s.in.id}`}>
+                <Td><span className="font-medium">{s.out.account}</span><p className="text-xs text-fg-muted">{date(s.out.date)} · {s.out.description}</p></Td>
+                <Td><span className="font-medium">{s.in.account}</span><p className="text-xs text-fg-muted">{date(s.in.date)} · {s.in.description}</p></Td>
+                <Td numeric><Money value={s.amount} currency={org.functionalCurrency} /></Td>
+                <Td className="text-xs text-fg-muted">{s.reasons.join(' · ')}{s.unique ? null : <p className="text-warning">Other lines could also pair; check before recording.</p>}</Td>
+                <Td className="whitespace-nowrap text-right">{manage ? <Button size="sm" loading={record.isPending && record.variables === s} aria-label={`Record transfer of ${s.amount} from ${s.out.account} to ${s.in.account}`} onClick={() => record.mutate(s)}>Record transfer</Button> : null}</Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : null}
+    </Card>
   );
 }
 

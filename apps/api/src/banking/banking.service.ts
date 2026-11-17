@@ -13,6 +13,7 @@ import {
   reconciliationIssues,
   statementLineKeys,
   suggestMatches,
+  suggestTransfers,
 } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, Permission, RoleName } from '@talk2tax/security';
@@ -330,6 +331,80 @@ export class BankingService {
       await this.matchInTx(tx, org, actor, line, [bankLine.id], 'CREATED_ENTRY');
       return this.reload(tx, org, lineId);
     }, outer);
+  }
+
+  // ------------------------------------------------------------ transfers
+
+  /**
+   * Unmatched statement lines that look like money moved between two of the organisation's own
+   * bank or cash accounts (BANK-007): the same amount out of one and into another within a few days.
+   */
+  async transferSuggestions(org: BankOrg) {
+    const accounts = await this.prisma.account.findMany({ where: { orgId: org.id, subtype: { in: BANK_SUBTYPES }, isPostable: true, isActive: true }, select: { id: true, code: true, name: true } });
+    if (accounts.length < 2) return { items: [] };
+    const lines = await this.prisma.bankStatementLine.findMany({
+      where: { orgId: org.id, status: 'UNMATCHED', reconciliationId: null, accountId: { in: accounts.map((a) => a.id) } },
+      orderBy: { date: 'desc' },
+      take: 2000,
+    });
+    const found = suggestTransfers(
+      lines.map((l) => ({ id: l.id, accountId: l.accountId, date: fromDbDate(l.date), amount: new D(l.amount.toString()), text: `${l.description} ${l.reference ?? ''}` })),
+      accounts,
+    );
+    const byLine = new Map(lines.map((l) => [l.id, l]));
+    const label = new Map(accounts.map((a) => [a.id, `${a.code} · ${a.name}`]));
+    const scale = minorUnits(org.functionalCurrency);
+    const side = (id: string) => {
+      const l = byLine.get(id)!;
+      return { id, accountId: l.accountId, account: label.get(l.accountId)!, date: fromDbDate(l.date), description: l.description, reference: l.reference };
+    };
+    return {
+      items: found.map((f) => ({ amount: new D(byLine.get(f.inLineId)!.amount.toString()).toFixed(scale), days: f.days, score: f.score, reasons: f.reasons, unique: f.unique, out: side(f.outLineId), in: side(f.inLineId) })),
+    };
+  }
+
+  /**
+   * Records a transfer between two own accounts from its two statement lines: one entry
+   * (Dr receiving account / Cr paying account, dated when the money left) matched to both.
+   */
+  async recordTransfer(org: BankOrg, actor: Actor, input: { outLineId: string; inLineId: string }) {
+    this.require(org, 'journals.post', 'record transfers');
+    return this.inTx(async (tx) => {
+      if (input.outLineId === input.inLineId) throw new DomainError('INVALID_TRANSFER', 'Choose two different statement lines');
+      const locked = new Map<string, Awaited<ReturnType<BankingService['lockLine']>>>();
+      for (const id of [input.outLineId, input.inLineId].sort()) locked.set(id, await this.lockLine(tx, org.id, id));
+      const out = locked.get(input.outLineId)!;
+      const into = locked.get(input.inLineId)!;
+      this.assertOpen(out);
+      this.assertOpen(into);
+      const [outAmount, inAmount] = [new D(out.amount.toString()), new D(into.amount.toString())];
+      const issues: string[] = [];
+      if (out.accountId === into.accountId) issues.push('A transfer moves money between two different accounts');
+      if (!outAmount.lt(0)) issues.push('The first line must be money out');
+      if (!inAmount.gt(0)) issues.push('The second line must be money in');
+      if (!outAmount.neg().eq(inAmount)) issues.push('Money out and money in must be the same amount');
+      const gap = Math.abs(out.date.getTime() - into.date.getTime()) / 86_400_000;
+      if (gap > 31) issues.push('The two lines are more than 31 days apart');
+      if (issues.length) throw new DomainError('INVALID_TRANSFER', issues.join('; '), HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+      const [from, to] = [await this.bankAccount(tx, org.id, out.accountId), await this.bankAccount(tx, org.id, into.accountId)];
+      const amount = inAmount.toFixed();
+      const memo = `Transfer ${from.code} ${from.name} → ${to.code} ${to.name}`;
+      const je = await this.journals.postSystemEntry(tx, org, actor, {
+        date: fromDbDate(out.date),
+        source: 'BANK',
+        memo,
+        reference: out.reference ?? into.reference ?? undefined,
+        lines: [
+          { accountId: to.id, debit: amount, description: into.description.slice(0, 500) },
+          { accountId: from.id, credit: amount, description: out.description.slice(0, 500) },
+        ],
+      });
+      const jl = await tx.journalLine.findMany({ where: { entryId: je.id } });
+      await this.matchInTx(tx, org, actor, out, [jl.find((l) => l.accountId === from.id)!.id], 'CREATED_ENTRY');
+      await this.matchInTx(tx, org, actor, into, [jl.find((l) => l.accountId === to.id)!.id], 'CREATED_ENTRY');
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.transfer_recorded', entityType: 'journal_entry', entityId: je.id, data: { outLineId: out.id, inLineId: into.id, fromAccountId: from.id, toAccountId: to.id, amount } });
+      return { journalEntryId: je.id, out: await this.reload(tx, org, out.id), in: await this.reload(tx, org, into.id) };
+    });
   }
 
   /** Records a customer receipt (money in) or vendor payment (money out) for the line and matches it. */

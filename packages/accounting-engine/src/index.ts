@@ -76,3 +76,4 @@ export * from './unbilled-revenue';
 export * from './vendor-portal';
 export * from './expense-policy';
 export * from './cash-basis';
+export * from './bank-transfers';

@@ -5070,9 +5070,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bank-transfers.ts + test/bank-transfers.test.ts",
+        "apps/api/src/banking/banking.service.ts transferSuggestions/recordTransfer; GET banking/transfers/suggestions, POST banking/transfers",
+        "apps/api/test/bank-transfers.e2e.test.ts",
+        "apps/web/src/components/banking/accounts-page.tsx Transfers between your accounts",
+        "apps/web/e2e/bank-transfers-flow.test.mjs",
+        "docs/BANK_TRANSFERS.md"
+      ],
+      "notes": "Same amount out/in across own accounts within 3 days; recorded as one entry matched to both statement lines. Same-currency accounts."
     },
     {
       "id": "BANK-008",

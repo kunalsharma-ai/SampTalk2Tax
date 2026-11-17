@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 791 |
+| Not started | 790 |
 | Designed | 0 |
 | Implementing | 68 |
 | Implemented | 34 |
-| Tested | 436 |
+| Tested | 437 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -27,7 +27,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | General ledger and accounting engine | M1 | 44 | 8 | 36 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 12 | 24 |
-| Banking and reconciliation | M2 | 24 | 6 | 18 |
+| Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -1244,6 +1244,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/banking.e2e.test.ts › matching
   - packages/accounting-engine/test/bank.test.ts
   - apps/web/e2e/banking-flow.test.mjs
+
+### BANK-007 — Transfer detection
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Same amount out/in across own accounts within 3 days; recorded as one entry matched to both statement lines. Same-currency accounts.
+- Evidence:
+  - packages/accounting-engine/src/bank-transfers.ts + test/bank-transfers.test.ts
+  - apps/api/src/banking/banking.service.ts transferSuggestions/recordTransfer; GET banking/transfers/suggestions, POST banking/transfers
+  - apps/api/test/bank-transfers.e2e.test.ts
+  - apps/web/src/components/banking/accounts-page.tsx Transfers between your accounts
+  - apps/web/e2e/bank-transfers-flow.test.mjs
+  - docs/BANK_TRANSFERS.md
 
 ### BANK-008 — Deposit matching
 

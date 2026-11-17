@@ -43,6 +43,7 @@ const PaymentBody = z.object({
   memo: z.string().max(1000).optional(),
   allocations: z.array(z.object({ documentId: z.uuid(), amount: decimalString })).max(200).default([]),
 });
+const TransferBody = z.object({ outLineId: z.uuid(), inLineId: z.uuid() });
 const ReasonBody = z.object({ reason: z.string().trim().min(3).max(500) });
 const ReconcileBody = z.object({ statementDate: isoDate, statementBalance: signedDecimal, openingBalance: signedDecimal.optional() });
 
@@ -76,6 +77,21 @@ export class BankingController {
   @RequirePermission('banking.read')
   lines(@CurrentOrg() org: OrgContext, @Param('accountId', ParseUUIDPipe) accountId: string, @Query(new ZodPipe(LinesQuery)) q: z.infer<typeof LinesQuery>) {
     return this.banking.listLines(org, accountId, q);
+  }
+
+  /** Unmatched lines that look like money moved between two of your own accounts. */
+  @Get('transfers/suggestions')
+  @RequirePermission('banking.read')
+  transferSuggestions(@CurrentOrg() org: OrgContext) {
+    return this.banking.transferSuggestions(org);
+  }
+
+  /** Records a transfer from its two statement lines (money out of one account, the same in to another). */
+  @Post('transfers')
+  @RequirePermission('banking.manage')
+  @ApiBody({ schema: openApi(TransferBody) })
+  recordTransfer(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(TransferBody)) body: z.infer<typeof TransferBody>) {
+    return this.banking.recordTransfer(org, user, body);
   }
 
   @Post('accounts/:accountId/auto-match')
