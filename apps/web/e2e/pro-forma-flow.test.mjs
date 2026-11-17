@@ -82,7 +82,7 @@ test('a quotation becomes a pro forma invoice, is issued and printed, then becom
   await dlg.getByRole('button', { name: 'Make draft invoice' }).click();
   await page.waitForURL(/\/sales\/invoices\/[0-9a-f-]{36}$/);
   await page.getByText('Reference PF-0001.').waitFor();
-  await page.getByText('Steel racks').waitFor();
+  await page.getByRole('cell', { name: 'Steel racks', exact: true }).waitFor();
   await page.goto(`${O}/sales/pro-formas`);
   await page.getByLabel('Show').selectOption('invoiced');
   await page.getByRole('table', { name: 'Pro forma invoices' }).getByRole('row', { name: /PF-0001.*Banyan Retail.*Invoiced/ }).waitFor();
