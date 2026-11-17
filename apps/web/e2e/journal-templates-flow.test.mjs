@@ -3,7 +3,7 @@
  * rent template with a month-end schedule that posts, runs the runs already due (posted journals
  * with the month in the memo), uses the template by hand for a draft, saves a manual journal as a
  * second template, pauses and resumes skipping missed runs, and archives a template.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

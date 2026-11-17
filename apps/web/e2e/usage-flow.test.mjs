@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for usage metering: an owner uploads a receipt and sees it counted
  * under Governance → Usage against the plan, and a person who runs Talk2Tax sees the
- * organisation under Platform admin → Usage. Real Next.js app → real API → real PostgreSQL.
+ * organisation under Platform admin → Usage. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

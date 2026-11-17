@@ -3,7 +3,7 @@
  * emails the customer when an invoice is a day overdue, tests it (the test email comes to
  * the owner only), turns it on, and the running API's own runner sends the real reminder
  * over SMTP. Then the owner builds a weekly digest and sees when it next comes round.
- * Real Next.js app → real API → real PostgreSQL → nodemailer → a local SMTP server run here
+ * Real Next.js app → real API → real MongoDB → nodemailer → a local SMTP server run here
  * (test-support/smtp-stand-in.mjs). The API must run with SMTP_URL=smtp://127.0.0.1:4556,
  * EMAIL_FROM set, and WORKFLOW_RUNNER_INTERVAL_SECONDS small (1 in CI).
  */

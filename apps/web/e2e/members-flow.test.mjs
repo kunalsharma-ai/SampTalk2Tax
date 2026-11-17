@@ -2,7 +2,7 @@
  * Browser end-to-end test for invitations: an owner creates an invite link, the invitee
  * opens it signed out, creates an account with the invited email and joins; the owner
  * changes the role and removes them; a link opened with the wrong account is refused.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

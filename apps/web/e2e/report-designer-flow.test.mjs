@@ -2,7 +2,7 @@
  * Browser end-to-end test for the report designer: an owner with posted invoices designs a
  * monthly report (heading, fixed text, figures, commentary), produces it for a month, writes the
  * commentary (a number not in the report is flagged), finalises it, and the record cannot change.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

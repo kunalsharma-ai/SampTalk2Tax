@@ -1,6 +1,6 @@
 /**
  * Browser end-to-end test for country modules: a person sets up a UK organisation, sees what the
- * module covers before creating it, finds no India-only pages, and adds the starter VAT rates. Real Next.js app → real API → real PostgreSQL.
+ * module covers before creating it, finds no India-only pages, and adds the starter VAT rates. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

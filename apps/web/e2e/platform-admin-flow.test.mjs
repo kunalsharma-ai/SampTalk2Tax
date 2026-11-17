@@ -2,7 +2,7 @@
  * Browser end-to-end test for platform administration: an administrator (given the role with the
  * real admin:grant command) finds an organisation, suspends it with a reason its owner sees,
  * announces maintenance, disables and re-enables a person, and never sees the books.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

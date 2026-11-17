@@ -3,7 +3,7 @@
  * the network with consent, sees how they compare once five other participants share the same
  * metric (only the median: fewer than ten), changes what is shared, and withdraws. The peers are
  * five more organisations set up through the API and withdrawn at the end, so the pool is left as
- * it was. Real Next.js app → real API → real PostgreSQL.
+ * it was. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

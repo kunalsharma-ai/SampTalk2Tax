@@ -4,7 +4,7 @@
  * adds an advocate with a PAN, enters a legal-services bill under reverse charge with TDS
  * (the form previews the tax from the server), posts it, and records the challan from the
  * TDS register, which ties to the ledger. A bill whose TDS is deposited cannot be voided.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -2,7 +2,7 @@
  * Browser end-to-end test for opportunity intelligence: an owner with twelve months of sales finds
  * a lapsed customer, a line to cross-sell and a slipped margin, changes the win-back rate, and
  * takes the win-back forward into the business impact engine.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -3,7 +3,7 @@
  * supplier runs the standard stress tests, opens "largest customer defaults", runs and saves it,
  * adds a cash freeze, sees each shock on its own, turns the simulation into a digital-twin
  * scenario and deletes the simulation.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
