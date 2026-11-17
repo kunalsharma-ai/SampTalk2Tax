@@ -385,6 +385,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid.',
     where: 'Expenses. Approved claims post to expense accounts and what is owed to the employee.',
   },
+  'expenses/allowance-rates': {
+    what: 'The rates employees can claim without a receipt: mileage per kilometre and per diem per day, each posting to an expense account.',
+    how: 'Add a rate with a clear name, such as Car or Metro city, its amount and the expense account. Change a rate or make it inactive when your policy changes; claims already saved keep the rate they were saved with.',
+    where: 'Expenses. Claimants choose these rates on mileage and per diem lines of a claim; finance (expenses.reimburse) sets them.',
+  },
   // ---------------------------------------------------------------- payroll
   'payroll/employees': {
     what: 'Your employees with their salary structure, PAN, statutory numbers and bank details.',

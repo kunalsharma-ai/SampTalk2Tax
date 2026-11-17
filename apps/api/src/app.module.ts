@@ -20,7 +20,8 @@ import { SessionsService } from './auth/sessions.service';
 import { TokensService } from './auth/tokens.service';
 import { BankingController } from './banking/banking.controller';
 import { BankingService } from './banking/banking.service';
-import { ExpensesController } from './expenses/expenses.controller';
+import { AllowanceRatesController, ExpensesController } from './expenses/expenses.controller';
+import { AllowancesService } from './expenses/allowances.service';
 import { ExpensesService } from './expenses/expenses.service';
 import { ErrorFilter } from './common/errors';
 import { ErrorsService } from './operations/errors.service';
@@ -264,6 +265,7 @@ export class AppModule {
         AttachmentsController,
         ApprovalsController,
         ExpensesController,
+        AllowanceRatesController,
         GstController,
         WithholdingController,
         PayrollController,
@@ -381,6 +383,7 @@ export class AppModule {
         AttachmentsService,
         ApprovalsService,
         ExpensesService,
+        AllowancesService,
         GstService,
         WithholdingService,
         PayrollService,

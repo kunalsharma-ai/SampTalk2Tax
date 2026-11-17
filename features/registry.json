@@ -8905,9 +8905,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/allowances.ts + test/allowances.test.ts",
+        "apps/api/src/expenses/allowances.service.ts; MongoDB collections expense_allowance_rates, expense_claim_allowances",
+        "/v1/orgs/:orgId/expense-allowance-rates; claim lines with allowance { rateId, quantity, from, to, purpose }",
+        "apps/api/test/expense-allowances.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/allowance-rates, claim form line kinds",
+        "apps/web/e2e/expense-allowances-flow.test.mjs"
+      ],
+      "notes": "Mileage at organisation rates per km (vehicle types as named rates). No map/GPS distance lookup."
     },
     {
       "id": "EXP-007",
@@ -8957,9 +8964,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/allowances.ts + test/allowances.test.ts",
+        "apps/api/src/expenses/allowances.service.ts; MongoDB collections expense_allowance_rates, expense_claim_allowances",
+        "/v1/orgs/:orgId/expense-allowance-rates; claim lines with allowance { rateId, quantity, from, to, purpose }",
+        "apps/api/test/expense-allowances.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/allowance-rates, claim form line kinds",
+        "apps/web/e2e/expense-allowances-flow.test.mjs"
+      ],
+      "notes": "Per diem at organisation daily rates (places as named rates), whole or half days."
     },
     {
       "id": "EXP-009",

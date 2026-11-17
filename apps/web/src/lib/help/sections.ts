@@ -103,6 +103,8 @@ export const SECTION_HELP: Record<string, Help> = {
   'Ask for help': { what: 'Open a support ticket with the Talk2Tax team.', how: 'Describe the problem, how urgent it is, and what you expected. You get replies on the ticket and by email.' },
   'Response times': { what: 'How quickly the support team aims to reply and to solve a ticket at each priority.', how: 'Use the priority that matches the impact on your work.' },
   'Change password': { what: 'Set a new password for signing in.', how: 'Enter your current password and a new long one. Every other device is signed out; this one stays signed in.' },
+  'Add a rate': { what: 'A new mileage or per diem rate employees can claim at.', how: 'Choose mileage (per km) or per diem (per day), name it, enter the rate and the expense account it posts to. Mileage rates can have up to 4 decimal places.' },
+  Rates: { what: 'Every mileage and per diem rate, active or not.', how: 'Choose Change to edit a rate or make it inactive. Inactive rates cannot be chosen on new claims; saved claims are not affected.' },
   'Two-step sign-in for members': {
     what: 'Whether everyone in this organisation must use two-step sign-in (a code from an authenticator app after the password) to open its books.',
     how: 'Turn two-step sign-in on for yourself under Account, then choose Require. Members without it see a set-up page instead of the books until they turn it on. The Members table shows who has it.',

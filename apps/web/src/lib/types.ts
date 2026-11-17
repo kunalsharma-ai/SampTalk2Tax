@@ -582,6 +582,31 @@ export interface ExpenseOptions {
   currency: string;
   accounts: { id: string; code: string; name: string }[];
   taxRates: { id: string; name: string; rate: string }[];
+  /** Active mileage and per diem rates. */
+  allowanceRates: AllowanceRate[];
+}
+export type AllowanceKind = 'MILEAGE' | 'PER_DIEM';
+export interface AllowanceRate {
+  id: string;
+  kind: AllowanceKind;
+  unit: 'KM' | 'DAY';
+  name: string;
+  rate: string;
+  accountId: string;
+  account: string | null;
+  isActive: boolean;
+  updatedAt: string;
+}
+export interface ClaimLineAllowance {
+  kind: AllowanceKind;
+  rateId: string;
+  rateName: string;
+  rate: string;
+  unit: 'KM' | 'DAY';
+  quantity: string;
+  from: string | null;
+  to: string | null;
+  purpose: string | null;
 }
 export interface ExpenseClaimSummary {
   id: string;
@@ -611,6 +636,8 @@ export interface ExpenseClaimLine {
   netAmount: string;
   taxAmount: string;
   possibleDuplicateOf: string[];
+  /** A mileage or per diem line: what the amount was worked out from. */
+  allowance: ClaimLineAllowance | null;
 }
 export interface ExpenseClaim {
   id: string;

@@ -26,6 +26,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
 import { lockRow } from '../db/locks';
+import { AllowancesService, ClaimLineInput } from './allowances.service';
 
 interface Actor {
   id: string;
@@ -33,7 +34,8 @@ interface Actor {
 
 export interface ClaimInput {
   title: string;
-  lines: ExpenseLineInput[];
+  /** Receipt lines, or mileage / per diem lines (`allowance`) whose amount the server works out. */
+  lines: ClaimLineInput[];
 }
 
 const CLAIM_INCLUDE = {
@@ -79,6 +81,7 @@ export class ExpensesService {
     private readonly mirror: PostgresMirrorService,
     private readonly chart: ChartService,
     private readonly moved: MovedTables,
+    private readonly allowances: AllowancesService,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -90,7 +93,8 @@ export class ExpensesService {
       this.prisma.account.findMany({ where: { orgId: org.id, type: 'EXPENSE', isPostable: true, isActive: true, id: { notIn: control } }, select: { id: true, code: true, name: true }, orderBy: { code: 'asc' } }),
       this.prisma.taxRate.findMany({ where: { orgId: org.id, isActive: true, kind: 'SIMPLE', purchaseAccountId: { not: null } }, select: { id: true, name: true, rate: true }, orderBy: [{ rate: 'asc' }, { name: 'asc' }] }),
     ]);
-    return { currency: org.functionalCurrency, accounts, taxRates: taxRates.map((t) => ({ ...t, rate: t.rate.toFixed() })) };
+    const allowanceRates = await this.allowances.listRates(org, { activeOnly: true });
+    return { currency: org.functionalCurrency, accounts, taxRates: taxRates.map((t) => ({ ...t, rate: t.rate.toFixed() })), allowanceRates };
   }
 
   async list(org: OrgContext, actor: Actor, q: { status?: ExpenseClaimStatus; mine: boolean; limit: number; offset: number }) {
@@ -132,8 +136,9 @@ export class ExpensesService {
 
   async create(org: OrgContext, actor: Actor, input: ClaimInput) {
     this.require(org, 'expenses.submit', 'claim expenses');
+    const expanded = await this.allowances.expand(org, input.lines);
     return this.prisma.$transaction(async (tx) => {
-      const computed = await this.prepare(tx, org, input.lines);
+      const computed = await this.prepare(tx, org, expanded.lines);
       const n = await this.nextNumber(tx, org.id);
       const now = new Date();
       const created = await this.moved.create<{ id: string }>(tx, EXPENSE_CLAIMS, org.id, {
@@ -149,6 +154,7 @@ export class ExpensesService {
         createdAt: now,
         updatedAt: now,
       });
+      await this.allowances.save(created.id, expanded.details);
       const c = await tx.expenseClaim.findUniqueOrThrow({ where: { id: created.id }, include: CLAIM_INCLUDE });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'expense_claim.created', entityType: 'expense_claim', entityId: c.id, data: { number: c.number, total: c.total.toFixed() } });
       return this.serialize(org, actor, c, tx);
@@ -157,10 +163,11 @@ export class ExpensesService {
 
   /** The claimant edits a draft or a rejected claim; a rejected claim becomes a draft again. */
   async update(org: OrgContext, actor: Actor, id: string, input: ClaimInput) {
+    const expanded = await this.allowances.expand(org, input.lines);
     return this.prisma.$transaction(async (tx) => {
       const c = await this.lockOwn(tx, org, actor, id);
       if (!EDITABLE.includes(c.status)) throw new DomainError('NOT_EDITABLE', `A ${c.status.toLowerCase()} claim cannot be edited${c.status === 'SUBMITTED' ? '; withdraw it first' : ''}`, HttpStatus.CONFLICT);
-      const computed = await this.prepare(tx, org, input.lines);
+      const computed = await this.prepare(tx, org, expanded.lines);
       await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, {
         title: input.title.trim(),
         status: 'DRAFT',
@@ -170,6 +177,7 @@ export class ExpensesService {
         lines: lineRows(computed),
         updatedAt: new Date(),
       });
+      await this.allowances.save(id, expanded.details);
       const out = await tx.expenseClaim.findUniqueOrThrow({ where: { id }, include: CLAIM_INCLUDE });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'expense_claim.updated', entityType: 'expense_claim', entityId: id, data: { total: out.total.toFixed() } });
       return this.serialize(org, actor, out, tx);
@@ -180,6 +188,7 @@ export class ExpensesService {
     await this.prisma.$transaction(async (tx) => {
       const c = await this.lockOwn(tx, org, actor, id);
       if (c.status !== 'DRAFT') throw new DomainError('NOT_DRAFT', 'Only drafts can be deleted', HttpStatus.CONFLICT);
+      await this.allowances.save(id, []);
       await this.moved.remove(tx, EXPENSE_CLAIMS, org.id, id);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'expense_claim.deleted', entityType: 'expense_claim', entityId: id, data: { number: c.number } });
     });
@@ -399,6 +408,7 @@ export class ExpensesService {
     );
     const receipts = await db.attachment.count({ where: { orgId: org.id, entityType: 'EXPENSE_CLAIM', entityId: c.id, removedAt: null } });
     const bank = c.bankAccountId ? await db.account.findUnique({ where: { id: c.bankAccountId }, select: { code: true, name: true } }) : null;
+    const allowanceByLine = await this.allowances.forClaim(c.id);
     const own = c.claimantId === actor.id;
     const decide = hasPermission(org.role, 'approvals.decide') && hasPermission(org.role, 'journals.post');
     return {
@@ -443,6 +453,8 @@ export class ExpensesService {
         netAmount: l.netAmount.toFixed(scale),
         taxAmount: l.taxAmount.toFixed(scale),
         possibleDuplicateOf: dupes.get(l.lineNo) ?? [],
+        /** Set on a mileage or per diem line: what the amount was worked out from. */
+        allowance: allowanceByLine.get(l.lineNo) ?? null,
       })),
       /** UI hints only; every action is checked again on the server. */
       actions: {
