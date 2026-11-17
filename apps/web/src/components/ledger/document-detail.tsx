@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ApprovalCard, useApprovalState } from '@/components/approvals/approval-card';
 import { AttachmentsPanel } from '@/components/attachments';
+import { BillChecksCard } from '@/components/purchases/bill-checks-card';
 import { EInvoicePanel } from '@/components/e-invoice';
 import { EWayBillPanel } from '@/components/e-way-bill';
 import { Money } from '@/components/money';
@@ -330,6 +331,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           </Table>
         )}
       </Card>
+
+      {d.kind === 'BILL' && d.status !== 'VOID' ? <BillChecksCard orgId={orgId} documentId={d.id} canManage={canManage} /> : null}
 
       <AttachmentsPanel entityType="DOCUMENT" entityId={d.id} canManage={canManage} description={`The ${label.toLowerCase()} itself, receipts, delivery notes. PDF, PNG, JPEG or WebP up to 5 MB each; kept exactly as uploaded.`} />
 

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 787 |
+| Not started | 786 |
 | Designed | 0 |
 | Implementing | 68 |
 | Implemented | 34 |
-| Tested | 440 |
+| Tested | 441 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
 | General ledger and accounting engine | M1 | 44 | 6 | 38 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
-| Accounts payable | M2 | 36 | 12 | 24 |
+| Accounts payable | M2 | 36 | 11 | 25 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1228,6 +1228,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/payment-batches-flow.test.mjs
   - docs/PAYMENT_BATCHES.md
   - apps/web/src/components/purchases/vendor-bank-card.tsx
+
+### AP-031 — Invoice anomaly detection
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Rule-based checks against the vendor's earlier bills and bank details, with reviews. Fixed thresholds; no AI explanation yet.
+- Evidence:
+  - packages/accounting-engine/src/bill-checks.ts + test/bill-checks.test.ts
+  - apps/api/src/bill-checks; MongoDB collection bill_check_reviews
+  - /v1/orgs/:orgId/purchases/bill-checks (+ /:documentId, /:documentId/review)
+  - apps/api/test/bill-checks.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/bill-checks, bill page Unusual bill checks card
+  - apps/web/e2e/bill-checks-flow.test.mjs
+  - docs/BILL_CHECKS.md
 
 ### BANK-001 — Multiple bank account management
 

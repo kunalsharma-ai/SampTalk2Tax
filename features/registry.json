@@ -4759,9 +4759,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bill-checks.ts + test/bill-checks.test.ts",
+        "apps/api/src/bill-checks; MongoDB collection bill_check_reviews",
+        "/v1/orgs/:orgId/purchases/bill-checks (+ /:documentId, /:documentId/review)",
+        "apps/api/test/bill-checks.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/bill-checks, bill page Unusual bill checks card",
+        "apps/web/e2e/bill-checks-flow.test.mjs",
+        "docs/BILL_CHECKS.md"
+      ],
+      "notes": "Rule-based checks against the vendor's earlier bills and bank details, with reviews. Fixed thresholds; no AI explanation yet."
     },
     {
       "id": "AP-032",
