@@ -447,6 +447,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add departments and projects. Link a project to a customer so its costs count against that customer\'s profit.',
     where: 'Accounting. Tags are used on invoices, bills and journals, and in Profit by department and Customer 360.',
   },
+  'financial-tags': {
+    what: 'Tags you define to report by, such as Location (an office, store or branch), Business unit or Sales channel, and their values.',
+    how: 'Add a tag from a preset or name your own, then add its values. Pick a value on journal lines; a line using a defined tag must use one of its values in use. Switch a value off to stop new lines using it.',
+    where: 'Accounting. Tags show under each journal line and as columns in Profit by department, project or tag. Values are never removed, so old lines keep their name.',
+  },
   'year-end': {
     what: 'Closing each fiscal year: its revenue and expense accounts brought to nil and the profit or loss moved to retained earnings.',
     how: 'Once a year has ended, choose Close the year, check the closing journal and post it. If something is posted to the year later, close it again: only the difference is posted. Reopen reverses the year\'s closes.',
@@ -489,8 +494,8 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Reports. Comes from posted revenue and expense entries; on a cash basis, also from payments, credit notes applied, expense claims paid back and payroll payments.',
   },
   'reports/profit-by-dimension': {
-    what: 'Profit and loss with a column for each department or project.',
-    how: 'Pick the period and whether to split by department or project.',
+    what: 'Profit and loss with a column for each department, project or value of a tag such as Location.',
+    how: 'Pick the period and whether to split by department, project or one of your tags.',
     where: 'Reports. Uses the tags set on lines; untagged amounts are shown separately.',
   },
   'reports/balance-sheet': {

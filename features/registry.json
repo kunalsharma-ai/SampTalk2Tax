@@ -1916,9 +1916,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-tags.ts + test/financial-tags.test.ts",
+        "apps/api/src/financial-tags; MongoDB collection financial_tags",
+        "/v1/orgs/:orgId/financial-tags, /v1/orgs/:orgId/reports/profit-by-tag; journal lines checked (INVALID_TAG)",
+        "apps/api/test/financial-tags.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/financial-tags, journal form tag pickers, profit-by-dimension tag tabs",
+        "apps/web/e2e/financial-tags-flow.test.mjs",
+        "docs/FINANCIAL_TAGS.md"
+      ],
+      "notes": "Locations as the Location preset of financial tags: values per office, store or branch, picked on journal lines, profit by location. Not yet on invoice and bill lines."
     },
     {
       "id": "GL-029",
@@ -2013,9 +2021,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-tags.ts + test/financial-tags.test.ts",
+        "apps/api/src/financial-tags; MongoDB collection financial_tags",
+        "/v1/orgs/:orgId/financial-tags, /v1/orgs/:orgId/reports/profit-by-tag; journal lines checked (INVALID_TAG)",
+        "apps/api/test/financial-tags.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/financial-tags, journal form tag pickers, profit-by-dimension tag tabs",
+        "apps/web/e2e/financial-tags-flow.test.mjs",
+        "docs/FINANCIAL_TAGS.md"
+      ],
+      "notes": "Organisation-defined tags with values on journal lines and profit by tag. Not yet on invoice and bill lines, budgets or report export."
     },
     {
       "id": "GL-032",

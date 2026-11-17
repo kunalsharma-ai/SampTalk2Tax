@@ -1,10 +1,11 @@
 import { ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import { buildReversalLines, JournalLineInput, minorUnits, NormalizedJournal, PostingAccount, validateJournal } from '@talk2tax/accounting-engine';
+import { buildReversalLines, JournalLineInput, lineTagIssues, minorUnits, NormalizedJournal, PostingAccount, validateJournal } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { checkLineDimensions } from '../dimensions/check';
+import { financialTags } from '../db/collections/financial-tags';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { isDuplicateKeyError, type ScopedCollection } from '@talk2tax/document-db';
@@ -484,6 +485,11 @@ export class JournalsService {
     );
     const normalized = validateJournal(lines, { functionalCurrency: org.functionalCurrency, accounts: map });
     await checkLineDimensions(tx, org.id, lines, { allowInactive: opts.allowInactive });
+    if (!opts.allowInactive && lines.some((l) => l.dimensions && Object.keys(l.dimensions).length)) {
+      const defs = await runInOrg(org.id, () => this.store.collection(financialTags).find({}));
+      const issues = lineTagIssues(defs, lines);
+      if (issues.length) throw new DomainError('INVALID_TAG', issues[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { errors: issues, issues });
+    }
     return normalized;
   }
 

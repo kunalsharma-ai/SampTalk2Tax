@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 789 |
+| Not started | 787 |
 | Designed | 0 |
 | Implementing | 68 |
 | Implemented | 34 |
-| Tested | 438 |
+| Tested | 440 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 8 | 36 |
+| General ledger and accounting engine | M1 | 44 | 6 | 38 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 12 | 24 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
@@ -328,6 +328,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
   - docs/FINANCIAL_DIMENSIONS.md
 
+### GL-028 — Locations
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Locations as the Location preset of financial tags: values per office, store or branch, picked on journal lines, profit by location. Not yet on invoice and bill lines.
+- Evidence:
+  - packages/accounting-engine/src/financial-tags.ts + test/financial-tags.test.ts
+  - apps/api/src/financial-tags; MongoDB collection financial_tags
+  - /v1/orgs/:orgId/financial-tags, /v1/orgs/:orgId/reports/profit-by-tag; journal lines checked (INVALID_TAG)
+  - apps/api/test/financial-tags.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/financial-tags, journal form tag pickers, profit-by-dimension tag tabs
+  - apps/web/e2e/financial-tags-flow.test.mjs
+  - docs/FINANCIAL_TAGS.md
+
 ### GL-029 — Projects
 
 - Module: General ledger and accounting engine
@@ -361,6 +375,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/dimensions-flow.test.mjs
   - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
   - docs/FINANCIAL_DIMENSIONS.md
+
+### GL-031 — Custom financial tags
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Organisation-defined tags with values on journal lines and profit by tag. Not yet on invoice and bill lines, budgets or report export.
+- Evidence:
+  - packages/accounting-engine/src/financial-tags.ts + test/financial-tags.test.ts
+  - apps/api/src/financial-tags; MongoDB collection financial_tags
+  - /v1/orgs/:orgId/financial-tags, /v1/orgs/:orgId/reports/profit-by-tag; journal lines checked (INVALID_TAG)
+  - apps/api/test/financial-tags.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/financial-tags, journal form tag pickers, profit-by-dimension tag tabs
+  - apps/web/e2e/financial-tags-flow.test.mjs
+  - docs/FINANCIAL_TAGS.md
 
 ### GL-032 — Account reconciliation
 
