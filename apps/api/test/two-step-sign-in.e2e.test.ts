@@ -1,6 +1,6 @@
 import { totpCode, totpStep } from '@talk2tax/security';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bootApp, Ctx, registerUser, TestUser } from './helpers';
+import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
 
 const PASSWORD = 'a-very-long-test-password';
 let ctx: Ctx;
@@ -152,5 +152,47 @@ describe('managing two-step sign-in', () => {
     await expect(c.updateOne({ id: u.id }, { $set: { secretCipher: 'something-else' } })).rejects.toThrow(/cannot be swapped/);
     await expect(c.updateOne({ id: u.id }, { $set: { lastStep: 1 } })).rejects.toThrow(/cannot be made usable again/);
     await expect(c.updateOne({ id: u.id }, { $set: { enabledAt: null } })).rejects.toThrow(/records when it was turned on/);
+  });
+});
+
+describe('an organisation that requires two-step sign-in', () => {
+  it('can only be required by someone who has it on, and shuts out members without it until they turn it on', async () => {
+    const owner = await registerUser(ctx);
+    const org = await createOrg(ctx, owner);
+    const viewer = await registerUser(ctx);
+    await ctx.http().post(`${org.base}/members`).set(owner.auth).send({ email: viewer.email, role: 'VIEWER' }).expect(201);
+
+    expect((await ctx.http().get(`${org.base}/security`).set(owner.auth).expect(200)).body).toMatchObject({ requireTwoStep: false, membersWithoutTwoStep: 2, youHaveTwoStep: false });
+    expect((await ctx.http().put(`${org.base}/security`).set(owner.auth).send({ requireTwoStep: true }).expect(409)).body.error).toBe('MFA_NEEDED_FIRST');
+    // Only members.manage may change it.
+    await ctx.http().put(`${org.base}/security`).set(viewer.auth).send({ requireTwoStep: false }).expect(403);
+
+    await turnOn(owner);
+    const on = await ctx.http().put(`${org.base}/security`).set(owner.auth).send({ requireTwoStep: true }).expect(200);
+    expect(on.body).toMatchObject({ requireTwoStep: true, membersWithoutTwoStep: 1, youHaveTwoStep: true, updatedBy: 'Test User' });
+
+    // The viewer is refused everywhere in the organisation, but sees why in the list of organisations.
+    expect((await ctx.http().get(`${org.base}/accounts`).set(viewer.auth).expect(403)).body.error).toBe('MFA_REQUIRED');
+    expect((await ctx.http().get(org.base).set(viewer.auth).expect(403)).body.error).toBe('MFA_REQUIRED');
+    const listed = (await ctx.http().get('/v1/orgs').set(viewer.auth).expect(200)).body.find((o: { id: string }) => o.id === org.orgId);
+    expect(listed.twoStep).toEqual({ required: true, satisfied: false });
+    // The owner, who has it on, carries on.
+    await ctx.http().get(`${org.base}/accounts`).set(owner.auth).expect(200);
+    const members = (await ctx.http().get(`${org.base}/members`).set(owner.auth).expect(200)).body as { userId: string; twoStepOn: boolean }[];
+    expect(members.find((m) => m.userId === owner.id)?.twoStepOn).toBe(true);
+    expect(members.find((m) => m.userId === viewer.id)?.twoStepOn).toBe(false);
+
+    // Turning it on (with the viewer's own account routes, which stay open) lets the viewer in.
+    await turnOn(viewer);
+    await ctx.http().get(`${org.base}/accounts`).set(viewer.auth).expect(200);
+    expect((await ctx.http().get('/v1/orgs').set(viewer.auth).expect(200)).body.find((o: { id: string }) => o.id === org.orgId).twoStep).toEqual({ required: true, satisfied: true });
+
+    // Other organisations of the viewer are not affected by this one's rule.
+    const other = await createOrg(ctx, viewer);
+    expect((await ctx.http().get('/v1/orgs').set(viewer.auth).expect(200)).body.find((o: { id: string }) => o.id === other.orgId).twoStep).toEqual({ required: false, satisfied: true });
+
+    await ctx.http().put(`${org.base}/security`).set(owner.auth).send({ requireTwoStep: false }).expect(200);
+    const actions = (await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, action: { startsWith: 'org.two_step' } }, orderBy: { id: 'asc' } })).map((e) => e.action);
+    expect(actions).toEqual(['org.two_step_required', 'org.two_step_not_required']);
   });
 });

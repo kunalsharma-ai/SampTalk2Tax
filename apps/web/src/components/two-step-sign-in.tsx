@@ -85,6 +85,9 @@ export function TwoStepSignInCard() {
   const qc = useQueryClient();
   const status = useQuery({ queryKey: ['auth-mfa'], queryFn: () => api<MfaStatus>('/v1/auth/mfa') });
   const refresh = () => qc.invalidateQueries({ queryKey: ['auth-mfa'] });
+  // Organisations that require two-step sign-in open once it is on: only after the recovery
+  // codes were saved, or this card (shown in their place) would go before the codes are seen.
+  const reopenOrgs = () => qc.invalidateQueries({ queryKey: ['orgs'] });
   const [mode, setMode] = useState<'idle' | 'password' | 'scan' | 'codes' | 'replace' | 'disable'>('idle');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -128,6 +131,7 @@ export function TwoStepSignInCard() {
       reset();
       setMode('idle');
       refresh();
+      void reopenOrgs();
     },
   });
   const error = start.error ?? confirm.error ?? replace.error ?? disable.error;
@@ -149,7 +153,7 @@ export function TwoStepSignInCard() {
         {error ? <Alert title="That did not work">{error.message}</Alert> : null}
         {disable.isSuccess && mode === 'idle' ? <Alert tone="positive" title="Two-step sign-in is off">Your password alone signs you in now.</Alert> : null}
 
-        {mode === 'codes' && codes ? <RecoveryCodes codes={codes} onDone={() => { setCodes(null); setMode('idle'); }} /> : null}
+        {mode === 'codes' && codes ? <RecoveryCodes codes={codes} onDone={() => { setCodes(null); setMode('idle'); void reopenOrgs(); }} /> : null}
 
         {mode === 'idle' && s && !s.enabled ? (
           <div className="flex flex-col gap-3">

@@ -16,6 +16,7 @@ import vendorPortal from './20261217100000_vendor_portal';
 import rowLocks from './20261218100000_row_locks';
 import auditEvents from './20261219100000_audit_events';
 import twoStepSignIn from './20261220100000_two_step_sign_in';
+import orgSecuritySettings from './20261221100000_org_security_settings';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, twoStepSignIn];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, twoStepSignIn, orgSecuritySettings];

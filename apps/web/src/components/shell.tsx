@@ -14,6 +14,7 @@ import { useAnnouncements, useMeWithRole } from '@/lib/admin';
 import { useOrgFlags } from '@/lib/operations';
 import { MaintenanceBanner } from './maintenance-banner';
 import { PageHelp } from './help';
+import { TwoStepSignInCard } from './two-step-sign-in';
 
 export function Shell({ children }: { children: ReactNode }) {
   const { org, orgId, isLoading } = useOrg();
@@ -132,7 +133,7 @@ export function Shell({ children }: { children: ReactNode }) {
         ) : null}
         {org?.isDemo ? <p className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-xs text-warning sm:hidden">{t('Synthetic demo data')}</p> : null}
         <main id="main" key={org?.timeZone ?? ""} className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
-          {isLoading ? <p className="text-sm text-fg-muted">{t('Loading…')}</p> : !org ? <p className="text-sm text-fg-muted">{t('Organisation not found or you do not have access.')}</p> : elsewhere ? <RegionElsewhere orgId={org.id} name={org.name} region={elsewhere} /> : children}
+          {isLoading ? <p className="text-sm text-fg-muted">{t('Loading…')}</p> : !org ? <p className="text-sm text-fg-muted">{t('Organisation not found or you do not have access.')}</p> : elsewhere ? <RegionElsewhere orgId={org.id} name={org.name} region={elsewhere} /> : org.twoStep?.required && !org.twoStep.satisfied ? <TwoStepRequired name={org.name} /> : children}
         </main>
       </div>
     </div>
@@ -152,6 +153,19 @@ function PlanBanner({ orgId, access }: { orgId: string; access: SubscriptionAcce
     return <p role="status" data-testid="plan-banner" className="border-b border-warning/30 bg-warning/10 px-4 py-2 text-center text-sm text-warning print:hidden">{text} {link}</p>;
   }
   return null;
+}
+
+/** The organisation requires two-step sign-in and this person does not have it on yet. */
+function TwoStepRequired({ name }: { name: string }) {
+  const t = useT();
+  return (
+    <section aria-label={t('Two-step sign-in required')} className="mx-auto max-w-3xl">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{t('Two-step sign-in required')}</p>
+      <h1 className="mt-2 text-xl font-semibold text-fg">{name}</h1>
+      <p className="mb-6 mt-3 text-sm text-fg-muted">{t('{name} asks everyone who opens its books to use two-step sign-in. Turn it on below; the organisation opens as soon as it is on.', { name })}</p>
+      <TwoStepSignInCard />
+    </section>
+  );
 }
 
 /** An organisation whose data lives in another region is served only there. */

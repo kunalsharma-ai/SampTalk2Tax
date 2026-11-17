@@ -7,6 +7,7 @@ import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from
 import { openApi, ZodPipe } from '../common/zod';
 import { InvitationsService } from './invitations.service';
 import { OrganizationsService } from './organizations.service';
+import { OrgSecurityService } from './org-security.service';
 
 const CreateOrgBody = z.object({
   name: z.string().trim().min(1).max(200),
@@ -19,6 +20,7 @@ const CreateOrgBody = z.object({
 const AddMemberBody = z.object({ email: z.email(), role: z.enum(ROLES) });
 const InviteBody = z.object({ email: z.email().max(254), role: z.enum(ROLES) });
 const RoleBody = z.object({ role: z.enum(ROLES) });
+const SecurityBody = z.object({ requireTwoStep: z.boolean() }).strict();
 const TimeZoneBody = z.object({ timeZone: z.string().trim().min(1).max(64) }).strict();
 
 @ApiTags('organizations')
@@ -28,6 +30,7 @@ export class OrganizationsController {
   constructor(
     private readonly orgs: OrganizationsService,
     private readonly invitations: InvitationsService,
+    private readonly security: OrgSecurityService,
   ) {}
 
   @Post()
@@ -55,6 +58,21 @@ export class OrganizationsController {
   @ApiBody({ schema: openApi(TimeZoneBody) })
   setTimeZone(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser, @Body(new ZodPipe(TimeZoneBody)) body: z.infer<typeof TimeZoneBody>) {
     return this.orgs.setTimeZone(orgId, user.id, body.timeZone);
+  }
+
+  /** Whether the organisation requires two-step sign-in, and how many members do not have it on. */
+  @Get(':orgId/security')
+  @RequirePermission('members.read')
+  getSecurity(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser) {
+    return this.security.get(orgId, user.id);
+  }
+
+  /** Require (or stop requiring) two-step sign-in for every member. Requiring it needs it on yourself first. */
+  @Put(':orgId/security')
+  @RequirePermission('members.manage')
+  @ApiBody({ schema: openApi(SecurityBody) })
+  setSecurity(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser, @Body(new ZodPipe(SecurityBody)) body: z.infer<typeof SecurityBody>) {
+    return this.security.set(orgId, user.id, body.requireTwoStep);
   }
 
   @Get(':orgId/members')

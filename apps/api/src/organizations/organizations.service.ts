@@ -18,6 +18,7 @@ import { users } from '../db/collections/identity';
 import { accounts } from '../db/collections/chart';
 import { memberships, organizations, type OrganizationDoc } from '../db/collections/tenancy';
 import { PeriodsService } from '../periods/periods.service';
+import { OrgSecurityService } from './org-security.service';
 import { PostgresMirrorService, thenInPostgres } from '../db/postgres-mirror.service';
 
 export interface CreateOrgInput {
@@ -38,6 +39,7 @@ export class OrganizationsService {
     private readonly regions: RegionsService,
     private readonly store: DocumentStoreService,
     private readonly mirror: PostgresMirrorService,
+    private readonly orgSecurity: OrgSecurityService,
     private readonly periods: PeriodsService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
@@ -155,11 +157,14 @@ export class OrganizationsService {
         await this.prisma.$transaction((tx) => withSystemAccess(tx, () => tx.subscription.findMany({ where: { orgId: { in: ms.map((m) => m.orgId) } }, include: { plan: true } })))
       ).map((s) => [s.orgId, s]),
     );
+    const requiring = await this.orgSecurity.requiring(ms.map((m) => m.orgId));
+    const satisfied = requiring.size ? await this.orgSecurity.userHasTwoStep(userId) : true;
     return ms
       .filter((m) => orgs.has(m.orgId))
       .map((m) => {
         const org = orgs.get(m.orgId)!;
-        return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(subs.get(m.orgId) ?? null), role: m.role };
+        const required = requiring.has(m.orgId);
+        return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(subs.get(m.orgId) ?? null), role: m.role, twoStep: { required, satisfied: !required || satisfied } };
       });
   }
 
@@ -186,11 +191,12 @@ export class OrganizationsService {
   async listMembers(orgId: string) {
     const ms = await runInOrg(orgId, () => this.store.collection(memberships).find({}, { sort: { createdAt: 1 } }));
     const people = new Map((await this.store.collection(users).find({ id: { $in: ms.map((m) => m.userId) } })).map((u) => [u.id, u]));
+    const twoStep = await this.orgSecurity.withTwoStep(ms.map((m) => m.userId));
     return ms
       .filter((m) => people.has(m.userId))
       .map((m) => {
         const u = people.get(m.userId)!;
-        return { userId: u.id, email: u.email, name: u.name, role: m.role, since: m.createdAt.toISOString() };
+        return { userId: u.id, email: u.email, name: u.name, role: m.role, since: m.createdAt.toISOString(), twoStepOn: twoStep.has(u.id) };
       });
   }
 

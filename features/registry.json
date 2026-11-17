@@ -27760,9 +27760,10 @@
         "POST /v1/auth/login → mfaRequired; POST /v1/auth/login/code; /v1/auth/mfa, /mfa/setup, /mfa/confirm, /mfa/recovery-codes, /mfa/disable",
         "apps/api/test/two-step-sign-in.e2e.test.ts",
         "apps/web/src/components/two-step-sign-in.tsx (Account and preferences), sign-in code step in auth-form.tsx",
-        "apps/web/e2e/two-step-sign-in-flow.test.mjs"
+        "apps/web/e2e/two-step-sign-in-flow.test.mjs",
+        "Organisation rule: GET/PUT /v1/orgs/:orgId/security (org_security_settings); AuthGuard refuses MFA_REQUIRED; apps/web/e2e/two-step-required-flow.test.mjs"
       ],
-      "notes": "Authenticator-app codes (TOTP) and ten single-use recovery codes. SMS and email codes are not offered. An organisation rule to require it for members is a separate slice."
+      "notes": "Authenticator-app codes (TOTP) and ten single-use recovery codes; an organisation can require it for every member. SMS and email codes are not offered."
     },
     {
       "id": "SEC-006",
