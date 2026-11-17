@@ -8,12 +8,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 915 |
+| Not started | 798 |
 | Designed | 0 |
-| Implementing | 61 |
-| Implemented | 32 |
-| Tested | 323 |
-| Integration pending | 12 |
+| Implementing | 67 |
+| Implemented | 34 |
+| Tested | 430 |
+| Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
 | Production ready | 0 |
@@ -24,24 +24,24 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 13 | 31 |
-| Accounts receivable | M2 | 43 | 30 | 13 |
-| Accounts payable | M2 | 36 | 25 | 11 |
-| Banking and reconciliation | M2 | 24 | 7 | 17 |
-| Global taxation engine | M3 | 54 | 31 | 23 |
+| General ledger and accounting engine | M1 | 44 | 9 | 35 |
+| Accounts receivable | M2 | 43 | 9 | 34 |
+| Accounts payable | M2 | 36 | 12 | 24 |
+| Banking and reconciliation | M2 | 24 | 6 | 18 |
+| Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 19 | 8 |
-| Treasury management | M6 | 28 | 23 | 5 |
+| Treasury management | M6 | 28 | 22 | 6 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
 | AI Virtual CFO | M7 | 35 | 0 | 35 |
 | Multi-agent AI finance workforce | M5 | 60 | 49 | 11 |
 | Autonomous financial workflows | M5 | 22 | 7 | 15 |
-| Enterprise financial management | M6 | 29 | 15 | 14 |
+| Enterprise financial management | M6 | 29 | 14 | 15 |
 | Inventory, manufacturing and service finance | M6 | 21 | 21 | 0 |
 | Project financial management | M6 | 33 | 33 | 0 |
-| CRM and finance integration | M6 | 13 | 13 | 0 |
+| CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
@@ -52,20 +52,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
 | Financial recovery planner | M7 | 11 | 0 | 11 |
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
-| Internationalization | M8 | 16 | 10 | 6 |
-| Integration marketplace | M6 | 50 | 44 | 6 |
-| Security and enterprise governance | M1 | 38 | 24 | 14 |
-| User experience and onboarding | M1 | 22 | 17 | 5 |
+| Internationalization | M8 | 16 | 0 | 16 |
+| Integration marketplace | M6 | 50 | 41 | 9 |
+| Security and enterprise governance | M1 | 38 | 23 | 15 |
+| User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
-| Subscription and monetization engine | M9 | 32 | 32 | 0 |
-| Platform super admin | M9 | 22 | 21 | 1 |
+| Subscription and monetization engine | M9 | 32 | 5 | 27 |
+| Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 19 | 2 |
+| Performance and scalability | M9 | 21 | 18 | 3 |
 | Testing and quality assurance | M1 | 31 | 11 | 20 |
 | Demonstration data | M1 | 21 | 19 | 2 |
-| Additional differentiating innovations | M7 | 18 | 2 | 16 |
-| Navigation structure | M1 | 48 | 34 | 14 |
-| Design system | M1 | 36 | 35 | 1 |
+| Additional differentiating innovations | M7 | 18 | 0 | 18 |
+| Navigation structure | M1 | 48 | 32 | 16 |
+| Design system | M1 | 36 | 34 | 2 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
 ## Features with progress and evidence
@@ -126,6 +126,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/journals
   - apps/web/e2e/ledger-flow.test.mjs
 
+### GL-007 — Recurring journals
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Template schedules monthly, quarterly, half-yearly or yearly, on the start day or the month's last day, to an end date or until ended; each run a draft or a posted Recurring journal, made once (numbered, in one transaction), by the hourly runner or Run due now; failures kept and retried; pause, resume (catch up or skip), end. Not yet: weekly or custom calendars, auto-reversing templates.
+- Evidence:
+  - packages/accounting-engine/src/recurring-journals.ts
+  - packages/accounting-engine/test/recurring-journals.test.ts
+  - packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql
+  - apps/api/src/journal-templates/journal-templates.service.ts
+  - apps/api/test/journal-templates.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/journal-templates
+  - apps/web/e2e/journal-templates-flow.test.mjs
+  - docs/JOURNAL_TEMPLATES.md
+  - apps/api/src/journal-templates/journal-templates-runner.service.ts
+
 ### GL-008 — Adjusting journals
 
 - Module: General ledger and accounting engine
@@ -153,6 +169,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts
   - apps/web/src
+
+### GL-011 — Closing balances
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Year-end close: revenue and expense accounts closed to a chosen retained earnings account by a CLOSING journal (YE-) on the year's last day, previewed line by line; closing again posts only what changed; reopening reverses the closes. Profit-and-loss reports, KPIs, budgets, dimensions, CFO, recovery and month-end checks leave CLOSING journals out; balance sheet and trial balance include them. Not yet: closing by department or project, automatic lock after closing.
+- Evidence:
+  - packages/accounting-engine/src/year-end.ts
+  - packages/accounting-engine/test/year-end.test.ts
+  - packages/database/prisma/migrations/20261126090000_year_end_close/migration.sql
+  - apps/api/src/year-end/year-end.service.ts
+  - apps/api/test/year-end.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/year-end/page.tsx
+  - apps/web/e2e/year-end-flow.test.mjs
+  - docs/YEAR_END_CLOSE.md
+
+### GL-012 — Journal templates
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Templates with lines (any currency, departments, projects), memo, reference and placeholders such as {month}; used by hand as a draft or posted, saved from any manual journal, archived once used.
+- Evidence:
+  - packages/accounting-engine/src/recurring-journals.ts
+  - packages/accounting-engine/test/recurring-journals.test.ts
+  - packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql
+  - apps/api/src/journal-templates/journal-templates.service.ts
+  - apps/api/test/journal-templates.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/journal-templates
+  - apps/web/e2e/journal-templates-flow.test.mjs
+  - docs/JOURNAL_TEMPLATES.md
 
 ### GL-013 — Accrual accounting
 
@@ -311,6 +357,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/banking.e2e.test.ts
 
+### GL-035 — Foreign currency revaluation
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Period-end revaluation of monetary foreign-currency balances (cash, receivables, payables, loans, accruals) at recorded or entered closing rates; unrealised gain or loss posted to the FX_GAIN_LOSS account and reversed the next day; immutable records. Inventory, prepayments and fixed assets stay at historical rates.
+- Evidence:
+  - packages/accounting-engine/src/fx.ts
+  - packages/accounting-engine/test/fx.test.ts
+  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/fx/fx.service.ts
+  - apps/api/test/fx-revaluation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fx/page.tsx
+  - apps/web/e2e/fx-revaluation-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
+
 ### GL-037 — Every posted journal must balance
 
 - Module: General ledger and accounting engine
@@ -393,6 +454,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - /v1/orgs/:orgId/contacts
   - apps/web/src/app/orgs/[orgId]/sales/customers
 
+### AR-003 — Customer onboarding
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: One onboarding per customer: details read from the customer (email, address with PIN, GSTIN or PAN, proposed credit terms) plus the organisation's own checklist (files where needed, attachments type CUSTOMER_ONBOARDING); submit, second-person approval (self-approved only when nobody else can) sets credit limit and terms, reject with reason, reopen. Optional setting starts onboarding for every new customer (contacts trigger). Invoices to a customer with an unapproved onboarding do not post. Not built: customer self-service portal.
+- Evidence:
+  - packages/accounting-engine/src/customer-onboarding.ts
+  - packages/accounting-engine/test/customer-onboarding.test.ts
+  - packages/database/prisma/migrations/20261207090000_customer_onboarding/migration.sql
+  - apps/api/src/customer-onboarding/customer-onboarding.service.ts
+  - apps/api/test/customer-onboarding.e2e.test.ts
+  - apps/web/src/components/onboarding/onboarding-panel.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/onboarding/page.tsx
+  - apps/web/e2e/customer-onboarding-flow.test.mjs
+  - docs/CUSTOMER_ONBOARDING.md
+
 ### AR-004 — Customer credit limits
 
 - Module: Accounts receivable
@@ -401,6 +478,63 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › credit limits
   - apps/web/src/components/ledger/document-form.tsx
+
+### AR-005 — Quotations
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Same feature as CRM-005: Quotations QT-0001 with the invoice tax rules (tax rates, GST place of supply, HSN/SAC); draft (editable, deletable) -> sent (frozen by a trigger) -> accepted or declined (reason); expired past valid-until; revisions QT-0001-R2 supersede the previous one when sent; linked to a deal, which is won on acceptance; acceptance rate on the list. No PDF or e-mail of a quotation yet.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx
+
+### AR-006 — Estimates
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Estimates are the quotations of CRM slice 2 (QT-0001, revisions -R2): worked out by the invoice rules, sent, revised, declined, expired, accepted into sales orders; pro forma invoices made from them (AR-008).
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/accounting-engine/test/sales-orders.test.ts
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/sales/quotes/[quoteId]/page.tsx
+  - docs/QUOTES_AND_ORDERS.md
+
+### AR-007 — Sales orders
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Same feature as CRM-007: Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/orders/[orderId]/page.tsx
+
+### AR-008 — Pro forma invoices
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Pro forma invoices PF-0001: drafted directly or from a sent/accepted quotation, lines worked out by the invoice rules (GST place of supply); issued then fixed (DB trigger on header and lines); printed with the invoice template as PRO_FORMA (heading Pro forma invoice, Not a tax invoice, Valid until); Make tax invoice creates a draft invoice with the same lines referenced PF-0001, deleting/voiding it frees the pro forma; cancel with reason; posts nothing. Functional currency only; advance via an ordinary receipt applied to the tax invoice.
+- Evidence:
+  - packages/accounting-engine/src/pro-forma.ts
+  - packages/accounting-engine/test/pro-forma.test.ts
+  - packages/database/prisma/migrations/20261202090000_pro_forma_invoices/migration.sql
+  - apps/api/src/sales-orders/pro-forma.service.ts
+  - apps/api/test/pro-forma.e2e.test.ts
+  - apps/web/e2e/pro-forma-flow.test.mjs
+  - docs/PRO_FORMA_INVOICES.md
+  - apps/web/src/app/orgs/[orgId]/sales/pro-formas/[proFormaId]/page.tsx
 
 ### AR-009 — Tax invoices
 
@@ -414,6 +548,97 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/invoice-templates/invoice-templates.service.ts
   - apps/web/e2e/invoice-templates-flow.test.mjs
 
+### AR-010 — Recurring invoices
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Each due contract period becomes a draft invoice (invoice rules incl. GST), by the background runner (CONTRACT_RUNNER_INTERVAL_SECONDS), on activation, Bill now, or Bill due periods now; each period recorded once (no double billing); deleted/voided invoice can be billed again; failures kept on the contract and retried. Invoices are drafts to check and post; no auto-posting or auto-email yet.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
+### AR-011 — Subscription billing
+
+- Module: Accounts receivable
+- Status: **Implementing**
+- Notes: Fixed-fee recurring billing works through contracts (CRM-006/AR-010). Not built: usage-based or metered charges, proration of part periods, card/mandate auto-collection.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
+### AR-012 — Usage-based billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Usage charges (meters) on contracts billed in arrears: per unit, graduated or volume tiers, included units, minimum charge. Usage recorded by hand, CSV import (all or nothing) or API, idempotent by reference, voided not deleted, negative corrections. Each period's invoice gets usage lines next to the fixed lines; billed readings frozen by triggers; bill again re-uses them. Not built: advance+usage mix, API keys for usage feeds, part-period proration.
+- Evidence:
+  - packages/accounting-engine/src/usage-billing.ts
+  - packages/accounting-engine/test/usage-billing.test.ts
+  - packages/database/prisma/migrations/20261211090000_usage_billing/migration.sql
+  - apps/api/src/sales-orders/usage-billing.service.ts
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/test/usage-billing.e2e.test.ts
+  - apps/web/src/components/contracts/usage-card.tsx
+  - apps/web/e2e/usage-billing-flow.test.mjs
+  - docs/USAGE_BILLING.md
+
+### AR-013 — Milestone billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Sales orders billed by milestones: plan named shares (<=100%), mark reached, make a draft invoice for the share of every line (cumulative target; the last takes what is left). Invoiced milestones locked (API + trigger); void frees. Method fixed once anything is billed. Invoices round per line, so totals can differ from the order by a paisa per line and invoice.
+- Evidence:
+  - packages/accounting-engine/src/project-billing.ts
+  - packages/accounting-engine/test/project-billing.test.ts
+  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/project-billing.e2e.test.ts
+  - apps/web/src/components/sales-orders/project-billing.tsx
+  - apps/web/e2e/project-billing-flow.test.mjs
+  - docs/MILESTONE_AND_PROGRESS_BILLING.md
+
+### AR-014 — Progress billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Sales orders billed by progress: each claim (percent complete above the previous live claim, <=100) makes a draft invoice billing every line up to that share less earlier claims; 100% bills the rest. Claims immutable (trigger); voided claims no longer count, deleting the draft removes the claim. Retentions not built.
+- Evidence:
+  - packages/accounting-engine/src/project-billing.ts
+  - packages/accounting-engine/test/project-billing.test.ts
+  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/project-billing.e2e.test.ts
+  - apps/web/src/components/sales-orders/project-billing.tsx
+  - apps/web/e2e/project-billing-flow.test.mjs
+  - docs/MILESTONE_AND_PROGRESS_BILLING.md
+
+### AR-015 — Retainer billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Retainers RT-0001: agreed amount and minimum per customer; held as ordinary unapplied receipts linked to the retainer (recorded into it or added); drawn down onto invoices with ordinary allocations, oldest receipt first, oldest due invoice first by default; top-up due below the minimum; close only when empty; triggers keep links permanent. Functional currency only; no GST on advances; top-up requests not emailed.
+- Evidence:
+  - packages/accounting-engine/src/retainers.ts
+  - packages/accounting-engine/test/retainers.test.ts
+  - packages/database/prisma/migrations/20261205090000_retainers/migration.sql
+  - apps/api/src/sales-orders/retainers.service.ts
+  - apps/api/test/retainers.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/retainers/[retainerId]/page.tsx
+  - apps/web/e2e/retainers-flow.test.mjs
+  - docs/RETAINERS.md
+
 ### AR-016 — Credit notes
 
 - Module: Accounts receivable
@@ -421,6 +646,37 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › applies a credit note and settles the invoice
   - packages/accounting-engine/test/documents.test.ts
+
+### AR-017 — Debit notes
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Debit notes DN-000001: an INVOICE linked to an earlier posted invoice (same customer, currency, place of supply, not before it); owed, aged and paid like an invoice; GSTR-1 9B type D with the original number, table 13 own series, GSTR-3B outward tax, e-invoice DBN, print titled Debit note with Against invoice. Invoice cannot be voided while a debit note stands (trigger). Sales side only.
+- Evidence:
+  - packages/database/prisma/migrations/20261128090000_debit_notes/migration.sql
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/test/debit-notes.e2e.test.ts
+  - packages/tax-engine/src/india/returns.ts
+  - packages/tax-engine/test/returns.test.ts
+  - apps/web/src/components/ledger/new-document.tsx
+  - apps/web/e2e/debit-notes-flow.test.mjs
+  - docs/DEBIT_NOTES.md
+
+### AR-018 — Payment links
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Payment links PL-0001 on posted INR/USD invoices through the organisation's own Razorpay or Stripe account (keys sealed, set up and tested in Settings → Payment gateways, deposit account, one gateway per currency). Settled by the signed webhook or by checking: an ordinary receipt into the deposit account applied to the invoice up to what is owed. One open link per invoice; trigger keeps links permanent and final. Not built: emailing the link from Talk2Tax, refunds, other currencies.
+- Evidence:
+  - packages/accounting-engine/src/payment-links.ts
+  - packages/accounting-engine/test/payment-links.test.ts
+  - packages/database/prisma/migrations/20261206090000_payment_links/migration.sql
+  - apps/api/src/payment-links/payment-links.service.ts
+  - apps/api/test/payment-links.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/payment-gateways/page.tsx
+  - apps/web/src/components/payment-links/payment-links-panel.tsx
+  - apps/web/e2e/payment-links-flow.test.mjs
+  - docs/PAYMENT_LINKS.md
 
 ### AR-019 — Payment allocation
 
@@ -473,6 +729,117 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/collections.e2e.test.ts
   - apps/web/e2e/collections-flow.test.mjs
 
+### AR-025 — Dispute management
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Invoice disputes DS-0001: raised from a posted invoice with something due, for part or all of what is due (checked), with reason, description, owner (a member) and target date; one open per invoice (partial unique index); changes and notes kept in an append-only history; resolved by a posted credit note of the same customer and currency, customer pays, written off or withdrawn, then final (trigger). An open dispute keeps the invoice out of AI payment reminders and the INVOICE_OVERDUE workflow trigger; it still counts in receivables. Summary: open count and amount, past target, oldest, average days to settle, outcomes.
+- Evidence:
+  - packages/accounting-engine/src/disputes.ts
+  - packages/accounting-engine/test/disputes.test.ts
+  - packages/database/prisma/migrations/20261201090000_invoice_disputes/migration.sql
+  - apps/api/src/disputes/disputes.service.ts
+  - apps/api/test/disputes.e2e.test.ts
+  - apps/web/e2e/disputes-flow.test.mjs
+  - docs/INVOICE_DISPUTES.md
+  - apps/web/src/app/orgs/[orgId]/sales/disputes/page.tsx
+
+### AR-026 — Bad debt provisions
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Provision matrix from the receivables ageing (rate per bucket, editable), specific provisions for invoices marked doubtful at their own percentage, foreign invoices at their own rate; each provision posts only the difference from the allowance in the books (increase or release) as a BAD_DEBT journal, kept append-only with the matrix it used. Not yet: provision rates learnt from history (expected-credit-loss model), provisions per customer group.
+- Evidence:
+  - packages/accounting-engine/src/bad-debts.ts
+  - packages/accounting-engine/test/bad-debts.test.ts
+  - packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql
+  - apps/api/src/bad-debts/bad-debts.service.ts
+  - apps/api/test/bad-debts.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx
+  - apps/web/e2e/bad-debts-flow.test.mjs
+  - docs/BAD_DEBTS.md
+
+### AR-027 — Write-offs
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Write off all or part of a posted invoice against the allowance (refused beyond what it holds) or straight to bad-debt expense, at the invoice's own exchange rate; settles the invoice like a receipt, so ageing, statement and control account agree, without changing GST returns or e-invoices; reversible once (journal and settlement reversed). Not yet: GST bad-debt relief, write-offs of payables or small balances in bulk.
+- Evidence:
+  - packages/accounting-engine/src/bad-debts.ts
+  - packages/accounting-engine/test/bad-debts.test.ts
+  - packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql
+  - apps/api/src/bad-debts/bad-debts.service.ts
+  - apps/api/test/bad-debts.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx
+  - apps/web/e2e/bad-debts-flow.test.mjs
+  - docs/BAD_DEBTS.md
+
+### AR-028 — Revenue recognition support
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Invoice lines for services delivered over time: service start, months (1-120), spread by days or evenly, set on the draft. Posting credits them to the deferred revenue account (2350 by default, configurable) and opens a DEFERRED_REVENUE schedule per line; the monthly release run recognises them. Revenue waterfall (12 months) over all deferred revenue schedules. Voiding takes back what was recognised and ends the schedules. Not built: standalone selling price allocation across bundled lines, credit notes adjusting schedules, milestone or usage-based recognition. Not reviewed against Ind AS 115 / ASC 606 by an accountant.
+- Evidence:
+  - packages/accounting-engine/src/revenue-recognition.ts
+  - packages/accounting-engine/test/revenue-recognition.test.ts
+  - packages/database/prisma/migrations/20261212090000_revenue_recognition/migration.sql
+  - apps/api/src/revenue-recognition/revenue-recognition.service.ts
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/test/revenue-recognition.e2e.test.ts
+  - apps/web/src/components/revenue-recognition/recognition-card.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/revenue-recognition/page.tsx
+  - apps/web/e2e/revenue-recognition-flow.test.mjs
+  - docs/REVENUE_RECOGNITION.md
+
+### AR-029 — Contract billing
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Contract billing from the contract's lines in force on the billing day; price changes and renewals apply to later periods only; reference CT-0001 <period> / customer reference.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
+### AR-030 — Customer portals
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Private link per customer (t2tp_ token, SHA-256 stored, shown once; 30/90/180/365 days or until revoked; revoke; view count and last opened). Portal without sign-in: balance, overdue and unused credits by currency, posted invoices and credit notes with state, payment-link Pay button, receipts, statement with running balance, invoice opened with the business's print template. Per-IP rate limited, no-referrer, noindex, RLS-scoped after the link lookup. Not built: customer sign-in accounts, emailing the link from the app, uploading remittances or raising disputes from the portal, branding/custom domain.
+- Evidence:
+  - packages/accounting-engine/src/customer-portal.ts
+  - packages/accounting-engine/test/customer-portal.test.ts
+  - packages/database/prisma/migrations/20261213090000_customer_portal/migration.sql
+  - apps/api/src/customer-portal/customer-portal.service.ts
+  - apps/api/src/customer-portal/customer-portal.controller.ts
+  - apps/api/test/customer-portal.e2e.test.ts
+  - apps/web/src/app/portal/[token]/page.tsx
+  - apps/web/src/app/api/portal/[...path]/route.ts
+  - apps/web/src/components/customer-portal/portal-links-card.tsx
+  - apps/web/e2e/customer-portal-flow.test.mjs
+  - docs/CUSTOMER_PORTAL.md
+
+### AR-031 — Multi-currency invoices
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Invoices, credit notes, bills, vendor credits, receipts and payments in any supported currency, at the recorded rate on the date or one entered and kept with the record. Settling at another rate posts a realised exchange gain or loss (reversed if the allocation is removed). Receivables and payables, ageing, balances, credit limits and approvals are in the functional currency at each record's rate; customer statements are per currency. Not yet: TDS/TCS, reverse charge or GST charged on foreign-currency documents, e-invoices for them, quotations/orders/contracts in other currencies, rate feeds.
+- Evidence:
+  - packages/accounting-engine/src/fx-documents.ts
+  - packages/accounting-engine/test/fx-documents.test.ts
+  - packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/src/ledgers/subledger.service.ts
+  - apps/api/test/fx-documents.e2e.test.ts
+  - apps/web/src/components/ledger/currency-rate.tsx
+  - apps/web/e2e/fx-documents-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
+
 ### AR-032 — Revenue leakage detection
 
 - Module: Accounts receivable
@@ -501,6 +868,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/collections-flow.test.mjs
   - docs/AI_COLLECTIONS.md
 
+### AR-042 — Automated detection of unbilled revenue
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Finds revenue not invoiced from real records: completed milestones without invoice, contract periods due but unbilled (with the runner error), drafts 7+ days old, delivery orders 30+ days with quantity left, expired pro formas without invoice, regular customers missed last month; confidence due now/likely/possible; totals by currency and source. Dismiss/restore with reason (append-only, audited), returns when the amount grows. Not built: an alert check, AI estimation.
+- Evidence:
+  - packages/accounting-engine/src/unbilled-revenue.ts
+  - packages/accounting-engine/test/unbilled-revenue.test.ts
+  - packages/database/prisma/migrations/20261216090000_unbilled_revenue/migration.sql
+  - apps/api/src/unbilled-revenue/unbilled-revenue.service.ts
+  - apps/api/test/unbilled-revenue.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/unbilled-revenue/page.tsx
+  - apps/web/e2e/unbilled-revenue-flow.test.mjs
+  - docs/UNBILLED_REVENUE.md
+
 ### AP-001 — Supplier management
 
 - Module: Accounts payable
@@ -508,6 +890,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts › bills and payments
   - apps/web/src/app/orgs/[orgId]/purchases/vendors
+
+### AP-002 — Vendor onboarding
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: One onboarding per vendor (separate from customer onboarding, own setting and checklist): email, address with PIN, GSTIN or PAN, verified bank details and payment terms read from the vendor, plus the checklist with files; submit, second-person approval sets payment terms (no credit limit), reject, reopen. Optional setting starts one for every new vendor. Bills from and payments to a vendor with an unapproved onboarding are refused. Not built: vendor self-service portal.
+- Evidence:
+  - packages/accounting-engine/src/customer-onboarding.ts
+  - packages/database/prisma/migrations/20261208090000_vendor_onboarding/migration.sql
+  - apps/api/src/customer-onboarding/customer-onboarding.service.ts
+  - apps/api/src/customer-onboarding/customer-onboarding.controller.ts
+  - apps/api/test/vendor-onboarding.e2e.test.ts
+  - apps/web/src/components/onboarding/onboarding-panel.tsx
+  - apps/web/src/components/onboarding/onboarding-list.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/onboarding/page.tsx
+  - apps/web/e2e/vendor-onboarding-flow.test.mjs
+  - docs/VENDOR_ONBOARDING.md
 
 ### AP-003 — Purchase invoices
 
@@ -526,6 +925,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/sales-purchases.e2e.test.ts › posts a bill to payables with recoverable input tax and pays it
   - apps/web/e2e/sales-flow.test.mjs
 
+### AP-005 — Recurring bills
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Recurring bills RB-0001: vendor, lines (GST rate, SAC, dimensions), place of supply, reverse charge, TDS section, due days; monthly/quarterly/half-yearly/yearly schedule (month end, end date) that makes each due run as a draft or posted bill through the normal bill code (GST, TDS, approval rules, periods, duplicate vendor reference). The vendor reference must carry a placeholder that changes each run. The first bill is checked on save inside a rolled-back savepoint. Runs recorded once in the same transaction (append-only); failures kept on the schedule; pause/resume (skip missed)/end; Make recurring from a bill. Hourly runner (RECURRING_BILL_RUNNER_INTERVAL_SECONDS). Functional currency only.
+- Evidence:
+  - packages/accounting-engine/src/recurring-bills.ts
+  - packages/accounting-engine/test/recurring-bills.test.ts
+  - packages/database/prisma/migrations/20261129090000_recurring_bills/migration.sql
+  - apps/api/src/recurring-bills/recurring-bills.service.ts
+  - apps/api/test/recurring-bills.e2e.test.ts
+  - apps/web/e2e/recurring-bills-flow.test.mjs
+  - docs/RECURRING_BILLS.md
+  - apps/web/src/app/orgs/[orgId]/purchases/recurring-bills/[billId]/page.tsx
+
 ### AP-006 — Bill approval workflows
 
 - Module: Accounts payable
@@ -535,6 +949,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
   - apps/web/e2e/approvals-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/approvals
+
+### AP-007 — Payment scheduling
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Payment schedule: each open bill gets a planned pay date and optional part amount (bill_payment_plans, bills only by trigger); suggested date = due date or the last chosen pay weekday before it, never the past; plans checked (not past, not before bill date, not more than left); weekly planned outflows against ledger bank balances with short weeks flagged (receipts not included); Plan the rest auto-plans unplanned bills; Prepare batch takes bills planned up to a date into a new payment batch with their amounts; Plan payment… from a bill. Functional currency only; planning moves no money.
+- Evidence:
+  - packages/accounting-engine/src/payment-schedule.ts
+  - packages/accounting-engine/test/payment-schedule.test.ts
+  - packages/database/prisma/migrations/20261130090000_payment_schedule/migration.sql
+  - apps/api/src/payment-batches/payment-schedule.service.ts
+  - apps/api/test/payment-schedule.e2e.test.ts
+  - apps/web/e2e/payment-schedule-flow.test.mjs
+  - docs/PAYMENT_SCHEDULE.md
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-schedule/page.tsx
 
 ### AP-008 — Partial payments
 
@@ -580,6 +1009,88 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/sales-purchases.e2e.test.ts
   - apps/api/src/seed/seed-demo.ts
 
+### AP-013 — Vendor portals
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Private link per vendor (t2tv_ token, SHA-256 stored, shown once; expiry or until revoked). Portal without sign-in: owed/due now by currency, posted bills and credits with due dates, TDS and status, payments with bank reference, issued purchase orders with amount still to invoice, statement. Vendor sends an invoice (number, date, total, PO, note) plus a PDF/image file (sniffed, 5 MB, once within an hour); duplicates by normalised number refused against waiting, recorded and existing bills. Purchases > Vendor invoices: record against a bill of the same vendor (file attached to the bill) or turn down with a reason the vendor sees. Append-only, audited. Not built: sign-in accounts, emailing links, auto-creating bills/reading PDFs (needs AI keys), bank detail changes via portal (deliberately).
+- Evidence:
+  - packages/accounting-engine/src/vendor-portal.ts
+  - packages/accounting-engine/test/vendor-portal.test.ts
+  - packages/database/prisma/migrations/20261217090000_vendor_portal/migration.sql
+  - apps/api/src/vendor-portal/vendor-portal.service.ts
+  - apps/api/src/vendor-portal/vendor-portal.controller.ts
+  - apps/api/test/vendor-portal.e2e.test.ts
+  - apps/web/src/app/vendor-portal/[token]/page.tsx
+  - apps/web/src/app/api/vendor-portal/[...path]/route.ts
+  - apps/web/src/components/vendor-portal/vendor-portal-card.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-invoices/page.tsx
+  - apps/web/e2e/vendor-portal-flow.test.mjs
+  - docs/VENDOR_PORTAL.md
+
+### AP-014 — Payment batches
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Payment batches PB-0001: draft (bills, part payments) -> approved by someone other than the preparer (self-approval only when no one else can approve, flagged) -> bank file CSV (beneficiary, account, IFSC, amount, reference) -> payments recorded, one per vendor, settling the bills; cancel with a reason. A bill is in one open batch at most; approved batches are frozen by a trigger. Functional currency only; no direct bank API (H2H) upload yet.
+- Evidence:
+  - packages/accounting-engine/src/payment-batches.ts
+  - packages/accounting-engine/test/payment-batches.test.ts
+  - packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql
+  - apps/api/src/payment-batches/payment-batches.service.ts
+  - apps/api/test/payment-batches.e2e.test.ts
+  - apps/web/e2e/payment-batches-flow.test.mjs
+  - docs/PAYMENT_BATCHES.md
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-batches/[batchId]/page.tsx
+
+### AP-015 — Purchase order matching
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Purchase orders PO-0001: drafted with lines worked out by the bill rules (GST vendor state/place of supply), expected date (late flag), match mode two-way/three-way and price/quantity tolerances; issued then fixed (DB trigger on header and lines); close with reason (short close) or cancel when nothing received/billed; Make bill drafts a bill for what is left to bill; bill lines keep purchase_order_line_id through edits; two-way matching checks price and quantity ordered. Functional currency only.
+- Evidence:
+  - packages/accounting-engine/src/purchase-orders.ts
+  - packages/accounting-engine/test/purchase-orders.test.ts
+  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/purchase-orders/purchase-orders.service.ts
+  - apps/api/src/purchase-orders/matching.ts
+  - apps/api/test/purchase-orders.e2e.test.ts
+  - apps/web/e2e/purchase-orders-flow.test.mjs
+  - docs/PURCHASE_ORDERS_AND_MATCHING.md
+  - apps/web/src/app/orgs/[orgId]/purchases/orders/[orderId]/page.tsx
+
+### AP-016 — Goods receipt matching
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Goods receipts GRN-0001 against issued three-way orders: date, delivery note, accepted and rejected quantity per line with note; over-receipt refused beyond the quantity tolerance; never edited or deleted (DB triggers), cancelled with a reason unless bills rely on the quantity. Does not move stock.
+- Evidence:
+  - packages/accounting-engine/src/purchase-orders.ts
+  - packages/accounting-engine/test/purchase-orders.test.ts
+  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/purchase-orders/purchase-orders.service.ts
+  - apps/api/src/purchase-orders/matching.ts
+  - apps/api/test/purchase-orders.e2e.test.ts
+  - apps/web/e2e/purchase-orders-flow.test.mjs
+  - docs/PURCHASE_ORDERS_AND_MATCHING.md
+  - apps/web/src/app/orgs/[orgId]/purchases/orders/[orderId]/page.tsx
+
+### AP-017 — Three-way matching
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Three-way matching of bills against order and goods received: exceptions for price above order (+tolerance), more than ordered, more than received (+tolerance), lines not on the order, order closed/cancelled; several bill lines per order line add up with other non-void bills; posting refused (409 BILL_MATCH_EXCEPTION) until approvals.decide accepts the exact differences with a reason (fingerprinted, append-only, audit); Purchase order match panel on the bill page.
+- Evidence:
+  - packages/accounting-engine/src/purchase-orders.ts
+  - packages/accounting-engine/test/purchase-orders.test.ts
+  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/purchase-orders/purchase-orders.service.ts
+  - apps/api/src/purchase-orders/matching.ts
+  - apps/api/test/purchase-orders.e2e.test.ts
+  - apps/web/e2e/purchase-orders-flow.test.mjs
+  - docs/PURCHASE_ORDERS_AND_MATCHING.md
+  - apps/web/src/app/orgs/[orgId]/purchases/orders/[orderId]/page.tsx
+
 ### AP-018 — Duplicate invoice detection
 
 - Module: Accounts payable
@@ -589,6 +1100,38 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/sales-purchases.e2e.test.ts › detects a vendor's invoice number entered twice
   - apps/web/e2e/sales-flow.test.mjs
 
+### AP-019 — Supplier tax validation
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Per active vendor: GSTIN and PAN validity and agreement, state, TDS without PAN, duplicate GSTIN/PAN across vendors, GST bills without GSTIN or under an older GSTIN, wrong tax head, plus GST portal checks recorded by people (append-only, audited) flagging cancelled/suspended/composition suppliers and the bills affected, stale checks and name differences. Not built: automatic GSP lookup (needs keys).
+- Evidence:
+  - packages/tax-engine/src/india/supplier-checks.ts
+  - packages/tax-engine/test/supplier-checks.test.ts
+  - packages/database/prisma/migrations/20261214090000_supplier_tax_checks/migration.sql
+  - apps/api/src/supplier-tax/supplier-tax.service.ts
+  - apps/api/test/supplier-tax.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/supplier-tax/page.tsx
+  - apps/web/src/components/supplier-tax/gstin-checks-card.tsx
+  - apps/web/e2e/supplier-tax-flow.test.mjs
+  - docs/SUPPLIER_TAX_CHECKS.md
+
+### AP-021 — Vendor performance tracking
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Scorecard per vendor and period from purchase orders, goods receipts, posted bills and vendor credits: on-time delivery (40), rejected goods by value (30), bills matched without accepted differences (20), team reviews (10), reweighted over what can be measured, grades A-D; overcharge above order price, spend and credits shown. Reviews 1-5 by aspect, optional PO, note needed at 1-2, append-only, withdrawn only by their author. Not built: external risk data.
+- Evidence:
+  - packages/accounting-engine/src/vendor-performance.ts
+  - packages/accounting-engine/test/vendor-performance.test.ts
+  - packages/database/prisma/migrations/20261209090000_vendor_performance/migration.sql
+  - apps/api/src/vendor-performance/vendor-performance.service.ts
+  - apps/api/test/vendor-performance.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-performance/page.tsx
+  - apps/web/src/components/vendor-performance/performance-card.tsx
+  - apps/web/e2e/vendor-performance-flow.test.mjs
+  - docs/VENDOR_PERFORMANCE.md
+
 ### AP-022 — Payment reconciliation
 
 - Module: Accounts payable
@@ -596,6 +1139,54 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/banking.e2e.test.ts › records a customer receipt from money in
   - apps/api/test/banking.e2e.test.ts › matching
+
+### AP-023 — International payment preparation
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Vendor bank abroad (IBAN mod-97, SWIFT country, ABA checksum, second-person verification); remittance per vendor and currency against posted foreign-currency bills with RBI purpose code, charges OUR/SHA/BEN and Form 15CA part A/B/C/D plus 15CB above Rs 5 lakh per vendor per financial year; approval by another person; CSV remittance instruction marks it sent; recorded at the bank's rate settling the bills. Purpose codes and 15CA rules not reviewed by a banker or CA. Not built: bank API/MT103, section 195 TDS, forwards.
+- Evidence:
+  - packages/accounting-engine/src/international-payments.ts
+  - packages/accounting-engine/test/international-payments.test.ts
+  - packages/database/prisma/migrations/20261210090000_international_payments/migration.sql
+  - apps/api/src/international-payments/international-payments.service.ts
+  - apps/api/test/international-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/international-payments/page.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/international-payments/[paymentId]/page.tsx
+  - apps/web/src/components/purchases/vendor-bank-card.tsx
+  - apps/web/e2e/international-payments-flow.test.mjs
+  - docs/INTERNATIONAL_PAYMENTS.md
+
+### AP-024 — Vendor risk monitoring
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Risk per active vendor from bank details (shared account, changed/unverified), supplier tax problems, performance grade, share of purchases, new vendor growing fast, onboarding not approved and late payment; level = worst factor. Reviews (decision, note, next review date) append-only and audited; new factor, higher level or due date asks again. VENDOR_RISK alert check. Not built: outside credit/sanctions data, blocking orders on a stop decision.
+- Evidence:
+  - packages/accounting-engine/src/vendor-risk.ts
+  - packages/accounting-engine/test/vendor-risk.test.ts
+  - packages/database/prisma/migrations/20261215090000_vendor_risk/migration.sql
+  - apps/api/src/vendor-risk/vendor-risk.service.ts
+  - apps/api/test/vendor-risk.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-risk/page.tsx
+  - apps/web/src/components/vendor-risk/risk-card.tsx
+  - apps/web/e2e/vendor-risk-flow.test.mjs
+  - docs/VENDOR_RISK.md
+
+### AP-027 — Supplier bank-detail change detection
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Vendor bank details (account holder, number, IFSC) with an append-only masked change history; any change clears verification in the database; verification needs approvals.decide and someone other than the person who changed them (unless no one else can); batches with unverified or changed details cannot be approved, sent to the bank or paid.
+- Evidence:
+  - packages/accounting-engine/src/payment-batches.ts
+  - packages/accounting-engine/test/payment-batches.test.ts
+  - packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql
+  - apps/api/src/payment-batches/payment-batches.service.ts
+  - apps/api/test/payment-batches.e2e.test.ts
+  - apps/web/e2e/payment-batches-flow.test.mjs
+  - docs/PAYMENT_BATCHES.md
+  - apps/web/src/components/purchases/vendor-bank-card.tsx
 
 ### BANK-001 — Multiple bank account management
 
@@ -680,6 +1271,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/loans-flow.test.mjs
   - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
   - docs/LOANS_AND_TREASURY.md
+
+### BANK-012 — Foreign exchange accounting
+
+- Module: Banking and reconciliation
+- Status: **Implementing**
+- Notes: Receipts and payments in a foreign currency into any bank account, realised gains and losses on settlement and period-end revaluation of foreign balances. Bank statement import and reconciliation are still in the functional currency only.
+- Evidence:
+  - packages/accounting-engine/src/fx-documents.ts
+  - packages/accounting-engine/test/fx-documents.test.ts
+  - packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql
+  - apps/api/src/ledgers/documents.service.ts
+  - apps/api/src/ledgers/subledger.service.ts
+  - apps/api/test/fx-documents.e2e.test.ts
+  - apps/web/src/components/ledger/currency-rate.tsx
+  - apps/web/e2e/fx-documents-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
+  - apps/api/src/fx/fx.service.ts
 
 ### BANK-013 — Unreconciled transaction reporting
 
@@ -777,9 +1385,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### TAX-004 — Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements
 
 - Module: Global taxation engine
-- Status: **Implementing**
-- Notes: India GST documents its rules, limitations, sources, tests and maintenance. No other country module exists yet.
+- Status: **Tested**
+- Notes: Every country module lists nine areas with status and notes, its limitations, sources (tax authority pages), review date and maintenance steps; tests check each module has them. India GST documents its rules and tests in depth.
 - Evidence:
+  - packages/accounting-engine/src/countries.ts
+  - packages/accounting-engine/test/countries.test.ts
+  - apps/api/src/country-modules/country-modules.service.ts
+  - apps/api/test/country-modules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
+  - docs/COUNTRY_MODULES.md
   - docs/TAX_ENGINE_INDIA_GST.md
 
 ### TAX-005 — GST
@@ -982,6 +1597,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/tax-engine/src/india/withholding.ts
   - packages/accounting-engine/src/documents.ts
+
+### TAX-042 — Do not claim worldwide compliance without verified, maintained country modules
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Each country shows its level (full, starter, accounting only) at onboarding and on the Country module page; India-only pages are hidden elsewhere and the API refuses that work. Nothing claims compliance outside India.
+- Evidence:
+  - packages/accounting-engine/src/countries.ts
+  - packages/accounting-engine/test/countries.test.ts
+  - apps/api/src/country-modules/country-modules.service.ts
+  - apps/api/test/country-modules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
+  - docs/COUNTRY_MODULES.md
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 
@@ -1246,6 +1875,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/loans-flow.test.mjs
   - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
   - docs/LOANS_AND_TREASURY.md
+
+### TRS-013 — Foreign exchange exposure
+
+- Module: Treasury management
+- Status: **Tested**
+- Notes: Exchange rates page shows foreign-currency balances by account and currency at any date, carried and at a chosen rate, and the gain or loss a revaluation would post. No sensitivity ranges or hedging.
+- Evidence:
+  - packages/accounting-engine/src/fx.ts
+  - packages/accounting-engine/test/fx.test.ts
+  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/fx/fx.service.ts
+  - apps/api/test/fx-revaluation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fx/page.tsx
+  - apps/web/e2e/fx-revaluation-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
 
 ### TRS-016 — Treasury dashboards
 
@@ -2895,6 +3539,184 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql
   - docs/FIXED_ASSETS.md
 
+### ENT-028 — Design for configurable accounting frameworks such as IFRS and applicable local GAAP
+
+- Module: Enterprise financial management
+- Status: **Implementing**
+- Notes: Presentation layouts for Schedule III (AS), UK Companies Act/FRS 102 and IFRS IAS 1 over one ledger. Recognition and measurement do not differ by framework: there are no framework-specific adjustments, Ind AS or US GAAP.
+- Evidence:
+  - packages/accounting-engine/src/statutory.ts
+  - packages/accounting-engine/test/statutory.test.ts
+  - apps/api/src/reports/reports.service.ts
+  - apps/api/test/statutory-statements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/statutory/page.tsx
+  - apps/web/e2e/statutory-statements-flow.test.mjs
+  - docs/LOCAL_FINANCIAL_REPORTING.md
+
+### CRM-001 — Provide native lightweight CRM functionality and integration APIs for external CRM systems
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Native lightweight CRM (leads, pipeline, quotations, orders, contracts, customer 360, revenue forecast) and integration APIs for external CRMs: API keys made under Settings > Integrations (hashed, scoped read/write, expiry, revoke, act as their creator), the CRM API at /v1/crm-api (also /api/crm on the app) with idempotent creation by externalRef, and signed CRM webhooks from the audit trail with retries, test, delivery log and secret rotation.
+- Evidence:
+  - packages/accounting-engine/src/crm.ts
+  - packages/accounting-engine/src/crm-api.ts
+  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - packages/database/prisma/migrations/20261122090000_crm_external_api/migration.sql
+  - apps/api/src/crm/crm.service.ts
+  - apps/api/src/crm-api/crm-api.controller.ts
+  - apps/api/src/crm-api/crm-webhooks.service.ts
+  - apps/api/test/crm.e2e.test.ts
+  - apps/api/test/crm-api.e2e.test.ts
+  - apps/web/e2e/crm-pipeline-flow.test.mjs
+  - apps/web/e2e/crm-connection-flow.test.mjs
+  - docs/CRM_PIPELINE.md
+  - docs/CRM_EXTERNAL_API.md
+
+### CRM-003 — Leads
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Leads LD-0001 with source, owner (a member), estimated value; NEW/CONTACTED/QUALIFIED/DISQUALIFIED (reason required, reopenable); duplicate warning by email against leads and contacts; converted once into a new or existing customer (a vendor becomes a customer too), optionally with a deal. Never deleted; a converted lead is frozen by a trigger; append-only activity timeline (calls, emails, meetings, notes, every change).
+- Evidence:
+  - packages/accounting-engine/src/crm.ts
+  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - apps/api/src/crm/crm.service.ts
+  - apps/api/test/crm.e2e.test.ts
+  - apps/web/e2e/crm-pipeline-flow.test.mjs
+  - docs/CRM_PIPELINE.md
+  - apps/web/src/app/orgs/[orgId]/sales/leads/page.tsx
+
+### CRM-004 — Opportunities
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Deals DL-0001 for a customer through PROSPECTING/QUALIFICATION/PROPOSAL/NEGOTIATION to WON (100%) or LOST (0%, reason required), reopenable; default stage probabilities overridable; weighted value; board by stage, overdue deals, 90-day win rate and days to win, weighted value by expected close month; deals on the customer page. Single currency (functional) for now.
+- Evidence:
+  - packages/accounting-engine/src/crm.ts
+  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - apps/api/src/crm/crm.service.ts
+  - apps/api/test/crm.e2e.test.ts
+  - apps/web/e2e/crm-pipeline-flow.test.mjs
+  - docs/CRM_PIPELINE.md
+  - apps/web/src/app/orgs/[orgId]/sales/pipeline/page.tsx
+
+### CRM-005 — Quotations
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Quotations QT-0001 with the invoice tax rules (tax rates, GST place of supply, HSN/SAC); draft (editable, deletable) -> sent (frozen by a trigger) -> accepted or declined (reason); expired past valid-until; revisions QT-0001-R2 supersede the previous one when sent; linked to a deal, which is won on acceptance; acceptance rate on the list. No PDF or e-mail of a quotation yet.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/quotes/page.tsx
+
+### CRM-006 — Contracts
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Customer contracts CT-0001: monthly/quarterly/half-yearly/yearly, in advance or arrears, fixed end on a period end or rolling; draft -> active <-> paused -> ended/cancelled; renew by hand (with % price change) or automatically; renewal-due flag from notice days; MRR/ARR; append-only history; activating for a deal wins it.
+- Evidence:
+  - packages/accounting-engine/src/contracts.ts
+  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/sales-orders/contracts.service.ts
+  - apps/api/src/sales-orders/contracts-runner.service.ts
+  - apps/api/test/contracts.e2e.test.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+  - docs/CONTRACTS.md
+  - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+
+### CRM-007 — Sales orders
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/web/src/app/orgs/[orgId]/sales/orders/[orderId]/page.tsx
+
+### CRM-008 — Billing
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Bill an order in full or by chosen quantities into a draft invoice (reference SO-0001 / customer PO) built by the normal invoice rules; billed quantities count while the invoice is draft or posted and are freed when it is voided or the draft deleted; over-billing refused under a row lock.
+- Evidence:
+  - packages/accounting-engine/src/sales-orders.ts
+  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/sales-orders/sales-orders.service.ts
+  - apps/api/test/sales-orders.e2e.test.ts
+  - apps/web/e2e/quotes-orders-flow.test.mjs
+  - docs/QUOTES_AND_ORDERS.md
+  - apps/api/src/ledgers/documents.service.ts
+
+### CRM-010 — Customer profitability
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Customer profitability: revenue (income lines of posted invoices less credit notes) less direct costs (expenses posted to the customer's linked projects), monthly for 12 months and to date; ranked on Customer insights.
+- Evidence:
+  - packages/accounting-engine/src/customer-insights.ts
+  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/crm/customer-insights.service.ts
+  - apps/api/test/customer-insights.e2e.test.ts
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - apps/web/src/components/crm/customer-360.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
+  - docs/CUSTOMER_360.md
+
+### CRM-011 — Customer lifetime value
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Lifetime value = gross profit to date + yearly gross profit (max of trailing 12m revenue and contract ARR, at the customer's margin) x expected years r/(1-r) (max 5) from the org's own 12-month retention; 3 years assumed (and shown) with fewer than 5 customers to measure.
+- Evidence:
+  - packages/accounting-engine/src/customer-insights.ts
+  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/crm/customer-insights.service.ts
+  - apps/api/test/customer-insights.e2e.test.ts
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - apps/web/src/components/crm/customer-360.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
+  - docs/CUSTOMER_360.md
+
+### CRM-012 — Credit risk
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Credit risk score 0-100 from 5 explained factors (overdue share, oldest overdue, days late, limit use, slowing), ratings low/medium/high/very high, suggested credit limit, credit hold that blocks invoice posting with audit trail.
+- Evidence:
+  - packages/accounting-engine/src/customer-insights.ts
+  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/crm/customer-insights.service.ts
+  - apps/api/test/customer-insights.e2e.test.ts
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - apps/web/src/components/crm/customer-360.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
+  - docs/CUSTOMER_360.md
+
+### CRM-013 — Revenue forecasting
+
+- Module: CRM and finance integration
+- Status: **Tested**
+- Notes: Deterministic forecast by month from active contracts (by invoice date, auto-renew runs on), open orders (left to bill, this month), open deals (weighted/full at close month) and the 3-month run rate of other sales; committed/expected/best; itemised; saved forecasts RF-0001 (immutable) compared with actual revenue (WAPE). AI explanation not built yet.
+- Evidence:
+  - packages/accounting-engine/src/revenue-forecast.ts
+  - packages/database/prisma/migrations/20261121090000_revenue_forecasts/migration.sql
+  - apps/api/src/crm/revenue-forecast.service.ts
+  - apps/api/test/revenue-forecast.e2e.test.ts
+  - apps/web/e2e/revenue-forecast-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/sales/revenue-forecast/page.tsx
+  - docs/REVENUE_FORECAST.md
+
 ### RISK-001 — Duplicate invoice detection
 
 - Module: Financial fraud and risk intelligence
@@ -3275,10 +4097,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 
 - Module: Dashboard design
-- Status: **Implementing**
-- Notes: Original palette and wordmark in packages/design-system; full brand system and illustration set not done.
+- Status: **Tested**
+- Notes: The Talk2Tax logo by Sampledge (mark, light and dark wordmarks) in packages/design-system/brand, built into app files by scripts/brand-assets.mjs: sign-in and first-run pages (animated, still under reduced motion), app and admin sidebars, favicon, home-screen icons and web manifest, accents from the logo's teal, sky and deep blue, Talk2Tax's own emails as branded HTML, and the mark on PDF exports. An illustration set is not done.
 - Evidence:
-  - apps/web/src
+  - packages/design-system/brand
+  - packages/design-system/test/contrast.test.mjs
+  - apps/web/src/components/brand.tsx
+  - apps/api/test/branded-email.test.ts
+  - apps/api/test/support.e2e.test.ts
 
 ### DASH-014 — Deep midnight navy
 
@@ -4071,37 +4897,97 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/benchmarking-flow.test.mjs
   - docs/BENCHMARKING.md
 
+### I18N-001 — Multi-language UI
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: Each person chooses the interface language (English or Hindi) on Account and preferences; the navigation, header, roles and the preferences page are translated; other pages are still in English and fall back to English text.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
 ### I18N-002 — Multi-currency accounting
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Transaction currency + rate per line, functional currency per org. Rate tables, revaluation and multi-currency reporting are not done.
+- Notes: Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table, period-end revaluation, and invoices, bills and payments in foreign currencies with realised gains and losses (AR-031). Not done: rate feeds, multi-currency reporting, foreign-currency bank statements.
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
+  - packages/accounting-engine/src/fx.ts
+  - packages/accounting-engine/test/fx.test.ts
+  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/fx/fx.service.ts
+  - apps/api/test/fx-revaluation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/fx/page.tsx
+  - apps/web/e2e/fx-revaluation-flow.test.mjs
+  - docs/MULTI_CURRENCY.md
+  - apps/api/test/fx-documents.e2e.test.ts
+  - apps/web/e2e/fx-documents-flow.test.mjs
 
 ### I18N-003 — Regional number formats
 
 - Module: Internationalization
-- Status: **Implementing**
-- Notes: Amounts use Intl.NumberFormat on exact decimal strings (en-IN style grouping for INR). A per-user locale setting is not built.
+- Status: **Tested**
+- Notes: Each person chooses how numbers are shown: follow the currency (Indian grouping for INR), Indian, international, European or spaces. Exact decimal strings are formatted without floating point. Every amount shown through the shared Money/money formatter follows it.
 - Evidence:
-  - apps/web/src
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
 
 ### I18N-004 — Regional date formats
 
 - Module: Internationalization
-- Status: **Implementing**
-- Notes: Printed invoices use the template's date style (02 Nov 2026, Nov 2, 2026 or 2026-11-02). The app's own screens still use one format.
+- Status: **Tested**
+- Notes: Each person chooses how dates are shown (06 Nov 2026, 06/11/2026, 11/06/2026 or 2026-11-06); month names follow the language. Invoice templates keep their own per-template date style for the printed document.
 - Evidence:
-  - packages/accounting-engine/src/invoice-templates.ts
-  - packages/accounting-engine/test/invoice-templates.test.ts
   - apps/api/src/invoice-templates/invoice-templates.service.ts
+  - apps/api/test/display-preferences.e2e.test.ts
   - apps/api/test/invoice-templates.e2e.test.ts
-  - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
-  - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
+  - apps/web/e2e/display-preferences-flow.test.mjs
   - apps/web/e2e/invoice-templates-flow.test.mjs
-  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
+  - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
+  - apps/web/src/components/preferences.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
   - docs/INVOICE_TEMPLATES.md
+  - docs/LANGUAGES_AND_FORMATS.md
+  - packages/accounting-engine/src/invoice-templates.ts
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/invoice-templates.test.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+
+### I18N-005 — Country-specific tax configurations
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: India has its full GST engine. UAE, UK, Singapore, Australia, Germany and Canada have starter modules whose standard national sales-tax rates can be added as ordinary tax rates posting to Output Tax Payable and Input Tax Receivable. The US and other countries are accounting only. No returns, schemes or rule checks outside India.
+- Evidence:
+  - packages/accounting-engine/src/countries.ts
+  - packages/accounting-engine/test/countries.test.ts
+  - apps/api/src/country-modules/country-modules.service.ts
+  - apps/api/test/country-modules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
+  - docs/COUNTRY_MODULES.md
 
 ### I18N-006 — Country-specific invoice formats
 
@@ -4118,6 +5004,37 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/invoice-templates-flow.test.mjs
   - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
   - docs/INVOICE_TEMPLATES.md
+
+### I18N-007 — Local financial reporting
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: Balance sheet and profit and loss in India Schedule III (Division I), UK Companies Act formats (FRS 102) and IFRS IAS 1 layouts, chosen by country, with the year before, the accounts behind each line, and accounts without a subtype flagged. Presentation only: no notes, cash flow statement, Ind AS (Division II), rounding to lakhs or crores, or MCA/Companies House filing.
+- Evidence:
+  - packages/accounting-engine/src/statutory.ts
+  - packages/accounting-engine/test/statutory.test.ts
+  - apps/api/src/reports/reports.service.ts
+  - apps/api/test/statutory-statements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/statutory/page.tsx
+  - apps/web/e2e/statutory-statements-flow.test.mjs
+  - docs/LOCAL_FINANCIAL_REPORTING.md
+
+### I18N-008 — Time-zone awareness
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: Each organisation has a time zone (owners and admins set it, audited) and each person may choose their own; moments (times things happened) are shown in it. Business dates such as today, due dates and periods are still calculated in India time for every organisation.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
 
 ### I18N-009 — Regional document templates
 
@@ -4142,6 +5059,157 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/test/periods.test.ts
   - apps/web/src
+
+### I18N-011 — Localization framework
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: English text is the key; a catalogue per language maps it, and missing text falls back to English. Tests check that every navigation label is translated, that no two different labels share a translation and that placeholders are kept.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-012 — Right-to-left layout support where needed
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: The page direction (dir) comes from the language's metadata, so a right-to-left language can be added; no right-to-left language is offered yet and layouts are not yet mirrored.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-013 — English
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: English is the default and the source text.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-014 — Hindi
+
+- Module: Internationalization
+- Status: **Implementing**
+- Notes: Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-015 — Architect for later support of additional languages
+
+- Module: Internationalization
+- Status: **Tested**
+- Notes: A language is a catalogue in the web app plus its code in the engine's LANGUAGES list and the database check; formats and time zones are independent of language.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### I18N-016 — Do not equate UI translation with legal or tax localization
+
+- Module: Internationalization
+- Status: **Implemented**
+- Notes: Language and formats are display-only and stored per person; tax and legal behaviour follows the organisation's country and settings, never the interface language. Tax terms and return names stay as the law writes them in every language.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/locale.test.ts
+  - apps/api/test/display-preferences.e2e.test.ts
+  - apps/web/src/lib/i18n.tsx
+  - apps/web/src/lib/format.ts
+  - apps/web/src/components/preferences.tsx
+  - apps/web/test/format.test.ts
+  - apps/web/test/i18n.test.ts
+  - apps/web/e2e/display-preferences-flow.test.mjs
+  - docs/LANGUAGES_AND_FORMATS.md
+
+### INTG-007 — Stripe
+
+- Module: Integration marketplace
+- Status: **Integration pending**
+- Notes: Stripe Checkout Sessions and webhooks, set up in Platform admin → Payments. Tested against a local stand-in of the API; needs a check with real Stripe test keys.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### INTG-009 — Razorpay
+
+- Module: Integration marketplace
+- Status: **Integration pending**
+- Notes: Razorpay Payment Links and webhooks, set up in Platform admin → Payments. Tested against a local stand-in of the API; needs a check with real Razorpay test keys.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### INTG-025 — CRM platforms
+
+- Module: Integration marketplace
+- Status: **Implementing**
+- Notes: Any CRM platform can connect through the generic CRM API (API keys) and CRM webhooks. Ready-made connectors for named platforms (Salesforce, HubSpot, Zoho) that map their objects automatically are not built.
+- Evidence:
+  - apps/api/src/crm-api/crm-api.controller.ts
+  - apps/api/src/crm-api/crm-webhooks.service.ts
+  - apps/web/src/components/crm-connection/crm-connection.tsx
+  - docs/CRM_EXTERNAL_API.md
 
 ### INTG-032 — Email providers
 
@@ -4321,6 +5389,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries
   - zod schemas on every endpoint
 
+### SEC-025 — Dependency scanning
+
+- Module: Security and enterprise governance
+- Status: **Implemented**
+- Notes: pnpm audit --prod --audit-level=high as a CI job, and weekly Dependabot updates for npm, GitHub Actions and base images. Four high-severity transitive advisories fixed with pinned overrides (audit clean locally). The CI job has not run on GitHub because Actions is blocked by billing.
+- Evidence:
+  - .github/workflows/ci.yml
+  - .github/dependabot.yml
+  - pnpm-workspace.yaml
+  - docs/CI_CD.md
+
 ### SEC-032 — AI action logging
 
 - Module: Security and enterprise governance
@@ -4371,6 +5450,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/onboarding
   - apps/web/e2e/ledger-flow.test.mjs
 
+### UX-003 — Select country
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Onboarding offers the eight country modules, fills in the usual currency and financial-year start, and shows what Talk2Tax covers in the chosen country before the organisation is created. The country cannot be changed later.
+- Evidence:
+  - apps/web/src/app/onboarding/page.tsx
+  - apps/web/e2e/country-modules-flow.test.mjs
+
 ### UX-007 — Configure fiscal year
 
 - Module: User experience and onboarding
@@ -4410,17 +5498,794 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/approvals
   - apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule
 
+### SUBS-001 — Create a flexible SaaS billing platform
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons, add-ons and usage metering are later slices.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-002 — India: ₹499/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹499/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-003 — Global: $9/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $9/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-004 — India: ₹1,499/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹1499/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-005 — Global: $25/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $25/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-006 — India: ₹3,499/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹3499/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-007 — Global: $59/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $59/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-008 — India: ₹8,999/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price ₹8999/month (proposed launch price), editable in Platform administration → Plans.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-009 — Global: $149/month
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Seeded plan price $149/month for organisations outside India (proposed launch price), editable.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-010 — These are proposed launch prices, not final validated commercial rates
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Shown on the subscription page and the admin plans page: proposed launch prices, not final.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-011 — Build an admin-configurable pricing system
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Plans (prices per currency and interval, limits, modules, offered flag, order) edited by super admins, validated and audited.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - apps/web/src/app/admin/plans/page.tsx
+
+### SUBS-012 — Monthly subscriptions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Monthly billing periods (calendar month, end of month kept).
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-013 — Annual subscriptions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Annual billing periods at ten months' price.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-014 — Free trials
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: 14-day trial (PLAN_TRIAL_DAYS) of every module for new organisations; admins extend trials; read-only (not locked) when it ends.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-015 — Plan upgrades
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Upgrades in a paid period are charged online for the days left (upgradeCharge) and take effect on payment; the period end is kept.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-016 — Plan downgrades
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: A cheaper plan or another billing interval in a paid period is scheduled: the renewal invoice is for it; refused while members exceed it.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-018 — Usage-based AI credits
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Each plan's monthly AI requests are metered (one per answered model call, any agent, own key or Talk2Tax's) and enforced before every model call (429 AI_CREDITS_USED_UP). Buying extra credits beyond the plan is not built.
+- Evidence:
+  - packages/accounting-engine/src/usage.ts
+  - packages/accounting-engine/test/usage.test.ts
+  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/usage/usage.controller.ts
+  - apps/api/test/usage.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx
+  - apps/web/src/app/admin/usage/page.tsx
+  - apps/web/e2e/usage-flow.test.mjs
+  - docs/USAGE_METERING.md
+  - apps/api/src/integrations/integrations.service.ts
+  - apps/api/src/ai-control/ai-control.service.ts
+
+### SUBS-019 — Document processing quotas
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Each plan's monthly uploads are counted per stored attachment and enforced inside the upload's transaction under a per-organisation lock (429 UPLOAD_LIMIT_REACHED); refused and duplicate files are not counted.
+- Evidence:
+  - packages/accounting-engine/src/usage.ts
+  - packages/accounting-engine/test/usage.test.ts
+  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/usage/usage.controller.ts
+  - apps/api/test/usage.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx
+  - apps/web/src/app/admin/usage/page.tsx
+  - apps/web/e2e/usage-flow.test.mjs
+  - docs/USAGE_METERING.md
+  - apps/api/src/attachments/attachments.service.ts
+
+### SUBS-020 — User-based licensing
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Member limits per plan, counting open invitations, on adding, inviting and accepting.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-023 — Enterprise contracts
+
+- Module: Subscription and monetization engine
+- Status: **Implementing**
+- Notes: Enterprise contracts activated by an administrator with the contract reference, or invoiced and paid by transfer (recorded under Invoices); no contract terms or custom prices yet.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-026 — Regional pricing
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: INR prices for organisations in India and USD elsewhere, per plan.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-027 — Tax on subscriptions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: GST on subscription invoices from an Indian supplier with a GSTIN: CGST+SGST in the same state (or state unknown), IGST in another state, zero-rated export outside India. No tax computed for a supplier outside India.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-028 — Automated renewals
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Renewal invoices are issued automatically 7 days before the period ends and paid by the customer (online or by transfer). Cards and UPI AutoPay are not charged automatically.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-029 — Payment failure handling
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Unpaid renewals go to 7 days grace, then read-only; a wrong amount or a payment on a replaced invoice is recorded and not applied; a cancelled payment can be retried; a late renewal starts from the day paid.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-030 — Dunning workflows
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Reminders once per invoice and stage (upcoming, due, final, lapsed), emailed to owners and admins through the organisation’s email set-up, and recorded in the subscription history.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-031 — Subscription invoices
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Payment request while unpaid; tax invoice numbered on payment (PREFIX/YY-YY/NNNNN, at most 16 characters, a series per financial year); printable; final once paid or void.
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-032 — Maintain clear distinctions between platform subscription billing and customers' own accounting transactions
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Subscriptions in their own tables and history, never posted to an organisation's books; the page says so.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### ADMIN-001 — Create a dedicated SaaS administration application
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: A dedicated platform administration area (/admin) of the web app with its own layout and API (/v1/admin), for people with a platform role (SUPER_ADMIN, SUPPORT); first administrator via the admin:grant command.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+
+### ADMIN-002 — Tenant management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Tenants (organisations) listed and searched by name, member email or id, with country, region, members, owners and status; overview counts.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+  - apps/web/src/app/admin/organisations/page.tsx
+
+### ADMIN-003 — Organization management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Organisation detail (metadata and members only), suspension with a reason shown to members (read-only, 423 ORG_SUSPENDED on changes) and reinstatement, written to the organisation's own audit trail.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+  - apps/web/src/app/admin/organisations/[id]/page.tsx
+
 ### ADMIN-004 — User management
 
 - Module: Platform super admin
 - Status: **Tested**
-- Notes: Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link.
+- Notes: Invite links (token hash stored, 7 days, only the invited email can accept, one use), new link and revoke, role changes within what the actor may grant, removing members, and at least one owner kept (service and trigger). Talk2Tax does not send email; the inviter shares the link. Platform administration adds people search, disable/enable with reason, sign out everywhere and platform roles (at least one super admin kept).
 - Evidence:
   - apps/api/src/organizations/invitations.service.ts
   - apps/api/test/invitations.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/members
   - apps/web/src/app/invite
   - apps/web/e2e/members-flow.test.mjs
+  - apps/api/src/admin/admin.service.ts
+  - apps/web/src/app/admin/people/page.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+
+### ADMIN-005 — Subscription management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Subscriptions in Platform administration: filter, activate with payment reference, extend trials, cancel, complimentary.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - apps/web/src/app/admin/subscriptions/page.tsx
+
+### ADMIN-006 — Plan management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Plan management in Platform administration.
+- Evidence:
+  - packages/accounting-engine/src/plans.ts
+  - packages/accounting-engine/test/plans.test.ts
+  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/billing/billing.service.ts
+  - apps/api/src/billing/platform-billing.service.ts
+  - apps/api/test/plans-subscriptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-flow.test.mjs
+  - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - apps/web/src/app/admin/plans/page.tsx
+
+### ADMIN-007 — Feature flags
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Flags declared in code with defaults; administrators switch one off for everyone, roll it out to a stable hashed share of organisations, or set it for one organisation (kept in that organisation's audit trail). The API refuses a switched-off module with 403 FEATURE_OFF and the menu hides it. Four modules are behind flags so far.
+- Evidence:
+  - packages/accounting-engine/src/feature-flags.ts
+  - packages/accounting-engine/test/feature-flags.test.ts
+  - apps/api/src/operations/flags.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/web/src/app/admin/flags/page.tsx
+  - apps/web/src/lib/nav.ts
+  - apps/web/test/nav.test.ts
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
+### ADMIN-008 — AI usage monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Platform admin → Usage: AI requests and tokens and uploads per organisation per month against each plan, fullest first, with totals and organisations at or near a limit.
+- Evidence:
+  - packages/accounting-engine/src/usage.ts
+  - packages/accounting-engine/test/usage.test.ts
+  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/usage/usage.controller.ts
+  - apps/api/test/usage.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/usage/page.tsx
+  - apps/web/src/app/admin/usage/page.tsx
+  - apps/web/e2e/usage-flow.test.mjs
+  - docs/USAGE_METERING.md
+
+### ADMIN-010 — API usage monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Requests per route pattern over the last 15 minutes: counts, 4xx and 5xx, p50 and p95, and requests per minute. In memory per API server instance; not aggregated across instances.
+- Evidence:
+  - apps/api/src/operations/metrics.service.ts
+  - apps/api/src/operations/request-context.ts
+  - apps/api/src/operations/system.service.ts
+  - apps/web/src/app/admin/system/page.tsx
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
+### ADMIN-011 — Infrastructure monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: System health measured on request: database latency, size, connections, PostgreSQL version and migrations; API version, uptime, memory and load; each background runner's last pass, duration, failures and lateness. No external metrics system or alerting to an on-call service yet.
+- Evidence:
+  - apps/api/src/operations/system.service.ts
+  - apps/api/src/operations/heartbeats.service.ts
+  - apps/web/src/app/admin/system/page.tsx
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
+### ADMIN-012 — Support ticket management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Tickets with topic and urgency, first-answer and resolution targets by urgency (1h/8h urgent to 72h/7d low, clock hours), a queue ordered by whose turn it is and the nearest target, assignment, internal notes never shown to the customer, replies emailed through the organisation's mail set-up, append-only messages, every status change in the organisation's audit chain.
+- Evidence:
+  - packages/accounting-engine/src/support.ts
+  - packages/accounting-engine/test/support.test.ts
+  - packages/database/prisma/migrations/20261114090000_support/migration.sql
+  - apps/api/src/support/support.service.ts
+  - apps/api/src/support/support.controller.ts
+  - apps/api/test/support.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/support/page.tsx
+  - apps/web/src/app/orgs/[orgId]/support/[ticketId]/page.tsx
+  - apps/web/src/app/admin/support/page.tsx
+  - apps/web/src/app/admin/support/[ticketId]/page.tsx
+  - apps/web/e2e/support-flow.test.mjs
+  - docs/SUPPORT.md
+
+### ADMIN-015 — Billing management
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Platform admin → Invoices (all subscription invoices, record a payment by hand, void, ask the gateway, issue due renewals, gateway notices) and → Payments (gateways and seller details).
+- Evidence:
+  - packages/accounting-engine/src/subscription-billing.ts
+  - packages/accounting-engine/test/subscription-billing.test.ts
+  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/billing/payments/gateways.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/test/subscription-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/src/app/admin/payments/page.tsx
+  - apps/web/src/app/admin/invoices/page.tsx
+  - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### ADMIN-017 — Error monitoring
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Every unexpected 5xx is recorded with its request id (shown to the person as a reference), grouped by error kind, code location and route; findable by reference; resolve and reopen; a resolved group that recurs opens again. Occurrences kept 30 days. Errors in the web app's browser code are not collected yet.
+- Evidence:
+  - apps/api/src/operations/errors.service.ts
+  - apps/api/src/common/errors.ts
+  - packages/database/prisma/migrations/20261116090100_error_events_rls/migration.sql
+  - apps/web/src/app/admin/errors/page.tsx
+  - apps/web/src/app/admin/errors/[id]/page.tsx
+  - apps/web/src/lib/api.ts
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
+### ADMIN-019 — System announcements
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Announcements with tone, start and optional end, withdrawn early if needed, shown on every page to everyone signed in.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+  - apps/web/src/app/admin/announcements/page.tsx
+  - apps/web/src/components/shell.tsx
+
+### ADMIN-020 — Maintenance controls
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Start now or schedule a maintenance window with a message and expected end. While in progress every change by anyone but platform staff is refused (503 MAINTENANCE with Retry-After); reads, sign-in and payment webhooks keep working, background runners skip their passes, and a banner shows on every page including sign-in.
+- Evidence:
+  - apps/api/src/operations/maintenance.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/web/src/app/admin/maintenance/page.tsx
+  - apps/web/src/components/maintenance-banner.tsx
+  - apps/web/src/app/api/status/route.ts
+  - packages/accounting-engine/src/operations.ts
+  - packages/accounting-engine/test/operations.test.ts
+  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/operations/operations.controller.ts
+  - apps/api/test/operations.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/OPERATIONS.md
+
+### ADMIN-021 — Super Admin access must not automatically grant unrestricted access to tenant financial data
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals. Since M9 slice 4 the one exception is support access the organisation grants itself (ADMIN-022): read-only, time-limited and logged.
+- Evidence:
+  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/admin/admin.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/platform-admin.e2e.test.ts
+  - apps/web/src/app/admin/layout.tsx
+  - apps/web/e2e/platform-admin-flow.test.mjs
+  - docs/PLATFORM_ADMINISTRATION.md
+  - apps/api/test/support.e2e.test.ts
+
+### ADMIN-022 — Implement controlled support access with explicit authorization, logging and expiration
+
+- Module: Platform super admin
+- Status: **Tested**
+- Notes: Only an owner or admin can grant; 1 to 72 hours with a reason, optionally tied to a ticket; one grant at a time; revocable; support staff get viewer rights for GET requests only (writes 403 SUPPORT_READ_ONLY); every request logged in an append-only table the organisation sees; grants can only be revoked once (database trigger).
+- Evidence:
+  - packages/accounting-engine/src/support.ts
+  - packages/accounting-engine/test/support.test.ts
+  - packages/database/prisma/migrations/20261114090000_support/migration.sql
+  - apps/api/src/support/support.service.ts
+  - apps/api/src/support/support.controller.ts
+  - apps/api/test/support.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/support/page.tsx
+  - apps/web/src/app/orgs/[orgId]/support/[ticketId]/page.tsx
+  - apps/web/src/app/admin/support/page.tsx
+  - apps/web/src/app/admin/support/[ticketId]/page.tsx
+  - apps/web/e2e/support-flow.test.mjs
+  - docs/SUPPORT.md
+  - apps/api/src/support/support-access.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/web/src/components/support/access-card.tsx
+  - apps/web/src/components/shell.tsx
+  - apps/web/src/lib/org.ts
 
 ### MOB-001 — Create a responsive web application first
 
@@ -4437,6 +6302,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Approvals work in the responsive web app at phone width; no mobile app.
 - Evidence:
   - apps/web/src/components/expenses/claims-list.tsx
+
+### PERF-007 — Regional deployments
+
+- Module: Performance and scalability
+- Status: **Implemented**
+- Notes: One deployment per region (DEPLOYMENT_REGION); organisations tagged with their data region at creation and served only there (421 WRONG_REGION elsewhere, with a link to the home region); audited operator move command. Implemented, not Production ready: no second region is running, and the data copy during a move is a manual database step.
+- Evidence:
+  - packages/database/prisma/migrations/20261110090000_data_regions/migration.sql
+  - apps/api/src/regions/regions.service.ts
+  - apps/api/src/regions/move-org.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/test/regional-deployment.e2e.test.ts
+  - apps/web/src/components/data-region.tsx
+  - apps/web/e2e/regional-deployment-flow.test.mjs
+  - docs/REGIONAL_DEPLOYMENT.md
 
 ### PERF-017 — Financial posting with transactional consistency
 
@@ -4509,10 +6389,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Testing and quality assurance
 - Status: **Tested**
-- Notes: Conversion and precision only; revaluation not built.
+- Notes: Conversion and precision, revaluation, and realised gains and losses on foreign-currency documents.
 - Evidence:
   - packages/accounting-engine/test/journal.test.ts
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
+  - packages/accounting-engine/test/fx-documents.test.ts
+  - apps/api/test/fx-documents.e2e.test.ts
 
 ### QA-009 — Reconciliation tests
 
@@ -4689,26 +6571,32 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### INNOV-005 — Evaluate financial indicators continuously and provide prioritized alerts
 
 - Module: Additional differentiating innovations
-- Status: **Implemented**
-- Notes: Nine checks run on demand and automatically when alerts are opened and the last run is over an hour old, ordered by severity. No background schedule or notifications yet.
+- Status: **Tested**
+- Notes: Nine checks run in the background (ALERTS_RUNNER_INTERVAL_SECONDS, default 300; organisations with posted entries not checked in the last hour, oldest first, 20 a pass), on demand, and when alerts are opened. Every alert has a priority score 0-100 with its reasons (severity, money at stake against average monthly revenue, days open, times it came back, minus 15 when acknowledged) and the list is ordered by it. New and reopened alerts become tasks by a per-organisation setting (critical or warnings, role, due days), closed automatically when the alert clears or is dismissed. No email or push notifications yet.
 - Evidence:
   - packages/accounting-engine/src/alerts.ts
   - packages/accounting-engine/test/alerts.test.ts
   - apps/api/src/alerts
   - apps/api/test/alerts.e2e.test.ts
-  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/api/test/continuous-alerts.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/alerts
+  - apps/web/e2e/alerts-flow.test.mjs
+  - apps/web/e2e/continuous-alerts-flow.test.mjs
+  - docs/ALERTS_AND_LEAKAGE.md
 
 ### INNOV-006 — Provide a centralized queue of tasks generated by users, rules and AI agents
 
 - Module: Additional differentiating innovations
-- Status: **Implementing**
-- Notes: Task queue for people and automations: tasks for a person or a role, due dates, overdue, links to the record, done or cancelled with a note, audit trail. Tasks from AI agents are later work.
+- Status: **Tested**
+- Notes: One work queue for tasks from people, automations, the AI assistant (confirmed actions), alerts and the month-end close. Each task records its source (backfilled for earlier tasks), shows it, and the queue filters by it; tasks for a person or a role, due dates, overdue, links to the record, done or cancelled with a note, audit trail. Alert tasks close themselves.
 - Evidence:
   - apps/api/src/tasks
   - apps/web/src/app/orgs/[orgId]/tasks
+  - apps/api/test/continuous-alerts.e2e.test.ts
   - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/continuous-alerts-flow.test.mjs
   - apps/web/e2e/automations-flow.test.mjs
+  - docs/ALERTS_AND_LEAKAGE.md
 
 ### INNOV-007 — Allow users to trace any reported figure to its originating transactions and documents
 
@@ -4727,6 +6615,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
   - apps/web/src/app/orgs/[orgId]/reports/balance-sheet/page.tsx
   - apps/web/src/app/orgs/[orgId]/reports/trial-balance/page.tsx
+
+### INNOV-008 — Estimate how sales, HR, procurement and operational changes affect financial performance
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Thirteen business changes across sales (new customer, lost customer, prices, salespeople, customer terms), HR (hires, pay rise, headcount reduction), procurement (supplier price by supplier share, supplier terms) and operations (new site, equipment, running costs), built from the books (cost of sales ratio, customers' sales, suppliers' bills) and played through the digital twin against carrying on as is; before/after revenue, margins, operating and net profit and cash; each change on its own with the statement lines it moves and its payback; each business area on its own with interaction; saved assessments re-run on the books; copy to a twin scenario.
+- Evidence:
+  - packages/accounting-engine/src/impact.ts
+  - packages/accounting-engine/test/impact.test.ts
+  - packages/database/prisma/migrations/20261107090000_business_impact/migration.sql
+  - apps/api/src/impact
+  - apps/api/test/business-impact.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/planning/impact
+  - apps/web/e2e/business-impact-flow.test.mjs
+  - docs/BUSINESS_IMPACT.md
 
 ### INNOV-009 — Compare forecast models against historical outcomes and track accuracy
 
@@ -4757,6 +6660,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/planning/disasters
   - apps/web/e2e/disaster-simulation-flow.test.mjs
   - docs/DISASTER_SIMULATION.md
+
+### INNOV-011 — Identify potentially profitable growth opportunities based on authorized financial and operational data
+
+- Module: Additional differentiating innovations
+- Status: **Tested**
+- Notes: Four kinds found in twelve months of posted books (lapsed customers to win back, revenue lines to cross-sell to active customers, the best-margin department or project, slipped gross margin restored by price), each with named evidence, user-set rates, confidence and reason, measured on the twin via the business impact engine, ranked by extra net profit; every kind that finds nothing says why; an opportunity can be taken forward as a saved impact assessment. Needs reports.read and sales.read.
+- Evidence:
+  - packages/accounting-engine/src/opportunities.ts
+  - packages/accounting-engine/test/opportunities.test.ts
+  - apps/api/src/opportunities
+  - apps/api/test/opportunities.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/planning/opportunities
+  - apps/web/e2e/opportunities-flow.test.mjs
+  - docs/OPPORTUNITY_INTELLIGENCE.md
 
 ### INNOV-012 — Generate evidence-based financial recovery scenarios
 
@@ -4915,6 +6832,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/shell.tsx
   - apps/web/src/components/banking
 
+### NAV-022 — Contracts
+
+- Module: Navigation structure
+- Status: **Tested**
+- Notes: Sales → Contracts.
+- Evidence:
+  - apps/web/src/lib/nav.ts
+  - apps/web/e2e/contracts-flow.test.mjs
+
 ### NAV-026 — Fixed Assets
 
 - Module: Navigation structure
@@ -4974,6 +6900,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/invite
   - apps/web/e2e/members-flow.test.mjs
 
+### NAV-044 — Support
+
+- Module: Navigation structure
+- Status: **Tested**
+- Notes: Help and support in the Governance group (and for staff who only claim expenses).
+- Evidence:
+  - apps/web/src/lib/nav.ts
+  - apps/web/src/app/orgs/[orgId]/support/page.tsx
+  - apps/web/e2e/support-flow.test.mjs
+
 ### NAV-046 — Use nested navigation and progressive disclosure
 
 - Module: Navigation structure
@@ -4988,6 +6924,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Sidebar only shows modules that exist today.
 - Evidence:
   - apps/web/src
+
+### DS-012 — Currency selectors
+
+- Module: Design system
+- Status: **Tested**
+- Notes: Currency and exchange-rate picker on invoices, bills, credits and payments: shows the recorded rate on the date and the home-currency amount.
+- Evidence:
+  - apps/web/src/components/ledger/currency-rate.tsx
+  - apps/web/e2e/fx-documents-flow.test.mjs
 
 ### DS-014 — Approval dialogs
 

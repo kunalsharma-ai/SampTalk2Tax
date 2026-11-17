@@ -1,3 +1,4 @@
+import { ChartService, type SystemAccountSpec } from '../accounts/chart.service';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { D, dec, Dec } from '@talk2tax/accounting-engine';
 import { Employee, PayComponentKind, PayrollLiability, PayrollSettings, Prisma, PtCategory, SalaryComponent, SalaryStructure } from '@talk2tax/database';
@@ -22,6 +23,8 @@ import { fromDbDate, todayIso, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { nextCounter } from '../db/counters';
+import { holdLock, lockRow } from '../db/locks';
 
 export interface PayrollOrg {
   id: string;
@@ -107,6 +110,7 @@ export class PayrollService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
+    private readonly chart: ChartService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -119,7 +123,7 @@ export class PayrollService {
 
   async saveSettings(orgId: string, actor: { id: string }, input: { pfEstablishmentCode?: string | null; esiEmployerCode?: string | null; ptRegistration?: string | null; accounts?: PayrollAccounts }) {
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', orgId);
       const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
       if (org.countryCode !== 'IN' || org.functionalCurrency !== 'INR') throw new DomainError('NOT_INDIA', 'Payroll is available to organisations in India that keep their books in INR');
       const before = await tx.payrollSettings.findUnique({ where: { orgId } });
@@ -236,13 +240,11 @@ export class PayrollService {
   async createRun(org: PayrollOrg, actor: { id: string }, input: { period: string; payDate: string }) {
     if (input.payDate < periodStart(input.period)) throw new DomainError('INVALID_DATE', 'The pay date cannot be before the month it pays for');
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', org.id);
       await this.requireSettings(tx, org.id);
       const live = await tx.payRun.findFirst({ where: { orgId: org.id, period: input.period, status: { not: 'VOID' } } });
       if (live) throw new DomainError('PAY_RUN_EXISTS', `${live.number} already covers ${input.period}`, HttpStatus.CONFLICT);
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'doc:PAY_RUN', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'doc:PAY_RUN') }];
       const run = await tx.payRun.create({ data: { orgId: org.id, number: `PAY-${String(value).padStart(6, '0')}`, period: input.period, payDate: toDbDate(input.payDate), createdById: actor.id } });
       const skipped = await this.syncPayslips(tx, org.id, run.id, input.period, new Map());
       await this.updateTotals(tx, run.id);
@@ -369,9 +371,7 @@ export class PayrollService {
       const bank = await tx.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
       if (!bank || !bank.isPostable || !bank.isActive || !['BANK', 'CASH'].includes(bank.subtype ?? '')) throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose an active bank or cash account');
       const settings = await this.requireSettings(tx, org.id);
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, 'doc:PAYROLL_PAYMENT', 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const [{ value }] = [{ value: await nextCounter(tx, org.id, 'doc:PAYROLL_PAYMENT') }];
       const number = `PAYP-${String(value).padStart(6, '0')}`;
       const c = org.functionalCurrency;
       const je = await this.journals.postSystemEntry(tx, org, actor, {
@@ -396,8 +396,8 @@ export class PayrollService {
     if (!hasPermission(org.role, 'journals.reverse')) throw new DomainError('FORBIDDEN', `Your role (${org.role}) cannot void payments; it needs journals.reverse`, HttpStatus.FORBIDDEN);
     return this.prisma.$transaction(async (tx) => {
       await this.lockRun(tx, org.id, runId);
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM payroll_remittances WHERE id = ${remittanceId}::uuid AND org_id = ${org.id}::uuid AND pay_run_id = ${runId}::uuid FOR UPDATE`;
-      if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });
+      const locked = await lockRow(tx, 'payroll_remittances', remittanceId, org.id);
+      if (!locked.length || !(await tx.payrollRemittance.count({ where: { id: remittanceId, orgId: org.id, payRunId: runId } }))) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Payment not found' });
       const r = await tx.payrollRemittance.findUniqueOrThrow({ where: { id: remittanceId } });
       if (r.status !== 'POSTED') throw new DomainError('ALREADY_VOID', 'Payment is already void', HttpStatus.CONFLICT);
       if (input.date < fromDbDate(r.date)) throw new DomainError('INVALID_DATE', 'The void date cannot be before the payment date');
@@ -735,12 +735,12 @@ export class PayrollService {
   }
 
   private async lockEmployee(tx: Tx, orgId: string, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM employees WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'employees', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Employee not found' });
   }
 
   private async lockRun(tx: Tx, orgId: string, id: string) {
-    const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM pay_runs WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    const rows = await lockRow<{ id: string }>(tx, 'pay_runs', id, orgId);
     if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Pay run not found' });
     return tx.payRun.findUniqueOrThrow({ where: { id } });
   }
@@ -751,22 +751,9 @@ export class PayrollService {
     return s;
   }
 
-  private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }) {
-    const out = {} as PayrollAccounts;
-    for (const key of ACCOUNT_KEYS) {
-      const spec = DEFAULT_ACCOUNTS[key];
-      const existing = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.code } } });
-      if (existing) {
-        if (existing.name !== spec.name || existing.type !== spec.type) throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} is already used by "${existing.name}". Choose the accounts yourself.`, HttpStatus.CONFLICT);
-        out[key] = existing.id;
-        continue;
-      }
-      const parent = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.parent } } });
-      const a = await tx.account.create({ data: { orgId, code: spec.code, name: spec.name, type: spec.type, subtype: spec.subtype, parentId: parent && !parent.isPostable && parent.type === spec.type ? parent.id : null, isPostable: true } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, reason: 'Payroll setup' } });
-      out[key] = a.id;
-    }
-    return out;
+  private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }): Promise<PayrollAccounts> {
+    const specs = Object.fromEntries(ACCOUNT_KEYS.map((k) => { const d = DEFAULT_ACCOUNTS[k]; return [k, { code: d.code, name: d.name, type: d.type, subtype: d.subtype, parentCode: d.parent }]; })) as Record<AccountKey, SystemAccountSpec>;
+    return this.chart.ensure(tx, orgId, actor.id, specs, 'Payroll setup');
   }
 
   private async checkAccounts(tx: Tx, orgId: string, accounts: PayrollAccounts) {

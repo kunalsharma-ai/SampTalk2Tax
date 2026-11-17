@@ -5,6 +5,7 @@ import {
   alertRule,
   AlertRuleDef,
   AlertRuleKey,
+  alertPriority,
   AlertSeverity,
   budgetOverruns,
   D,
@@ -14,6 +15,7 @@ import {
   KPI_DEFINITIONS,
   minorUnits,
   missedRecurringBilling,
+  notifies,
   overdueByCustomer,
   resolveAlertParams,
   SEVERITY_ORDER,
@@ -30,6 +32,9 @@ import { PrismaService } from '../common/prisma.service';
 import { ComplianceService } from '../compliance/compliance.service';
 import { KpisService } from '../kpis/kpis.service';
 import { SubledgerService } from '../ledgers/subledger.service';
+import { TasksService } from '../tasks/tasks.service';
+import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
+import { lockName } from '../db/locks';
 
 type Actor = { id: string };
 
@@ -69,6 +74,10 @@ interface Finding {
   evidence: Evidence;
 }
 
+const monthEndOf = (month: string) => {
+  const [y, m] = month.split('-').map(Number) as [number, number];
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+};
 const addDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const istDate = (d: Date) => new Date(d.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 function shiftMonth(month: string, by: number): string {
@@ -105,7 +114,60 @@ export class AlertsService {
     private readonly compliance: ComplianceService,
     private readonly kpis: KpisService,
     private readonly budgets: BudgetsService,
+    private readonly tasks: TasksService,
+    private readonly vendorRisk: VendorRiskService,
   ) {}
+
+  // ------------------------------------------------------------------ notifications
+
+  /** Who hears about new alerts. Without a saved setting: critical alerts become a task for owners, due the same day. */
+  async notifications(orgId: string) {
+    const s = await this.prisma.alertNotificationSetting.findUnique({ where: { orgId } });
+    const who = s ? await this.names([s.updatedById]) : new Map<string, string>();
+    return {
+      minSeverity: (s?.minSeverity ?? 'CRITICAL') as 'CRITICAL' | 'WARNING' | 'OFF',
+      taskRole: (s?.taskRole ?? 'OWNER') as 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'APPROVER',
+      dueDays: s?.dueDays ?? 0,
+      isDefault: !s,
+      updatedBy: s ? (who.get(s.updatedById) ?? null) : null,
+      updatedAt: s?.updatedAt.toISOString() ?? null,
+    };
+  }
+
+  async saveNotifications(orgId: string, actor: Actor, input: { minSeverity: 'CRITICAL' | 'WARNING' | 'OFF'; taskRole: 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'APPROVER'; dueDays: number }) {
+    const before = await this.notifications(orgId);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.alertNotificationSetting.upsert({ where: { orgId }, create: { orgId, ...input, updatedById: actor.id }, update: { ...input, updatedById: actor.id } });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'alerts.notifications_changed', entityType: 'alert_notification_settings', entityId: orgId, data: { before: { minSeverity: before.minSeverity, taskRole: before.taskRole, dueDays: before.dueDays }, after: input } });
+    });
+    return this.notifications(orgId);
+  }
+
+  /** A task for a new or reopened alert, unless one is already open for it. */
+  private async notifyInTx(tx: Prisma.TransactionClient, orgId: string, alert: { id: string; title: string; summary: string; severity: AlertSeverity }, setting: { minSeverity: 'CRITICAL' | 'WARNING' | 'OFF'; taskRole: string; dueDays: number }) {
+    if (!notifies(alert.severity, setting.minSeverity)) return;
+    const open = await tx.task.findFirst({ where: { orgId, linkType: 'ALERT', linkId: alert.id, status: 'OPEN' }, select: { id: true } });
+    if (open) return;
+    await this.tasks.createInTx(tx, orgId, {
+      title: `${alert.severity === 'CRITICAL' ? 'Critical alert' : alert.severity === 'WARNING' ? 'Warning' : 'Alert'}: ${alert.title}`,
+      description: `${alert.summary} This task closes itself when the alert is cleared or dismissed.`,
+      assignTo: { role: setting.taskRole as 'OWNER' },
+      dueDate: addDays(todayIst(), setting.dueDays),
+      link: { type: 'ALERT', id: alert.id },
+      createdById: null,
+      source: 'ALERT',
+    });
+  }
+
+  /** Closes the open tasks for alerts that were cleared (done) or dismissed (cancelled). */
+  private async closeTasksInTx(tx: Prisma.TransactionClient, orgId: string, alertIds: string[], to: 'DONE' | 'CANCELLED', note: string, actorId: string | null) {
+    if (!alertIds.length) return;
+    const open = await tx.task.findMany({ where: { orgId, linkType: 'ALERT', linkId: { in: alertIds }, status: 'OPEN' }, select: { id: true, title: true } });
+    for (const t of open) {
+      await tx.task.update({ where: { id: t.id }, data: { status: to, closedById: actorId, closedAt: new Date(), closeNote: note.slice(0, 1000) } });
+      await this.audit.append(tx, { orgId, actorId, action: to === 'DONE' ? 'task.completed' : 'task.cancelled', entityType: 'task', entityId: t.id, data: { title: t.title, note, automatic: true } });
+    }
+  }
 
   private async org(orgId: string) {
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { functionalCurrency: true, fiscalYearStartMonth: true } });
@@ -334,16 +396,26 @@ export class AlertsService {
         const month = shiftMonth(today.slice(0, 7), -1);
         const from = `${shiftMonth(month, -lookback)}-01`;
         const to = `${shiftMonth(month, 1)}-01`;
-        const rows = await this.prisma.$queryRaw<{ contact_id: string; name: string; month: string; amount: Prisma.Decimal; n: bigint; last_id: string; last_number: string }[]>`
-          SELECT d.contact_id, c.name, to_char(d.issue_date, 'YYYY-MM') AS month,
-                 SUM(CASE WHEN d.kind = 'INVOICE' THEN d.subtotal ELSE -d.subtotal END) AS amount,
-                 COUNT(*) FILTER (WHERE d.kind = 'INVOICE') AS n,
-                 (array_agg(d.id::text ORDER BY d.issue_date DESC, d.number DESC) FILTER (WHERE d.kind = 'INVOICE'))[1] AS last_id,
-                 (array_agg(d.number ORDER BY d.issue_date DESC, d.number DESC) FILTER (WHERE d.kind = 'INVOICE'))[1] AS last_number
-          FROM documents d JOIN contacts c ON c.id = d.contact_id
-          WHERE d.org_id = ${orgId}::uuid AND d.kind IN ('INVOICE', 'CREDIT_NOTE') AND d.status = 'POSTED'
-            AND d.issue_date >= ${toDbDate(from)}::date AND d.issue_date < ${toDbDate(to)}::date
-          GROUP BY 1, 2, 3`;
+        const docs = await this.prisma.document.findMany({
+          where: { orgId, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { gte: toDbDate(from), lt: toDbDate(to) } },
+          select: { id: true, kind: true, contactId: true, number: true, issueDate: true, subtotal: true },
+        });
+        const contactName = new Map((docs.length ? await this.prisma.contact.findMany({ where: { orgId, id: { in: [...new Set(docs.map((d) => d.contactId))] } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+        // By customer and month: invoices less credit notes, and the latest invoice (by date, then number).
+        const groups = new Map<string, { contact_id: string; name: string; month: string; amount: Prisma.Decimal; n: number; last: (typeof docs)[number] | null }>();
+        for (const d of docs) {
+          const month = fromDbDate(d.issueDate).slice(0, 7);
+          const k = `${d.contactId}|${month}`;
+          const g = groups.get(k) ?? { contact_id: d.contactId, name: contactName.get(d.contactId) ?? '', month, amount: new Prisma.Decimal(0), n: 0, last: null };
+          g.amount = d.kind === 'INVOICE' ? g.amount.plus(d.subtotal) : g.amount.minus(d.subtotal);
+          if (d.kind === 'INVOICE') {
+            g.n += 1;
+            const l = g.last;
+            if (!l || d.issueDate > l.issueDate || (d.issueDate.getTime() === l.issueDate.getTime() && (d.number ?? '') > (l.number ?? ''))) g.last = d;
+          }
+          groups.set(k, g);
+        }
+        const rows = [...groups.values()].map((g) => ({ ...g, last_id: g.last?.id ?? null, last_number: g.last?.number ?? '' }));
         const name = new Map(rows.map((r) => [r.contact_id, r.name]));
         const last = new Map<string, { id: string; number: string; month: string }>();
         for (const r of rows) if (r.last_id && (!last.has(r.contact_id) || last.get(r.contact_id)!.month < r.month)) last.set(r.contact_id, { id: r.last_id, number: r.last_number, month: r.month });
@@ -377,11 +449,11 @@ export class AlertsService {
         const since = toDbDate(addDays(today, -DUPLICATE_LOOKBACK_DAYS));
         const bills = def.key === 'DUPLICATE_BILL';
         const items = bills
-          ? (await this.prisma.document.findMany({ where: { orgId, kind: 'BILL', status: 'POSTED', issueDate: { gte: since } }, select: { id: true, contactId: true, issueDate: true, total: true, number: true, reference: true, contact: { select: { name: true } } } })).map((d) => ({
+          ? (await this.prisma.document.findMany({ where: { orgId, kind: 'BILL', status: 'POSTED', issueDate: { gte: since } }, select: { id: true, contactId: true, issueDate: true, total: true, exchangeRate: true, number: true, reference: true, contact: { select: { name: true } } } })).map((d) => ({
               id: d.id,
               contactId: d.contactId,
               date: fromDbDate(d.issueDate),
-              amount: d.total.toFixed(),
+              amount: d.total.times(d.exchangeRate).toDecimalPlaces(2).toFixed(),
               number: d.number ?? '',
               reference: d.reference,
               contactName: d.contact.name,
@@ -419,6 +491,33 @@ export class AlertsService {
             },
           };
         });
+      }
+      case 'VENDOR_RISK': {
+        const r = await this.vendorRisk.list(orgId);
+        const why = { NEVER_REVIEWED: 'nobody has reviewed it yet', NEW_RISK: 'something new since the last review', REVIEW_DUE: 'the review date has come' } as const;
+        return r.vendors
+          .filter((v) => v.need && (v.level === 'HIGH' || v.level === 'MEDIUM' || v.need === 'REVIEW_DUE'))
+          .map((v) => {
+            const shown = v.need === 'NEW_RISK' ? v.factors.filter((f) => v.newFactors.includes(f.code)) : v.factors;
+            return {
+              rule: def.key,
+              fingerprint: v.id,
+              severity: v.level === 'HIGH' ? ('CRITICAL' as const) : v.level === 'MEDIUM' ? ('WARNING' as const) : ('INFO' as const),
+              title: `${v.name}: ${v.level.toLowerCase()} vendor risk, ${why[v.need!]}`,
+              summary: `${shown.map((f) => f.title).join('; ')}. Open the vendor's Risk card, look at each factor and record a review with what you decided.`,
+              amount: new D(v.owed).gt(0) ? new D(v.owed) : null,
+              evidence: {
+                facts: [
+                  { label: 'Vendor', value: v.name },
+                  { label: 'Risk', value: v.level.charAt(0) + v.level.slice(1).toLowerCase() },
+                  { label: 'Owed to the vendor', value: o.money(v.owed), kind: 'money' as const },
+                  ...(v.lastReview ? [{ label: 'Last review', value: `${dateLabel(v.lastReview.reviewedOn)}, next due ${dateLabel(v.lastReview.nextReviewOn)}` }] : []),
+                  ...shown.map((f) => ({ label: f.title, value: f.detail })),
+                ],
+                links: [{ kind: 'VENDOR' as const, id: v.id, label: `Open ${v.name}` }, { kind: 'PAGE' as const, path: '/purchases/vendor-risk', label: 'Open vendor risk' }],
+              },
+            };
+          });
       }
       case 'UNUSUAL_JOURNAL': {
         const since = new Date(Date.now() - JOURNAL_WINDOW_DAYS * 86_400_000);
@@ -493,12 +592,14 @@ export class AlertsService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`t2t.alerts:${orgId}`}))`;
+      await lockName(tx, `t2t.alerts:${orgId}`);
       if (!actor) {
         const newer = await tx.alertScan.findFirst({ where: { orgId, finishedAt: { gte: startedAt } }, select: { id: true } });
         if (newer) return null;
       }
       const existing = await tx.alert.findMany({ where: { orgId }, select: { id: true, rule: true, fingerprint: true, status: true } });
+      const ns = await tx.alertNotificationSetting.findUnique({ where: { orgId } });
+      const notify = { minSeverity: (ns?.minSeverity ?? 'CRITICAL') as 'CRITICAL' | 'WARNING' | 'OFF', taskRole: ns?.taskRole ?? 'OWNER', dueDays: ns?.dueDays ?? 0 };
       const sync = syncAlerts(existing, findings, ran);
       const now = new Date();
       const byKey = new Map(findings.map((f) => [`${f.rule}\u0000${f.fingerprint}`, f]));
@@ -509,6 +610,7 @@ export class AlertsService {
         await tx.alertEvent.create({ data: { orgId, alertId: a.id, action: 'OPENED', actorId: actor?.id ?? null } });
         // Recorded in the audit trail so that automations can act on a new alert.
         await this.audit.append(tx, { orgId, actorId: null, action: 'alert.opened', entityType: 'alert', entityId: a.id, data: { rule: f.rule, title: a.title, severity: f.severity, reopened: false } });
+        await this.notifyInTx(tx, orgId, { id: a.id, title: a.title, summary: a.summary, severity: f.severity }, notify);
       }
       const ruleOf = new Map(existing.map((e) => [e.id, e.rule]));
       for (const r of sync.refresh) {
@@ -520,6 +622,7 @@ export class AlertsService {
         if (r.reopen) {
           await tx.alertEvent.create({ data: { orgId, alertId: r.id, action: 'REOPENED', actorId: actor?.id ?? null, note: 'Found again by the checks' } });
           await this.audit.append(tx, { orgId, actorId: null, action: 'alert.opened', entityType: 'alert', entityId: r.id, data: { rule: f.rule, title: f.title.slice(0, 300), severity: f.severity, reopened: true } });
+          await this.notifyInTx(tx, orgId, { id: r.id, title: f.title.slice(0, 300), summary: f.summary.slice(0, 2000), severity: f.severity }, notify);
         }
       }
       const offIds = existing.filter((e) => off.includes(e.rule as AlertRuleKey) && (e.status === 'OPEN' || e.status === 'ACKNOWLEDGED')).map((e) => e.id);
@@ -531,6 +634,7 @@ export class AlertsService {
           await tx.alert.update({ where: { id }, data: { status: 'CLEARED', clearedAt: now, statusAt: now } });
           await tx.alertEvent.create({ data: { orgId, alertId: id, action: 'CLEARED', actorId: actor?.id ?? null, note } });
         }
+        await this.closeTasksInTx(tx, orgId, [...ids], 'DONE', `The alert cleared: ${note.charAt(0).toLowerCase()}${note.slice(1)}.`, actor?.id ?? null);
       }
       const reopened = sync.refresh.filter((r) => r.reopen).length;
       const scan = await tx.alertScan.create({
@@ -567,8 +671,18 @@ export class AlertsService {
 
   // ------------------------------------------------------------------ reading
 
-  private serialize(a: Awaited<ReturnType<PrismaService['alert']['findFirstOrThrow']>>, who: Map<string, string>) {
+  /** Average operating revenue of the last three complete months, to judge amounts against. */
+  private async monthlyRevenue(orgId: string): Promise<string | null> {
+    const last = shiftMonth(todayIst().slice(0, 7), -1);
+    const months = await this.kpis.monthFigures(orgId, last, monthEndOf(last), 3);
+    if (!months.length) return null;
+    const total = months.reduce((t, m) => t.plus(m.operatingRevenue), new Prisma.Decimal(0));
+    return total.div(months.length).toFixed(2);
+  }
+
+  private serialize(a: Awaited<ReturnType<PrismaService['alert']['findFirstOrThrow']>>, who: Map<string, string>, monthlyRevenue: string | null) {
     const def = ALERT_RULES.find((r) => r.key === a.rule);
+    const priority = alertPriority({ severity: a.severity, status: a.status, amount: a.amount?.toFixed() ?? null, monthlyRevenue, firstSeenAt: a.firstSeenAt.toISOString().slice(0, 10), reopenCount: a.reopenCount, today: todayIst() });
     return {
       id: a.id,
       rule: a.rule,
@@ -587,6 +701,7 @@ export class AlertsService {
       lastSeenAt: a.lastSeenAt.toISOString(),
       clearedAt: a.clearedAt?.toISOString() ?? null,
       reopenCount: a.reopenCount,
+      priority,
     };
   }
 
@@ -605,8 +720,11 @@ export class AlertsService {
       this.prisma.alert.findMany({ where: { orgId, status: { in: statuses } }, orderBy: { lastSeenAt: 'desc' }, take: 500 }),
       this.prisma.alert.groupBy({ by: ['status', 'severity'], where: { orgId }, _count: { _all: true } }),
     ]);
-    rows.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.lastSeenAt.getTime() - a.lastSeenAt.getTime());
     const who = await this.names([...rows.map((r) => r.statusById), last?.ranById ?? null]);
+    const revenue = await this.monthlyRevenue(orgId);
+    const alerts = rows.map((r) => this.serialize(r, who, revenue));
+    // Most urgent first; ties by severity, then the most recently seen.
+    alerts.sort((a, b) => b.priority.score - a.priority.score || SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.lastSeenAt.localeCompare(a.lastSeenAt));
     const n = (f: (c: (typeof counts)[number]) => boolean) => counts.filter(f).reduce((s, c) => s + c._count._all, 0);
     const active = (c: (typeof counts)[number]) => c.status === 'OPEN' || c.status === 'ACKNOWLEDGED';
     const o = await this.org(orgId);
@@ -623,7 +741,14 @@ export class AlertsService {
         warning: n((c) => active(c) && c.severity === 'WARNING'),
         info: n((c) => active(c) && c.severity === 'INFO'),
       },
-      alerts: rows.map((r) => this.serialize(r, who)),
+      monthlyRevenue: revenue,
+      bands: {
+        urgent: alerts.filter((a) => a.priority.band === 'URGENT').length,
+        high: alerts.filter((a) => a.priority.band === 'HIGH').length,
+        normal: alerts.filter((a) => a.priority.band === 'NORMAL').length,
+        low: alerts.filter((a) => a.priority.band === 'LOW').length,
+      },
+      alerts,
     };
   }
 
@@ -634,7 +759,7 @@ export class AlertsService {
     const who = await this.names([a.statusById, ...events.map((e) => e.actorId)]);
     const def = ALERT_RULES.find((r) => r.key === a.rule);
     return {
-      ...this.serialize(a, who),
+      ...this.serialize(a, who, await this.monthlyRevenue(orgId)),
       ruleDescription: def?.description ?? null,
       history: events.map((e) => ({ id: e.id, action: e.action, by: e.actorId ? (who.get(e.actorId) ?? null) : null, automatic: !e.actorId, note: e.note, at: e.createdAt.toISOString() })),
     };
@@ -667,6 +792,11 @@ export class AlertsService {
       });
       await tx.alertEvent.create({ data: { orgId, alertId: id, action, actorId: actor.id, note } });
       await this.audit.append(tx, { orgId, actorId: actor.id, action: `alert.${action.toLowerCase()}`, entityType: 'alert', entityId: id, data: { rule: a.rule, title: a.title, from: a.status, note } });
+      if (to === 'DISMISSED') await this.closeTasksInTx(tx, orgId, [id], 'CANCELLED', `The alert was dismissed${note ? `: ${note}` : '.'}`, actor.id);
+      if (to === 'OPEN') {
+        const ns = await tx.alertNotificationSetting.findUnique({ where: { orgId } });
+        await this.notifyInTx(tx, orgId, a, { minSeverity: (ns?.minSeverity ?? 'CRITICAL') as 'CRITICAL' | 'WARNING' | 'OFF', taskRole: ns?.taskRole ?? 'OWNER', dueDays: ns?.dueDays ?? 0 });
+      }
       return a.title;
     }
   }

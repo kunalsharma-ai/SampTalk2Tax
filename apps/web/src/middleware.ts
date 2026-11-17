@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PUBLIC = ['/login', '/register'];
+/** Open to anyone, signed in or not: where a customer lands after paying a payment link. */
+const OPEN = ['/paid'];
+/** The customer and vendor portals: the secret in the link is the check (AR-030, AP-013). */
+const OPEN_PREFIXES = ['/portal/', '/vendor-portal/'];
 
 /** Redirects signed-out visitors to /login (the API still enforces auth on every call). */
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  if (OPEN.includes(pathname) || OPEN_PREFIXES.some((p) => pathname.startsWith(p))) {
+    const res = NextResponse.next();
+    res.headers.set('Referrer-Policy', 'no-referrer');
+    return res;
+  }
   // An expired access cookie is fine while the refresh cookie lives: the API proxy renews it.
   const signedIn = Boolean(req.cookies.get('t2t_session')?.value || req.cookies.get('t2t_refresh')?.value);
   if (!signedIn && !PUBLIC.includes(pathname)) {
@@ -17,4 +26,5 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ['/((?!api/|_next/|favicon.ico|icon.svg).*)'] };
+// Logos and app icons are public: the sign-in page shows them before anyone is signed in.
+export const config = { matcher: ['/((?!api/|_next/|brand/|favicon.ico|icon.svg|apple-icon.png|manifest.webmanifest).*)'] };

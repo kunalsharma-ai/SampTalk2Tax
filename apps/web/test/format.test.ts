@@ -31,3 +31,25 @@ describe('today', () => {
     expect(today()).toBe('2026-11-04');
   });
 });
+
+describe('display preferences', () => {
+  afterEach(async () => {
+    const f = await import('../src/lib/format');
+    f.setDisplayPreferences({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: null });
+    f.setOrganisationTimeZone(null);
+  });
+
+  it('applies the person’s number and date formats, and their time zone over the organisation’s', async () => {
+    const f = await import('../src/lib/format');
+    f.setOrganisationTimeZone('Asia/Dubai');
+    expect(f.dateTime('2026-11-05T21:34:00Z')).toBe('06 Nov 2026, 01:34');
+    f.setDisplayPreferences({ language: 'hi', numberFormat: 'INTL', dateFormat: 'YMD', timeZone: 'Europe/London' });
+    expect(f.money('1234567.89', 'INR')).toBe('₹1,234,567.89');
+    expect(f.date('2026-04-01')).toBe('2026-04-01');
+    expect(f.dateTime('2026-11-05T21:34:00Z')).toBe('2026-11-05, 21:34');
+    f.setDisplayPreferences({ language: 'hi', numberFormat: 'IN', dateFormat: 'D_MON_Y', timeZone: null });
+    expect(f.date('2026-03-31')).toBe('31 मार्च 2026');
+    // Not a decimal: shown as it came rather than failing the page.
+    expect(f.money('n/a', 'INR')).toBe('n/a');
+  });
+});

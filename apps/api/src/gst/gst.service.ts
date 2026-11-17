@@ -1,5 +1,6 @@
+import { ChartService } from '../accounts/chart.service';
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { D, Ledger } from '@talk2tax/accounting-engine';
+import { D, Ledger, toFunctional } from '@talk2tax/accounting-engine';
 import { Contact, GstRegistration, Prisma } from '@talk2tax/database';
 import {
   checkGstin,
@@ -16,7 +17,10 @@ import {
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { lockRow } from '../db/locks';
 
 export interface GstAccountsInput {
   outputCgstAccountId: string;
@@ -65,6 +69,8 @@ export class GstService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly chart: ChartService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   registration(db: Tx | PrismaService, orgId: string) {
@@ -84,7 +90,7 @@ export class GstService {
     if (!check.valid) throw new DomainError('INVALID_GSTIN', check.issues.join('; '));
     return this.prisma.$transaction(async (tx) => {
       // Serialise registration changes per organisation.
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', orgId);
       const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
       if (org.countryCode !== 'IN' || org.functionalCurrency !== 'INR') {
         throw new DomainError('NOT_INDIA', 'GST registration is available to organisations in India that keep their books in INR');
@@ -161,12 +167,7 @@ export class GstService {
    */
   private async ledgerMovements(orgId: string, reg: GstRegistration, from: string, to: string, s: ReturnType<typeof gstr3bSummary>) {
     const ids = ACCOUNT_KEYS.map((k) => reg[k]);
-    const rows = await this.prisma.$queryRaw<{ account_id: string; dr: Prisma.Decimal | null; cr: Prisma.Decimal | null }[]>`
-      SELECT l.account_id, SUM(l.functional_debit) AS dr, SUM(l.functional_credit) AS cr
-      FROM journal_lines l JOIN journal_entries e ON e.id = l.entry_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.date BETWEEN ${toDbDate(from)}::date AND ${toDbDate(to)}::date
-        AND l.account_id IN (${Prisma.join(ids.map((x) => Prisma.sql`${x}::uuid`))})
-      GROUP BY l.account_id`;
+    const rows = (await lineSums(this.store, orgId, { entry: postedBetween(toDbDate(from), toDbDate(to)), line: { accountId: { $in: ids } }, by: { accountId: 'lines.accountId' } })).map((r) => ({ account_id: r.key.accountId as string, dr: r.debit, cr: r.credit }));
     const net = (id: string, credit: boolean) => {
       const r = rows.find((x) => x.account_id === id);
       const dr = new D(r?.dr?.toFixed() ?? '0');
@@ -195,10 +196,14 @@ export class GstService {
   private async returnDocuments(orgId: string, kinds: GstReturnDocument['kind'][], from: string, to: string): Promise<GstReturnDocument[]> {
     const docs = await this.prisma.document.findMany({
       where: { orgId, kind: { in: kinds }, status: { in: ['POSTED', 'VOID'] }, placeOfSupply: { not: null }, issueDate: { gte: toDbDate(from), lte: toDbDate(to) } },
-      include: { contact: { select: { name: true } }, lines: { orderBy: { lineNo: 'asc' }, include: { tax: { select: { gstCategory: true } } } } },
+      include: { contact: { select: { name: true } }, debitNoteFor: { select: { number: true } }, lines: { orderBy: { lineNo: 'asc' }, include: { tax: { select: { gstCategory: true } } } } },
       orderBy: [{ issueDate: 'asc' }, { number: 'asc' }],
     });
-    return docs.map((d) => ({
+    // Returns are in rupees: a document in another currency is converted at its own rate.
+    return docs.map((d) => {
+      const r = d.exchangeRate.toFixed();
+      const inr = (v: Prisma.Decimal) => (d.currency === 'INR' ? v.toFixed(2) : toFunctional(new D(v.toFixed()), r, 'INR').toFixed(2));
+      return {
       id: d.id,
       kind: d.kind,
       status: d.status as 'POSTED' | 'VOID',
@@ -208,44 +213,28 @@ export class GstService {
       gstin: d.counterpartyGstin,
       placeOfSupply: d.placeOfSupply!,
       nature: d.supplyNature!,
-      total: d.subtotal.plus(d.taxTotal).toFixed(2),
+      total: inr(d.subtotal.plus(d.taxTotal)),
       reverseCharge: d.reverseCharge,
       supplierState: d.supplierState ?? undefined,
+      ...(d.debitNoteForId ? { debitNote: true, originalNumber: d.debitNoteFor?.number ?? null } : {}),
       lines: d.lines.map((l) => ({
         hsnCode: l.hsnCode,
         quantity: l.quantity.toFixed(),
         category: (l.tax?.gstCategory ?? 'NON_GST') as GstCategory,
         rate: l.taxRate.toFixed(),
-        taxable: l.netAmount.toFixed(2),
-        cgst: l.cgstAmount.toFixed(2),
-        sgst: l.sgstAmount.toFixed(2),
-        igst: l.igstAmount.toFixed(2),
+        taxable: inr(l.netAmount),
+        cgst: inr(l.cgstAmount),
+        sgst: inr(l.sgstAmount),
+        igst: inr(l.igstAmount),
       })),
-    }));
+      };
+    });
   }
 
   // ------------------------------------------------------------------ helpers
 
   private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }): Promise<GstAccountsInput> {
-    const out = {} as GstAccountsInput;
-    for (const key of ACCOUNT_KEYS) {
-      const spec = DEFAULT_ACCOUNTS[key];
-      const existing = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.code } } });
-      if (existing) {
-        if (existing.name !== spec.name || existing.type !== spec.type) {
-          throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} is already used by "${existing.name}". Choose the GST accounts yourself.`, HttpStatus.CONFLICT);
-        }
-        out[key] = existing.id;
-        continue;
-      }
-      const parent = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.parentCode } } });
-      const a = await tx.account.create({
-        data: { orgId, code: spec.code, name: spec.name, type: spec.type, subtype: spec.subtype, parentId: parent && !parent.isPostable && parent.type === spec.type ? parent.id : null, isPostable: true },
-      });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, reason: 'GST registration' } });
-      out[key] = a.id;
-    }
-    return out;
+    return this.chart.ensure(tx, orgId, actor.id, DEFAULT_ACCOUNTS, 'GST registration');
   }
 
   private async checkAccounts(tx: Tx, orgId: string, accounts: GstAccountsInput) {

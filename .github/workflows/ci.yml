@@ -5,9 +5,19 @@ on:
   push:
     branches: [main]
 
+# A newer push to the same branch or pull request replaces the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: Build, typecheck, unit, API and browser tests
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:16
@@ -21,13 +31,15 @@ jobs:
     env:
       DATABASE_URL: postgresql://talk2tax:talk2tax@localhost:5432/talk2tax_test?schema=public
       TEST_DATABASE_URL: postgresql://talk2tax:talk2tax@localhost:5432/talk2tax_test?schema=public
+      MONGODB_URL: mongodb://localhost:27017/talk2tax_test?replicaSet=rs0
+      TEST_MONGODB_URL: mongodb://localhost:27017/talk2tax_test?replicaSet=rs0
       JWT_SECRET: ci-only-secret-that-is-at-least-32-characters-long
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version-file: .nvmrc
           cache: pnpm
       # The app connects as an ordinary role: a superuser would bypass row-level security.
       - name: Create the application database role
@@ -36,6 +48,14 @@ jobs:
         run: |
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE talk2tax LOGIN PASSWORD 'talk2tax' NOSUPERUSER NOBYPASSRLS NOCREATEROLE"
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE talk2tax_test OWNER talk2tax"
+      # Service containers cannot take arguments, so MongoDB (a one-node replica set, for
+      # transactions) is started here.
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:8.0 --replSet rs0 --bind_ip_all
+          for i in $(seq 1 60); do docker exec mongo mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' >/dev/null 2>&1 && break; sleep 1; done
+          docker exec mongo mongosh --quiet --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] })"
+          for i in $(seq 1 60); do docker exec mongo mongosh --quiet --eval 'db.hello().isWritablePrimary' | grep -q true && break; sleep 1; done
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm typecheck
@@ -59,11 +79,16 @@ jobs:
           # The automations browser test runs a webhook receiver on localhost, and waits for the
           # runner, so the runner looks every second and may reach private addresses here only.
           WORKFLOW_RUNNER_INTERVAL_SECONDS: 1
+          CRM_WEBHOOK_RUNNER_INTERVAL_SECONDS: 1
           WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true'
           # The schedules browser test runs a local SMTP server (test-support/smtp-stand-in.mjs)
           # on this port; nothing is sent beyond it.
           SMTP_URL: smtp://127.0.0.1:4556
           EMAIL_FROM: Talk2Tax CI <robot@talk2tax.test>
+          # The payments browser test runs a local stand-in for the Stripe and Razorpay APIs
+          # (test-support/payments-stand-in.mjs); no money moves and nothing reaches them.
+          PAYMENTS_STRIPE_API_URL: http://127.0.0.1:4557
+          PAYMENTS_RAZORPAY_API_URL: http://127.0.0.1:4557
         run: |
           (cd apps/api && node dist/main.js > /tmp/api.log 2>&1 &)
           (cd apps/web && npx next start -p 3000 > /tmp/web.log 2>&1 &)
@@ -76,3 +101,79 @@ jobs:
       - name: Server logs on failure
         if: failure()
         run: tail -n 100 /tmp/api.log /tmp/web.log || true
+      - name: Keep server logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-logs
+          path: /tmp/*.log
+          retention-days: 7
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # Fails on a known high or critical advisory in anything the running app uses.
+      - run: pnpm audit --prod --audit-level=high
+
+  containers:
+    name: Container images and full-stack smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IMAGE_TAG: ci
+      JWT_SECRET: ci-only-secret-that-is-at-least-32-characters-long
+      GIT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: docker/setup-buildx-action@v4
+      # The three images the release workflow publishes, built the same way (layers cached between runs).
+      - name: Build the migration image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migrate
+          tags: talk2tax-migrate:ci
+          load: true
+          cache-from: type=gha,scope=migrate
+          cache-to: type=gha,scope=migrate,mode=max
+      - name: Build the API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: api
+          build-args: GIT_SHA=${{ github.sha }}
+          tags: talk2tax-api:ci
+          load: true
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+      - name: Build the web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          build-args: GIT_SHA=${{ github.sha }}
+          tags: talk2tax-web:ci
+          load: true
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+      - name: Start the stack (database, migrations, API, web)
+        run: docker compose --profile app up -d --no-build --wait --wait-timeout 180
+      - name: Smoke test through the web app
+        run: node scripts/smoke-stack.mjs http://localhost:3000
+      - name: Migrations are idempotent
+        run: docker compose --profile app run --rm migrate | tee /tmp/migrate.log && grep -q "No pending migrations" /tmp/migrate.log
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose --profile app logs --no-color --tail 200

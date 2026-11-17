@@ -13,6 +13,7 @@ import { can, type AccountType, type DocumentKind, type FinancialDocument, type 
 import { LineDimensions } from '@/components/dimensions/line-dimensions';
 import { useDimensions } from '@/lib/dimensions';
 import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
+import { CurrencyRate } from './currency-rate';
 
 interface LineState {
   key: number;
@@ -24,6 +25,8 @@ interface LineState {
   hsnCode: string;
   departmentId: string;
   projectId: string;
+  /** Bills made from a purchase order: the order line this line bills (kept through edits). */
+  purchaseOrderLineId: string;
 }
 
 const QTY = /^\d{0,12}(\.\d{0,6})?$/;
@@ -31,7 +34,15 @@ const TYPE_ORDER: AccountType[] = ['REVENUE', 'EXPENSE', 'ASSET', 'LIABILITY', '
 /** Reverse charge in the form: input-tax placeholders pair with output-tax placeholders. */
 const RCM_ACCOUNTS = new Map([['cgst', 'out-cgst'], ['sgst', 'out-sgst'], ['igst', 'out-igst']]);
 
-export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string }) {
+/** A debit note's invoice: the contact, currency and place of supply follow it. */
+export interface DebitNoteOf {
+  id: string;
+  number: string;
+  currency?: string;
+  placeOfSupply?: string | null;
+}
+
+export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string; debitNoteFor?: DebitNoteOf }) {
   const { org, orgId } = useOrg();
   const accounts = useAccounts();
   const dims = useDimensions();
@@ -45,9 +56,9 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const qc = useQueryClient();
   const c = org?.functionalCurrency ?? 'INR';
   const nextKey = useRef(2);
-  const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '', departmentId: '', projectId: '' });
+  const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '', departmentId: '', projectId: '', purchaseOrderLineId: '' });
   const isCharge = kind === l.charge.kind;
-  const label = isCharge ? l.charge.label : l.credit.label;
+  const label = debitNoteFor ? 'Debit note' : isCharge ? l.charge.label : l.credit.label;
 
   const [contact, setContact] = useState(existing?.contact.id ?? contactId ?? '');
   const [issueDate, setIssueDate] = useState(existing?.issueDate ?? today());
@@ -56,15 +67,20 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const [memo, setMemo] = useState(existing?.memo ?? '');
   const [lines, setLines] = useState<LineState[]>(
     existing
-      ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '', departmentId: x.departmentId ?? '', projectId: x.projectId ?? '' }))
+      ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '', departmentId: x.departmentId ?? '', projectId: x.projectId ?? '', purchaseOrderLineId: x.purchaseOrderLineId ?? '' }))
       : [blank(1)],
   );
-  const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? '');
+  const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? debitNoteFor?.placeOfSupply ?? '');
   const [reverseCharge, setReverseCharge] = useState(existing?.reverseCharge ?? false);
   const [sectionId, setSectionId] = useState(existing?.withholding?.section.id ?? (contactId ? '' : ''));
   const [sectionTouched, setSectionTouched] = useState(!!existing);
   const [newContact, setNewContact] = useState<ContactDraft | null>(null);
   const [override, setOverride] = useState(false);
+  const [chosenCurrency, setCurrency] = useState(existing?.currency ?? debitNoteFor?.currency ?? '');
+  const currency = chosenCurrency || c;
+  const [rate, setRate] = useState(existing && existing.currency !== existing.functionalCurrency ? existing.exchangeRate : '');
+  // In another currency: no TDS/TCS or reverse charge yet, and GST only at zero (exports, nil-rated, exempt).
+  const foreign = currency !== c;
 
   const control = new Set([org?.arAccountId, org?.apAccountId, org?.claimsAccountId].filter(Boolean));
   const choices = useMemo(() => {
@@ -99,7 +115,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
   const defaultDue = selectedContact && issueDate ? addDays(issueDate, selectedContact.paymentTermsDays) : '';
 
   const filled = lines.filter((x) => x.accountId || x.unitPrice || x.description);
-  const payloadLines = filled.map((x) => ({ accountId: x.accountId, description: x.description || undefined, quantity: x.quantity || '0', unitPrice: x.unitPrice || '0', taxRateId: x.taxRateId || null, hsnCode: x.hsnCode.trim() || null, departmentId: x.departmentId || null, projectId: x.projectId || null }));
+  const payloadLines = filled.map((x) => ({ accountId: x.accountId, description: x.description || undefined, quantity: x.quantity || '0', unitPrice: x.unitPrice || '0', taxRateId: x.taxRateId || null, hsnCode: x.hsnCode.trim() || null, departmentId: x.departmentId || null, projectId: x.projectId || null, ...(x.purchaseOrderLineId ? { purchaseOrderLineId: x.purchaseOrderLineId } : {}) }));
 
   // Same calculation the server runs, so the totals shown are the totals that post.
   const calc = useMemo(() => {
@@ -121,27 +137,28 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
         if (selectedContact.stateCode === '96') issues.push(`${selectedContact.name} is outside India: services from abroad are under reverse charge (tick Reverse charge)`);
         else if (!selectedContact.gstin) issues.push(`${selectedContact.name} has no GSTIN, so their bill cannot carry GST. Tick Reverse charge if you pay the GST.`);
       }
-      if (reverseCharge && !charged && payloadLines.length) issues.push('A reverse-charge document needs at least one line with a GST rate above 0%');
+      if (reverseCharge && !foreign && !charged && payloadLines.length) issues.push('A reverse-charge document needs at least one line with a GST rate above 0%');
+      if (foreign && charged) issues.push(`A ${currency} document cannot charge GST yet: use the zero-rated (export), nil-rated, exempt or non-GST rate`);
     }
     try {
-      let d = computeDocument(payloadLines, c, taxMap, splitter);
-      if (gstMode && reverseCharge) d = applyReverseCharge(d, RCM_ACCOUNTS);
+      let d = computeDocument(payloadLines, currency, taxMap, splitter);
+      if (gstMode && reverseCharge && !foreign) d = applyReverseCharge(d, RCM_ACCOUNTS);
       const heads = gstHeads(d.lines.flatMap((x) => x.taxComponents));
       return { ok: issues.length === 0, issues, lines: d.lines, subtotal: d.subtotal.toFixed(2), tax: d.taxTotal.toFixed(2), total: d.total.toFixed(2), rcmTax: d.reverseCharge?.tax.toFixed(2) ?? null, heads };
     } catch (e) {
       return { ok: false, issues: [...issues, ...(e instanceof DocumentValidationError ? e.issues : [(e as Error).message])], lines: [], subtotal: null, tax: null, total: null, rcmTax: null, heads: null };
     }
-  }, [payloadLines, c, taxMap, contact, l.contact, l.ledger, gstMode, pos, supplierState, selectedContact, gstCategories, splitter, reverseCharge]);
+  }, [payloadLines, currency, foreign, taxMap, contact, l.contact, l.ledger, gstMode, pos, supplierState, selectedContact, gstCategories, splitter, reverseCharge]);
 
   // The tax to withhold depends on the contact's posted documents, so the server works it out.
   const wAmount = calc.subtotal === null ? null : wKind === 'TDS' ? calc.subtotal : (Number(calc.subtotal) + Number(calc.tax)).toFixed(2);
   const preview = useQuery({
     queryKey: ['withholding-preview', orgId, contact, section, issueDate, wAmount, existing?.id],
-    enabled: !!section && !!contact && !!issueDate && wAmount !== null && !!wKind,
+    enabled: !!section && !!contact && !!issueDate && wAmount !== null && !!wKind && !foreign,
     queryFn: () => api<WithholdingPreview>(`/v1/orgs/${orgId}/withholding/preview`, { method: 'POST', body: { documentKind: kind, contactId: contact, sectionId: section, issueDate, amount: wAmount, documentId: existing?.id } }),
     retry: false,
   });
-  const wTax = section && preview.data ? preview.data.amount : '0.00';
+  const wTax = section && preview.data && !foreign ? preview.data.amount : '0.00';
   const settle = calc.total === null ? null : (Number(calc.total) + (wKind === 'TCS' ? 1 : -1) * Number(wTax)).toFixed(2);
 
   const save = useMutation({
@@ -154,8 +171,12 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
         reference: reference || null,
         memo: memo || null,
         placeOfSupply: gstMode ? pos || null : null,
-        reverseCharge: gstMode && l.ledger === 'PURCHASES' ? reverseCharge : undefined,
-        withholdingSectionId: wKind ? section || null : undefined,
+        reverseCharge: gstMode && l.ledger === 'PURCHASES' ? reverseCharge && !foreign : undefined,
+        withholdingSectionId: wKind ? (foreign ? null : section || null) : undefined,
+        currency,
+        exchangeRate: foreign ? rate.trim() || null : null,
+        debitNoteFor: debitNoteFor?.id,
+        purchaseOrderId: existing?.purchaseOrderId ?? undefined,
         lines: payloadLines,
       };
       const base = `/v1/orgs/${orgId}/${l.api}/documents`;
@@ -168,6 +189,8 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
       await qc.invalidateQueries({ queryKey: ['document', orgId] });
       await qc.invalidateQueries({ queryKey: ['contacts', orgId] });
       await qc.invalidateQueries({ queryKey: ['dashboard', orgId] });
+      await qc.invalidateQueries({ queryKey: ['bill-match', orgId] });
+      await qc.invalidateQueries({ queryKey: ['purchase-orders', orgId] });
       router.push(`/orgs/${orgId}/${l.docsPath}/${d.id}`);
     },
   });
@@ -183,11 +206,11 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <label htmlFor="doc-contact" className="text-xs font-medium uppercase tracking-wide text-fg-muted">{l.contact}</label>
           <div className="flex gap-2">
-            <Select id="doc-contact" value={contact} onChange={(e) => { setContact(e.target.value); if (!existing) setSectionTouched(false); }}>
+            <Select id="doc-contact" value={contact} disabled={!!debitNoteFor} onChange={(e) => { setContact(e.target.value); if (!existing) setSectionTouched(false); }}>
               <option value="">Choose a {l.contact.toLowerCase()}…</option>
               {(contacts.data ?? []).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
             </Select>
-            {can(org.role, 'contacts.manage') ? <Button type="button" variant="secondary" onClick={() => setNewContact(draftFrom(null, l))}>New</Button> : null}
+            {can(org.role, 'contacts.manage') && !debitNoteFor ? <Button type="button" variant="secondary" onClick={() => setNewContact(draftFrom(null, l))}>New</Button> : null}
           </div>
         </div>
         <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
@@ -209,11 +232,12 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
           Memo
           <Input value={memo} maxLength={1000} placeholder="Optional note" onChange={(e) => setMemo(e.target.value)} />
         </label>
+        <CurrencyRate id="doc" currency={currency} setCurrency={setCurrency} rate={rate} setRate={setRate} date={issueDate} amount={calc.total} locked={debitNoteFor ? `In ${currency}, like ${debitNoteFor.number}.` : undefined} />
         {gstMode ? (
           <div className="grid gap-4 rounded-lg border border-line bg-surface-raised p-4 sm:col-span-4 sm:grid-cols-4" aria-label="GST">
             <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted sm:col-span-2">
               Place of supply
-              <Select value={pos} onChange={(e) => setPlaceOfSupply(e.target.value)}>
+              <Select value={pos} disabled={!!debitNoteFor} onChange={(e) => setPlaceOfSupply(e.target.value)}>
                 <option value="">Choose a state…</option>
                 {(states.data ?? []).filter((x) => l.ledger === 'SALES' || x.code !== '96').map((x) => <option key={x.code} value={x.code}>{x.code} · {x.name}</option>)}
               </Select>
@@ -233,7 +257,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
                 </p>
               ) : <p className="text-fg-faint">Choose the {l.contact.toLowerCase()} and place of supply.</p>}
             </div>
-            {l.ledger === 'PURCHASES' ? (
+            {l.ledger === 'PURCHASES' && !foreign ? (
               <label className="flex items-start gap-2 text-sm sm:col-span-4">
                 <input type="checkbox" className="mt-0.5 accent-[var(--t2t-accent)]" checked={reverseCharge} onChange={(e) => setReverseCharge(e.target.checked)} />
                 <span>
@@ -244,7 +268,7 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
             ) : null}
           </div>
         ) : null}
-        {wKind && wOptions.length ? (
+        {wKind && wOptions.length && !foreign ? (
           <div className="grid gap-4 rounded-lg border border-line bg-surface-raised p-4 sm:col-span-4 sm:grid-cols-4" aria-label={wKind}>
             <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted sm:col-span-2">
               {wKind === 'TDS' ? 'TDS section' : 'TCS section'}
@@ -315,10 +339,10 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
                   <Td numeric className="whitespace-nowrap">
                     {computed ? (
                       <>
-                        <span className="num">{money(computed.netAmount.toFixed(2), c)}</span>
+                        <span className="num">{money(computed.netAmount.toFixed(2), currency)}</span>
                         {computed.taxComponents.length > 1 || (computed.taxComponents[0] && computed.taxComponents[0].code !== 'TAX')
-                          ? computed.taxComponents.map((tc) => <p key={tc.code} className="text-xs text-fg-muted">+ {tc.code} {tc.rate.toFixed()}% {money(tc.amount.toFixed(2), c)}</p>)
-                          : computed.taxAmount.gt(0) ? <p className="text-xs text-fg-muted">+ tax {money(computed.taxAmount.toFixed(2), c)}</p> : null}
+                          ? computed.taxComponents.map((tc) => <p key={tc.code} className="text-xs text-fg-muted">+ {tc.code} {tc.rate.toFixed()}% {money(tc.amount.toFixed(2), currency)}</p>)
+                          : computed.taxAmount.gt(0) ? <p className="text-xs text-fg-muted">+ tax {money(computed.taxAmount.toFixed(2), currency)}</p> : null}
                       </>
                     ) : <span className="text-fg-faint">—</span>}
                   </Td>
@@ -343,12 +367,12 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
                 {Number(wTax) > 0 ? <><p>{wKind === 'TDS' ? 'Less TDS' : 'Add TCS'}</p><p className="font-semibold text-fg">{wKind === 'TDS' ? 'Payable to vendor' : 'Customer pays'}</p></> : null}
               </Td>
               <Td numeric className="text-sm">
-                <p className="num">{money(calc.subtotal, c)}</p>
+                <p className="num">{money(calc.subtotal, currency)}</p>
                 {gstMode && calc.heads ? (
-                  nature === 'INTRA' ? (<><p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.cgst.toFixed(2), c)}</p><p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.sgst.toFixed(2), c)}</p></>) : <p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.igst.toFixed(2), c)}</p>
-                ) : <p className="num">{money(calc.tax, c)}</p>}
-                <p className="num font-semibold">{money(calc.total, c)}</p>
-                {Number(wTax) > 0 ? <><p className="num">{wKind === 'TDS' ? '−' : '+'} {money(wTax, c)}</p><p className="num font-semibold">{money(settle, c)}</p></> : null}
+                  nature === 'INTRA' ? (<><p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.cgst.toFixed(2), currency)}</p><p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.sgst.toFixed(2), currency)}</p></>) : <p className={`num ${reverseCharge ? 'text-fg-muted' : ''}`}>{money(calc.heads.igst.toFixed(2), currency)}</p>
+                ) : <p className="num">{money(calc.tax, currency)}</p>}
+                <p className="num font-semibold">{money(calc.total, currency)}</p>
+                {Number(wTax) > 0 ? <><p className="num">{wKind === 'TDS' ? '−' : '+'} {money(wTax, currency)}</p><p className="num font-semibold">{money(settle, currency)}</p></> : null}
               </Td>
               <Td />
             </tr>
@@ -378,9 +402,9 @@ export function DocumentForm({ l, kind, existing, contactId }: { l: LedgerConfig
 
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button>
-        <Button type="button" variant="secondary" loading={save.isPending && save.variables === false} disabled={!calc.ok || save.isPending || (!!section && !preview.data)} onClick={() => save.mutate(false)}>Save as draft</Button>
+        <Button type="button" variant="secondary" loading={save.isPending && save.variables === false} disabled={!calc.ok || save.isPending || (!!section && !foreign && !preview.data)} onClick={() => save.mutate(false)}>Save as draft</Button>
         {can(org.role, 'journals.post') ? (
-          <Button type="button" loading={save.isPending && save.variables === true} disabled={!calc.ok || save.isPending || (creditLimitHit && !override) || (!!section && !preview.data)} onClick={() => save.mutate(true)}>
+          <Button type="button" loading={save.isPending && save.variables === true} disabled={!calc.ok || save.isPending || (creditLimitHit && !override) || (!!section && !foreign && !preview.data)} onClick={() => save.mutate(true)}>
             {existing ? 'Save and post' : `Post ${label.toLowerCase()}`}
           </Button>
         ) : null}

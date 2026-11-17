@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { postgresOff } from '../db/counters';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import {
@@ -11,6 +12,7 @@ import {
   CloseReviewContext,
   CONFIDENCE_LEVELS,
   D,
+  type Dec,
   evaluateClose,
   parseAdjustment,
   ResolvedAdjustment,
@@ -20,14 +22,19 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AiControlService } from '../ai-control/ai-control.service';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
+import { entryMonth, lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { DeferralsService } from '../deferrals/deferrals.service';
 import { JournalsService } from '../journals/journals.service';
+import { postgresWithMongo } from '../db/postgres-mirror.service';
+import { PeriodsService } from '../periods/periods.service';
 import { TasksService } from '../tasks/tasks.service';
+import { holdLock, lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export interface CloseOrg {
@@ -152,6 +159,8 @@ export class CloseService {
     private readonly deferrals: DeferralsService,
     @Inject(CONFIG) private readonly config: AppConfig,
     private readonly integrations: IntegrationsService,
+    private readonly periods: PeriodsService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ reading
@@ -288,39 +297,24 @@ export class CloseService {
       db.journalEntry.count({ where: { orgId, status: 'DRAFT', date: { gte: start, lte: end } } }),
       db.document.count({ where: { orgId, status: 'DRAFT', issueDate: { gte: start, lte: end } } }),
       db.bankStatementLine.groupBy({ by: ['accountId'], where: { orgId, status: 'UNMATCHED', date: { lte: end } }, _count: true }),
-      db.$queryRaw<{ id: string; code: string; name: string; last: Date | null }[]>`
-        SELECT a.id, a.code, a.name,
-          (SELECT MAX(r.statement_date) FROM bank_reconciliations r WHERE r.account_id = a.id AND r.status = 'COMPLETED') AS last
-        FROM accounts a
-        WHERE a.org_id = ${orgId}::uuid AND a.subtype = 'BANK'
-          AND EXISTS (SELECT 1 FROM bank_statement_lines l WHERE l.account_id = a.id AND l.date <= ${end}::date)
-        ORDER BY a.code`,
+      this.bankAccountsToReconcile(db, orgId, end),
       db.approvalRequest.count({ where: { orgId, status: 'PENDING' } }),
       db.expenseClaim.count({ where: { orgId, status: 'SUBMITTED' } }),
       db.employee.count({ where: { orgId, dateOfJoining: { lte: end }, OR: [{ dateOfLeaving: null }, { dateOfLeaving: { gte: start } }] } }),
       db.payRun.groupBy({ by: ['status'], where: { orgId, period: month }, _count: true }),
-      db.$queryRaw<{ debit: Prisma.Decimal | null; credit: Prisma.Decimal | null; fixed: Prisma.Decimal | null; depreciation: Prisma.Decimal | null }[]>`
-        SELECT SUM(jl.functional_debit) AS debit, SUM(jl.functional_credit) AS credit,
-          SUM(CASE WHEN a.subtype = 'FIXED_ASSET' THEN jl.functional_debit - jl.functional_credit ELSE 0 END) AS fixed,
-          SUM(CASE WHEN a.subtype = 'DEPRECIATION' AND je.date >= ${start}::date THEN jl.functional_debit - jl.functional_credit ELSE 0 END) AS depreciation
-        FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id JOIN accounts a ON a.id = jl.account_id
-        WHERE jl.org_id = ${orgId}::uuid AND je.status = 'POSTED' AND je.date <= ${end}::date`,
+      this.ledgerTotals(db, orgId, start, end),
       db.fiscalPeriod.findMany({ where: { orgId, startDate: { lt: start }, status: 'OPEN' }, orderBy: { startDate: 'asc' }, select: { name: true } }),
       db.bankAiSuggestion.count({ where: { orgId, status: 'READY', statementLine: { date: { lte: end } } } }),
       closeId ? db.closeAdjustment.count({ where: { orgId, closeId, status: 'READY' } }) : 0,
     ]);
     const deferrals = await this.deferrals.dueThrough(db, org, month);
-    const cash = await db.$queryRaw<{ code: string; name: string; balance: Prisma.Decimal }[]>`
-      SELECT a.code, a.name, SUM(jl.functional_debit - jl.functional_credit) AS balance
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id JOIN accounts a ON a.id = jl.account_id
-      WHERE jl.org_id = ${orgId}::uuid AND je.status = 'POSTED' AND je.date <= ${end}::date AND a.subtype = 'CASH'
-      GROUP BY a.code, a.name HAVING SUM(jl.functional_debit - jl.functional_credit) < 0 ORDER BY a.code`;
+    const cash = sums.negativeCash;
     const accountIds = unmatched.map((u) => u.accountId);
     const accs = accountIds.length ? await db.account.findMany({ where: { orgId, id: { in: accountIds } }, select: { id: true, code: true, name: true } }) : [];
     const accBy = new Map(accs.map((a) => [a.id, a]));
     const runCount = (s: string) => payRuns.find((r) => r.status === s)?._count ?? 0;
-    const s = sums[0] ?? { debit: null, credit: null, fixed: null, depreciation: null };
-    const dec = (v: Prisma.Decimal | null) => new D(v?.toString() ?? '0').toFixed(2);
+    const s = sums;
+    const dec = (v: Dec) => v.toFixed(2);
     return {
       currency: org.functionalCurrency,
       period: { name: p.name, startDate: fromDbDate(start), endDate: fromDbDate(end) },
@@ -335,10 +329,48 @@ export class CloseService {
       payroll: employees ? { posted: runCount('POSTED') > 0, drafts: runCount('DRAFT') } : null,
       depreciation: { fixedAssets: dec(s.fixed), postedThisMonth: dec(s.depreciation) },
       deferrals,
-      negativeCash: cash.map((c) => ({ code: c.code, name: c.name, balance: new D(c.balance.toString()).toFixed(2) })),
+      negativeCash: cash.map((c) => ({ code: c.code, name: c.name, balance: c.balance.toFixed(2) })),
       aiWaiting: { bankSuggestions, adjustments },
       trialBalance: { debit: dec(s.debit), credit: dec(s.credit) },
       earlierOpenPeriods: earlier.map((e) => e.name),
+    };
+  }
+
+  /** Bank accounts with statement lines up to `end`, and the last statement each was reconciled to. */
+  private async bankAccountsToReconcile(db: Tx | PrismaService, orgId: string, end: Date) {
+    const [banks, withLines, done] = await Promise.all([
+      db.account.findMany({ where: { orgId, subtype: 'BANK' }, select: { id: true, code: true, name: true } }),
+      db.bankStatementLine.groupBy({ by: ['accountId'], where: { orgId, date: { lte: end } }, _count: true }),
+      db.bankReconciliation.groupBy({ by: ['accountId'], where: { orgId, status: 'COMPLETED' }, _max: { statementDate: true } }),
+    ]);
+    const has = new Set(withLines.map((w) => w.accountId));
+    const last = new Map(done.map((d) => [d.accountId, d._max.statementDate]));
+    return banks
+      .filter((b) => has.has(b.id))
+      .map((b) => ({ ...b, last: last.get(b.id) ?? null }))
+      .sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+  }
+
+  /** Posted totals to `end`: the trial balance, fixed assets at cost, this month's depreciation and cash accounts in overdraft. */
+  private async ledgerTotals(db: Tx | PrismaService, orgId: string, start: Date, end: Date) {
+    const [toEnd, month, accounts] = await Promise.all([
+      lineSums(this.store, orgId, { entry: postedBetween(null, end), by: { accountId: 'lines.accountId' } }),
+      lineSums(this.store, orgId, { entry: postedBetween(start, end), by: { accountId: 'lines.accountId' } }),
+      db.account.findMany({ where: { orgId }, select: { id: true, code: true, name: true, subtype: true } }),
+    ]);
+    const acc = new Map(accounts.map((a) => [a.id, a]));
+    const zero = new D(0);
+    const sub = (id: unknown) => acc.get(id as string)?.subtype;
+    const sum = (rows: typeof toEnd, f: (r: (typeof toEnd)[number]) => Dec) => rows.reduce((t, r) => t.plus(f(r)), zero);
+    return {
+      debit: sum(toEnd, (r) => r.debit),
+      credit: sum(toEnd, (r) => r.credit),
+      fixed: sum(toEnd.filter((r) => sub(r.key.accountId) === 'FIXED_ASSET'), (r) => r.debit.minus(r.credit)),
+      depreciation: sum(month.filter((r) => sub(r.key.accountId) === 'DEPRECIATION'), (r) => r.debit.minus(r.credit)),
+      negativeCash: toEnd
+        .filter((r) => sub(r.key.accountId) === 'CASH' && r.debit.minus(r.credit).lt(0))
+        .map((r) => ({ code: acc.get(r.key.accountId as string)!.code, name: acc.get(r.key.accountId as string)!.name, balance: r.debit.minus(r.credit) }))
+        .sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0)),
     };
   }
 
@@ -359,7 +391,8 @@ export class CloseService {
   }
 
   private async openClose(tx: Tx, orgId: string, periodId: string) {
-    await tx.$queryRaw`SELECT id FROM period_closes WHERE period_id = ${periodId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    if (!postgresOff()) await tx.$queryRaw`SELECT id FROM period_closes WHERE period_id = ${periodId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await holdLock(`period_closes:period:${periodId}`);
     const c = await tx.periodClose.findFirst({ where: { orgId, periodId } });
     if (!c) throw new DomainError('CLOSE_NOT_STARTED', 'Start the close of this month first', HttpStatus.CONFLICT);
     return c;
@@ -389,6 +422,7 @@ export class CloseService {
           dueDate: due,
           link: { type: 'PERIOD_CLOSE', id: periodId },
           createdById: actor.id,
+          source: 'CLOSE',
         });
         existing[check.key] = t.id;
         created.push(check.key);
@@ -444,16 +478,26 @@ export class CloseService {
     const start = fromDbDate(p.startDate);
     const end = fromDbDate(p.endDate);
     const priorStart = addMonths(start, -3);
-    const rows = await tx.$queryRaw<{ code: string; name: string; type: string; movement: Prisma.Decimal; prior: Prisma.Decimal; months: number; closing: Prisma.Decimal }[]>`
-      SELECT a.code, a.name, a.type::text AS type,
-        COALESCE(SUM(CASE WHEN je.date >= ${toDbDate(start)}::date THEN jl.functional_debit - jl.functional_credit END), 0) AS movement,
-        COALESCE(SUM(CASE WHEN je.date >= ${toDbDate(priorStart)}::date AND je.date < ${toDbDate(start)}::date THEN jl.functional_debit - jl.functional_credit END), 0) AS prior,
-        COUNT(DISTINCT CASE WHEN je.date >= ${toDbDate(priorStart)}::date AND je.date < ${toDbDate(start)}::date THEN date_trunc('month', je.date) END)::int AS months,
-        COALESCE(SUM(jl.functional_debit - jl.functional_credit), 0) AS closing
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id JOIN accounts a ON a.id = jl.account_id
-      WHERE jl.org_id = ${org.id}::uuid AND je.status = 'POSTED' AND je.date <= ${toDbDate(end)}::date
-      GROUP BY a.code, a.name, a.type
-      ORDER BY a.code`;
+    const sums = await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(end), { excludeClosing: true }), by: { accountId: 'lines.accountId', month: entryMonth } });
+    const chart = new Map((await tx.account.findMany({ where: { orgId: org.id }, select: { id: true, code: true, name: true, type: true } })).map((a) => [a.id, a]));
+    const from = toDbDate(start);
+    const priorFrom = toDbDate(priorStart);
+    const per = new Map<string, { code: string; name: string; type: string; movement: Dec; prior: Dec; months: Set<number>; closing: Dec }>();
+    for (const x of sums) {
+      const a = chart.get(x.key.accountId as string);
+      if (!a) continue;
+      const r = per.get(a.id) ?? { code: a.code, name: a.name, type: a.type, movement: new D(0), prior: new D(0), months: new Set<number>(), closing: new D(0) };
+      const net = x.debit.minus(x.credit);
+      const m = x.key.month as Date;
+      if (m >= from) r.movement = r.movement.plus(net);
+      else if (m >= priorFrom) {
+        r.prior = r.prior.plus(net);
+        r.months.add(m.getTime());
+      }
+      r.closing = r.closing.plus(net);
+      per.set(a.id, r);
+    }
+    const rows = [...per.values()].map((r) => ({ ...r, months: r.months.size })).sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
     const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
     const control = [o.arAccountId, o.apAccountId, o.claimsAccountId].filter((x): x is string => !!x);
     const allowed = await tx.account.findMany({
@@ -464,17 +508,17 @@ export class CloseService {
     const pl = (t: string) => t === 'REVENUE' || t === 'EXPENSE';
     const accounts = rows
       .filter((r) => {
-        const active = !new D(r.movement.toString()).isZero() || !new D(r.prior.toString()).isZero();
-        return pl(r.type) ? active || r.months > 0 : active || !new D(r.closing.toString()).isZero();
+        const active = !r.movement.isZero() || !r.prior.isZero();
+        return pl(r.type) ? active || r.months > 0 : active || !r.closing.isZero();
       })
       .map((r) => ({
         code: r.code,
         name: r.name,
         type: r.type,
-        movement: new D(r.movement.toString()).toFixed(2),
-        priorAverage: new D(r.prior.toString()).div(3).toFixed(2),
+        movement: r.movement.toFixed(2),
+        priorAverage: r.prior.div(3).toFixed(2),
         monthsActive: r.months,
-        closingBalance: new D(r.closing.toString()).toFixed(2),
+        closingBalance: r.closing.toFixed(2),
       }));
     const checks = evaluateClose(await this.facts(tx, org, p, closeId)).map((c) => ({ label: c.label, ok: c.ok, detail: c.detail }));
     const next = await this.nextPeriod(tx, org.id, p);
@@ -608,7 +652,7 @@ export class CloseService {
   }
 
   private async lockAdjustment(tx: Tx, orgId: string, id: string) {
-    await tx.$queryRaw`SELECT id FROM close_adjustments WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'close_adjustments', id, orgId);
     const a = await tx.closeAdjustment.findFirst({ where: { id, orgId } });
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Adjusting entry not found' });
     return a;
@@ -622,11 +666,13 @@ export class CloseService {
    * posting in progress) and a certification records the checks and totals as they stood.
    */
   async close(org: CloseOrg, actor: Actor, periodId: string, note: string | null) {
-    await this.prisma.$transaction(
-      async (tx) => {
+    await postgresWithMongo(
+      this.prisma,
+      async (tx, undoLater) => {
         const c = await this.openClose(tx, org.id, periodId);
         if (c.status === 'CLOSED') throw new DomainError('CLOSE_CLOSED', 'This month is already closed', HttpStatus.CONFLICT);
-        const locked = await tx.$queryRaw<{ status: string }[]>`SELECT status::text AS status FROM fiscal_periods WHERE id = ${periodId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+        await lockRow(tx, 'fiscal_periods', periodId, org.id);
+        const locked = await tx.fiscalPeriod.findMany({ where: { id: periodId, orgId: org.id }, select: { status: true } });
         if (locked[0]?.status === 'CLOSED') throw new DomainError('PERIOD_CLOSED', 'This period is closed for good and cannot be changed', HttpStatus.CONFLICT);
         const p = await this.period(tx, org.id, periodId);
         const running = await tx.closeAiReview.count({ where: { orgId: org.id, closeId: c.id, status: 'RUNNING' } });
@@ -637,7 +683,7 @@ export class CloseService {
         const totals = await this.totals(tx, org, p);
         await tx.closeAdjustment.updateMany({ where: { orgId: org.id, closeId: c.id, status: 'READY' }, data: { status: 'SUPERSEDED' } });
         if (p.status === 'OPEN') {
-          await tx.fiscalPeriod.update({ where: { id: periodId }, data: { status: 'LOCKED', lockedAt: new Date(), lockedById: actor.id } });
+          await this.periods.setStatusInTx(tx, undoLater, org.id, periodId, 'LOCKED', actor.id);
           await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'period.locked', entityType: 'fiscal_period', entityId: periodId, data: { name: p.name, by: 'month-end close' } });
         }
         const cert = await tx.closeCertification.create({ data: { orgId: org.id, closeId: c.id, certifiedById: actor.id, note: note?.trim() || null, checks: checks as unknown as Prisma.InputJsonValue, totals: totals as Prisma.InputJsonValue } });
@@ -651,21 +697,24 @@ export class CloseService {
 
   /** Reopen a closed month: the period is unlocked and the certification records who reopened it and why. */
   async reopen(org: CloseOrg, actor: Actor, periodId: string, reason: string) {
-    await this.prisma.$transaction(async (tx) => {
+    await postgresWithMongo(this.prisma, async (tx, undoLater) => {
       const c = await this.openClose(tx, org.id, periodId);
       if (c.status !== 'CLOSED') throw new DomainError('CLOSE_NOT_CLOSED', 'This month is not closed', HttpStatus.CONFLICT);
-      const locked = await tx.$queryRaw<{ status: string; name: string }[]>`SELECT status::text AS status, name FROM fiscal_periods WHERE id = ${periodId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'fiscal_periods', periodId, org.id);
+      const locked = await tx.fiscalPeriod.findMany({ where: { id: periodId, orgId: org.id }, select: { status: true, name: true } });
       if (locked[0]?.status === 'CLOSED') throw new DomainError('PERIOD_CLOSED', 'This period is closed for good and cannot be reopened', HttpStatus.CONFLICT);
-      const later = await tx.$queryRaw<{ name: string }[]>`
-        SELECT p.name FROM period_closes c JOIN fiscal_periods p ON p.id = c.period_id
-        WHERE c.org_id = ${org.id}::uuid AND c.status = 'CLOSED' AND p.start_date > (SELECT start_date FROM fiscal_periods WHERE id = ${periodId}::uuid)
-        ORDER BY p.start_date LIMIT 1`;
-      if (later[0]) throw new DomainError('LATER_MONTH_CLOSED', `${later[0].name} is closed after this month. Reopen it first.`, HttpStatus.CONFLICT);
+      const own = await tx.fiscalPeriod.findFirstOrThrow({ where: { id: periodId, orgId: org.id }, select: { startDate: true } });
+      const later = await tx.periodClose.findFirst({
+        where: { orgId: org.id, status: 'CLOSED', period: { startDate: { gt: own.startDate } } },
+        orderBy: { period: { startDate: 'asc' } },
+        select: { period: { select: { name: true } } },
+      });
+      if (later) throw new DomainError('LATER_MONTH_CLOSED', `${later.period.name} is closed after this month. Reopen it first.`, HttpStatus.CONFLICT);
       const cert = await tx.closeCertification.findFirstOrThrow({ where: { orgId: org.id, closeId: c.id, reopenedAt: null } });
       await tx.closeCertification.update({ where: { id: cert.id }, data: { reopenedById: actor.id, reopenedAt: new Date(), reopenReason: reason.trim() } });
       await tx.periodClose.update({ where: { id: c.id }, data: { status: 'IN_PROGRESS' } });
       if (locked[0]?.status === 'LOCKED') {
-        await tx.fiscalPeriod.update({ where: { id: periodId }, data: { status: 'OPEN', lockedAt: null, lockedById: null } });
+        await this.periods.setStatusInTx(tx, undoLater, org.id, periodId, 'OPEN', actor.id);
         await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'period.unlocked', entityType: 'fiscal_period', entityId: periodId, data: { name: locked[0].name, by: 'month-end close reopened' } });
       }
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'close.reopened', entityType: 'period_close', entityId: c.id, data: { certificationId: cert.id, reason: reason.trim() } });
@@ -675,20 +724,34 @@ export class CloseService {
 
   /** The figures a certification records. */
   private async totals(tx: Tx, org: CloseOrg, p: Period) {
-    const rows = await tx.$queryRaw<{ type: string; month: Prisma.Decimal; todate: Prisma.Decimal; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
-      SELECT a.type::text AS type,
-        COALESCE(SUM(CASE WHEN je.date >= ${p.startDate}::date THEN jl.functional_credit - jl.functional_debit END), 0) AS month,
-        COALESCE(SUM(jl.functional_debit - jl.functional_credit), 0) AS todate,
-        COALESCE(SUM(jl.functional_debit), 0) AS debit, COALESCE(SUM(jl.functional_credit), 0) AS credit
-      FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id JOIN accounts a ON a.id = jl.account_id
-      WHERE jl.org_id = ${org.id}::uuid AND je.status = 'POSTED' AND je.date <= ${p.endDate}::date
-      GROUP BY a.type`;
+    const [toEnd, inMonth, types] = await Promise.all([
+      lineSums(this.store, org.id, { entry: postedBetween(null, p.endDate, { excludeClosing: true }), by: { accountId: 'lines.accountId' } }),
+      lineSums(this.store, org.id, { entry: postedBetween(p.startDate, p.endDate, { excludeClosing: true }), by: { accountId: 'lines.accountId' } }),
+      tx.account.findMany({ where: { orgId: org.id }, select: { id: true, type: true } }),
+    ]);
+    const typeOf = new Map(types.map((a) => [a.id, a.type as string]));
+    const byType = new Map<string, { month: Dec; todate: Dec; debit: Dec; credit: Dec }>();
+    const slot = (t: string) => {
+      if (!byType.has(t)) byType.set(t, { month: new D(0), todate: new D(0), debit: new D(0), credit: new D(0) });
+      return byType.get(t)!;
+    };
+    for (const x of toEnd) {
+      const b = slot(typeOf.get(x.key.accountId as string) ?? 'OTHER');
+      b.todate = b.todate.plus(x.debit.minus(x.credit));
+      b.debit = b.debit.plus(x.debit);
+      b.credit = b.credit.plus(x.credit);
+    }
+    for (const x of inMonth) {
+      const b = slot(typeOf.get(x.key.accountId as string) ?? 'OTHER');
+      b.month = b.month.plus(x.credit.minus(x.debit));
+    }
+    const rows = [...byType.entries()].map(([type, v]) => ({ type, ...v }));
     const get = (t: string) => rows.find((r) => r.type === t);
-    const n = (v: Prisma.Decimal | undefined) => new D(v?.toString() ?? '0');
+    const n = (v: Dec | undefined) => v ?? new D(0);
     const revenue = n(get('REVENUE')?.month);
     const expenses = n(get('EXPENSE')?.month).neg();
-    const debit = rows.reduce((s, r) => s.plus(r.debit.toString()), new D(0));
-    const credit = rows.reduce((s, r) => s.plus(r.credit.toString()), new D(0));
+    const debit = rows.reduce((s, r) => s.plus(r.debit), new D(0));
+    const credit = rows.reduce((s, r) => s.plus(r.credit), new D(0));
     const journals = await tx.journalEntry.count({ where: { orgId: org.id, status: 'POSTED', date: { gte: p.startDate, lte: p.endDate } } });
     return {
       currency: org.functionalCurrency,

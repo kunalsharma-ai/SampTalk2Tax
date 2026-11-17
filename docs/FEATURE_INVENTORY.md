@@ -74,12 +74,12 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-004 | 5.1 General Ledger | capability | Hierarchical account structures | Tested |
 | GL-005 | 5.1 General Ledger | capability | Account types and subtypes | Tested |
 | GL-006 | 5.1 General Ledger | capability | Journal entries | Tested |
-| GL-007 | 5.1 General Ledger | capability | Recurring journals | Not started |
+| GL-007 | 5.1 General Ledger | capability | Recurring journals | Tested |
 | GL-008 | 5.1 General Ledger | capability | Adjusting journals | Implemented |
 | GL-009 | 5.1 General Ledger | capability | Reversing journals | Tested |
 | GL-010 | 5.1 General Ledger | capability | Opening balances | Implemented |
-| GL-011 | 5.1 General Ledger | capability | Closing balances | Not started |
-| GL-012 | 5.1 General Ledger | capability | Journal templates | Not started |
+| GL-011 | 5.1 General Ledger | capability | Closing balances | Tested |
+| GL-012 | 5.1 General Ledger | capability | Journal templates | Tested |
 | GL-013 | 5.1 General Ledger | capability | Accrual accounting | Implementing |
 | GL-014 | 5.1 General Ledger | capability | Cash accounting | Not started |
 | GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implemented |
@@ -102,7 +102,7 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-032 | 5.1 General Ledger | capability | Account reconciliation | Implementing |
 | GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Not started |
 | GL-034 | 5.1 General Ledger | capability | Consolidation adjustments | Not started |
-| GL-035 | 5.1 General Ledger | capability | Foreign currency revaluation | Not started |
+| GL-035 | 5.1 General Ledger | capability | Foreign currency revaluation | Tested |
 | GL-036 | 5.1 General Ledger | capability | Automated journal suggestions | Not started |
 | GL-037 | Critical accounting invariants | rule | Every posted journal must balance | Tested |
 | GL-038 | Critical accounting invariants | rule | Use fixed-precision decimal arithmetic | Tested |
@@ -121,35 +121,35 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 |---|---|---|---|---|
 | AR-001 |  | rule | Build a comprehensive AR module | Implementing |
 | AR-002 |  | capability | Customer management | Tested |
-| AR-003 |  | capability | Customer onboarding | Not started |
+| AR-003 |  | capability | Customer onboarding | Tested |
 | AR-004 |  | capability | Customer credit limits | Tested |
-| AR-005 |  | capability | Quotations | Not started |
-| AR-006 |  | capability | Estimates | Not started |
-| AR-007 |  | capability | Sales orders | Not started |
-| AR-008 |  | capability | Pro forma invoices | Not started |
+| AR-005 |  | capability | Quotations | Tested |
+| AR-006 |  | capability | Estimates | Tested |
+| AR-007 |  | capability | Sales orders | Tested |
+| AR-008 |  | capability | Pro forma invoices | Tested |
 | AR-009 |  | capability | Tax invoices | Tested |
-| AR-010 |  | capability | Recurring invoices | Not started |
-| AR-011 |  | capability | Subscription billing | Not started |
-| AR-012 |  | capability | Usage-based billing | Not started |
-| AR-013 |  | capability | Milestone billing | Not started |
-| AR-014 |  | capability | Progress billing | Not started |
-| AR-015 |  | capability | Retainer billing | Not started |
+| AR-010 |  | capability | Recurring invoices | Tested |
+| AR-011 |  | capability | Subscription billing | Implementing |
+| AR-012 |  | capability | Usage-based billing | Tested |
+| AR-013 |  | capability | Milestone billing | Tested |
+| AR-014 |  | capability | Progress billing | Tested |
+| AR-015 |  | capability | Retainer billing | Tested |
 | AR-016 |  | capability | Credit notes | Tested |
-| AR-017 |  | capability | Debit notes | Not started |
-| AR-018 |  | capability | Payment links | Not started |
+| AR-017 |  | capability | Debit notes | Tested |
+| AR-018 |  | capability | Payment links | Tested |
 | AR-019 |  | capability | Payment allocation | Tested |
 | AR-020 |  | capability | Partial payments | Tested |
 | AR-021 |  | capability | Advance payments | Tested |
 | AR-022 |  | capability | Customer statements | Tested |
 | AR-023 |  | capability | Receivable aging | Tested |
 | AR-024 |  | capability | Collection reminders | Integration pending |
-| AR-025 |  | capability | Dispute management | Not started |
-| AR-026 |  | capability | Bad debt provisions | Not started |
-| AR-027 |  | capability | Write-offs | Not started |
-| AR-028 |  | capability | Revenue recognition support | Not started |
-| AR-029 |  | capability | Contract billing | Not started |
-| AR-030 |  | capability | Customer portals | Not started |
-| AR-031 |  | capability | Multi-currency invoices | Not started |
+| AR-025 |  | capability | Dispute management | Tested |
+| AR-026 |  | capability | Bad debt provisions | Tested |
+| AR-027 |  | capability | Write-offs | Tested |
+| AR-028 |  | capability | Revenue recognition support | Tested |
+| AR-029 |  | capability | Contract billing | Tested |
+| AR-030 |  | capability | Customer portals | Tested |
+| AR-031 |  | capability | Multi-currency invoices | Tested |
 | AR-032 |  | capability | Revenue leakage detection | Tested |
 | AR-033 | Advanced AR AI | capability | Predictive payment-delay scoring | Not started |
 | AR-034 | Advanced AR AI | capability | Intelligent collection prioritization | Not started |
@@ -160,7 +160,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-039 | Advanced AR AI | capability | Cash collection forecasting | Not started |
 | AR-040 | Advanced AR AI | capability | Suggested payment plans | Not started |
 | AR-041 | Advanced AR AI | capability | AI-assisted contract-to-invoice matching | Not started |
-| AR-042 | Advanced AR AI | capability | Automated detection of unbilled revenue | Not started |
+| AR-042 | Advanced AR AI | capability | Automated detection of unbilled revenue | Tested |
 | AR-043 | Advanced AR AI | rule | All external communication must respect tenant-configured approval and consent policies | Not started |
 
 ## Accounts payable
@@ -170,32 +170,32 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | AP-001 |  | capability | Supplier management | Tested |
-| AP-002 |  | capability | Vendor onboarding | Not started |
+| AP-002 |  | capability | Vendor onboarding | Tested |
 | AP-003 |  | capability | Purchase invoices | Tested |
 | AP-004 |  | capability | Supplier bills | Tested |
-| AP-005 |  | capability | Recurring bills | Not started |
+| AP-005 |  | capability | Recurring bills | Tested |
 | AP-006 |  | capability | Bill approval workflows | Tested |
-| AP-007 |  | capability | Payment scheduling | Not started |
+| AP-007 |  | capability | Payment scheduling | Tested |
 | AP-008 |  | capability | Partial payments | Implemented |
 | AP-009 |  | capability | Advance payments | Implemented |
 | AP-010 |  | capability | Credit notes | Implemented |
 | AP-011 |  | capability | Supplier statements | Implemented |
 | AP-012 |  | capability | Payables aging | Tested |
-| AP-013 |  | capability | Vendor portals | Not started |
-| AP-014 |  | capability | Payment batches | Not started |
-| AP-015 |  | capability | Purchase order matching | Not started |
-| AP-016 |  | capability | Goods receipt matching | Not started |
-| AP-017 |  | capability | Three-way matching | Not started |
+| AP-013 |  | capability | Vendor portals | Tested |
+| AP-014 |  | capability | Payment batches | Tested |
+| AP-015 |  | capability | Purchase order matching | Tested |
+| AP-016 |  | capability | Goods receipt matching | Tested |
+| AP-017 |  | capability | Three-way matching | Tested |
 | AP-018 |  | capability | Duplicate invoice detection | Tested |
-| AP-019 |  | capability | Supplier tax validation | Not started |
+| AP-019 |  | capability | Supplier tax validation | Tested |
 | AP-020 |  | capability | Expense classification | Not started |
-| AP-021 |  | capability | Vendor performance tracking | Not started |
+| AP-021 |  | capability | Vendor performance tracking | Tested |
 | AP-022 |  | capability | Payment reconciliation | Tested |
-| AP-023 |  | capability | International payment preparation | Not started |
-| AP-024 |  | capability | Vendor risk monitoring | Not started |
+| AP-023 |  | capability | International payment preparation | Tested |
+| AP-024 |  | capability | Vendor risk monitoring | Tested |
 | AP-025 | Advanced AP AI | capability | Invoice document extraction | Not started |
 | AP-026 | Advanced AP AI | capability | AI invoice coding | Not started |
-| AP-027 | Advanced AP AI | capability | Supplier bank-detail change detection | Not started |
+| AP-027 | Advanced AP AI | capability | Supplier bank-detail change detection | Tested |
 | AP-028 | Advanced AP AI | capability | Payment fraud indicators | Not started |
 | AP-029 | Advanced AP AI | capability | Dynamic discount recommendations | Not started |
 | AP-030 | Advanced AP AI | capability | Intelligent payment prioritization | Not started |
@@ -223,7 +223,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-009 |  | capability | Payment matching | Tested |
 | BANK-010 |  | capability | Bank charges | Tested |
 | BANK-011 |  | capability | Interest accounting | Implementing |
-| BANK-012 |  | capability | Foreign exchange accounting | Not started |
+| BANK-012 |  | capability | Foreign exchange accounting | Implementing |
 | BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
 | BANK-014 |  | capability | Bank balance monitoring | Implementing |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |
@@ -246,7 +246,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-001 |  | rule | Create a modular, jurisdiction-aware taxation architecture | Implementing |
 | TAX-002 |  | rule | Do not hard-code global tax rates | Tested |
 | TAX-003 |  | rule | Use effective-dated, version-controlled rules | Not started |
-| TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Implementing |
+| TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Tested |
 | TAX-005 | India Module | capability | GST | Tested |
 | TAX-006 | India Module | capability | CGST | Tested |
 | TAX-007 | India Module | capability | SGST | Tested |
@@ -284,7 +284,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-039 | Global Tax Modules | capability | Country-specific invoice formats | Not started |
 | TAX-040 | Global Tax Modules | capability | Electronic invoicing requirements | Not started |
 | TAX-041 | Global Tax Modules | rule | Implement supported jurisdictions incrementally | Not started |
-| TAX-042 | Global Tax Modules | rule | Do not claim worldwide compliance without verified, maintained country modules | Not started |
+| TAX-042 | Global Tax Modules | rule | Do not claim worldwide compliance without verified, maintained country modules | Tested |
 | TAX-043 | AI Tax Intelligence | capability | Tax document interpretation | Not started |
 | TAX-044 | AI Tax Intelligence | capability | Tax discrepancy detection | Not started |
 | TAX-045 | AI Tax Intelligence | capability | Tax reconciliation | Not started |
@@ -428,7 +428,7 @@ Part 13 · M6 · priority P2 · depends on: GL, BANK
 | TRS-010 |  | capability | Loan schedules | Tested |
 | TRS-011 |  | capability | Interest calculations | Tested |
 | TRS-012 |  | capability | Investment tracking | Not started |
-| TRS-013 |  | capability | Foreign exchange exposure | Not started |
+| TRS-013 |  | capability | Foreign exchange exposure | Tested |
 | TRS-014 |  | capability | Currency risk monitoring | Not started |
 | TRS-015 |  | capability | Payment planning | Not started |
 | TRS-016 |  | capability | Treasury dashboards | Tested |
@@ -693,7 +693,7 @@ Part 19 · M6 · priority P2 · depends on: GL
 | ENT-025 |  | capability | Financial controls | Not started |
 | ENT-026 |  | capability | Audit management | Not started |
 | ENT-027 |  | capability | Corporate reporting | Not started |
-| ENT-028 |  | rule | Design for configurable accounting frameworks such as IFRS and applicable local GAAP | Not started |
+| ENT-028 |  | rule | Design for configurable accounting frameworks such as IFRS and applicable local GAAP | Implementing |
 | ENT-029 |  | rule | Do not claim standards compliance without appropriate validation | Not started |
 
 ## Inventory, manufacturing and service finance
@@ -770,19 +770,19 @@ Part 22 · M6 · priority P3 · depends on: AR, INTG
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| CRM-001 |  | rule | Provide native lightweight CRM functionality and integration APIs for external CRM systems | Not started |
+| CRM-001 |  | rule | Provide native lightweight CRM functionality and integration APIs for external CRM systems | Tested |
 | CRM-002 |  | capability | Customer records | Not started |
-| CRM-003 |  | capability | Leads | Not started |
-| CRM-004 |  | capability | Opportunities | Not started |
-| CRM-005 |  | capability | Quotations | Not started |
-| CRM-006 |  | capability | Contracts | Not started |
-| CRM-007 |  | capability | Sales orders | Not started |
-| CRM-008 |  | capability | Billing | Not started |
+| CRM-003 |  | capability | Leads | Tested |
+| CRM-004 |  | capability | Opportunities | Tested |
+| CRM-005 |  | capability | Quotations | Tested |
+| CRM-006 |  | capability | Contracts | Tested |
+| CRM-007 |  | capability | Sales orders | Tested |
+| CRM-008 |  | capability | Billing | Tested |
 | CRM-009 |  | capability | Collections | Not started |
-| CRM-010 |  | capability | Customer profitability | Not started |
-| CRM-011 |  | capability | Customer lifetime value | Not started |
-| CRM-012 |  | capability | Credit risk | Not started |
-| CRM-013 |  | capability | Revenue forecasting | Not started |
+| CRM-010 |  | capability | Customer profitability | Tested |
+| CRM-011 |  | capability | Customer lifetime value | Tested |
+| CRM-012 |  | capability | Credit risk | Tested |
+| CRM-013 |  | capability | Revenue forecasting | Tested |
 
 ## Financial fraud and risk intelligence
 
@@ -947,7 +947,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-010 |  | capability | Interactive | Not started |
 | DASH-011 |  | capability | Highly intuitive | Not started |
 | DASH-012 |  | capability | Data-rich without becoming cluttered | Not started |
-| DASH-013 | Design Direction | rule | Create an original visual identity for Sampledge Talk2Tax | Implementing |
+| DASH-013 | Design Direction | rule | Create an original visual identity for Sampledge Talk2Tax | Tested |
 | DASH-014 | Design Direction | capability | Deep midnight navy | Tested |
 | DASH-015 | Design Direction | capability | Electric cyan | Tested |
 | DASH-016 | Design Direction | capability | Rich indigo | Tested |
@@ -1147,22 +1147,22 @@ Part 33 · M8 · priority P2 · depends on: none
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| I18N-001 |  | capability | Multi-language UI | Not started |
+| I18N-001 |  | capability | Multi-language UI | Implementing |
 | I18N-002 |  | capability | Multi-currency accounting | Implementing |
-| I18N-003 |  | capability | Regional number formats | Implementing |
-| I18N-004 |  | capability | Regional date formats | Implementing |
-| I18N-005 |  | capability | Country-specific tax configurations | Not started |
+| I18N-003 |  | capability | Regional number formats | Tested |
+| I18N-004 |  | capability | Regional date formats | Tested |
+| I18N-005 |  | capability | Country-specific tax configurations | Tested |
 | I18N-006 |  | capability | Country-specific invoice formats | Tested |
-| I18N-007 |  | capability | Local financial reporting | Not started |
-| I18N-008 |  | capability | Time-zone awareness | Not started |
+| I18N-007 |  | capability | Local financial reporting | Tested |
+| I18N-008 |  | capability | Time-zone awareness | Implementing |
 | I18N-009 |  | capability | Regional document templates | Tested |
 | I18N-010 |  | capability | Configurable fiscal years | Implemented |
-| I18N-011 |  | capability | Localization framework | Not started |
-| I18N-012 |  | capability | Right-to-left layout support where needed | Not started |
-| I18N-013 |  | capability | English | Not started |
-| I18N-014 |  | capability | Hindi | Not started |
-| I18N-015 |  | rule | Architect for later support of additional languages | Not started |
-| I18N-016 |  | rule | Do not equate UI translation with legal or tax localization | Not started |
+| I18N-011 |  | capability | Localization framework | Tested |
+| I18N-012 |  | capability | Right-to-left layout support where needed | Implementing |
+| I18N-013 |  | capability | English | Tested |
+| I18N-014 |  | capability | Hindi | Implementing |
+| I18N-015 |  | rule | Architect for later support of additional languages | Tested |
+| I18N-016 |  | rule | Do not equate UI translation with legal or tax localization | Implemented |
 
 ## Integration marketplace
 
@@ -1176,9 +1176,9 @@ Part 34 · M6 · priority P2 · depends on: SEC
 | INTG-004 | Banking | capability | Payment initiation providers | Not started |
 | INTG-005 | Banking | capability | Bank account verification | Not started |
 | INTG-006 | Banking | capability | Banking reconciliation | Not started |
-| INTG-007 | Payments | capability | Stripe | Not started |
+| INTG-007 | Payments | capability | Stripe | Integration pending |
 | INTG-008 | Payments | capability | PayPal | Not started |
-| INTG-009 | Payments | capability | Razorpay | Not started |
+| INTG-009 | Payments | capability | Razorpay | Integration pending |
 | INTG-010 | Payments | capability | Adyen | Not started |
 | INTG-011 | Payments | capability | Supported local payment gateways | Not started |
 | INTG-012 | Accounting | capability | QuickBooks | Not started |
@@ -1194,7 +1194,7 @@ Part 34 · M6 · priority P2 · depends on: SEC
 | INTG-022 | Business | capability | WooCommerce | Not started |
 | INTG-023 | Business | capability | HRMS platforms | Not started |
 | INTG-024 | Business | capability | Payroll platforms | Not started |
-| INTG-025 | Business | capability | CRM platforms | Not started |
+| INTG-025 | Business | capability | CRM platforms | Implementing |
 | INTG-026 | Business | capability | Procurement platforms | Not started |
 | INTG-027 | Business | capability | Project management systems | Not started |
 | INTG-028 | Productivity | capability | Microsoft 365 | Not started |
@@ -1251,7 +1251,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-022 |  | capability | Disaster recovery procedures | Not started |
 | SEC-023 |  | capability | Security event monitoring | Not started |
 | SEC-024 |  | capability | Vulnerability scanning | Not started |
-| SEC-025 |  | capability | Dependency scanning | Not started |
+| SEC-025 |  | capability | Dependency scanning | Implemented |
 | SEC-026 |  | capability | Penetration testing preparation | Not started |
 | SEC-027 |  | rule | Build toward relevant security and privacy frameworks, including SOC 2, ISO 27001 and applicable data protection laws | Not started |
 | SEC-028 |  | rule | Do not claim certification without a completed independent assessment | Not started |
@@ -1274,7 +1274,7 @@ Part 36 · M1 · priority P1 · depends on: DS
 |---|---|---|---|---|
 | UX-001 |  | rule | Create an exceptionally smooth onboarding experience | Not started |
 | UX-002 | Onboarding Wizard | capability | Create organization | Tested |
-| UX-003 | Onboarding Wizard | capability | Select country | Not started |
+| UX-003 | Onboarding Wizard | capability | Select country | Tested |
 | UX-004 | Onboarding Wizard | capability | Select industry | Not started |
 | UX-005 | Onboarding Wizard | capability | Select business size | Not started |
 | UX-006 | Onboarding Wizard | capability | Select accounting framework | Not started |
@@ -1328,38 +1328,38 @@ Part 38 · M9 · priority P2 · depends on: SEC
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| SUBS-001 |  | rule | Create a flexible SaaS billing platform | Not started |
-| SUBS-002 | Starter | rule | India: ₹499/month | Not started |
-| SUBS-003 | Starter | rule | Global: $9/month | Not started |
-| SUBS-004 | Professional | rule | India: ₹1,499/month | Not started |
-| SUBS-005 | Professional | rule | Global: $25/month | Not started |
-| SUBS-006 | Business AI | rule | India: ₹3,499/month | Not started |
-| SUBS-007 | Business AI | rule | Global: $59/month | Not started |
-| SUBS-008 | Enterprise AI | rule | India: ₹8,999/month | Not started |
-| SUBS-009 | Enterprise AI | rule | Global: $149/month | Not started |
-| SUBS-010 | Corporate Global | rule | These are proposed launch prices, not final validated commercial rates | Not started |
-| SUBS-011 | Corporate Global | rule | Build an admin-configurable pricing system | Not started |
-| SUBS-012 | Billing Capabilities | capability | Monthly subscriptions | Not started |
-| SUBS-013 | Billing Capabilities | capability | Annual subscriptions | Not started |
-| SUBS-014 | Billing Capabilities | capability | Free trials | Not started |
-| SUBS-015 | Billing Capabilities | capability | Plan upgrades | Not started |
-| SUBS-016 | Billing Capabilities | capability | Plan downgrades | Not started |
+| SUBS-001 |  | rule | Create a flexible SaaS billing platform | Implementing |
+| SUBS-002 | Starter | rule | India: ₹499/month | Tested |
+| SUBS-003 | Starter | rule | Global: $9/month | Tested |
+| SUBS-004 | Professional | rule | India: ₹1,499/month | Tested |
+| SUBS-005 | Professional | rule | Global: $25/month | Tested |
+| SUBS-006 | Business AI | rule | India: ₹3,499/month | Tested |
+| SUBS-007 | Business AI | rule | Global: $59/month | Tested |
+| SUBS-008 | Enterprise AI | rule | India: ₹8,999/month | Tested |
+| SUBS-009 | Enterprise AI | rule | Global: $149/month | Tested |
+| SUBS-010 | Corporate Global | rule | These are proposed launch prices, not final validated commercial rates | Tested |
+| SUBS-011 | Corporate Global | rule | Build an admin-configurable pricing system | Tested |
+| SUBS-012 | Billing Capabilities | capability | Monthly subscriptions | Tested |
+| SUBS-013 | Billing Capabilities | capability | Annual subscriptions | Tested |
+| SUBS-014 | Billing Capabilities | capability | Free trials | Tested |
+| SUBS-015 | Billing Capabilities | capability | Plan upgrades | Tested |
+| SUBS-016 | Billing Capabilities | capability | Plan downgrades | Tested |
 | SUBS-017 | Billing Capabilities | capability | Add-on modules | Not started |
-| SUBS-018 | Billing Capabilities | capability | Usage-based AI credits | Not started |
-| SUBS-019 | Billing Capabilities | capability | Document processing quotas | Not started |
-| SUBS-020 | Billing Capabilities | capability | User-based licensing | Not started |
+| SUBS-018 | Billing Capabilities | capability | Usage-based AI credits | Implementing |
+| SUBS-019 | Billing Capabilities | capability | Document processing quotas | Tested |
+| SUBS-020 | Billing Capabilities | capability | User-based licensing | Tested |
 | SUBS-021 | Billing Capabilities | capability | Multi-entity add-ons | Not started |
 | SUBS-022 | Billing Capabilities | capability | API usage plans | Not started |
-| SUBS-023 | Billing Capabilities | capability | Enterprise contracts | Not started |
+| SUBS-023 | Billing Capabilities | capability | Enterprise contracts | Implementing |
 | SUBS-024 | Billing Capabilities | capability | Coupons | Not started |
 | SUBS-025 | Billing Capabilities | capability | Promotional pricing | Not started |
-| SUBS-026 | Billing Capabilities | capability | Regional pricing | Not started |
-| SUBS-027 | Billing Capabilities | capability | Tax on subscriptions | Not started |
-| SUBS-028 | Billing Capabilities | capability | Automated renewals | Not started |
-| SUBS-029 | Billing Capabilities | capability | Payment failure handling | Not started |
-| SUBS-030 | Billing Capabilities | capability | Dunning workflows | Not started |
-| SUBS-031 | Billing Capabilities | capability | Subscription invoices | Not started |
-| SUBS-032 | Billing Capabilities | rule | Maintain clear distinctions between platform subscription billing and customers' own accounting transactions | Not started |
+| SUBS-026 | Billing Capabilities | capability | Regional pricing | Tested |
+| SUBS-027 | Billing Capabilities | capability | Tax on subscriptions | Tested |
+| SUBS-028 | Billing Capabilities | capability | Automated renewals | Tested |
+| SUBS-029 | Billing Capabilities | capability | Payment failure handling | Tested |
+| SUBS-030 | Billing Capabilities | capability | Dunning workflows | Tested |
+| SUBS-031 | Billing Capabilities | capability | Subscription invoices | Tested |
+| SUBS-032 | Billing Capabilities | rule | Maintain clear distinctions between platform subscription billing and customers' own accounting transactions | Tested |
 
 ## Platform super admin
 
@@ -1367,28 +1367,28 @@ Part 39 · M9 · priority P2 · depends on: SEC
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| ADMIN-001 |  | rule | Create a dedicated SaaS administration application | Not started |
-| ADMIN-002 |  | capability | Tenant management | Not started |
-| ADMIN-003 |  | capability | Organization management | Not started |
+| ADMIN-001 |  | rule | Create a dedicated SaaS administration application | Tested |
+| ADMIN-002 |  | capability | Tenant management | Tested |
+| ADMIN-003 |  | capability | Organization management | Tested |
 | ADMIN-004 |  | capability | User management | Tested |
-| ADMIN-005 |  | capability | Subscription management | Not started |
-| ADMIN-006 |  | capability | Plan management | Not started |
-| ADMIN-007 |  | capability | Feature flags | Not started |
-| ADMIN-008 |  | capability | AI usage monitoring | Not started |
+| ADMIN-005 |  | capability | Subscription management | Tested |
+| ADMIN-006 |  | capability | Plan management | Tested |
+| ADMIN-007 |  | capability | Feature flags | Tested |
+| ADMIN-008 |  | capability | AI usage monitoring | Tested |
 | ADMIN-009 |  | capability | AI model configuration | Not started |
-| ADMIN-010 |  | capability | API usage monitoring | Not started |
-| ADMIN-011 |  | capability | Infrastructure monitoring | Not started |
-| ADMIN-012 |  | capability | Support ticket management | Not started |
+| ADMIN-010 |  | capability | API usage monitoring | Tested |
+| ADMIN-011 |  | capability | Infrastructure monitoring | Tested |
+| ADMIN-012 |  | capability | Support ticket management | Tested |
 | ADMIN-013 |  | capability | Audit log search | Not started |
 | ADMIN-014 |  | capability | Integration health | Not started |
-| ADMIN-015 |  | capability | Billing management | Not started |
+| ADMIN-015 |  | capability | Billing management | Tested |
 | ADMIN-016 |  | capability | Product analytics | Not started |
-| ADMIN-017 |  | capability | Error monitoring | Not started |
+| ADMIN-017 |  | capability | Error monitoring | Tested |
 | ADMIN-018 |  | capability | Security alerts | Not started |
-| ADMIN-019 |  | capability | System announcements | Not started |
-| ADMIN-020 |  | capability | Maintenance controls | Not started |
-| ADMIN-021 |  | rule | Super Admin access must not automatically grant unrestricted access to tenant financial data | Not started |
-| ADMIN-022 |  | rule | Implement controlled support access with explicit authorization, logging and expiration | Not started |
+| ADMIN-019 |  | capability | System announcements | Tested |
+| ADMIN-020 |  | capability | Maintenance controls | Tested |
+| ADMIN-021 |  | rule | Super Admin access must not automatically grant unrestricted access to tenant financial data | Tested |
+| ADMIN-022 |  | rule | Implement controlled support access with explicit authorization, logging and expiration | Tested |
 
 ## Mobile experience
 
@@ -1425,7 +1425,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-004 |  | capability | Complex reporting | Not started |
 | PERF-005 |  | capability | AI workload isolation | Not started |
 | PERF-006 |  | capability | Background processing | Not started |
-| PERF-007 |  | capability | Regional deployments | Not started |
+| PERF-007 |  | capability | Regional deployments | Implemented |
 | PERF-008 |  | capability | Horizontal scaling | Not started |
 | PERF-009 |  | capability | Database partitioning where justified | Not started |
 | PERF-010 |  | capability | Caching | Not started |
@@ -1517,13 +1517,13 @@ Part 44 · M7 · priority P3 · depends on: none
 | INNOV-002 | 44.2 Financial Decision Memory | rule | Maintain a searchable history of approved management decisions, assumptions, financial outcomes and lessons learned | Tested |
 | INNOV-003 | 44.3 AI Financial Policy Studio | rule | Allow organizations to define financial policies conversationally | Tested |
 | INNOV-004 | 44.3 AI Financial Policy Studio | rule | Convert approved policies into testable, version-controlled workflow rules | Tested |
-| INNOV-005 | 44.4 Continuous Financial Health Monitoring | rule | Evaluate financial indicators continuously and provide prioritized alerts | Implemented |
-| INNOV-006 | 44.5 Intelligent Financial Task Marketplace | rule | Provide a centralized queue of tasks generated by users, rules and AI agents | Implementing |
+| INNOV-005 | 44.4 Continuous Financial Health Monitoring | rule | Evaluate financial indicators continuously and provide prioritized alerts | Tested |
+| INNOV-006 | 44.5 Intelligent Financial Task Marketplace | rule | Provide a centralized queue of tasks generated by users, rules and AI agents | Tested |
 | INNOV-007 | 44.6 Financial Data Lineage Explorer | rule | Allow users to trace any reported figure to its originating transactions and documents | Tested |
-| INNOV-008 | 44.7 Cross-Functional Business Impact Engine | rule | Estimate how sales, HR, procurement and operational changes affect financial performance | Not started |
+| INNOV-008 | 44.7 Cross-Functional Business Impact Engine | rule | Estimate how sales, HR, procurement and operational changes affect financial performance | Tested |
 | INNOV-009 | 44.8 AI Financial Model Evaluation Lab | rule | Compare forecast models against historical outcomes and track accuracy | Tested |
 | INNOV-010 | 44.9 Financial Disaster Simulation | rule | Simulate liquidity shocks, customer defaults, supplier failures and major operational disruptions | Tested |
-| INNOV-011 | 44.10 Business Opportunity Intelligence | rule | Identify potentially profitable growth opportunities based on authorized financial and operational data | Not started |
+| INNOV-011 | 44.10 Business Opportunity Intelligence | rule | Identify potentially profitable growth opportunities based on authorized financial and operational data | Tested |
 | INNOV-012 | 44.11 Intelligent Financial Recovery Planning | rule | Generate evidence-based financial recovery scenarios | Tested |
 | INNOV-013 | 44.12 Voice-Based Financial Assistant | rule | Allow authorized users to ask financial questions by voice | Integration pending |
 | INNOV-014 | 44.12 Voice-Based Financial Assistant | rule | Require confirmation for sensitive actions | Tested |
@@ -1559,7 +1559,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-019 |  | capability | Financial Digital Twin | Not started |
 | NAV-020 |  | capability | Financial War Room | Not started |
 | NAV-021 |  | capability | Projects | Not started |
-| NAV-022 |  | capability | Contracts | Not started |
+| NAV-022 |  | capability | Contracts | Tested |
 | NAV-023 |  | capability | Customers | Not started |
 | NAV-024 |  | capability | Vendors | Not started |
 | NAV-025 |  | capability | Inventory Finance | Not started |
@@ -1581,7 +1581,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 | NAV-041 |  | capability | Organization Settings | Not started |
 | NAV-042 |  | capability | User Management | Tested |
 | NAV-043 |  | capability | Security Center | Not started |
-| NAV-044 |  | capability | Support | Not started |
+| NAV-044 |  | capability | Support | Tested |
 | NAV-045 |  | capability | Super Admin | Not started |
 | NAV-046 |  | rule | Use nested navigation and progressive disclosure | Implemented |
 | NAV-047 |  | rule | Do not overwhelm users by showing all modules simultaneously | Implemented |
@@ -1604,7 +1604,7 @@ Part 46 · M1 · priority P1 · depends on: none
 | DS-009 |  | capability | Charts | Not started |
 | DS-010 |  | capability | Financial calculators | Not started |
 | DS-011 |  | capability | Date selectors | Not started |
-| DS-012 |  | capability | Currency selectors | Not started |
+| DS-012 |  | capability | Currency selectors | Tested |
 | DS-013 |  | capability | Multi-company selectors | Not started |
 | DS-014 |  | capability | Approval dialogs | Implemented |
 | DS-015 |  | capability | AI recommendation cards | Not started |

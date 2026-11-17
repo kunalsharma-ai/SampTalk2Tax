@@ -1,6 +1,9 @@
 import { fiscalYearForDate } from '@talk2tax/accounting-engine';
+import { mirrorRows } from '../src/common/prisma.service';
+import { tenantStorage } from '../src/common/tenant-context';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 const FY = fiscalYearForDate(today(), 4);
 const PRIOR_APR = `${FY - 2}-04-15`;
@@ -197,10 +200,7 @@ describe('budget against actual', () => {
 });
 
 describe('database guards', () => {
-  const raw = async (sql: string, ...args: unknown[]) => ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+  const raw = async (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 
   it('keeps approved budgets and their lines fixed', async () => {
     await expect(raw(`UPDATE budget_lines SET amount = 1 WHERE budget_id = $1::uuid`, v1)).rejects.toThrow(/only while the budget is a draft/);
@@ -218,8 +218,10 @@ describe('database guards', () => {
     await expect(raw(`INSERT INTO budget_lines (id, org_id, budget_id, account_id, period_no, amount) VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::uuid, 13, 5)`, org.orgId, id, org.acc['6300'])).rejects.toThrow(/budget_lines_chk/);
     await expect(raw(`UPDATE budgets SET status = 'APPROVED', approved_at = now(), approved_by_id = created_by_id WHERE id = $1::uuid`, id)).rejects.toThrow(/cannot move from DRAFT to APPROVED/);
     await raw(`UPDATE budgets SET status = 'SUBMITTED', submitted_at = now(), submitted_by_id = $2::uuid WHERE id = $1::uuid`, id, owner.id);
+    // Written past the API, so MongoDB is brought in step by hand.
+    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'Budget', { id }));
     await expect(raw(`UPDATE budgets SET status = 'APPROVED', approved_at = now(), approved_by_id = $2::uuid WHERE id = $1::uuid`, id, owner.id)).rejects.toThrow(/budgets_approver_chk/);
-    await expect(raw(`UPDATE budgets SET status = 'APPROVED', approved_at = now(), approved_by_id = $2::uuid WHERE id = $1::uuid`, id, approver.id)).rejects.toThrow(/23505/);
+    await expect(raw(`UPDATE budgets SET status = 'APPROVED', approved_at = now(), approved_by_id = $2::uuid WHERE id = $1::uuid`, id, approver.id)).rejects.toThrow(/23505|Unique constraint/);
   });
 
   it('keeps organisations apart', async () => {

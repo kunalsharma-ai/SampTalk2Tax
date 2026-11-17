@@ -12,7 +12,24 @@ export interface Org {
   arAccountId: string | null;
   apAccountId: string | null;
   claimsAccountId: string | null;
+  /** IANA time zone moments are shown in. */
+  timeZone: string;
+  /** The region this organisation's data lives in, and whether this deployment serves it. */
+  dataRegion: DataRegion;
+  /** Suspended by the platform: readable, not changeable. */
+  suspended: { at: string; reason: string } | null;
+  /** The organisation's Talk2Tax plan and whether its books can change. */
+  subscription: OrgSubscription | null;
   role: Role;
+  /** Set when a person who runs Talk2Tax reads the books under the organisation's support access. */
+  viaSupport?: { expiresAt: string } | null;
+}
+
+export interface DataRegion {
+  region: string;
+  name: string;
+  appUrl: string | null;
+  here: boolean;
 }
 
 export interface Account {
@@ -60,7 +77,7 @@ export interface Journal {
   displayNumber: string | null;
   date: string;
   type: string;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT' | 'YEAR_END';
   status: 'DRAFT' | 'POSTED';
   memo: string | null;
   reference: string | null;
@@ -77,7 +94,7 @@ export interface Journal {
 export const PERMS: Record<Role, Set<string>> = {
   OWNER: new Set(['*']),
   ADMIN: new Set(['*']),
-  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse', 'payroll.read', 'payroll.manage', 'budgets.manage', 'alerts.manage', 'collections.manage', 'close.manage', 'assets.manage', 'deferrals.manage', 'loans.manage', 'templates.manage', 'documents.sign', 'scenarios.manage', 'cfo.reports', 'decisions.manage', 'policies.manage', 'dashboards.manage', 'reports.design']),
+  ACCOUNTANT: new Set(['accounts.manage', 'periods.manage', 'journals.create', 'journals.post', 'journals.reverse', 'audit.read', 'contacts.manage', 'sales.manage', 'purchases.manage', 'banking.manage', 'banking.reconcile', 'expenses.submit', 'expenses.reimburse', 'payroll.read', 'payroll.manage', 'budgets.manage', 'alerts.manage', 'collections.manage', 'close.manage', 'assets.manage', 'deferrals.manage', 'loans.manage', 'templates.manage', 'documents.sign', 'scenarios.manage', 'cfo.reports', 'decisions.manage', 'policies.manage', 'dashboards.manage', 'reports.design', 'crm.manage']),
   APPROVER: new Set(['journals.post', 'audit.read', 'approvals.decide', 'expenses.submit', 'documents.sign', 'scenarios.approve', 'decisions.manage']),
   VIEWER: new Set([]),
   EMPLOYEE: new Set(['expenses.submit']),
@@ -122,6 +139,9 @@ export interface Contact {
   isVendor: boolean;
   paymentTermsDays: number;
   creditLimit: string | null;
+  creditHold: boolean;
+  creditHoldReason: string | null;
+  creditHoldAt: string | null;
   isActive: boolean;
   receivable: Balance;
   payable: Balance;
@@ -186,6 +206,8 @@ export interface Gstr1DocumentRow {
   placeOfSupply: string;
   value: string;
   rates: (TaxHeads & { rate: string })[];
+  noteType?: 'C' | 'D';
+  originalNumber?: string | null;
 }
 export interface HsnRow extends TaxHeads {
   hsnCode: string;
@@ -205,7 +227,7 @@ export interface Gstr1 {
   cdnur: Gstr1DocumentRow[];
   nil: { nature: 'INTRA' | 'INTER'; registered: boolean; nilRated: string; exempt: string; nonGst: string }[];
   hsn: { b2b: HsnRow[]; b2c: HsnRow[] };
-  documents: { kind: 'INVOICE' | 'CREDIT_NOTE'; from: string; to: string; issued: number; cancelled: number }[];
+  documents: { kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE'; from: string; to: string; issued: number; cancelled: number }[];
   totals: TaxHeads;
 }
 
@@ -241,6 +263,10 @@ export interface DocumentSummary {
   dueDate: string;
   reference: string | null;
   currency: string;
+  /** Functional currency per one unit; 1 in the functional currency. */
+  exchangeRate: string;
+  /** The total in the functional currency at the document's rate. */
+  functionalTotal: string;
   subtotal: string;
   taxTotal: string;
   total: string;
@@ -248,6 +274,8 @@ export interface DocumentSummary {
   amountDue: string;
   paymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID' | null;
   isOverdue: boolean;
+  /** Lists only: an invoice that is a debit note on an earlier invoice. */
+  isDebitNote?: boolean;
 }
 
 export interface DocumentLine {
@@ -271,10 +299,18 @@ export interface DocumentLine {
   taxAmount: string;
   departmentId: string | null;
   projectId: string | null;
+  /** Bills: the purchase order line this line bills. */
+  purchaseOrderLineId?: string | null;
 }
 
 export interface FinancialDocument extends DocumentSummary {
   memo: string | null;
+  /** Set on a debit note: the invoice it raises the value of. */
+  debitNoteFor: { id: string; number: string | null; issueDate: string; total: string } | null;
+  /** Bills: the purchase order this bill is matched to. */
+  purchaseOrderId?: string | null;
+  debitNotes: { id: string; number: string | null; status: 'DRAFT' | 'POSTED' | 'VOID'; issueDate: string; total: string }[];
+  functionalCurrency: string;
   reverseCharge: boolean;
   reverseChargeTax: string;
   withholding: {
@@ -306,7 +342,10 @@ export interface FinancialDocument extends DocumentSummary {
     id: string;
     amount: string;
     date: string;
-    source?: { type: 'payment' | 'credit'; id: string; number: string; kind: string };
+    /** Realised exchange gain (+) or loss (-) in the functional currency; null when none. */
+    fxGain: string | null;
+    fxJournalEntryId: string | null;
+    source?: { type: 'payment' | 'credit' | 'write_off'; id: string; number: string; kind: string };
     target?: { id: string; number: string; kind: string };
   }[];
 }
@@ -320,6 +359,11 @@ export interface Payment {
   date: string;
   bankAccount: { id: string; code: string; name: string };
   currency: string;
+  exchangeRate: string;
+  functionalAmount: string;
+  functionalCurrency: string;
+  /** Realised exchange gain (+) or loss (-) on what it settled, in the functional currency. */
+  fxGain: string;
   amount: string;
   allocated: string;
   unallocated: string;
@@ -328,7 +372,7 @@ export interface Payment {
   journalEntryId: string;
   voidJournalEntryId: string | null;
   voidDate: string | null;
-  allocations: { id: string; amount: string; date: string; target: { id: string; number: string; kind: string } }[];
+  allocations: { id: string; amount: string; date: string; fxGain: string | null; fxJournalEntryId: string | null; target: { id: string; number: string; kind: string } }[];
 }
 
 export interface AgeingItem {
@@ -341,6 +385,11 @@ export interface AgeingItem {
   bucket: string | null;
   total: string;
   open: string;
+  currency: string;
+  /** For an item in another currency: its rate and its amounts in that currency. */
+  rate?: string;
+  foreignTotal?: string;
+  foreignOpen?: string;
 }
 
 export interface AgeingAmounts {
@@ -366,6 +415,8 @@ export interface Statement {
   contact: { id: string; name: string };
   ledger: 'SALES' | 'PURCHASES';
   currency: string;
+  /** The currencies this contact has documents or payments in (a statement is in one of them). */
+  currencies: string[];
   from: string;
   to: string;
   openingBalance: string;
@@ -395,7 +446,7 @@ export interface LedgerLink {
   date: string;
   memo: string | null;
   reference: string | null;
-  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY';
+  source: 'MANUAL' | 'DOCUMENT' | 'PAYMENT' | 'BANK' | 'EXPENSE' | 'TAX' | 'PAYROLL' | 'CLOSE' | 'ASSET' | 'DEFERRAL' | 'ACCRUAL' | 'LOAN' | 'INTERCOMPANY' | 'FX_REVALUATION' | 'FX_SETTLEMENT' | 'BAD_DEBT' | 'YEAR_END';
   amount: string;
   payment: { id: string; number: string; kind: 'RECEIPT' | 'PAYMENT'; contactName: string } | null;
 }
@@ -470,7 +521,7 @@ export interface Reconciliation {
   lines: number;
 }
 
-export type AttachmentEntity = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM';
+export type AttachmentEntity = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING';
 export interface Attachment {
   id: string;
   fileName: string;
@@ -918,7 +969,7 @@ export interface EInvoiceRecord {
 
 export interface EInvoiceRow {
   documentId: string;
-  kind: 'INVOICE' | 'CREDIT_NOTE';
+  kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE';
   number: string | null;
   issueDate: string;
   documentStatus: string;
@@ -1001,3 +1052,13 @@ export interface EWayBillRegister {
 }
 
 export type EWayBillDocument = { configured: false; documentId: string } | (EWayBillRow & { configured: true; history: EWayBillRecord[] });
+
+export type SubscriptionAccess =
+  | { level: 'FULL'; state: 'TRIAL' | 'ACTIVE' | 'GRACE' | 'CANCELLING' | 'COMPLIMENTARY'; until: string | null; daysLeft: number | null }
+  | { level: 'READ_ONLY'; state: 'TRIAL_ENDED' | 'LAPSED' | 'CANCELLED'; since: string | null };
+
+export interface OrgSubscription {
+  plan: { code: string; name: string; features: string[] };
+  status: 'TRIALING' | 'ACTIVE' | 'CANCELLED' | 'COMPLIMENTARY';
+  access: SubscriptionAccess;
+}

@@ -17,7 +17,10 @@ import { Budget, BudgetStatus, Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService } from '../common/prisma.service';
+import { lockName, lockRow } from '../db/locks';
 
 type Tx = Prisma.TransactionClient;
 type Actor = { id: string };
@@ -42,6 +45,7 @@ export class BudgetsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ helpers
@@ -94,11 +98,16 @@ export class BudgetsService {
   /** Revenue and expense totals per budget, by account type. */
   private async totals(orgId: string, ids: string[]) {
     if (!ids.length) return new Map<string, { revenue: Dec; expenses: Dec; accounts: number }>();
-    const rows = await this.prisma.$queryRaw<{ budget_id: string; type: string; amount: Prisma.Decimal; accounts: bigint }[]>`
-      SELECT bl.budget_id, a.type::text AS type, SUM(bl.amount) AS amount, COUNT(DISTINCT bl.account_id) AS accounts
-      FROM budget_lines bl JOIN accounts a ON a.id = bl.account_id AND a.org_id = bl.org_id
-      WHERE bl.org_id = ${orgId}::uuid AND bl.budget_id = ANY(${ids}::uuid[])
-      GROUP BY 1, 2`;
+    const lines = await this.prisma.budgetLine.findMany({ where: { orgId, budgetId: { in: ids } }, select: { budgetId: true, accountId: true, amount: true, account: { select: { type: true } } } });
+    const grouped = new Map<string, { budget_id: string; type: string; amount: Prisma.Decimal; ids: Set<string> }>();
+    for (const l of lines) {
+      const k = `${l.budgetId}|${l.account.type}`;
+      const g = grouped.get(k) ?? { budget_id: l.budgetId, type: l.account.type as string, amount: new Prisma.Decimal(0), ids: new Set<string>() };
+      g.amount = g.amount.plus(l.amount);
+      g.ids.add(l.accountId);
+      grouped.set(k, g);
+    }
+    const rows = [...grouped.values()].map((g) => ({ ...g, accounts: g.ids.size }));
     const out = new Map<string, { revenue: Dec; expenses: Dec; accounts: number }>();
     for (const id of ids) out.set(id, { revenue: new D(0), expenses: new D(0), accounts: 0 });
     for (const r of rows) {
@@ -112,15 +121,11 @@ export class BudgetsService {
 
   /** Posted revenue and expense movements by account and month, on each account's normal side. */
   async actuals(orgId: string, from: string, to: string, tx: Tx | PrismaService = this.prisma) {
-    const rows = await tx.$queryRaw<(ActualRow & { type: string })[]>`
-      SELECT l.account_id, to_char(date_trunc('month', e.date), 'YYYY-MM') AS month, a.type::text AS type,
-             SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND a.type IN ('REVENUE', 'EXPENSE')
-        AND e.date >= ${toDbDate(from)}::date AND e.date <= ${toDbDate(to)}::date
-      GROUP BY 1, 2, 3`;
+    const accounts = new Map((await tx.account.findMany({ where: { orgId, type: { in: ['REVENUE', 'EXPENSE'] } }, select: { id: true, type: true } })).map((a) => [a.id, a.type as string]));
+    const sums = accounts.size
+      ? await lineSums(this.store, orgId, { entry: postedBetween(toDbDate(from), toDbDate(to), { excludeClosing: true }), line: { accountId: { $in: [...accounts.keys()] } }, by: { accountId: 'lines.accountId', month: { $dateToString: { date: '$date', format: '%Y-%m' } } } })
+      : [];
+    const rows = sums.map((r) => ({ account_id: r.key.accountId as string, month: r.key.month as string, type: accounts.get(r.key.accountId as string)!, debit: r.debit, credit: r.credit }));
     const byAccount = new Map<string, Map<string, Dec>>();
     for (const r of rows) {
       const net = new D(r.debit.toFixed()).minus(r.credit.toFixed());
@@ -207,7 +212,7 @@ export class BudgetsService {
     const o = await this.org(orgId);
     const scale = minorUnits(o.functionalCurrency);
     const id = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`budget:${orgId}:${input.fiscalYear}`}))`;
+      await lockName(tx, `budget:${orgId}:${input.fiscalYear}`);
       const last = await tx.budget.findFirst({ where: { orgId, fiscalYear: input.fiscalYear }, orderBy: { version: 'desc' }, select: { version: true } });
       const version = (last?.version ?? 0) + 1;
       let lines: { accountId: string; amounts: string[] }[] = [];
@@ -266,7 +271,7 @@ export class BudgetsService {
   }
 
   private async draft(tx: Tx, orgId: string, id: string) {
-    await tx.$executeRaw`SELECT 1 FROM budgets WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await (lockRow(tx, 'budgets', id, orgId)).then((r) => r.length);
     const b = await this.load(orgId, id, tx);
     if (b.status !== 'DRAFT') throw new DomainError('BUDGET_NOT_DRAFT', `Version ${b.version} is ${b.status.toLowerCase()}; only drafts change. Start a new version from it instead.`, HttpStatus.CONFLICT);
     return b;
@@ -345,7 +350,7 @@ export class BudgetsService {
 
   private async move(orgId: string, actor: Actor, id: string, from: BudgetStatus, step: (tx: Tx, b: Budget) => Promise<{ action: string; data: Record<string, unknown> }>) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT 1 FROM budgets WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+      await (lockRow(tx, 'budgets', id, orgId)).then((r) => r.length);
       const b = await this.load(orgId, id, tx);
       if (b.status !== from) throw new DomainError('BUDGET_STATUS', `Version ${b.version} is ${b.status.toLowerCase()}`, HttpStatus.CONFLICT);
       const { action, data } = await step(tx, b);

@@ -1,6 +1,7 @@
 import { addMonth, fiscalYearForDate, loanSchedule } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Loans against the real API and database: adding a loan with its money received, installments
@@ -22,11 +23,7 @@ let org: Awaited<ReturnType<typeof createOrg>>;
 let L: string;
 const id: Record<string, string> = {};
 
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const loan = (overrides: Record<string, unknown> = {}) => ({
   name: 'Warehouse term loan',
   lender: 'State Bank of India',

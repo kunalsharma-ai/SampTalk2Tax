@@ -34,7 +34,7 @@ export function PeriodChart({ data, currency }: { data: PeriodPoint[]; currency:
           <XAxis dataKey="label" stroke="var(--t2t-text-faint)" tickLine={false} axisLine={false} fontSize={12} />
           <YAxis stroke="var(--t2t-text-faint)" tickLine={false} axisLine={false} fontSize={12} tickFormatter={(v) => compact.format(v)} width={56} />
           <Tooltip
-            cursor={{ fill: 'rgba(56,217,245,0.06)' }}
+            cursor={{ fill: 'rgba(14,165,233,0.08)' }}
             contentStyle={{ background: 'var(--t2t-surface-raised)', border: '1px solid var(--t2t-border)', borderRadius: 10, fontSize: 12 }}
             labelStyle={{ color: 'var(--t2t-text)' }}
             formatter={(_v, name, item) => {

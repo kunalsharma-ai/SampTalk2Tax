@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
-import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFeature } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { BankAiService } from './bank-ai.service';
 
@@ -12,6 +12,7 @@ const DismissBody = z.object({ note: z.string().trim().max(1000, 'Keep the note 
 
 @ApiTags('banking')
 @ApiBearerAuth()
+@RequireFeature('AI')
 @Controller('v1/orgs/:orgId/banking')
 export class BankAiController {
   constructor(private readonly ai: BankAiService) {}

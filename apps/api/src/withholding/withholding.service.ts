@@ -1,3 +1,4 @@
+import { ChartService } from '../accounts/chart.service';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { D, dec, minorUnits } from '@talk2tax/accounting-engine';
 import { Contact, Prisma, ThresholdBasis, ThresholdWindow, WithholdingKind, WithholdingSection, WithholdingSettings } from '@talk2tax/database';
@@ -5,9 +6,13 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { checkPan, computeWithholding, depositDueDate, TDS_TEMPLATES, tanIssue, thresholdWindow, WithholdingResult, WithholdingRule } from '@talk2tax/tax-engine';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { nextCounter } from '../db/counters';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
+import { lockRow } from '../db/locks';
 
 export interface WithholdingOrg {
   id: string;
@@ -67,6 +72,8 @@ export class WithholdingService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
+    private readonly chart: ChartService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -86,7 +93,7 @@ export class WithholdingService {
     const issue = tanIssue(tan);
     if (issue) throw new DomainError('INVALID_TAN', issue);
     return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM organizations WHERE id = ${orgId}::uuid FOR UPDATE`;
+      await lockRow(tx, 'organizations', orgId);
       const org = await tx.organization.findUniqueOrThrow({ where: { id: orgId } });
       if (org.countryCode !== 'IN' || org.functionalCurrency !== 'INR') throw new DomainError('NOT_INDIA', 'TDS and TCS are available to organisations in India that keep their books in INR');
       const before = await tx.withholdingSettings.findUnique({ where: { orgId } });
@@ -178,10 +185,11 @@ export class WithholdingService {
     if (input.issueDate < fromDbDate(section.validFrom)) throw new DomainError('DOCUMENT_INVALID', `${section.kind} section ${section.code} applies from ${fromDbDate(section.validFrom)}`);
     const w = thresholdWindow(section.thresholdWindow, input.issueDate);
     const exclude = input.excludeDocumentId ?? '00000000-0000-0000-0000-000000000000';
-    const [h] = await db.$queryRaw<{ subject: Prisma.Decimal | null; base: Prisma.Decimal | null }[]>`
-      SELECT SUM(withholding_subject) AS subject, SUM(withholding_base) AS base FROM documents
-      WHERE org_id = ${orgId}::uuid AND contact_id = ${input.contact.id}::uuid AND withholding_section_id = ${section.id}::uuid
-        AND status = 'POSTED' AND issue_date BETWEEN ${toDbDate(w.from)}::date AND ${toDbDate(w.to)}::date AND id <> ${exclude}::uuid`;
+    const { _sum: sum } = await db.document.aggregate({
+      where: { orgId, contactId: input.contact.id, withholdingSectionId: section.id, status: 'POSTED', issueDate: { gte: toDbDate(w.from), lte: toDbDate(w.to) }, id: { not: exclude } },
+      _sum: { withholdingSubject: true, withholdingBase: true },
+    });
+    const h = { subject: sum.withholdingSubject, base: sum.withholdingBase };
     const pan = input.contact.pan;
     const result = computeWithholding(ruleOf(section), input.amount, { aggregateBefore: h?.subject?.toFixed() ?? '0', taxedBefore: h?.base?.toFixed() ?? '0' }, pan, 'INR');
     return { section, kind, accountId: kind === 'TDS' ? settings.tdsPayableAccountId : settings.tcsPayableAccountId, pan, result };
@@ -189,7 +197,7 @@ export class WithholdingService {
 
   /** Serialise posting for one contact so two documents cannot both miss a threshold crossing. */
   async lockContact(tx: Tx, orgId: string, contactId: string) {
-    await tx.$queryRaw`SELECT id FROM contacts WHERE id = ${contactId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
+    await lockRow(tx, 'contacts', contactId, orgId);
   }
 
   async preview(orgId: string, input: { documentKind: 'BILL' | 'INVOICE'; contactId: string; sectionId: string; issueDate: string; amount: string; documentId?: string }) {
@@ -273,20 +281,13 @@ export class WithholdingService {
   private async ledgerCheck(org: WithholdingOrg, kind: WithholdingKind, settings: WithholdingSettings, to: string) {
     const accountId = kind === 'TDS' ? settings.tdsPayableAccountId : settings.tcsPayableAccountId;
     const t = toDbDate(to);
-    const [bal] = await this.prisma.$queryRaw<{ cr: Prisma.Decimal | null; dr: Prisma.Decimal | null }[]>`
-      SELECT SUM(l.functional_credit) AS cr, SUM(l.functional_debit) AS dr FROM journal_lines l JOIN journal_entries e ON e.id = l.entry_id
-      WHERE l.org_id = ${org.id}::uuid AND l.account_id = ${accountId}::uuid AND e.status = 'POSTED' AND e.date <= ${t}::date`;
-    const [w] = await this.prisma.$queryRaw<{ s: Prisma.Decimal | null }[]>`
-      SELECT SUM(withholding_amount) AS s FROM documents
-      WHERE org_id = ${org.id}::uuid AND withholding_kind = ${kind}::"WithholdingKind" AND issue_date <= ${t}::date
-        AND (status = 'POSTED' OR (status = 'VOID' AND void_date > ${t}::date))`;
-    const [d] = await this.prisma.$queryRaw<{ s: Prisma.Decimal | null }[]>`
-      SELECT SUM(tax_amount) AS s FROM withholding_deposits
-      WHERE org_id = ${org.id}::uuid AND kind = ${kind}::"WithholdingKind" AND deposit_date <= ${t}::date
-        AND (status = 'POSTED' OR (status = 'VOID' AND void_date > ${t}::date))`;
+    const [bal] = await lineSums(this.store, org.id, { entry: postedBetween(null, t), line: { accountId }, by: {} });
+    const live = { OR: [{ status: 'POSTED' as const }, { status: 'VOID' as const, voidDate: { gt: t } }] };
+    const w = await this.prisma.document.aggregate({ where: { orgId: org.id, withholdingKind: kind, issueDate: { lte: t }, ...live }, _sum: { withholdingAmount: true } });
+    const d = await this.prisma.withholdingDeposit.aggregate({ where: { orgId: org.id, kind, depositDate: { lte: t }, ...live }, _sum: { taxAmount: true } });
     const scale = minorUnits(org.functionalCurrency);
-    const ledger = new D(bal?.cr?.toFixed() ?? '0').minus(bal?.dr?.toFixed() ?? '0');
-    const expected = new D(w?.s?.toFixed() ?? '0').minus(d?.s?.toFixed() ?? '0');
+    const ledger = bal ? bal.credit.minus(bal.debit) : new D(0);
+    const expected = new D(w._sum.withholdingAmount?.toFixed() ?? '0').minus(d._sum.taxAmount?.toFixed() ?? '0');
     const account = await this.prisma.account.findUniqueOrThrow({ where: { id: accountId }, select: { id: true, code: true, name: true } });
     return { asOf: to, account, balance: ledger.toFixed(scale), expected: expected.toFixed(scale), agrees: ledger.eq(expected) };
   }
@@ -316,7 +317,7 @@ export class WithholdingService {
     return this.prisma.$transaction(async (tx) => {
       const settings = await this.settings(tx, org.id);
       if (!settings) throw new DomainError('WITHHOLDING_NOT_CONFIGURED', 'Set up TDS and TCS first (Settings → TDS and TCS)', HttpStatus.CONFLICT);
-      for (const id of [...ids].sort()) await tx.$queryRaw`SELECT id FROM documents WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      for (const id of [...ids].sort()) await lockRow(tx, 'documents', id, org.id);
       const docs = await tx.document.findMany({ where: { orgId: org.id, id: { in: ids } }, include: { depositItems: { where: { active: true } } } });
       const issues: string[] = [];
       for (const id of ids) {
@@ -337,9 +338,7 @@ export class WithholdingService {
       }
       const tax = docs.reduce((s, d) => s.plus(d.withholdingAmount.toFixed()), new D(0));
       const payable = input.kind === 'TDS' ? settings.tdsPayableAccountId : settings.tcsPayableAccountId;
-      const [{ value }] = await tx.$queryRaw<{ value: number }[]>`
-        INSERT INTO org_counters (org_id, key, value) VALUES (${org.id}::uuid, ${`doc:${input.kind}_DEPOSIT`}, 1)
-        ON CONFLICT (org_id, key) DO UPDATE SET value = org_counters.value + 1 RETURNING value`;
+      const value = await nextCounter(tx, org.id, `doc:${input.kind}_DEPOSIT`);
       const number = `${input.kind}D-${String(value).padStart(6, '0')}`;
       const c = org.functionalCurrency;
       const lines = [
@@ -373,7 +372,7 @@ export class WithholdingService {
   async voidDeposit(org: WithholdingOrg, actor: { id: string }, id: string, input: { date: string; reason: string }) {
     if (!hasPermission(org.role, 'journals.reverse')) throw new DomainError('FORBIDDEN', `Your role (${org.role}) cannot void deposits; it needs journals.reverse`, HttpStatus.FORBIDDEN);
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM withholding_deposits WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      const rows = await lockRow<{ id: string }>(tx, 'withholding_deposits', id, org.id);
       if (!rows[0]) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Deposit not found' });
       const dep = await tx.withholdingDeposit.findUniqueOrThrow({ where: { id } });
       if (dep.status !== 'POSTED') throw new DomainError('ALREADY_VOID', 'Deposit is already void', HttpStatus.CONFLICT);
@@ -435,21 +434,8 @@ export class WithholdingService {
   }
 
   private async defaultAccounts(tx: Tx, orgId: string, actor: { id: string }) {
-    const out = {} as { tdsPayableAccountId: string; tcsPayableAccountId: string };
-    for (const key of ['tdsPayableAccountId', 'tcsPayableAccountId'] as const) {
-      const spec = DEFAULT_ACCOUNTS[key];
-      const existing = await tx.account.findUnique({ where: { orgId_code: { orgId, code: spec.code } } });
-      if (existing) {
-        if (existing.name !== spec.name || existing.type !== 'LIABILITY') throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} is already used by "${existing.name}". Choose the accounts yourself.`, HttpStatus.CONFLICT);
-        out[key] = existing.id;
-        continue;
-      }
-      const parent = await tx.account.findUnique({ where: { orgId_code: { orgId, code: '2000' } } });
-      const a = await tx.account.create({ data: { orgId, code: spec.code, name: spec.name, type: 'LIABILITY', subtype: spec.subtype, parentId: parent && !parent.isPostable && parent.type === 'LIABILITY' ? parent.id : null, isPostable: true } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, reason: 'TDS and TCS setup' } });
-      out[key] = a.id;
-    }
-    return out;
+    const spec = (k: keyof typeof DEFAULT_ACCOUNTS) => ({ ...DEFAULT_ACCOUNTS[k], type: 'LIABILITY' as const, parentCode: '2000' });
+    return this.chart.ensure(tx, orgId, actor.id, { tdsPayableAccountId: spec('tdsPayableAccountId'), tcsPayableAccountId: spec('tcsPayableAccountId') }, 'TDS and TCS setup');
   }
 
   private async checkAccounts(tx: Tx, orgId: string, accounts: { tdsPayableAccountId: string; tcsPayableAccountId: string }) {

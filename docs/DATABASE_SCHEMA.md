@@ -51,9 +51,12 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `cash_forecasts` | A saved forecast or backtest: as-of date, horizon, opening, expected closing, minimum balance, the daily base/low/high series (`days` JSON) and a summary of its inputs | horizon 1–400 days and `days` has exactly that many entries (the API offers 30, 60, 90, 180 and 365); `is_backtest` true exactly when `as_of` is before the day it was saved (India time) (CHECK); **never updated or deleted** (trigger); RLS |
 | `kpi_targets` | A target for one KPI: at least or at most a value, with a note | unique `(org_id, kpi)`; KPI one of the 13 (CHECK); RLS |
 | `management_reports` | One month's report: commentary, DRAFT or FINAL, and once final the frozen figures (`snapshot` JSON), who finalised it and when | unique `(org_id, month)`; first day of a month, commentary ≤ 10,000 characters, FINAL exactly when snapshot and finaliser are set (CHECK); created as drafts, fixed org and month, **final reports never updated or deleted** (trigger); RLS |
+| `users` (display columns) | `language` en/hi, `number_format` AUTO/IN/INTL/EU/SPACE, `date_format` D_MON_Y/DMY/MDY/YMD, `time_zone` (null = the organisation's) | CHECKs; display only |
+| `organizations.time_zone` | IANA zone moments are shown in; default Asia/Kolkata | CHECK; changes audited |
 | `alert_rule_settings` | One check's settings for an organisation: on or off, and its thresholds (`params` JSON of decimal strings) | unique `(org_id, rule)`; a known check, params an object (CHECK); RLS |
 | `alerts` | One finding of one check: severity, title, summary, amount, `evidence` JSON (facts, linked records, a table), status OPEN / ACKNOWLEDGED / DISMISSED / CLEARED with note and who, first and last seen, cleared time, reopen count | unique `(org_id, rule, fingerprint)`; known check, dismissed needs a person and reason, acknowledged a person, CLEARED exactly when `cleared_at` is set (CHECK); start open, fixed org, check, finding and first seen, reopen count never falls, **never deleted** (trigger); RLS |
 | `alert_events` | An alert's history: OPENED, ACKNOWLEDGED, DISMISSED, REOPENED, CLEARED, by whom (null = the checks) with a note | **append-only** (trigger); RLS |
+| `alert_notification_settings` | Per organisation: which alerts become tasks (`min_severity` CRITICAL / WARNING / OFF), for which role (`task_role`), due after `due_days` (0–30), who changed it | unique per organisation; CHECKs; RLS |
 | `alert_scans` | One run of the checks: who (null = automatic), start and finish, checks run, found, opened, reopened, cleared, failures | **append-only** (trigger); RLS |
 | `copilot_settings` | Whether the organisation has the AI copilot on, and who changed it last | one row per organisation; RLS |
 | `copilot_conversations` | A member's conversation with the copilot: title, and the model, tool-set version and instructions it was started with | owner, model, tool set and instructions fixed (trigger); RLS plus a **restrictive policy to the member who started it** |
@@ -84,7 +87,7 @@ PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migratio
 | `invoice_templates` | Invoice designs: name, country preset, LAYOUT or HTML, layout JSON (theme, palette, font, labels, sections, columns), HTML, logo bytes and type and hash, default, archived | one default per organisation and one active name (partial unique indexes); HTML only with the HTML engine and at most 200 KB, logo PNG/JPEG/WebP at most 500 KB (CHECK); cannot be archived while non-void documents use it (trigger); RLS |
 | `user_signatures` | A member's e-signature per organisation: DRAWN, UPLOADED or TYPED, name, designation, image and hash, revoked | one in use per member (partial unique index); image type and size (CHECK); only revoked, once, never deleted (trigger); RLS |
 | `document_signatures` | E-signatures on posted invoices and credit notes: signer, a copy of the image, SHA-256 of the signed content, time, browser; withdrawn with who and why | one in force per document (partial unique index); hash format, withdrawal fields together (CHECK); only on posted invoices and credit notes with the signer's own signature in use, only withdrawn once, never deleted (trigger); RLS |
-| `tasks` | A task for a member or a role: title, details, due date, link to a record, the workflow run that made it, closed by and note | closed once, never deleted (trigger); RLS |
+| `tasks` | A task for a member or a role: title, details, due date, link to a record, the workflow run that made it, `source` (PERSON, WORKFLOW, AI_AGENT, ALERT, CLOSE), closed by and note | closed once, never deleted (trigger); RLS |
 | `documents` | Invoices, credit notes, bills, vendor credits. DRAFT → POSTED → VOID, with links to the posting and void journals; GST place of supply, supplier state, nature (INTRA/INTER) and counterparty GSTIN, reverse charge and its tax, and TDS/TCS (section, kind, subject, base, rate, amount, counterparty PAN), frozen once posted | total = subtotal + tax ∓ TDS/TCS > 0; TDS only on bills and TCS only on invoices; reverse charge only on bills and vendor credits with a place of supply and tax total 0; due ≥ issue; status fields consistent; unique `(org_id, kind, number)`; **one bill per vendor reference** (case-insensitive partial unique index); `template_id` (print template, invoices and credit notes only, not archived) is the one column a posted document may change |
 | `document_lines` | Account, quantity, unit price, tax rate, net and tax amount; HSN/SAC and CGST, SGST/UTGST, IGST amounts; department and project | quantity > 0, amounts ≥ 0; FKs `(document_id, org_id)`, `(account_id, org_id)`, `(tax_rate_id, org_id)` |
 | `payments` | Receipts and vendor payments from a bank/cash account; POSTED or VOID; idempotency key + body hash | amount > 0; unique `(org_id, idempotency_key)` |
@@ -205,6 +208,8 @@ Forecast evaluation lab: `forecast_lab_runs` (`number` unique per organisation, 
 
 Disaster simulation: `disaster_simulations` (`number` unique per organisation, shown as DS-0001; `name` unique per organisation; `description`; `baseline_months` 3, 6 or 12 and `horizon_months` 1 to 60, checked; `shocks` a JSON array of 1 to 10 shocks, checked by the engine before saving; creator, last editor and times; forced row-level security on `org_id`). Only the shocks are stored: results are re-run on the books each time. See [`DISASTER_SIMULATION.md`](DISASTER_SIMULATION.md).
 
+Business impact: `impact_assessments` (`number` unique per organisation, shown as BI-0001; `name` unique per organisation; `description`; `baseline_months` 3, 6 or 12 and `horizon_months` 1 to 60, checked; `changes` a JSON array of 1 to 15 business changes, checked by the engine before saving; creator, last editor and times; forced row-level security on `org_id`). Only the changes are stored: results are re-run on the books each time. See [`BUSINESS_IMPACT.md`](BUSINESS_IMPACT.md).
+
 Policy studio: `policies` (`number` unique per organisation, shown as POL-0001; `name` unique per organisation; `statement`; `status` DRAFT, ACTIVE or RETIRED; `version` and `active_version`, checked so an active policy runs its latest version; `rules` and `tests` JSON, checked by the engine; `workflow_ids` uuid[] of the workflows that run the rules, in rule order; creator, last editor, approver and times), `policy_versions` (one row per event: CREATED, EDITED, APPROVED or RETIRED, with the version's name, words, rules, tests and note; unique on policy, version and event; a trigger refuses any update or delete) and `policy_ai_drafts` (request, result or error, model and tokens of each AI draft). All three have forced row-level security on `org_id` and composite foreign keys. See [`POLICY_STUDIO.md`](POLICY_STUDIO.md).
 
 Dashboards: `dashboards` (`number` unique per organisation, shown as DB-0001; `name` unique per organisation; `description`; `config` JSON with 1 to 12 widgets, checked in the database and by the engine; `version` for safe concurrent changes; creator, last editor and times) and `dashboard_ai_drafts` (request, result or error, model and tokens of each AI draft). Both have forced row-level security on `org_id`. Figures are never stored. See [`AI_DASHBOARDS.md`](AI_DASHBOARDS.md).
@@ -214,3 +219,46 @@ Report designer: `report_designs` (number shown as RD-0001, unique name, `layout
 ## Integrations
 
 `org_integrations`: one row per organisation and kind (`AI_ANTHROPIC`, `EMAIL_SMTP`): `enabled`, `settings` (JSON object, no secrets), `secret_cipher` (base64 of IV, GCM tag and ciphertext) with the `key_id` that sealed it (both set or both null), `secret_hint`, the last test (`test_status` NOT_TESTED/OK/FAILED, message, when and by whom; `tested_at` set exactly when tested), updated by and at. Forced row-level security on `org_id`. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+## Exchange rates and revaluation (M8, slice 4)
+
+* `exchange_rates`: one rate per organisation, currency and date (`rate > 0`), forced RLS.
+* `fx_revaluations`: number, date, reversal date, rates and lines (JSON), gain, journal and reversal entry; unique per organisation and date; immutable by trigger; forced RLS.
+* `JournalSource` gains `FX_REVALUATION`.
+
+## Regional deployment (M8, slice 5)
+
+* `organizations.data_region`: the region the organisation's data lives in (`^[a-z0-9-]{2,32}$` check; set at creation; untagged rows are claimed by the first API to start; a trigger refuses clearing it). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
+
+## Platform administration (M9, slice 1)
+
+* `users.platform_role`: `SUPER_ADMIN`, `SUPPORT` or null (check constraint).
+* `organizations.suspended_at`, `suspended_reason`: both set or both null; a reason is required (check constraint).
+* `platform_announcements`: message (1-500 characters), tone `INFO`/`WARNING`, start, optional end after the start, creator, optional withdrawal (when and by whom, both or neither). Platform data: no `org_id`, no row-level security. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+
+## Plans and subscriptions (M9, slice 2)
+
+* `plans` (platform data, no RLS): unique code, name, description, `prices` (INR and USD, monthly and annual), `limits`, `features`, offered flag, order. Seeded with the four proposed launch plans.
+* `subscriptions`: one per organisation (`org_id` primary key): plan, status (`TRIALING`, `ACTIVE`, `CANCELLED`, `COMPLIMENTARY`), interval, currency (`INR`/`USD`), price, trial end, current period, payment reference, and one pending request (plan, interval, when, by whom). Check constraints tie each status to its dates. Forced RLS; members can read their organisations' rows.
+* `subscription_events`: immutable history per organisation (trigger), forced RLS. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
+* `platform_payment_gateways` (Stripe, Razorpay: mode, currencies, sealed keys and webhook secrets, last test) and `platform_billing_profile` (one row: seller details on invoices). Platform data, no RLS; read and changed only through platform administration.
+* `subscription_invoices`: payment requests and tax invoices per organisation (one open at a time; final once paid or void, trigger; no deletes), forced RLS. `subscription_invoice_counters`: tax invoice running numbers per Indian financial year. `payment_webhook_events`: every gateway notice with its signature check and outcome, unique per provider and event id. See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md).
+
+## Support (M9, slice 4)
+
+* `support_tickets`: per organisation, a global running `number` (shown as `T-000123`), subject, topic, urgency, state (`OPEN`, `PENDING`, `RESOLVED`, `CLOSED`; closed iff `closed_at`), who opened it, the support assignee, first answer, resolution and close times. Forced RLS.
+* `support_messages`: the conversation (`CUSTOMER` or `SUPPORT` side; internal notes only on the support side), composite FK to the ticket and its organisation, append-only (trigger), forced RLS.
+* `support_access_grants`: read-only support access to the books: reason, who granted it, at most 72 hours (check), optional ticket; can only be revoked, once (trigger); no deletes. Forced RLS.
+* `support_access_views`: every request support made under a grant (path, who, when), append-only, forced RLS. See [`SUPPORT.md`](SUPPORT.md).
+
+## Usage metering (M9, slice 5)
+
+* `usage_events`: one row per metered use (`AI_CALL` with input and output tokens and whose key, or `UPLOAD` with bytes), counted per India-time calendar month against the plan's limits. Append-only (trigger), forced RLS. See [`USAGE_METERING.md`](USAGE_METERING.md).
+
+## Operations (M9, slice 6)
+
+* `feature_flags`: a row only for a flag an administrator changed (on/off, rollout 0 to 100%, note, who and when); without a row a flag is at its default in code.
+* `feature_flag_overrides`: a flag forced on or off for one organisation, with a reason. Forced RLS; cascades with the organisation.
+* `maintenance_windows`: message, start, expected end, who started and ended it. At most one open window (unique partial index); ended only once (check).
+* `error_groups`: unexpected server errors grouped by a SHA-256 fingerprint of error kind, code location and route pattern; counts, first and last seen, resolved by whom.
+* `error_events`: each occurrence with request id, status, route pattern, organisation and person ids (no foreign keys), message and stack; kept 30 days. Forced RLS. See [`OPERATIONS.md`](OPERATIONS.md).

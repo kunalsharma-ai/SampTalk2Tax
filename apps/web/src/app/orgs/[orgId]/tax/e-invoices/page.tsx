@@ -116,7 +116,7 @@ function EInvoices() {
                         <tr key={x.documentId} className="border-t border-line">
                           <Td>{x.state === 'READY' ? <input type="checkbox" aria-label={`Select ${x.number}`} className="accent-[var(--t2t-accent)]" checked={picked.has(x.documentId)} onChange={() => toggle(x.documentId)} /> : null}</Td>
                           <Td>
-                            <Link className="whitespace-nowrap text-accent hover:underline" href={`/orgs/${orgId}/sales/invoices/${x.documentId}`}>{x.kind === 'CREDIT_NOTE' ? 'Credit note' : 'Invoice'} {x.number}</Link>
+                            <Link className="whitespace-nowrap text-accent hover:underline" href={`/orgs/${orgId}/sales/invoices/${x.documentId}`}>{x.kind === 'CREDIT_NOTE' ? 'Credit note' : x.kind === 'DEBIT_NOTE' ? 'Debit note' : 'Invoice'} {x.number}</Link>
                           </Td>
                           <Td className="whitespace-nowrap">{date(x.issueDate)}</Td>
                           <Td>

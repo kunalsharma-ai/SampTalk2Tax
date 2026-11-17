@@ -159,11 +159,22 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/orgs/:orgId/management-reports/:month` | reports.read | The month's report: P&L `lines` (actual, previous, lastYear, budget, variance, favourable, ytd, ytdBudget), `cash`, `kpis`, `customers`, `commentary`, `status`; once FINAL the frozen figures plus `changedSince` |
 | `PUT /v1/orgs/:orgId/management-reports/:month/commentary` | budgets.manage | `commentary` (≤ 10,000 characters); `REPORT_FINAL` (409) once final |
 | `POST /v1/orgs/:orgId/management-reports/:month/finalise` | budgets.manage | Freeze figures and commentary; `MONTH_NOT_ENDED` or `REPORT_FINAL` (409) |
+| `GET /v1/auth/me` → `preferences`; `PUT /v1/auth/me/preferences` | signed in | My `language` (en\|hi), `numberFormat` (AUTO\|IN\|INTL\|EU\|SPACE), `dateFormat` (D_MON_Y\|DMY\|MDY\|YMD), `timeZone` (IANA or null = the organisation's). Display only |
+| `PUT /v1/orgs/:orgId/time-zone` | org.manage | `timeZone` (IANA); `422 INVALID_TIME_ZONE`; audited `org.time_zone_changed`. Organisations carry `timeZone` |
+| `GET /v1/country-modules`, `GET /v1/country-modules/:code` | signed in | Country modules: level (FULL\|STARTER\|ACCOUNTING_ONLY), capabilities with status and note, starter rates, limitations, sources, `reviewedOn`. See [`COUNTRY_MODULES.md`](COUNTRY_MODULES.md) |
+| `GET /v1/orgs/:orgId/country-module` | org.read | The organisation's module, starter rates with `existing`, and `taxAccounts` |
+| `POST /v1/orgs/:orgId/country-module/starter-rates` | accounts.manage | Optional `names`; returns `created`, `skipped`; `409 NO_STARTER_RATES` or `TAX_ACCOUNT_REQUIRED`; audited |
+| `GET /v1/orgs/:orgId/reports/statutory/formats` | reports.read | Layouts for local statements (IN_SCHEDULE_III, GB_COMPANIES_ACT, IFRS_IAS1) and the country `default` |
+| `GET /v1/orgs/:orgId/reports/statutory?from=&to=&format=&comparative=` | reports.read | Balance sheet and profit and loss in that layout with the year before, `checks` and `unclassified` accounts. See [`LOCAL_FINANCIAL_REPORTING.md`](LOCAL_FINANCIAL_REPORTING.md) |
+| `GET`/`PUT /v1/orgs/:orgId/fx/rates`, `DELETE /v1/orgs/:orgId/fx/rates/:rateId` | reports.read / accounts.manage | Exchange rates per currency and day; journal lines in another currency without a rate use them |
+| `GET /v1/orgs/:orgId/fx/exposure?asOf=&rate.XXX=` | reports.read | Foreign-currency balances and the revaluation they would need |
+| `GET`/`POST /v1/orgs/:orgId/fx/revaluations` | reports.read / accounts.manage | Period-end revaluation, posted and reversed the next day; `FX_ORDER`, `FX_RATE_MISSING`, `FX_ACCOUNT_MISSING`, `FX_NOTHING`. See [`MULTI_CURRENCY.md`](MULTI_CURRENCY.md) |
 | `GET /v1/orgs/:orgId/alerts?status=ACTIVE\|DISMISSED\|CLEARED\|ALL&fresh=` | reports.read | Alerts by severity with `evidence`, `summary` counts and `lastScan`; runs the checks first when the last run is over 60 minutes old (unless `fresh=false`) |
 | `POST /v1/orgs/:orgId/alerts/scan` | alerts.manage | Run every check that is on now; returns the run (found, opened, reopened, cleared, failures) |
 | `GET /v1/orgs/:orgId/alerts/:alertId` | reports.read | One alert with the check's description and its `history` |
 | `POST /v1/orgs/:orgId/alerts/:alertId/acknowledge`, `/dismiss`, `/reopen` | alerts.manage | `note` (optional) or `reason` (dismiss, 3–1,000 characters); `INVALID_ALERT_STATE` (409) from the wrong state |
-| `GET /v1/orgs/:orgId/alert-rules`; `PUT …/alert-rules/:rule` | reports.read / alerts.manage | The nine checks with description, settings, values and who changed them; save `enabled` and `params` (`INVALID_SETTING` naming the setting when out of range) |
+| `GET /v1/orgs/:orgId/alerts/notifications`; `PUT …/alerts/notifications` | reports.read / alerts.manage | Which alerts become tasks: `minSeverity` CRITICAL\|WARNING\|OFF, `taskRole` OWNER\|ADMIN\|ACCOUNTANT\|APPROVER, `dueDays` 0–30; returns `isDefault`, `updatedBy`, `updatedAt`. Alerts in the list and `GET …/alerts/:id` carry `priority` {`score` 0–100, `band` URGENT\|HIGH\|NORMAL\|LOW, `reasons`}; the list is ordered by it and adds `bands` counts and `monthlyRevenue` |
+| `GET /v1/orgs/:orgId/alert-rules`; `PUT …/alert-rules/:rule` | reports.read / alerts.manage | The ten checks with description, settings, values and who changed them; save `enabled` and `params` (`INVALID_SETTING` naming the setting when out of range) |
 | `GET /v1/orgs/:orgId/integrations`; `PUT …/integrations/ai`, `PUT …/integrations/email`; `POST …/integrations/:kind/test`; `DELETE …/integrations/:kind` (`ai` or `email`) | org.manage | Integrations set up in the app: the organisation's own Claude key and model and its own mail server, stored encrypted, never returned, tested for real. See [`INTEGRATIONS.md`](INTEGRATIONS.md) |
 | `GET /v1/orgs/:orgId/copilot/status` | copilot.use | AI copilot: `configured` (a Claude key is available: the organisation's own or the server's), `source` (ORGANISATION, SERVER or NONE), `provider`, `model`, `enabled` for the organisation and who changed it, `canChange`, `questionsPerHour`, `tools` |
 | `PUT /v1/orgs/:orgId/copilot/settings` | org.manage | `enabled`: turn the copilot on or off for the organisation (off by default) |
@@ -208,6 +219,8 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `GET /v1/orgs/:orgId/decisions` (+ `/meta`, `/draft`, `/:id`); `POST …/decisions`; `PUT …/decisions/:id`; `POST …/decisions/:id/review`, `/withdraw` | reports.read to read; decisions.manage to record, change, review and withdraw | Decision memory: decisions with assumptions and expected outcomes measured from the books, review with lessons, search. See [`DECISION_MEMORY.md`](DECISION_MEMORY.md) |
 | `GET /v1/orgs/:orgId/forecast-lab?window=` (+ `/runs`, `/runs/:id`); `POST …/forecast-lab/runs` | reports.read to read; budgets.manage to save a run | Forecast evaluation lab: eight methods backtested on the books, next three months, saved runs measured once their months are over. See [`FORECAST_LAB.md`](FORECAST_LAB.md) |
 | `GET /v1/orgs/:orgId/disasters/options`, `/stress-tests`, `/simulations` (+ `/:id`); `POST …/disasters/simulate`; `POST|PUT|DELETE …/disasters/simulations[/:id]`; `POST …/simulations/:id/scenario` | reports.read, sales.read and purchases.read to read and run; scenarios.manage to save, change, delete and copy to the twin | Disaster simulation: customer default, supplier failure, liquidity shock, operational disruption and demand collapse built from the books and played through the digital twin; standard stress tests. See [`DISASTER_SIMULATION.md`](DISASTER_SIMULATION.md) |
+| `GET /v1/orgs/:orgId/impact/options`, `/assessments` (+ `/:id`); `POST …/impact/assess`; `POST|PUT|DELETE …/impact/assessments[/:id]`; `POST …/assessments/:id/scenario` | reports.read, sales.read and purchases.read to read and run; scenarios.manage to save, change, delete and copy to the twin | Business impact engine: sales, HR, procurement and operations changes built from the books and played through the digital twin against carrying on as is. See [`BUSINESS_IMPACT.md`](BUSINESS_IMPACT.md) |
+| `GET /v1/orgs/:orgId/opportunities`; `POST …/opportunities/:key/assessment` | reports.read and sales.read to read; scenarios.manage and purchases.read to take one forward | Opportunity intelligence: lapsed customers, cross-sell lines, the best-margin segment and slipped margin found in twelve months of books, each measured; taking one forward saves an impact assessment. See [`OPPORTUNITY_INTELLIGENCE.md`](OPPORTUNITY_INTELLIGENCE.md) |
 | `GET /v1/orgs/:orgId/policies` (+ `/:id`, `/catalogue`, `/ai-status`, `/:id/backtest`); `POST …/policies/check`, `/backtest`, `/ai-draft`; `POST|PUT …/policies[/:id]`; `POST …/policies/:id/approve`, `/:id/retire` | reports.read to read, check and back-test; policies.manage to write and draft with AI; workflows.manage to approve and retire (never the last editor) | Policy studio: policies in words turned into tested, versioned workflow rules. See [`POLICY_STUDIO.md`](POLICY_STUDIO.md) |
 | `GET /v1/orgs/:orgId/dashboards` (+ `/:id?month=`, `/catalogue`, `/ai-status`); `POST …/dashboards/preview`, `/ai-draft`; `POST|PUT|DELETE …/dashboards[/:id]` | reports.read to view and preview (customer widgets need sales.read); dashboards.manage to build, change, delete and draft with AI | Dashboards of approved metrics, built by hand or drafted by AI from a description. See [`AI_DASHBOARDS.md`](AI_DASHBOARDS.md) |
 | `GET /v1/orgs/:orgId/report-designer/catalogue`, `/ai-status`, `/designs[/:id]`, `/reports/:id`; `POST …/preview`, `/ai-draft`, `/designs`, `/designs/:id/reports`, `/reports/:id/write-commentary`, `/reports/:id/finalise`; `PUT …/designs/:id`, `/reports/:id/commentary`; `DELETE …/designs/:id`, `/reports/:id` | reports.read to view and preview; reports.design to design, produce, write commentary, finalise and delete | Report designs and the monthly reports produced from them, with commentary checked against the figures. See [`REPORT_DESIGNER.md`](REPORT_DESIGNER.md) |
@@ -216,7 +229,7 @@ All org routes need `Authorization: Bearer <access token>` and membership in the
 | `POST …/invoice-templates`; `PUT …/invoice-templates/:id`; `POST …/:id/duplicate`; `POST …/:id/default`; `POST …/:id/archive`; `PUT`/`DELETE …/:id/logo` | templates.manage | Create, design, copy, make default, archive templates; logos |
 | `PUT …/invoice-print/:documentId/template` | sales.manage | Print an invoice with a chosen template (allowed after posting) |
 | `POST …/invoice-print/:documentId/signature`; `POST …/signature/withdraw`; `GET`/`PUT`/`DELETE …/signatures/me` | documents.sign | E-sign posted invoices; your signature |
-| `GET /v1/orgs/:orgId/tasks?scope=mine|all&status=OPEN|DONE|CANCELLED|ALL` | tasks.use | Tasks for me and my role (`all`: every task, owners and admins only), with counts of my open and overdue tasks; each with assignee, due date, `overdue`, link (path and label), the workflow that made it, who closed it and the note, `canClose` |
+| `GET /v1/orgs/:orgId/tasks?scope=mine|all&status=OPEN|DONE|CANCELLED|ALL&source=PERSON|WORKFLOW|AI_AGENT|ALERT|CLOSE|ALL` | tasks.use | Each task has `source` and `sourceLabel`. Tasks for me and my role (`all`: every task, owners and admins only), with counts of my open and overdue tasks; each with assignee, due date, `overdue`, link (path and label), the workflow that made it, who closed it and the note, `canClose` |
 | `GET /v1/orgs/:orgId/tasks/count`; `GET …/tasks/:id` | tasks.use | My open tasks; one task I can see (404 otherwise) |
 | `POST /v1/orgs/:orgId/tasks` | tasks.use | `title`, `description`, `assignTo` {`role`} or {`userId`} (a member who can take tasks; `422 ASSIGNEE_NOT_MEMBER`), `dueDate` |
 | `POST /v1/orgs/:orgId/tasks/:id/complete`; `…/cancel` | tasks.use | `note` optional. For the assignee, their role, the creator, or an owner or admin; `409 TASK_CLOSED` |
@@ -251,6 +264,20 @@ Content-Type: application/json
 
 `201` with the posted entry (`displayNumber: "JE-000042"`, line functional amounts). A retry with the same key and body returns `200` with header `Idempotent-Replay: true`.
 
+## Regions
+
+* `GET /v1/region` (public): `{ region, name, regions: [{ region, name, appUrl }] }`, the region this deployment serves and the ones it knows. `GET /health` includes `region`.
+* Organisations (`GET /v1/orgs`, `GET /v1/orgs/:orgId`) carry `dataRegion: { region, name, appUrl, here }`.
+* Every `/v1/orgs/:orgId/...` route answers `421 WRONG_REGION` for an organisation whose data lives in another region. See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
+
+## Platform administration
+
+`/v1/admin/...` for people with a platform role (`SUPER_ADMIN`, `SUPPORT`), and `GET /v1/announcements` for everyone signed in. Never an organisation's books. See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+
+## Plans and subscriptions
+
+`GET /v1/orgs/:orgId/subscription`, `POST|DELETE /v1/orgs/:orgId/subscription/request`, and `/v1/admin/plans`, `/v1/admin/subscriptions/...` for platform administrators. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
+
 ## Errors
 
 `{ "error": "<CODE>", "message": "…", ... }`
@@ -263,4 +290,74 @@ Content-Type: application/json
 | 404 | `NOT_FOUND`, `USER_NOT_FOUND` |
 | 409 | `PERIOD_NOT_OPEN`, `ALREADY_POSTED`, `ENTRY_POSTED`, `ALREADY_REVERSED`, `IS_REVERSAL`, `NOT_POSTED`, `SYSTEM_ENTRY`, `DOCUMENT_POSTED`, `ALREADY_VOID`, `HAS_ALLOCATIONS`, `CREDIT_LIMIT_EXCEEDED`, `DUPLICATE_BILL`, `TOTAL_CHANGED`, `CONTACT_IN_USE`, `ALREADY_REMOVED`, `BANK_MATCHED`, `ALREADY_MATCHED`, `NOT_MATCHED`, `LINE_RECONCILED`, `LINE_EXCLUDED`, `NOTHING_NEW`, `PERIOD_RECONCILED`, `NOT_LATEST`, `ALREADY_UNDONE`, `ACCOUNT_IN_USE`, `NON_ZERO_BALANCE`, `HAS_CHILDREN`, `CONFLICT`, `FISCAL_YEAR_EXISTS`, `LEDGER_INTEGRITY` |
 | 422 | `JOURNAL_INVALID` / `DOCUMENT_INVALID` / `STATEMENT_INVALID` / `RECONCILIATION_FAILED` (with `issues[]`), `INVALID_MATCH`, `OPENING_REQUIRED`, `OPENING_MISMATCH`, `CONTROL_ACCOUNT`, `INVALID_ALLOCATION`, `INVALID_BANK_ACCOUNT`, `TAX_ACCOUNT_REQUIRED`, `NOT_A_CUSTOMER`, `NOT_A_VENDOR`, `CONTACT_INACTIVE`, `NO_FISCAL_PERIOD`, `IDEMPOTENCY_KEY_REUSED`, `INVALID_PARENT`, `INVALID_SUBTYPE`, `WEAK_PASSWORD`, `WRONG_PASSWORD`, `SAME_PASSWORD`, `INVALID_DATE` |
+| 403 | `FEATURE_NOT_IN_PLAN` (with `feature`): the plan does not include the module |
+| 409 | `PLAN_LIMIT`: the plan's member limit is reached |
+| 423 | `ORG_SUSPENDED`: the organisation is suspended by the platform (reads still work) |
+| 402 | `PLAN_REQUIRED` (with `state`): the trial or plan has run out; reads still work |
+| 409 | `PAYMENTS_NOT_SET_UP`, `BILLING_PROFILE_MISSING`: no gateway takes the currency, or the seller details are missing |
+| 502 | `GATEWAY_ERROR`: the payment gateway refused or did not answer |
+| 403 | `SUPPORT_READ_ONLY`: support staff reading under the organisation's support access tried to change something |
+| 429 | `AI_CREDITS_USED_UP`, `UPLOAD_LIMIT_REACHED`: the plan's AI requests or uploads for the month are used up |
+| 409 | `TICKET_CLOSED`, `TICKET_NOT_RESOLVED`, `TICKET_ALREADY_RESOLVED`, `SUPPORT_ACCESS_ACTIVE`, `SUPPORT_ACCESS_ENDED` |
+| 421 | `WRONG_REGION` (with `region`, `regionName`, `appUrl`): the organisation's data lives in another region |
 | 429 | `RATE_LIMITED`, `TOO_MANY_ATTEMPTS` (both with `Retry-After`) |
+
+
+## Subscription payments
+
+See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). All work while the books are read-only.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/orgs/:orgId/subscription/quote?plan=&interval=` | members | What paying for the plan now charges (kind, period, subtotal, tax lines, total, whether online payment is available) |
+| POST | `/v1/orgs/:orgId/subscription/checkout` | owners, admins | `{plan, interval}`: issues a payment request and returns the gateway's `url`; a cheaper plan or other billing is scheduled for the renewal instead (`scheduled: true`) |
+| GET | `/v1/orgs/:orgId/subscription/invoices` (`/:id`) | members | Payment requests and tax invoices |
+| POST | `/v1/orgs/:orgId/subscription/invoices/:id/pay` | owners, admins | The gateway page for an unpaid invoice (reused while open) |
+| POST | `/v1/orgs/:orgId/subscription/invoices/:id/check` | members | Asks the gateway whether it was paid, and records it |
+| POST | `/v1/billing/webhooks/stripe` \| `razorpay` | gateways (signature) | Signed payment notices; 400 `SIGNATURE_INVALID` when the signature does not match |
+| GET | `/v1/admin/payments` | platform.read | Gateways (no secrets) and seller details |
+| PUT | `/v1/admin/payments/gateways/:provider` | platform.manage | `{enabled, mode, currencies, keyId?, secret?, webhookSecret?}`; 409 `GATEWAY_CURRENCY_TAKEN` |
+| POST | `/v1/admin/payments/gateways/:provider/test` | platform.manage | Calls the gateway with the stored key |
+| DELETE | `/v1/admin/payments/gateways/:provider` | platform.manage | Removes it and its keys |
+| PUT | `/v1/admin/payments/profile` | platform.manage | Seller details |
+| GET | `/v1/admin/invoices?filter=all\|open\|paid\|void` | platform.read | Every invoice and the latest gateway notices |
+| POST | `/v1/admin/invoices/:id/mark-paid` \| `void` \| `check` | platform.manage | Record a payment by hand `{reference}`, void `{reason}`, or ask the gateway |
+| POST | `/v1/admin/billing/run-renewals` | platform.manage | Issue due renewals and reminders now |
+
+## Support
+
+See [`SUPPORT.md`](SUPPORT.md). The organisation's routes work while the books are read-only.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/orgs/:orgId/support/tickets` | members | Tickets: all for owners and admins, otherwise the ones you opened; each with its targets |
+| POST | `/v1/orgs/:orgId/support/tickets` | members | `{subject, category, priority?, body}` opens a ticket |
+| GET | `/v1/orgs/:orgId/support/tickets/:id` | members who can see it | The ticket, messages (no internal notes) and grants tied to it |
+| POST | `/v1/orgs/:orgId/support/tickets/:id/messages` | members who can see it | `{body}`: a reply; hands the ticket back to support |
+| POST | `/v1/orgs/:orgId/support/tickets/:id/close` \| `reopen` | members who can see it | Close (final) or reopen a resolved ticket |
+| GET | `/v1/orgs/:orgId/support/access` | org.manage | The active grant, past grants and every request support made |
+| POST | `/v1/orgs/:orgId/support/access` | org.manage | `{hours (1-72), reason, ticketId?}`; 409 `SUPPORT_ACCESS_ACTIVE` |
+| POST | `/v1/orgs/:orgId/support/access/:grantId/revoke` | org.manage | Ends it now |
+| GET | `/v1/admin/support/tickets?status=active\|all\|OPEN\|PENDING\|RESOLVED\|CLOSED&assigned=all\|me\|unassigned&q=` | platform.support | The queue and counts |
+| GET | `/v1/admin/support/tickets/:id` | platform.support | Ticket with internal notes, the organisation's name and plan, its active grant, and the support staff |
+| POST | `/v1/admin/support/tickets/:id/messages` | platform.support | `{body, internal?, resolve?}`; returns `{ticket, emailed}` |
+| PUT | `/v1/admin/support/tickets/:id` | platform.support | `{priority?, assigneeId?, action?: RESOLVE\|CLOSE\|REOPEN}` |
+
+`GET /v1/orgs/:orgId` now also returns `role` and `viaSupport` (`{expiresAt}` when read under support access, otherwise null).
+
+## Usage
+
+See [`USAGE_METERING.md`](USAGE_METERING.md).
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/orgs/:orgId/usage` | members | This month's AI requests and uploads against the plan, by day, and six months of history |
+| GET | `/v1/admin/usage?month=YYYY-MM` | platform.read | Every organisation's use in a month against its plan |
+
+## Operations
+
+Every response carries `X-Request-Id`, and every error body `requestId`. Errors: `403 FEATURE_OFF`
+(a module switched off by a feature flag), `503 MAINTENANCE` (changes paused, with `Retry-After`).
+See [`OPERATIONS.md`](OPERATIONS.md) for the routes: `GET /v1/status` (public),
+`GET /v1/orgs/:orgId/flags`, and `/v1/admin/system`, `/v1/admin/errors`, `/v1/admin/flags`,
+`/v1/admin/maintenance`.

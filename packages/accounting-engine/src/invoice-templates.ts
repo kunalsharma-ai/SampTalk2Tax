@@ -760,14 +760,17 @@ export const INVOICE_PLACEHOLDERS: readonly { path: string; description: string;
   { path: 'labels.taxId', description: 'Label for tax numbers (GSTIN, TRN, VAT No.)' },
   { path: 'labels.tax', description: 'Short tax name (GST, VAT, Sales tax)' },
   { path: 'logo', description: 'The logo as a data: URL, for <img src="{{logo}}">; empty when there is none' },
-  { path: 'doc.kind', description: 'Invoice or Credit note' },
+  { path: 'doc.kind', description: 'Invoice, Debit note or Credit note' },
   { path: 'doc.number', description: 'Document number (DRAFT until posted)' },
+  { path: 'doc.originalInvoice', description: 'Debit notes: the invoice they adjust, with its date; empty otherwise' },
   { path: 'doc.issueDate', description: 'Issue date, formatted' },
   { path: 'doc.dueDate', description: 'Due date, formatted' },
   { path: 'doc.reference', description: 'Your reference or PO number' },
   { path: 'doc.memo', description: 'Memo typed on the invoice' },
   { path: 'doc.currency', description: 'Currency code' },
   { path: 'doc.status', description: 'Draft, Posted or Void' },
+  { path: 'doc.isProForma', description: 'True for a pro forma invoice (not a tax invoice)' },
+  { path: 'doc.dueLabel', description: 'Due date, or Valid until on a pro forma invoice' },
   { path: 'doc.isDraft', description: 'True for drafts (use {{#doc.isDraft}}…{{/doc.isDraft}})' },
   { path: 'doc.isVoid', description: 'True for void documents' },
   { path: 'doc.placeOfSupply', description: 'India GST place of supply, such as 27 Maharashtra' },
@@ -1069,7 +1072,10 @@ export interface InvoiceSignatureInfo {
 
 /** Everything the page needs about one invoice, as the API returns it. */
 export interface InvoicePrintSource {
-  kind: 'INVOICE' | 'CREDIT_NOTE';
+  /** PRO_FORMA: a pro forma invoice (AR-008), printed as "not a tax invoice" with its valid-until date in place of the due date. */
+  kind: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'PRO_FORMA';
+  /** Debit notes: the invoice whose value they raise (CGST Rule 53(1A) asks for its number and date). */
+  originalInvoice?: { number: string; issueDate: string } | null;
   status: 'DRAFT' | 'POSTED' | 'VOID';
   number: string | null;
   issueDate: string;
@@ -1168,11 +1174,14 @@ export function buildInvoiceView(
     (s) => s && s.trim(),
   ) as string[];
   return {
-    title: opts.title,
+    title: src.kind === 'PRO_FORMA' ? 'Pro forma invoice' : opts.title,
     labels: { taxId: opts.taxIdLabel, tax: opts.taxLabel },
     logo: opts.showLogo && src.logoDataUrl ? src.logoDataUrl : '',
     doc: {
-      kind: src.kind === 'CREDIT_NOTE' ? 'Credit note' : 'Invoice',
+      kind: src.kind === 'CREDIT_NOTE' ? 'Credit note' : src.kind === 'DEBIT_NOTE' ? 'Debit note' : src.kind === 'PRO_FORMA' ? 'Pro forma invoice' : 'Invoice',
+      isProForma: src.kind === 'PRO_FORMA',
+      dueLabel: src.kind === 'PRO_FORMA' ? 'Valid until' : 'Due date',
+      originalInvoice: src.originalInvoice ? `${src.originalInvoice.number} of ${formatDate(src.originalInvoice.issueDate, opts.dateStyle)}` : '',
       number: src.number ?? 'DRAFT',
       issueDate: formatDate(src.issueDate, opts.dateStyle),
       dueDate: formatDate(src.dueDate, opts.dateStyle),
@@ -1423,8 +1432,10 @@ function renderSection(section: SectionConfig, view: InvoiceView, layout: Layout
       return `${heading(section)}<div class="hdr">${logo}<div class="who"><div class="seller">${escapeHtml(v.seller.name)}</div>${legal}${tax}${sectionText(section, v)}</div></div>`;
     }
     case 'TITLE': {
-      const sub = section.text.trim() ? `<div class="sub">${renderPlaceholders(section.text, v, { plain: true })}</div>` : '';
-      const kind = v.doc.kind === 'Credit note' && !/credit/i.test(v.title) ? 'Credit note' : v.title;
+      const sub = v.doc.isProForma
+        ? '<div class="sub">Not a tax invoice. A tax invoice is issued on supply or on receipt of payment.</div>'
+        : section.text.trim() ? `<div class="sub">${renderPlaceholders(section.text, v, { plain: true })}</div>` : '';
+      const kind = v.doc.kind === 'Credit note' && !/credit/i.test(v.title) ? 'Credit note' : v.doc.kind === 'Debit note' && !/debit/i.test(v.title) ? 'Debit note' : v.title;
       return `<div class="ttl">${heading(section)}<h1>${escapeHtml(kind)}</h1>${sub}</div>`;
     }
     case 'META': {
@@ -1432,7 +1443,8 @@ function renderSection(section: SectionConfig, view: InvoiceView, layout: Layout
       const rows: [string, string][] = [
         [`${d.kind} no.`, d.number!],
         ['Date', d.issueDate!],
-        ['Due date', d.dueDate!],
+        ['Against invoice', d.originalInvoice ?? ''],
+        [d.dueLabel ?? 'Due date', d.dueDate!],
         ['Reference', d.reference!],
         ['Place of supply', d.placeOfSupply!],
         ...(d.placeOfSupply ? ([['Reverse charge', d.reverseCharge!]] as [string, string][]) : []),

@@ -5,6 +5,8 @@ import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DocumentStoreService } from '../common/document-store.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { PrismaService } from '../common/prisma.service';
 
 export interface DimOrg {
@@ -20,6 +22,8 @@ export interface ValueInput {
   name: string;
   description?: string | null;
   customer?: string | null;
+  /** Projects: the customer it is run for. */
+  contactId?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   isActive?: boolean;
@@ -32,9 +36,10 @@ export class DimensionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly store: DocumentStoreService,
   ) {}
 
-  private serialize(v: { id: string; type: DimensionType; code: string; name: string; description: string | null; customer: string | null; startDate: Date | null; endDate: Date | null; isActive: boolean; createdAt: Date }, usage?: { lines: number }) {
+  private serialize(v: { id: string; type: DimensionType; code: string; name: string; description: string | null; customer: string | null; contactId: string | null; contact?: { name: string } | null; startDate: Date | null; endDate: Date | null; isActive: boolean; createdAt: Date }, usage?: { lines: number }) {
     return {
       id: v.id,
       type: v.type,
@@ -42,6 +47,8 @@ export class DimensionsService {
       name: v.name,
       description: v.description,
       customer: v.customer,
+      contactId: v.contactId,
+      contactName: v.contact?.name ?? null,
       startDate: v.startDate ? fromDbDate(v.startDate) : null,
       endDate: v.endDate ? fromDbDate(v.endDate) : null,
       isActive: v.isActive,
@@ -52,10 +59,11 @@ export class DimensionsService {
 
   /** Every department and project, with how many posted journal lines use each. */
   async list(org: DimOrg, type?: DimensionType) {
-    const rows = await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, ...(type ? { type } : {}) }, orderBy: [{ type: 'asc' }, { code: 'asc' }] });
-    const counts = await this.prisma.$queryRaw<{ id: string; n: bigint }[]>`
-      SELECT v.id, (SELECT COUNT(*) FROM journal_lines l WHERE l.org_id = v.org_id AND (l.department_id = v.id OR l.project_id = v.id)) AS n
-      FROM dimension_values v WHERE v.org_id = ${org.id}::uuid`;
+    const rows = await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, ...(type ? { type } : {}) }, include: { contact: { select: { name: true } } }, orderBy: [{ type: 'asc' }, { code: 'asc' }] });
+    const tagged = await lineSums(this.store, org.id, { entry: { $or: [{ 'lines.departmentId': { $type: 'string' } }, { 'lines.projectId': { $type: 'string' } }] }, by: { department: 'lines.departmentId', project: 'lines.projectId' } });
+    const counted = new Map<string, number>();
+    for (const t of tagged) for (const id of [t.key.department, t.key.project]) if (typeof id === 'string') counted.set(id, (counted.get(id) ?? 0) + t.lines);
+    const counts = [...counted.entries()].map(([id, n]) => ({ id, n }));
     const n = new Map(counts.map((c) => [c.id, Number(c.n)]));
     return { values: rows.map((v) => this.serialize(v, { lines: n.get(v.id) ?? 0 })), can: { manage: hasPermission(org.role, 'accounts.manage') } };
   }
@@ -65,9 +73,17 @@ export class DimensionsService {
     const codeIssue = checkDimensionCode(input.code);
     if (codeIssue) errors.push(codeIssue);
     if (!input.name.trim()) errors.push('Give it a name');
-    if (input.type === 'DEPARTMENT' && (input.customer || input.startDate || input.endDate)) errors.push('Only projects have a customer and dates');
+    if (input.type === 'DEPARTMENT' && (input.customer || input.contactId || input.startDate || input.endDate)) errors.push('Only projects have a customer and dates');
     if (input.startDate && input.endDate && input.endDate < input.startDate) errors.push('A project cannot end before it starts');
     if (errors.length) throw new DomainError('DIMENSION_INVALID', errors[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { errors });
+  }
+
+  /** A project's customer must be one of the organisation's customers. */
+  private async customerOf(orgId: string, contactId: string | null | undefined) {
+    if (!contactId) return null;
+    const c = await this.prisma.contact.findFirst({ where: { id: contactId, orgId, isCustomer: true }, select: { id: true, name: true } });
+    if (!c) throw new DomainError('CUSTOMER_NOT_FOUND', 'Choose one of your customers for the project', HttpStatus.UNPROCESSABLE_ENTITY);
+    return c;
   }
 
   private duplicate(e: unknown, input: ValueInput): never {
@@ -78,6 +94,7 @@ export class DimensionsService {
 
   async create(org: DimOrg, actor: Actor, input: ValueInput) {
     this.check(input);
+    const customer = input.type === 'PROJECT' ? await this.customerOf(org.id, input.contactId) : null;
     try {
       const v = await this.prisma.$transaction(async (tx) => {
         const created = await tx.dimensionValue.create({
@@ -87,13 +104,15 @@ export class DimensionsService {
             code: input.code.toUpperCase(),
             name: input.name.trim(),
             description: input.description?.trim() || null,
-            customer: input.type === 'PROJECT' ? input.customer?.trim() || null : null,
+            customer: input.type === 'PROJECT' ? input.customer?.trim() || customer?.name || null : null,
+            contactId: customer?.id ?? null,
             startDate: input.type === 'PROJECT' && input.startDate ? toDbDate(input.startDate) : null,
             endDate: input.type === 'PROJECT' && input.endDate ? toDbDate(input.endDate) : null,
             createdById: actor.id,
           },
+          include: { contact: { select: { name: true } } },
         });
-        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'dimension.created', entityType: 'dimension_value', entityId: created.id, data: { type: input.type, code: created.code, name: created.name } });
+        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'dimension.created', entityType: 'dimension_value', entityId: created.id, data: { type: input.type, code: created.code, name: created.name, contactId: created.contactId } });
         return created;
       });
       return this.serialize(v);
@@ -107,6 +126,7 @@ export class DimensionsService {
     if (!v) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Department or project not found' });
     const full = { ...input, type: v.type };
     this.check(full);
+    const customer = v.type === 'PROJECT' && input.contactId !== undefined ? await this.customerOf(org.id, input.contactId) : undefined;
     try {
       const updated = await this.prisma.$transaction(async (tx) => {
         const u = await tx.dimensionValue.update({
@@ -115,13 +135,15 @@ export class DimensionsService {
             code: input.code.toUpperCase(),
             name: input.name.trim(),
             description: input.description?.trim() || null,
-            customer: v.type === 'PROJECT' ? input.customer?.trim() || null : null,
+            customer: v.type === 'PROJECT' ? input.customer?.trim() || customer?.name || null : null,
+            contactId: customer === undefined ? undefined : (customer?.id ?? null),
             startDate: v.type === 'PROJECT' && input.startDate ? toDbDate(input.startDate) : null,
             endDate: v.type === 'PROJECT' && input.endDate ? toDbDate(input.endDate) : null,
             isActive: input.isActive,
           },
+          include: { contact: { select: { name: true } } },
         });
-        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'dimension.updated', entityType: 'dimension_value', entityId: id, data: { code: u.code, name: u.name, isActive: u.isActive, wasActive: v.isActive } });
+        await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'dimension.updated', entityType: 'dimension_value', entityId: id, data: { code: u.code, name: u.name, isActive: u.isActive, wasActive: v.isActive, contactId: u.contactId, hadContactId: v.contactId } });
         return u;
       });
       return this.serialize(updated);
@@ -134,16 +156,14 @@ export class DimensionsService {
   async profit(org: DimOrg, q: { type: DimensionType; from: string; to: string; includeInactive?: boolean }) {
     if (q.from > q.to) throw new DomainError('INVALID_RANGE', 'The start must be on or before the end');
     const values = await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, type: q.type }, orderBy: { code: 'asc' } });
-    const col = q.type === 'DEPARTMENT' ? Prisma.sql`l.department_id` : Prisma.sql`l.project_id`;
-    const rows = await this.prisma.$queryRaw<{ account_id: string; code: string; name: string; type: 'REVENUE' | 'EXPENSE'; value_id: string | null; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
-      SELECT a.id AS account_id, a.code, a.name, a.type::text AS type, ${col} AS value_id,
-             SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id
-      WHERE l.org_id = ${org.id}::uuid AND e.status = 'POSTED' AND a.type IN ('REVENUE', 'EXPENSE')
-        AND e.date >= ${toDbDate(q.from)}::date AND e.date <= ${toDbDate(q.to)}::date
-      GROUP BY a.id, a.code, a.name, a.type, ${col}`;
+    const accounts = new Map((await this.prisma.account.findMany({ where: { orgId: org.id, type: { in: ['REVENUE', 'EXPENSE'] } }, select: { id: true, code: true, name: true, type: true } })).map((a) => [a.id, a]));
+    const sums = accounts.size
+      ? await lineSums(this.store, org.id, { entry: postedBetween(toDbDate(q.from), toDbDate(q.to), { excludeClosing: true }), line: { accountId: { $in: [...accounts.keys()] } }, by: { accountId: 'lines.accountId', valueId: q.type === 'DEPARTMENT' ? 'lines.departmentId' : 'lines.projectId' } })
+      : [];
+    const rows = sums.map((r) => {
+      const a = accounts.get(r.key.accountId as string)!;
+      return { account_id: a.id, code: a.code, name: a.name, type: a.type as 'REVENUE' | 'EXPENSE', value_id: (r.key.valueId as string | null) ?? null, debit: r.debit, credit: r.credit };
+    });
     const used = new Set(rows.map((r) => r.value_id).filter(Boolean));
     const shown = values.filter((v) => v.isActive || q.includeInactive || used.has(v.id));
     const report = profitByDimension(

@@ -7,7 +7,10 @@ import { OrgContext } from '../auth/decorators';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
+import { APPROVAL_POLICIES, APPROVAL_REQUESTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { currentApproval, policyFor } from './approval-rules';
+import { lockRow } from '../db/locks';
 
 interface Actor {
   id: string;
@@ -35,6 +38,7 @@ export class ApprovalsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly documents: DocumentsService,
+    private readonly moved: MovedTables,
   ) {}
 
   // ------------------------------------------------------------------ policies
@@ -62,7 +66,9 @@ export class ApprovalsService {
     await this.prisma.$transaction(async (tx) => {
       const before = await tx.approvalPolicy.findUnique({ where: { orgId_documentKind: { orgId: org.id, documentKind: kind } } });
       const data = { minAmount: min.toFixed(), requireDifferentApprover: input.requireDifferentApprover, isActive: input.isActive, updatedById: actor.id };
-      await tx.approvalPolicy.upsert({ where: { orgId_documentKind: { orgId: org.id, documentKind: kind } }, create: { orgId: org.id, documentKind: kind, ...data }, update: data });
+      const now = new Date();
+      if (before) await this.moved.update(tx, APPROVAL_POLICIES, org.id, before.id, { ...data, updatedAt: now });
+      else await this.moved.create(tx, APPROVAL_POLICIES, org.id, { documentKind: kind, ...data, createdAt: now, updatedAt: now });
       await this.audit.append(tx, {
         orgId: org.id,
         actorId: actor.id,
@@ -95,10 +101,10 @@ export class ApprovalsService {
 
   /** What the document page needs: does a policy apply, and where is the approval now. */
   async forDocument(org: OrgContext, actor: Actor, documentId: string) {
-    const doc = await this.prisma.document.findFirst({ where: { id: documentId, orgId: org.id }, select: { id: true, kind: true, status: true, total: true, createdById: true } });
+    const doc = await this.prisma.document.findFirst({ where: { id: documentId, orgId: org.id }, select: { id: true, kind: true, status: true, total: true, exchangeRate: true, createdById: true } });
     if (!doc) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
     this.require(org, readPermission(doc.kind), 'see this document');
-    const policy = doc.status === 'DRAFT' ? await policyFor(this.prisma, org.id, doc.kind, doc.total.toFixed()) : null;
+    const policy = doc.status === 'DRAFT' ? await policyFor(this.prisma, org.id, doc.kind, doc.total.times(doc.exchangeRate).toFixed()) : null;
     const approved = doc.status === 'DRAFT' ? await currentApproval(this.prisma, doc.id, doc.total.toFixed()) : null;
     const history = await this.prisma.approvalRequest.findMany({ where: { documentId: doc.id, orgId: org.id }, include: REQ_INCLUDE, orderBy: { requestedAt: 'desc' } });
     const scale = minorUnits(org.functionalCurrency);
@@ -114,14 +120,24 @@ export class ApprovalsService {
     return this.prisma.$transaction(async (tx) => {
       const doc = await this.lockDraft(tx, org, input.documentId);
       this.require(org, managePermission(doc.kind), 'submit this document for approval');
-      const policy = await policyFor(tx, org.id, doc.kind, doc.total.toFixed());
+      const policy = await policyFor(tx, org.id, doc.kind, doc.total.times(doc.exchangeRate).toFixed());
       if (!policy) throw new DomainError('NO_APPROVAL_NEEDED', 'No approval rule applies to this document; it can be posted directly');
       const open = await tx.approvalRequest.findFirst({ where: { documentId: doc.id, status: { in: ['PENDING', 'APPROVED'] } } });
       if (open) throw new DomainError('ALREADY_SUBMITTED', open.status === 'PENDING' ? 'This document is already waiting for approval' : 'This document is already approved', HttpStatus.CONFLICT);
-      const r = await tx.approvalRequest.create({
-        data: { orgId: org.id, documentId: doc.id, documentKind: doc.kind, contactName: doc.contact.name, total: doc.total.toFixed(), note: input.note || null, requestedById: actor.id },
-        include: REQ_INCLUDE,
+      const made = await this.moved.create<{ id: string }>(tx, APPROVAL_REQUESTS, org.id, {
+        documentId: doc.id,
+        documentKind: doc.kind,
+        contactName: doc.contact.name,
+        total: doc.total.toFixed(),
+        status: 'PENDING',
+        note: input.note || null,
+        requestedById: actor.id,
+        requestedAt: new Date(),
+        decidedById: null,
+        decidedAt: null,
+        decisionNote: null,
       });
+      const r = await tx.approvalRequest.findUniqueOrThrow({ where: { id: made.id }, include: REQ_INCLUDE });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'approval.requested', entityType: 'approval_request', entityId: r.id, data: { documentId: doc.id, kind: doc.kind, total: doc.total.toFixed() } });
       return (await this.serialize(org, actor, [r], tx))[0];
     });
@@ -157,7 +173,8 @@ export class ApprovalsService {
       const r = await this.lockRequest(tx, org, id);
       this.require(org, managePermission(r.documentKind), 'withdraw this request');
       if (r.status !== 'PENDING') throw new DomainError('NOT_PENDING', `This request is already ${r.status.toLowerCase()}`, HttpStatus.CONFLICT);
-      const out = await tx.approvalRequest.update({ where: { id }, data: { status: 'CANCELLED', decidedById: actor.id, decidedAt: new Date(), decisionNote: 'Withdrawn' }, include: REQ_INCLUDE });
+      await this.moved.update(tx, APPROVAL_REQUESTS, org.id, id, { status: 'CANCELLED', decidedById: actor.id, decidedAt: new Date(), decisionNote: 'Withdrawn' });
+      const out = await tx.approvalRequest.findUniqueOrThrow({ where: { id }, include: REQ_INCLUDE });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'approval.withdrawn', entityType: 'approval_request', entityId: id, data: { documentId: r.documentId } });
       return (await this.serialize(org, actor, [out], tx))[0];
     });
@@ -176,7 +193,8 @@ export class ApprovalsService {
           throw new DomainError('SAME_PERSON', 'Someone other than the person who prepared or submitted this document must approve it', HttpStatus.FORBIDDEN);
         }
       }
-      const out = await tx.approvalRequest.update({ where: { id }, data: { status, decidedById: actor.id, decidedAt: new Date(), decisionNote: note || null }, include: REQ_INCLUDE });
+      await this.moved.update(tx, APPROVAL_REQUESTS, org.id, id, { status, decidedById: actor.id, decidedAt: new Date(), decisionNote: note || null });
+      const out = await tx.approvalRequest.findUniqueOrThrow({ where: { id }, include: REQ_INCLUDE });
       await this.audit.append(tx, {
         orgId: org.id,
         actorId: actor.id,
@@ -190,16 +208,16 @@ export class ApprovalsService {
   }
 
   private async lockRequest(tx: Tx, org: OrgContext, id: string) {
-    await tx.$queryRaw`SELECT id FROM approval_requests WHERE id = ${id}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'approval_requests', id, org.id);
     const r = await tx.approvalRequest.findFirst({ where: { id, orgId: org.id }, include: REQ_INCLUDE });
     if (!r) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Approval request not found' });
     this.require(org, readPermission(r.documentKind), 'see this request');
-    if (r.documentId) await tx.$queryRaw`SELECT id FROM documents WHERE id = ${r.documentId}::uuid FOR UPDATE`;
+    if (r.documentId) await lockRow(tx, 'documents', r.documentId);
     return r;
   }
 
   private async lockDraft(tx: Tx, org: OrgContext, documentId: string) {
-    await tx.$queryRaw`SELECT id FROM documents WHERE id = ${documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+    await lockRow(tx, 'documents', documentId, org.id);
     const doc = await tx.document.findFirst({ where: { id: documentId, orgId: org.id }, include: { contact: { select: { name: true } } } });
     if (!doc) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Document not found' });
     if (doc.status !== 'DRAFT') throw new DomainError('NOT_DRAFT', 'Only drafts can be submitted for approval', HttpStatus.CONFLICT);

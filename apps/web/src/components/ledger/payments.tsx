@@ -9,7 +9,7 @@ import { AttachmentsPanel } from '@/components/attachments';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
-import { date, today } from '@/lib/format';
+import { date, money, today } from '@/lib/format';
 import { kindLabel, type LedgerConfig } from '@/lib/ledgers';
 import { useOrg } from '@/lib/org';
 import { can, type DocumentSummary, type Payment } from '@/lib/types';
@@ -61,8 +61,8 @@ export function PaymentsList({ l }: { l: LedgerConfig }) {
                     <Td>{p.contact.name}</Td>
                     <Td className="text-fg-muted">{p.bankAccount.name}</Td>
                     <Td>{p.status === 'VOID' ? <Badge tone="negative">Void</Badge> : p.unallocated === '0.00' ? <Badge tone="positive">Fully applied</Badge> : <Badge tone="violet">Credit available</Badge>}</Td>
-                    <Td numeric><Money value={p.amount} currency={c} /></Td>
-                    <Td numeric>{p.status === 'POSTED' && p.unallocated !== '0.00' ? <Money value={p.unallocated} currency={c} /> : <span className="text-fg-faint">—</span>}</Td>
+                    <Td numeric><Money value={p.amount} currency={p.currency} /></Td>
+                    <Td numeric>{p.status === 'POSTED' && p.unallocated !== '0.00' ? <Money value={p.unallocated} currency={p.currency} /> : <span className="text-fg-faint">—</span>}</Td>
                   </Tr>
                 );
               })}
@@ -135,7 +135,11 @@ export function PaymentDetail({ l }: { l: LedgerConfig }) {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-fg-muted">Date</p><p className="mt-2 text-sm">{date(p.date)}</p></Card>
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-fg-muted">{l.ledger === 'SALES' ? 'Deposited to' : 'Paid from'}</p><p className="mt-2 text-sm">{p.bankAccount.code} · {p.bankAccount.name}</p></Card>
-        <Card className="p-4"><p className="text-xs uppercase tracking-wide text-fg-muted">Amount</p><p className="mt-2 text-sm"><Money value={p.amount} currency={c} /></p></Card>
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide text-fg-muted">Amount</p>
+          <p className="mt-2 text-sm"><Money value={p.amount} currency={c} /></p>
+          {c !== p.functionalCurrency ? <p className="mt-1 text-xs text-fg-muted">= <Money value={p.functionalAmount} currency={p.functionalCurrency} /> at {p.exchangeRate}{p.fxGain !== '0.00' ? <>; exchange {Number(p.fxGain) > 0 ? 'gain' : 'loss'} {money(p.fxGain.replace('-', ''), p.functionalCurrency)}</> : null}</p> : null}
+        </Card>
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-fg-muted">Not applied</p><p className="mt-2 text-sm"><Money value={p.unallocated} currency={c} /></p></Card>
       </div>
       <p className="mt-4 text-sm text-fg-muted">
@@ -149,13 +153,16 @@ export function PaymentDetail({ l }: { l: LedgerConfig }) {
           <p className="px-5 py-4 text-sm text-fg-muted">Not applied to anything yet.</p>
         ) : (
           <Table>
-            <thead><tr><Th>Date</Th><Th>{l.charge.label}</Th><Th numeric>Amount</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
+            <thead><tr><Th>Date</Th><Th>{l.charge.label}</Th><Th numeric>Amount</Th>{c !== p.functionalCurrency ? <Th numeric>Exchange difference</Th> : null}<Th><span className="sr-only">Actions</span></Th></tr></thead>
             <tbody>
               {p.allocations.map((a) => (
                 <Tr key={a.id}>
                   <Td>{date(a.date)}</Td>
                   <Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/${l.docsPath}/${a.target.id}`}>{kindLabel(l, a.target.kind)} {a.target.number}</Link></Td>
                   <Td numeric><Money value={a.amount} currency={c} /></Td>
+                  {c !== p.functionalCurrency ? (
+                    <Td numeric>{a.fxGain ? <Link className="hover:underline" href={`/orgs/${orgId}/journals/${a.fxJournalEntryId}`}><span className={Number(a.fxGain) > 0 ? 'text-positive' : 'text-negative'}>{Number(a.fxGain) > 0 ? 'Gain ' : 'Loss '}{money(a.fxGain.replace('-', ''), p.functionalCurrency)}</span></Link> : <span className="text-fg-faint">None</span>}</Td>
+                  ) : null}
                   <Td className="text-right">{canManage ? <Button size="sm" variant="ghost" onClick={() => confirm('Remove this application?') && unallocate.mutate(a.id)}>Remove</Button> : null}</Td>
                 </Tr>
               ))}
@@ -173,7 +180,7 @@ export function PaymentDetail({ l }: { l: LedgerConfig }) {
               <Table>
                 <thead><tr><Th>Number</Th><Th>Due</Th><Th numeric>Still due</Th><Th numeric className="w-40">Apply</Th></tr></thead>
                 <tbody>
-                  {(open.data?.items ?? []).map((d) => (
+                  {(open.data?.items ?? []).filter((d) => d.currency === c).map((d) => (
                     <Tr key={d.id}>
                       <Td className="num">{d.number}</Td>
                       <Td>{date(d.dueDate)}</Td>

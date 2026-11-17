@@ -5,25 +5,21 @@ import {
   buildAccountLedger,
   buildBalanceSheet,
   buildIncomeStatement,
+  buildStatutoryStatements,
   buildTrialBalance,
   D,
+  defaultStatutoryFormat,
+  STATUTORY_FORMATS,
+  type StatutoryFormatId,
+  type StatutoryStatement,
   Dec,
   minorUnits,
 } from '@talk2tax/accounting-engine';
-import { Prisma } from '@talk2tax/database';
 import { fromDbDate, toDbDate } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { GraphService } from '../graph/graph.service';
-
-interface MovementRow {
-  id: string;
-  code: string;
-  name: string;
-  type: AccountType;
-  subtype: string | null;
-  debit: Prisma.Decimal;
-  credit: Prisma.Decimal;
-}
 
 /** All reports read only POSTED entries; drafts never affect balances. */
 @Injectable()
@@ -31,37 +27,33 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly graph: GraphService,
+    private readonly store: DocumentStoreService,
   ) {}
 
-  private async movements(orgId: string, from: string | null, to: string, dims: { departmentId?: string | null; projectId?: string | null } = {}): Promise<AccountMovement[]> {
+  /**
+   * Movements by account. `profitAndLoss` leaves out closing entries (year-end closes to retained earnings), which
+   * are not part of any period's profit; balances to a date keep them.
+   */
+  private async movements(orgId: string, from: string | null, to: string, dims: { departmentId?: string | null; projectId?: string | null } = {}, profitAndLoss = false): Promise<AccountMovement[]> {
     const fromDate = from ? toDbDate(from) : null;
     const dept = dims.departmentId ?? null;
     const project = dims.projectId ?? null;
-    const rows = await this.prisma.$queryRaw<MovementRow[]>`
-      SELECT a.id, a.code, a.name, a.type::text AS type, a.subtype,
-             COALESCE(m.debit, 0) AS debit, COALESCE(m.credit, 0) AS credit
-      FROM accounts a
-      LEFT JOIN (
-        SELECT l.account_id, SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-        FROM journal_lines l
-        JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-        WHERE l.org_id = ${orgId}::uuid
-          AND e.status = 'POSTED'
-          AND e.date <= ${toDbDate(to)}::date
-          AND (${fromDate}::date IS NULL OR e.date >= ${fromDate}::date)
-          AND (${dept}::uuid IS NULL OR l.department_id = ${dept}::uuid)
-          AND (${project}::uuid IS NULL OR l.project_id = ${project}::uuid)
-        GROUP BY l.account_id
-      ) m ON m.account_id = a.id
-      WHERE a.org_id = ${orgId}::uuid`;
+    const sums = await lineSums(this.store, orgId, {
+      entry: postedBetween(fromDate, toDbDate(to), { excludeClosing: profitAndLoss }),
+      line: { ...(dept ? { departmentId: dept } : {}), ...(project ? { projectId: project } : {}) },
+      by: { accountId: 'lines.accountId' },
+    });
+    const byAccount = new Map(sums.map((x) => [x.key.accountId as string, x]));
+    const accounts = await this.prisma.account.findMany({ where: { orgId }, select: { id: true, code: true, name: true, type: true, subtype: true } });
+    const rows = accounts.map((a) => ({ ...a, debit: byAccount.get(a.id)?.debit ?? new D(0), credit: byAccount.get(a.id)?.credit ?? new D(0) }));
     return rows.map((r) => ({
       accountId: r.id,
       code: r.code,
       name: r.name,
       type: r.type,
       subtype: r.subtype,
-      debit: new D(r.debit.toFixed()),
-      credit: new D(r.credit.toFixed()),
+      debit: r.debit,
+      credit: r.credit,
     }));
   }
 
@@ -98,7 +90,7 @@ export class ReportsService {
   async incomeStatement(orgId: string, q: { from: string; to: string; departmentId?: string; projectId?: string }) {
     const ccy = await this.currency(orgId);
     const f = (d: Dec) => d.toFixed(minorUnits(ccy));
-    const is = buildIncomeStatement(await this.movements(orgId, q.from, q.to, q));
+    const is = buildIncomeStatement(await this.movements(orgId, q.from, q.to, q, true));
     const line = (l: { accountId: string; code: string; name: string; subtype?: string | null; amount: Dec }) => ({ ...l, subtype: l.subtype ?? null, amount: f(l.amount) });
     return {
       currency: ccy,
@@ -128,6 +120,43 @@ export class ReportsService {
       totalAssets: f(bs.totalAssets),
       totalLiabilities: f(bs.totalLiabilities),
       totalEquity: f(bs.totalEquity),
+    };
+  }
+
+  async statutoryFormats(orgId: string) {
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { countryCode: true } });
+    return {
+      default: defaultStatutoryFormat(org.countryCode),
+      formats: STATUTORY_FORMATS.map((f) => ({ id: f.id, name: f.name, countries: f.countries, basis: f.basis })),
+    };
+  }
+
+  async statutory(orgId: string, q: { from: string; to: string; format?: StatutoryFormatId; comparative: boolean }) {
+    const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true, legalName: true, countryCode: true, functionalCurrency: true } });
+    const ccy = org.functionalCurrency;
+    const f = (d: Dec | null) => (d === null ? null : d.toFixed(minorUnits(ccy)));
+    const formatId = q.format ?? defaultStatutoryFormat(org.countryCode);
+    const run = async (from: string, to: string) => buildStatutoryStatements(formatId, await this.movements(orgId, null, to), await this.movements(orgId, from, to, {}, true));
+    const now = await run(q.from, q.to);
+    const prevRange = { from: yearBefore(q.from), to: yearBefore(q.to) };
+    const prev = q.comparative ? await run(prevRange.from, prevRange.to) : null;
+    const merge = (cur: StatutoryStatement, before: StatutoryStatement | null) =>
+      cur.rows.map((r) => {
+        const p = before?.rows.find((x) => x.key === r.key);
+        return { key: r.key, label: r.label, kind: r.kind, level: r.level, note: r.note, amount: f(r.amount), previous: p ? f(p.amount) : null, accounts: r.accounts.map((a) => ({ accountId: a.accountId, code: a.code, name: a.name, amount: f(a.amount) })) };
+      });
+    const fm = now.format;
+    return {
+      organisation: { name: org.name, legalName: org.legalName, countryCode: org.countryCode },
+      currency: ccy,
+      format: { id: fm.id, name: fm.name, basis: fm.basis, balanceSheetTitle: fm.balanceSheetTitle, profitAndLossTitle: fm.profitAndLossTitle, sources: fm.sources, notIncluded: fm.notIncluded, isCountryDefault: formatId === defaultStatutoryFormat(org.countryCode) },
+      from: q.from,
+      to: q.to,
+      previous: prev ? prevRange : null,
+      balanceSheet: merge(now.balanceSheet, prev?.balanceSheet ?? null),
+      profitAndLoss: merge(now.profitAndLoss, prev?.profitAndLoss ?? null),
+      checks: { balanced: now.balanced && (prev?.balanced ?? true), profitAgrees: now.profitAgrees && (prev?.profitAgrees ?? true), netProfit: f(now.netProfit) },
+      unclassified: now.unclassified,
     };
   }
 
@@ -187,25 +216,19 @@ export class ReportsService {
     if (!period) throw new NotFoundException({ error: 'NO_FISCAL_PERIOD', message: `No fiscal period covers ${q.asOf}` });
     const periods = await this.prisma.fiscalPeriod.findMany({ where: { orgId, fiscalYear: period.fiscalYear }, orderBy: { periodNo: 'asc' } });
 
-    const rows = await this.prisma.$queryRaw<{ period_id: string | null; bucket: string; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
-      SELECT CASE WHEN e.date >= ${periods[0].startDate}::date THEN e.period_id ELSE NULL END AS period_id,
-             CASE
-               WHEN a.type = 'REVENUE' THEN 'REVENUE'
-               WHEN a.type = 'EXPENSE' THEN 'EXPENSE'
-               WHEN a.subtype IN ('CASH', 'BANK') THEN 'CASH'
-               WHEN a.subtype = 'ACCOUNTS_RECEIVABLE' THEN 'AR'
-               WHEN a.subtype = 'ACCOUNTS_PAYABLE' THEN 'AP'
-               ELSE 'OTHER'
-             END AS bucket,
-             SUM(l.functional_debit) AS debit, SUM(l.functional_credit) AS credit
-      FROM journal_lines l
-      JOIN journal_entries e ON e.id = l.entry_id AND e.org_id = l.org_id
-      JOIN accounts a ON a.id = l.account_id AND a.org_id = l.org_id
-      WHERE l.org_id = ${orgId}::uuid AND e.status = 'POSTED' AND e.date <= ${asOf}::date
-      GROUP BY 1, 2`;
+    const sums = await lineSums(this.store, orgId, { entry: postedBetween(null, asOf, { excludeClosing: true }), by: { periodId: 'periodId', date: 'date', accountId: 'lines.accountId' } });
+    const kinds = new Map((await this.prisma.account.findMany({ where: { orgId }, select: { id: true, type: true, subtype: true } })).map((a) => [a.id, a]));
+    const bucketOf = (a: { type: string; subtype: string | null } | undefined) =>
+      !a ? 'OTHER' : a.type === 'REVENUE' ? 'REVENUE' : a.type === 'EXPENSE' ? 'EXPENSE' : a.subtype === 'CASH' || a.subtype === 'BANK' ? 'CASH' : a.subtype === 'ACCOUNTS_RECEIVABLE' ? 'AR' : a.subtype === 'ACCOUNTS_PAYABLE' ? 'AP' : 'OTHER';
+    const rows = sums.map((x) => ({
+      period_id: (x.key.date as Date) >= periods[0].startDate ? (x.key.periodId as string) : null,
+      bucket: bucketOf(kinds.get(x.key.accountId as string)),
+      debit: x.debit,
+      credit: x.credit,
+    }));
 
     const zero = () => new D(0);
-    const net = (r: { debit: Prisma.Decimal; credit: Prisma.Decimal }) => new D(r.debit.toFixed()).minus(r.credit.toFixed());
+    const net = (r: { debit: Dec; credit: Dec }) => r.debit.minus(r.credit);
     let cash = zero(), ar = zero(), ap = zero();
     let openingCash = zero();
     const perPeriod = new Map<string, { revenue: Dec; expenses: Dec; cash: Dec }>();
@@ -258,4 +281,11 @@ export class ReportsService {
       draftJournals: draftCount,
     };
   }
+}
+
+/** The same day a year earlier (29 February becomes 28 February). */
+function yearBefore(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const last = new Date(Date.UTC(y - 1, m, 0)).getUTCDate();
+  return `${y - 1}-${String(m).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
 }

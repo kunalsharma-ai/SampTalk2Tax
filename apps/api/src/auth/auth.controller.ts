@@ -1,8 +1,13 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
+import { DISPLAY_DATE_FORMAT_CODES, isTimeZone, LANGUAGE_CODES, NUMBER_FORMAT_CODES } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
-import { PrismaService } from '../common/prisma.service';
+import { DocumentStoreService } from '../common/document-store.service';
+import { users } from '../db/collections/identity';
+import { memberships as membershipsCollection, organizations } from '../db/collections/tenancy';
+import { runAsSystem } from '../common/tenant-context';
+import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { openApi, ZodPipe } from '../common/zod';
 import { AuthService } from './auth.service';
 import { AuthUser, CurrentSession, CurrentUser, Public } from './decorators';
@@ -16,6 +21,14 @@ const RegisterBody = z.object({
 });
 const LoginBody = z.object({ email: z.email().max(254), password: z.string().min(1).max(256) });
 const RefreshBody = z.object({ refreshToken: z.string().min(1).max(200) });
+const PreferencesBody = z
+  .object({
+    language: z.enum(LANGUAGE_CODES),
+    numberFormat: z.enum(NUMBER_FORMAT_CODES),
+    dateFormat: z.enum(DISPLAY_DATE_FORMAT_CODES),
+    timeZone: z.string().trim().max(64).refine(isTimeZone, 'Choose a time zone such as Asia/Kolkata or Europe/London').nullable(),
+  })
+  .strict();
 const PasswordBody = z.object({ currentPassword: z.string().min(1).max(256), newPassword: z.string().min(1).max(256) });
 
 function meta(req: Request): ClientMeta {
@@ -29,7 +42,8 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly sessions: SessionsService,
-    private readonly prisma: PrismaService,
+    private readonly store: DocumentStoreService,
+    private readonly mirror: PostgresMirrorService,
   ) {}
 
   @Public()
@@ -72,12 +86,32 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   async me(@CurrentUser() user: AuthUser) {
-    const memberships = await this.prisma.membership.findMany({
-      where: { userId: user.id },
-      include: { org: { select: { id: true, name: true, isDemo: true, functionalCurrency: true } } },
-      orderBy: { createdAt: 'asc' },
-    });
-    return { user, organizations: memberships.map((m) => ({ ...m.org, role: m.role })) };
+    const mine = await runAsSystem(() => this.store.collection(membershipsCollection).find({ userId: user.id }, { sort: { createdAt: 1 } }));
+    const orgs = new Map((await this.store.collection(organizations).find({ id: { $in: mine.map((m) => m.orgId) } })).map((o) => [o.id, o]));
+    const memberships = mine
+      .filter((m) => orgs.has(m.orgId))
+      .map((m) => {
+        const o = orgs.get(m.orgId)!;
+        return { role: m.role, org: { id: o.id, name: o.name, isDemo: o.isDemo, functionalCurrency: o.functionalCurrency, timeZone: o.timeZone } };
+      });
+    const preferences = await this.preferences(user.id);
+    return { user, preferences, organizations: memberships.map((m) => ({ ...m.org, role: m.role })) };
+  }
+
+  private async preferences(userId: string) {
+    const u = await this.store.collection(users).findById(userId);
+    if (!u) throw new Error(`User ${userId} not found`);
+    return { language: u.language, numberFormat: u.numberFormat, dateFormat: u.dateFormat, timeZone: u.timeZone };
+  }
+
+  /** My interface language and how numbers, dates and times are shown to me. Time zone null = each organisation's own. */
+  @Put('me/preferences')
+  @ApiBearerAuth()
+  @ApiBody({ schema: openApi(PreferencesBody) })
+  async savePreferences(@CurrentUser() user: AuthUser, @Body(new ZodPipe(PreferencesBody)) body: z.infer<typeof PreferencesBody>) {
+    await this.store.collection(users).updateOne({ id: user.id }, { $set: { ...body, updatedAt: new Date() } });
+    await this.mirror.users([user.id]);
+    return this.preferences(user.id);
   }
 
   @Get('sessions')
@@ -105,7 +139,7 @@ export class AuthController {
   @ApiBearerAuth()
   @HttpCode(200)
   async revokeOthers(@CurrentUser() user: AuthUser, @CurrentSession() sid: string) {
-    return { signedOut: await this.sessions.revokeOthers(null, user.id, sid, 'signed_out_elsewhere') };
+    return { signedOut: await this.sessions.revokeOthers(user.id, sid, 'signed_out_elsewhere') };
   }
 
   @Put('password')

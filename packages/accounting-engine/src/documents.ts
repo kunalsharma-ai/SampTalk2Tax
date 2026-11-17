@@ -50,6 +50,14 @@ export function documentNumber(kind: DocumentKind | PaymentKind, n: number): str
   return `${DOCUMENT_PREFIX[kind]}-${String(n).padStart(6, '0')}`;
 }
 
+/**
+ * Debit notes (AR-017) are invoices that raise the value of an earlier posted invoice to the same
+ * customer. They are owed, aged and paid like invoices but numbered in their own series.
+ */
+export function debitNoteNumber(n: number): string {
+  return `DN-${String(n).padStart(6, '0')}`;
+}
+
 export class DocumentValidationError extends Error {
   constructor(public readonly issues: string[]) {
     super(issues.join('; '));
@@ -70,6 +78,8 @@ export interface DocumentLineInput {
   /** Financial dimensions, carried to the line's journal line. */
   departmentId?: string | null;
   projectId?: string | null;
+  /** Bills: the purchase order line this line bills (matched against the order and its goods receipts). */
+  purchaseOrderLineId?: string | null;
 }
 
 export interface TaxRateInfo {
@@ -120,6 +130,7 @@ export interface ComputedDocumentLine {
   taxComponents: TaxComponent[];
   departmentId: string | null;
   projectId: string | null;
+  purchaseOrderLineId: string | null;
 }
 
 export interface ComputedDocument {
@@ -214,6 +225,7 @@ export function computeDocument(lines: DocumentLineInput[], currency: string, ta
       taxComponents,
       departmentId: l.departmentId ?? null,
       projectId: l.projectId ?? null,
+      purchaseOrderLineId: l.purchaseOrderLineId ?? null,
     });
   });
   if (issues.length) throw new DocumentValidationError(issues);

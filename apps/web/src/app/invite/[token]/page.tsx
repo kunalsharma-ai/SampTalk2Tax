@@ -7,6 +7,7 @@ import { Logo } from '@/components/brand';
 import { api, signOut } from '@/lib/api';
 import { date } from '@/lib/format';
 import type { InvitationPreview } from '@/lib/types';
+import { PageHelp } from '@/components/help';
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
@@ -23,7 +24,7 @@ export default function InvitePage() {
   const inv = q.data;
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
-      <div className="mb-8"><Logo /></div>
+      <div className="mb-8"><Logo size="lg" animated /></div>
       <Card className="p-6">
         {q.isLoading ? <p className="text-sm text-fg-muted">Loading the invitation…</p> : null}
         {q.error ? <Alert title="Invitation not found">{q.error.message}</Alert> : null}
@@ -31,7 +32,10 @@ export default function InvitePage() {
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-sm text-fg-muted">{inv.invitedBy ? `${inv.invitedBy} invited you to join` : 'You are invited to join'}</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">{inv.organization.name}</h1>
+              <div className="mt-1 flex items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight">{inv.organization.name}</h1>
+                <PageHelp title="Invitation" />
+              </div>
               <p className="mt-2 text-sm">
                 as <Badge tone="violet">{inv.role.toLowerCase()}</Badge> {inv.organization.isDemo ? <Badge tone="warning">Synthetic demo data</Badge> : null}
               </p>

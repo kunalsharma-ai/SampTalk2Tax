@@ -7,3 +7,10 @@ onlyBuiltDependencies:
   - "prisma"
   - "@swc/core"
   - "@nestjs/core"
+# Security fixes in transitive dependencies (pnpm audit --prod, checked in CI), until the packages
+# that bring them in update. Each pins a patched release at least two weeks old.
+overrides:
+  "multer@<2.5.0": "2.5.0"
+  "postcss@<8.5.23": "8.5.23"
+  "js-yaml@>=5.0.0 <5.4.1": "5.5.0"
+  "deepmerge-ts@<8.0.0": "8.0.2"

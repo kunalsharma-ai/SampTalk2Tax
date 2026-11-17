@@ -35,7 +35,7 @@ A scenario holds up to 50 changes of 15 kinds. Months are counted from 1 (the fi
 | Supplier costs | % | Cost of sales per unit of volume |
 | New loan | amount, interest % a year, term | Received in its month, repaid by EMI from the next; interest through profit, principal through cash |
 | Investment | amount, useful life | Paid in its month, depreciated straight-line from the next |
-| Expansion | one-off cost, monthly cost, revenue at full speed, months to full speed | Revenue ramps evenly to full speed |
+| Expansion | one-off cost, monthly cost, revenue at full speed, months to full speed | Revenue ramps evenly to full speed. An optional cost of sales share (%) books cost of sales on that revenue; the [business impact engine](BUSINESS_IMPACT.md) sets it to the business's own ratio |
 | Exchange rate | share of revenue in foreign currency, rate change % | That share of revenue is worth more or less |
 | Cost inflation | % a year | All costs compound monthly |
 | Market downturn | revenue drop %, extra days to pay, from month, for how many months | Revenue drops and customers pay later, then recover |

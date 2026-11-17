@@ -13,6 +13,7 @@ import { AppConfig, CONFIG } from '../config';
 import { CopilotMessageParam, CopilotModel, CopilotRequest, CopilotResponse, FALLBACK_BETA } from './copilot.model';
 import { CopilotActionsService } from './copilot.actions';
 import { CopilotSource, CopilotTools, TOOLSET_VERSION, ToolContext } from './copilot.tools';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 type Member = { orgId: string; role: RoleName };
@@ -199,7 +200,7 @@ export class CopilotService {
         if (!conv) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Conversation not found' });
         if (this.isClosed(conv, ai.modelName)) throw new DomainError('CONVERSATION_CLOSED', 'This conversation was started with another AI model or an earlier version of the copilot. Start a new conversation to ask more.', HttpStatus.CONFLICT);
         // One answer at a time per conversation: lock it, then look for one still being worked on.
-        await tx.$queryRaw`SELECT id FROM copilot_conversations WHERE id = ${conv.id}::uuid FOR UPDATE`;
+        await lockRow(tx, 'copilot_conversations', conv.id);
         const pending = await tx.copilotMessage.findFirst({ where: { orgId, conversationId: conv.id, status: 'PENDING' } });
         if (pending) {
           // An answer left pending by a server restart can never finish: close it so the conversation can go on.

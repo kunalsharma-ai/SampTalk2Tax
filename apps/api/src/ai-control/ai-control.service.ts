@@ -8,6 +8,7 @@ import { PrismaService } from '../common/prisma.service';
 import { AppConfig, CONFIG } from '../config';
 import { CopilotModel } from '../copilot/copilot.model';
 import { todayIst } from '../tasks/tasks.service';
+import { UsageService } from '../usage/usage.service';
 
 type Member = { orgId: string; role: RoleName };
 type Actor = { id: string };
@@ -37,7 +38,7 @@ export const AGENT_KEYS = Object.keys(AGENTS) as AiAgent[];
 /** How far back acceptance rates look. */
 export const ACCURACY_DAYS = 90;
 
-export type AgentBlock = { code: 'AI_NOT_CONFIGURED' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED'; message: string; status: HttpStatus };
+export type AgentBlock = { code: 'AI_NOT_CONFIGURED' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED' | 'AI_CREDITS_USED_UP'; message: string; status: HttpStatus };
 
 /** The start of the current calendar month in India time, as an instant. */
 export function monthStartIst(now: Date = new Date()): { month: string; since: Date } {
@@ -52,6 +53,7 @@ export class AiControlService {
     private readonly audit: AuditService,
     @Inject(CONFIG) private readonly config: AppConfig,
     private readonly integrations: IntegrationsService,
+    private readonly metering: UsageService,
   ) {}
 
   // ------------------------------------------------------------------ the guard every agent goes through
@@ -109,7 +111,8 @@ export class AiControlService {
         return { code: 'AI_BUDGET_REACHED', message: `The ${AGENTS[agent].name.toLowerCase()} has used its ${a.monthlyTokenLimit.toLocaleString('en-IN')} tokens for this month. An owner or admin can raise the budget in the AI control center.`, status: HttpStatus.TOO_MANY_REQUESTS };
       }
     }
-    return null;
+    // The plan's AI requests for the month, shared by every agent.
+    return this.metering.aiBlock(orgId);
   }
 
   async assert(orgId: string, agent: AiAgent) {

@@ -19,6 +19,7 @@ const CreateOrgBody = z.object({
 const AddMemberBody = z.object({ email: z.email(), role: z.enum(ROLES) });
 const InviteBody = z.object({ email: z.email().max(254), role: z.enum(ROLES) });
 const RoleBody = z.object({ role: z.enum(ROLES) });
+const TimeZoneBody = z.object({ timeZone: z.string().trim().min(1).max(64) }).strict();
 
 @ApiTags('organizations')
 @ApiBearerAuth()
@@ -43,8 +44,17 @@ export class OrganizationsController {
 
   @Get(':orgId')
   @RequirePermission('org.read')
-  get(@Param('orgId') orgId: string) {
-    return this.orgs.get(orgId);
+  async get(@Param('orgId') orgId: string, @CurrentOrg() org: OrgContext) {
+    // Support staff reading under a grant are told so, with when their access ends.
+    return { ...(await this.orgs.get(orgId)), role: org.role, viaSupport: org.viaSupport ? { expiresAt: org.viaSupport.expiresAt } : null };
+  }
+
+  /** The time zone moments are shown in (display only; business dates follow the country module). */
+  @Put(':orgId/time-zone')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(TimeZoneBody) })
+  setTimeZone(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser, @Body(new ZodPipe(TimeZoneBody)) body: z.infer<typeof TimeZoneBody>) {
+    return this.orgs.setTimeZone(orgId, user.id, body.timeZone);
   }
 
   @Get(':orgId/members')

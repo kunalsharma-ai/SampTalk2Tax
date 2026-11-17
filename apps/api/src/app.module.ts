@@ -2,6 +2,7 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AccountsController } from './accounts/accounts.controller';
 import { AccountsService } from './accounts/accounts.service';
+import { ChartService } from './accounts/chart.service';
 import { ApprovalsController } from './approvals/approvals.controller';
 import { ApprovalsService } from './approvals/approvals.service';
 import { AttachmentsController } from './attachments/attachments.controller';
@@ -20,18 +21,50 @@ import { BankingService } from './banking/banking.service';
 import { ExpensesController } from './expenses/expenses.controller';
 import { ExpensesService } from './expenses/expenses.service';
 import { ErrorFilter } from './common/errors';
+import { ErrorsService } from './operations/errors.service';
+import { FlagsService } from './operations/flags.service';
+import { HeartbeatsService } from './operations/heartbeats.service';
+import { MaintenanceService } from './operations/maintenance.service';
+import { MetricsService } from './operations/metrics.service';
+import { OperationsController, OrgFlagsController, StatusController } from './operations/operations.controller';
+import { SystemService } from './operations/system.service';
 import { ContactsController } from './contacts/contacts.controller';
 import { ContactsService } from './contacts/contacts.service';
 import { DocumentsService } from './ledgers/documents.service';
 import { PurchasesController, SalesController } from './ledgers/ledger.controllers';
 import { SubledgerService } from './ledgers/subledger.service';
 import { TaxRatesController } from './tax-rates/tax-rates.controller';
+import { FxController } from './fx/fx.controller';
+import { FxService } from './fx/fx.service';
+import { CountryModuleController, CountryModulesCatalogueController } from './country-modules/country-modules.controller';
+import { CountryModulesService } from './country-modules/country-modules.service';
 import { TaxRatesService } from './tax-rates/tax-rates.service';
 import { prismaProvider } from './common/prisma.service';
+import { documentStoreProvider } from './common/document-store.service';
+import { PostgresMirrorService } from './db/postgres-mirror.service';
+import { MovedTables } from './db/moved-table';
+import { SeedSyncService } from './db/seed-sync.service';
 import { AppConfig, CONFIG } from './config';
 import { GstController } from './gst/gst.controller';
 import { GstService } from './gst/gst.service';
 import { HealthController } from './health/health.controller';
+import { RegionsController } from './regions/regions.controller';
+import { AdminController, AnnouncementsController } from './admin/admin.controller';
+import { AdminService } from './admin/admin.service';
+import { PlatformSupportController, SupportController } from './support/support.controller';
+import { SupportService } from './support/support.service';
+import { PlatformUsageController, UsageController } from './usage/usage.controller';
+import { UsageService } from './usage/usage.service';
+import { SupportAccessService } from './support/support-access.service';
+import { BillingController } from './billing/billing.controller';
+import { BillingService } from './billing/billing.service';
+import { PlatformBillingController } from './billing/platform-billing.controller';
+import { PlatformBillingService } from './billing/platform-billing.service';
+import { PaymentSettingsService } from './billing/payments/payment-settings.service';
+import { RenewalsRunnerService } from './billing/payments/renewals-runner.service';
+import { PaymentWebhooksController, PlatformPaymentsController, SubscriptionPaymentsController } from './billing/payments/subscription-payments.controller';
+import { SubscriptionPaymentsService } from './billing/payments/subscription-payments.service';
+import { RegionsService } from './regions/regions.service';
 import { JournalsController } from './journals/journals.controller';
 import { JournalsService } from './journals/journals.service';
 import { InvitationLinksController, OrganizationsController } from './organizations/organizations.controller';
@@ -50,6 +83,7 @@ import { CashFlowService } from './cash-flow/cash-flow.service';
 import { KpisController } from './kpis/kpis.controller';
 import { KpisService } from './kpis/kpis.service';
 import { AlertsController } from './alerts/alerts.controller';
+import { AlertsRunnerService } from './alerts/alerts-runner.service';
 import { AlertsService } from './alerts/alerts.service';
 import { BankAiController } from './bank-ai/bank-ai.controller';
 import { BankAiService } from './bank-ai/bank-ai.service';
@@ -63,6 +97,47 @@ import { DeferralsService } from './deferrals/deferrals.service';
 import { InvoicePrintController, InvoiceTemplatesController, SignaturesController } from './invoice-templates/invoice-templates.controller';
 import { InvoiceTemplatesService } from './invoice-templates/invoice-templates.service';
 import { LoansController } from './loans/loans.controller';
+import { CrmController } from './crm/crm.controller';
+import { CustomerInsightsController } from './crm/customer-insights.controller';
+import { CustomerInsightsService } from './crm/customer-insights.service';
+import { RevenueForecastController } from './crm/revenue-forecast.controller';
+import { RevenueForecastService } from './crm/revenue-forecast.service';
+import { ApiKeyGuard } from './crm-api/api-key.guard';
+import { ApiKeysService } from './crm-api/api-keys.service';
+import { CrmApiController } from './crm-api/crm-api.controller';
+import { CrmConnectionController } from './crm-api/crm-connection.controller';
+import { CrmWebhooksRunnerService } from './crm-api/crm-webhooks-runner.service';
+import { CrmWebhooksService } from './crm-api/crm-webhooks.service';
+import { ContractsController } from './sales-orders/contracts.controller';
+import { UsageBillingController } from './sales-orders/usage-billing.controller';
+import { CustomerPortalController, CustomerPortalLinksController } from './customer-portal/customer-portal.controller';
+import { CustomerPortalService } from './customer-portal/customer-portal.service';
+import { VendorInvoicesController, VendorPortalController, VendorPortalLinksController } from './vendor-portal/vendor-portal.controller';
+import { VendorPortalService } from './vendor-portal/vendor-portal.service';
+import { SupplierTaxController } from './supplier-tax/supplier-tax.controller';
+import { SupplierTaxService } from './supplier-tax/supplier-tax.service';
+import { RevenueRecognitionController } from './revenue-recognition/revenue-recognition.controller';
+import { RevenueRecognitionService } from './revenue-recognition/revenue-recognition.service';
+import { UsageBillingService } from './sales-orders/usage-billing.service';
+import { ContractsRunnerService } from './sales-orders/contracts-runner.service';
+import { BadDebtsController } from './bad-debts/bad-debts.controller';
+import { BadDebtsService } from './bad-debts/bad-debts.service';
+import { YearEndController } from './year-end/year-end.controller';
+import { YearEndService } from './year-end/year-end.service';
+import { PaymentBatchesController, VendorBankDetailsController } from './payment-batches/payment-batches.controller';
+import { PaymentBatchesService } from './payment-batches/payment-batches.service';
+import { PaymentScheduleController } from './payment-batches/payment-schedule.controller';
+import { DisputesController } from './disputes/disputes.controller';
+import { DisputesService } from './disputes/disputes.service';
+import { PaymentScheduleService } from './payment-batches/payment-schedule.service';
+import { JournalTemplatesController } from './journal-templates/journal-templates.controller';
+import { JournalTemplatesRunnerService } from './journal-templates/journal-templates-runner.service';
+import { JournalTemplatesService } from './journal-templates/journal-templates.service';
+import { RecurringBillsController } from './recurring-bills/recurring-bills.controller';
+import { RecurringBillsRunnerService } from './recurring-bills/recurring-bills-runner.service';
+import { RecurringBillsService } from './recurring-bills/recurring-bills.service';
+import { ContractsService } from './sales-orders/contracts.service';
+import { SalesOrdersController } from './sales-orders/sales-orders.controller';
 import { ReportExportsController } from './report-exports/report-exports.controller';
 import { ConsolidationController } from './consolidation/consolidation.controller';
 import { ConsolidationService } from './consolidation/consolidation.service';
@@ -78,6 +153,10 @@ import { GraphService } from './graph/graph.service';
 import { DecisionsController } from './decisions/decisions.controller';
 import { DisastersController } from './disasters/disasters.controller';
 import { DisastersService } from './disasters/disasters.service';
+import { ImpactController } from './impact/impact.controller';
+import { ImpactService } from './impact/impact.service';
+import { OpportunitiesController } from './opportunities/opportunities.controller';
+import { OpportunitiesService } from './opportunities/opportunities.service';
 import { DashboardsController } from './dashboards/dashboards.controller';
 import { DashboardsService } from './dashboards/dashboards.service';
 import { ReportDesignerController } from './report-designer/report-designer.controller';
@@ -93,6 +172,26 @@ import { TwinController } from './twin/twin.controller';
 import { TwinService } from './twin/twin.service';
 import { ReportExportService } from './report-exports/report-exports.service';
 import { LoansService } from './loans/loans.service';
+import { CrmService } from './crm/crm.service';
+import { SalesOrdersService } from './sales-orders/sales-orders.service';
+import { ProFormaController } from './sales-orders/pro-forma.controller';
+import { ProFormaService } from './sales-orders/pro-forma.service';
+import { RetainersController } from './sales-orders/retainers.controller';
+import { PaymentLinksController, PaymentLinkWebhooksController } from './payment-links/payment-links.controller';
+import { PaymentLinksService } from './payment-links/payment-links.service';
+import { CustomerOnboardingController, VendorOnboardingController } from './customer-onboarding/customer-onboarding.controller';
+import { CustomerOnboardingService } from './customer-onboarding/customer-onboarding.service';
+import { VendorPerformanceController } from './vendor-performance/vendor-performance.controller';
+import { UnbilledRevenueController } from './unbilled-revenue/unbilled-revenue.controller';
+import { UnbilledRevenueService } from './unbilled-revenue/unbilled-revenue.service';
+import { VendorRiskController } from './vendor-risk/vendor-risk.controller';
+import { VendorRiskService } from './vendor-risk/vendor-risk.service';
+import { InternationalPaymentsController } from './international-payments/international-payments.controller';
+import { InternationalPaymentsService } from './international-payments/international-payments.service';
+import { VendorPerformanceService } from './vendor-performance/vendor-performance.service';
+import { RetainersService } from './sales-orders/retainers.service';
+import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
+import { PurchaseOrdersService } from './purchase-orders/purchase-orders.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
 import { DimensionsService } from './dimensions/dimensions.service';
 import { CloseService } from './close/close.service';
@@ -129,6 +228,21 @@ export class AppModule {
       module: AppModule,
       controllers: [
         HealthController,
+        RegionsController,
+        AdminController,
+        StatusController,
+        OrgFlagsController,
+        OperationsController,
+        SupportController,
+        PlatformSupportController,
+        UsageController,
+        PlatformUsageController,
+        AnnouncementsController,
+        BillingController,
+        PlatformBillingController,
+        SubscriptionPaymentsController,
+        PlatformPaymentsController,
+        PaymentWebhooksController,
         AuthController,
         OrganizationsController,
         InvitationLinksController,
@@ -139,6 +253,9 @@ export class AppModule {
         AuditController,
         ContactsController,
         TaxRatesController,
+        FxController,
+        CountryModulesCatalogueController,
+        CountryModuleController,
         SalesController,
         PurchasesController,
         BankingController,
@@ -161,6 +278,41 @@ export class AppModule {
         FixedAssetsController,
         DeferralsController,
         LoansController,
+        CrmController,
+        CustomerInsightsController,
+        RevenueForecastController,
+        CrmApiController,
+        CrmConnectionController,
+        SalesOrdersController,
+        ContractsController,
+        UsageBillingController,
+        RevenueRecognitionController,
+        CustomerPortalLinksController,
+        CustomerPortalController,
+        VendorPortalLinksController,
+        VendorInvoicesController,
+        VendorPortalController,
+        SupplierTaxController,
+        JournalTemplatesController,
+        RecurringBillsController,
+        BadDebtsController,
+        YearEndController,
+        PaymentBatchesController,
+        PaymentScheduleController,
+        DisputesController,
+        ProFormaController,
+    RetainersController,
+    PaymentLinksController,
+    CustomerOnboardingController,
+    VendorPerformanceController,
+    VendorRiskController,
+    UnbilledRevenueController,
+    InternationalPaymentsController,
+    VendorOnboardingController,
+    PaymentLinkWebhooksController,
+    PurchaseOrdersController,
+    BillMatchController,
+        VendorBankDetailsController,
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
@@ -172,6 +324,8 @@ export class AppModule {
         GraphController,
         DecisionsController,
     DisastersController,
+    ImpactController,
+    OpportunitiesController,
     PoliciesController,
     DashboardsController,
     ReportDesignerController,
@@ -185,8 +339,22 @@ export class AppModule {
         TasksController,
       ],
       providers: [
+        RegionsService,
+        AdminService,
+        SupportService,
+        SupportAccessService,
+        UsageService,
+        BillingService,
+        PlatformBillingService,
+        PaymentSettingsService,
+        SubscriptionPaymentsService,
+        RenewalsRunnerService,
         { provide: CONFIG, useValue: config },
         prismaProvider,
+        documentStoreProvider,
+        PostgresMirrorService,
+        MovedTables,
+        SeedSyncService,
         TokensService,
         AuditService,
         AuthService,
@@ -195,12 +363,15 @@ export class AppModule {
         OrganizationsService,
         InvitationsService,
         AccountsService,
+        ChartService,
         PeriodsService,
         JournalsService,
         ReportsService,
         SubledgerService,
         ContactsService,
         TaxRatesService,
+        FxService,
+        CountryModulesService,
         DocumentsService,
         BankingService,
         AttachmentsService,
@@ -214,6 +385,7 @@ export class AppModule {
         CashFlowService,
         KpisService,
         AlertsService,
+        AlertsRunnerService,
         CopilotTools,
         CopilotActionsService,
         CopilotService,
@@ -224,6 +396,39 @@ export class AppModule {
         FixedAssetsService,
         DeferralsService,
         LoansService,
+        CrmService,
+        CustomerInsightsService,
+        RevenueForecastService,
+        ApiKeysService,
+        ApiKeyGuard,
+        CrmWebhooksService,
+        CrmWebhooksRunnerService,
+        SalesOrdersService,
+        ContractsService,
+        UsageBillingService,
+        RevenueRecognitionService,
+        CustomerPortalService,
+        VendorPortalService,
+        SupplierTaxService,
+        ContractsRunnerService,
+        JournalTemplatesService,
+        BadDebtsService,
+        YearEndService,
+        PaymentBatchesService,
+        PaymentScheduleService,
+        DisputesService,
+        ProFormaService,
+    RetainersService,
+    PaymentLinksService,
+    CustomerOnboardingService,
+    VendorPerformanceService,
+    VendorRiskService,
+    UnbilledRevenueService,
+    InternationalPaymentsService,
+    PurchaseOrdersService,
+        JournalTemplatesRunnerService,
+        RecurringBillsService,
+        RecurringBillsRunnerService,
         InvoiceTemplatesService,
         ReportExportService,
         ConsolidationService,
@@ -235,6 +440,8 @@ export class AppModule {
         GraphService,
         DecisionsService,
     DisastersService,
+    ImpactService,
+    OpportunitiesService,
     PoliciesService,
     DashboardsService,
     ReportDesignerService,
@@ -248,6 +455,12 @@ export class AppModule {
         WorkflowRunnerService,
         MailerService,
         WorkflowsService,
+        MetricsService,
+        MaintenanceService,
+        HeartbeatsService,
+        FlagsService,
+        ErrorsService,
+        SystemService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },

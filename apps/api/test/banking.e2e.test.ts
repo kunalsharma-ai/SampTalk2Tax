@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Bank statement import, matching and reconciliation against a real database.
@@ -207,11 +208,11 @@ describe('matching', () => {
 
   it('enforces matching rules in the database as well', async () => {
     const stray = await lineBy('CARD TXN');
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM bank_statement_lines WHERE id = '${stray.id}'`)).rejects.toThrow(/cannot be deleted/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE bank_statement_lines SET amount = 1 WHERE id = '${stray.id}'`)).rejects.toThrow(/cannot be changed/);
+    await expect(sqlWrite(ctx, `DELETE FROM bank_statement_lines WHERE id = '${stray.id}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE bank_statement_lines SET amount = 1 WHERE id = '${stray.id}'`)).rejects.toThrow(/cannot be changed/);
     // Marking a line MATCHED without matching ledger lines fails at commit.
     await expect(
-      ctx.prisma.$executeRawUnsafe(`UPDATE bank_statement_lines SET status = 'MATCHED', excluded_reason = NULL WHERE id = '${stray.id}'`),
+      sqlWrite(ctx, `UPDATE bank_statement_lines SET status = 'MATCHED', excluded_reason = NULL WHERE id = '${stray.id}'`),
     ).rejects.toThrow(/does not equal its matched ledger lines/);
   });
 });
@@ -240,7 +241,7 @@ describe('reconciliation', () => {
     expect(all.every((l) => l.reconciled)).toBe(true);
     const deposit = await lineBy('CASH DEPOSIT');
     expect((await ctx.http().post(`${org.base}/banking/lines/${deposit.id}/unmatch`).set(owner.auth).send({}).expect(409)).body.error).toBe('LINE_RECONCILED');
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE bank_matches SET removed_at = now() WHERE statement_line_id = '${deposit.id}'`)).rejects.toThrow(/reconciled/);
+    await expect(sqlWrite(ctx, `UPDATE bank_matches SET removed_at = now() WHERE statement_line_id = '${deposit.id}'`)).rejects.toThrow(/reconciled/);
     const late = await ctx.http().post(`${org.base}/banking/accounts/${bank}/imports`).set(owner.auth).send({ fileName: 'late.csv', csv: `h\n${dmy(day(2))},LATE LINE,,-1.00\n`, mapping }).expect(409);
     expect(late.body.error).toBe('PERIOD_RECONCILED');
     const accounts = (await ctx.http().get(`${org.base}/banking/accounts`).set(owner.auth).expect(200)).body;

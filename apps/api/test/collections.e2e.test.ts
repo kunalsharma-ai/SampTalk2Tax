@@ -6,6 +6,7 @@ import { startSmtpStandIn, type SmtpStandIn } from '../../../test-support/smtp-s
 import { CollectionsService, MAX_CUSTOMERS_PER_RUN } from '../src/collections/collections.service';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * The AI collections agent against the real API, the real database and real SMTP. The
@@ -49,11 +50,7 @@ const c: Record<string, string> = {};
 const inv: Record<string, { id: string; number: string }> = {};
 
 const settle = () => Promise.all([...ctx.app.get(CollectionsService).inflight.values()]);
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const invoice = async (key: string, who: string, amount: string, dueDate: string) => {
   const d = (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: c[who], issueDate: addDays(dueDate, -15) < T ? addDays(dueDate, -15) : T, dueDate, reference: `PO-${key}`, post: true, lines: [{ accountId: org.acc['4100'], quantity: '1', unitPrice: amount }] }).expect(201)).body;
   inv[key] = { id: d.id, number: d.number };
@@ -124,6 +121,9 @@ beforeAll(async () => {
   await invoice('cedar', 'Cedar Mart', '20000.00', addDays(T, -3));
   await invoice('lotus', 'Lotus Stores', '8000.00', addDays(T, -5));
   await invoice('teak', 'Teak Traders', '30000.00', addDays(T, 10));
+  // Banyan disputes another invoice: the reminder leaves it out while the dispute is open.
+  await invoice('disputed', 'Banyan Retail', '7000.00', addDays(T, -20));
+  await ctx.http().post(`${org.base}/sales/disputes`).set(owner.auth).send({ documentId: inv.disputed.id, reason: 'QUALITY', description: 'Damaged on arrival' }).expect(201);
   // Banyan paid one invoice in full, 60 days late, and part of another.
   await receipt('Banyan Retail', '15000.00', [{ documentId: inv.paid.id, amount: '10000.00' }, { documentId: inv.a.id, amount: '5000.00' }]);
 });

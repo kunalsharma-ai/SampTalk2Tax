@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BankAiService, MAX_LINES_PER_RUN } from '../src/bank-ai/bank-ai.service';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../src/copilot/copilot.model';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * AI reconciliation against the real API and database. The language model is a scripted
@@ -70,11 +71,7 @@ interface Suggestion {
 }
 
 const settle = () => Promise.all([...ctx.app.get(BankAiService).inflight.values()]);
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const run = async () => (await ctx.http().post(`${A}/runs`).set(owner.auth).expect(201)).body;
 const suggestions = async (status?: string) => (await ctx.http().get(`${A}/suggestions${status ? `?status=${status}` : ''}`).set(owner.auth).expect(200)).body as Suggestion[];
 const forLine = async (text: string, status?: string) => (await suggestions(status)).find((s) => s.line.description.includes(text))!;

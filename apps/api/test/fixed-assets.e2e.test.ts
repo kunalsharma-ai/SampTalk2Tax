@@ -1,6 +1,7 @@
 import { addMonth, chargeFor, fiscalYearForDate, monthEnd } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * The fixed asset register against the real API and database: adding assets (with the
@@ -21,11 +22,7 @@ let laptop: string;
 let machine: string;
 const machineTerms = { cost: '500000.00', residualValue: '0.00', inServiceDate: `${addMonth(M, -30)}-01`, method: 'WRITTEN_DOWN_VALUE' as const, annualRate: '15', openingAccumulated: '75000.00', depreciatedThrough: addMonth(M, -4) };
 
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const asset = async (id: string) => (await ctx.http().get(`${F}/${id}`).set(owner.auth).expect(200)).body;
 const dep = async (month?: string) => (await ctx.http().get(`${F}/depreciation${month ? `?month=${month}` : ''}`).set(owner.auth).expect(200)).body;
 const entry = async (number: number) => {

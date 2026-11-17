@@ -58,7 +58,6 @@ function monthEnd(month: string): string {
   return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 }
 const dm = (n: number) => `DM-${String(n).padStart(4, '0')}`;
-const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 /**
  * Decision memory: approved management decisions with their assumptions and the outcomes they
@@ -205,10 +204,15 @@ export class DecisionsService {
     const terms = searchTerms(q.q ?? '');
     let ids: string[] | undefined;
     if (terms.length) {
-      const patterns = terms.map((t) => `%${escapeLike(t)}%`);
-      const rows = await this.prisma.$queryRaw<{ id: string }[]>`
-        SELECT id FROM decisions WHERE org_id = ${orgId}::uuid
-          AND lower(concat_ws(' ', 'dm-' || lpad(number::text, 4, '0'), title, decision, context, decided_by, outcome_notes, lessons, withdrawn_reason, array_to_string(tags, ' '), assumptions::text)) LIKE ALL(${patterns}::text[])`;
+      // Every word somewhere in the decision's text, as the SQL search over its fields did.
+      const all = await this.prisma.decision.findMany({ where: { orgId }, select: { id: true, number: true, title: true, decision: true, context: true, decidedBy: true, outcomeNotes: true, lessons: true, withdrawnReason: true, tags: true, assumptions: true } });
+      const rows = all.filter((d) => {
+        const text = [`dm-${String(d.number).padStart(4, '0')}`, d.title, d.decision, d.context, d.decidedBy, d.outcomeNotes, d.lessons, d.withdrawnReason, d.tags.join(' '), JSON.stringify(d.assumptions)]
+          .filter((x) => x !== null && x !== undefined)
+          .join(' ')
+          .toLowerCase();
+        return terms.every((t) => text.includes(t.toLowerCase()));
+      });
       ids = rows.map((r) => r.id);
     }
     const rows = await this.prisma.decision.findMany({

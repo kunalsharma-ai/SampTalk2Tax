@@ -8,6 +8,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import type { LinkType } from '../workflows/workflow-facts';
+import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
 export type Assignee = { role: AssignableRole } | { userId: string };
@@ -22,7 +23,13 @@ export interface NewTask {
   link?: { type: LinkType; id: string } | null;
   workflowRunId?: string | null;
   createdById: string | null;
+  /** Where the task came from; a person when not given. */
+  source?: TaskSource;
 }
+
+export const TASK_SOURCES = ['PERSON', 'WORKFLOW', 'AI_AGENT', 'ALERT', 'CLOSE'] as const;
+export type TaskSource = (typeof TASK_SOURCES)[number];
+export const SOURCE_LABELS: Record<TaskSource, string> = { PERSON: 'A person', WORKFLOW: 'An automation', AI_AGENT: 'The AI assistant', ALERT: 'An alert', CLOSE: 'Month-end close' };
 
 type TaskRow = Prisma.TaskGetPayload<object>;
 
@@ -55,6 +62,7 @@ export class TasksService {
         linkType: t.link?.type ?? null,
         linkId: t.link?.id ?? null,
         workflowRunId: t.workflowRunId ?? null,
+        source: t.source ?? (t.workflowRunId ? 'WORKFLOW' : 'PERSON'),
         createdById: t.createdById,
       },
     });
@@ -64,7 +72,7 @@ export class TasksService {
       action: 'task.created',
       entityType: 'task',
       entityId: task.id,
-      data: { title: task.title, assigneeUserId: task.assigneeUserId, assigneeRole: task.assigneeRole, dueDate: t.dueDate, workflowRunId: task.workflowRunId },
+      data: { title: task.title, assigneeUserId: task.assigneeUserId, assigneeRole: task.assigneeRole, dueDate: t.dueDate, workflowRunId: task.workflowRunId, source: task.source },
     });
     return task;
   }
@@ -86,12 +94,12 @@ export class TasksService {
     return { orgId: org.id, OR: [{ assigneeUserId: actor.id }, { assigneeRole: org.role }] };
   }
 
-  async list(org: OrgContext, actor: Actor, q: { scope: 'mine' | 'all'; status: TaskStatus | 'ALL' }) {
+  async list(org: OrgContext, actor: Actor, q: { scope: 'mine' | 'all'; status: TaskStatus | 'ALL'; source?: TaskSource | 'ALL' }) {
     if (q.scope === 'all' && !this.canManage(org)) {
       throw new DomainError('FORBIDDEN', 'Only owners and admins can see every task', HttpStatus.FORBIDDEN);
     }
     const base = q.scope === 'mine' ? this.mineWhere(org, actor) : this.visibleWhere(org, actor);
-    const where: Prisma.TaskWhereInput = { AND: [base, q.status === 'ALL' ? {} : { status: q.status }] };
+    const where: Prisma.TaskWhereInput = { AND: [base, q.status === 'ALL' ? {} : { status: q.status }, !q.source || q.source === 'ALL' ? {} : { source: q.source }] };
     const [rows, open, overdue] = await Promise.all([
       this.prisma.task.findMany({ where, orderBy: q.status === 'OPEN' ? [{ dueDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }] : [{ createdAt: 'desc' }], take: 500 }),
       this.prisma.task.count({ where: { AND: [this.mineWhere(org, actor), { status: 'OPEN' }] } }),
@@ -113,7 +121,7 @@ export class TasksService {
 
   async close(org: OrgContext, actor: Actor, id: string, to: 'DONE' | 'CANCELLED', note: string | null) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM tasks WHERE id = ${id}::uuid FOR UPDATE`;
+      await lockRow(tx, 'tasks', id);
       const t = await tx.task.findFirst({ where: { AND: [{ id }, this.visibleWhere(org, actor)] } });
       if (!t) throw new NotFoundException('Task not found');
       if (t.status !== 'OPEN') throw new DomainError('TASK_CLOSED', `This task is already ${t.status === 'DONE' ? 'done' : 'cancelled'}`, HttpStatus.CONFLICT);
@@ -181,6 +189,8 @@ export class TasksService {
         overdue: t.status === 'OPEN' && due !== null && due < today,
         link: path({ type: t.linkType, id: t.linkId }),
         workflow: run ? { id: run.workflowId, name: run.workflow.name, runId: run.id } : null,
+        source: t.source as TaskSource,
+        sourceLabel: SOURCE_LABELS[t.source as TaskSource] ?? t.source,
         createdBy: t.createdById ? (users.get(t.createdById) ?? null) : null,
         createdAt: t.createdAt.toISOString(),
         closedBy: t.closedById ? (users.get(t.closedById) ?? null) : null,

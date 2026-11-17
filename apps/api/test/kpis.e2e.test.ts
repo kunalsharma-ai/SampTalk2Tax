@@ -1,6 +1,7 @@
 import { D, fiscalYearForDate } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * KPIs and the monthly management report against the real API and database, with every
@@ -175,15 +176,11 @@ describe('the management report', () => {
     const list = (await ctx.http().get(`${org.base}/management-reports`).set(viewer.auth).expect(200)).body;
     expect(list.find((x: { month: string }) => x.month === M)).toMatchObject({ status: 'FINAL', hasCommentary: true, finalisedBy: 'KPI Owner', ended: true });
     const audit = await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, entityType: 'management_report' }, select: { action: true } });
-    expect(audit.map((a) => a.action)).toEqual(['management_report.commentary_saved', 'management_report.finalised']);
+    expect(audit.map((a) => a.action).sort()).toEqual(['management_report.commentary_saved', 'management_report.finalised']);
   });
 
   it('the database keeps a final report as it was', async () => {
-    const raw = (sql: string, ...args: unknown[]) =>
-      ctx.prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-        return tx.$executeRawUnsafe(sql, ...args);
-      });
+    const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
     await expect(raw(`UPDATE management_reports SET commentary = 'edited' WHERE org_id = $1::uuid`, org.orgId)).rejects.toThrow(/immutable/);
     await expect(raw(`DELETE FROM management_reports WHERE org_id = $1::uuid`, org.orgId)).rejects.toThrow(/cannot be deleted/);
     await expect(raw(`INSERT INTO management_reports (id, org_id, month, status, snapshot, finalised_by_id, finalised_at, updated_by_id, updated_at) VALUES (gen_random_uuid(), $1::uuid, '2020-01-01', 'FINAL', '{}', $2::uuid, now(), $2::uuid, now())`, org.orgId, owner.id)).rejects.toThrow(/starts as a draft/);

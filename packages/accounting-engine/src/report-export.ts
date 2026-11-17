@@ -98,7 +98,7 @@ export function neutraliseFormula(text: string): string {
   return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
 }
 
-function csvField(value: string): string {
+export function csvField(value: string): string {
   return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 

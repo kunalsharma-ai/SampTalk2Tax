@@ -1,7 +1,10 @@
+import { currentTenantContext } from '../common/tenant-context';
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma } from '@talk2tax/database';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
+import { lockName } from '../db/locks';
+import { allowedInTx } from '../db/guards/allow';
 
 export interface AuditInput {
   orgId: string | null;
@@ -32,6 +35,8 @@ export class AuditService {
    * advisory lock serialises appends per organisation so the chain cannot fork.
    */
   async append(tx: Tx, input: AuditInput): Promise<void> {
+    // A trial run (a check made by doing the work and undoing it) leaves no trail.
+    if (allowedInTx('trial_run')) return;
     // Events with no organisation form one global chain shared by every user; reading its
     // last link crosses tenants, so it is done with system access for this step only.
     if (input.orgId === null) return withSystemAccess(tx, () => this.appendRow(tx, input));
@@ -40,14 +45,16 @@ export class AuditService {
 
   private async appendRow(tx: Tx, input: AuditInput): Promise<void> {
     const chainKey = input.orgId ?? 'global';
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'audit:' + chainKey}))`;
+    await lockName(tx, 'audit:' + chainKey);
     const prev = await tx.auditEvent.findFirst({
       where: { orgId: input.orgId },
       orderBy: { id: 'desc' },
       select: { hash: true },
     });
     const createdAt = new Date();
-    const data = (input.data ?? null) as Prisma.InputJsonValue | null;
+    // A change made through the CRM API records the key it came with, next to the key's creator.
+    const apiKey = currentTenantContext().apiKey;
+    const data = (apiKey ? { ...((input.data as Record<string, unknown> | null) ?? {}), viaApiKey: { id: apiKey.id, prefix: apiKey.prefix } } : (input.data ?? null)) as Prisma.InputJsonValue | null;
     const hash = auditHash(prev?.hash ?? null, {
       orgId: input.orgId,
       actorId: input.actorId,

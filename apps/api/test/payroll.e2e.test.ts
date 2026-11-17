@@ -2,6 +2,7 @@ import { D } from '@talk2tax/accounting-engine';
 import { pfContributions } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 // Months inside the fiscal year created at onboarding (April to March of the current year).
 const t = today();
@@ -149,9 +150,9 @@ describe('April pay run', () => {
   });
 
   it('freezes posted payslips and the salaries they used', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE payslips SET net = 1 WHERE pay_run_id = '${runs.apr.id}'`)).rejects.toThrow(/cannot change|check constraint/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE payslips SET tds = tds WHERE pay_run_id = '${runs.apr.id}'`)).rejects.toThrow(/posted pay run cannot change/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE salary_components SET monthly_amount = 1`)).rejects.toThrow(/cannot change/);
+    await expect(sqlWrite(ctx, `UPDATE payslips SET net = 1 WHERE pay_run_id = '${runs.apr.id}'`)).rejects.toThrow(/cannot change|check constraint/);
+    await expect(sqlWrite(ctx, `UPDATE payslips SET tds = tds WHERE pay_run_id = '${runs.apr.id}'`)).rejects.toThrow(/posted pay run cannot change/);
+    await expect(sqlWrite(ctx, `UPDATE salary_components SET monthly_amount = 1`)).rejects.toThrow(/cannot change/);
     expect((await ctx.http().post(`${org.base}/payroll/employees/${emp.asha.id}/salaries`).set(owner.auth).send(salary(`${APR}-01`, '1000', '0')).expect(409)).body.error).toBe('STRUCTURE_USED');
     expect((await ctx.http().put(`${org.base}/payroll/employees/${emp.asha.id}`).set(owner.auth).send({ code: 'E001', name: 'Asha Kulkarni', dateOfJoining: `${APR}-02` }).expect(409)).body.error).toBe('EMPLOYEE_PAID');
     expect((await ctx.http().put(`${org.base}/payroll/runs/${runs.apr.id}/payslips/${emp.ravi.id}`).set(owner.auth).send({ lopDays: '0', oneOffs: [] }).expect(409)).body.error).toBe('PAY_RUN_POSTED');

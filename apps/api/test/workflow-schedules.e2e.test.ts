@@ -7,6 +7,7 @@ import { IntegrationsService } from '../src/integrations/integrations.service';
 import { EMAIL_NOT_SET_UP, MailerService } from '../src/workflows/email';
 import { WorkflowRunnerService } from '../src/workflows/workflow-runner.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 /**
  * Schedule triggers and email actions against the real API, the real database and real
@@ -27,11 +28,7 @@ const H = 3_600_000;
 const T = new Date(Date.now() + 5.5 * H).toISOString().slice(0, 10);
 const addDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 const tick = (now?: Date) => tenantStorage.run({}, () => runner.tick({ now }));
-const raw = (sql: string, ...args: unknown[]) =>
-  ctx.prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-    return tx.$executeRawUnsafe(sql, ...args);
-  });
+const raw = (sql: string, ...args: unknown[]) => sqlWrite(ctx, sql, args, { bypass: true });
 const invoice = async (who: string, amount: string, dueDate: string, reference: string) =>
   (await ctx.http().post(`${org.base}/sales/documents`).set(owner.auth).send({ kind: 'INVOICE', contactId: c[who], issueDate: dueDate < T ? addDays(dueDate, -7) : T, dueDate, reference, post: true, lines: [{ accountId: org.acc['4100'], quantity: '1', unitPrice: amount }] }).expect(201)).body;
 const wf = (body: Record<string, unknown>) => ctx.http().post(`${org.base}/workflows`).set(owner.auth).send(body);
@@ -124,6 +121,9 @@ describe('an invoice is overdue', () => {
     inv.paid = await invoice('Banyan Retail', '900.00', addDays(T, -3), 'PO-PAID');
     await ctx.http().post(`${org.base}/sales/payments`).set(owner.auth).send({ contactId: c['Banyan Retail'], date: T, bankAccountId: org.acc['1120'], amount: '900.00', allocations: [{ documentId: inv.paid.id, amount: '900.00' }] }).expect(201);
     inv.future = await invoice('Banyan Retail', '10000.00', addDays(T, 30), 'PO-FUT');
+    // Under an open dispute: held out of the overdue trigger.
+    inv.disputed = await invoice('Banyan Retail', '3000.00', addDays(T, -3), 'PO-DISP');
+    await ctx.http().post(`${org.base}/sales/disputes`).set(owner.auth).send({ documentId: inv.disputed.id, reason: 'PRICE', description: 'Rate not as agreed' }).expect(201);
 
     w = await create({
       name: 'Overdue reminder',
@@ -253,7 +253,7 @@ describe('an invoice is overdue', () => {
     const [run] = await runsOf(w.id);
     await expect(
       raw(`INSERT INTO workflow_runs (id, org_id, workflow_id, version, trigger, occurrence_key, facts, conditions, status, finished_at) VALUES (gen_random_uuid(), $1::uuid, $2::uuid, 1, 'INVOICE_OVERDUE', $3, '{}', '[]', 'SKIPPED', now())`, org.orgId, w.id, run.occurrenceKey),
-    ).rejects.toThrow(/23505/); // workflow_runs_once_per_occurrence
+    ).rejects.toThrow(/23505|Unique constraint/); // workflow_runs_once_per_occurrence
     await expect(
       raw(`INSERT INTO workflow_runs (id, org_id, workflow_id, version, trigger, event_id, occurrence_key, facts, conditions, status, finished_at) VALUES (gen_random_uuid(), $1::uuid, $2::uuid, 1, 'INVOICE_OVERDUE', 1, 'x', '{}', '[]', 'SKIPPED', now())`, org.orgId, w.id),
     ).rejects.toThrow(/workflow_runs_chk/);
@@ -310,11 +310,11 @@ describe('on a schedule', () => {
     expect(runs[0].occurrenceKey).toBe(`at:${occ.at.toISOString()}`);
     expect(runs[0].link).toBeNull();
     const facts = Object.fromEntries(runs[0].facts.map((f) => [f.key, f.value]));
-    // Open invoices due before the day: 150000 + 2000 + 5000 + 700 + 100 + 100 (the paid one is not open, PO-FUT is not due).
-    expect(facts).toMatchObject({ date: occ.date, overdueReceivables: '157900.00', receivablesOutstanding: '167900.00', overduePayables: '0.00' });
+    // Open invoices due before the day: 150000 + 2000 + 5000 + 700 + 100 + 100 + 3000 disputed (still owed; the paid one is not open, PO-FUT is not due).
+    expect(facts).toMatchObject({ date: occ.date, overdueReceivables: '160900.00', receivablesOutstanding: '170900.00', overduePayables: '0.00' });
     const digest = to(owner.email).filter((m) => m.subject.startsWith('Receivables on'));
     expect(digest).toHaveLength(1);
-    expect(digest[0].text.split('\n').slice(0, 3)).toEqual(['Overdue: ₹1,57,900.00', 'Outstanding: ₹1,67,900.00', 'Bills overdue: ₹0.00']);
+    expect(digest[0].text.split('\n').slice(0, 3)).toEqual(['Overdue: ₹1,60,900.00', 'Outstanding: ₹1,70,900.00', 'Bills overdue: ₹0.00']);
     // The next day it comes round again.
     await tick(new Date(now + 26 * H + 60_000));
     expect(await runsOf(w.id)).toHaveLength(2);
@@ -323,8 +323,8 @@ describe('on a schedule', () => {
 
 describe('without a mail server', () => {
   it('says email is not set up, and an email action fails with that reason', async () => {
-    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'smtp://localhost:25', EMAIL_FROM: '' })).toThrow(/EMAIL_FROM is required when SMTP_URL is set/);
-    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'http://mail', EMAIL_FROM: 'a@b' })).toThrow(/SMTP_URL must start with smtp:\/\//);
+    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', MONGODB_URL: 'mongodb://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'smtp://localhost:25', EMAIL_FROM: '' })).toThrow(/EMAIL_FROM is required when SMTP_URL is set/);
+    expect(() => loadConfig({ ...process.env, DATABASE_URL: 'postgres://x', MONGODB_URL: 'mongodb://x', JWT_SECRET: 'x'.repeat(40), SMTP_URL: 'http://mail', EMAIL_FROM: 'a@b' })).toThrow(/SMTP_URL must start with smtp:\/\//);
 
     // No mail server of the organisation's own and none on the server.
     const appMailer = ctx.app.get(MailerService);

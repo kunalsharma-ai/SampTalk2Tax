@@ -70,11 +70,13 @@ test('an owner tags lines with departments and projects and reads profit for eac
   await add.getByLabel('Code').fill('');
   await add.getByLabel('Name', { exact: true }).fill('');
 
+  const customer = (await call(`${base}/contacts`, { name: 'Asha Traders', isCustomer: true })).body.id;
   await page.getByRole('tab', { name: /Projects/ }).click();
   const addP = page.getByLabel('Add a project');
   await addP.getByLabel('Code').fill('PORTAL');
   await addP.getByLabel('Name', { exact: true }).fill('Sales portal build');
-  await addP.getByLabel('Customer (optional)').fill('Asha Traders');
+  await addP.getByLabel('Customer (optional)').locator('option', { hasText: 'Asha Traders' }).waitFor({ state: 'attached' });
+  await addP.getByLabel('Customer (optional)').selectOption({ label: 'Asha Traders' });
   await addP.getByLabel('Starts (optional)').fill(`${T.slice(0, 7)}-01`);
   await addP.getByRole('button', { name: 'Add project' }).click();
   await page.getByRole('table', { name: 'Projects' }).getByText('Sales portal build').waitFor();
@@ -106,7 +108,6 @@ test('an owner tags lines with departments and projects and reads profit for eac
     { accountId: acc['6300'], debit: '5000.00' },
     { accountId: acc['1120'], credit: '60000.00' },
   ] })).status, 201);
-  const customer = (await call(`${base}/contacts`, { name: 'Asha Traders', isCustomer: true })).body.id;
   const inv = await call(`${base}/sales/documents`, { kind: 'INVOICE', contactId: customer, issueDate: T, post: true, lines: [
     { accountId: acc['4200'], description: 'Portal build, phase 1', quantity: '1', unitPrice: '150000', departmentId: deps.SALES, projectId: proj },
     { accountId: acc['4100'], description: 'Hardware', quantity: '2', unitPrice: '10000' },

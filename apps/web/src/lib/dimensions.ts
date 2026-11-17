@@ -12,6 +12,9 @@ export interface DimensionValue {
   name: string;
   description: string | null;
   customer: string | null;
+  /** Projects: the customer it is run for. */
+  contactId: string | null;
+  contactName: string | null;
   startDate: string | null;
   endDate: string | null;
   isActive: boolean;

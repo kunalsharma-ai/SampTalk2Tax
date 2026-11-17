@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AccountsService } from '../src/accounts/accounts.service';
 import { PrismaService } from '../src/common/prisma.service';
-import { tenantStorage } from '../src/common/tenant-context';
+import { currentTenantContext, tenantStorage } from '../src/common/tenant-context';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
+import { postgresOff } from '../src/db/counters';
 
 /**
  * Row-level security is the second isolation layer: these tests bypass the application's
@@ -42,8 +43,11 @@ describe('policies on tenant tables', () => {
     const bAccount = orgB.acc['1120'];
     const row = await asTenant({ orgId: orgA.orgId, userId: alice.id }, () => ctx.prisma.account.findUnique({ where: { id: bAccount } }));
     expect(row).toBeNull();
-    const raw = await asTenant({ orgId: orgA.orgId, userId: alice.id }, () => ctx.prisma.$queryRaw<unknown[]>`SELECT id FROM accounts WHERE id = ${bAccount}::uuid`);
-    expect(raw).toEqual([]);
+    // PostgreSQL's own policy, while it runs.
+    if (!postgresOff()) {
+      const raw = await asTenant({ orgId: orgA.orgId, userId: alice.id }, () => ctx.prisma.$queryRaw<unknown[]>`SELECT id FROM accounts WHERE id = ${bAccount}::uuid`);
+      expect(raw).toEqual([]);
+    }
   });
 
   it('cannot write rows into, or move rows to, another organisation', async () => {
@@ -64,7 +68,8 @@ describe('policies on tenant tables', () => {
     await expect(asTenant({}, () => ctx.prisma.contact.create({ data: { orgId: orgA.orgId, name: 'X', isCustomer: true } }))).rejects.toThrow(/row-level security/);
   });
 
-  it('inside a transaction the settings hold for every statement, and a stray root-client call sees nothing', async () => {
+  // PostgreSQL's settings belong to its connections; with it off the context is all there is.
+  it.skipIf(postgresOff())('inside a transaction the settings hold for every statement, and a stray root-client call sees nothing', async () => {
     const out = await asTenant({ orgId: orgA.orgId, userId: alice.id }, () =>
       ctx.prisma.$transaction(async (tx) => ({
         inTx: await tx.account.count(),
@@ -84,7 +89,8 @@ describe('policies on tenant tables', () => {
     await expect(asTenant({ orgId: orgB.orgId, userId: bob.id }, () => ctx.prisma.membership.create({ data: { orgId: orgA.orgId, userId: bob.id, role: 'OWNER' } }))).rejects.toThrow(/row-level security/);
   });
 
-  it('the database enforces it for the table owner as well (FORCE)', async () => {
+  // PostgreSQL's row-level security; with PostgreSQL off the data layer's policies are the whole of it.
+  it.skipIf(postgresOff())('the database enforces it for the table owner as well (FORCE)', async () => {
     const rows = await ctx.prisma.$queryRaw<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }[]>`
       SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relkind = 'r' AND EXISTS (SELECT 1 FROM information_schema.columns i WHERE i.table_name = c.relname AND i.column_name = 'org_id')`;
@@ -104,7 +110,10 @@ describe('HTTP requests run with the caller\'s tenant settings', () => {
     let seen: { settings: unknown; orgIds: string[] } | null = null;
     // Simulate the bug: ignore orgId entirely.
     svc.list = (async () => {
-      const [settings] = await prisma.$queryRaw<{ org: string; user_id: string; bypass: string }[]>`
+      const t = currentTenantContext();
+      const [settings] = postgresOff()
+        ? [{ org: t.orgId, user_id: t.userId, bypass: t.bypass ? 'on' : '' }]
+        : await prisma.$queryRaw<{ org: string; user_id: string; bypass: string }[]>`
         SELECT current_setting('t2t.org_id', true) AS org, current_setting('t2t.user_id', true) AS user_id, current_setting('t2t.bypass', true) AS bypass`;
       const all = await prisma.account.findMany();
       seen = { settings, orgIds: [...new Set(all.map((a) => a.orgId))] };

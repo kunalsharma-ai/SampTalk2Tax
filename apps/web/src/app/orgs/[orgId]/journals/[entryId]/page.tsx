@@ -25,6 +25,8 @@ export default function JournalDetailPage() {
   const [reverseOpen, setReverseOpen] = useState(false);
   const [reverseDate, setReverseDate] = useState(today());
   const [reverseMemo, setReverseMemo] = useState('');
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState('');
   const q = useQuery({ queryKey: ['journal', orgId, entryId], queryFn: () => api<Journal>(`/v1/orgs/${orgId}/journals/${entryId}`) });
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: ['journal', orgId] });
@@ -45,6 +47,14 @@ export default function JournalDetailPage() {
       await refresh();
       setReverseOpen(false);
       router.push(`/orgs/${orgId}/journals/${j.id}`);
+    },
+  });
+
+  const saveTemplate = useMutation({
+    mutationFn: () => api<{ id: string }>(`/v1/orgs/${orgId}/journal-templates/from-journal/${entryId}`, { method: 'POST', body: { name: templateName } }),
+    onSuccess: async (t) => {
+      await qc.invalidateQueries({ queryKey: ['journal-templates', orgId] });
+      router.push(`/orgs/${orgId}/journal-templates/${t.id}`);
     },
   });
 
@@ -78,6 +88,9 @@ export default function JournalDetailPage() {
               </>
             ) : null}
             {j.status === 'DRAFT' && can(org.role, 'journals.post') ? <Button loading={post.isPending} onClick={() => post.mutate()}>Post</Button> : null}
+            {j.source === 'MANUAL' && can(org.role, 'journals.create') ? (
+              <Button variant="secondary" onClick={() => { setTemplateName(j.memo?.slice(0, 120) ?? ''); setTemplateOpen(true); }}>Save as template…</Button>
+            ) : null}
             {j.status === 'POSTED' && (j.source === 'MANUAL' || j.source === 'CLOSE') && !j.reversedBy && j.type !== 'REVERSING' && can(org.role, 'journals.reverse') ? (
               <Button variant="secondary" onClick={() => setReverseOpen(true)}>Reverse…</Button>
             ) : null}
@@ -105,7 +118,7 @@ export default function JournalDetailPage() {
       </div>
       {j.source !== 'MANUAL' ? (
         <div className="mt-4">
-          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : j.source === 'CLOSE' ? 'an AI-proposed month-end adjustment a person approved' : j.source === 'ASSET' ? 'the fixed asset register' : j.source === 'DEFERRAL' ? 'a prepaid or deferred revenue schedule' : j.source === 'ACCRUAL' ? 'a month-end accrual' : j.source === 'LOAN' ? 'a loan' : j.source === 'INTERCOMPANY' ? 'an intercompany transaction' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
+          <Alert tone="accent" title={`Created by ${j.source === 'DOCUMENT' ? 'a sales or purchase document' : j.source === 'BANK' ? 'a bank statement line' : j.source === 'EXPENSE' ? 'an expense claim' : j.source === 'TAX' ? 'a TDS/TCS deposit' : j.source === 'PAYROLL' ? 'payroll' : j.source === 'CLOSE' ? 'an AI-proposed month-end adjustment a person approved' : j.source === 'ASSET' ? 'the fixed asset register' : j.source === 'DEFERRAL' ? 'a prepaid or deferred revenue schedule' : j.source === 'ACCRUAL' ? 'a month-end accrual' : j.source === 'LOAN' ? 'a loan' : j.source === 'INTERCOMPANY' ? 'an intercompany transaction' : j.source === 'BAD_DEBT' ? 'a bad-debt provision or write-off' : j.source === 'YEAR_END' ? 'the year-end close' : 'a payment'}${j.reference ? ` (${j.reference})` : ''}`}>
             {j.source === 'PAYROLL'
               ? 'This entry was posted by a pay run or a payroll payment. To correct it, void the payment or the pay run (Payroll → Pay runs).'
               : j.source === 'TAX'
@@ -124,6 +137,10 @@ export default function JournalDetailPage() {
               ? 'Posted from a loan: the money received, an installment or a prepayment (Banking → Loans). To correct it, reverse the latest entry on the loan.'
               : j.source === 'INTERCOMPANY'
               ? 'Posted together with the matching entry in the other group company, from the intercompany transactions of the group (Reports → Group consolidation). To correct it, reverse the transaction there, which reverses both entries.'
+              : j.source === 'YEAR_END'
+              ? 'A closing entry: the year\'s revenue and expense accounts brought to nil and the profit or loss moved to retained earnings (Accounting → Year-end close). Profit and loss reports leave closing entries out. To undo it, reopen the year there.'
+              : j.source === 'BAD_DEBT'
+              ? 'Posted from Bad debts: a provision for doubtful debts or an invoice written off (Sales → Bad debts). To correct a write-off, reverse it there; a provision is corrected by the next provision, which posts only the difference.'
               : j.source === 'BANK'
               ? 'This entry was posted from a bank statement line. To correct it, unmatch that line on the bank account screen, which reverses this entry.'
               : `This entry stays in step with its ${j.source === 'DOCUMENT' ? 'document' : 'payment'}. To correct it, void the ${j.source === 'DOCUMENT' ? 'document' : 'payment'} instead of reversing this journal.`}
@@ -204,6 +221,17 @@ export default function JournalDetailPage() {
             <Button variant="ghost" onClick={() => setReverseOpen(false)}>Cancel</Button>
             <Button loading={reverse.isPending} onClick={() => reverse.mutate()}>Post reversal</Button>
           </div>
+        </div>
+      </Dialog>
+      <Dialog open={templateOpen} onOpenChange={setTemplateOpen} title="Save as a template" description="Keep these lines, memo and reference as a journal template. Use it to start the same journal again, or give it a schedule to make it every month.">
+        <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+          Template name
+          <Input value={templateName} maxLength={120} onChange={(e) => setTemplateName(e.target.value)} placeholder="e.g. Office rent accrual" />
+        </label>
+        {saveTemplate.error ? <div className="mt-3"><Alert title="The template was not saved">{(saveTemplate.error as Error).message}</Alert></div> : null}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setTemplateOpen(false)}>Cancel</Button>
+          <Button loading={saveTemplate.isPending} disabled={!templateName.trim()} onClick={() => saveTemplate.mutate()}>Save template</Button>
         </div>
       </Dialog>
     </>

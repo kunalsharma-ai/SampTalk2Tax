@@ -54,6 +54,10 @@ enum JournalSource {
   ACCRUAL
   LOAN
   INTERCOMPANY
+  FX_REVALUATION
+  FX_SETTLEMENT
+  BAD_DEBT
+  YEAR_END
 }
 
 enum IntercompanyKind {
@@ -79,6 +83,7 @@ enum AttachmentEntity {
   JOURNAL_ENTRY
   BANK_STATEMENT_LINE
   EXPENSE_CLAIM
+  CUSTOMER_ONBOARDING
 }
 
 enum ApprovalStatus {
@@ -126,15 +131,27 @@ enum JournalType {
 }
 
 model User {
-  id           String        @id @default(uuid()) @db.Uuid
-  email        String        @unique
-  name         String
-  passwordHash String        @map("password_hash")
-  isActive     Boolean       @default(true) @map("is_active")
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  memberships  Membership[]
-  sessions     AuthSession[]
+  id                     String                 @id @default(uuid()) @db.Uuid
+  email                  String                 @unique
+  name                   String
+  passwordHash           String                 @map("password_hash")
+  isActive               Boolean                @default(true) @map("is_active")
+  /// Platform administration: SUPER_ADMIN or SUPPORT; null for everyone else.
+  platformRole           String?                @map("platform_role") @db.VarChar(16)
+  /// Interface language: en or hi.
+  language               String                 @default("en") @db.VarChar(8)
+  /// AUTO (by currency), IN, INTL, EU or SPACE.
+  numberFormat           String                 @default("AUTO") @map("number_format") @db.VarChar(8)
+  /// D_MON_Y, DMY, MDY or YMD.
+  dateFormat             String                 @default("D_MON_Y") @map("date_format") @db.VarChar(8)
+  /// IANA time zone for this person; null = the organisation's.
+  timeZone               String?                @map("time_zone") @db.VarChar(64)
+  createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships            Membership[]
+  sessions               AuthSession[]
+  announcementsCreated   PlatformAnnouncement[] @relation("AnnouncementCreatedBy")
+  announcementsWithdrawn PlatformAnnouncement[] @relation("AnnouncementWithdrawnBy")
 
   @@map("users")
 }
@@ -178,114 +195,140 @@ model LoginThrottle {
 }
 
 model Organization {
-  id                     String                  @id @default(uuid()) @db.Uuid
-  name                   String
-  legalName              String?                 @map("legal_name")
-  countryCode            String                  @map("country_code") @db.Char(2)
-  functionalCurrency     String                  @map("functional_currency") @db.Char(3)
-  fiscalYearStartMonth   Int                     @map("fiscal_year_start_month") @db.SmallInt
-  isDemo                 Boolean                 @default(false) @map("is_demo")
+  id                       String                    @id @default(uuid()) @db.Uuid
+  name                     String
+  legalName                String?                   @map("legal_name")
+  /// IANA time zone moments are shown in for this organisation.
+  timeZone                 String                    @default("Asia/Kolkata") @map("time_zone") @db.VarChar(64)
+  countryCode              String                    @map("country_code") @db.Char(2)
+  functionalCurrency       String                    @map("functional_currency") @db.Char(3)
+  fiscalYearStartMonth     Int                       @map("fiscal_year_start_month") @db.SmallInt
+  isDemo                   Boolean                   @default(false) @map("is_demo")
+  /// The region this organisation's data lives in (set at creation; see docs/REGIONAL_DEPLOYMENT.md).
+  dataRegion               String?                   @map("data_region") @db.VarChar(32)
+  /// Suspended by the platform: readable by members, not changeable.
+  suspendedAt              DateTime?                 @map("suspended_at") @db.Timestamptz(6)
+  suspendedReason          String?                   @map("suspended_reason")
   /// Receivables / payables control accounts. Manual journals cannot post to them (DB trigger).
-  arAccountId            String?                 @map("ar_account_id") @db.Uuid
-  apAccountId            String?                 @map("ap_account_id") @db.Uuid
+  arAccountId              String?                   @map("ar_account_id") @db.Uuid
+  apAccountId              String?                   @map("ap_account_id") @db.Uuid
   /// Employee reimbursements payable. Only expense claims post to it (DB trigger).
-  claimsAccountId        String?                 @map("claims_account_id") @db.Uuid
-  createdAt              DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt              DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
-  memberships            Membership[]
-  accounts               Account[]
-  periods                FiscalPeriod[]
-  journalEntries         JournalEntry[]
-  counters               OrgCounter[]
-  auditEvents            AuditEvent[]
-  contacts               Contact[]
-  taxRates               TaxRate[]
-  documents              Document[]
-  payments               Payment[]
-  statementImports       BankStatementImport[]
-  statementLines         BankStatementLine[]
-  bankMatches            BankMatch[]
-  reconciliations        BankReconciliation[]
-  attachments            Attachment[]
-  invoiceTemplates       InvoiceTemplate[]
-  consolidationGroups    ConsolidationGroup[]
-  consolidatedIn         ConsolidationMember[]   @relation("ConsolidationMemberOrg")
-  twinScenarios          TwinScenario[]
-  cfoReports             CfoReport[]
-  benchmarkParticipation BenchmarkParticipation?
-  decisions              Decision[]
-  recoveryPlans          RecoveryPlan[]
-  integrations           OrgIntegration[]
-  userSignatures         UserSignature[]
-  documentSignatures     DocumentSignature[]
-  approvalPolicies       ApprovalPolicy[]
-  approvalRequests       ApprovalRequest[]
-  expenseClaims          ExpenseClaim[]
-  invitations            Invitation[]
-  gstRegistration        GstRegistration?
-  withholdingSettings    WithholdingSettings?
-  withholdingSections    WithholdingSection[]
-  withholdingDeposits    WithholdingDeposit[]
-  payrollSettings        PayrollSettings?
-  complianceSettings     ComplianceSettings?
-  complianceFilings      ComplianceFiling[]
-  eInvoiceSettings       EInvoiceSettings?
-  eInvoices              EInvoice[]
-  eWayBillSettings       EWayBillSettings?
-  eWayBills              EWayBill[]
-  eWayBillVehicles       EWayBillVehicleUpdate[]
-  employees              Employee[]
-  payRuns                PayRun[]
-  budgets                Budget[]
-  budgetLines            BudgetLine[]
-  cashFlowSettings       CashFlowSettings?
-  cashFlowItems          CashFlowItem[]
-  cashForecasts          CashForecast[]
-  kpiTargets             KpiTarget[]
-  managementReports      ManagementReport[]
-  alertRuleSettings      AlertRuleSetting[]
-  alerts                 Alert[]
-  alertEvents            AlertEvent[]
-  alertScans             AlertScan[]
-  copilotSettings        CopilotSettings?
-  aiAgentSettings        AiAgentSetting[]
-  fixedAssets            FixedAsset[]
-  depreciationRuns       DepreciationRun[]
-  depreciationLines      DepreciationLine[]
-  deferralSchedules      DeferralSchedule[]
-  deferralRuns           DeferralRun[]
-  deferralLines          DeferralLine[]
-  accruals               Accrual[]
-  loans                  Loan[]
-  loanEvents             LoanEvent[]
-  dimensionValues        DimensionValue[]
-  copilotConversations   CopilotConversation[]
-  copilotMessages        CopilotMessage[]
-  workflows              Workflow[]
-  workflowVersions       WorkflowVersion[]
-  workflowRuns           WorkflowRun[]
-  workflowActionRuns     WorkflowActionRun[]
-  workflowCursor         WorkflowCursor?
-  tasks                  Task[]
-  collectionRuns         CollectionRun[]
-  collectionDrafts       CollectionDraft[]
-  bankAiRuns             BankAiRun[]
-  bankAiSuggestions      BankAiSuggestion[]
-  periodCloses           PeriodClose[]
-  closeCertifications    CloseCertification[]
-  closeAiReviews         CloseAiReview[]
-  closeAdjustments       CloseAdjustment[]
-  forecastLabRuns        ForecastLabRun[]
-  disasterSimulations    DisasterSimulation[]
-  policies               Policy[]
-  policyVersions         PolicyVersion[]
-  dashboards             Dashboard[]
-  reportDesigns          ReportDesign[]
-  reportRuns             ReportRun[]
-  reportAiCalls          ReportAiCall[]
-  copilotActions         CopilotAction[]
-  dashboardAiDrafts      DashboardAiDraft[]
-  policyAiDrafts         PolicyAiDraft[]
+  claimsAccountId          String?                   @map("claims_account_id") @db.Uuid
+  createdAt                DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memberships              Membership[]
+  subscription             Subscription?
+  subscriptionEvents       SubscriptionEvent[]
+  subscriptionInvoices     SubscriptionInvoice[]
+  accounts                 Account[]
+  periods                  FiscalPeriod[]
+  journalEntries           JournalEntry[]
+  counters                 OrgCounter[]
+  auditEvents              AuditEvent[]
+  contacts                 Contact[]
+  taxRates                 TaxRate[]
+  documents                Document[]
+  payments                 Payment[]
+  statementImports         BankStatementImport[]
+  statementLines           BankStatementLine[]
+  bankMatches              BankMatch[]
+  reconciliations          BankReconciliation[]
+  attachments              Attachment[]
+  invoiceTemplates         InvoiceTemplate[]
+  consolidationGroups      ConsolidationGroup[]
+  consolidatedIn           ConsolidationMember[]     @relation("ConsolidationMemberOrg")
+  twinScenarios            TwinScenario[]
+  cfoReports               CfoReport[]
+  benchmarkParticipation   BenchmarkParticipation?
+  decisions                Decision[]
+  recoveryPlans            RecoveryPlan[]
+  integrations             OrgIntegration[]
+  userSignatures           UserSignature[]
+  documentSignatures       DocumentSignature[]
+  approvalPolicies         ApprovalPolicy[]
+  approvalRequests         ApprovalRequest[]
+  expenseClaims            ExpenseClaim[]
+  invitations              Invitation[]
+  gstRegistration          GstRegistration?
+  withholdingSettings      WithholdingSettings?
+  withholdingSections      WithholdingSection[]
+  withholdingDeposits      WithholdingDeposit[]
+  payrollSettings          PayrollSettings?
+  complianceSettings       ComplianceSettings?
+  complianceFilings        ComplianceFiling[]
+  eInvoiceSettings         EInvoiceSettings?
+  eInvoices                EInvoice[]
+  eWayBillSettings         EWayBillSettings?
+  eWayBills                EWayBill[]
+  eWayBillVehicles         EWayBillVehicleUpdate[]
+  employees                Employee[]
+  payRuns                  PayRun[]
+  budgets                  Budget[]
+  budgetLines              BudgetLine[]
+  cashFlowSettings         CashFlowSettings?
+  cashFlowItems            CashFlowItem[]
+  cashForecasts            CashForecast[]
+  kpiTargets               KpiTarget[]
+  managementReports        ManagementReport[]
+  alertRuleSettings        AlertRuleSetting[]
+  alerts                   Alert[]
+  alertEvents              AlertEvent[]
+  alertScans               AlertScan[]
+  copilotSettings          CopilotSettings?
+  aiAgentSettings          AiAgentSetting[]
+  fixedAssets              FixedAsset[]
+  depreciationRuns         DepreciationRun[]
+  depreciationLines        DepreciationLine[]
+  deferralSchedules        DeferralSchedule[]
+  deferralRuns             DeferralRun[]
+  deferralLines            DeferralLine[]
+  accruals                 Accrual[]
+  loans                    Loan[]
+  crmLeads                 CrmLead[]
+  crmDeals                 CrmDeal[]
+  crmActivities            CrmActivity[]
+  salesQuotes              SalesQuote[]
+  salesOrders              SalesOrder[]
+  salesContracts           SalesContract[]
+  journalTemplates         JournalTemplate[]
+  recurringBills           RecurringBill[]
+  revenueForecasts            RevenueForecast[]
+  apiKeys                     ApiKey[]
+  crmWebhooks                 CrmWebhook[]
+  crmWebhookDeliveries        CrmWebhookDelivery[]
+  loanEvents               LoanEvent[]
+  dimensionValues          DimensionValue[]
+  copilotConversations     CopilotConversation[]
+  copilotMessages          CopilotMessage[]
+  workflows                Workflow[]
+  workflowVersions         WorkflowVersion[]
+  workflowRuns             WorkflowRun[]
+  workflowActionRuns       WorkflowActionRun[]
+  workflowCursor           WorkflowCursor?
+  tasks                    Task[]
+  collectionRuns           CollectionRun[]
+  collectionDrafts         CollectionDraft[]
+  bankAiRuns               BankAiRun[]
+  bankAiSuggestions        BankAiSuggestion[]
+  periodCloses             PeriodClose[]
+  closeCertifications      CloseCertification[]
+  closeAiReviews           CloseAiReview[]
+  closeAdjustments         CloseAdjustment[]
+  forecastLabRuns          ForecastLabRun[]
+  disasterSimulations      DisasterSimulation[]
+  impactAssessments        ImpactAssessment[]
+  alertNotificationSetting AlertNotificationSetting?
+  policies                 Policy[]
+  policyVersions           PolicyVersion[]
+  dashboards               Dashboard[]
+  reportDesigns            ReportDesign[]
+  reportRuns               ReportRun[]
+  reportAiCalls            ReportAiCall[]
+  copilotActions           CopilotAction[]
+  dashboardAiDrafts        DashboardAiDraft[]
+  policyAiDrafts           PolicyAiDraft[]
+  exchangeRates            ExchangeRate[]
+  fxRevaluations           FxRevaluation[]
 
   @@map("organizations")
 }
@@ -344,6 +387,7 @@ model Account {
   children         Account[]             @relation("AccountHierarchy")
   lines            JournalLine[]
   documentLines    DocumentLine[]
+  journalTemplateLines JournalTemplateLine[]
   expenseLines     ExpenseClaimLine[]
   paymentsViaBank  Payment[]
   statementImports BankStatementImport[]
@@ -379,32 +423,34 @@ model FiscalPeriod {
 }
 
 model JournalEntry {
-  id                 String        @id @default(uuid()) @db.Uuid
-  orgId              String        @map("org_id") @db.Uuid
-  entryNumber        Int?          @map("entry_number")
-  date               DateTime      @db.Date
-  periodId           String        @map("period_id") @db.Uuid
-  type               JournalType   @default(STANDARD)
-  source             JournalSource @default(MANUAL)
-  status             JournalStatus @default(DRAFT)
-  memo               String?
-  reference          String?
-  functionalCurrency String        @map("functional_currency") @db.Char(3)
-  totalDebit         Decimal       @default(0) @map("total_debit") @db.Decimal(24, 6)
-  totalCredit        Decimal       @default(0) @map("total_credit") @db.Decimal(24, 6)
-  idempotencyKey     String?       @map("idempotency_key")
-  idempotencyHash    String?       @map("idempotency_hash")
-  reversesEntryId    String?       @unique @map("reverses_entry_id") @db.Uuid
-  createdById        String        @map("created_by_id") @db.Uuid
-  postedById         String?       @map("posted_by_id") @db.Uuid
-  postedAt           DateTime?     @map("posted_at") @db.Timestamptz(6)
-  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  org                Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
-  period             FiscalPeriod  @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
-  reverses           JournalEntry? @relation("Reversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
-  reversedBy         JournalEntry? @relation("Reversal")
-  lines              JournalLine[]
+  id                    String         @id @default(uuid()) @db.Uuid
+  orgId                 String         @map("org_id") @db.Uuid
+  entryNumber           Int?           @map("entry_number")
+  date                  DateTime       @db.Date
+  periodId              String         @map("period_id") @db.Uuid
+  type                  JournalType    @default(STANDARD)
+  source                JournalSource  @default(MANUAL)
+  status                JournalStatus  @default(DRAFT)
+  memo                  String?
+  reference             String?
+  functionalCurrency    String         @map("functional_currency") @db.Char(3)
+  totalDebit            Decimal        @default(0) @map("total_debit") @db.Decimal(24, 6)
+  totalCredit           Decimal        @default(0) @map("total_credit") @db.Decimal(24, 6)
+  idempotencyKey        String?        @map("idempotency_key")
+  idempotencyHash       String?        @map("idempotency_hash")
+  reversesEntryId       String?        @unique @map("reverses_entry_id") @db.Uuid
+  createdById           String         @map("created_by_id") @db.Uuid
+  postedById            String?        @map("posted_by_id") @db.Uuid
+  postedAt              DateTime?      @map("posted_at") @db.Timestamptz(6)
+  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                   Organization   @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  period                FiscalPeriod   @relation(fields: [periodId, orgId], references: [id, orgId], onDelete: Restrict)
+  reverses              JournalEntry?  @relation("Reversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
+  reversedBy            JournalEntry?  @relation("Reversal")
+  lines                 JournalLine[]
+  fxRevaluation         FxRevaluation? @relation("FxRevaluationEntry")
+  fxRevaluationReversal FxRevaluation? @relation("FxRevaluationReversal")
 
   @@unique([orgId, entryNumber])
   @@unique([orgId, idempotencyKey])
@@ -497,13 +543,21 @@ model Contact {
   isVendor             Boolean           @default(false) @map("is_vendor")
   paymentTermsDays     Int               @default(30) @map("payment_terms_days")
   creditLimit          Decimal?          @map("credit_limit") @db.Decimal(24, 6)
+  /// Credit hold: no invoice to this customer posts until it is lifted. Reason, when and who are required while on hold.
+  creditHold           Boolean           @default(false) @map("credit_hold")
+  creditHoldReason     String?           @map("credit_hold_reason") @db.VarChar(500)
+  creditHoldAt         DateTime?         @map("credit_hold_at") @db.Timestamptz(6)
+  creditHoldById       String?           @map("credit_hold_by_id") @db.Uuid
   isActive             Boolean           @default(true) @map("is_active")
   createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   org                  Organization      @relation(fields: [orgId], references: [id], onDelete: Restrict)
   documents            Document[]
+  recurringBills       RecurringBill[]
   payments             Payment[]
   collectionDrafts     CollectionDraft[]
+  /// Projects run for this customer: their costs are the customer's direct costs.
+  projects             DimensionValue[]
 
   @@unique([id, orgId])
   @@index([orgId, name])
@@ -565,6 +619,8 @@ model Document {
   reference            String?
   memo                 String?
   currency             String                   @db.Char(3)
+  /// Functional currency per one unit of the document's currency; 1 in the functional currency. Fixed when saved.
+  exchangeRate         Decimal                  @default(1) @map("exchange_rate") @db.Decimal(24, 10)
   /// India GST, set on documents that use GST rates: place of supply (state code, 96 = outside India).
   placeOfSupply        String?                  @map("place_of_supply") @db.Char(2)
   /// India GST: the supplier's state (the organisation's on sales, the vendor's on purchases).
@@ -613,11 +669,18 @@ model Document {
   templateId           String?                  @map("template_id") @db.Uuid
   template             InvoiceTemplate?         @relation(fields: [templateId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_template_fk")
   signatures           DocumentSignature[]
+  /// A debit note (an INVOICE row, numbered DN-) raising the value of this earlier posted invoice.
+  debitNoteForId       String?                  @map("debit_note_for_id") @db.Uuid
+  debitNoteFor         Document?                @relation("DebitNotes", fields: [debitNoteForId, orgId], references: [id, orgId], onDelete: Restrict, map: "documents_debit_note_for_fk")
+  debitNotes           Document[]               @relation("DebitNotes")
+  /// A bill matched to this purchase order (AP-015); its lines point at the order's lines.
+  purchaseOrderId      String?                  @map("purchase_order_id") @db.Uuid
 
   @@unique([orgId, kind, number])
   @@unique([id, orgId])
   @@index([orgId, kind, status])
   @@index([orgId, contactId])
+  @@index([orgId, debitNoteForId])
   @@map("documents")
 }
 
@@ -641,6 +704,8 @@ model DocumentLine {
   igstAmount   Decimal  @default(0) @map("igst_amount") @db.Decimal(24, 6)
   departmentId String?  @map("department_id") @db.Uuid
   projectId    String?  @map("project_id") @db.Uuid
+  /// Bills: the purchase order line this line bills.
+  purchaseOrderLineId String? @map("purchase_order_line_id") @db.Uuid
   document     Document @relation(fields: [documentId, orgId], references: [id, orgId], onDelete: Cascade)
   account      Account  @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
   tax          TaxRate? @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
@@ -660,6 +725,8 @@ model Payment {
   date               DateTime      @db.Date
   bankAccountId      String        @map("bank_account_id") @db.Uuid
   currency           String        @db.Char(3)
+  /// Functional currency per one unit of the payment's currency; 1 in the functional currency.
+  exchangeRate       Decimal       @default(1) @map("exchange_rate") @db.Decimal(24, 10)
   amount             Decimal       @db.Decimal(24, 6)
   reference          String?
   memo               String?
@@ -696,13 +763,21 @@ model Allocation {
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   removedOn        DateTime? @map("removed_on") @db.Date
   removedById      String?   @map("removed_by_id") @db.Uuid
+  /// Realised exchange gain (+) or loss (-) in the functional currency, posted when the allocation was made.
+  fxGain                   Decimal   @default(0) @map("fx_gain") @db.Decimal(24, 6)
+  fxJournalEntryId         String?   @unique @map("fx_journal_entry_id") @db.Uuid
+  fxReversalJournalEntryId String?   @unique @map("fx_reversal_journal_entry_id") @db.Uuid
+  /// A bad-debt write-off settling the target invoice (the third kind of source).
+  writeOffId               String?   @map("write_off_id") @db.Uuid
   target           Document  @relation("AllocationTarget", fields: [targetId, orgId], references: [id, orgId], onDelete: Restrict)
   payment          Payment?  @relation(fields: [paymentId, orgId], references: [id, orgId], onDelete: Restrict)
   creditDocument   Document? @relation("AllocationCreditSource", fields: [creditDocumentId, orgId], references: [id, orgId], onDelete: Restrict)
+  writeOff         BadDebtWriteOff? @relation(fields: [writeOffId, orgId], references: [id, orgId], onDelete: Restrict)
 
   @@index([orgId, targetId])
   @@index([orgId, paymentId])
   @@index([orgId, creditDocumentId])
+  @@index([orgId, writeOffId])
   @@map("allocations")
 }
 
@@ -1750,6 +1825,23 @@ model AlertEvent {
   @@map("alert_events")
 }
 
+/// Who hears about new alerts: an alert opened or reopened at or above `minSeverity` becomes a
+/// task for `taskRole`, due in `dueDays`. No row means the default: critical alerts, owners, due today.
+model AlertNotificationSetting {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @unique @map("org_id") @db.Uuid
+  /// CRITICAL, WARNING or OFF
+  minSeverity String       @map("min_severity") @db.VarChar(10)
+  taskRole    String       @map("task_role") @db.VarChar(20)
+  dueDays     Int          @map("due_days")
+  updatedById String       @map("updated_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("alert_notification_settings")
+}
+
 /// One run of the checks. Append-only.
 model AlertScan {
   id         String       @id @default(uuid()) @db.Uuid
@@ -2064,6 +2156,8 @@ model Task {
   linkType       String?      @map("link_type") @db.VarChar(20)
   linkId         String?      @map("link_id") @db.VarChar(64)
   workflowRunId  String?      @map("workflow_run_id") @db.Uuid
+  /// Where the task came from: PERSON, WORKFLOW (an automation), AI_AGENT (proposed by the copilot and confirmed by a member), ALERT or CLOSE (the month-end checklist).
+  source         String       @default("PERSON") @db.VarChar(20)
   createdById    String?      @map("created_by_id") @db.Uuid
   closedById     String?      @map("closed_by_id") @db.Uuid
   closedAt       DateTime?    @map("closed_at") @db.Timestamptz(6)
@@ -2074,6 +2168,8 @@ model Task {
 
   @@index([orgId, status])
   @@index([orgId, assigneeUserId, status])
+  @@index([orgId, source, status])
+  @@index([orgId, linkType, linkId])
   @@map("tasks")
 }
 
@@ -2622,6 +2718,9 @@ model DimensionValue {
   description String?       @db.VarChar(500)
   /// Projects: who it is for, and when it runs.
   customer    String?       @db.VarChar(200)
+  /// Projects: the customer it is run for (its costs count against that customer's profit).
+  contactId   String?       @map("contact_id") @db.Uuid
+  contact     Contact?      @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict, map: "dimension_values_contact_fkey")
   startDate   DateTime?     @map("start_date") @db.Date
   endDate     DateTime?     @map("end_date") @db.Date
   isActive    Boolean       @default(true) @map("is_active")
@@ -2632,6 +2731,7 @@ model DimensionValue {
 
   @@unique([id, orgId])
   @@index([orgId, type])
+  @@index([orgId, contactId])
   @@map("dimension_values")
 }
 
@@ -3350,6 +3450,29 @@ model DisasterSimulation {
   @@map("disaster_simulations")
 }
 
+/// A saved business impact assessment: the business changes only (sales, HR, procurement,
+/// operations). Every view re-runs them against the books as they stand.
+model ImpactAssessment {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  number         Int
+  name           String       @db.VarChar(120)
+  description    String?      @db.VarChar(1000)
+  baselineMonths Int          @map("baseline_months")
+  horizonMonths  Int          @map("horizon_months")
+  /// [{ lever, ... }] as checked by the engine's checkChange
+  changes        Json
+  createdById    String       @map("created_by_id") @db.Uuid
+  updatedById    String       @map("updated_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([orgId, name])
+  @@map("impact_assessments")
+}
+
 /// A financial policy: the policy in words, the workflow rules that enforce it, and tests.
 /// `version` is the latest version; `activeVersion` is the one whose rules are running.
 model Policy {
@@ -3540,4 +3663,2074 @@ model ReportAiCall {
 
   @@index([orgId, createdAt])
   @@map("report_ai_calls")
+}
+
+/// Exchange rates an organisation records: functional currency per one unit of `currency`, from `date`.
+model ExchangeRate {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  currency    String       @db.Char(3)
+  date        DateTime     @db.Date
+  rate        Decimal      @db.Decimal(24, 10)
+  source      String?      @db.VarChar(200)
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([orgId, currency, date])
+  @@map("exchange_rates")
+}
+
+/// A period-end revaluation of foreign-currency balances: posted on `date`, reversed on `reversalDate`. Immutable.
+model FxRevaluation {
+  id              String       @id @default(uuid()) @db.Uuid
+  orgId           String       @map("org_id") @db.Uuid
+  number          Int
+  date            DateTime     @db.Date
+  reversalDate    DateTime     @map("reversal_date") @db.Date
+  rates           Json
+  lines           Json
+  gain            Decimal      @db.Decimal(24, 6)
+  journalEntryId  String       @unique @map("journal_entry_id") @db.Uuid
+  reversalEntryId String       @unique @map("reversal_entry_id") @db.Uuid
+  createdById     String       @map("created_by_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org             Organization @relation(fields: [orgId], references: [id])
+  journalEntry    JournalEntry @relation("FxRevaluationEntry", fields: [journalEntryId], references: [id])
+  reversalEntry   JournalEntry @relation("FxRevaluationReversal", fields: [reversalEntryId], references: [id])
+
+  @@unique([orgId, number])
+  @@unique([orgId, date])
+  @@map("fx_revaluations")
+}
+
+/// A message shown to every signed-in person while current (platform administration).
+model PlatformAnnouncement {
+  id          String    @id @db.Uuid
+  message     String
+  tone        String    @default("INFO") @db.VarChar(8)
+  startsAt    DateTime  @map("starts_at") @db.Timestamptz(6)
+  endsAt      DateTime? @map("ends_at") @db.Timestamptz(6)
+  createdBy   String    @map("created_by") @db.Uuid
+  creator     User      @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  withdrawnBy String?   @map("withdrawn_by") @db.Uuid
+  withdrawer  User?     @relation("AnnouncementWithdrawnBy", fields: [withdrawnBy], references: [id], onDelete: Restrict)
+
+  @@index([startsAt])
+  @@map("platform_announcements")
+}
+
+/// A Talk2Tax plan (platform billing; not an organisation's books). Edited by platform administrators.
+model Plan {
+  id            String                @id @db.Uuid
+  code          String                @unique @db.VarChar(24)
+  name          String                @db.VarChar(60)
+  description   String                @default("") @db.VarChar(300)
+  prices        Json
+  limits        Json
+  features      String[]              @default([])
+  isActive      Boolean               @default(true) @map("is_active")
+  sortOrder     Int                   @default(0) @map("sort_order")
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  subscriptions Subscription[]        @relation("SubscriptionPlan")
+  invoices      SubscriptionInvoice[]
+  requestedBy   Subscription[]        @relation("SubscriptionRequestedPlan")
+
+  @@map("plans")
+}
+
+/// An organisation's Talk2Tax subscription (one per organisation).
+model Subscription {
+  orgId              String       @id @map("org_id") @db.Uuid
+  org                Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  planId             String       @map("plan_id") @db.Uuid
+  plan               Plan         @relation("SubscriptionPlan", fields: [planId], references: [id], onDelete: Restrict)
+  status             String       @db.VarChar(16)
+  billingInterval    String?      @map("billing_interval") @db.VarChar(8)
+  currency           String       @db.Char(3)
+  price              Decimal?     @db.Decimal(12, 2)
+  trialEndsAt        DateTime?    @map("trial_ends_at") @db.Timestamptz(6)
+  currentPeriodStart DateTime?    @map("current_period_start") @db.Timestamptz(6)
+  currentPeriodEnd   DateTime?    @map("current_period_end") @db.Timestamptz(6)
+  paymentReference   String?      @map("payment_reference") @db.VarChar(200)
+  requestedPlanId    String?      @map("requested_plan_id") @db.Uuid
+  requestedPlan      Plan?        @relation("SubscriptionRequestedPlan", fields: [requestedPlanId], references: [id], onDelete: Restrict)
+  requestedInterval  String?      @map("requested_interval") @db.VarChar(8)
+  requestedAt        DateTime?    @map("requested_at") @db.Timestamptz(6)
+  requestedBy        String?      @map("requested_by") @db.Uuid
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("subscriptions")
+}
+
+/// What happened to a subscription (immutable).
+model SubscriptionEvent {
+  id        String       @id @db.Uuid
+  orgId     String       @map("org_id") @db.Uuid
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  kind      String       @db.VarChar(32)
+  data      Json         @default("{}")
+  actorId   String?      @map("actor_id") @db.Uuid
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, createdAt])
+  @@map("subscription_events")
+}
+
+/// A payment gateway the platform takes subscription payments through (set up in Platform administration).
+model PlatformPaymentGateway {
+  provider        String    @id @db.VarChar(16)
+  enabled         Boolean   @default(false)
+  mode            String    @default("TEST") @db.VarChar(8)
+  currencies      String[]  @default([])
+  keyId           String?   @map("key_id") @db.VarChar(100)
+  secretCipher    String?   @map("secret_cipher")
+  secretKeyId     String?   @map("secret_key_id") @db.VarChar(16)
+  secretHint      String?   @map("secret_hint") @db.VarChar(16)
+  webhookCipher   String?   @map("webhook_cipher")
+  webhookKeyId    String?   @map("webhook_key_id") @db.VarChar(16)
+  webhookHint     String?   @map("webhook_hint") @db.VarChar(16)
+  lastTestAt      DateTime? @map("last_test_at") @db.Timestamptz(6)
+  lastTestOk      Boolean?  @map("last_test_ok")
+  lastTestMessage String?   @map("last_test_message") @db.VarChar(500)
+  updatedBy       String?   @map("updated_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_payment_gateways")
+}
+
+/// The platform's own details printed on subscription invoices (one row).
+model PlatformBillingProfile {
+  id            Int      @id @default(1) @db.SmallInt
+  legalName     String   @map("legal_name") @db.VarChar(200)
+  address       String   @default("") @db.VarChar(500)
+  countryCode   String   @map("country_code") @db.Char(2)
+  gstin         String?  @db.VarChar(15)
+  stateCode     String?  @map("state_code") @db.Char(2)
+  email         String?  @db.VarChar(200)
+  gstRate       Decimal  @default(18) @map("gst_rate") @db.Decimal(5, 2)
+  sacCode       String   @default("998314") @map("sac_code") @db.VarChar(8)
+  invoicePrefix String   @default("T2T") @map("invoice_prefix") @db.VarChar(4)
+  updatedBy     String?  @map("updated_by") @db.Uuid
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_billing_profile")
+}
+
+/// A subscription charge: unpaid (a payment request), paid (a tax invoice) or void. Final once paid or void.
+model SubscriptionInvoice {
+  id                String       @id @db.Uuid
+  orgId             String       @map("org_id") @db.Uuid
+  org               Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  reference         String       @unique @db.VarChar(16)
+  number            String?      @unique @db.VarChar(16)
+  kind              String       @db.VarChar(8)
+  status            String       @default("OPEN") @db.VarChar(8)
+  planId            String       @map("plan_id") @db.Uuid
+  plan              Plan         @relation(fields: [planId], references: [id], onDelete: Restrict)
+  billingInterval   String       @map("billing_interval") @db.VarChar(8)
+  listPrice         Decimal      @map("list_price") @db.Decimal(12, 2)
+  periodStart       DateTime     @map("period_start") @db.Timestamptz(6)
+  periodEnd         DateTime     @map("period_end") @db.Timestamptz(6)
+  currency          String       @db.Char(3)
+  subtotal          Decimal      @db.Decimal(12, 2)
+  taxLines          Json         @default("[]") @map("tax_lines")
+  taxTotal          Decimal      @map("tax_total") @db.Decimal(12, 2)
+  total             Decimal      @db.Decimal(12, 2)
+  taxNote           String       @default("") @map("tax_note") @db.VarChar(300)
+  placeOfSupply     String?      @map("place_of_supply") @db.VarChar(40)
+  seller            Json
+  buyer             Json
+  issuedAt          DateTime     @default(now()) @map("issued_at") @db.Timestamptz(6)
+  dueAt             DateTime     @map("due_at") @db.Timestamptz(6)
+  paidAt            DateTime?    @map("paid_at") @db.Timestamptz(6)
+  voidedAt          DateTime?    @map("voided_at") @db.Timestamptz(6)
+  voidReason        String?      @map("void_reason") @db.VarChar(300)
+  gateway           String?      @db.VarChar(16)
+  checkoutRef       String?      @map("checkout_ref") @db.VarChar(100)
+  checkoutUrl       String?      @map("checkout_url") @db.VarChar(1000)
+  checkoutExpiresAt DateTime?    @map("checkout_expires_at") @db.Timestamptz(6)
+  paymentRef        String?      @map("payment_ref") @db.VarChar(200)
+  createdBy         String?      @map("created_by") @db.Uuid
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([gateway, checkoutRef], map: "subscription_invoices_checkout_key")
+  @@index([orgId, issuedAt])
+  @@map("subscription_invoices")
+}
+
+model SubscriptionInvoiceCounter {
+  series String @id @db.VarChar(8)
+  last   Int
+
+  @@map("subscription_invoice_counters")
+}
+
+/// A notification received from a payment gateway.
+model PaymentWebhookEvent {
+  id          String   @id @db.Uuid
+  provider    String   @db.VarChar(16)
+  eventId     String?  @map("event_id") @db.VarChar(200)
+  type        String   @default("") @db.VarChar(100)
+  signatureOk Boolean  @map("signature_ok")
+  outcome     String   @db.VarChar(300)
+  invoiceId   String?  @map("invoice_id") @db.Uuid
+  receivedAt  DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  @@unique([provider, eventId])
+  @@index([receivedAt])
+  @@map("payment_webhook_events")
+}
+
+/// A support ticket between an organisation and the people who run Talk2Tax (M9 slice 4).
+model SupportTicket {
+  id              String           @id @db.Uuid
+  orgId           String           @map("org_id") @db.Uuid
+  number          Int              @unique @default(autoincrement())
+  subject         String           @db.VarChar(200)
+  category        String           @db.VarChar(12)
+  priority        String           @db.VarChar(8)
+  status          String           @default("OPEN") @db.VarChar(8)
+  createdBy       String           @map("created_by") @db.Uuid
+  assigneeId      String?          @map("assignee_id") @db.Uuid
+  firstResponseAt DateTime?        @map("first_response_at") @db.Timestamptz(6)
+  resolvedAt      DateTime?        @map("resolved_at") @db.Timestamptz(6)
+  closedAt        DateTime?        @map("closed_at") @db.Timestamptz(6)
+  lastMessageAt   DateTime         @default(now()) @map("last_message_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  messages        SupportMessage[]
+
+  @@unique([id, orgId])
+  @@index([orgId, createdAt])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+/// One message on a ticket. Never edited or deleted; internal notes are never shown to the organisation.
+model SupportMessage {
+  id        String        @id @db.Uuid
+  ticketId  String        @map("ticket_id") @db.Uuid
+  orgId     String        @map("org_id") @db.Uuid
+  ticket    SupportTicket @relation(fields: [ticketId, orgId], references: [id, orgId], onDelete: Restrict)
+  authorId  String        @map("author_id") @db.Uuid
+  side      String        @db.VarChar(8)
+  internal  Boolean       @default(false)
+  body      String
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
+}
+
+/// Time-limited read-only support access to an organisation's books, granted by the organisation.
+model SupportAccessGrant {
+  id        String    @id @db.Uuid
+  orgId     String    @map("org_id") @db.Uuid
+  ticketId  String?   @map("ticket_id") @db.Uuid
+  reason    String    @db.VarChar(500)
+  grantedBy String    @map("granted_by") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedBy String?   @map("revoked_by") @db.Uuid
+
+  @@unique([id, orgId])
+  @@index([orgId, expiresAt])
+  @@map("support_access_grants")
+}
+
+/// Each request support made under a grant. Append-only.
+model SupportAccessView {
+  id        BigInt   @id @default(autoincrement())
+  grantId   String   @map("grant_id") @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  path      String   @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, createdAt])
+  @@map("support_access_views")
+}
+
+/// One metered use counted against the plan's monthly limits (M9 slice 5). Append-only.
+model UsageEvent {
+  id           BigInt   @id @default(autoincrement())
+  orgId        String   @map("org_id") @db.Uuid
+  kind         String   @db.VarChar(8)
+  source       String?  @db.VarChar(16)
+  inputTokens  Int      @default(0) @map("input_tokens")
+  outputTokens Int      @default(0) @map("output_tokens")
+  bytes        Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, kind, createdAt])
+  @@index([createdAt])
+  @@map("usage_events")
+}
+
+/// Operations (M9 slice 6). A flag without a row is at its default.
+model FeatureFlag {
+  key            String   @id @db.VarChar(48)
+  enabled        Boolean
+  rolloutPercent Int      @default(100) @map("rollout_percent")
+  note           String?
+  updatedBy      String   @map("updated_by") @db.Uuid
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("feature_flags")
+}
+
+model FeatureFlagOverride {
+  flagKey   String   @map("flag_key") @db.VarChar(48)
+  orgId     String   @map("org_id") @db.Uuid
+  enabled   Boolean
+  reason    String
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@id([flagKey, orgId])
+  @@index([orgId])
+  @@map("feature_flag_overrides")
+}
+
+model MaintenanceWindow {
+  id            String    @id @db.Uuid
+  message       String
+  startsAt      DateTime  @map("starts_at") @db.Timestamptz(6)
+  expectedEndAt DateTime? @map("expected_end_at") @db.Timestamptz(6)
+  createdBy     String    @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  endedAt       DateTime? @map("ended_at") @db.Timestamptz(6)
+  endedBy       String?   @map("ended_by") @db.Uuid
+
+  @@index([startsAt])
+  @@map("maintenance_windows")
+}
+
+model ErrorGroup {
+  id          String       @id @db.Uuid
+  fingerprint String       @unique @db.VarChar(64)
+  name        String       @db.VarChar(200)
+  message     String
+  method      String       @db.VarChar(8)
+  route       String       @db.VarChar(300)
+  frame       String?      @db.VarChar(500)
+  occurrences Int          @default(0)
+  firstSeenAt DateTime     @default(now()) @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime     @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  resolvedAt  DateTime?    @map("resolved_at") @db.Timestamptz(6)
+  resolvedBy  String?      @map("resolved_by") @db.Uuid
+  events      ErrorEvent[]
+
+  @@index([lastSeenAt])
+  @@map("error_groups")
+}
+
+model ErrorEvent {
+  id        BigInt     @id @default(autoincrement())
+  groupId   String     @map("group_id") @db.Uuid
+  group     ErrorGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  requestId String     @map("request_id") @db.VarChar(64)
+  status    Int
+  method    String     @db.VarChar(8)
+  path      String     @db.VarChar(500)
+  orgId     String?    @map("org_id") @db.Uuid
+  userId    String?    @map("user_id") @db.Uuid
+  message   String
+  stack     String?
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([groupId, createdAt])
+  @@index([requestId])
+  @@index([createdAt])
+  @@map("error_events")
+}
+
+enum CrmLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  DISQUALIFIED
+  CONVERTED
+}
+
+enum CrmLeadSource {
+  WEBSITE
+  REFERRAL
+  EVENT
+  OUTBOUND
+  PARTNER
+  ADVERTISING
+  OTHER
+}
+
+enum CrmDealStage {
+  PROSPECTING
+  QUALIFICATION
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum CrmActivityKind {
+  CREATED
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  STATUS_CHANGED
+  STAGE_CHANGED
+  CONVERTED
+  UPDATED
+}
+
+/// Someone who might buy. Never deleted; once converted to a customer it is closed for good.
+model CrmLead {
+  id                 String        @id @default(uuid()) @db.Uuid
+  orgId              String        @map("org_id") @db.Uuid
+  /// Shown as LD-0001.
+  number             Int
+  name               String        @db.VarChar(200)
+  company            String?       @db.VarChar(200)
+  email              String?       @db.VarChar(254)
+  phone              String?       @db.VarChar(40)
+  source             CrmLeadSource @default(OTHER)
+  status             CrmLeadStatus @default(NEW)
+  /// The member working the lead.
+  ownerId            String?       @map("owner_id") @db.Uuid
+  /// A first guess at what the lead might buy, in the functional currency.
+  estimatedValue     Decimal?      @map("estimated_value") @db.Decimal(24, 6)
+  notes              String?       @db.VarChar(2000)
+  /// The other system's id when the lead came through the CRM API; unique in the organisation.
+  externalRef        String?       @map("external_ref") @db.VarChar(100)
+  disqualifiedReason String?       @map("disqualified_reason") @db.VarChar(500)
+  convertedContactId String?       @map("converted_contact_id") @db.Uuid
+  convertedDealId    String?       @map("converted_deal_id") @db.Uuid
+  convertedAt        DateTime?     @map("converted_at") @db.Timestamptz(6)
+  createdById        String        @map("created_by_id") @db.Uuid
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  activities         CrmActivity[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@unique([orgId, externalRef])
+  @@index([orgId, status])
+  @@map("crm_leads")
+}
+
+/// A sale being worked on for a customer, through the pipeline stages to won or lost. Never deleted.
+model CrmDeal {
+  id                String        @id @default(uuid()) @db.Uuid
+  orgId             String        @map("org_id") @db.Uuid
+  /// Shown as DL-0001.
+  number            Int
+  name              String        @db.VarChar(200)
+  contactId         String        @map("contact_id") @db.Uuid
+  /// The lead it came from, when it was converted from one.
+  leadId            String?       @map("lead_id") @db.Uuid
+  /// In the organisation's functional currency.
+  amount            Decimal       @db.Decimal(24, 6)
+  stage             CrmDealStage  @default(PROSPECTING)
+  /// Whole percent, 0 to 100.
+  probability       Int
+  expectedCloseDate DateTime      @map("expected_close_date") @db.Date
+  ownerId           String?       @map("owner_id") @db.Uuid
+  closedOn          DateTime?     @map("closed_on") @db.Date
+  lostReason        String?       @map("lost_reason") @db.VarChar(500)
+  notes             String?       @db.VarChar(2000)
+  /// The other system's id when the deal came through the CRM API; unique in the organisation.
+  externalRef       String?       @map("external_ref") @db.VarChar(100)
+  createdById       String        @map("created_by_id") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org               Organization  @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  activities        CrmActivity[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@unique([orgId, externalRef])
+  @@index([orgId, stage])
+  @@index([orgId, contactId])
+  @@map("crm_deals")
+}
+
+/// What happened on a lead or a deal: notes, calls, emails, meetings and every change. Append-only.
+model CrmActivity {
+  id        String          @id @default(uuid()) @db.Uuid
+  orgId     String          @map("org_id") @db.Uuid
+  leadId    String?         @map("lead_id") @db.Uuid
+  dealId    String?         @map("deal_id") @db.Uuid
+  kind      CrmActivityKind
+  body      String?         @db.VarChar(4000)
+  data      Json?
+  actorId   String          @map("actor_id") @db.Uuid
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  org       Organization    @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lead      CrmLead?        @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  deal      CrmDeal?        @relation(fields: [dealId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, leadId, createdAt])
+  @@index([orgId, dealId, createdAt])
+  @@map("crm_activities")
+}
+
+enum SalesQuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  SUPERSEDED
+}
+
+enum SalesOrderStatus {
+  OPEN
+  CANCELLED
+}
+
+/// A quotation offered to a customer, valid until a date. Revisions keep the number with a higher revision.
+model SalesQuote {
+  id            String           @id @default(uuid()) @db.Uuid
+  orgId         String           @map("org_id") @db.Uuid
+  /// Shown as QT-0001 (revision 2 as QT-0001-R2).
+  number        Int
+  revision      Int              @default(1)
+  previousId    String?          @map("previous_id") @db.Uuid
+  contactId     String           @map("contact_id") @db.Uuid
+  dealId        String?          @map("deal_id") @db.Uuid
+  status        SalesQuoteStatus @default(DRAFT)
+  issueDate     DateTime         @map("issue_date") @db.Date
+  validUntil    DateTime         @map("valid_until") @db.Date
+  placeOfSupply String?          @map("place_of_supply") @db.Char(2)
+  reference     String?          @db.VarChar(100)
+  terms         String?          @db.VarChar(4000)
+  memo          String?          @db.VarChar(1000)
+  currency      String           @db.Char(3)
+  subtotal      Decimal          @db.Decimal(24, 6)
+  taxTotal      Decimal          @map("tax_total") @db.Decimal(24, 6)
+  total         Decimal          @db.Decimal(24, 6)
+  sentAt        DateTime?        @map("sent_at") @db.Timestamptz(6)
+  decidedAt     DateTime?        @map("decided_at") @db.Timestamptz(6)
+  declineReason String?          @map("decline_reason") @db.VarChar(500)
+  orderId       String?          @map("order_id") @db.Uuid
+  createdById   String           @map("created_by_id") @db.Uuid
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org           Organization     @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines         SalesQuoteLine[]
+
+  @@unique([orgId, number, revision])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("sales_quotes")
+}
+
+model SalesQuoteLine {
+  id          String     @id @default(uuid()) @db.Uuid
+  orgId       String     @map("org_id") @db.Uuid
+  quoteId     String     @map("quote_id") @db.Uuid
+  lineNo      Int        @map("line_no")
+  description String?    @db.VarChar(500)
+  accountId   String     @map("account_id") @db.Uuid
+  quantity    Decimal    @db.Decimal(24, 6)
+  unitPrice   Decimal    @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?    @map("tax_rate_id") @db.Uuid
+  hsnCode     String?    @map("hsn_code")
+  netAmount   Decimal    @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal    @map("tax_amount") @db.Decimal(24, 6)
+  quote       SalesQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@unique([quoteId, lineNo])
+  @@map("sales_quote_lines")
+}
+
+/// A customer's confirmed order, from an accepted quotation or entered directly, billed by invoices.
+model SalesOrder {
+  id            String              @id @default(uuid()) @db.Uuid
+  orgId         String              @map("org_id") @db.Uuid
+  /// Shown as SO-0001.
+  number        Int
+  contactId     String              @map("contact_id") @db.Uuid
+  quoteId       String?             @unique @map("quote_id") @db.Uuid
+  dealId        String?             @map("deal_id") @db.Uuid
+  orderDate     DateTime            @map("order_date") @db.Date
+  placeOfSupply String?             @map("place_of_supply") @db.Char(2)
+  /// The customer's purchase order number.
+  reference     String?             @db.VarChar(100)
+  memo          String?             @db.VarChar(1000)
+  currency      String              @db.Char(3)
+  subtotal      Decimal             @db.Decimal(24, 6)
+  taxTotal      Decimal             @map("tax_total") @db.Decimal(24, 6)
+  total         Decimal             @db.Decimal(24, 6)
+  status        SalesOrderStatus    @default(OPEN)
+  billingMethod SalesBillingMethod  @default(DELIVERY) @map("billing_method")
+  cancelReason  String?             @map("cancel_reason") @db.VarChar(500)
+  cancelledAt   DateTime?           @map("cancelled_at") @db.Timestamptz(6)
+  createdById   String              @map("created_by_id") @db.Uuid
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org           Organization        @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines         SalesOrderLine[]
+  billings      SalesOrderBilling[]
+  milestones    SalesOrderMilestone[]
+  progressClaims SalesOrderProgressClaim[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("sales_orders")
+}
+
+model SalesOrderLine {
+  id          String              @id @default(uuid()) @db.Uuid
+  orgId       String              @map("org_id") @db.Uuid
+  orderId     String              @map("order_id") @db.Uuid
+  lineNo      Int                 @map("line_no")
+  description String?             @db.VarChar(500)
+  accountId   String              @map("account_id") @db.Uuid
+  quantity    Decimal             @db.Decimal(24, 6)
+  unitPrice   Decimal             @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?             @map("tax_rate_id") @db.Uuid
+  hsnCode     String?             @map("hsn_code")
+  netAmount   Decimal             @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal             @map("tax_amount") @db.Decimal(24, 6)
+  order       SalesOrder          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  billings    SalesOrderBilling[]
+
+  @@unique([orderId, lineNo])
+  @@map("sales_order_lines")
+}
+
+/// A quantity of an order line sent to an invoice. Removed with a deleted draft invoice; ignored once the invoice is void.
+model SalesOrderBilling {
+  id          String         @id @default(uuid()) @db.Uuid
+  orgId       String         @map("org_id") @db.Uuid
+  orderId     String         @map("order_id") @db.Uuid
+  orderLineId String         @map("order_line_id") @db.Uuid
+  documentId  String         @map("document_id") @db.Uuid
+  quantity    Decimal        @db.Decimal(24, 6)
+  createdById String         @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  order       SalesOrder     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  line        SalesOrderLine @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, documentId])
+  @@index([orderLineId])
+  @@map("sales_order_billings")
+}
+
+enum SalesContractStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
+enum ContractFrequency {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+enum ContractTiming {
+  ADVANCE
+  ARREARS
+}
+
+enum ContractPeriodStatus {
+  BILLED
+  SKIPPED
+}
+
+/// A customer contract billed every period into a draft invoice (CRM slice 3). Shown as CT-0001.
+model SalesContract {
+  id               String                @id @default(uuid()) @db.Uuid
+  orgId            String                @map("org_id") @db.Uuid
+  number           Int
+  contactId        String                @map("contact_id") @db.Uuid
+  dealId           String?               @map("deal_id") @db.Uuid
+  title            String                @db.VarChar(200)
+  status           SalesContractStatus   @default(DRAFT)
+  frequency        ContractFrequency
+  timing           ContractTiming        @default(ADVANCE)
+  startDate        DateTime              @map("start_date") @db.Date
+  /// Null: rolls on until cancelled.
+  endDate          DateTime?             @map("end_date") @db.Date
+  /// The next period to bill or skip (1 for the first).
+  nextPeriodNo     Int                   @default(1) @map("next_period_no")
+  autoRenew        Boolean               @default(false) @map("auto_renew")
+  renewalMonths    Int?                  @map("renewal_months")
+  noticeDays       Int                   @default(30) @map("notice_days")
+  paymentTermsDays Int?                  @map("payment_terms_days")
+  placeOfSupply    String?               @map("place_of_supply") @db.Char(2)
+  /// The customer's purchase order or contract reference.
+  reference        String?               @db.VarChar(100)
+  memo             String?               @db.VarChar(1000)
+  currency         String                @db.Char(3)
+  /// Per period.
+  subtotal         Decimal               @db.Decimal(24, 6)
+  taxTotal         Decimal               @map("tax_total") @db.Decimal(24, 6)
+  total            Decimal               @db.Decimal(24, 6)
+  activatedAt      DateTime?             @map("activated_at") @db.Timestamptz(6)
+  cancelReason     String?               @map("cancel_reason") @db.VarChar(500)
+  cancelledAt      DateTime?             @map("cancelled_at") @db.Timestamptz(6)
+  endedAt          DateTime?             @map("ended_at") @db.Timestamptz(6)
+  lastError        String?               @map("last_error") @db.VarChar(1000)
+  lastErrorAt      DateTime?             @map("last_error_at") @db.Timestamptz(6)
+  createdById      String                @map("created_by_id") @db.Uuid
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org              Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines            SalesContractLine[]
+  periods          SalesContractPeriod[]
+  events           SalesContractEvent[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@index([status])
+  @@map("sales_contracts")
+}
+
+model SalesContractLine {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  contractId  String        @map("contract_id") @db.Uuid
+  lineNo      Int           @map("line_no")
+  description String?       @db.VarChar(500)
+  accountId   String        @map("account_id") @db.Uuid
+  quantity    Decimal       @db.Decimal(24, 6)
+  unitPrice   Decimal       @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?       @map("tax_rate_id") @db.Uuid
+  hsnCode     String?       @map("hsn_code")
+  netAmount   Decimal       @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal       @map("tax_amount") @db.Decimal(24, 6)
+  contract    SalesContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, lineNo])
+  @@unique([id, orgId])
+  @@map("sales_contract_lines")
+}
+
+model SalesContractPeriod {
+  id          String               @id @default(uuid()) @db.Uuid
+  orgId       String               @map("org_id") @db.Uuid
+  contractId  String               @map("contract_id") @db.Uuid
+  periodNo    Int                  @map("period_no")
+  periodStart DateTime             @map("period_start") @db.Date
+  periodEnd   DateTime             @map("period_end") @db.Date
+  status      ContractPeriodStatus
+  documentId  String?              @map("document_id") @db.Uuid
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contract    SalesContract        @relation(fields: [contractId], references: [id], onDelete: Restrict)
+
+  @@unique([contractId, periodNo])
+  @@index([orgId, documentId])
+  @@map("sales_contract_periods")
+}
+
+/// Append-only history of a contract (actor null: the billing runner).
+model SalesContractEvent {
+  id         String        @id @default(uuid()) @db.Uuid
+  orgId      String        @map("org_id") @db.Uuid
+  contractId String        @map("contract_id") @db.Uuid
+  kind       String        @db.VarChar(40)
+  body       String        @db.VarChar(1000)
+  data       Json?
+  actorId    String?       @map("actor_id") @db.Uuid
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  contract   SalesContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId, createdAt])
+  @@map("sales_contract_events")
+}
+
+/// A revenue forecast as it stood on a day (RF-0001), kept to compare with what was invoiced. Never changes.
+model RevenueForecast {
+  id             String       @id @default(uuid()) @db.Uuid
+  orgId          String       @map("org_id") @db.Uuid
+  number         Int
+  asOf           DateTime     @map("as_of") @db.Date
+  months         Int
+  currency       String       @db.Char(3)
+  actualSoFar    Decimal      @map("actual_so_far") @db.Decimal(24, 6)
+  committedTotal Decimal      @map("committed_total") @db.Decimal(24, 6)
+  expectedTotal  Decimal      @map("expected_total") @db.Decimal(24, 6)
+  bestTotal      Decimal      @map("best_total") @db.Decimal(24, 6)
+  /// { months: ForecastMonth[], items: ForecastItem[] } as worked out that day.
+  data           Json
+  note           String?      @db.VarChar(500)
+  createdById    String       @map("created_by_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, asOf])
+  @@map("revenue_forecasts")
+}
+
+/// A key another system uses to call the CRM API (/v1/crm-api) for one organisation. Only a
+/// SHA-256 of the key is kept; the key is shown once. It acts with its creator's role, limited to
+/// its scopes, and stops working when revoked or when its creator leaves. Never deleted.
+model ApiKey {
+  id          String       @id @default(uuid()) @db.Uuid
+  orgId       String       @map("org_id") @db.Uuid
+  name        String       @db.VarChar(100)
+  /// The visible start of the key (t2t_<prefix>_…), used to find it and shown in lists.
+  prefix      String       @unique @db.VarChar(16)
+  keyHash     String       @unique @map("key_hash") @db.Char(64)
+  /// crm.read and/or crm.write.
+  scopes      String[]
+  createdById String       @map("created_by_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt   DateTime?    @map("expires_at") @db.Timestamptz(6)
+  lastUsedAt  DateTime?    @map("last_used_at") @db.Timestamptz(6)
+  revokedAt   DateTime?    @map("revoked_at") @db.Timestamptz(6)
+  revokedById String?      @map("revoked_by_id") @db.Uuid
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("api_keys")
+}
+
+/// Sends CRM events to another system. Events are read from the audit trail after last_event_id;
+/// each becomes one signed delivery, tried again on failure. The secret is sealed by the API.
+model CrmWebhook {
+  id           String               @id @default(uuid()) @db.Uuid
+  orgId        String               @map("org_id") @db.Uuid
+  name         String               @db.VarChar(100)
+  url          String               @db.VarChar(500)
+  events       String[]
+  secretCipher String               @map("secret_cipher")
+  secretKeyId  String               @map("secret_key_id") @db.VarChar(16)
+  secretHint   String               @map("secret_hint") @db.VarChar(16)
+  enabled      Boolean              @default(true)
+  lastEventId  BigInt               @map("last_event_id")
+  createdById  String               @map("created_by_id") @db.Uuid
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org          Organization         @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  deliveries   CrmWebhookDelivery[]
+
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("crm_webhooks")
+}
+
+/// One event sent (or being sent) to a CRM webhook. The same body is sent on every attempt.
+model CrmWebhookDelivery {
+  id              String       @id @default(uuid()) @db.Uuid
+  orgId           String       @map("org_id") @db.Uuid
+  webhookId       String       @map("webhook_id") @db.Uuid
+  /// The audit event it came from; null for a test delivery.
+  eventId         BigInt?      @map("event_id")
+  event           String       @db.VarChar(40)
+  body            String
+  /// PENDING, SUCCEEDED or FAILED.
+  status          String       @default("PENDING") @db.VarChar(10)
+  attempts        Int          @default(0)
+  nextAttemptAt   DateTime?    @map("next_attempt_at") @db.Timestamptz(6)
+  lastStatusCode  Int?         @map("last_status_code")
+  lastError       String?      @map("last_error") @db.VarChar(300)
+  responseSnippet String?      @map("response_snippet") @db.VarChar(500)
+  durationMs      Int?         @map("duration_ms")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  finishedAt      DateTime?    @map("finished_at") @db.Timestamptz(6)
+  org             Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  webhook         CrmWebhook   @relation(fields: [webhookId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([webhookId, eventId])
+  @@index([orgId, webhookId, createdAt])
+  @@map("crm_webhook_deliveries")
+}
+
+enum JournalTemplateStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum RecurringPostMode {
+  DRAFT
+  POST
+}
+
+enum RecurringScheduleStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+/// A journal entered again and again (GL-012), optionally posting itself on a schedule (GL-007).
+model JournalTemplate {
+  id             String                   @id @default(uuid()) @db.Uuid
+  orgId          String                   @map("org_id") @db.Uuid
+  number         Int
+  name           String                   @db.VarChar(120)
+  description    String?                  @db.VarChar(500)
+  /// STANDARD or ADJUSTING. Scheduled runs are posted as RECURRING journals.
+  journalType    String                   @default("STANDARD") @map("journal_type") @db.VarChar(20)
+  /// May hold placeholders such as {month}.
+  memo           String?                  @db.VarChar(1000)
+  reference      String?                  @db.VarChar(100)
+  status         JournalTemplateStatus    @default(ACTIVE)
+  /// Null: no schedule.
+  frequency      ContractFrequency?
+  startDate      DateTime?                @map("start_date") @db.Date
+  endDate        DateTime?                @map("end_date") @db.Date
+  monthEnd       Boolean                  @default(false) @map("month_end")
+  postMode       RecurringPostMode        @default(DRAFT) @map("post_mode")
+  scheduleStatus RecurringScheduleStatus? @map("schedule_status")
+  nextRunNo      Int                      @default(1) @map("next_run_no")
+  lastError      String?                  @map("last_error") @db.VarChar(1000)
+  lastErrorAt    DateTime?                @map("last_error_at") @db.Timestamptz(6)
+  createdById    String                   @map("created_by_id") @db.Uuid
+  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org            Organization             @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  lines          JournalTemplateLine[]
+  runs           JournalTemplateRun[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([scheduleStatus])
+  @@map("journal_templates")
+}
+
+model JournalTemplateLine {
+  id           String          @id @default(uuid()) @db.Uuid
+  orgId        String          @map("org_id") @db.Uuid
+  templateId   String          @map("template_id") @db.Uuid
+  lineNo       Int             @map("line_no")
+  accountId    String          @map("account_id") @db.Uuid
+  debit        Decimal         @default(0) @db.Decimal(24, 6)
+  credit       Decimal         @default(0) @db.Decimal(24, 6)
+  /// Null: the functional currency.
+  currency     String?         @db.Char(3)
+  description  String?         @db.VarChar(500)
+  departmentId String?         @map("department_id") @db.Uuid
+  projectId    String?         @map("project_id") @db.Uuid
+  template     JournalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  account      Account         @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@unique([templateId, lineNo])
+  @@map("journal_template_lines")
+}
+
+/// Append-only: one row per journal a template made (run_no null: posted by hand).
+model JournalTemplateRun {
+  id             String          @id @default(uuid()) @db.Uuid
+  orgId          String          @map("org_id") @db.Uuid
+  templateId     String          @map("template_id") @db.Uuid
+  runNo          Int?            @map("run_no")
+  runDate        DateTime        @map("run_date") @db.Date
+  journalEntryId String?         @map("journal_entry_id") @db.Uuid
+  entryNumber    Int?            @map("entry_number")
+  posted         Boolean
+  /// Null: the schedule runner.
+  actorId        String?         @map("actor_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  template       JournalTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  @@unique([templateId, runNo])
+  @@index([templateId, createdAt])
+  @@index([journalEntryId])
+  @@map("journal_template_runs")
+}
+
+enum WriteOffStatus {
+  ACTIVE
+  REVERSED
+}
+
+/// The accounts and provision matrix (percent per ageing bucket) for bad debts (AR-026).
+model BadDebtSettings {
+  orgId              String   @id @map("org_id") @db.Uuid
+  expenseAccountId   String   @map("expense_account_id") @db.Uuid
+  allowanceAccountId String   @map("allowance_account_id") @db.Uuid
+  rates              Json
+  updatedById        String   @map("updated_by_id") @db.Uuid
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("bad_debt_settings")
+}
+
+/// An invoice provided for at its own percentage (a specific provision).
+model DoubtfulInvoice {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  documentId  String   @unique @map("document_id") @db.Uuid
+  percent     Decimal  @db.Decimal(7, 4)
+  reason      String   @db.VarChar(500)
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([orgId])
+  @@map("doubtful_invoices")
+}
+
+/// A bad-debt write-off (AR-027): settles what is left on an invoice through an allocation.
+model BadDebtWriteOff {
+  id                      String         @id @default(uuid()) @db.Uuid
+  orgId                   String         @map("org_id") @db.Uuid
+  number                  Int
+  documentId              String         @map("document_id") @db.Uuid
+  contactId               String         @map("contact_id") @db.Uuid
+  date                    DateTime       @db.Date
+  currency                String         @db.Char(3)
+  /// In the invoice currency.
+  amount                  Decimal        @db.Decimal(24, 6)
+  /// The invoice's rate.
+  exchangeRate            Decimal        @map("exchange_rate") @db.Decimal(24, 10)
+  functionalAmount        Decimal        @map("functional_amount") @db.Decimal(24, 6)
+  /// Debited: the bad-debt expense or the allowance for doubtful debts.
+  accountId               String         @map("account_id") @db.Uuid
+  reason                  String         @db.VarChar(500)
+  status                  WriteOffStatus @default(ACTIVE)
+  journalEntryId          String         @unique @map("journal_entry_id") @db.Uuid
+  reversedOn              DateTime?      @map("reversed_on") @db.Date
+  reversalReason          String?        @map("reversal_reason") @db.VarChar(500)
+  reversalJournalEntryId  String?        @unique @map("reversal_journal_entry_id") @db.Uuid
+  reversedById            String?        @map("reversed_by_id") @db.Uuid
+  createdById             String         @map("created_by_id") @db.Uuid
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  allocations             Allocation[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, documentId])
+  @@index([orgId, contactId])
+  @@map("bad_debt_write_offs")
+}
+
+/// One provision run (append-only): the matrix, the result, and the posting that set the allowance.
+model BadDebtProvision {
+  id             String   @id @default(uuid()) @db.Uuid
+  orgId          String   @map("org_id") @db.Uuid
+  number         Int
+  asOf           DateTime @map("as_of") @db.Date
+  rates          Json
+  result         Json
+  required       Decimal  @db.Decimal(24, 6)
+  carried        Decimal  @db.Decimal(24, 6)
+  adjustment     Decimal  @db.Decimal(24, 6)
+  journalEntryId String?  @unique @map("journal_entry_id") @db.Uuid
+  memo           String?  @db.VarChar(500)
+  createdById    String   @map("created_by_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([orgId, number])
+  @@map("bad_debt_provisions")
+}
+
+enum YearEndCloseStatus {
+  ACTIVE
+  REVERSED
+}
+
+/// A fiscal year's revenue and expense accounts closed to retained earnings by one closing journal (GL-011). Immutable apart from one reversal.
+model YearEndClose {
+  id                        String             @id @default(uuid()) @db.Uuid
+  orgId                     String             @map("org_id") @db.Uuid
+  number                    Int
+  fiscalYear                Int                @map("fiscal_year")
+  closingDate               DateTime           @map("closing_date") @db.Date
+  retainedEarningsAccountId String             @map("retained_earnings_account_id") @db.Uuid
+  /// The year's profit (revenue less expenses, closing entries left out) when this close was made.
+  profit                    Decimal            @db.Decimal(24, 6)
+  /// Credited to retained earnings by this close (negative: debited, a loss).
+  toRetainedEarnings        Decimal            @map("to_retained_earnings") @db.Decimal(24, 6)
+  accounts                  Int
+  journalEntryId            String             @unique @map("journal_entry_id") @db.Uuid
+  memo                      String?            @db.VarChar(400)
+  status                    YearEndCloseStatus @default(ACTIVE)
+  reversedOn                DateTime?          @map("reversed_on") @db.Date
+  reversalReason            String?            @map("reversal_reason") @db.VarChar(500)
+  reversalJournalEntryId    String?            @unique @map("reversal_journal_entry_id") @db.Uuid
+  reversedById              String?            @map("reversed_by_id") @db.Uuid
+  createdById               String             @map("created_by_id") @db.Uuid
+  createdAt                 DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, fiscalYear])
+  @@map("year_end_closes")
+}
+
+enum PaymentBatchStatus {
+  DRAFT
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+/// A vendor's bank account for payments (AP-027). Any change clears the verification (trigger); verified by someone other than who changed it.
+model VendorBankDetails {
+  contactId        String    @id @map("contact_id") @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  accountName      String    @map("account_name") @db.VarChar(140)
+  accountNumber    String    @map("account_number") @db.VarChar(34)
+  /// Null for international bank details (AP-023).
+  ifsc             String?   @db.Char(11)
+  bankName         String?   @map("bank_name") @db.VarChar(140)
+  /// DOMESTIC (IFSC) or INTERNATIONAL (SWIFT/BIC, IBAN or account number, bank country).
+  kind             String    @default("DOMESTIC") @db.VarChar(13)
+  swiftBic         String?   @map("swift_bic") @db.VarChar(11)
+  bankCountry      String?   @map("bank_country") @db.Char(2)
+  bankAddress      String?   @map("bank_address") @db.VarChar(300)
+  routingCode      String?   @map("routing_code") @db.VarChar(20)
+  intermediarySwift String?  @map("intermediary_swift") @db.VarChar(11)
+  changedById      String    @map("changed_by_id") @db.Uuid
+  changedAt        DateTime  @default(now()) @map("changed_at") @db.Timestamptz(6)
+  verifiedById     String?   @map("verified_by_id") @db.Uuid
+  verifiedAt       DateTime? @map("verified_at") @db.Timestamptz(6)
+  verificationNote String?   @map("verification_note") @db.VarChar(500)
+
+  @@unique([contactId, orgId])
+  @@index([orgId])
+  @@map("vendor_bank_details")
+}
+
+/// Every change of a vendor's bank details (append-only, account numbers masked).
+model VendorBankDetailChange {
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  contactId    String   @map("contact_id") @db.Uuid
+  beforeMasked String?  @map("before_masked") @db.VarChar(80)
+  afterMasked  String   @map("after_masked") @db.VarChar(80)
+  changedById  String   @map("changed_by_id") @db.Uuid
+  changedAt    DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@index([orgId, contactId])
+  @@map("vendor_bank_detail_changes")
+}
+
+/// Bills paid together from one bank account on one date (AP-014): prepared, approved by a second person, sent to the bank, recorded as paid.
+model PaymentBatch {
+  id               String             @id @default(uuid()) @db.Uuid
+  orgId            String             @map("org_id") @db.Uuid
+  number           Int
+  bankAccountId    String             @map("bank_account_id") @db.Uuid
+  paymentDate      DateTime           @map("payment_date") @db.Date
+  currency         String             @db.Char(3)
+  memo             String?            @db.VarChar(400)
+  status           PaymentBatchStatus @default(DRAFT)
+  createdById      String             @map("created_by_id") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  approvedById     String?            @map("approved_by_id") @db.Uuid
+  approvedAt       DateTime?          @map("approved_at") @db.Timestamptz(6)
+  selfApproved     Boolean            @default(false) @map("self_approved")
+  fileDownloadedAt DateTime?          @map("file_downloaded_at") @db.Timestamptz(6)
+  paidById         String?            @map("paid_by_id") @db.Uuid
+  paidAt           DateTime?          @map("paid_at") @db.Timestamptz(6)
+  cancelledById    String?            @map("cancelled_by_id") @db.Uuid
+  cancelledAt      DateTime?          @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason     String?            @map("cancel_reason") @db.VarChar(500)
+  updatedAt        DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items            PaymentBatchItem[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@map("payment_batches")
+}
+
+model PaymentBatchItem {
+  id         String       @id @default(uuid()) @db.Uuid
+  orgId      String       @map("org_id") @db.Uuid
+  batchId    String       @map("batch_id") @db.Uuid
+  documentId String       @map("document_id") @db.Uuid
+  contactId  String       @map("contact_id") @db.Uuid
+  amount     Decimal      @db.Decimal(24, 6)
+  paymentId  String?      @map("payment_id") @db.Uuid
+  open       Boolean      @default(true)
+  batch      PaymentBatch @relation(fields: [batchId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([batchId, documentId])
+  @@index([orgId, batchId])
+  @@map("payment_batch_items")
+}
+
+/// AP-005 recurring bills: a vendor bill made again on a schedule (RB-0001).
+model RecurringBill {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  orgId                String                  @map("org_id") @db.Uuid
+  number               Int
+  name                 String                  @db.VarChar(120)
+  contactId            String                  @map("contact_id") @db.Uuid
+  /// May hold placeholders such as {month}; must change from run to run (duplicate bill check).
+  reference            String?                 @db.VarChar(100)
+  memo                 String?                 @db.VarChar(1000)
+  /// India GST: null takes the registration's state, as a bill entered by hand.
+  placeOfSupply        String?                 @map("place_of_supply") @db.Char(2)
+  reverseCharge        Boolean                 @default(false) @map("reverse_charge")
+  withholdingSectionId String?                 @map("withholding_section_id") @db.Uuid
+  /// Days after the bill date the bill is due; null: the vendor's payment terms.
+  dueDays              Int?                    @map("due_days")
+  frequency            ContractFrequency
+  startDate            DateTime                @map("start_date") @db.Date
+  endDate              DateTime?               @map("end_date") @db.Date
+  monthEnd             Boolean                 @default(false) @map("month_end")
+  postMode             RecurringPostMode       @default(DRAFT) @map("post_mode")
+  status               RecurringScheduleStatus @default(ACTIVE)
+  nextRunNo            Int                     @default(1) @map("next_run_no")
+  lastError            String?                 @map("last_error") @db.VarChar(1000)
+  lastErrorAt          DateTime?               @map("last_error_at") @db.Timestamptz(6)
+  createdById          String                  @map("created_by_id") @db.Uuid
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org                  Organization            @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  contact              Contact                 @relation(fields: [contactId, orgId], references: [id, orgId], onDelete: Restrict, map: "recurring_bills_contact_fk")
+  lines                RecurringBillLine[]
+  runs                 RecurringBillRun[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([status])
+  @@map("recurring_bills")
+}
+
+model RecurringBillLine {
+  id              String        @id @default(uuid()) @db.Uuid
+  orgId           String        @map("org_id") @db.Uuid
+  recurringBillId String        @map("recurring_bill_id") @db.Uuid
+  lineNo          Int           @map("line_no")
+  accountId       String        @map("account_id") @db.Uuid
+  description     String?       @db.VarChar(500)
+  quantity        Decimal       @db.Decimal(24, 6)
+  unitPrice       Decimal       @map("unit_price") @db.Decimal(24, 6)
+  taxRateId       String?       @map("tax_rate_id") @db.Uuid
+  hsnCode         String?       @map("hsn_code") @db.VarChar(8)
+  departmentId    String?       @map("department_id") @db.Uuid
+  projectId       String?       @map("project_id") @db.Uuid
+  recurringBill   RecurringBill @relation(fields: [recurringBillId], references: [id], onDelete: Cascade)
+
+  @@unique([recurringBillId, lineNo])
+  @@map("recurring_bill_lines")
+}
+
+/// Append-only: one row per bill a schedule made.
+model RecurringBillRun {
+  id              String        @id @default(uuid()) @db.Uuid
+  orgId           String        @map("org_id") @db.Uuid
+  recurringBillId String        @map("recurring_bill_id") @db.Uuid
+  runNo           Int           @map("run_no")
+  runDate         DateTime      @map("run_date") @db.Date
+  /// Null once a draft bill the run made was deleted.
+  documentId      String?       @map("document_id") @db.Uuid
+  posted          Boolean
+  /// Null: the schedule runner.
+  actorId         String?       @map("actor_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  recurringBill   RecurringBill @relation(fields: [recurringBillId], references: [id], onDelete: Restrict)
+
+  @@unique([recurringBillId, runNo])
+  @@index([documentId])
+  @@map("recurring_bill_runs")
+}
+
+/// AP-007: the date (and amount) an open bill is planned to be paid. Planning moves no money.
+model BillPaymentPlan {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  documentId  String   @unique @map("document_id") @db.Uuid
+  payDate     DateTime @map("pay_date") @db.Date
+  /// Null: what is left on the bill.
+  amount      Decimal? @db.Decimal(24, 6)
+  note        String?  @db.VarChar(300)
+  updatedById String   @map("updated_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([orgId, payDate])
+  @@map("bill_payment_plans")
+}
+
+/// A customer's dispute about an invoice (AR-025). While OPEN, the invoice is held out of reminders.
+model InvoiceDispute {
+  id             String    @id @default(uuid()) @db.Uuid
+  orgId          String    @map("org_id") @db.Uuid
+  number         Int
+  documentId     String    @map("document_id") @db.Uuid
+  contactId      String    @map("contact_id") @db.Uuid
+  amount         Decimal   @db.Decimal(24, 6)
+  /// PRICE, QUANTITY, QUALITY, NOT_RECEIVED, DUPLICATE, TAX, OTHER
+  reason         String    @db.VarChar(20)
+  description    String    @db.VarChar(1000)
+  /// OPEN or RESOLVED
+  status         String    @default("OPEN") @db.VarChar(10)
+  ownerId        String?   @map("owner_id") @db.Uuid
+  targetDate     DateTime? @map("target_date") @db.Date
+  openedOn       DateTime  @map("opened_on") @db.Date
+  openedById     String    @map("opened_by_id") @db.Uuid
+  /// CREDIT_NOTE, CUSTOMER_PAYS, WRITTEN_OFF, WITHDRAWN
+  outcome        String?   @db.VarChar(20)
+  creditNoteId   String?   @map("credit_note_id") @db.Uuid
+  resolutionNote String?   @map("resolution_note") @db.VarChar(1000)
+  resolvedOn     DateTime? @map("resolved_on") @db.Date
+  resolvedById   String?   @map("resolved_by_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@unique([orgId, number])
+  @@index([orgId, status])
+  @@index([documentId])
+  @@map("invoice_disputes")
+}
+
+/// Append-only history of a dispute: raised, notes, changes, resolution.
+model InvoiceDisputeEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  disputeId String   @map("dispute_id") @db.Uuid
+  /// RAISED, NOTE, CHANGED, RESOLVED
+  kind      String   @db.VarChar(20)
+  body      String?  @db.VarChar(2000)
+  data      Json?
+  actorId   String   @map("actor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([disputeId, createdAt])
+  @@map("invoice_dispute_events")
+}
+
+/// A pro forma invoice (AR-008): what the customer will be billed. Not a tax invoice; posts nothing.
+model ProFormaInvoice {
+  id            String    @id @default(uuid()) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  /// Shown as PF-0001.
+  number        Int
+  contactId     String    @map("contact_id") @db.Uuid
+  quoteId       String?   @map("quote_id") @db.Uuid
+  issueDate     DateTime  @map("issue_date") @db.Date
+  validUntil    DateTime  @map("valid_until") @db.Date
+  placeOfSupply String?   @map("place_of_supply") @db.Char(2)
+  reference     String?   @db.VarChar(100)
+  terms         String?   @db.VarChar(4000)
+  memo          String?   @db.VarChar(1000)
+  currency      String    @db.Char(3)
+  subtotal      Decimal   @db.Decimal(24, 6)
+  taxTotal      Decimal   @map("tax_total") @db.Decimal(24, 6)
+  total         Decimal   @db.Decimal(24, 6)
+  /// DRAFT, ISSUED or CANCELLED (invoiced is worked out from invoiceId)
+  status        String    @default("DRAFT") @db.VarChar(10)
+  issuedAt      DateTime? @map("issued_at") @db.Timestamptz(6)
+  cancelReason  String?   @map("cancel_reason") @db.VarChar(500)
+  cancelledAt   DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  invoiceId     String?   @unique @map("invoice_id") @db.Uuid
+  createdById   String    @map("created_by_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lines         ProFormaInvoiceLine[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("pro_forma_invoices")
+}
+
+model ProFormaInvoiceLine {
+  id          String          @id @default(uuid()) @db.Uuid
+  orgId       String          @map("org_id") @db.Uuid
+  proFormaId  String          @map("pro_forma_id") @db.Uuid
+  lineNo      Int             @map("line_no")
+  description String?         @db.VarChar(500)
+  accountId   String          @map("account_id") @db.Uuid
+  quantity    Decimal         @db.Decimal(24, 6)
+  unitPrice   Decimal         @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?         @map("tax_rate_id") @db.Uuid
+  hsnCode     String?         @map("hsn_code")
+  netAmount   Decimal         @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal         @map("tax_amount") @db.Decimal(24, 6)
+  proForma    ProFormaInvoice @relation(fields: [proFormaId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([proFormaId, lineNo])
+  @@map("pro_forma_invoice_lines")
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  ISSUED
+  CLOSED
+  CANCELLED
+}
+
+enum MatchMode {
+  TWO_WAY
+  THREE_WAY
+}
+
+enum GoodsReceiptStatus {
+  RECORDED
+  CANCELLED
+}
+
+/// AP-015: what was ordered from a vendor. Shown as PO-0001. Fixed once issued.
+model PurchaseOrder {
+  id                       String              @id @default(uuid()) @db.Uuid
+  orgId                    String              @map("org_id") @db.Uuid
+  number                   Int
+  contactId                String              @map("contact_id") @db.Uuid
+  orderDate                DateTime            @map("order_date") @db.Date
+  expectedDate             DateTime?           @map("expected_date") @db.Date
+  placeOfSupply            String?             @map("place_of_supply") @db.Char(2)
+  /// The vendor's quotation or reference.
+  reference                String?             @db.VarChar(100)
+  terms                    String?             @db.VarChar(4000)
+  memo                     String?             @db.VarChar(1000)
+  currency                 String              @db.Char(3)
+  subtotal                 Decimal             @db.Decimal(24, 6)
+  taxTotal                 Decimal             @map("tax_total") @db.Decimal(24, 6)
+  total                    Decimal             @db.Decimal(24, 6)
+  status                   PurchaseOrderStatus @default(DRAFT)
+  matchMode                MatchMode           @default(THREE_WAY) @map("match_mode")
+  priceTolerancePercent    Decimal             @default(0) @map("price_tolerance_percent") @db.Decimal(5, 2)
+  quantityTolerancePercent Decimal             @default(0) @map("quantity_tolerance_percent") @db.Decimal(5, 2)
+  issuedAt                 DateTime?           @map("issued_at") @db.Timestamptz(6)
+  closedAt                 DateTime?           @map("closed_at") @db.Timestamptz(6)
+  closeReason              String?             @map("close_reason") @db.VarChar(500)
+  cancelledAt              DateTime?           @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason             String?             @map("cancel_reason") @db.VarChar(500)
+  createdById              String              @map("created_by_id") @db.Uuid
+  createdAt                DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lines                    PurchaseOrderLine[]
+  receipts                 GoodsReceipt[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, status])
+  @@index([orgId, contactId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id          String             @id @default(uuid()) @db.Uuid
+  orgId       String             @map("org_id") @db.Uuid
+  orderId     String             @map("order_id") @db.Uuid
+  lineNo      Int                @map("line_no")
+  description String?            @db.VarChar(500)
+  accountId   String             @map("account_id") @db.Uuid
+  quantity    Decimal            @db.Decimal(24, 6)
+  unitPrice   Decimal            @map("unit_price") @db.Decimal(24, 6)
+  taxRateId   String?            @map("tax_rate_id") @db.Uuid
+  hsnCode     String?            @map("hsn_code")
+  netAmount   Decimal            @map("net_amount") @db.Decimal(24, 6)
+  taxAmount   Decimal            @map("tax_amount") @db.Decimal(24, 6)
+  order       PurchaseOrder      @relation(fields: [orderId, orgId], references: [id, orgId], onDelete: Cascade)
+  received    GoodsReceiptLine[]
+
+  @@unique([orderId, lineNo])
+  @@unique([id, orgId])
+  @@map("purchase_order_lines")
+}
+
+/// AP-016: goods received against a purchase order. Shown as GRN-0001. Never edited; cancelled instead.
+model GoodsReceipt {
+  id           String             @id @default(uuid()) @db.Uuid
+  orgId        String             @map("org_id") @db.Uuid
+  number       Int
+  orderId      String             @map("order_id") @db.Uuid
+  receiptDate  DateTime           @map("receipt_date") @db.Date
+  /// The vendor's delivery note or challan.
+  reference    String?            @db.VarChar(100)
+  memo         String?            @db.VarChar(1000)
+  status       GoodsReceiptStatus @default(RECORDED)
+  cancelledAt  DateTime?          @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason String?            @map("cancel_reason") @db.VarChar(500)
+  createdById  String             @map("created_by_id") @db.Uuid
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  order        PurchaseOrder      @relation(fields: [orderId, orgId], references: [id, orgId], onDelete: Restrict)
+  lines        GoodsReceiptLine[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, orderId])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptLine {
+  id          String            @id @default(uuid()) @db.Uuid
+  orgId       String            @map("org_id") @db.Uuid
+  receiptId   String            @map("receipt_id") @db.Uuid
+  orderLineId String            @map("order_line_id") @db.Uuid
+  /// Accepted into stock or use.
+  quantity    Decimal           @db.Decimal(24, 6)
+  rejected    Decimal           @default(0) @db.Decimal(24, 6)
+  note        String?           @db.VarChar(500)
+  receipt     GoodsReceipt      @relation(fields: [receiptId, orgId], references: [id, orgId], onDelete: Restrict)
+  orderLine   PurchaseOrderLine @relation(fields: [orderLineId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([receiptId, orderLineId])
+  @@index([orderLineId])
+  @@map("goods_receipt_lines")
+}
+
+/// AP-017: why a bill that does not match its purchase order is accepted. Applies only to the differences it records.
+model BillMatchAcceptance {
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  documentId   String   @map("document_id") @db.Uuid
+  fingerprint  String
+  reason       String   @db.VarChar(1000)
+  acceptedById String   @map("accepted_by_id") @db.Uuid
+  acceptedAt   DateTime @default(now()) @map("accepted_at") @db.Timestamptz(6)
+
+  @@index([orgId, documentId])
+  @@map("bill_match_acceptances")
+}
+
+enum SalesBillingMethod {
+  DELIVERY
+  MILESTONES
+  PROGRESS
+}
+
+/// A named share of a sales order's value, billed on its own invoice (AR-013).
+model SalesOrderMilestone {
+  id            String     @id @default(uuid()) @db.Uuid
+  orgId         String     @map("org_id") @db.Uuid
+  orderId       String     @map("order_id") @db.Uuid
+  seq           Int
+  name          String     @db.VarChar(200)
+  percent       Decimal    @db.Decimal(5, 2)
+  dueDate       DateTime?  @map("due_date") @db.Date
+  completedAt   DateTime?  @map("completed_at") @db.Timestamptz(6)
+  completedById String?    @map("completed_by_id") @db.Uuid
+  documentId    String?    @map("document_id") @db.Uuid
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  order         SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, seq])
+  @@unique([id, orgId])
+  @@index([orgId, documentId])
+  @@map("sales_order_milestones")
+}
+
+/// A claim of how complete the work on a sales order is, billed up to that share (AR-014).
+model SalesOrderProgressClaim {
+  id              String     @id @default(uuid()) @db.Uuid
+  orgId           String     @map("org_id") @db.Uuid
+  orderId         String     @map("order_id") @db.Uuid
+  percentComplete Decimal    @map("percent_complete") @db.Decimal(5, 2)
+  documentId      String     @unique @map("document_id") @db.Uuid
+  note            String?    @db.VarChar(500)
+  createdById     String     @map("created_by_id") @db.Uuid
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  order           SalesOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, orderId])
+  @@map("sales_order_progress_claims")
+}
+
+/// Money a customer keeps on account at an agreed level (AR-015), shown as RT-0001.
+model Retainer {
+  id             String            @id @default(uuid()) @db.Uuid
+  orgId          String            @map("org_id") @db.Uuid
+  number         Int
+  contactId      String            @map("contact_id") @db.Uuid
+  name           String            @db.VarChar(200)
+  amount         Decimal           @db.Decimal(24, 6)
+  minimumBalance Decimal           @default(0) @map("minimum_balance") @db.Decimal(24, 6)
+  startDate      DateTime          @map("start_date") @db.Date
+  terms          String?           @db.VarChar(2000)
+  status         String            @default("ACTIVE") @db.VarChar(10)
+  closedAt       DateTime?         @map("closed_at") @db.Timestamptz(6)
+  closeReason    String?           @map("close_reason") @db.VarChar(500)
+  createdById    String            @map("created_by_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  receipts       RetainerReceipt[]
+
+  @@unique([orgId, number])
+  @@unique([id, orgId])
+  @@index([orgId, contactId])
+  @@map("retainers")
+}
+
+/// A customer receipt that makes up part of a retainer.
+model RetainerReceipt {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  retainerId  String   @map("retainer_id") @db.Uuid
+  paymentId   String   @unique @map("payment_id") @db.Uuid
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  retainer    Retainer @relation(fields: [retainerId], references: [id], onDelete: Restrict)
+
+  @@index([orgId, retainerId])
+  @@map("retainer_receipts")
+}
+
+/// An organisation's own Stripe or Razorpay account, for payment links on its invoices (AR-018).
+model OrgPaymentGateway {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  provider         String    @db.VarChar(16)
+  enabled          Boolean   @default(false)
+  mode             String    @default("TEST") @db.VarChar(8)
+  currencies       String[]  @default([])
+  keyId            String?   @map("key_id") @db.VarChar(100)
+  secretCipher     String?   @map("secret_cipher")
+  secretKeyId      String?   @map("secret_key_id") @db.VarChar(16)
+  secretHint       String?   @map("secret_hint") @db.VarChar(16)
+  webhookCipher    String?   @map("webhook_cipher")
+  webhookKeyId     String?   @map("webhook_key_id") @db.VarChar(16)
+  webhookHint      String?   @map("webhook_hint") @db.VarChar(16)
+  depositAccountId String?   @map("deposit_account_id") @db.Uuid
+  lastTestAt       DateTime? @map("last_test_at") @db.Timestamptz(6)
+  lastTestOk       Boolean?  @map("last_test_ok")
+  lastTestMessage  String?   @map("last_test_message") @db.VarChar(500)
+  updatedById      String?   @map("updated_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([orgId, provider])
+  @@map("org_payment_gateways")
+}
+
+/// A link a customer pays an invoice through on the gateway's page, shown as PL-0001.
+model PaymentLink {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  number           Int
+  documentId       String    @map("document_id") @db.Uuid
+  provider         String    @db.VarChar(16)
+  gatewayRef       String    @map("gateway_ref") @db.VarChar(200)
+  url              String    @db.VarChar(1000)
+  currency         String    @db.Char(3)
+  amount           Decimal   @db.Decimal(24, 6)
+  status           String    @default("OPEN") @db.VarChar(10)
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6)
+  paidAt           DateTime? @map("paid_at") @db.Timestamptz(6)
+  paidAmount       Decimal?  @map("paid_amount") @db.Decimal(24, 6)
+  gatewayPaymentId String?   @map("gateway_payment_id") @db.VarChar(200)
+  paymentId        String?   @unique @map("payment_id") @db.Uuid
+  settledBy        String?   @map("settled_by") @db.VarChar(100)
+  cancelledAt      DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  createdById      String    @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([orgId, number])
+  @@unique([provider, gatewayRef])
+  @@index([orgId, documentId])
+  @@map("payment_links")
+}
+
+/// A notice from an organisation's gateway about a payment link.
+model PaymentLinkNotice {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  provider    String   @db.VarChar(16)
+  eventId     String?  @map("event_id") @db.VarChar(200)
+  type        String   @db.VarChar(100)
+  signatureOk Boolean  @map("signature_ok")
+  outcome     String   @db.VarChar(300)
+  linkId      String?  @map("link_id") @db.Uuid
+  receivedAt  DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  @@unique([orgId, provider, eventId])
+  @@index([orgId, receivedAt])
+  @@map("payment_link_notices")
+}
+
+/// AR-003: whether customers added from now on must be onboarded before they are invoiced.
+model CustomerOnboardingSettings {
+  orgId       String   @map("org_id") @db.Uuid
+  /// CUSTOMER or VENDOR (AP-002).
+  party       String   @default("CUSTOMER") @db.VarChar(8)
+  required    Boolean  @default(false)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@id([orgId, party])
+  @@map("customer_onboarding_settings")
+}
+
+/// AR-003: the organisation's own onboarding checklist.
+model CustomerOnboardingRequirement {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  party     String   @default("CUSTOMER") @db.VarChar(8)
+  label     String   @db.VarChar(300)
+  needsFile Boolean  @default(false) @map("needs_file")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@index([orgId, party, sortOrder], map: "customer_onboarding_requirements_org_id_idx")
+  @@map("customer_onboarding_requirements")
+}
+
+/// AR-003: one onboarding per customer; invoices to the customer post only once it is approved.
+model CustomerOnboarding {
+  id               String    @id @default(uuid()) @db.Uuid
+  orgId            String    @map("org_id") @db.Uuid
+  contactId        String    @map("contact_id") @db.Uuid
+  /// CUSTOMER or VENDOR (AP-002); a contact that is both has one of each.
+  party            String    @default("CUSTOMER") @db.VarChar(8)
+  status           String    @default("OPEN") @db.VarChar(10)
+  creditLimit      Decimal?  @map("credit_limit") @db.Decimal(24, 6)
+  paymentTermsDays Int?      @map("payment_terms_days")
+  notes            String?   @db.VarChar(2000)
+  submittedById    String?   @map("submitted_by_id") @db.Uuid
+  submittedAt      DateTime? @map("submitted_at") @db.Timestamptz(6)
+  decidedById      String?   @map("decided_by_id") @db.Uuid
+  decidedAt        DateTime? @map("decided_at") @db.Timestamptz(6)
+  decisionNote     String?   @map("decision_note") @db.VarChar(1000)
+  selfApproved     Boolean   @default(false) @map("self_approved")
+  createdById      String?   @map("created_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@unique([orgId, contactId, party])
+  @@index([orgId, status])
+  @@map("customer_onboardings")
+}
+
+/// AR-003: a checklist item of one onboarding, copied from the organisation's checklist.
+model CustomerOnboardingCheck {
+  id            String    @id @default(uuid()) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  onboardingId  String    @map("onboarding_id") @db.Uuid
+  requirementId String?   @map("requirement_id") @db.Uuid
+  label         String    @db.VarChar(300)
+  needsFile     Boolean   @default(false) @map("needs_file")
+  sortOrder     Int       @default(0) @map("sort_order")
+  done          Boolean   @default(false)
+  doneById      String?   @map("done_by_id") @db.Uuid
+  doneAt        DateTime? @map("done_at") @db.Timestamptz(6)
+  note          String?   @db.VarChar(1000)
+  attachmentId  String?   @map("attachment_id") @db.Uuid
+
+  @@unique([onboardingId, requirementId], map: "customer_onboarding_checks_onboarding_requirement_key")
+  @@index([orgId, onboardingId])
+  @@map("customer_onboarding_checks")
+}
+
+/// AP-021: the team's own review of a vendor. Never edited or deleted; the author may withdraw it.
+model VendorReview {
+  id             String    @id @default(uuid()) @db.Uuid
+  orgId          String    @map("org_id") @db.Uuid
+  contactId      String    @map("contact_id") @db.Uuid
+  orderId        String?   @map("order_id") @db.Uuid
+  reviewDate     DateTime  @map("review_date") @db.Date
+  aspect         String    @db.VarChar(20)
+  rating         Int       @db.SmallInt
+  note           String?   @db.VarChar(2000)
+  createdById    String    @map("created_by_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  withdrawnById  String?   @map("withdrawn_by_id") @db.Uuid
+  withdrawnAt    DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  withdrawReason String?   @map("withdraw_reason") @db.VarChar(500)
+
+  @@unique([id, orgId])
+  @@index([orgId, contactId, reviewDate])
+  @@map("vendor_reviews")
+}
+
+/// AP-023: an outward remittance to one vendor abroad in their currency (IP-0001).
+model InternationalPayment {
+  id             String                     @id @default(uuid()) @db.Uuid
+  orgId          String                     @map("org_id") @db.Uuid
+  number         Int
+  contactId      String                     @map("contact_id") @db.Uuid
+  bankAccountId  String                     @map("bank_account_id") @db.Uuid
+  paymentDate    DateTime                   @map("payment_date") @db.Date
+  currency       String                     @db.Char(3)
+  amount         Decimal                    @default(0) @db.Decimal(24, 6)
+  estimateRate   Decimal?                   @map("estimate_rate") @db.Decimal(24, 10)
+  purposeCode    String?                    @map("purpose_code") @db.VarChar(5)
+  purpose        String?                    @db.VarChar(200)
+  charges        String                     @default("OUR") @db.VarChar(3)
+  taxableInIndia Boolean                    @default(true) @map("taxable_in_india")
+  hasTaxOrder    Boolean                    @default(false) @map("has_tax_order")
+  form15Part     String                     @default("NONE") @map("form15_part") @db.VarChar(4)
+  needs15cb      Boolean                    @default(false) @map("needs_15cb")
+  form15caAck    String?                    @map("form15ca_ack") @db.VarChar(40)
+  form15cbNumber String?                    @map("form15cb_number") @db.VarChar(40)
+  memo           String?                    @db.VarChar(500)
+  status         String                     @default("DRAFT") @db.VarChar(10)
+  createdById    String                     @map("created_by_id") @db.Uuid
+  createdAt      DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  approvedById   String?                    @map("approved_by_id") @db.Uuid
+  approvedAt     DateTime?                  @map("approved_at") @db.Timestamptz(6)
+  selfApproved   Boolean                    @default(false) @map("self_approved")
+  sentById       String?                    @map("sent_by_id") @db.Uuid
+  sentAt         DateTime?                  @map("sent_at") @db.Timestamptz(6)
+  paidRate       Decimal?                   @map("paid_rate") @db.Decimal(24, 10)
+  bankReference  String?                    @map("bank_reference") @db.VarChar(60)
+  paymentId      String?                    @map("payment_id") @db.Uuid
+  paidById       String?                    @map("paid_by_id") @db.Uuid
+  paidAt         DateTime?                  @map("paid_at") @db.Timestamptz(6)
+  cancelledById  String?                    @map("cancelled_by_id") @db.Uuid
+  cancelledAt    DateTime?                  @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason   String?                    @map("cancel_reason") @db.VarChar(500)
+  items          InternationalPaymentItem[]
+
+  @@unique([id, orgId])
+  @@unique([orgId, number])
+  @@index([orgId, status])
+  @@map("international_payments")
+}
+
+model InternationalPaymentItem {
+  id           String               @id @default(uuid()) @db.Uuid
+  orgId        String               @map("org_id") @db.Uuid
+  remittanceId String               @map("remittance_id") @db.Uuid
+  documentId   String               @map("document_id") @db.Uuid
+  amount       Decimal              @db.Decimal(24, 6)
+  remittance   InternationalPayment @relation(fields: [remittanceId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@unique([remittanceId, documentId], map: "international_payment_items_remittance_document_key")
+  @@index([orgId, documentId], map: "international_payment_items_org_id_idx")
+  @@map("international_payment_items")
+}
+
+enum UsagePricing {
+  PER_UNIT
+  GRADUATED
+  VOLUME
+}
+
+/// AR-012: a metered charge on a customer contract, billed in arrears from recorded usage.
+model ContractMeter {
+  id               String       @id @default(uuid()) @db.Uuid
+  orgId            String       @map("org_id") @db.Uuid
+  contractId       String       @map("contract_id") @db.Uuid
+  code             String       @db.VarChar(40)
+  name             String       @db.VarChar(120)
+  unit             String       @db.VarChar(30)
+  accountId        String       @map("account_id") @db.Uuid
+  taxRateId        String?      @map("tax_rate_id") @db.Uuid
+  hsnCode          String?      @map("hsn_code")
+  pricing          UsagePricing
+  /// [{ upTo: string | null, unitPrice: string }]
+  tiers            Json
+  includedQuantity Decimal      @default(0) @map("included_quantity") @db.Decimal(24, 6)
+  minimumCharge    Decimal?     @map("minimum_charge") @db.Decimal(24, 6)
+  active           Boolean      @default(true)
+  createdById      String       @map("created_by_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  usage            UsageRecord[]
+
+  @@unique([contractId, code])
+  @@unique([id, orgId])
+  @@index([orgId])
+  @@map("contract_meters")
+}
+
+/// AR-012: one usage reading against a meter. Voided, never edited or deleted.
+model UsageRecord {
+  id          String        @id @default(uuid()) @db.Uuid
+  orgId       String        @map("org_id") @db.Uuid
+  contractId  String        @map("contract_id") @db.Uuid
+  meterId     String        @map("meter_id") @db.Uuid
+  usageDate   DateTime      @map("usage_date") @db.Date
+  quantity    Decimal       @db.Decimal(24, 6)
+  reference   String?       @db.VarChar(100)
+  note        String?       @db.VarChar(500)
+  source      String        @db.VarChar(10)
+  periodNo    Int?          @map("period_no")
+  documentId  String?       @map("document_id") @db.Uuid
+  voidedAt    DateTime?     @map("voided_at") @db.Timestamptz(6)
+  voidedById  String?       @map("voided_by_id") @db.Uuid
+  voidReason  String?       @map("void_reason") @db.VarChar(500)
+  createdById String        @map("created_by_id") @db.Uuid
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  meter       ContractMeter @relation(fields: [meterId, orgId], references: [id, orgId], onDelete: Cascade)
+
+  @@index([meterId, usageDate], map: "usage_records_meter_date_idx")
+  @@index([contractId, periodNo], map: "usage_records_contract_period_idx")
+  @@index([orgId])
+  @@map("usage_records")
+}
+
+/// AR-028: where revenue recognised over time waits until it is earned.
+model RevenueRecognitionSettings {
+  orgId             String   @id @map("org_id") @db.Uuid
+  deferredAccountId String   @map("deferred_account_id") @db.Uuid
+  updatedById       String   @map("updated_by_id") @db.Uuid
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("revenue_recognition_settings")
+}
+
+/// AR-028: an invoice line recognised over its service period; on posting it gets a deferred revenue schedule.
+model InvoiceLineRecognition {
+  id          String         @id @default(uuid()) @db.Uuid
+  orgId       String         @map("org_id") @db.Uuid
+  documentId  String         @map("document_id") @db.Uuid
+  lineNo      Int            @map("line_no")
+  startDate   DateTime       @map("start_date") @db.Date
+  months      Int
+  method      DeferralMethod
+  scheduleId  String?        @unique @map("schedule_id") @db.Uuid
+  createdById String         @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([documentId, lineNo])
+  @@index([orgId])
+  @@map("invoice_line_recognition")
+}
+
+/// AR-030: a private link a customer opens to see their invoices, statement and payment links
+/// without signing in. Only the SHA-256 of the secret is kept; never deleted, only revoked.
+model CustomerPortalLink {
+  id          String    @id @default(uuid()) @db.Uuid
+  orgId       String    @map("org_id") @db.Uuid
+  contactId   String    @map("contact_id") @db.Uuid
+  prefix      String    @db.VarChar(12)
+  tokenHash   String    @unique @map("token_hash") @db.Char(64)
+  note        String?   @db.VarChar(200)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdById String    @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime? @map("last_seen_at") @db.Timestamptz(6)
+  viewCount   Int       @default(0) @map("view_count")
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedById String?   @map("revoked_by_id") @db.Uuid
+
+  @@unique([id, orgId])
+  @@index([orgId, contactId])
+  @@map("customer_portal_links")
+}
+
+/// AP-019: what a person saw when they looked a vendor's GSTIN up on the GST portal. Append-only.
+model SupplierGstinCheck {
+  id            String    @id @default(uuid()) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  contactId     String    @map("contact_id") @db.Uuid
+  gstin         String    @db.Char(15)
+  /// ACTIVE, CANCELLED, SUSPENDED or NOT_FOUND.
+  status        String    @db.VarChar(12)
+  taxpayerType  String?   @map("taxpayer_type") @db.VarChar(14)
+  legalName     String?   @map("legal_name") @db.VarChar(200)
+  /// From when a cancellation or suspension applies, as the portal shows it.
+  effectiveDate DateTime? @map("effective_date") @db.Date
+  checkedOn     DateTime  @map("checked_on") @db.Date
+  note          String?   @db.VarChar(500)
+  recordedById  String    @map("recorded_by_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, contactId, checkedOn])
+  @@map("supplier_gstin_checks")
+}
+
+/// A person's review of a vendor's risk (AP-024): the level and factors they saw, their decision and when to look again. Append-only.
+model VendorRiskReview {
+  id           String   @id @default(uuid()) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  contactId    String   @map("contact_id") @db.Uuid
+  /// NONE, LOW, MEDIUM or HIGH when reviewed.
+  level        String   @db.VarChar(6)
+  factorCodes  String[] @default([]) @map("factor_codes")
+  /// ACCEPTED, MONITOR or STOP.
+  decision     String   @db.VarChar(8)
+  note         String   @db.VarChar(1000)
+  reviewedOn   DateTime @map("reviewed_on") @db.Date
+  nextReviewOn DateTime @map("next_review_on") @db.Date
+  reviewedById String   @map("reviewed_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, contactId, reviewedOn])
+  @@map("vendor_risk_reviews")
+}
+
+/// AR-042: a finding of unbilled revenue dismissed (with the amount then) or brought back. Append-only; the latest row decides.
+model UnbilledRevenueDismissal {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  /// SOURCE:record id, such as ORDER:<sales order id>.
+  fingerprint String   @db.VarChar(80)
+  /// DISMISS or RESTORE.
+  action      String   @db.VarChar(7)
+  amount      Decimal? @db.Decimal(24, 6)
+  currency    String   @db.Char(3)
+  reason      String   @db.VarChar(500)
+  byId        String   @map("by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, fingerprint, createdAt])
+  @@map("unbilled_revenue_dismissals")
+}
+
+/// AP-013 vendor portal: a private link for a vendor. Only the SHA-256 of the secret is stored.
+model VendorPortalLink {
+  id          String    @id @default(uuid()) @db.Uuid
+  orgId       String    @map("org_id") @db.Uuid
+  contactId   String    @map("contact_id") @db.Uuid
+  prefix      String    @db.VarChar(12)
+  tokenHash   String    @unique @map("token_hash") @db.Char(64)
+  note        String?   @db.VarChar(200)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdById String    @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime? @map("last_seen_at") @db.Timestamptz(6)
+  viewCount   Int       @default(0) @map("view_count")
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedById String?   @map("revoked_by_id") @db.Uuid
+
+  @@unique([id, orgId])
+  @@index([orgId, contactId])
+  @@map("vendor_portal_links")
+}
+
+/// AP-013: an invoice a vendor sent through the portal, waiting to be recorded as a bill or turned down.
+model VendorPortalSubmission {
+  id              String    @id @default(uuid()) @db.Uuid
+  orgId           String    @map("org_id") @db.Uuid
+  contactId       String    @map("contact_id") @db.Uuid
+  linkId          String    @map("link_id") @db.Uuid
+  invoiceNumber   String    @map("invoice_number") @db.VarChar(40)
+  numberKey       String    @map("number_key") @db.VarChar(40)
+  invoiceDate     DateTime  @map("invoice_date") @db.Date
+  currency        String    @db.Char(3)
+  amount          Decimal   @db.Decimal(24, 6)
+  purchaseOrderId String?   @map("purchase_order_id") @db.Uuid
+  note            String?   @db.VarChar(500)
+  fileName        String?   @map("file_name") @db.VarChar(200)
+  contentType     String?   @map("content_type") @db.VarChar(40)
+  sizeBytes       Int?      @map("size_bytes")
+  sha256          String?   @db.Char(64)
+  content         Bytes?
+  /// RECEIVED, RECORDED or REJECTED.
+  status          String    @default("RECEIVED") @db.VarChar(8)
+  documentId      String?   @map("document_id") @db.Uuid
+  decidedById     String?   @map("decided_by_id") @db.Uuid
+  decidedAt       DateTime? @map("decided_at") @db.Timestamptz(6)
+  rejectReason    String?   @map("reject_reason") @db.VarChar(500)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([id, orgId])
+  @@index([orgId, status, createdAt])
+  @@index([orgId, contactId])
+  @@map("vendor_portal_submissions")
 }

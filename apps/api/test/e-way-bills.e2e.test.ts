@@ -1,6 +1,7 @@
 import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
+import { sqlWrite } from './sql-writes';
 
 // Synthetic, format-valid GSTINs (made-up PANs). The organisation is in Maharashtra (27).
 const gstin = (state: string, pan: string) => `${state}${pan}1Z${gstinCheckCharacter(`${state}${pan}1Z`)}`;
@@ -193,7 +194,7 @@ describe('recording e-way bills', () => {
   it('blocks voiding the invoice until the cancellation is recorded, within 24 hours', async () => {
     const v = await ctx.http().post(`${org.base}/sales/documents/${doc.id}/void`).set(owner.auth).send({ reason: 'Wrong buyer' }).expect(409);
     expect(v.body.error).toBe('HAS_EWAY_BILL');
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE documents SET status = 'VOID' WHERE id = '${doc.id}'`)).rejects.toThrow(/live e-way bill/);
+    await expect(sqlWrite(ctx, `UPDATE documents SET status = 'VOID' WHERE id = '${doc.id}'`)).rejects.toThrow(/live e-way bill/);
     const c = (await ctx.http().post(`${org.base}/e-way-bills/documents/${doc.id}/e-way-bill/cancel`).set(owner.auth).send({ reason: '3', remark: 'Wrong buyer' }).expect(200)).body;
     expect(c).toMatchObject({ status: 'CANCELLED', cancelReason: 'Data entry mistake' });
     expect((await state(doc.id)).state).toBe('NEEDED');
@@ -202,9 +203,9 @@ describe('recording e-way bills', () => {
   });
 
   it('keeps the records immutable in the database', async () => {
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE e_way_bills SET vehicle_no = 'X' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/immutable/);
-    await expect(ctx.prisma.$executeRawUnsafe(`DELETE FROM e_way_bills WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be deleted/);
-    await expect(ctx.prisma.$executeRawUnsafe(`UPDATE e_way_bill_vehicle_updates SET remark = 'X' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be changed/);
+    await expect(sqlWrite(ctx, `UPDATE e_way_bills SET vehicle_no = 'X' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/immutable/);
+    await expect(sqlWrite(ctx, `DELETE FROM e_way_bills WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be deleted/);
+    await expect(sqlWrite(ctx, `UPDATE e_way_bill_vehicle_updates SET remark = 'X' WHERE org_id = '${org.orgId}'`)).rejects.toThrow(/cannot be changed/);
   });
 });
 

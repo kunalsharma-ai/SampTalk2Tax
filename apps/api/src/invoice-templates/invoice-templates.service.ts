@@ -27,7 +27,10 @@ import { createHash } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
+import { DOCUMENTS } from '../db/collections/sales';
+import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { lockRow } from '../db/locks';
 
 export interface TemplateOrg {
   id: string;
@@ -71,6 +74,7 @@ export class InvoiceTemplatesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly moved: MovedTables,
   ) {}
 
   private invalid(message: string, details?: unknown): never {
@@ -298,6 +302,7 @@ export class InvoiceTemplatesService {
         allocationsIn: { where: { removedOn: null }, select: { amount: true } },
         allocationsOut: { where: { removedOn: null }, select: { amount: true } },
         eInvoices: { where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' }, take: 1 },
+        debitNoteFor: { select: { number: true, issueDate: true } },
       },
     });
     if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Invoice not found' });
@@ -328,7 +333,7 @@ export class InvoiceTemplatesService {
    * The template an invoice prints with: the one asked for, else the invoice's own, else the
    * organisation's default, else a built-in one from the organisation's country preset.
    */
-  private async resolveTemplate(orgId: string, countryCode: string, requested: string | null | undefined, own: string | null) {
+  async resolveTemplate(orgId: string, countryCode: string, requested: string | null | undefined, own: string | null) {
     const id = requested ?? own;
     let t = id ? await this.prisma.invoiceTemplate.findFirst({ where: { id, orgId } }) : null;
     if (requested && !t) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Template not found' });
@@ -393,7 +398,8 @@ export class InvoiceTemplatesService {
     const paid = (d.kind === 'INVOICE' ? d.allocationsIn : d.allocationsOut).reduce((s, a) => s.plus(a.amount), new Prisma.Decimal(0));
     const ein = d.eInvoices[0];
     const source: InvoicePrintSource = {
-      kind: d.kind as 'INVOICE' | 'CREDIT_NOTE',
+      kind: d.debitNoteForId ? 'DEBIT_NOTE' : (d.kind as 'INVOICE' | 'CREDIT_NOTE'),
+      originalInvoice: d.debitNoteFor ? { number: d.debitNoteFor.number ?? '', issueDate: fromDbDate(d.debitNoteFor.issueDate) } : null,
       status: d.status,
       number: d.number,
       issueDate: fromDbDate(d.issueDate),
@@ -438,7 +444,7 @@ export class InvoiceTemplatesService {
       logoDataUrl: template.logoDataUrl,
     };
     return {
-      document: { id: d.id, kind: d.kind, status: d.status, number: d.number, templateId: d.templateId, contactName: d.contact.name },
+      document: { id: d.id, kind: d.debitNoteForId ? ('DEBIT_NOTE' as const) : d.kind, status: d.status, number: d.number, templateId: d.templateId, contactName: d.contact.name },
       source,
       template,
       templates,
@@ -461,7 +467,7 @@ export class InvoiceTemplatesService {
         const t = await this.find(tx, org.id, templateId);
         if (t.archivedAt) throw new DomainError('TEMPLATE_ARCHIVED', 'That template is archived', HttpStatus.CONFLICT);
       }
-      await tx.document.update({ where: { id: documentId }, data: { templateId } });
+      await this.moved.update(tx, DOCUMENTS, org.id, documentId, { templateId, updatedAt: new Date() });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'document.template_set', entityType: 'document', entityId: documentId, data: { templateId, before: d.templateId } });
     });
     return this.printData(org, documentId);
@@ -506,7 +512,7 @@ export class InvoiceTemplatesService {
 
   async sign(org: TemplateOrg, actor: Actor, documentId: string, userAgent: string | null) {
     await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT 1 FROM documents WHERE id = ${documentId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
+      await (lockRow(tx, 'documents', documentId, org.id)).then((r) => r.length);
       const d = await this.salesDocument(tx, org, documentId);
       if (d.status !== 'POSTED') throw new DomainError('DOCUMENT_NOT_POSTED', 'Post the invoice before signing it; drafts can still change', HttpStatus.CONFLICT);
       const existing = await tx.documentSignature.findFirst({ where: { orgId: org.id, documentId, withdrawnAt: null } });

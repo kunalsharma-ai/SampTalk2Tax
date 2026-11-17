@@ -13,6 +13,8 @@ export interface TenantContext {
   userId?: string;
   /** Set only for system work that must cross tenants (e.g. the global audit chain). */
   bypass?: boolean;
+  /** Set when the request came through the CRM API with a key: audit events record it. */
+  apiKey?: { id: string; prefix: string };
   /** Inside an interactive transaction whose settings are already applied. */
   inTx?: boolean;
 }
@@ -52,4 +54,24 @@ export function enterOrg(orgId: string): void {
 export function enterUser(userId: string): void {
   const store = tenantStorage.getStore();
   if (store) store.userId = userId;
+}
+
+/** Marks the current request as made with an API key (after the key is checked). */
+export function enterApiKey(apiKey: { id: string; prefix: string }): void {
+  const store = tenantStorage.getStore();
+  if (store) store.apiKey = apiKey;
+}
+
+/**
+ * Runs fn as the system (every organisation visible). For the few reads that cross tenants
+ * by design: a person's own memberships, an invitation looked up by its link token. Keep
+ * the filter explicit (userId, tokenHash) and never wrap writes of tenant data in this.
+ */
+export function runAsSystem<T>(fn: () => Promise<T>): Promise<T> {
+  return tenantStorage.run({ ...currentTenantContext(), bypass: true }, fn);
+}
+
+/** Runs fn inside one organisation: a new one (not yet in the request), or the one an invitation belongs to. */
+export function runInOrg<T>(orgId: string, fn: () => Promise<T>): Promise<T> {
+  return tenantStorage.run({ ...currentTenantContext(), orgId, bypass: false }, fn);
 }

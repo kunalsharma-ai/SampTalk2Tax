@@ -9,14 +9,14 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * No AI functionality of any kind exists yet, and none is claimed.
 
 ## Accounting
-* No year-end close (retained earnings roll-forward is shown as "unclosed earnings" on the balance sheet).
-* No recurring journals, templates, accrual auto-reversal, revaluation, exchange-rate tables, intercompany, consolidation, subsidiary ledgers or cash-basis reporting.
+* Year-end close posts one closing journal to retained earnings per year (see [`YEAR_END_CLOSE.md`](YEAR_END_CLOSE.md)); years not closed show their profit as "unclosed earnings" on the balance sheet. Closing lines carry no departments or projects.
+* Journal templates and recurring journals exist (docs/JOURNAL_TEMPLATES.md); a schedule runs monthly, quarterly, half-yearly or yearly (no weekly or custom calendars), and a template cannot reverse itself on the next day (use Accruals for that). No revaluation, exchange-rate tables, intercompany, consolidation, subsidiary ledgers or cash-basis reporting.
 * Dimensions are free-form key/values on lines; there are no dimension masters or dimension reports.
 * The chart template is a generic SMB chart, not a statutory chart (e.g. Schedule III presentation is not implemented).
 * Period CLOSED status exists but there is no close workflow; LOCKED/OPEN toggling is available to OWNER/ADMIN.
 
 ## Receivables and payables (M2, slice 1)
-* Documents are in the organisation's functional currency only; multi-currency invoices and bills are not supported yet.
+* Invoices, bills, credits and payments can be in another currency (see [`MULTI_CURRENCY.md`](MULTI_CURRENCY.md)), but quotations, sales orders, contracts and expense claims are in the functional currency only.
 * Simple tax rates are percentages the tenant configures. India GST (M3, slice 1) and India TDS/TCS with GST reverse charge (M3, slice 2) are the only statutory tax modules; what they do not cover yet is listed in [`TAX_ENGINE_INDIA_GST.md`](TAX_ENGINE_INDIA_GST.md) and [`TAX_ENGINE_INDIA_TDS_TCS.md`](TAX_ENGINE_INDIA_TDS_TCS.md). There is no other country's tax, no e-invoicing, no TDS/TCS statements and no filing.
 * No quotes, sales orders, purchase orders, recurring invoices, debit notes, write-offs, bad-debt provisions, collection reminders, payment links or portals.
 * No PDF generation or emailing of invoices and statements.
@@ -77,9 +77,25 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * A fixed set of 13 KPIs for the whole organisation, computed by calendar month from posted journals by account subtype: no custom formulas or dashboards, dimensions, peer benchmarks, alerts, drill-down to journals, scheduled or emailed reports, or PDF/Excel export (browser print only). DSO and DPO compare GST-inclusive balances with tax-exclusive revenue and expenses. The management report compares only the approved budget. See [`KPIS_AND_MANAGEMENT_REPORTS.md`](KPIS_AND_MANAGEMENT_REPORTS.md).
 
+## Languages and regional formats (M8, slice 1)
+
+* Hindi covers the navigation, header, roles and the preferences page; other pages are in English. Not yet reviewed by a professional translator. No right-to-left language yet. Business dates (today, due dates, periods) are in India time for every organisation; time zones change only how moments are shown. A few pages and printed documents format values themselves and do not follow the person's formats. Emails, exports and AI answers are not translated.
+
+## Country modules (M8, slice 2)
+
+* India is the only full tax module. The UAE, UK, Singapore, Australia, Germany and Canada are starter modules: standard national sales-tax rates only, as ordinary tax rates, with no returns, filings, reverse charge, schemes, e-invoicing or payroll, and no check of which rate applies. Canada has federal GST only. The United States and every other country are accounting only. Starter rates have no effective dates, and nothing warns when a module's review is overdue. Reports use one layout everywhere: no local statutory statements. See [`COUNTRY_MODULES.md`](COUNTRY_MODULES.md).
+
+## Local financial reporting (M8, slice 3)
+
+* Balance sheet and profit and loss layouts only (Schedule III Division I, UK Companies Act formats, IFRS IAS 1), placed by account subtype: no notes, cash flow statement, changes in equity, Ind AS, US GAAP or framework-specific adjustments, no current portion of long-term loans, ageing or MSME splits, no rounding to lakhs or crores, no export besides Print, and no filing. See [`LOCAL_FINANCIAL_REPORTING.md`](LOCAL_FINANCIAL_REPORTING.md).
+
+## Multi-currency (M8, slice 4)
+
+* Invoices, bills, credits, receipts and payments can be in another currency, with realised exchange gains and losses on settlement. Not yet on foreign-currency documents: TDS/TCS, reverse charge, GST charged above 0% (exports at zero rate are fine), e-invoices and e-way bills. A payment reminder covers one currency at a time. Rates are entered by people (no feed). Revaluation covers monetary account balances, not individual open documents. Bank statement lines are in the functional currency. See [`MULTI_CURRENCY.md`](MULTI_CURRENCY.md).
+
 ## Alerts and leakage checks (M4, slice 4)
 
-* Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run on request or when alerts are opened and the last run is over an hour old: no background schedule, and no email, push or chat notifications. No assignment, due dates or snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
+* Nine fixed, rule-based checks with thresholds; no machine learning or AI explanations. Checks run in the background (at most hourly per organisation, 20 organisations a pass), on request, and when alerts are opened. Priority is a fixed, explained formula, not learned. New alerts become tasks for a role by one setting for all checks; there are no email, push or chat notifications, no assignment to one person and no snoozing. Duplicates match exact amounts from the same contact only; unusual journals look at size and posting delay only; missed billing looks at the last complete month without contracts. Vendor bank changes, payroll anomalies and unusual bank activity are not checked. See [`ALERTS_AND_LEAKAGE.md`](ALERTS_AND_LEAKAGE.md).
 
 ## AI copilot (M4, slice 5)
 
@@ -88,7 +104,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Month-end close (M5, slice 5)
 
 * The AI review has not yet run against the live Claude API; it is tested with the official SDK against a local stand-in.
-* A person starts each close and each review. Nothing starts on its own as a month ends. Proposed entries cannot be edited before posting. Entries are in the functional currency, with no tax or dimensions. No report pack is generated at close (the certification records the headline figures). There is no year-end close to retained earnings. See [`MONTH_END_CLOSE.md`](MONTH_END_CLOSE.md).
+* A person starts each close and each review. Nothing starts on its own as a month ends. Proposed entries cannot be edited before posting. Entries are in the functional currency, with no tax or dimensions. No report pack is generated at close (the certification records the headline figures). Year-end close is separate (see [`YEAR_END_CLOSE.md`](YEAR_END_CLOSE.md)). See [`MONTH_END_CLOSE.md`](MONTH_END_CLOSE.md).
 
 ## AI control center (M5, slice 6)
 
@@ -204,6 +220,10 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Organisation-wide figures only; customer and supplier shares are baseline averages; a supplier's share is measured against cost of sales only; one deterministic path per simulation, not a distribution. See [`DISASTER_SIMULATION.md`](DISASTER_SIMULATION.md).
 
+## Business impact engine
+
+* Organisation-wide figures only; customer and supplier shares are baseline averages; new revenue carries the average cost of sales ratio and the usual payment days; a headcount reduction assumes sales are unchanged; one deterministic path per assessment. See [`BUSINESS_IMPACT.md`](BUSINESS_IMPACT.md).
+
 ## Policy studio
 
 * Rules can only do what workflows can do; back-tests cover event rules over the last 90 days only; live AI drafting waits on a Claude key. See [`POLICY_STUDIO.md`](POLICY_STUDIO.md).
@@ -223,3 +243,42 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Integrations
 
 * Only AI (Claude) and email (SMTP) are set up in the app. Payment gateways, bank feeds, accounting systems, CRMs, chat tools and GSP connections for e-invoicing and e-way bills are not built. No OAuth sign-in for Google or Microsoft mail (use SMTP with an app password). No external secrets manager. Both are tested against local stand-ins only until live credentials are added. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+## Opportunity intelligence
+
+* Four fixed kinds of opportunity; take-up rates are the user's estimates; lines are revenue accounts, not products; segment margins include only tagged costs; the total of all opportunities ignores overlap. See [`OPPORTUNITY_INTELLIGENCE.md`](OPPORTUNITY_INTELLIGENCE.md).
+
+## Regional deployment
+
+* Moving an organisation between regions is an operator command plus a manual database copy; there is no automated copy or in-app request. Sign-in accounts are per region. No cloud regions are provisioned by the repository. See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
+
+## Platform administration
+
+* Search shows the newest 200 matches. Disabling asks for the reason in a browser prompt. Usage metering is in [`USAGE_METERING.md`](USAGE_METERING.md), monitoring in [`OPERATIONS.md`](OPERATIONS.md). See [`PLATFORM_ADMINISTRATION.md`](PLATFORM_ADMINISTRATION.md).
+
+## Plans and subscriptions
+
+* Online subscription payments (Razorpay, Stripe) are tested only against a local stand-in of their APIs, not yet with real test accounts. Renewals are paid by the customer: no saved-card, UPI AutoPay or e-mandate charging. No refunds or credit notes for subscriptions; no tax for suppliers outside India. No coupons or add-ons yet. See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). AI and upload limits are shown but not yet counted. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
+
+## Operations
+
+* Request timings and runner heartbeats are in memory per API instance and cover the last 15 minutes; there is no metrics history, no aggregation across instances and no alerting to an on-call service. Errors in the web app's browser code and in background runner passes are not grouped under Errors. Feature flags cover four modules. Maintenance pauses changes by everyone except platform staff, including organisation owners; it does not stop already-running requests. See [`OPERATIONS.md`](OPERATIONS.md).
+
+## CI/CD and containers
+
+* The CI and release workflows have not run on GitHub (Actions is blocked for this account by billing); their steps were run locally. Deployment is to one Docker host, with a short gap while containers are replaced, and there is no staging environment, image vulnerability scan or log shipping. See [`CI_CD.md`](CI_CD.md).
+
+## CRM
+
+* Leads, the pipeline, quotations, sales orders, contracts, customer 360 and the revenue forecast are built (CRM slices 1 to 5), and other systems connect with API keys and webhooks (slice 6). Deals are in the functional currency only. There are no follow-up reminders from leads or deals, and no import of leads from a file. See [`CRM_PIPELINE.md`](CRM_PIPELINE.md).
+* Quotations cannot be printed, made into a PDF or e-mailed from the app yet (*Mark sent* only records it); quotations and orders are in the functional currency only; an order's lines cannot be amended; and editing the quantities on a draft invoice made from an order does not change what the order counts as billed. See [`QUOTES_AND_ORDERS.md`](QUOTES_AND_ORDERS.md).
+* Customer 360 counts direct costs only through projects linked to the customer (no allocation of shared costs, no cost of goods from stock, which is not modelled); lifetime value is undiscounted and uses one retention rate for all customers; the credit risk score is a fixed, explained rule set, not a model trained on defaults, and uses no outside credit data. See [`CUSTOMER_360.md`](CUSTOMER_360.md).
+* The revenue forecast places what is left on sales orders in the current month (orders have no delivery dates), counts deals once in their close month, leaves out quotations without a deal, recognises revenue at invoice date, has no AI explanation and no automatic monthly snapshot. See [`REVENUE_FORECAST.md`](REVENUE_FORECAST.md).
+* Contract invoices are made as drafts and are not posted or e-mailed automatically; there is no proration of part periods, no usage-based charges and no automatic collection. See [`CONTRACTS.md`](CONTRACTS.md).
+* The CRM connection has no ready-made connectors for named platforms (Salesforce, HubSpot, Zoho), no OAuth for third-party apps and no per-key rate limit; quotations, orders and contracts are not in the CRM API yet. A webhook's `object` is the record when it is first sent, not at the moment of the event. See [`CRM_EXTERNAL_API.md`](CRM_EXTERNAL_API.md).
+
+## In-app help
+
+* Help texts are in English only; the Hindi catalogue translates the panel's headings and the feature guide's labels, and a help text shows in English until its translation is added. See [`IN_APP_HELP.md`](IN_APP_HELP.md).
+* Detail and form pages without their own entry show the help of the page above them (a contract's page shows the contracts help); sections titled with a record's name rather than fixed text have no (i).
+* The help texts have not been reviewed by an accountant or a tax professional.

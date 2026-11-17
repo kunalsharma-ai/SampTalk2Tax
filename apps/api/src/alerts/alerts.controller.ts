@@ -22,6 +22,14 @@ const RuleBody = z
   })
   .strict();
 
+const NotificationsBody = z
+  .object({
+    minSeverity: z.enum(['CRITICAL', 'WARNING', 'OFF']),
+    taskRole: z.enum(['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER']),
+    dueDays: z.number().int('Days must be a whole number').min(0, 'Days cannot be negative').max(30, 'At most 30 days'),
+  })
+  .strict();
+
 @ApiTags('alerts')
 @ApiBearerAuth()
 @Controller('v1/orgs/:orgId')
@@ -41,6 +49,20 @@ export class AlertsController {
   @RequirePermission('alerts.manage')
   scan(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser) {
     return this.alerts.runScan(org.id, user);
+  }
+
+  /** Which new alerts become a task in the work queue, for which role, and how soon they are due. */
+  @Get('alerts/notifications')
+  @RequirePermission('reports.read')
+  notifications(@CurrentOrg() org: OrgContext) {
+    return this.alerts.notifications(org.id);
+  }
+
+  @Put('alerts/notifications')
+  @RequirePermission('alerts.manage')
+  @ApiBody({ schema: openApi(NotificationsBody) })
+  saveNotifications(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(NotificationsBody)) body: z.infer<typeof NotificationsBody>) {
+    return this.alerts.saveNotifications(org.id, user, body);
   }
 
   @Get('alerts/:alertId')
