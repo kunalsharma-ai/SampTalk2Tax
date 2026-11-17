@@ -33,7 +33,7 @@ whenever a brand file changes and commit the result. It needs Playwright's Chrom
 | `apps/web/public/brand/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | Web app manifest (`apps/web/src/app/manifest.ts`) |
 | `apps/api/src/common/brand-assets.ts` | Logo PNGs for email and PDF, as base64 so the API needs no files at run time |
 
-The web middleware lets `/brand/*`, the icons and the manifest through without a session,
+The web proxy (`apps/web/src/proxy.ts`) lets `/brand/*`, the icons and the manifest through without a session,
 because the sign-in page shows them.
 
 ## In the code

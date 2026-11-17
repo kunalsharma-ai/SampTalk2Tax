@@ -162,7 +162,7 @@ describe('tenant isolation', () => {
     expect((await store.collection(plans).findOne({ code: 'STARTER' }))?.price).toBe('999.00');
     // There orgId is an ordinary field (which organisation a record is about), so it can be set; id still cannot.
     await as({}, () => store.collection(plans).updateOne({ code: 'STARTER' }, { $set: { orgId: ORG_A } } as never));
-    expect((await store.collection(plans).findOne({ code: 'STARTER' }))?.orgId).toBe(ORG_A);
+    expect(((await store.collection(plans).findOne({ code: 'STARTER' })) as { orgId?: string } | null)?.orgId).toBe(ORG_A);
     await expect(as({}, () => store.collection(plans).updateOne({ code: 'STARTER' }, { $set: { id: 'x' } }))).rejects.toThrow(/cannot be changed/);
   });
 
