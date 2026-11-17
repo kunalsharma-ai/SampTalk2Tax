@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 795 |
+| Not started | 792 |
 | Designed | 0 |
-| Implementing | 67 |
+| Implementing | 68 |
 | Implemented | 34 |
-| Tested | 433 |
+| Tested | 435 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 17 | 10 |
+| Expense management | M2 | 27 | 14 | 13 |
 | Treasury management | M6 | 28 | 22 | 6 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -1820,6 +1820,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/expenses.e2e.test.ts
   - apps/web/e2e/expenses-flow.test.mjs
 
+### EXP-013 — Spending limits
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Limits per receipt, day, month (per claimant, across live claims) and claim; by category or for everything.
+- Evidence:
+  - packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts
+  - apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules
+  - /v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED
+  - apps/api/test/expense-policy.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card
+  - apps/web/e2e/expense-policy-flow.test.mjs
+  - docs/EXPENSE_POLICY.md
+
+### EXP-015 — Policy enforcement
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Blocking rules stop submission and approval; warnings need the approver's reason.
+- Evidence:
+  - packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts
+  - apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules
+  - /v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED
+  - apps/api/test/expense-policy.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card
+  - apps/web/e2e/expense-policy-flow.test.mjs
+  - docs/EXPENSE_POLICY.md
+
 ### EXP-017 — Expense reporting
 
 - Module: Expense management
@@ -1844,6 +1872,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy.
 - Evidence:
   - apps/web/src/components/expenses/claim-detail.tsx
+
+### EXP-022 — Policy violation detection
+
+- Module: Expense management
+- Status: **Implementing**
+- Notes: Rule-based detection (limits, missing receipts, receipt age, plus the existing possible-duplicate check). No AI/ML anomaly model yet.
+- Evidence:
+  - packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts
+  - apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules
+  - /v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED
+  - apps/api/test/expense-policy.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card
+  - apps/web/e2e/expense-policy-flow.test.mjs
+  - docs/EXPENSE_POLICY.md
 
 ### TRS-002 — Cash positioning
 

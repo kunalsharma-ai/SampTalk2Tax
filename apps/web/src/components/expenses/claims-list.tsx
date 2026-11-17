@@ -56,6 +56,7 @@ export function ClaimsList() {
         actions={
           <>
             {can(role, 'expenses.read') ? <Link href={`/orgs/${orgId}/expenses/allowance-rates`}><Button variant="secondary">Mileage and per diem rates</Button></Link> : null}
+            {can(role, 'expenses.read') ? <Link href={`/orgs/${orgId}/expenses/policy`}><Button variant="secondary">Expense policy</Button></Link> : null}
             {can(role, 'expenses.submit') ? <Link href={`/orgs/${orgId}/expenses/new`}><Button>New claim</Button></Link> : null}
           </>
         }

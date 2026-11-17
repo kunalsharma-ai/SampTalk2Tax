@@ -19,7 +19,8 @@ function size(bytes: number) {
  * Receipts, invoices and other evidence for one record. Files are kept as they were
  * uploaded; removing one keeps a record of it with the reason.
  */
-export function AttachmentsPanel({ entityType, entityId, canManage, description }: { entityType: AttachmentEntity; entityId: string; canManage: boolean; description?: string }) {
+/** `onChanged` runs after files are added or removed, for records whose own checks depend on them. */
+export function AttachmentsPanel({ entityType, entityId, canManage, description, onChanged }: { entityType: AttachmentEntity; entityId: string; canManage: boolean; description?: string; onChanged?: () => unknown }) {
   const { orgId } = useOrg();
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
@@ -29,7 +30,10 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description 
   const base = `/v1/orgs/${orgId}/attachments`;
   const key = ['attachments', orgId, entityType, entityId, showRemoved];
   const files = useQuery({ queryKey: key, queryFn: () => api<Attachment[]>(`${base}?entityType=${entityType}&entityId=${entityId}&includeRemoved=${showRemoved}`) });
-  const refresh = () => qc.invalidateQueries({ queryKey: ['attachments', orgId, entityType, entityId] });
+  const refresh = async () => {
+    await qc.invalidateQueries({ queryKey: ['attachments', orgId, entityType, entityId] });
+    await onChanged?.();
+  };
   const upload = useMutation({
     mutationFn: async (list: File[]) => {
       for (const f of list) await uploadFile<Attachment>(`${base}?entityType=${entityType}&entityId=${entityId}&fileName=${encodeURIComponent(f.name)}`, f);

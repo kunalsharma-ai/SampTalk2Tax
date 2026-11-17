@@ -584,6 +584,29 @@ export interface ExpenseOptions {
   taxRates: { id: string; name: string; rate: string }[];
   /** Active mileage and per diem rates. */
   allowanceRates: AllowanceRate[];
+  /** Active expense policy rules, as sentences. */
+  policy: { id: string; severity: PolicySeverity; summary: string }[];
+}
+export type PolicySeverity = 'WARN' | 'BLOCK';
+export type ExpensePolicyKind = 'LINE_MAX' | 'DAILY_MAX' | 'MONTHLY_MAX' | 'CLAIM_MAX' | 'RECEIPT_ABOVE' | 'MAX_AGE_DAYS';
+export interface ExpensePolicyRule {
+  id: string;
+  kind: ExpensePolicyKind;
+  severity: PolicySeverity;
+  accountId: string | null;
+  accountLabel: string | null;
+  amount: string | null;
+  days: number | null;
+  summary: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+export interface PolicyViolation {
+  ruleId: string;
+  kind: ExpensePolicyKind;
+  severity: PolicySeverity;
+  lineNo: number | null;
+  message: string;
 }
 export type AllowanceKind = 'MILEAGE' | 'PER_DIEM';
 export interface AllowanceRate {
@@ -666,6 +689,8 @@ export interface ExpenseClaim {
   voidReason: string | null;
   createdAt: string;
   receiptCount: number;
+  /** Expense policy rules the claim breaks; null once it is decided. */
+  policy: PolicyViolation[] | null;
   lines: ExpenseClaimLine[];
   actions: { edit: boolean; submit: boolean; withdraw: boolean; delete: boolean; decide: boolean; reimburse: boolean; void: boolean; attach: boolean };
 }

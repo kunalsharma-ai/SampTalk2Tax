@@ -394,16 +394,16 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-010 |  | capability | Expense approval workflows | Tested |
 | EXP-011 |  | capability | Corporate card integration architecture | Not started |
 | EXP-012 |  | capability | Virtual card integration architecture | Not started |
-| EXP-013 |  | capability | Spending limits | Not started |
+| EXP-013 |  | capability | Spending limits | Tested |
 | EXP-014 |  | capability | Department budgets | Not started |
-| EXP-015 |  | capability | Policy enforcement | Not started |
+| EXP-015 |  | capability | Policy enforcement | Tested |
 | EXP-016 |  | capability | Expense reconciliation | Not started |
 | EXP-017 |  | capability | Expense reporting | Implementing |
 | EXP-018 |  | capability | Duplicate expense detection | Implemented |
 | EXP-019 |  | capability | Receipt-to-transaction matching | Not started |
 | EXP-020 | AI Expense Features | capability | Automatic expense categorization | Not started |
 | EXP-021 | AI Expense Features | capability | Missing receipt detection | Implemented |
-| EXP-022 | AI Expense Features | capability | Policy violation detection | Not started |
+| EXP-022 | AI Expense Features | capability | Policy violation detection | Implementing |
 | EXP-023 | AI Expense Features | capability | Unusual expense alerts | Not started |
 | EXP-024 | AI Expense Features | capability | Fraud risk indicators | Not started |
 | EXP-025 | AI Expense Features | capability | Expense forecasting | Not started |
