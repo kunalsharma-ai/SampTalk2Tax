@@ -7,8 +7,9 @@
 #   --secret id=extra_ca,src=<ca.pem>
 
 # The full Node image already has CA certificates; no apt needed.
-FROM node:22-bookworm AS build
-RUN corepack enable
+FROM node:26-trixie AS build
+# Node 25+ no longer ships corepack, so install it before enabling pnpm.
+RUN npm install -g corepack@0.36.0 && corepack enable
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages ./packages
@@ -32,7 +33,7 @@ USER node
 CMD ["node", "dist/db/migrate.js"]
 
 # The API server: distroless (no shell or package manager), as a non-root user.
-FROM gcr.io/distroless/nodejs22-debian12:nonroot AS api
+FROM gcr.io/distroless/nodejs26-debian13:nonroot AS api
 WORKDIR /app
 ENV NODE_ENV=production PORT=4000
 # The commit the image was built from; shown under Platform admin → System health.

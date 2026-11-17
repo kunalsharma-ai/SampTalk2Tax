@@ -8,10 +8,10 @@ deployed.
 | Image | Built from | What it runs |
 |---|---|---|
 | `talk2tax-migrate` | `apps/api/Dockerfile`, target `migrate` | The MongoDB migrations against `MONGODB_URL`, then exits. The release step, run once before new API containers start |
-| `talk2tax-api` | `apps/api/Dockerfile`, target `api` | The API (`dist/main.js`). Distroless Node 22 (no shell or package manager), non-root user, health check on `/health` |
+| `talk2tax-api` | `apps/api/Dockerfile`, target `api` | The API (`dist/main.js`). Distroless Node 26 (no shell or package manager), non-root user, health check on `/health` |
 | `talk2tax-web` | `apps/web/Dockerfile` | The web app as Next.js's self-contained server. Distroless, non-root, health check on `/login`. No database access; reaches the API at `T2T_API_URL` |
 
-- The build stage is the full `node:22-bookworm` image (no `apt-get`). The API image takes a
+- The build stage is the full `node:26-trixie` image (no `apt-get`). The API image takes a
   production-only copy of the workspace (`pnpm deploy --prod`) with the code Prisma generates from
   the schema (model types and description; no query engine runs), and loads it once during the
   build to prove it.
