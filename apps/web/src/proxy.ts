@@ -7,7 +7,7 @@ const OPEN = ['/paid'];
 const OPEN_PREFIXES = ['/portal/', '/vendor-portal/'];
 
 /** Redirects signed-out visitors to /login (the API still enforces auth on every call). */
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (OPEN.includes(pathname) || OPEN_PREFIXES.some((p) => pathname.startsWith(p))) {
     const res = NextResponse.next();
