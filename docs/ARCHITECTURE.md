@@ -75,7 +75,7 @@ The directive's full target layout (`apps/web|admin|mobile|documentation`, `pack
 *Decision:* money is `decimal.js` in code, `NUMERIC(24,6)` in the database (rates `NUMERIC(24,10)`), and strings in JSON. JS numbers are rejected. *Why:* Directive Part 5 forbids binary floating point.
 
 ### ADR-005 Pinned, proven dependency versions
-*Decision:* TypeScript 5.9, NestJS 11, Prisma 6.19, zod 4, vitest 3, Node 22. *Why:* newer majors exist at the time of writing (TypeScript 7, NestJS 12, Prisma 7/8 pre-release) but have breaking changes in decorators, ESM and the Prisma client generator. Upgrade deliberately once the foundation is stable; tracked in KNOWN_LIMITATIONS.
+*Decision:* TypeScript 5.9, NestJS 11, Prisma 6.19, zod 4, vitest 3, Node 26 (upgraded from 22 in November 2026, when 26 became LTS). *Why:* newer majors exist at the time of writing (TypeScript 7, NestJS 12, Prisma 7/8 pre-release) but have breaking changes in decorators, ESM and the Prisma client generator. Upgrade deliberately once the foundation is stable; tracked in KNOWN_LIMITATIONS.
 
 ### ADR-006 JWT via `jose`, passwords via Node scrypt
 *Decision:* short-lived HS256 access tokens signed with `jose`; scrypt (N=2^15, r=8, p=1) with per-hash parameters for passwords. *Why:* no native build dependencies, well-reviewed primitives. Refresh tokens, MFA and SSO are later SEC items.
