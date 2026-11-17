@@ -480,8 +480,8 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'reports/income-statement': {
     what: 'Profit and loss: revenue less expenses for a period.',
-    how: 'Choose the period and compare it with an earlier one. Open a line to see its entries. Export to Excel or PDF.',
-    where: 'Reports. Comes from posted revenue and expense entries.',
+    how: 'Choose the period and the basis. Accrual (the default) counts income and expenses when invoiced or billed; Cash counts them when money is received or paid, in the share of each invoice, bill, expense claim or pay run settled in the period, and shows the accrual result beside it. Open a line to see its entries. Export to Excel or PDF.',
+    where: 'Reports. Comes from posted revenue and expense entries; on a cash basis, also from payments, credit notes applied, expense claims paid back and payroll payments.',
   },
   'reports/profit-by-dimension': {
     what: 'Profit and loss with a column for each department or project.',

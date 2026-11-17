@@ -6501,6 +6501,18 @@
         "docs/EXPENSE_POLICY.md"
       ],
       "notes": "Rule-based detection (limits, missing receipts, receipt age, plus the existing possible-duplicate check). No AI/ML anomaly model yet."
+    },
+    "GL-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cash-basis.ts + test/cash-basis.test.ts",
+        "apps/api/src/reports/reports.service.ts cashMovements; GET reports/income-statement?basis=CASH; export basis=CASH",
+        "apps/api/test/cash-basis.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement (Basis select)",
+        "apps/web/e2e/cash-basis-flow.test.mjs",
+        "docs/CASH_BASIS_REPORTS.md"
+      ],
+      "notes": "Cash-basis profit and loss derived from the accrual ledger (payments, credits applied, claims paid back, payroll payments, bank entries). Balance sheet stays accrual."
     }
   }
 }

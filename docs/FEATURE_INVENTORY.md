@@ -81,7 +81,7 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-011 | 5.1 General Ledger | capability | Closing balances | Tested |
 | GL-012 | 5.1 General Ledger | capability | Journal templates | Tested |
 | GL-013 | 5.1 General Ledger | capability | Accrual accounting | Implementing |
-| GL-014 | 5.1 General Ledger | capability | Cash accounting | Not started |
+| GL-014 | 5.1 General Ledger | capability | Cash accounting | Tested |
 | GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implemented |
 | GL-016 | 5.1 General Ledger | capability | Financial periods | Tested |
 | GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Implemented |
