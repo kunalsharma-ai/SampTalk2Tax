@@ -10,6 +10,7 @@ import { runAsSystem } from '../common/tenant-context';
 import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { openApi, ZodPipe } from '../common/zod';
 import { AuthService } from './auth.service';
+import { MfaService } from './mfa.service';
 import { AuthUser, CurrentSession, CurrentUser, Public } from './decorators';
 import { AuthRateLimit } from './rate-limit';
 import { ClientMeta, SessionsService } from './sessions.service';
@@ -20,6 +21,10 @@ const RegisterBody = z.object({
   password: z.string().min(1).max(256),
 });
 const LoginBody = z.object({ email: z.email().max(254), password: z.string().min(1).max(256) });
+const LoginCodeBody = z.object({ challengeToken: z.string().min(1).max(200), code: z.string().trim().min(6).max(20) });
+const MfaSetupBody = z.object({ password: z.string().min(1).max(256) });
+const MfaCodeBody = z.object({ code: z.string().trim().min(6).max(20) });
+const MfaDisableBody = z.object({ password: z.string().min(1).max(256), code: z.string().trim().min(6).max(20) });
 const RefreshBody = z.object({ refreshToken: z.string().min(1).max(200) });
 const PreferencesBody = z
   .object({
@@ -44,6 +49,7 @@ export class AuthController {
     private readonly sessions: SessionsService,
     private readonly store: DocumentStoreService,
     private readonly mirror: PostgresMirrorService,
+    private readonly mfa: MfaService,
   ) {}
 
   @Public()
@@ -61,6 +67,63 @@ export class AuthController {
   @ApiBody({ schema: openApi(LoginBody) })
   login(@Body(new ZodPipe(LoginBody)) body: z.infer<typeof LoginBody>, @Req() req: Request) {
     return this.auth.login(body, meta(req));
+  }
+
+  /** The second step of signing in, when two-step sign-in is on: the challenge token from login and a code. */
+  @Public()
+  @AuthRateLimit()
+  @Post('login/code')
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(LoginCodeBody) })
+  loginWithCode(@Body(new ZodPipe(LoginCodeBody)) body: z.infer<typeof LoginCodeBody>, @Req() req: Request) {
+    return this.auth.loginWithCode(body, meta(req));
+  }
+
+  /** Whether two-step sign-in is on, and how many recovery codes are left. */
+  @Get('mfa')
+  @ApiBearerAuth()
+  mfaStatus(@CurrentUser() user: AuthUser) {
+    return this.mfa.status(user.id);
+  }
+
+  /** Start turning two-step sign-in on: returns the secret and otpauth:// URI for the authenticator app. */
+  @Post('mfa/setup')
+  @ApiBearerAuth()
+  @AuthRateLimit()
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(MfaSetupBody) })
+  mfaSetup(@CurrentUser() user: AuthUser, @Body(new ZodPipe(MfaSetupBody)) body: z.infer<typeof MfaSetupBody>) {
+    return this.mfa.startSetup(user.id, body.password);
+  }
+
+  /** Finish turning it on with a code from the app; the recovery codes come back once. */
+  @Post('mfa/confirm')
+  @ApiBearerAuth()
+  @AuthRateLimit()
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(MfaCodeBody) })
+  mfaConfirm(@CurrentUser() user: AuthUser, @Body(new ZodPipe(MfaCodeBody)) body: z.infer<typeof MfaCodeBody>) {
+    return this.mfa.confirmSetup(user.id, body.code);
+  }
+
+  /** Replace the recovery codes (needs a code from the app). */
+  @Post('mfa/recovery-codes')
+  @ApiBearerAuth()
+  @AuthRateLimit()
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(MfaCodeBody) })
+  mfaRecoveryCodes(@CurrentUser() user: AuthUser, @Body(new ZodPipe(MfaCodeBody)) body: z.infer<typeof MfaCodeBody>) {
+    return this.mfa.regenerateRecoveryCodes(user.id, body.code);
+  }
+
+  /** Turn two-step sign-in off (password and a code). */
+  @Post('mfa/disable')
+  @ApiBearerAuth()
+  @AuthRateLimit()
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(MfaDisableBody) })
+  mfaDisable(@CurrentUser() user: AuthUser, @Body(new ZodPipe(MfaDisableBody)) body: z.infer<typeof MfaDisableBody>) {
+    return this.mfa.disable(user.id, body.password, body.code);
   }
 
   /** Swap a refresh token for a new access token and (usually) a new refresh token. */

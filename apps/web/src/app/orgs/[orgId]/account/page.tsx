@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { DataRegionCard } from '@/components/data-region';
 import { OrganisationTimeZoneCard, PreferencesCard } from '@/components/preferences';
 import { PageHeader } from '@/components/shell';
+import { TwoStepSignInCard } from '@/components/two-step-sign-in';
 import { useT } from '@/lib/i18n';
 import { api } from '@/lib/api';
 import { dateTime, describeDevice } from '@/lib/format';
@@ -33,7 +34,7 @@ export default function AccountSecurityPage() {
 
   return (
     <>
-      <PageHeader title={t('Account and preferences')} description={t("Your language and formats, where you are signed in, and your password. These settings are for your own account and apply in every organisation, except the organisation's time zone.")} />
+      <PageHeader title={t('Account and preferences')} description={t("Your language and formats, where you are signed in, two-step sign-in and your password. These settings are for your own account and apply in every organisation, except the organisation's time zone.")} />
       <PreferencesCard />
       <OrganisationTimeZoneCard />
       <DataRegionCard />
@@ -76,6 +77,8 @@ export default function AccountSecurityPage() {
           </tbody>
         </Table>
       </Card>
+
+      <TwoStepSignInCard />
 
       <Card>
         <CardHeader title="Change password" description="Changing your password signs out every other device. At least 12 characters." />

@@ -140,3 +140,107 @@ export const loginThrottles = defineCollection<LoginThrottleDoc>({
     },
   },
 });
+
+/**
+ * A person's two-step sign-in (SEC-005): an authenticator-app secret, sealed with the server's
+ * key, and single-use recovery codes kept only as hashes. The id is the user's id. PENDING
+ * while the person has scanned the code but not yet typed one back; ACTIVE after.
+ */
+export interface UserMfaDoc {
+  id: string;
+  status: 'PENDING' | 'ACTIVE';
+  secretCipher: string;
+  /** Which server key sealed the secret (SecretBox.keyId). */
+  keyId: string;
+  /** The last time step a code was accepted for, so a code works once. */
+  lastStep: number | null;
+  recoveryCodes: { hash: string; usedAt: Date | null }[];
+  enabledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const userMfa = defineCollection<UserMfaDoc>({
+  name: 'user_mfa',
+  scope: 'global',
+  schema: {
+    bsonType: 'object',
+    required: ['status', 'secretCipher', 'keyId', 'recoveryCodes', 'createdAt', 'updatedAt'],
+    properties: {
+      _id: { bsonType: 'string' },
+      status: { enum: ['PENDING', 'ACTIVE'] },
+      secretCipher: { bsonType: 'string', minLength: 1 },
+      keyId: { bsonType: 'string', minLength: 1 },
+      lastStep: { bsonType: ['int', 'long', 'null'] },
+      recoveryCodes: {
+        bsonType: 'array',
+        maxItems: 20,
+        items: { bsonType: 'object', required: ['hash', 'usedAt'], properties: { hash: { bsonType: 'string', pattern: '^[0-9a-f]{64}$' }, usedAt: { bsonType: ['date', 'null'] } } },
+      },
+      enabledAt: { bsonType: ['date', 'null'] },
+      createdAt: { bsonType: 'date' },
+      updatedAt: { bsonType: 'date' },
+    },
+  },
+  guards: {
+    beforeInsert(m) {
+      if (m.status !== 'PENDING' || m.enabledAt !== null) throw new GuardViolation('Two-step sign-in starts pending, until a code from the app is typed back');
+    },
+    afterUpdate(before, after) {
+      if ((after.status === 'ACTIVE') !== (after.enabledAt !== null)) throw new GuardViolation('Active two-step sign-in records when it was turned on, and only then');
+      if (before.status === 'ACTIVE' && (after.secretCipher !== before.secretCipher || after.status !== 'ACTIVE')) {
+        throw new GuardViolation('An active authenticator cannot be swapped in place; turn two-step sign-in off first');
+      }
+      if (before.lastStep !== null && (after.lastStep === null || after.lastStep < before.lastStep)) throw new GuardViolation('A used code cannot be made usable again');
+    },
+  },
+});
+
+/**
+ * The second step of a sign-in: the password was right and the person has two-step sign-in, so
+ * a short-lived challenge waits for a code. The token is `<id>.<secret>`; only a SHA-256 of the
+ * secret is kept. Five wrong codes end the challenge. MongoDB removes expired ones (TTL index).
+ */
+export interface MfaChallengeDoc {
+  id: string;
+  userId: string;
+  secretHash: string;
+  attempts: number;
+  expiresAt: Date;
+  usedAt: Date | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: Date;
+}
+
+export const MFA_CHALLENGE_MAX_ATTEMPTS = 5;
+
+export const mfaChallenges = defineCollection<MfaChallengeDoc>({
+  name: 'mfa_challenges',
+  scope: 'global',
+  schema: {
+    bsonType: 'object',
+    required: ['userId', 'secretHash', 'attempts', 'expiresAt', 'createdAt'],
+    properties: {
+      userId: { bsonType: 'string' },
+      secretHash: { bsonType: 'string', pattern: '^[0-9a-f]{64}$' },
+      attempts: { bsonType: ['int', 'long'], minimum: 0, maximum: MFA_CHALLENGE_MAX_ATTEMPTS },
+      expiresAt: { bsonType: 'date' },
+      usedAt: { bsonType: ['date', 'null'] },
+      ipAddress: { bsonType: ['string', 'null'], maxLength: 64 },
+      userAgent: { bsonType: ['string', 'null'], maxLength: 300 },
+      createdAt: { bsonType: 'date' },
+    },
+  },
+  indexes: [
+    { key: { userId: 1 }, name: 'user' },
+    { key: { expiresAt: 1 }, name: 'expires', expireAfterSeconds: 0 },
+  ],
+  guards: {
+    afterUpdate(before, after) {
+      if (after.userId !== before.userId || after.secretHash !== before.secretHash || after.expiresAt.getTime() !== before.expiresAt.getTime()) throw new GuardViolation('A sign-in challenge cannot be changed');
+      if (before.usedAt) throw new GuardViolation('A sign-in challenge is used once');
+      if (after.attempts < before.attempts) throw new GuardViolation('Wrong codes cannot be forgotten');
+    },
+  },
+});

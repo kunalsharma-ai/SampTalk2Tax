@@ -6425,6 +6425,18 @@
         "docs/VENDOR_PORTAL.md"
       ],
       "notes": "Private link per vendor (t2tv_ token, SHA-256 stored, shown once; expiry or until revoked). Portal without sign-in: owed/due now by currency, posted bills and credits with due dates, TDS and status, payments with bank reference, issued purchase orders with amount still to invoice, statement. Vendor sends an invoice (number, date, total, PO, note) plus a PDF/image file (sniffed, 5 MB, once within an hour); duplicates by normalised number refused against waiting, recorded and existing bills. Purchases > Vendor invoices: record against a bill of the same vendor (file attached to the bill) or turn down with a reason the vendor sees. Append-only, audited. Not built: sign-in accounts, emailing links, auto-creating bills/reading PDFs (needs AI keys), bank detail changes via portal (deliberately)."
+    },
+    "SEC-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/security/src/totp.ts (RFC 6238 TOTP, recovery codes) + test/totp.test.ts",
+        "apps/api/src/auth/mfa.service.ts, MongoDB collections user_mfa and mfa_challenges",
+        "POST /v1/auth/login → mfaRequired; POST /v1/auth/login/code; /v1/auth/mfa, /mfa/setup, /mfa/confirm, /mfa/recovery-codes, /mfa/disable",
+        "apps/api/test/two-step-sign-in.e2e.test.ts",
+        "apps/web/src/components/two-step-sign-in.tsx (Account and preferences), sign-in code step in auth-form.tsx",
+        "apps/web/e2e/two-step-sign-in-flow.test.mjs"
+      ],
+      "notes": "Authenticator-app codes (TOTP) and ten single-use recovery codes. SMS and email codes are not offered. An organisation rule to require it for members is a separate slice."
     }
   }
 }

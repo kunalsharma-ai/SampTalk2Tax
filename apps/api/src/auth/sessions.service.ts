@@ -81,8 +81,8 @@ export class SessionsService {
     return { issued: { ...access, refreshToken: `${s.id}.${secret}`, sessionId: s.id, sessionExpiresAt: expiresAt.toISOString() }, userId, ipAddress: s.ipAddress };
   }
 
-  async auditCreated(tx: Tx, s: CreatedSession): Promise<void> {
-    await this.audit.append(tx, { orgId: null, actorId: s.userId, action: 'session.created', entityType: 'session', entityId: s.issued.sessionId, data: { ip: s.ipAddress } });
+  async auditCreated(tx: Tx, s: CreatedSession, mfa?: 'APP' | 'RECOVERY_CODE'): Promise<void> {
+    await this.audit.append(tx, { orgId: null, actorId: s.userId, action: 'session.created', entityType: 'session', entityId: s.issued.sessionId, data: { ip: s.ipAddress, ...(mfa ? { secondStep: mfa } : {}) } });
   }
 
   /** Removes a session whose sign-in did not complete (its audit record could not be written). */
