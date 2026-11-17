@@ -18,10 +18,10 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.8.0",
-    "@nestjs/common": "11.2.8",
-    "@nestjs/core": "11.2.8",
-    "@nestjs/platform-express": "11.2.8",
-    "@nestjs/swagger": "11.4.7",
+    "@nestjs/common": "12.5.1",
+    "@nestjs/core": "12.5.1",
+    "@nestjs/platform-express": "12.5.1",
+    "@nestjs/swagger": "12.1.2",
     "@talk2tax/accounting-engine": "workspace:*",
     "@talk2tax/database": "workspace:*",
     "@talk2tax/document-db": "workspace:*",
@@ -36,7 +36,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@nestjs/testing": "11.2.8",
+    "@nestjs/testing": "12.5.1",
     "@swc/core": "1.16.22",
     "@types/express": "5.0.6",
     "@types/node": "26.6.6",
