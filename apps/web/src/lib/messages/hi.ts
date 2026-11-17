@@ -99,6 +99,7 @@ export const hi: Record<string, string> = {
   'Group consolidation': 'समूह समेकन',
   // Tax
   'Compliance calendar': 'अनुपालन कैलेंडर',
+  'Tax notices': 'कर नोटिस',
   'GST returns': 'GST रिटर्न',
   'E-invoices': 'ई-इनवॉइस',
   'E-way bills': 'ई-वे बिल',

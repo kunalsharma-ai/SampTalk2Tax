@@ -6278,9 +6278,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/tax-notices.ts + test/tax-notices.test.ts",
+        "apps/api/src/tax-notices; MongoDB collections tax_notices, tax_notice_files",
+        "/v1/orgs/:orgId/tax-notices (+ respond, close, reopen, notes, files)",
+        "apps/api/test/tax-notices.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/notices",
+        "apps/web/e2e/tax-notices-flow.test.mjs",
+        "docs/TAX_NOTICES.md"
+      ],
+      "notes": "Notice register with deadlines, files, history and outcomes. Not yet in the compliance calendar; no reminders."
     },
     {
       "id": "TAX-025",
