@@ -7,7 +7,6 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { users } from '../db/collections/identity';
 import { memberships as membershipsCollection, organizations } from '../db/collections/tenancy';
 import { runAsSystem } from '../common/tenant-context';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { openApi, ZodPipe } from '../common/zod';
 import { AuthService } from './auth.service';
 import { AuthUser, CurrentSession, CurrentUser, Public } from './decorators';
@@ -43,7 +42,6 @@ export class AuthController {
     private readonly auth: AuthService,
     private readonly sessions: SessionsService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
   ) {}
 
   @Public()
@@ -110,7 +108,6 @@ export class AuthController {
   @ApiBody({ schema: openApi(PreferencesBody) })
   async savePreferences(@CurrentUser() user: AuthUser, @Body(new ZodPipe(PreferencesBody)) body: z.infer<typeof PreferencesBody>) {
     await this.store.collection(users).updateOne({ id: user.id }, { $set: { ...body, updatedAt: new Date() } });
-    await this.mirror.users([user.id]);
     return this.preferences(user.id);
   }
 

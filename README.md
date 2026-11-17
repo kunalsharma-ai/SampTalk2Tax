@@ -10,7 +10,7 @@ Talk2Tax is planned as an AI-native accounting, tax and finance platform. This r
 * **Onboarding:** creating an organisation applies a starter chart of accounts and generates the current fiscal year (any start month, e.g. April–March).
 * **General ledger:** hierarchical chart of accounts, draft → post journals, multi-currency lines with exchange rates, reversals, period lock/unlock, idempotent and concurrency-safe posting with gap-free numbers.
 * **Reports:** trial balance, income statement, balance sheet, account ledger, all from posted entries.
-* **Controls:** PostgreSQL triggers make posted entries immutable and refuse unbalanced postings even outside the API; append-only, hash-chained audit trail with a verify endpoint.
+* **Controls:** the data layer's guards make posted entries immutable and refuse unbalanced postings on every write, not just the API's checks; append-only, hash-chained audit trail with a verify endpoint.
 * **Receivables & payables (M2, first slice):** customers and vendors, tenant tax rates, invoices, credit notes, bills and vendor credits (draft → post → void), receipts and payments with allocation and idempotency, credit limits, duplicate vendor-invoice detection, customer/vendor statements, and ageing that reconciles to the control accounts.
 * **Banking (M2, second slice):** bank and cash accounts, CSV statement import with column detection and duplicate skipping, rule-based match suggestions, receipts, payments or entries created straight from statement lines, and bank reconciliation with locked periods, history and undo. No live bank feeds.
 * **Attachments and approvals (M2, third slice):** PDF and image files attached to invoices, bills, payments and journals (type checked from the bytes, kept unchanged, removal leaves a record), and approval rules by document type and amount that the database enforces: a covered draft posts only after someone other than its preparer approves exactly that total. Editing a draft cancels its approval.
@@ -23,13 +23,13 @@ Talk2Tax is planned as an AI-native accounting, tax and finance platform. This r
 ```bash
 corepack enable                      # pnpm 10
 cp .env.example .env                 # set JWT_SECRET (openssl rand -base64 48)
-docker compose up -d postgres mongo
+docker compose up -d mongo
 pnpm install && pnpm build
 pnpm db:migrate
 pnpm db:seed                         # optional, prints demo login
 pnpm dev:api                         # http://localhost:4000/docs
 pnpm dev:web                         # http://localhost:3000
-pnpm test                            # unit + integration (needs Postgres and MongoDB)
+pnpm test                            # unit + integration (needs MongoDB)
 pnpm e2e                             # browser tests (API and web app running)
 ```
 
@@ -43,7 +43,7 @@ apps/web                    Next.js web app (+ Playwright browser tests)
 packages/ui                 Accessible React components
 packages/design-system      Colour and type tokens with a contrast test
 packages/accounting-engine  Pure double-entry rules (money, journals, periods, reports)
-packages/database           Prisma schema and SQL migrations with integrity triggers
+packages/database           Prisma schema: model types and description (MongoDB holds the data)
 packages/security           Roles/permissions, password hashing
 features/                   Feature registry (every directive requirement, with status)
 docs/                       PRD, architecture, schema, engine, security, API, tests, roadmap

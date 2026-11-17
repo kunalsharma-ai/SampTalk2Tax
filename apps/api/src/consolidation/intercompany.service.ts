@@ -26,17 +26,6 @@ export interface IntercompanyInput {
   toBankCode?: string | null;
 }
 
-/**
- * Runs the deferred ledger checks (every posted entry balances, with at least two lines) now,
- * while the transaction still points at the company that owns the entry. At commit they would
- * run under whichever company the transaction points at last, where row-level security hides
- * the other company's lines.
- */
-async function checkNow(tx: Tx) {
-  await tx.$executeRawUnsafe('SET CONSTRAINTS ALL IMMEDIATE');
-  await tx.$executeRawUnsafe('SET CONSTRAINTS ALL DEFERRED');
-}
-
 const AMOUNT = /^\d{1,14}(\.\d{1,4})?$/;
 
 /**
@@ -236,7 +225,6 @@ export class IntercompanyService {
         source: 'INTERCOMPANY',
         lines: fl,
       });
-      await checkNow(tx);
       await useOrgInTx(tx, toOrg.id);
       const te = await this.journals.postSystemEntry(tx, { id: toOrg.id, functionalCurrency: tc }, actor, {
         date: input.date,
@@ -245,7 +233,6 @@ export class IntercompanyService {
         source: 'INTERCOMPANY',
         lines: tl,
       });
-      await checkNow(tx);
       await useOrgInTx(tx, org.id);
       const t = await tx.intercompanyTransaction.create({
         data: {
@@ -307,10 +294,8 @@ export class IntercompanyService {
       if (locked?.reversedOn) throw new DomainError('ALREADY_REVERSED', 'This transaction is already reversed', HttpStatus.CONFLICT);
       await useOrgInTx(tx, fromOrg.id);
       const fr = await this.journals.reverseSystemEntry(tx, { id: fromOrg.id, functionalCurrency: fromOrg.functionalCurrency }, actor, t.fromEntryId, { date: input.date, memo: `Reversal of ${reference}` });
-      await checkNow(tx);
       await useOrgInTx(tx, toOrg.id);
       const tr = await this.journals.reverseSystemEntry(tx, { id: toOrg.id, functionalCurrency: toOrg.functionalCurrency }, actor, t.toEntryId, { date: input.date, memo: `Reversal of ${reference}` });
-      await checkNow(tx);
       await useOrgInTx(tx, org.id);
       const u = await tx.intercompanyTransaction.update({ where: { id: t.id }, data: { reversedOn: toDbDate(input.date), fromReversalId: fr.id, toReversalId: tr.id, reversedById: actor.id } });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'intercompany.reversed', entityType: 'intercompany_transaction', entityId: t.id, data: { groupId, reference, date: input.date, fromReversal: fr.entryNumber, toReversal: tr.entryNumber } });

@@ -7,13 +7,14 @@ deployed.
 
 | Image | Built from | What it runs |
 |---|---|---|
-| `talk2tax-migrate` | `apps/api/Dockerfile`, target `migrate` | `prisma migrate deploy` against `DATABASE_URL`, then exits. The release step, run once before new API containers start |
+| `talk2tax-migrate` | `apps/api/Dockerfile`, target `migrate` | The MongoDB migrations against `MONGODB_URL`, then exits. The release step, run once before new API containers start |
 | `talk2tax-api` | `apps/api/Dockerfile`, target `api` | The API (`dist/main.js`). Distroless Node 22 (no shell or package manager), non-root user, health check on `/health` |
 | `talk2tax-web` | `apps/web/Dockerfile` | The web app as Next.js's self-contained server. Distroless, non-root, health check on `/login`. No database access; reaches the API at `T2T_API_URL` |
 
-- The build stage is the full `node:22-bookworm` image (OpenSSL for Prisma is already there, so no
-  `apt-get`). The API image takes a production-only copy of the workspace (`pnpm deploy --prod`)
-  with the Prisma client generated for this OS, and loads it once during the build to prove it.
+- The build stage is the full `node:22-bookworm` image (no `apt-get`). The API image takes a
+  production-only copy of the workspace (`pnpm deploy --prod`) with the code Prisma generates from
+  the schema (model types and description; no query engine runs), and loads it once during the
+  build to prove it.
 - `GIT_SHA` (build argument) is baked in and shown under Platform admin → System health.
 - Behind a TLS-inspecting proxy, give the build its CA: `--secret id=extra_ca,src=<ca.pem>`
   (optional; without it nothing changes).
@@ -27,7 +28,7 @@ docker compose --profile app up --build      # database → migrations → API �
 node scripts/smoke-stack.mjs                 # sign up, organisation, posted journal, trial balance
 ```
 
-`POSTGRES_PORT`, `API_PORT` and `WEB_PORT` move the host ports; images are tagged
+`MONGO_PORT`, `API_PORT` and `WEB_PORT` move the host ports; images are tagged
 `talk2tax-{migrate,api,web}:${IMAGE_TAG:-local}`, so images built elsewhere run with `--no-build`.
 
 `scripts/smoke-stack.mjs [web url]` checks a running stack the way a browser reaches it: the
@@ -41,7 +42,7 @@ On every pull request and push to `main`; a newer push cancels the run in progre
 
 | Job | What it checks |
 |---|---|
-| Build, typecheck, unit, API and browser tests | `pnpm install --frozen-lockfile` (the lockfile must match every `package.json`), build, typecheck, all unit and API integration tests against PostgreSQL 16 as an ordinary role (row-level security applies), the feature registry, then the API and web app started with local stand-ins for Claude, SMTP and the payment gateways and every browser test, one file at a time. Server logs are kept when it fails |
+| Build, typecheck, unit, API and browser tests | `pnpm install --frozen-lockfile` (the lockfile must match every `package.json`), build, typecheck, all unit and API integration tests against MongoDB 8 as a one-node replica set, the feature registry, then the API and web app started with local stand-ins for Claude, SMTP and the payment gateways and every browser test, one file at a time. Server logs are kept when it fails |
 | Dependency audit | `pnpm audit --prod --audit-level=high`: no known high or critical advisory in anything the running app uses |
 | Container images and full-stack smoke test | Builds the three images (layers cached between runs), starts database → migrations → API → web with Docker Compose, runs the smoke test, and runs the migrations again to prove they are idempotent |
 
@@ -71,18 +72,15 @@ them in update.
 ### The production host
 
 One Docker host with `deploy/docker-compose.prod.yml` and, next to it, `.env.production` (never in
-the repository) holding `DATABASE_URL`, `JWT_SECRET`, `INTEGRATIONS_ENCRYPTION_KEY`, `APP_URL`,
-`DOMAIN` and the other settings in [`DEPLOYMENT.md`](DEPLOYMENT.md). PostgreSQL is a managed service
-with backups and point-in-time recovery, reached as the application role (never a superuser).
+the repository) holding `MONGODB_URL`, `JWT_SECRET`, `INTEGRATIONS_ENCRYPTION_KEY`, `APP_URL`,
+`DOMAIN` and the other settings in [`DEPLOYMENT.md`](DEPLOYMENT.md). MongoDB is a managed replica set
+with backups and point-in-time recovery, reached as a user with `readWrite` on the app's database only.
 Caddy is the only container reachable from outside: it obtains and renews TLS certificates for
 `DOMAIN`, sends HSTS, and forwards to the web app, which forwards API calls (and payment webhooks)
 to the API on the internal network.
 
 ## Not built yet
 
-- The workflows have not run on GitHub: Actions is blocked for this account by a billing problem.
-  Everything they do was run locally instead (images built, stack started, smoke and browser tests
-  against the containers, the dependency audit). `actionlint` was not run.
 - One host only: no Kubernetes, autoscaling, blue-green or canary releases, and a short gap while
   containers are replaced. Request timings and runner heartbeats are per instance (see
   [`OPERATIONS.md`](OPERATIONS.md)).

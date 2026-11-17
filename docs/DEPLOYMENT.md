@@ -2,31 +2,21 @@
 
 ## Local development
 
-Prerequisites: Node 22, pnpm 10 (`corepack enable`), Docker (or a local PostgreSQL 16).
+Prerequisites: Node 22, pnpm 10 (`corepack enable`), Docker (or a local MongoDB 8 started as a replica set).
 
 ```bash
 cp .env.example .env                    # then set JWT_SECRET: openssl rand -base64 48
-docker compose up -d postgres           # creates the talk2tax role and both databases
+docker compose up -d mongo              # MongoDB as a one-node replica set (rs0)
 pnpm install
 pnpm build
-pnpm db:migrate                         # applies migrations to DATABASE_URL
+pnpm db:migrate                         # applies MongoDB migrations to MONGODB_URL
 pnpm db:seed                            # optional: synthetic demo company, prints a one-time password
 pnpm dev:api                            # http://localhost:4000, OpenAPI at /docs
 pnpm dev:web                            # http://localhost:3000 (Next.js dev server)
 pnpm test
 ```
 
-Without Docker, create the role and databases yourself:
-
-```sql
-CREATE USER talk2tax WITH PASSWORD 'talk2tax' CREATEDB NOSUPERUSER NOBYPASSRLS;
-CREATE DATABASE talk2tax OWNER talk2tax;
-CREATE DATABASE talk2tax_test OWNER talk2tax;
-```
-
-The app role must not be a superuser or have `BYPASSRLS`, or row-level security does not apply (the API refuses to start that way in production). If you used an earlier `docker compose` volume, where `talk2tax` was the container superuser, recreate it with `docker compose down -v`.
-
-The migration enables the `btree_gist` extension (trusted in PostgreSQL 13+, so the database owner can create it).
+Without Docker, start `mongod --replSet rs0` and run `rs.initiate()` once in `mongosh`. Transactions need a replica set; the API refuses to start against a standalone server. The databases are created on first use. An installation that ran on PostgreSQL is upgraded as described in [`MONGODB.md`](MONGODB.md#upgrading-an-installation-that-ran-on-postgresql).
 
 ## Web app in production mode
 
@@ -42,17 +32,17 @@ The web app has no database access of its own; it talks only to the API. Its con
 
 ```bash
 export JWT_SECRET=$(openssl rand -base64 48)
-docker compose --profile app up --build   # Postgres → migrations → API → web app on :3000
+docker compose --profile app up --build   # MongoDB → migrations → API → web app on :3000
 node scripts/smoke-stack.mjs              # checks the running stack end to end
 ```
 
-Three images: `talk2tax-migrate` (the release step, `prisma migrate deploy`), `talk2tax-api` and `talk2tax-web`, both distroless and non-root with health checks. Building, CI, publishing to GitHub's registry and deploying are in [`CI_CD.md`](CI_CD.md).
+Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `talk2tax-api` and `talk2tax-web`, both distroless and non-root with health checks. Building, CI, publishing to GitHub's registry and deploying are in [`CI_CD.md`](CI_CD.md).
 
 ## Configuration
 
 | Variable | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `MONGODB_URL` | yes | MongoDB connection string; must reach a replica set (`?replicaSet=rs0`) |
 | `JWT_SECRET` | yes | ≥ 32 chars; rotate by redeploying (invalidates tokens) |
 | `JWT_TTL_SECONDS` | no | Default 3600 |
 | `PORT` | no | Default 4000 |
@@ -90,4 +80,4 @@ Register in the app, then on the API host run `pnpm --filter @talk2tax/api admin
 
 ## Production
 
-`deploy/docker-compose.prod.yml` runs the published images on one Docker host behind Caddy (automatic TLS), with managed PostgreSQL and settings in `.env.production`; `.github/workflows/release.yml` deploys a version to it after an approval, running migrations first. See [`CI_CD.md`](CI_CD.md). Not done yet: a staging environment, secrets from a secrets manager rather than the host's env file, structured log shipping, and more than one host.
+`deploy/docker-compose.prod.yml` runs the published images on one Docker host behind Caddy (automatic TLS), with a managed MongoDB replica set and settings in `.env.production`; `.github/workflows/release.yml` deploys a version to it after an approval, running migrations first. See [`CI_CD.md`](CI_CD.md). Not done yet: a staging environment, secrets from a secrets manager rather than the host's env file, structured log shipping, and more than one host.

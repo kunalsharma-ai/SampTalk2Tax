@@ -1,8 +1,9 @@
 import catalog from './catalog.json';
 
 /**
- * The schema's CHECK constraints, foreign keys and unique indexes, as PostgreSQL had them
- * (scripts/snapshot-constraints.sh), for the API to enforce on MongoDB records.
+ * The schema's CHECK constraints, foreign keys and unique indexes (taken from PostgreSQL before it
+ * was removed), for the API to enforce on MongoDB records. A new rule is added to catalog.json by
+ * hand, written as the SQL PostgreSQL would have printed.
  */
 export interface ForeignKey {
   name: string;

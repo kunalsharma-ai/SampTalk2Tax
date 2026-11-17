@@ -26,7 +26,7 @@ import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { SubledgerService } from '../ledgers/subledger.service';
-import { nextCounter, postgresOff } from '../db/counters';
+import { nextCounter } from '../db/counters';
 import { holdLock, lockRow } from '../db/locks';
 
 type Actor = { id: string };
@@ -172,7 +172,6 @@ export class BadDebtsService {
     const rates = this.rates(settings.rates);
     const id = await this.prisma.$transaction(async (tx) => {
       // One provision run at a time per organisation.
-      if (!postgresOff()) await tx.$queryRaw`SELECT org_id FROM bad_debt_settings WHERE org_id = ${org.id}::uuid FOR UPDATE`;
       await holdLock(`bad_debt_settings:${org.id}`);
       const { result } = await this.preview(org, input.asOf, rates, tx);
       const carried = await this.allowanceBalance(tx, org.id, settings.allowanceAccountId, input.asOf);
@@ -279,7 +278,6 @@ export class BadDebtsService {
       const functional = foreign ? toFunctional(dec(amount), rate, org.functionalCurrency) : dec(amount);
       if (input.against === 'ALLOWANCE') {
         // The allowance is a credit balance; charging more than it holds would turn it into a debit.
-        if (!postgresOff()) await tx.$queryRaw`SELECT org_id FROM bad_debt_settings WHERE org_id = ${org.id}::uuid FOR UPDATE`;
         await holdLock(`bad_debt_settings:${org.id}`);
         const held = await this.allowanceBalance(tx, org.id, settings.allowanceAccountId, input.date);
         if (functional.gt(held)) {

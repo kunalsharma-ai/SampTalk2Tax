@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 import { sqlWrite } from './sql-writes';
@@ -105,7 +104,6 @@ describe('vendor risk', () => {
       addDays(T, -1),
       owner.id,
     );
-    await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'VendorRiskReview', { contactId: v.krishna!.id }));
     expect(await row(v.krishna!.id)).toMatchObject({ need: 'REVIEW_DUE', lastReview: { decision: 'ACCEPTED', reviewedBy: 'Risk Owner' } });
   });
 
