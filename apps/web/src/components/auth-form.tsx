@@ -121,18 +121,20 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           {mode === 'login' ? 'Sign in' : 'Create account'}
         </Button>
       </form>
+      {/* Not prefetched: once the form signs you in, the proxy sends /login and /register to "/", and a
+          prefetch that ends up there answers 404 (Next.js 16 prefetches each segment separately). */}
       <p className="mt-6 text-sm text-fg-muted">
         {mode === 'login' ? (
           <>
             New to Talk2Tax?{' '}
-            <Link className="text-accent hover:underline" href={`/register${carry}`}>
+            <Link className="text-accent hover:underline" href={`/register${carry}`} prefetch={false}>
               Create an account
             </Link>
           </>
         ) : (
           <>
             Already have an account?{' '}
-            <Link className="text-accent hover:underline" href={`/login${carry}`}>
+            <Link className="text-accent hover:underline" href={`/login${carry}`} prefetch={false}>
               Sign in
             </Link>
           </>
