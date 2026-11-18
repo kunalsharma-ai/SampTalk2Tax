@@ -64,6 +64,8 @@ export function ClaimDetail() {
     setDialog(d);
   };
   const dupes = c.lines.filter((l) => l.possibleDuplicateOf.length);
+  const policy = c.policy ?? [];
+  const blocking = policy.filter((v) => v.severity === 'BLOCK');
   const finance = org.role !== 'EMPLOYEE';
 
   if (editing && a.edit) {
@@ -113,6 +115,22 @@ export function ClaimDetail() {
             {dupes.map((l) => `Line ${l.lineNo} has the same date and amount as ${l.possibleDuplicateOf.join(', ')}`).join('. ')}. Check it is not the same receipt.
           </Alert>
         </div>
+      ) : null}
+      {policy.length ? (
+        <Card className="mb-4" role="region" aria-label="Expense policy">
+          <CardHeader
+            title="Expense policy"
+            description={blocking.length ? 'This claim cannot be submitted until the blocking items are fixed.' : c.status === 'SUBMITTED' ? 'Outside the policy: the approver must say why they approve it anyway.' : 'You can submit it, but the approver must say why they approve it anyway.'}
+          />
+          <ul className="divide-y divide-line px-5 pb-4 text-sm">
+            {policy.map((v, i) => (
+              <li key={`${v.ruleId}-${i}`} className="flex items-start gap-3 py-2">
+                {v.severity === 'BLOCK' ? <Badge tone="negative">Blocks</Badge> : <Badge tone="warning">Warning</Badge>}
+                <span>{v.message}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
       ) : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-4">
@@ -176,6 +194,7 @@ export function ClaimDetail() {
         entityType="EXPENSE_CLAIM"
         entityId={c.id}
         canManage={a.attach}
+        onChanged={() => qc.invalidateQueries({ queryKey: ['expense-claim', orgId, c.id] })}
         description={c.receiptCount === 0 && ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) ? 'No receipts attached yet. Add a photo or PDF of each receipt (PDF, PNG, JPEG or WebP, up to 5 MB).' : 'Receipts for this claim, kept exactly as uploaded.'}
       />
 
@@ -204,13 +223,24 @@ export function ClaimDetail() {
             if (dialog === 'void') run.mutate({ action: 'void', body: { date: when, reason: note } });
           }}
         >
-          {run.error ? <Alert title="Could not complete this">{run.error instanceof ApiError ? run.error.message : 'Try again.'}</Alert> : null}
+          {run.error ? (
+            <Alert title="Could not complete this">
+              {run.error instanceof ApiError ? run.error.message : 'Try again.'}
+              {run.error instanceof ApiError && run.error.issues.length ? <ul className="mt-1 list-disc pl-5">{run.error.issues.map((i) => <li key={i}>{i}</li>)}</ul> : null}
+            </Alert>
+          ) : null}
+          {dialog === 'submit' && blocking.length ? <Alert tone="negative" title="Outside the expense policy">{blocking.map((v) => v.message).join(' ')}</Alert> : null}
+          {dialog === 'approve' && policy.length ? <Alert tone="warning" title="Outside the expense policy">{policy.map((v) => v.message).join(' ')}</Alert> : null}
           {dialog === 'submit' && c.receiptCount === 0 ? <Alert tone="warning" title="No receipts attached">You can still submit, but the approver may ask for them.</Alert> : null}
           {dialog === 'approve' && c.receiptCount === 0 ? <Alert tone="warning" title="No receipts attached">This claim has no receipts.</Alert> : null}
           {dialog === 'approve' && dupes.length ? <Alert tone="warning" title="Possibly claimed before">{dupes.length} line(s) match an earlier claim by date and amount.</Alert> : null}
           {dialog === 'approve' ? (
             <>
-              <Field label="Note (optional)">{(p) => <Input {...p} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
+              {policy.length ? (
+                <Field label="Why approve it anyway" hint="Required for a claim outside the expense policy. Kept with the approval.">{(p) => <Input {...p} required maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
+              ) : (
+                <Field label="Note (optional)">{(p) => <Input {...p} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
+              )}
               <Field label="Posting date" hint="The date the expense is recorded in the books.">{(p) => <Input {...p} type="date" required value={when} onChange={(e) => setWhen(e.target.value)} />}</Field>
             </>
           ) : null}

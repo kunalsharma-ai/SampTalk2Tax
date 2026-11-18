@@ -390,6 +390,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add a rate with a clear name, such as Car or Metro city, its amount and the expense account. Change a rate or make it inactive when your policy changes; claims already saved keep the rate they were saved with.',
     where: 'Expenses. Claimants choose these rates on mileage and per diem lines of a claim; finance (expenses.reimburse) sets them.',
   },
+  'expenses/policy': {
+    what: 'Spending limits and other rules every expense claim is checked against: limits per receipt, per day, per month and per claim, receipts needed above an amount, and how old a receipt may be.',
+    how: 'Add a rule and choose whether it blocks submission or warns the approver. Limits per receipt, day and month can apply to one category. Make a rule inactive when the policy changes.',
+    where: 'Expenses. Claimants see what their claim breaks on the claim; approvers must give a reason to approve a claim outside the policy; finance (expenses.reimburse) sets the rules.',
+  },
   // ---------------------------------------------------------------- payroll
   'payroll/employees': {
     what: 'Your employees with their salary structure, PAN, statutory numbers and bank details.',

@@ -9107,9 +9107,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts",
+        "apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules",
+        "/v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED",
+        "apps/api/test/expense-policy.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card",
+        "apps/web/e2e/expense-policy-flow.test.mjs",
+        "docs/EXPENSE_POLICY.md"
+      ],
+      "notes": "Limits per receipt, day, month (per claimant, across live claims) and claim; by category or for everything."
     },
     {
       "id": "EXP-014",
@@ -9159,9 +9167,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts",
+        "apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules",
+        "/v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED",
+        "apps/api/test/expense-policy.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card",
+        "apps/web/e2e/expense-policy-flow.test.mjs",
+        "docs/EXPENSE_POLICY.md"
+      ],
+      "notes": "Blocking rules stop submission and approval; warnings need the approver's reason."
     },
     {
       "id": "EXP-016",
@@ -9348,9 +9364,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts",
+        "apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules",
+        "/v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED",
+        "apps/api/test/expense-policy.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card",
+        "apps/web/e2e/expense-policy-flow.test.mjs",
+        "docs/EXPENSE_POLICY.md"
+      ],
+      "notes": "Rule-based detection (limits, missing receipts, receipt age, plus the existing possible-duplicate check). No AI/ML anomaly model yet."
     },
     {
       "id": "EXP-023",

@@ -5,6 +5,7 @@ import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from
 import { decimalString, isoDate, openApi, ZodPipe } from '../common/zod';
 import { ExpensesService } from './expenses.service';
 import { AllowancesService } from './allowances.service';
+import { ExpensePolicyService } from './expense-policy.service';
 
 const Allowance = z.object({
   rateId: z.uuid(),
@@ -28,6 +29,14 @@ const Line = z
   .refine((l) => !!l.allowance || (!!l.accountId && !!l.amount), 'A line needs a category and an amount, or a mileage or per diem rate');
 const RateBody = z.object({ kind: z.enum(['MILEAGE', 'PER_DIEM']), name: z.string().trim().min(1).max(80), rate: decimalString, accountId: z.uuid() });
 const RateUpdateBody = z.object({ name: z.string().trim().min(1).max(80), rate: decimalString, accountId: z.uuid(), isActive: z.boolean() });
+const PolicyFields = {
+  severity: z.enum(['WARN', 'BLOCK']),
+  accountId: z.uuid().nullish(),
+  amount: decimalString.nullish(),
+  days: z.number().int().nullish(),
+};
+const PolicyRuleBody = z.object({ kind: z.enum(['LINE_MAX', 'DAILY_MAX', 'MONTHLY_MAX', 'CLAIM_MAX', 'RECEIPT_ABOVE', 'MAX_AGE_DAYS']), ...PolicyFields });
+const PolicyRuleUpdateBody = z.object({ ...PolicyFields, isActive: z.boolean() });
 const ClaimBody = z.object({ title: z.string().trim().min(1).max(200), lines: z.array(Line).min(1).max(100) });
 const ListQuery = z.object({
   status: z.enum(['DRAFT', 'SUBMITTED', 'REJECTED', 'APPROVED', 'REIMBURSED', 'VOID']).optional(),
@@ -161,5 +170,33 @@ export class AllowanceRatesController {
   @ApiBody({ schema: openApi(RateUpdateBody) })
   update(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('rateId', ParseUUIDPipe) id: string, @Body(new ZodPipe(RateUpdateBody)) body: z.infer<typeof RateUpdateBody>) {
     return this.allowances.updateRate(org, user.id, id, body);
+  }
+}
+
+/** Expense policy rules (EXP-013, EXP-015, EXP-022). Claimants see the active ones through the claim options. */
+@ApiTags('expenses')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/expense-policy-rules')
+export class ExpensePolicyController {
+  constructor(private readonly policy: ExpensePolicyService) {}
+
+  @Get()
+  @RequirePermission('expenses.read')
+  list(@CurrentOrg() org: OrgContext) {
+    return this.policy.list(org);
+  }
+
+  @Post()
+  @RequirePermission('expenses.reimburse')
+  @ApiBody({ schema: openApi(PolicyRuleBody) })
+  create(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(PolicyRuleBody)) body: z.infer<typeof PolicyRuleBody>) {
+    return this.policy.create(org, user.id, body);
+  }
+
+  @Put(':ruleId')
+  @RequirePermission('expenses.reimburse')
+  @ApiBody({ schema: openApi(PolicyRuleUpdateBody) })
+  update(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('ruleId', ParseUUIDPipe) id: string, @Body(new ZodPipe(PolicyRuleUpdateBody)) body: z.infer<typeof PolicyRuleUpdateBody>) {
+    return this.policy.update(org, user.id, id, body);
   }
 }

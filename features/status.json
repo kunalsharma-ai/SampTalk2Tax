@@ -6462,6 +6462,45 @@
         "apps/web/e2e/expense-allowances-flow.test.mjs"
       ],
       "notes": "Per diem at organisation daily rates (places as named rates), whole or half days."
+    },
+    "EXP-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts",
+        "apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules",
+        "/v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED",
+        "apps/api/test/expense-policy.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card",
+        "apps/web/e2e/expense-policy-flow.test.mjs",
+        "docs/EXPENSE_POLICY.md"
+      ],
+      "notes": "Limits per receipt, day, month (per claimant, across live claims) and claim; by category or for everything."
+    },
+    "EXP-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts",
+        "apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules",
+        "/v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED",
+        "apps/api/test/expense-policy.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card",
+        "apps/web/e2e/expense-policy-flow.test.mjs",
+        "docs/EXPENSE_POLICY.md"
+      ],
+      "notes": "Blocking rules stop submission and approval; warnings need the approver's reason."
+    },
+    "EXP-022": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts",
+        "apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules",
+        "/v1/orgs/:orgId/expense-policy-rules; claim.policy; submit 422 POLICY_BLOCKED; approve 422 POLICY_NOTE_REQUIRED",
+        "apps/api/test/expense-policy.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card",
+        "apps/web/e2e/expense-policy-flow.test.mjs",
+        "docs/EXPENSE_POLICY.md"
+      ],
+      "notes": "Rule-based detection (limits, missing receipts, receipt age, plus the existing possible-duplicate check). No AI/ML anomaly model yet."
     }
   }
 }

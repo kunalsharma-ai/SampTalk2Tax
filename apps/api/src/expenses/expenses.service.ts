@@ -26,6 +26,7 @@ import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
 import { lockRow } from '../db/locks';
 import { AllowancesService, ClaimLineInput } from './allowances.service';
+import { ExpensePolicyService } from './expense-policy.service';
 
 interface Actor {
   id: string;
@@ -80,6 +81,7 @@ export class ExpensesService {
     private readonly chart: ChartService,
     private readonly moved: MovedTables,
     private readonly allowances: AllowancesService,
+    private readonly policy: ExpensePolicyService,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -92,7 +94,8 @@ export class ExpensesService {
       this.prisma.taxRate.findMany({ where: { orgId: org.id, isActive: true, kind: 'SIMPLE', purchaseAccountId: { not: null } }, select: { id: true, name: true, rate: true }, orderBy: [{ rate: 'asc' }, { name: 'asc' }] }),
     ]);
     const allowanceRates = await this.allowances.listRates(org, { activeOnly: true });
-    return { currency: org.functionalCurrency, accounts, taxRates: taxRates.map((t) => ({ ...t, rate: t.rate.toFixed() })), allowanceRates };
+    const policy = (await this.policy.list(org, { activeOnly: true })).map((r) => ({ id: r.id, severity: r.severity, summary: r.summary }));
+    return { currency: org.functionalCurrency, accounts, taxRates: taxRates.map((t) => ({ ...t, rate: t.rate.toFixed() })), allowanceRates, policy };
   }
 
   async list(org: OrgContext, actor: Actor, q: { status?: ExpenseClaimStatus; mine: boolean; limit: number; offset: number }) {
@@ -195,8 +198,12 @@ export class ExpensesService {
   async submit(org: OrgContext, actor: Actor, id: string) {
     return this.transition(org, actor, id, 'own', async (tx, c) => {
       if (!EDITABLE.includes(c.status)) throw new DomainError('NOT_EDITABLE', `This claim is already ${c.status.toLowerCase()}`, HttpStatus.CONFLICT);
+      const found = await this.policyCheck(org, tx, c, todayIso());
+      const blocked = found.filter((v) => v.severity === 'BLOCK');
+      if (blocked.length) throw new DomainError('POLICY_BLOCKED', 'The claim breaks the expense policy', HttpStatus.UNPROCESSABLE_ENTITY, { issues: blocked.map((v) => v.message) });
+      const warnings = found.map((v) => v.message);
       await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'SUBMITTED', submittedAt: new Date(), decidedById: null, decidedAt: null, decisionNote: null }, updatedAt: new Date() });
-      return { action: 'expense_claim.submitted', data: { total: c.total.toFixed() } };
+      return { action: 'expense_claim.submitted', data: { total: c.total.toFixed(), ...(warnings.length ? { policyWarnings: warnings } : {}) } };
     });
   }
 
@@ -214,6 +221,11 @@ export class ExpensesService {
     return this.transition(org, actor, id, 'decide', async (tx, c) => {
       if (c.status !== 'SUBMITTED') throw new DomainError('NOT_SUBMITTED', `This claim is ${c.status.toLowerCase()}, not waiting for approval`, HttpStatus.CONFLICT);
       if (c.claimantId === actor.id) throw new DomainError('SAME_PERSON', 'You cannot approve your own expense claim', HttpStatus.FORBIDDEN);
+      // Checked again: limits count claims approved since, and rules may have changed.
+      const found = await this.policyCheck(org, tx, c, c.submittedAt!.toISOString().slice(0, 10));
+      const blocked = found.filter((v) => v.severity === 'BLOCK');
+      if (blocked.length) throw new DomainError('POLICY_BLOCKED', 'This claim now breaks a blocking expense policy rule. Reject it so the claimant can change it.', HttpStatus.CONFLICT, { issues: blocked.map((v) => v.message) });
+      if (found.length && !input.note?.trim()) throw new DomainError('POLICY_NOTE_REQUIRED', 'This claim is outside the expense policy. Add a note saying why you approve it anyway.', HttpStatus.UNPROCESSABLE_ENTITY, { issues: found.map((v) => v.message) });
       const date = input.date ?? todayIso();
       // Recompute with the current tax rates and accounts: what posts is what is valid now.
       const computed = await this.prepare(
@@ -234,7 +246,7 @@ export class ExpensesService {
         lines: buildExpenseClaimJournal(computed, payable, org.functionalCurrency),
       });
       await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'APPROVED', decidedById: actor.id, decidedAt: new Date(), decisionNote: input.note || null, journalEntryId: je.id, postingDate: toDbDate(date) }, updatedAt: new Date() });
-      return { action: 'expense_claim.approved', data: { journalEntryId: je.id, date, total: c.total.toFixed(), note: input.note ?? null } };
+      return { action: 'expense_claim.approved', data: { journalEntryId: je.id, date, total: c.total.toFixed(), note: input.note ?? null, ...(found.length ? { policyExceptions: found.map((v) => v.message) } : {}) } };
     });
   }
 
@@ -327,6 +339,32 @@ export class ExpensesService {
     return c;
   }
 
+  /**
+   * The expense policy rules this claim breaks, counting the claimant's other live claims for
+   * limits per day and per month. `asOf` is the day receipt age is measured to.
+   */
+  private async policyCheck(org: OrgContext, db: Pick<Tx, 'expenseClaimLine' | 'attachment'>, c: ClaimRow, asOf: string) {
+    const months = c.lines.map((l) => fromDbDate(l.date).slice(0, 7)).sort();
+    const others = months.length
+      ? await db.expenseClaimLine.findMany({
+          where: {
+            orgId: org.id,
+            claimId: { not: c.id },
+            claim: { claimantId: c.claimantId, status: { in: ['SUBMITTED', 'APPROVED', 'REIMBURSED'] } },
+            date: { gte: toDbDate(`${months[0]}-01`), lt: toDbDate(nextMonth(months[months.length - 1])) },
+          },
+          select: { date: true, accountId: true, amount: true },
+        })
+      : [];
+    const allowanceLines = new Set((await this.allowances.forClaim(c.id)).keys());
+    const receiptCount = await db.attachment.count({ where: { orgId: org.id, entityType: 'EXPENSE_CLAIM', entityId: c.id, removedAt: null } });
+    return this.policy.violations(
+      org,
+      { lines: c.lines.map((l) => ({ lineNo: l.lineNo, date: fromDbDate(l.date), accountId: l.accountId, amount: l.amount.toFixed(), isAllowance: allowanceLines.has(l.lineNo) })), receiptCount, asOf },
+      others.map((o) => ({ date: fromDbDate(o.date), accountId: o.accountId, amount: o.amount.toFixed() })),
+    );
+  }
+
   private assertCanSee(org: OrgContext, actor: Actor, claimantId: string) {
     if (claimantId !== actor.id && !hasPermission(org.role, 'expenses.read')) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Expense claim not found' });
   }
@@ -407,6 +445,8 @@ export class ExpensesService {
     const bank = c.bankAccountId ? await db.account.findUnique({ where: { id: c.bankAccountId }, select: { code: true, name: true } }) : null;
     const allowanceByLine = await this.allowances.forClaim(c.id);
     const own = c.claimantId === actor.id;
+    // Checked while the claim can still change or be decided; afterwards the audit trail keeps what was found.
+    const policy = ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) ? await this.policyCheck(org, db, c, c.status === 'SUBMITTED' ? c.submittedAt!.toISOString().slice(0, 10) : todayIso()) : null;
     const decide = hasPermission(org.role, 'approvals.decide') && hasPermission(org.role, 'journals.post');
     return {
       id: c.id,
@@ -435,6 +475,8 @@ export class ExpensesService {
       voidReason: c.voidReason,
       createdAt: c.createdAt.toISOString(),
       receiptCount: receipts,
+      /** Expense policy rules the claim breaks (null once decided). */
+      policy,
       lines: c.lines.map((l) => ({
         lineNo: l.lineNo,
         date: fromDbDate(l.date),
@@ -482,4 +524,10 @@ function lineRows(computed: ReturnType<typeof computeExpenseClaim>) {
     netAmount: l.netAmount.toFixed(),
     taxAmount: l.taxAmount.toFixed(),
   }));
+}
+
+/** The first day of the month after `ym` (YYYY-MM). */
+function nextMonth(ym: string) {
+  const [y, m] = ym.split('-').map(Number);
+  return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
 }
