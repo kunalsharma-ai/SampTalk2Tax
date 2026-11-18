@@ -51,7 +51,7 @@ export async function uploadFile<T>(path: string, file: File): Promise<T> {
 export type SessionResult = { user: { id: string; email: string; name: string }; mfaRequired?: undefined } | { mfaRequired: true; expiresIn: number; user?: undefined };
 
 /** Signs in or registers. With two-step sign-in on, signing in answers mfaRequired; send the code with mode 'code'. */
-export async function session(mode: 'login' | 'register' | 'code', payload: { email: string; password: string; name?: string } | { code: string }): Promise<SessionResult> {
+export async function session(mode: 'login' | 'register' | 'code', payload: { email: string; password: string; name?: string } | { code: string; trustDevice?: boolean }): Promise<SessionResult> {
   const res = await fetch('/api/session', { method: 'POST', headers: { 'content-type': 'application/json', 'x-t2t-csrf': '1' }, body: JSON.stringify({ mode, ...payload }) });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, body.error ?? 'ERROR', body.message ?? 'Sign-in failed', []);

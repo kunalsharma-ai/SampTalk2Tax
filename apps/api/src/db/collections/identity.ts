@@ -70,6 +70,8 @@ export interface AuthSessionDoc {
   expiresAt: Date;
   revokedAt: Date | null;
   revokedReason: string | null;
+  /** The known device this session was signed in from; null for sessions from before devices were kept. */
+  deviceId?: string | null;
 }
 
 export const authSessions = defineCollection<AuthSessionDoc>({
@@ -91,6 +93,7 @@ export const authSessions = defineCollection<AuthSessionDoc>({
       expiresAt: { bsonType: 'date' },
       revokedAt: { bsonType: ['date', 'null'] },
       revokedReason: { bsonType: ['string', 'null'] },
+      deviceId: { bsonType: ['string', 'null'] },
     },
   },
   indexes: [
@@ -241,6 +244,51 @@ export const mfaChallenges = defineCollection<MfaChallengeDoc>({
       if (after.userId !== before.userId || after.secretHash !== before.secretHash || after.expiresAt.getTime() !== before.expiresAt.getTime()) throw new GuardViolation('A sign-in challenge cannot be changed');
       if (before.usedAt) throw new GuardViolation('A sign-in challenge is used once');
       if (after.attempts < before.attempts) throw new GuardViolation('Wrong codes cannot be forgotten');
+    },
+  },
+});
+
+/**
+ * The browsers a person has signed in from (SEC-009). The web app keeps a random device key in a
+ * long-lived httpOnly cookie and sends it on sign-in; only its SHA-256 is kept here. Signing in
+ * from a key not seen before, once the person has another device, sends them an alert. A device
+ * can be trusted for 30 days, when signing in there skips the two-step code.
+ */
+export interface KnownDeviceDoc {
+  id: string;
+  userId: string;
+  keyHash: string;
+  /** "Chrome on Windows", from the browser's user agent when first seen. */
+  label: string;
+  userAgent: string | null;
+  firstSeenAt: Date;
+  lastSeenAt: Date;
+  lastIp: string | null;
+  /** Signing in here skips the two-step code until then; null when not trusted. */
+  trustedUntil: Date | null;
+}
+
+export const knownDevices = defineCollection<KnownDeviceDoc>({
+  name: 'known_devices',
+  scope: 'global',
+  schema: {
+    bsonType: 'object',
+    required: ['userId', 'keyHash', 'label', 'firstSeenAt', 'lastSeenAt'],
+    properties: {
+      userId: { bsonType: 'string' },
+      keyHash: { bsonType: 'string', minLength: 64, maxLength: 64 },
+      label: { bsonType: 'string', maxLength: 120 },
+      userAgent: { bsonType: ['string', 'null'], maxLength: 300 },
+      firstSeenAt: { bsonType: 'date' },
+      lastSeenAt: { bsonType: 'date' },
+      lastIp: { bsonType: ['string', 'null'], maxLength: 64 },
+      trustedUntil: { bsonType: ['date', 'null'] },
+    },
+  },
+  indexes: [{ key: { userId: 1, keyHash: 1 }, name: 'user_key', unique: true }],
+  guards: {
+    afterUpdate(before, after) {
+      if (after.userId !== before.userId || after.keyHash !== before.keyHash) throw new GuardViolation('A device keeps its person and key');
     },
   },
 });

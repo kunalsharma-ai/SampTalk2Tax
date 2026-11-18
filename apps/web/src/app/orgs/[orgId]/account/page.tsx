@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Field, Input, Table, Td, Th, Tr } from '@talk2tax/ui';
 import { useState } from 'react';
 import { DataRegionCard } from '@/components/data-region';
+import { KnownDevicesCard } from '@/components/known-devices';
 import { OrganisationTimeZoneCard, PreferencesCard } from '@/components/preferences';
 import { PageHeader } from '@/components/shell';
 import { TwoStepSignInCard } from '@/components/two-step-sign-in';
@@ -52,7 +53,7 @@ export default function AccountSecurityPage() {
         />
         {revoke.error || revokeOthers.error ? <div className="px-5 pb-3"><Alert title="Could not sign out">{(revoke.error ?? revokeOthers.error)?.message}</Alert></div> : null}
         {revokeOthers.data ? <div className="px-5 pb-3"><Alert tone="positive" title={`Signed out ${revokeOthers.data.signedOut} other device${revokeOthers.data.signedOut === 1 ? '' : 's'}`} /></div> : null}
-        <Table>
+        <Table aria-label="Where you're signed in">
           <thead><tr><Th>Device</Th><Th>Address</Th><Th>Signed in</Th><Th>Last active</Th><Th>Ends by</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
           <tbody>
             {sessions.isLoading ? <Tr><Td colSpan={6} className="text-fg-muted">Loading…</Td></Tr> : null}
@@ -77,6 +78,8 @@ export default function AccountSecurityPage() {
           </tbody>
         </Table>
       </Card>
+
+      <KnownDevicesCard />
 
       <TwoStepSignInCard />
 
