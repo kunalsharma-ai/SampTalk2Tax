@@ -6,6 +6,7 @@
  *
  * No framework or database code. Money is compared as decimals, never as JS numbers.
  */
+import { calendarDate } from './locale';
 import { D, Dec } from './money';
 
 export class WorkflowError extends Error {
@@ -190,7 +191,7 @@ export const WORKFLOW_TRIGGER_DEFS: readonly TriggerDef[] = [
   {
     key: 'SCHEDULE',
     label: 'On a schedule',
-    description: 'Every day, every week on a weekday, or every month on a day, at a time (India time).',
+    description: 'Every day, every week on a weekday, or every month on a day, at a time in the organisation\'s time zone.',
     kind: 'schedule',
     auditActions: [],
     emailsContact: false,
@@ -254,7 +255,7 @@ export type ScheduleFrequency = (typeof SCHEDULE_FREQUENCIES)[number];
 export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
 /**
- * Settings of a schedule trigger. SCHEDULE: frequency, time (HH:MM, India time), weekday
+ * Settings of a schedule trigger. SCHEDULE: frequency, time (HH:MM, the organisation's time zone), weekday
  * (1 = Monday … 7 = Sunday) for WEEKLY, dayOfMonth (1–28) for MONTHLY.
  * INVOICE_OVERDUE: days after the due date (1–365). BILL_DUE_SOON: days before the due date (0–90).
  * Event triggers take none.
@@ -283,7 +284,7 @@ export function checkTriggerParams(trigger: WorkflowTrigger, raw: TriggerParams 
       return { params: {}, issues };
     }
     const time = (p.time ?? '').trim();
-    if (!TIME.test(time)) issues.push('Schedule: enter a time as HH:MM (24-hour, India time)');
+    if (!TIME.test(time)) issues.push('Schedule: enter a time as HH:MM (24-hour)');
     const out: TriggerParams = { frequency, time };
     if (frequency === 'WEEKLY') {
       if (!isInt(p.weekday, 1, 7)) issues.push('Schedule: choose a weekday');
@@ -307,9 +308,9 @@ export function checkTriggerParams(trigger: WorkflowTrigger, raw: TriggerParams 
 }
 
 /** Plain-language description of a trigger with its settings. */
-export function describeTrigger(trigger: WorkflowTrigger, params: TriggerParams = {}): string {
+export function describeTrigger(trigger: WorkflowTrigger, params: TriggerParams = {}, timeZone = 'Asia/Kolkata'): string {
   if (trigger === 'SCHEDULE') {
-    const at = `at ${params.time ?? '??:??'} India time`;
+    const at = `at ${params.time ?? '??:??'} ${timeZone === 'Asia/Kolkata' ? 'India time' : `${timeZone} time`}`;
     if (params.frequency === 'DAILY') return `Every day ${at}`;
     if (params.frequency === 'WEEKLY') return `Every ${WEEKDAYS[(params.weekday ?? 1) - 1]} ${at}`;
     return `Every month on day ${params.dayOfMonth ?? '?'} ${at}`;
@@ -320,9 +321,17 @@ export function describeTrigger(trigger: WorkflowTrigger, params: TriggerParams 
   return triggerDef(trigger).label;
 }
 
-/** The India date (YYYY-MM-DD) of an instant. */
-export function istDate(at: Date): string {
-  return new Date(at.getTime() + IST_MS).toISOString().slice(0, 10);
+/** The date (YYYY-MM-DD) of an instant in the organisation's time zone (India by default). */
+export function istDate(at: Date, timeZone = 'Asia/Kolkata'): string {
+  return timeZone === 'Asia/Kolkata' ? new Date(at.getTime() + IST_MS).toISOString().slice(0, 10) : calendarDate(at, timeZone);
+}
+
+/** How far a time zone's wall clock is ahead of UTC at an instant, in milliseconds. */
+function zoneOffset(at: Date, timeZone: string): number {
+  if (timeZone === 'Asia/Kolkata') return IST_MS;
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(at);
+  const p = (t: string) => Number(parts.find((x) => x.type === t)!.value);
+  return Date.UTC(p('year'), p('month') - 1, p('day'), p('hour'), p('minute'), p('second')) - Math.floor(at.getTime() / 1000) * 1000;
 }
 
 /** Adds days to a YYYY-MM-DD date. */
@@ -331,14 +340,16 @@ export function shiftDate(date: string, days: number): string {
 }
 
 /**
- * The most recent time a schedule came round at or before now, as an instant and its India
- * date. Times are India time (UTC+05:30, no daylight saving).
+ * The most recent time a schedule came round at or before now, as an instant and its date.
+ * Times are wall-clock times in the organisation's time zone (India, UTC+05:30, by default);
+ * across a daylight-saving change the instant follows the zone's offset on that day.
  */
-export function latestOccurrence(params: TriggerParams, now: Date): { at: Date; date: string } {
+export function latestOccurrence(params: TriggerParams, now: Date, timeZone = 'Asia/Kolkata'): { at: Date; date: string } {
   const m = TIME.exec(params.time ?? '');
   if (!m || !params.frequency) throw new WorkflowError('The schedule is not complete');
   const minutes = Number(m[1]) * 60 + Number(m[2]);
-  const wall = new Date(now.getTime() + IST_MS); // India wall-clock time, read with UTC getters
+  const offset = zoneOffset(now, timeZone);
+  const wall = new Date(now.getTime() + offset); // wall-clock time in the zone, read with UTC getters
   const day = Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth(), wall.getUTCDate());
   const at = (dayStart: number) => dayStart + minutes * 60_000;
   let t: number;
@@ -354,7 +365,9 @@ export function latestOccurrence(params: TriggerParams, now: Date): { at: Date; 
     t = at(Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth(), dom));
     if (t > wall.getTime()) t = at(Date.UTC(wall.getUTCFullYear(), wall.getUTCMonth() - 1, dom));
   }
-  return { at: new Date(t - IST_MS), date: new Date(t).toISOString().slice(0, 10) };
+  // The wall time back to an instant, at the zone's offset then (it may differ across a clock change).
+  const instant = new Date(t - zoneOffset(new Date(t - offset), timeZone));
+  return { at: instant, date: new Date(t).toISOString().slice(0, 10) };
 }
 
 /**

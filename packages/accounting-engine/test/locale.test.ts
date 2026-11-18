@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkPreferences, displayDate, displayDateTime, displayMoney, displayNumber, isTimeZone, numberLocale, timeZoneLabel, zonedParts } from '../src';
+import { calendarDate, checkPreferences, displayDate, displayDateTime, displayMoney, displayNumber, isTimeZone, numberLocale, timeZoneLabel, zonedParts } from '../src';
 
 describe('regional formats', () => {
   it('groups money by the chosen format, with AUTO following the currency, and never rounds', () => {
@@ -47,5 +47,18 @@ describe('regional formats', () => {
       'Choose a date format from the list',
       'Choose a time zone such as Asia/Kolkata or Europe/London',
     ]);
+  });
+});
+
+describe('business dates', () => {
+  it('are the calendar date in the organisation\'s time zone', () => {
+    const at = new Date('2026-11-18T20:00:00Z');
+    expect(calendarDate(at, 'Asia/Kolkata')).toBe('2026-11-19');
+    expect(calendarDate(at, 'Europe/London')).toBe('2026-11-18');
+    expect(calendarDate(at, 'Pacific/Pago_Pago')).toBe('2026-11-18');
+    expect(calendarDate(new Date('2026-11-18T09:00:00Z'), 'Pacific/Kiritimati')).toBe('2026-11-18');
+    expect(calendarDate(new Date('2026-11-18T10:00:00Z'), 'Pacific/Kiritimati')).toBe('2026-11-19');
+    // An unknown zone falls back to India time.
+    expect(calendarDate(at, 'Mars/Olympus')).toBe('2026-11-19');
   });
 });

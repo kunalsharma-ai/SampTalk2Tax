@@ -30,6 +30,18 @@ describe('today', () => {
     vi.setSystemTime(new Date('2026-11-04T18:29:59Z')); // 23:59 on 4 Nov in India
     expect(today()).toBe('2026-11-04');
   });
+  it('follows the organisation’s time zone, not a personal one', async () => {
+    const f = await import('../src/lib/format');
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-04T20:00:00Z')); // 5 Nov in India, still 4 Nov in London
+    f.setOrganisationTimeZone('Europe/London');
+    f.setDisplayPreferences({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: 'Asia/Kolkata' });
+    expect(f.today()).toBe('2026-11-04');
+    expect(f.istDay('2026-11-04T23:30:00Z')).toBe('2026-11-04');
+    f.setOrganisationTimeZone(null);
+    f.setDisplayPreferences({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: null });
+    expect(f.today()).toBe('2026-11-05');
+  });
 });
 
 describe('display preferences', () => {

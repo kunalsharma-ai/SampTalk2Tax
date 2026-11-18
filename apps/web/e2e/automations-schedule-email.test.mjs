@@ -119,7 +119,7 @@ test('an owner sets up an overdue reminder by email; the runner emails the custo
   await page.getByLabel('Trigger').selectOption({ label: 'On a schedule' });
   await page.getByLabel('Repeats').selectOption({ label: 'Every week' });
   await page.getByLabel('On', { exact: true }).selectOption({ label: 'Monday' });
-  await page.getByLabel('At (India time)').fill('09:00');
+  await page.getByLabel('At', { exact: true }).fill('09:00');
   await page.getByRole('button', { name: 'Add a condition' }).click();
   await page.getByLabel('Condition 1 fact').selectOption({ label: 'Overdue receivables' });
   await page.getByLabel('Condition 1 test').selectOption({ label: 'is more than' });

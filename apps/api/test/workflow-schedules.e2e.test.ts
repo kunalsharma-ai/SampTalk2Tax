@@ -93,7 +93,7 @@ describe('building schedule workflows', () => {
       actions: [{ type: 'SEND_EMAIL', to: { contact: true }, subject: 'Hi {{number}}', body: '' }],
     }).expect(422);
     expect(res.body.details.issues).toEqual([
-      'Schedule: enter a time as HH:MM (24-hour, India time)',
+      'Schedule: enter a time as HH:MM (24-hour)',
       'Schedule: choose a weekday',
       'Action 1: write the email',
       'Action 1: {{number}} is not available for on a schedule',

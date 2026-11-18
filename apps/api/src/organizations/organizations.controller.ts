@@ -52,7 +52,7 @@ export class OrganizationsController {
     return { ...(await this.orgs.get(orgId)), role: org.role, viaSupport: org.viaSupport ? { expiresAt: org.viaSupport.expiresAt } : null };
   }
 
-  /** The time zone moments are shown in (display only; business dates follow the country module). */
+  /** The organisation's time zone: moments are shown in it and its business day follows it (I18N-008). */
   @Put(':orgId/time-zone')
   @RequirePermission('org.manage')
   @ApiBody({ schema: openApi(TimeZoneBody) })

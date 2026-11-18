@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 781 |
 | Designed | 0 |
-| Implementing | 50 |
+| Implementing | 49 |
 | Implemented | 34 |
-| Tested | 464 |
+| Tested | 465 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -5301,8 +5301,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### I18N-008 — Time-zone awareness
 
 - Module: Internationalization
-- Status: **Implementing**
-- Notes: Each organisation has a time zone (owners and admins set it, audited) and each person may choose their own; moments (times things happened) are shown in it. Business dates such as today, due dates and periods are still calculated in India time for every organisation.
+- Status: **Tested**
+- Notes: Each organisation has a time zone (owners and admins set it, audited) and each person may choose their own; moments are shown in it. The organisation's business day follows its zone: today, due and overdue, alerts, tasks, the cash forecast, the close checklist, copilot and scheduled automations (with daylight saving). India time stays for e-way bills and the platform's own billing and usage months.
 - Evidence:
   - packages/accounting-engine/src/locale.ts
   - packages/accounting-engine/test/locale.test.ts
@@ -5314,6 +5314,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/test/i18n.test.ts
   - apps/web/e2e/display-preferences-flow.test.mjs
   - docs/LANGUAGES_AND_FORMATS.md
+  - apps/api/src/common/dates.ts
+  - apps/api/test/business-day.e2e.test.ts
+  - packages/accounting-engine/test/workflows.test.ts
 
 ### I18N-009 — Regional document templates
 

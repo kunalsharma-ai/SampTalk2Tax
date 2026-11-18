@@ -2,7 +2,7 @@
  * Formatting for display only. Amounts arrive from the API as exact decimal strings and
  * Intl.NumberFormat formats strings without converting through binary floating point.
  */
-import { DEFAULT_PREFERENCES, displayDate, displayDateTime, displayMoney, displayNumber, numberLocale, type DisplayPreferences } from '@talk2tax/accounting-engine';
+import { calendarDate, DEFAULT_PREFERENCES, displayDate, displayDateTime, displayMoney, displayNumber, numberLocale, type DisplayPreferences } from '@talk2tax/accounting-engine';
 
 /**
  * The display preferences in force: the signed-in person's choices, with the organisation's time
@@ -60,17 +60,17 @@ export function date(iso: string): string {
 }
 
 /**
- * Today's date in India (YYYY-MM-DD), the calendar the API uses for "today", periods and due
- * dates. Using the browser's own date would leave out today's documents for anyone whose clock is
- * behind India time (between 00:00 and 05:30 IST for a browser on UTC).
+ * Today's business date (YYYY-MM-DD) in the organisation's time zone, the calendar the API uses
+ * for "today", periods and due dates (I18N-008; India time by default). Not the browser's own
+ * date, and not a personal time zone: those would disagree with the books near midnight.
  */
 export function today(): string {
-  return new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+  return calendarDate(new Date(), orgTimeZone ?? DEFAULT_PREFERENCES.timeZone);
 }
 
-/** The India calendar date (YYYY-MM-DD) of a moment, matching the API's days. */
+/** The business date (YYYY-MM-DD) of a moment, in the organisation's time zone, matching the API's days. */
 export function istDay(at: string): string {
-  return new Date(Date.parse(at) + 5.5 * 3_600_000).toISOString().slice(0, 10);
+  return calendarDate(new Date(Date.parse(at)), orgTimeZone ?? DEFAULT_PREFERENCES.timeZone);
 }
 
 /** A readable name for a browser's user-agent string. Display only; never used for decisions. */

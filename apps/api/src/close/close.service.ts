@@ -20,7 +20,7 @@ import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AiControlService } from '../ai-control/ai-control.service';
 import { AuditService } from '../audit/audit.service';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
 import { entryMonth, lineSums, postedBetween } from '../db/ledger-queries';
@@ -166,7 +166,7 @@ export class CloseService {
 
   /** Every period up to the current month, newest first, with where its close stands. */
   async list(org: CloseOrg) {
-    const today = iso(new Date(Date.now() + 5.5 * 3_600_000));
+    const today = todayIso();
     const periods = await this.prisma.fiscalPeriod.findMany({ where: { orgId: org.id, startDate: { lte: toDbDate(today) } }, orderBy: { startDate: 'desc' }, take: 36, include: { close: { include: { certifications: { where: { reopenedAt: null }, take: 1 } } } } });
     const names = await this.names(periods.flatMap((p) => [p.close?.certifications[0]?.certifiedById]).filter((x): x is string => !!x));
     return {
@@ -379,7 +379,7 @@ export class CloseService {
   async start(org: CloseOrg, actor: Actor, periodId: string) {
     await this.prisma.$transaction(async (tx) => {
       const p = await this.period(tx, org.id, periodId);
-      const today = iso(new Date(Date.now() + 5.5 * 3_600_000));
+      const today = todayIso();
       if (fromDbDate(p.startDate) > today) throw new DomainError('PERIOD_IN_FUTURE', `${p.name} has not started yet`, HttpStatus.CONFLICT);
       const existing = await tx.periodClose.findUnique({ where: { periodId } });
       if (existing) return;

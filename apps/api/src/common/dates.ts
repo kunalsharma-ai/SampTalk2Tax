@@ -1,4 +1,5 @@
-import { assertIsoDate } from '@talk2tax/accounting-engine';
+import { assertIsoDate, calendarDate } from '@talk2tax/accounting-engine';
+import { currentTimeZone } from './tenant-context';
 
 export function toDbDate(iso: string): Date {
   assertIsoDate(iso);
@@ -10,15 +11,32 @@ export function fromDbDate(d: Date): string {
 }
 
 /**
- * Today's date in India (YYYY-MM-DD). The whole product keeps one business calendar, India time,
- * so "today" (future-date checks, due and overdue, defaults) agrees between every module and the
- * web app, also between 00:00 and 05:30 IST when the UTC date is still yesterday.
+ * Today's business date (YYYY-MM-DD) for the organisation the current work is for, in its time
+ * zone (I18N-008), so "today" (future-date checks, due and overdue, defaults) agrees between every
+ * module and the web app. Outside an organisation, and by default, it is India time.
  */
 export function todayIso(): string {
-  return new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+  return businessDate(new Date());
 }
 
-/** The date in India (YYYY-MM-DD) of a moment, e.g. when a reminder was sent. */
+/** The business date of a moment in the current organisation's time zone (India by default). */
+export function businessDate(at: Date): string {
+  return calendarDate(at, currentTimeZone() ?? DEFAULT_BUSINESS_TIME_ZONE);
+}
+
+export const DEFAULT_BUSINESS_TIME_ZONE = 'Asia/Kolkata';
+
+/** The current organisation's time zone (India by default). */
+export function orgZone(): string {
+  return currentTimeZone() ?? DEFAULT_BUSINESS_TIME_ZONE;
+}
+
+/** How a time zone is named next to a date: "India time" for the default. */
+export function zoneLabel(tz = orgZone()): string {
+  return tz === DEFAULT_BUSINESS_TIME_ZONE ? 'India time' : `${tz} time`;
+}
+
+/** The business date (YYYY-MM-DD) of a moment, e.g. when a reminder was sent: in the organisation's time zone. */
 export function istDate(at: Date): string {
-  return new Date(at.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+  return businessDate(at);
 }
