@@ -9,6 +9,8 @@ import { useT } from '@/lib/i18n';
 import { useOrg, useOrgs } from '@/lib/org';
 import { Logo } from './brand';
 import { navFor } from '@/lib/nav';
+import { CommandPalette } from './command-palette';
+import { can } from '@/lib/types';
 import type { DataRegion, SubscriptionAccess } from '@/lib/types';
 import { useAnnouncements, useMeWithRole } from '@/lib/admin';
 import { useOrgFlags } from '@/lib/operations';
@@ -103,6 +105,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {org?.isDemo ? <Badge tone="warning">{t('Synthetic demo data')}</Badge> : null}
           </span>
           <div className="ml-auto flex shrink-0 items-center gap-1">
+            {org && !elsewhere ? <CommandPalette orgId={orgId} groups={navGroups} searchRecords={can(org.role, 'reports.read')} /> : null}
             {me.data?.user.platformRole ? (
               <Link href="/admin" className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg">
                 {t('Platform admin')}

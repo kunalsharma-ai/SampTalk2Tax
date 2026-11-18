@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 782 |
+| Not started | 781 |
 | Designed | 0 |
 | Implementing | 50 |
 | Implemented | 34 |
-| Tested | 463 |
+| Tested | 464 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -65,7 +65,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
-| Design system | M1 | 36 | 34 | 2 |
+| Design system | M1 | 36 | 33 | 3 |
 | Absolute quality rules | All | 20 | 8 | 12 |
 
 ## Features with progress and evidence
@@ -7085,9 +7085,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Navigation structure
 - Status: **Implementing**
-- Notes: Sidebar and org switcher exist for the M1 modules; global search and command palette are not built.
+- Notes: Sidebar, org switcher and global search (Ctrl+K command palette over pages and records, DS-003) exist. The palette only opens pages and records; it cannot yet start actions.
 - Evidence:
   - apps/web/src
+  - apps/web/src/components/command-palette.tsx
+  - apps/web/e2e/command-palette-flow.test.mjs
 
 ### NAV-002 — Overview
 
@@ -7222,6 +7224,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Sidebar only shows modules that exist today.
 - Evidence:
   - apps/web/src
+
+### DS-003 — Command palette
+
+- Module: Design system
+- Status: **Tested**
+- Notes: Ctrl+K or ⌘K (or Search in the header) opens a search of the pages this person can open and, with reports access, records: contacts, invoices and bills, payments, journals, accounts, projects, departments, loans, fixed assets and alerts. Arrow keys and Enter, or click. No actions (create, run) from the palette yet.
+- Evidence:
+  - apps/web/src/components/command-palette.tsx
+  - apps/web/src/lib/palette.ts
+  - apps/web/test/palette.test.ts
+  - apps/web/e2e/command-palette-flow.test.mjs
 
 ### DS-012 — Currency selectors
 
