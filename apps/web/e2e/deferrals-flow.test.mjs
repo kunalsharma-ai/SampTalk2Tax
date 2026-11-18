@@ -2,7 +2,7 @@
  * Browser end-to-end test for prepaid expenses, deferred revenue and accruals: an owner adds a
  * prepaid expense with its payment posted and deferred revenue with its receipt, posts three
  * months of releases, ends the deferred revenue early with a refund, and posts and cancels a
- * month-end accrual. Real Next.js app → real API → real PostgreSQL.
+ * month-end accrual. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

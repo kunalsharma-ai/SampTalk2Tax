@@ -4,7 +4,7 @@
  * plans the other bills for their due dates; the weekly cash table flags the week that overdraws;
  * Prepare batch takes the bills planned up to a date into a new payment batch with their planned
  * amounts, saved as PB-0001.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

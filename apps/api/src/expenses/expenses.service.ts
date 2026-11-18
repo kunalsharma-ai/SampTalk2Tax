@@ -1,7 +1,6 @@
 import { ChartService } from '../accounts/chart.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { organizations } from '../db/collections/tenancy';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { EXPENSE_CLAIMS } from '../db/collections/expenses';
 import { MovedTables } from '../db/moved-table';
 import { randomUUID } from 'node:crypto';
@@ -79,7 +78,6 @@ export class ExpensesService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
     private readonly chart: ChartService,
     private readonly moved: MovedTables,
     private readonly allowances: AllowancesService,
@@ -412,7 +410,6 @@ export class ExpensesService {
     if (!code) throw new DomainError('NO_CLAIMS_ACCOUNT', 'Could not find a free account code (2250–2259) for employee reimbursements', HttpStatus.CONFLICT);
     const id = await this.chart.create(tx, orgId, actorId, { code, name: 'Employee Reimbursements Payable', type: 'LIABILITY', subtype: 'EMPLOYEE_REIMBURSEMENTS', parentCode: '2000' }, 'Employee expense claims');
     await this.store.collection(organizations).updateOne({ id: orgId, claimsAccountId: null }, { $set: { claimsAccountId: id, updatedAt: new Date() } });
-    await this.mirror.organizations([orgId], tx);
     return id;
   }
 

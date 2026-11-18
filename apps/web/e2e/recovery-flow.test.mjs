@@ -3,7 +3,7 @@
  * running out sees the options worked out from overdue invoices, a supplier's bills and cost
  * lines, starts a plan, adds options, assigns an owner and a due date, watches the liquidity
  * forecast close the gap, drops an action, starts the plan and opens it as a twin scenario.
- * Nothing is posted. Real Next.js app → real API → real PostgreSQL.
+ * Nothing is posted. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

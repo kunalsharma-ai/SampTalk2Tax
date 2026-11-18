@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for KPIs and the management report: an owner posts a month of
  * activity, reads the KPIs and the figures behind one, sets a target, writes the month's
- * commentary and finalises the report. Real Next.js app → real API → real PostgreSQL.
+ * commentary and finalises the report. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

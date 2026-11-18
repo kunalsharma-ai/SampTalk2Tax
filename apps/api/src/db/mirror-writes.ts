@@ -228,7 +228,7 @@ export async function claimRecords(client: unknown, model: string, due: Record<s
 
 /** The model of this name as MongoDB holds it: mirrored, or moved by hand. */
 export const modelInfo = (name: string): MirrorInfo | undefined => INFOS.get(name) ?? READABLE.get(name);
-const readableByDelegate = () => new Map([...READABLE.values()].map((i) => [i.delegate, i]));
+export const readableByDelegate = () => new Map([...READABLE.values()].map((i) => [i.delegate, i]));
 
 export const mirrorByDelegate = () => new Map([...INFOS.values()].map((i) => [i.delegate, i]));
 
@@ -239,7 +239,7 @@ type Child = MirrorInfo['children'][number];
  * the Prisma schema does not know what PostgreSQL deletes or detaches when a row goes. The
  * catalog does: it is read once, and its ON DELETE CASCADE and SET NULL keys whose child is a
  * mirrored table are added to the parents' children, also for parents moved by hand (documents,
- * journal entries) through `mirrorParentDeleted`.
+ * journal entries) through `cascadeDeleted`.
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -266,10 +266,10 @@ async function loadForeignKeys(_tx?: unknown): Promise<void> {
 }
 
 /**
- * Applies to MongoDB what PostgreSQL does to mirrored rows when rows of a table moved by hand
- * are deleted (a draft document's billing links go, a deleted draft journal's run loses its link).
+ * Applies the foreign keys' ON DELETE actions to the rows that point at deleted rows of a table
+ * moved by hand (a draft document's billing links go, a deleted draft journal's run loses its link).
  */
-export async function mirrorParentDeleted(tx: unknown, store: Store, table: string, orgId: string, ids: string[]) {
+export async function cascadeDeleted(tx: unknown, store: Store, table: string, orgId: string, ids: string[]) {
   await loadForeignKeys(tx);
   for (const id of ids) await applyChildren(store, BY_TABLE.get(table) ?? [], orgId, { id, orgId });
 }
@@ -303,26 +303,13 @@ function inContext<T>(info: MirrorInfo, orgId: unknown, fn: () => Promise<T>): P
   return info.tenant ? runInOrg(String(orgId), fn) : runAsSystem(fn);
 }
 
-/**
- * Writes these PostgreSQL rows (read back in full) into MongoDB. A Prisma write's own rows are
- * checked even when nothing changed, as a trigger would be. `allWritten` is false where the rows
- * may include ones the call did not write (the children of a nested write, everything a raw
- * statement's transaction wrote so far, a catch-up copy); those are checked only when changed.
- */
-async function putRows(store: Store, d: Delegate, info: MirrorInfo, keys: Record<string, unknown>[], allWritten = true) {
-  if (!keys.length) return;
-  const rows = (await d.findMany({ where: pkWhere(info, keys) })) as Record<string, unknown>[];
-  // `guards_off` stands in for a test's ALTER TABLE ... DISABLE TRIGGER (moving dates back as time would).
-  const guard = allowedInTx('guards_off') ? undefined : GUARDS[info.model];
-  for (const r of rows) await storeRow(store, info, r, allWritten ? 'checked' : 'changed', guard);
-}
 
 /**
  * Writes one record (by field name, complete) into MongoDB after its guard, CHECK constraints
  * and foreign keys. `insert` refuses a record whose key is already there, as an INSERT would.
  */
 async function storeRow(store: Store, info: MirrorInfo, r: Record<string, unknown>, mode: 'checked' | 'changed' | 'insert', guard = allowedInTx('guards_off') ? undefined : GUARDS[info.model]) {
-  if (POSTGRES_OFF()) writePolicy(info, r);
+  writePolicy(info, r);
   const before = (await beforeRow(info, store, r)) as Record<string, unknown> | null;
   if (info.readOnly) return storeMoved(store, info, r, mode === 'insert' || !before);
   if (mode === 'insert' && before) throw duplicateKey(info, info.pk);
@@ -422,8 +409,7 @@ function beforeRow(info: MirrorInfo, store: Store, key: Record<string, unknown>)
 
 /** Reads for guards: straight from MongoDB (they run inside the write, so not through its queue). */
 function guardReads(info: MirrorInfo, store: Store) {
-  const refuse = new Proxy({}, { get: () => () => Promise.reject(new Error(`A guard read of ${info.model} could not be translated`)) }) as Delegate;
-  return mongoReadOps(refuse, info, store) as unknown as { findFirst(a: unknown): Promise<unknown>; findMany(a: unknown): Promise<unknown>; count(a: unknown): Promise<unknown> };
+  return mongoReadOps(info, store) as unknown as { findFirst(a: unknown): Promise<unknown>; findMany(a: unknown): Promise<unknown>; count(a: unknown): Promise<unknown> };
 }
 
 /** Records of a model (by its delegate name) as Prisma gives them, read from MongoDB alone. */
@@ -478,48 +464,6 @@ async function applyChildren(store: Store, children: Child[], orgId: unknown, pa
   }
 }
 
-/**
- * Nested writes (`lines: { create: [...] }`) change child rows too: those of mirrored child
- * models are read back by their foreign key and written to MongoDB, and children PostgreSQL no
- * longer has are removed.
- */
-async function syncNested(tx: Record<string, Delegate>, store: Store, info: MirrorInfo, data: unknown, row: Record<string, unknown>) {
-  if (!data || typeof data !== 'object') return;
-  const m = MODELS.get(info.model)!;
-  for (const f of m.fields) {
-    if (f.kind !== 'object' || f.relationFromFields?.length || !(data as Record<string, unknown>)[f.name]) continue;
-    const child = INFOS.get(f.type);
-    if (!child) continue;
-    const back = MODELS.get(f.type)!.fields.find((x) => x.kind === 'object' && x.relationName === f.relationName && x.relationFromFields?.length);
-    if (!back) continue;
-    const i = back.relationToFields!.findIndex((x) => x !== 'orgId');
-    const fk = back.relationFromFields![i < 0 ? 0 : i];
-    const parentKey = row[back.relationToFields![i < 0 ? 0 : i]];
-    const cd = pgOf(tx[child.delegate]);
-    const keep = (await cd.findMany({ where: { [fk]: parentKey }, select: pkSelect(child) })) as Record<string, unknown>[];
-    const had = (await inContext(child, row.orgId, () => store.collection(child.def).find({ [fk]: parentKey }))) as Record<string, unknown>[];
-    const kept = new Set(keep.map((k) => docId(child, k)));
-    await dropRows(store, child, had.filter((h) => !kept.has(String(h.id))).map((h) => ({ ...h, orgId: h.orgId ?? row.orgId })));
-    await putRows(store, cd, child, keep, false);
-  }
-}
-
-/** Adds the primary key (and orgId) to a select, so the written rows can be found again. */
-function withKeys(info: MirrorInfo, args: Record<string, unknown>) {
-  if (!args.select) return { args, strip: [] as string[] };
-  const select = { ...(args.select as Record<string, unknown>) };
-  const strip: string[] = [];
-  for (const k of Object.keys(pkSelect(info))) if (!select[k]) (select[k] = true), strip.push(k);
-  return { args: { ...args, select }, strip };
-}
-
-const stripKeys = <T>(row: T, strip: string[]) => {
-  if (!strip.length || !row || typeof row !== 'object') return row;
-  const out = { ...(row as Record<string, unknown>) };
-  for (const k of strip) delete out[k];
-  return out as T;
-};
-
 /** A model delegate whose writes also land in MongoDB. Reads pass straight through. */
 /**
  * Runs a transaction's MongoDB work one call at a time. PostgreSQL code often runs reads side by
@@ -535,72 +479,13 @@ export function oneAtATime() {
 }
 type Serial = ReturnType<typeof oneAtATime>;
 
-// ------------------------------------------------------------------ planned writes, checked
-
-/**
- * With T2T_PLAN_CHECK=1, every write is also worked out as MongoDB alone will do it
- * (mongo-writes.ts) and the plan is compared with what PostgreSQL stored. Differences go to
- * plan-differences.txt (or PLAN_DIFFERENCES_FILE).
- */
-const PLAN_CHECK = () => process.env.T2T_PLAN_CHECK === '1';
-type Row = Record<string, unknown>;
-
-async function tryPlan(label: string, fn: () => Promise<PlannedRow[]>): Promise<PlannedRow[] | null> {
-  if (!hasAutoincrement()) useAutoincrement(async () => FROM_SEQUENCE);
-  try {
-    return await fn();
-  } catch (e) {
-    reportPlan([`${label}: could not plan: ${(e as Error).message}`]);
-    return null;
-  }
-}
-
-function reportPlan(lines: string[]) {
-  if (lines.length) appendFileSync(process.env.PLAN_DIFFERENCES_FILE ?? 'plan-differences.txt', `${lines.join('\n')}\n`);
-}
-
-async function comparePlans(tx: Record<string, Delegate>, label: string, plans: PlannedRow[] | null, returned?: Row) {
-  if (!plans) return;
-  // A check only: whatever goes wrong in it is reported, never the write's failure.
-  await comparing(tx, label, plans, returned).catch((e) => reportPlan([`${label}: could not compare: ${(e as Error).message}`]));
-}
-
-const keyText = (where: Row) => JSON.stringify(where, (_, v) => (typeof v === 'bigint' ? `${v}n` : v));
-
-async function comparing(tx: Record<string, Delegate>, label: string, plans: PlannedRow[], returned?: Row) {
-  const lines: string[] = [];
-  // The values PostgreSQL's sequences gave the record itself are known from what it returned.
-  if (returned && plans[0]) for (const [k, v] of Object.entries(plans[0].row)) if (fromSequence(v) && k in returned) plans[0].row[k] = returned[k];
-  for (const p of plans) {
-    const info = modelInfo(p.model);
-    if (!info) continue;
-    if (info.pk.some((k) => fromSequence(p.row[k]))) continue; // a key only PostgreSQL's sequence knows
-    const where = Object.fromEntries(info.pk.map((k) => [k, p.row[k]]));
-    if (info.pk.some((k) => p.row[k] === null || p.row[k] === undefined)) {
-      lines.push(`${label}: ${p.model} planned without its key`);
-      continue;
-    }
-    const stored = (await pgOf(tx[info.delegate]).findFirst({ where })) as Row | null;
-    if (!stored) lines.push(`${label}: ${p.model} ${keyText(where)} planned but not stored`);
-    else lines.push(...differences(p.model, p.row, stored).map((x) => `${label}: ${x}`));
-  }
-  reportPlan(lines);
-}
-
-const updatePlans = async (model: string, before: Row | null, data: Row): Promise<PlannedRow[]> => {
-  if (!before) return [];
-  const u = await planUpdate(model, before, data, new Date(), true);
-  return [{ model, row: u.row, before }, ...u.children];
-};
 
 // ------------------------------------------------------------------ MongoDB alone
 
-/** PostgreSQL takes no writes (T2T_POSTGRES=off): mirrored models are written to MongoDB alone. */
-export const POSTGRES_OFF = () => process.env.T2T_POSTGRES === 'off';
 
 /** Next value of an autoincrement column, from a MongoDB sequence raised once to the highest value held. */
 const raisedSerials = new Set<string>();
-async function nextSerial(store: Store, model: string, field: string): Promise<number> {
+export async function nextSerial(store: Store, model: string, field: string): Promise<number> {
   const info = modelInfo(model)!;
   const own = store as Partial<Pick<DocumentStore, 'nextSequence' | 'raiseSequence'>>;
   const seq = own.nextSequence && own.raiseSequence ? (own as Pick<DocumentStore, 'nextSequence' | 'raiseSequence'>) : coordinationStore();
@@ -615,14 +500,16 @@ async function nextSerial(store: Store, model: string, field: string): Promise<n
   return seq.nextSequence(name);
 }
 
-type Ops = Record<string, (args: Record<string, unknown>) => Promise<unknown>>;
+type Row = Record<string, unknown>;
+
+export type Ops = Record<string, (args: Record<string, unknown>) => Promise<unknown>>;
 
 /**
  * The writes of a mirrored model with PostgreSQL out of the way: each is planned
  * (mongo-writes.ts), checked as the database checked it (guards, CHECK constraints, foreign
  * keys, unique keys) and stored; the result is read back in the shape the caller asked for.
  */
-function mongoOnlyOps(info: MirrorInfo, store: Store, reads: Ops): Ops {
+export function mongoOnlyOps(info: MirrorInfo, store: Store, reads: Ops): Ops {
   const shape = (args: Row) => ({ ...(args.select ? { select: args.select } : {}), ...(args.include ? { include: args.include } : {}) });
   const shaped = (row: Row, args: Row) => reads.findFirst({ where: keyOf(info, row), ...shape(args) });
   const write = async (plans: PlannedRow[]) => {
@@ -712,355 +599,3 @@ function mongoOnlyOps(info: MirrorInfo, store: Store, reads: Ops): Ops {
 
 const keyOf = (info: MirrorInfo, row: Row) => Object.fromEntries(info.pk.map((k) => [k, row[k]]));
 
-export function mirroredDelegate(d: Delegate, info: MirrorInfo, store: Store, tx: Record<string, Delegate>, serial: Serial = oneAtATime()): Delegate {
-  const label = (op: string) => `${info.model}.${op}`;
-  const reads = MONGO_READS() || POSTGRES_OFF() ? mongoReadOps(d, info, store) : {};
-  if (POSTGRES_OFF()) {
-    if (!hasAutoincrement()) useAutoincrement((model, field) => nextSerial(store, model, field));
-    const mongo = mongoOnlyOps(info, store, reads as Ops);
-    return new Proxy(d, {
-      get(target, prop, receiver) {
-        if (prop === PG) return target;
-        if (typeof prop === 'string' && prop in mongo) return (args: Record<string, unknown>) => serial(() => mongo[prop](args ?? {}));
-        if (typeof prop === 'string' && prop in reads) return (args: Record<string, unknown>) => serial(() => reads[prop](args));
-        return Reflect.get(target, prop, receiver);
-      },
-    });
-  }
-  const ops: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
-    async create(args) {
-      const plans = PLAN_CHECK() ? await tryPlan(label('create'), () => planCreate(info.model, args.data as Row, new Date(), true)) : null;
-      const { args: a, strip } = withKeys(info, args);
-      const row = (await d.create(a)) as Record<string, unknown>;
-      await comparePlans(tx, label('create'), plans, row);
-      await putRows(store, d, info, [row]);
-      await syncNested(tx, store, info, args.data, row);
-      return stripKeys(row, strip);
-    },
-    async update(args) {
-      const plans = PLAN_CHECK()
-        ? await tryPlan(label('update'), async () => updatePlans(info.model, (await d.findFirst({ where: flatWhere(info.model, args.where as Row) })) as Row | null, args.data as Row))
-        : null;
-      const { args: a, strip } = withKeys(info, args);
-      const row = (await d.update(a)) as Record<string, unknown>;
-      await comparePlans(tx, label('update'), plans);
-      await putRows(store, d, info, [row]);
-      await syncNested(tx, store, info, args.data, row);
-      return stripKeys(row, strip);
-    },
-    async upsert(args) {
-      const plans = PLAN_CHECK()
-        ? await tryPlan(label('upsert'), async () => {
-            const before = (await d.findFirst({ where: flatWhere(info.model, args.where as Row) })) as Row | null;
-            return before ? updatePlans(info.model, before, args.update as Row) : planCreate(info.model, args.create as Row, new Date(), true);
-          })
-        : null;
-      const { args: a, strip } = withKeys(info, args);
-      const row = (await d.upsert(a)) as Record<string, unknown>;
-      await comparePlans(tx, label('upsert'), plans, row);
-      await putRows(store, d, info, [row]);
-      await syncNested(tx, store, info, args.create, row);
-      await syncNested(tx, store, info, args.update, row);
-      return stripKeys(row, strip);
-    },
-    async delete(args) {
-      await loadForeignKeys(tx);
-      const { args: a, strip } = withKeys(info, args);
-      const row = (await d.delete(a)) as Record<string, unknown>;
-      await dropRows(store, info, [row]);
-      return stripKeys(row, strip);
-    },
-    async createMany(args) {
-      const plans = PLAN_CHECK()
-        ? await tryPlan(label('createMany'), async () => (await Promise.all(([] as Row[]).concat(args.data as Row[]).map((x) => planCreate(info.model, x, new Date(), true)))).flat())
-        : null;
-      const rows = (await d.createManyAndReturn({ ...args, select: pkSelect(info) })) as Record<string, unknown>[];
-      await comparePlans(tx, label('createMany'), plans);
-      await putRows(store, d, info, rows);
-      return { count: rows.length };
-    },
-    async createManyAndReturn(args) {
-      const plans = PLAN_CHECK()
-        ? await tryPlan(label('createManyAndReturn'), async () => (await Promise.all(([] as Row[]).concat(args.data as Row[]).map((x) => planCreate(info.model, x, new Date(), true)))).flat())
-        : null;
-      const { args: a, strip } = withKeys(info, args);
-      const rows = (await d.createManyAndReturn(a)) as Record<string, unknown>[];
-      await comparePlans(tx, label('createManyAndReturn'), plans);
-      await putRows(store, d, info, rows);
-      return rows.map((r) => stripKeys(r, strip));
-    },
-    async updateMany(args) {
-      const plans = PLAN_CHECK()
-        ? await tryPlan(label('updateMany'), async () => (await Promise.all(((await d.findMany({ where: args.where })) as Row[]).map((b) => updatePlans(info.model, b, args.data as Row)))).flat())
-        : null;
-      const keys = (await d.findMany({ where: args.where, select: pkSelect(info) })) as Record<string, unknown>[];
-      const r = await d.updateMany(args);
-      await comparePlans(tx, label('updateMany'), plans);
-      await putRows(store, d, info, keys);
-      return r;
-    },
-    async updateManyAndReturn(args) {
-      const plans = PLAN_CHECK()
-        ? await tryPlan(label('updateManyAndReturn'), async () =>
-            (await Promise.all(((await d.findMany({ where: args.where })) as Row[]).map((b) => updatePlans(info.model, b, args.data as Row)))).flat(),
-          )
-        : null;
-      const keys = (await d.findMany({ where: args.where, select: pkSelect(info) })) as Record<string, unknown>[];
-      const r = await d.updateManyAndReturn(args);
-      await comparePlans(tx, label('updateManyAndReturn'), plans);
-      await putRows(store, d, info, keys);
-      return r;
-    },
-    async deleteMany(args) {
-      await loadForeignKeys(tx);
-      const keys = (await d.findMany({ where: args?.where, select: pkSelect(info) })) as Record<string, unknown>[];
-      const r = await d.deleteMany(args);
-      await dropRows(store, info, keys);
-      return r;
-    },
-  };
-  return new Proxy(d, {
-    get(target, prop, receiver) {
-      if (prop === PG) return target;
-      if (typeof prop === 'string' && prop in ops) return (args: Record<string, unknown>) => serial(() => ops[prop](args));
-      if (typeof prop === 'string' && prop in reads) return (args: Record<string, unknown>) => serial(() => reads[prop](args));
-      return Reflect.get(target, prop, receiver);
-    },
-  });
-}
-
-/**
- * Copies rows a raw SQL statement (or a PostgreSQL trigger) wrote into MongoDB. Call it after
- * the statement, inside the same transaction.
- */
-export async function mirrorRowsWhere(tx: unknown, store: Store, model: string, where: Record<string, unknown>) {
-  const info = INFOS.get(model);
-  if (!info) return;
-  const d = pgOf((tx as Record<string, Delegate>)[info.delegate]);
-  const keys = (await d.findMany({ where, select: pkSelect(info) })) as Record<string, unknown>[];
-  await putRows(store, d, info, keys, false);
-}
-
-/**
- * Wraps a transaction client so writes to mirrored models also land in MongoDB. Outside a
- * transaction (`inTx` false), each such write runs in a transaction of its own, so both
- * databases commit together.
- */
-export function mirrorClient<T extends object>(client: T, store: Store, runInTx?: (fn: (tx: unknown) => Promise<unknown>) => Promise<unknown>): T {
-  const byDelegate = mirrorByDelegate();
-  const readable = readableByDelegate();
-  const cache = new Map<string, unknown>();
-  const serial = oneAtATime();
-  return new Proxy(client, {
-    get(target, prop, receiver) {
-      if (prop === STORE) return store;
-      const value = Reflect.get(target, prop, receiver);
-      if (prop === '$executeRaw' || prop === '$executeRawUnsafe') {
-        const run = value as (...a: unknown[]) => Promise<number>;
-        return (...a: unknown[]) => {
-          const table = writtenTable(prop === '$executeRawUnsafe' ? String(a[0]) : sqlText(a));
-          if (!table) return run.apply(target, a);
-          if (POSTGRES_OFF()) return Promise.reject(new Error(`A raw SQL write to ${table.info.def.name} with PostgreSQL off`));
-          // Outside a transaction, run it in one so MongoDB is brought in step with it.
-          if (runInTx) return runInTx((tx) => (tx as Record<string, (...x: unknown[]) => Promise<number>>)[prop](...a));
-          return serial(async () => {
-            const n = await run.apply(target, a);
-            await syncAfterSql(receiver, store, table);
-            return n;
-          });
-        };
-      }
-      if (typeof prop === 'string' && !byDelegate.has(prop) && MONGO_READS()) {
-        const ro = readable.get(prop);
-        if (ro) {
-          if (!cache.has(prop)) {
-            const pg = value as Delegate;
-            const reads = mongoReadOps(pg, ro, store);
-            // With PostgreSQL off, writes to a table moved by hand go to its collection.
-            const writes = POSTGRES_OFF() && !ro.embedded ? mongoOnlyOps(ro, store, reads as Ops) : {};
-            cache.set(prop, new Proxy(pg, {
-              get(t, op, r) {
-                if (op === PG) return t;
-                if (typeof op === 'string' && op in writes) {
-                  return (args: Record<string, unknown>) => (runInTx ? runInTx((tx) => ((tx as Record<string, Delegate>)[prop] as Delegate)[op](args)) : serial(() => writes[op](args ?? {})));
-                }
-                if (typeof op === 'string' && op in reads) return (args: Record<string, unknown>) => (runInTx ? (strayInTx() ? (t as Delegate)[op](args) : reads[op](args)) : serial(() => reads[op](args)));
-                return Reflect.get(t, op, r);
-              },
-            }));
-          }
-          return cache.get(prop);
-        }
-      }
-      if (typeof prop !== 'string' || !byDelegate.has(prop)) return value;
-      if (!cache.has(prop)) {
-        const info = byDelegate.get(prop)!;
-        if (runInTx) {
-          // Top-level client: run the write inside a transaction (whose client is wrapped).
-          const pg = value as Delegate;
-          const reads: Record<string, (a: unknown) => Promise<unknown>> = MONGO_READS() ? (mongoReadOps(pg, info, store) as never) : {};
-          cache.set(prop, new Proxy(pg, {
-            get(t, op, r) {
-              if (op === PG) return t;
-              if (typeof op === 'string' && WRITES.has(op)) return (args: unknown) => runInTx((tx) => ((tx as Record<string, Delegate>)[prop] as Delegate)[op](args));
-              if (typeof op === 'string' && op in reads) return (args: unknown) => (strayInTx() ? (t as Delegate)[op](args) : reads[op](args));
-              return Reflect.get(t, op, r);
-            },
-          }));
-        } else cache.set(prop, mirroredDelegate(value as Delegate, info, store, receiver as Record<string, Delegate>, serial));
-      }
-      return cache.get(prop);
-    },
-  });
-}
-
-// ------------------------------------------------------------------ raw SQL
-
-const sqlText = (a: unknown[]): string => {
-  const first = a[0] as { sql?: string; strings?: string[] } | string[];
-  if (Array.isArray(first)) return first.join('?');
-  return first?.sql ?? first?.strings?.join('?') ?? '';
-};
-
-/** The mirrored table a raw INSERT, UPDATE or DELETE writes, if it writes one. */
-function writtenTable(sql: string): { info: MirrorInfo; deletes: boolean } | null {
-  const m = /^\s*(?:(INSERT\s+INTO)|(UPDATE)|(DELETE\s+FROM))\s+(?:"?public"?\.)?"?([a-z_][a-z0-9_]*)"?/i.exec(sql);
-  if (!m) return null;
-  const info = [...INFOS.values()].find((i) => i.def.name === m[4]);
-  return info ? { info, deletes: !!m[3] } : null;
-}
-
-/**
- * After a raw write in a transaction: the rows it inserted or updated carry the transaction's
- * id in xmin, so they are found and written to MongoDB (with rows triggers changed in the same
- * transaction). After a raw DELETE, documents whose rows are gone are removed.
- */
-async function syncAfterSql(tx: unknown, store: Store, { info, deletes }: { info: MirrorInfo; deletes: boolean }) {
-  const q = tx as { $queryRawUnsafe<R>(sql: string): Promise<R> };
-  const cols = info.pk.map((k) => `"${info.scalars.find((f) => f.name === k)?.dbName ?? k}"`);
-  const orgCol = info.tenant ? `, "${info.scalars.find((f) => f.name === 'orgId')?.dbName ?? 'org_id'}" AS "orgId"` : '';
-  const asKeys = (rows: Record<string, unknown>[]) => rows.map((r) => Object.fromEntries([...info.pk.map((k, i) => [k, r[`k${i}`]]), ...(info.tenant ? [['orgId', r.orgId]] : [])]));
-  const select = `SELECT ${cols.map((c, i) => `${c}::text AS "k${i}"`).join(', ')}${orgCol} FROM "${info.def.name}"`;
-  const [{ before }] = await q.$queryRawUnsafe<{ before: string | null }[]>(`SELECT current_setting('t2t.bypass', true) AS before`);
-  await q.$queryRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-  // No reset when this fails: the transaction is aborted then, and a reset would hide why.
-  {
-    if (deletes) {
-      const kept = new Set(asKeys(await q.$queryRawUnsafe<Record<string, unknown>[]>(select)).map((k) => docId(info, k)));
-      const docs = (await runAsSystem(() => store.collection(info.def).find({}, { projection: { _id: 1, ...(info.tenant ? { orgId: 1 } : {}), ...Object.fromEntries(info.pk.map((k) => [k, 1])) } }))) as Record<string, unknown>[];
-      await dropRows(store, info, docs.filter((d) => !kept.has(String(d.id))));
-    } else {
-      const rows = await q.$queryRawUnsafe<Record<string, unknown>[]>(`${select} WHERE xmin::text = (pg_current_xact_id()::text::bigint % 4294967296)::text`);
-      await putRows(store, pgOf((tx as Record<string, Delegate>)[info.delegate]), info, asKeys(rows).map((k) => castKeys(info, k)), false);
-    }
-  }
-  await q.$queryRawUnsafe(`SELECT set_config('t2t.bypass', '${before === 'on' ? 'on' : ''}', true)`);
-}
-
-/** Keys read as text, back in their column types for a Prisma where. */
-function castKeys(info: MirrorInfo, k: Record<string, unknown>) {
-  const out: Record<string, unknown> = { ...k };
-  for (const f of info.scalars) {
-    if (!(f.name in out) || out[f.name] === null) continue;
-    if (f.type === 'Int') out[f.name] = Number(out[f.name]);
-    else if (f.type === 'BigInt') out[f.name] = BigInt(String(out[f.name]));
-    else if (f.type === 'DateTime') out[f.name] = new Date(String(out[f.name]));
-  }
-  return out;
-}
-
-/** The PostgreSQL delegate behind a wrapped one: reading back what PostgreSQL holds must not go to MongoDB. */
-const PG = Symbol('postgres delegate');
-/** A client whose model delegates all read PostgreSQL (the copying tool reads what PostgreSQL holds). */
-export const postgresOnly = <C>(client: C): C =>
-  new Proxy(client as object, {
-    get(t, p, r) {
-      const v = Reflect.get(t, p, r);
-      return v && typeof v === 'object' ? pgOf(v as Delegate) : v;
-    },
-  }) as C;
-
-export const pgOf = (d: Delegate): Delegate => ((d as unknown as Record<symbol, Delegate>)[PG] ?? d);
-
-/**
- * A call on the root client from inside a transaction's callback. PostgreSQL answers it with no
- * tenant settings, so it sees nothing; it still goes there, so it keeps seeing nothing. With
- * PostgreSQL off it reads MongoDB like any other call.
- */
-const strayInTx = () => !!currentTenantContext().inTx && !POSTGRES_OFF();
-
-/** Reads of mirrored tables come from MongoDB unless MONGO_READS=off (step 8). */
-const MONGO_READS = () => process.env.MONGO_READS !== 'off';
-
-const WRITES = new Set(['create', 'update', 'upsert', 'delete', 'createMany', 'createManyAndReturn', 'updateMany', 'updateManyAndReturn', 'deleteMany']);
-
-/**
- * Copies the rows of every mirrored table that MongoDB does not have yet (db:copy-to-mongo).
- * Rows already there are left alone, so it is safe to run again.
- */
-export async function copyMirroredTables(
-  read: (model: string, page: { skip: number; take: number; orderBy: Record<string, 'asc'>[] }) => Promise<Record<string, unknown>[]>,
-  store: Store,
-  only?: readonly string[],
-): Promise<Record<string, number>> {
-  const copied: Record<string, number> = {};
-  for (const info of INFOS.values()) {
-    if (only && !only.includes(info.model)) continue;
-    let n = 0;
-    for (let skip = 0; ; skip += 1000) {
-      const rows = await read(info.delegate, { skip, take: 1000, orderBy: info.pk.map((k) => ({ [k]: 'asc' as const })) });
-      if (!rows.length) break;
-      const ids = rows.map((r) => docId(info, r));
-      const have = new Set(((await runAsSystem(() => store.collection(info.def).find({ id: { $in: ids } }, { projection: { id: 1 } }))) as { id: string }[]).map((d) => d.id));
-      const fresh = rows.filter((r) => !have.has(docId(info, r)));
-      if (fresh.length) await runAsSystem(() => store.collection(info.def).insertMany(fresh.map((r) => ({ id: docId(info, r), ...(info.tenant ? { orgId: r.orgId } : {}), ...forMongo(info, r) })) as never));
-      n += fresh.length;
-      if (rows.length < 1000) break;
-    }
-    copied[info.def.name] = n;
-  }
-  return copied;
-}
-
-/**
- * Compares every mirrored table with its collection (for one organisation, or all) and lists
- * what differs: rows missing on either side, and fields whose values differ. Empty = in step.
- */
-export async function compareMirrored(
-  read: (model: string, where: Record<string, unknown>) => Promise<Record<string, unknown>[]>,
-  store: Store,
-  orgIds?: string[],
-): Promise<string[]> {
-  const problems: string[] = [];
-  const norm = (f: Field, v: unknown): unknown => {
-    if (v === null || v === undefined) return null;
-    if (f.type === 'Decimal') return (Array.isArray(v) ? v : [v]).map((x) => new Prisma.Decimal(typeof x === 'string' ? x : (x as { toFixed(): string }).toFixed()).toFixed()).join(',');
-    if (f.type === 'DateTime') return new Date(v as Date).toISOString();
-    // A MongoDB Binary holds its bytes in .buffer; a Uint8Array's .buffer is the whole pool it sits in.
-    if (f.type === 'Bytes') return Buffer.from((v as { _bsontype?: string })._bsontype === 'Binary' ? (v as { buffer: Uint8Array }).buffer : (v as Uint8Array)).toString('base64');
-    // PostgreSQL gives a bigint, MongoDB a number or a Long.
-    if (f.type === 'BigInt' || f.type === 'Int') return String(v);
-    return JSON.stringify(v);
-  };
-  for (const info of INFOS.values()) {
-    const hasOrg = info.scalars.some((f) => f.name === 'orgId');
-    if (orgIds && !hasOrg) continue;
-    const rows = await read(info.delegate, orgIds ? { orgId: { in: orgIds } } : {});
-    const docs = (await runAsSystem(() => store.collection(info.def).find(orgIds ? { orgId: { $in: orgIds } } : {}))) as Record<string, unknown>[];
-    const byId = new Map(docs.map((d) => [String(d.id), d]));
-    for (const r of rows) {
-      const d = byId.get(docId(info, r));
-      if (!d) {
-        problems.push(`${info.def.name} ${docId(info, r)}: missing in MongoDB`);
-        continue;
-      }
-      byId.delete(docId(info, r));
-      for (const f of info.scalars) {
-        if (f.name === 'id') continue;
-        if (norm(f, r[f.name]) !== norm(f, d[f.name])) problems.push(`${info.def.name} ${docId(info, r)}.${f.name}: ${String(norm(f, r[f.name]))} in PostgreSQL, ${String(norm(f, d[f.name]))} in MongoDB`);
-      }
-    }
-    for (const id of byId.keys()) problems.push(`${info.def.name} ${id}: in MongoDB only`);
-  }
-  return problems;
-}

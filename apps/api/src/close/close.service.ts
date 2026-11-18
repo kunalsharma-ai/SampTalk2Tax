@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { postgresOff } from '../db/counters';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import {
@@ -31,7 +30,7 @@ import { AppConfig, CONFIG } from '../config';
 import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { DeferralsService } from '../deferrals/deferrals.service';
 import { JournalsService } from '../journals/journals.service';
-import { postgresWithMongo } from '../db/postgres-mirror.service';
+import { transactionWithUndo } from '../common/undo';
 import { PeriodsService } from '../periods/periods.service';
 import { TasksService } from '../tasks/tasks.service';
 import { holdLock, lockRow } from '../db/locks';
@@ -391,7 +390,6 @@ export class CloseService {
   }
 
   private async openClose(tx: Tx, orgId: string, periodId: string) {
-    if (!postgresOff()) await tx.$queryRaw`SELECT id FROM period_closes WHERE period_id = ${periodId}::uuid AND org_id = ${orgId}::uuid FOR UPDATE`;
     await holdLock(`period_closes:period:${periodId}`);
     const c = await tx.periodClose.findFirst({ where: { orgId, periodId } });
     if (!c) throw new DomainError('CLOSE_NOT_STARTED', 'Start the close of this month first', HttpStatus.CONFLICT);
@@ -666,7 +664,7 @@ export class CloseService {
    * posting in progress) and a certification records the checks and totals as they stood.
    */
   async close(org: CloseOrg, actor: Actor, periodId: string, note: string | null) {
-    await postgresWithMongo(
+    await transactionWithUndo(
       this.prisma,
       async (tx, undoLater) => {
         const c = await this.openClose(tx, org.id, periodId);
@@ -697,7 +695,7 @@ export class CloseService {
 
   /** Reopen a closed month: the period is unlocked and the certification records who reopened it and why. */
   async reopen(org: CloseOrg, actor: Actor, periodId: string, reason: string) {
-    await postgresWithMongo(this.prisma, async (tx, undoLater) => {
+    await transactionWithUndo(this.prisma, async (tx, undoLater) => {
       const c = await this.openClose(tx, org.id, periodId);
       if (c.status !== 'CLOSED') throw new DomainError('CLOSE_NOT_CLOSED', 'This month is not closed', HttpStatus.CONFLICT);
       await lockRow(tx, 'fiscal_periods', periodId, org.id);

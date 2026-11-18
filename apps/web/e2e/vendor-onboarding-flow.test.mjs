@@ -4,7 +4,7 @@
  * refused, bank details are entered and verified, the checklist is worked through on the vendor's
  * page (files attached, payment terms proposed, no credit limit offered), submitted and approved,
  * which sets the payment terms, and the bill then posts and the vendor can be paid.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
