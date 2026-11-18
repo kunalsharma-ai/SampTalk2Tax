@@ -83,6 +83,7 @@ export const hi: Record<string, string> = {
   Accruals: 'उपार्जन',
   'Departments and projects': 'विभाग और परियोजनाएँ',
   'Locations and tags': 'स्थान और टैग',
+  'Unusual bills': 'असामान्य बिल',
   'Month-end close': 'महीने का समापन',
   'Year-end close': 'वर्षांत समापन',
   'Fiscal periods': 'वित्तीय अवधियाँ',

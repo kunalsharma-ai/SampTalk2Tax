@@ -22,6 +22,7 @@ import expenseAllowances from './20261222100000_expense_allowances';
 import expensePolicy from './20261223100000_expense_policy';
 import taxNoticesMigration from './20261224100000_tax_notices';
 import financialTagsMigration from './20261225100000_financial_tags';
+import billChecksMigration from './20261226100000_bill_checks';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration, billChecksMigration];

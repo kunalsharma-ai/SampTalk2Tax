@@ -447,6 +447,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add departments and projects. Link a project to a customer so its costs count against that customer\'s profit.',
     where: 'Accounting. Tags are used on invoices, bills and journals, and in Profit by department and Customer 360.',
   },
+  'purchases/bill-checks': {
+    what: 'Bills from the last 120 days that look unusual against the same vendor\'s earlier bills and bank details.',
+    how: 'Open each bill, read what was compared, check with the vendor where needed, then mark it reviewed with why it is fine. A review covers the findings it saw; a new finding brings the bill back.',
+    where: 'Purchases. Rule-based checks: vendor invoice number used before, much more than usual, a price that went up, a new expense account, the first bill from a vendor, bank details changed recently or not verified, odd dates and round amounts without tax. Anyone who reads purchases sees them; those who manage purchases review them.',
+  },
   'financial-tags': {
     what: 'Tags you define to report by, such as Location (an office, store or branch), Business unit or Sales channel, and their values.',
     how: 'Add a tag from a preset or name your own, then add its values. Pick a value on journal lines; a line using a defined tag must use one of its values in use. Switch a value off to stop new lines using it.',

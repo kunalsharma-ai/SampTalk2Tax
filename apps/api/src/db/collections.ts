@@ -6,6 +6,7 @@ import { allowanceRates, claimAllowances } from './collections/allowances';
 import { expensePolicyRules } from './collections/expense-policy';
 import { taxNoticeFiles, taxNotices } from './collections/tax-notices';
 import { financialTags } from './collections/financial-tags';
+import { billCheckReviews } from './collections/bill-checks';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { journalEntries } from './collections/ledger';
 import { allocations, approvalPolicies, approvalRequests, attachments, contacts, documents, payments } from './collections/sales';
@@ -18,4 +19,4 @@ import { invitations, memberships, organizations } from './collections/tenancy';
  * can reach it, and before a $lookup or $unionWith may read it. Modules add their
  * definitions as they move from PostgreSQL (see docs/MONGODB.md › Order of the move).
  */
-export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, ...MIRRORED.map((m) => m.def)];
+export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, billCheckReviews, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, ...MIRRORED.map((m) => m.def)];

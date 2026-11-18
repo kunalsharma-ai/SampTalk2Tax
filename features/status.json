@@ -6564,6 +6564,19 @@
         "docs/FINANCIAL_TAGS.md"
       ],
       "notes": "Locations as the Location preset of financial tags: values per office, store or branch, picked on journal lines, profit by location. Not yet on invoice and bill lines."
+    },
+    "AP-031": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bill-checks.ts + test/bill-checks.test.ts",
+        "apps/api/src/bill-checks; MongoDB collection bill_check_reviews",
+        "/v1/orgs/:orgId/purchases/bill-checks (+ /:documentId, /:documentId/review)",
+        "apps/api/test/bill-checks.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/bill-checks, bill page Unusual bill checks card",
+        "apps/web/e2e/bill-checks-flow.test.mjs",
+        "docs/BILL_CHECKS.md"
+      ],
+      "notes": "Rule-based checks against the vendor's earlier bills and bank details, with reviews. Fixed thresholds; no AI explanation yet."
     }
   }
 }

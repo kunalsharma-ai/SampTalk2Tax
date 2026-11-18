@@ -50,6 +50,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/purchases/vendor-invoices', label: 'Vendor invoices' },
       { href: '/purchases/orders', label: 'Purchase orders' },
       { href: '/purchases/bills', label: 'Bills' },
+      { href: '/purchases/bill-checks', label: 'Unusual bills', perm: 'purchases.read' },
       { href: '/purchases/payments', label: 'Payments' },
       { href: '/purchases/recurring-bills', label: 'Recurring bills' },
       { href: '/purchases/payment-schedule', label: 'Payment schedule' },
