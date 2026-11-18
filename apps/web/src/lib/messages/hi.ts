@@ -404,4 +404,18 @@ export const hi: Record<string, string> = {
   'Posting creates the journal automatically. Posted documents are never edited; void one to reverse it.': 'पोस्ट करने पर जर्नल अपने-आप बनता है। पोस्ट किए गए दस्तावेज़ कभी बदले नहीं जाते; उलटने के लिए उसे रद्द (void) करें।',
   'Invoices and credit notes': 'इनवॉइस और क्रेडिट नोट',
   'Bills and vendor credits': 'बिल और विक्रेता क्रेडिट',
+  // Search (command palette)
+  'Search pages and records': 'पेज और रिकॉर्ड खोजें',
+  'Type a page, a name or a number': 'पेज, नाम या संख्या लिखें',
+  Results: 'परिणाम',
+  'Searching records…': 'रिकॉर्ड खोजे जा रहे हैं…',
+  'Only pages are searched: finding records needs access to reports.': 'केवल पेज खोजे जाते हैं: रिकॉर्ड खोजने के लिए रिपोर्ट देखने की अनुमति चाहिए।',
+  'Pages and records: customers, invoices, bills, payments, journals, accounts and more.': 'पेज और रिकॉर्ड: ग्राहक, इनवॉइस, बिल, भुगतान, जर्नल, खाते और भी बहुत कुछ।',
+  Contact: 'संपर्क',
+  Project: 'प्रोजेक्ट',
+  Department: 'विभाग',
+  Loan: 'ऋण',
+  'Fixed asset': 'स्थायी संपत्ति',
+  Alert: 'अलर्ट संदेश',
+  'Find pages and records': 'पेज और रिकॉर्ड ढूँढें',
 };
