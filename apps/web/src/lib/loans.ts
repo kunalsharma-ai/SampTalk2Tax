@@ -93,7 +93,13 @@ export interface LoanAccounts {
 
 export interface Treasury {
   asOf: string;
-  cash: { total: string; accounts: { id: string; code: string; name: string; kind: 'BANK' | 'CASH'; balance: string }[] };
+  cash: {
+    total: string;
+    currency: string;
+    accounts: { id: string; code: string; name: string; kind: 'BANK' | 'CASH'; balance: string; currency: string; currencyBalance: string }[];
+    /** Cash held in each currency, and what the books carry for it; `share` of the total in %. */
+    byCurrency: { currency: string; accounts: number; amount: string; functional: string; share: string | null }[];
+  };
   borrowings: LoanList['totals'];
   netCash: string;
   upcoming: (LoanRow & { loanId: string; reference: string; name: string; overdue: boolean })[];

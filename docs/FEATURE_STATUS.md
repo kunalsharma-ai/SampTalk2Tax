@@ -2110,13 +2110,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Treasury management
 - Status: **Implementing**
-- Notes: Cash and bank balances from posted journals up to today, and net cash after borrowings, on the treasury overview. Not built: intraday or bank-fed balances, balances by entity or currency.
+- Notes: Cash and bank balances from posted journals up to today, and net cash after borrowings, on the treasury overview. Cash is also shown by currency: accounts kept in another currency show their balance in that currency next to the functional amount, with a total and share per currency. Not built: intraday or bank-fed balances, balances by entity.
 - Evidence:
   - apps/api/src/loans/loans.service.ts
   - apps/api/test/loans.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/treasury/page.tsx
   - apps/web/e2e/loans-flow.test.mjs
   - docs/LOANS_AND_TREASURY.md
+  - apps/api/test/treasury-currencies.e2e.test.ts
+  - apps/web/e2e/treasury-currencies-flow.test.mjs
 
 ### TRS-009 — Debt management
 
@@ -5238,7 +5240,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table, period-end revaluation, and invoices, bills and payments in foreign currencies with realised gains and losses (AR-031). Not done: rate feeds, multi-currency reporting, foreign-currency bank statements.
+- Notes: Transaction currency and rate per journal line, functional currency per organisation, an exchange-rate table, period-end revaluation, and invoices, bills and payments in foreign currencies with realised gains and losses (AR-031). Bank accounts can be kept in another currency, with statements imported, matched and reconciled in it (BANK-012), and treasury shows cash by currency. Not done: rate feeds, multi-currency reporting.
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
   - packages/accounting-engine/src/fx.ts
