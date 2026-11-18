@@ -870,7 +870,7 @@ Part 25 · M2 · priority P2 · depends on: AIGW
 | DOC-015 | AI Document Features | capability | Classification | Not started |
 | DOC-016 | AI Document Features | capability | Entity extraction | Not started |
 | DOC-017 | AI Document Features | capability | Field validation | Not started |
-| DOC-018 | AI Document Features | capability | Duplicate detection | Implementing |
+| DOC-018 | AI Document Features | capability | Duplicate detection | Tested |
 | DOC-019 | AI Document Features | capability | Contract clause extraction | Not started |
 | DOC-020 | AI Document Features | capability | Invoice matching | Not started |
 | DOC-021 | AI Document Features | capability | Semantic search | Not started |

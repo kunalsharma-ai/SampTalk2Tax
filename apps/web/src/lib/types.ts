@@ -536,6 +536,8 @@ export interface Attachment {
   createdAt: string;
   removedAt: string | null;
   removedReason: string | null;
+  /** Other records (that you may see) holding the same file (DOC-018). */
+  alsoOn?: { entityType: AttachmentEntity; entityId: string; label: string; path: string | null; fileName: string }[];
 }
 
 export type DocumentKindName = 'INVOICE' | 'CREDIT_NOTE' | 'BILL' | 'VENDOR_CREDIT';

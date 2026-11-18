@@ -20002,11 +20002,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files"
+        "apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files",
+        "packages/accounting-engine/src/duplicate-files.ts",
+        "packages/accounting-engine/test/duplicate-files.test.ts",
+        "apps/api/src/attachments/attachments.service.ts",
+        "apps/api/test/duplicate-files.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/duplicate-files/page.tsx",
+        "apps/web/e2e/duplicate-files-flow.test.mjs",
+        "docs/DUPLICATE_FILES.md"
       ],
-      "notes": "Exact duplicate files (same SHA-256) on the same record are refused. No cross-record or fuzzy duplicate detection."
+      "notes": "Exact duplicates (same SHA-256): refused on the same record; on other records named when uploaded and listed (only records the person may see), and listed on Duplicate files with a risk (two claims or two bills first). Not built: near-duplicate detection of rescans or photos."
     },
     {
       "id": "DOC-019",

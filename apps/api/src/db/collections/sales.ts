@@ -756,7 +756,10 @@ export const attachments = defineCollection<AttachmentDoc>({
       content: { bsonType: 'binData' },
     },
   },
-  indexes: [{ key: { orgId: 1, entityType: 1, entityId: 1 }, name: 'org_entity' }],
+  indexes: [
+    { key: { orgId: 1, entityType: 1, entityId: 1 }, name: 'org_entity' },
+    { key: { orgId: 1, sha256: 1 }, name: 'org_sha256' },
+  ],
   // Was t2t_guard_attachment: the bytes never change, and removal happens once.
   guards: {
     beforeInsert(a) {
