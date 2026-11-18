@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 780 |
 | Designed | 0 |
-| Implementing | 45 |
+| Implementing | 44 |
 | Implemented | 34 |
-| Tested | 470 |
+| Tested | 471 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -4213,10 +4213,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### AUDIT-028 — Relevant evidence references
 
 - Module: Continuous audit and governance
-- Status: **Implementing**
-- Notes: Evidence files are linked to the records they support with a SHA-256 checksum. Audit-event-level evidence references are not modelled yet.
+- Status: **Tested**
+- Notes: Evidence files are linked to the records they support with a SHA-256 checksum. Every audit event about a record that can hold files also carries a reference to each file attached at that moment: id, name and SHA-256, hashed into the chain. The audit trail page shows and links them.
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts
+  - apps/api/src/audit/audit.service.ts
+  - apps/api/test/audit-evidence.e2e.test.ts
+  - apps/web/e2e/audit-evidence-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/audit/page.tsx
+  - docs/SECURITY.md
 
 ### DOC-001 — Create a secure financial document management system
 

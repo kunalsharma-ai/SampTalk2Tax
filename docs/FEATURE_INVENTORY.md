@@ -843,7 +843,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-025 | Explainable AI Ledger | capability | Approving user | Tested |
 | AUDIT-026 | Explainable AI Ledger | capability | Execution result | Tested |
 | AUDIT-027 | Explainable AI Ledger | capability | Timestamp | Not started |
-| AUDIT-028 | Explainable AI Ledger | capability | Relevant evidence references | Implementing |
+| AUDIT-028 | Explainable AI Ledger | capability | Relevant evidence references | Tested |
 | AUDIT-029 | Explainable AI Ledger | rule | Do not expose hidden model chain-of-thought | Not started |
 | AUDIT-030 | Explainable AI Ledger | rule | Store concise, auditable decision explanations instead | Not started |
 

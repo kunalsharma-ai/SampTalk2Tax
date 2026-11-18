@@ -15,6 +15,27 @@ export interface AuditInput {
   data?: Record<string, unknown>;
 }
 
+/**
+ * Records evidence files can be attached to (AttachmentEntity), by their audit entity type. An
+ * event about one of them carries a reference to each file attached at that moment: its id, name
+ * and SHA-256. The reference is part of the hashed event, so the trail shows which receipts a bill
+ * had when it was posted, and a file swapped later no longer matches its recorded checksum.
+ */
+export const EVIDENCE_ENTITIES: Record<string, 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING'> = {
+  document: 'DOCUMENT',
+  payment: 'PAYMENT',
+  journal_entry: 'JOURNAL_ENTRY',
+  bank_statement_line: 'BANK_STATEMENT_LINE',
+  expense_claim: 'EXPENSE_CLAIM',
+  customer_onboarding: 'CUSTOMER_ONBOARDING',
+};
+export const MAX_EVIDENCE_REFS = 20;
+export interface EvidenceRef {
+  attachmentId: string;
+  fileName: string;
+  sha256: string;
+}
+
 function canonical(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value ?? null);
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
@@ -54,14 +75,17 @@ export class AuditService {
     const createdAt = new Date();
     // A change made through the CRM API records the key it came with, next to the key's creator.
     const apiKey = currentTenantContext().apiKey;
-    const data = (apiKey ? { ...((input.data as Record<string, unknown> | null) ?? {}), viaApiKey: { id: apiKey.id, prefix: apiKey.prefix } } : (input.data ?? null)) as Prisma.InputJsonValue | null;
+    let data = (input.data ?? null) as Record<string, unknown> | null;
+    if (apiKey) data = { ...(data ?? {}), viaApiKey: { id: apiKey.id, prefix: apiKey.prefix } };
+    const evidence = await this.evidence(tx, input);
+    if (evidence.length) data = { ...(data ?? {}), evidence };
     const hash = auditHash(prev?.hash ?? null, {
       orgId: input.orgId,
       actorId: input.actorId,
       action: input.action,
       entityType: input.entityType,
       entityId: input.entityId ?? null,
-      data,
+      data: data as Prisma.InputJsonValue | null,
       createdAt: createdAt.toISOString(),
     });
     await tx.auditEvent.create({
@@ -71,12 +95,25 @@ export class AuditService {
         action: input.action,
         entityType: input.entityType,
         entityId: input.entityId ?? null,
-        data: data ?? Prisma.JsonNull,
+        data: (data as Prisma.InputJsonValue | null) ?? Prisma.JsonNull,
         prevHash: prev?.hash ?? null,
         hash,
         createdAt,
       },
     });
+  }
+
+  /** The files attached to the event's record as the event happens (none for other records). */
+  private async evidence(tx: Tx, input: AuditInput): Promise<EvidenceRef[]> {
+    const kind = EVIDENCE_ENTITIES[input.entityType];
+    if (!kind || !input.orgId || !input.entityId || (input.data && 'evidence' in input.data)) return [];
+    const files = await tx.attachment.findMany({
+      where: { orgId: input.orgId, entityType: kind, entityId: input.entityId, removedAt: null },
+      select: { id: true, fileName: true, sha256: true },
+      orderBy: { createdAt: 'asc' },
+      take: MAX_EVIDENCE_REFS,
+    });
+    return files.map((f) => ({ attachmentId: f.id, fileName: f.fileName, sha256: f.sha256 }));
   }
 
   async list(orgId: string, opts: { entityType?: string; entityId?: string; limit: number; beforeId?: bigint }) {

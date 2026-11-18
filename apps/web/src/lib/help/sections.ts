@@ -234,7 +234,7 @@ export const SECTION_HELP: Record<string, Help> = {
   'Last 24 months': { what: 'Management reports by month, finalised or still open.', how: 'Open a month to read or finalise it. A finalised report never changes.' },
   Basis: { what: 'The framework the statements follow and the period covered.', how: 'Pick the framework your country requires.' },
   'Not included': { what: 'What these statements do not cover yet, such as notes that need your judgement.', how: 'Prepare these separately before filing.' },
-  'Latest 200 events': { what: 'The most recent recorded actions: who did what, to which record, and when.', how: 'Filter by person or record type. The trail cannot be edited.' },
+  'Latest 200 events': { what: 'The most recent recorded actions: who did what, to which record, and when. Evidence lists the files attached to the record at that moment, with the start of each file\'s SHA-256 checksum.', how: 'Filter by person or record type. The trail cannot be edited. Open a file to see what was relied on; hover the checksum for the full value.' },
   Widgets: { what: 'The charts and figures on the dashboard.', how: 'Add, resize or remove widgets. Each one uses an approved figure from your books.' },
   'Produce a report': { what: 'Create a copy of the report for a period, with the figures filled in.', how: 'Pick the period and produce it. The copy keeps its figures even if the books change later.' },
   Reports: { what: 'Reports produced from this design.', how: 'Open one to read, print or export it.' },
