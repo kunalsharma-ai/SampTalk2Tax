@@ -126,6 +126,8 @@ export interface Contract {
   timing: 'ADVANCE' | 'ARREARS';
   startDate: string;
   endDate: string | null;
+  /** Day of the month periods run from (part periods billed by days); null: from the start date. */
+  billingDay: number | null;
   autoRenew: boolean;
   renewalMonths: number | null;
   noticeDays: number;
@@ -160,7 +162,7 @@ export interface ContractList {
 export interface ContractDetail extends Contract {
   lines: SalesLine[];
   periods: { id: string; periodNo: number; start: string; end: string; status: 'BILLED' | 'SKIPPED'; invoice: { id: string; number: string | null; status: string; total: string; issueDate: string } | null; canBillAgain: boolean }[];
-  upcoming: { periodNo: number; start: string; end: string; billDate: string }[];
+  upcoming: { periodNo: number; start: string; end: string; billDate: string; part: { days: number; of: number } | null }[];
   events: { id: string; kind: string; body: string; actor: { id: string; name: string } | null; createdAt: string }[];
   can: { manage: boolean };
 }

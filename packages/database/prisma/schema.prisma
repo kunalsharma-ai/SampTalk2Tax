@@ -4378,6 +4378,8 @@ model SalesContract {
   frequency        ContractFrequency
   timing           ContractTiming        @default(ADVANCE)
   startDate        DateTime              @map("start_date") @db.Date
+  /// Day of the month (1 to 28) periods run from, with part periods billed by days; null: periods run from the start date.
+  billingDay       Int?                  @map("billing_day")
   /// Null: rolls on until cancelled.
   endDate          DateTime?             @map("end_date") @db.Date
   /// The next period to bill or skip (1 for the first).
