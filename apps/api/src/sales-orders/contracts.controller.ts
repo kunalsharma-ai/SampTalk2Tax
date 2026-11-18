@@ -38,7 +38,7 @@ const ContractBody = z
     lines: z.array(Line).min(1, 'Add at least one line').max(200),
   })
   .strict();
-const ReasonBody = z.object({ reason: z.string().trim().min(1, 'Give a reason').max(500) }).strict();
+const CancelBody = z.object({ reason: z.string().trim().min(1, 'Give a reason').max(500), creditUnused: z.boolean().optional() }).strict();
 const RenewBody = z.object({ months: z.number().int().min(1).max(120), upliftPercent: decimalString.nullish() }).strict();
 const ListQuery = z.object({ view: z.enum(['active', 'renewals', 'draft', 'closed', 'all']).optional(), contactId: id.optional(), dealId: id.optional() });
 
@@ -115,9 +115,16 @@ export class ContractsController {
   @Post(':id/cancel')
   @HttpCode(200)
   @RequirePermission('sales.manage')
-  @ApiBody({ schema: openApi(ReasonBody) })
-  cancel(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) contractId: string, @Body(new ZodPipe(ReasonBody)) b: z.infer<typeof ReasonBody>) {
-    return this.contracts.cancel(org, user, contractId, b.reason);
+  @ApiBody({ schema: openApi(CancelBody) })
+  cancel(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', new ZodPipe(id)) contractId: string, @Body(new ZodPipe(CancelBody)) b: z.infer<typeof CancelBody>) {
+    return this.contracts.cancel(org, user, contractId, b.reason, { creditUnused: b.creditUnused });
+  }
+
+  /** What cancelling today would credit for unused days of periods already billed in advance. */
+  @Get(':id/cancel-credit')
+  @RequirePermission('sales.read')
+  cancelCredit(@CurrentOrg() org: OrgContext, @Param('id', new ZodPipe(id)) contractId: string) {
+    return this.contracts.cancelCredit(org, contractId);
   }
 
   @Post(':id/renew')

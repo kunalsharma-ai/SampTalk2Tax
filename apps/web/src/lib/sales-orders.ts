@@ -167,6 +167,15 @@ export interface ContractDetail extends Contract {
   can: { manage: boolean };
 }
 
+/** What cancelling a contract today would credit for unused days already billed in advance (AR-011). */
+export interface CancelCredit {
+  today: string;
+  timing: 'ADVANCE' | 'ARREARS';
+  periods: { periodNo: number; start: string; end: string; from: string; days: number; of: number; invoice: { id: string; number: string | null }; subtotal: string; total: string }[];
+  drafts: { periodNo: number; start: string; end: string; invoice: { id: string; number: string | null } }[];
+  total: string;
+}
+
 export interface ProForma {
   id: string;
   reference: string;

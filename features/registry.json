@@ -2806,9 +2806,11 @@
         "docs/CONTRACTS.md",
         "apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx",
         "packages/accounting-engine/test/contracts.test.ts",
-        "apps/web/e2e/contract-part-periods-flow.test.mjs"
+        "apps/web/e2e/contract-part-periods-flow.test.mjs",
+        "apps/api/test/contract-cancel-credit.e2e.test.ts",
+        "apps/web/e2e/contract-cancel-credit-flow.test.mjs"
       ],
-      "notes": "Fixed-fee recurring billing works through contracts (CRM-006/AR-010), usage charges through meters (AR-012), and part periods are billed by days when a contract is billed on a fixed day of the month. Not built: card or mandate auto-collection (needs a payment gateway), credit for unused days on cancelling mid-period."
+      "notes": "Fixed-fee recurring billing works through contracts (CRM-006/AR-010), usage charges through meters (AR-012), and part periods are billed by days when a contract is billed on a fixed day of the month. Cancelling part-way through a period billed in advance credits the unused days on a draft credit note per invoice (preview in the cancel dialog). Not built: card or mandate auto-collection (needs a payment gateway)."
     },
     {
       "id": "AR-012",

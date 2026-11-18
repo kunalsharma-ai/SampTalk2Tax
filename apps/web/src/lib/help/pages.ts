@@ -91,7 +91,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'sales/contracts': {
     what: 'Agreements billed the same way every month, quarter, half-year or year, such as maintenance or retainers.',
-    how: 'Create a contract with its lines, billing frequency and dates, then activate it. Each period due becomes a draft invoice automatically. Pause, renew with a price change, or cancel as needed.',
+    how: 'Create a contract with its lines, billing frequency and dates, then activate it. Each period due becomes a draft invoice automatically. Pause, renew with a price change, or cancel as needed; cancelling part-way through a period billed in advance can credit the unused days on a draft credit note.',
     where: 'Sales. Contract invoices appear under Invoices as drafts for you to post; MRR and ARR feed Customer 360 and the Revenue forecast.',
   },
   'sales/customers': {

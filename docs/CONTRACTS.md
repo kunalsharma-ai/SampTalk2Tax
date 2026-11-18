@@ -78,6 +78,25 @@ date, and is recorded in the history as *Renewed automatically*.
   period; **ARR** = MRR × 12.
 * **Renewals due**: active or paused contracts within their notice days of the end date, or past it.
 
+## Credit for unused days on cancelling
+
+Cancelling a contract part-way through a period it billed in advance can credit the days left.
+The cancel dialog shows each posted invoice whose period runs past today, its unused days and the
+credit, and *Credit the unused days* (on by default) makes one **draft credit note per invoice**,
+dated today, with the invoice's currency and rate:
+
+* The customer is served to the end of the cancel day; the unused days run from the next day (or
+  from the period's start, for a period billed ahead that has not begun) to the period end.
+* Each line is credited at the contract's unit price × unused days ÷ the full period's days. A part
+  period keeps its full-period length, so the credit never exceeds what was billed. Tax is worked
+  out as on any credit note.
+* An invoice still in draft is listed, not credited: edit or void the draft instead. Usage charges
+  are not credited.
+* A contract billed in arrears has nothing billed ahead, so there is nothing to credit
+  (`CONTRACT_NOTHING_TO_CREDIT`, as when no posted invoice runs past today).
+* The credit notes appear in the contract's history and the `sales_contract.cancelled` audit event
+  (`creditNotes`, `creditTotal`). Review and post them, then set each against its invoice.
+
 ## Permissions
 
 Reading needs `sales.read`; everything else needs `sales.manage`.
@@ -86,11 +105,12 @@ Reading needs `sales.read`; everything else needs `sales.manage`.
 
 Under `/v1/orgs/:orgId/sales/contracts`: `GET` (`view` active/renewals/draft/closed/all,
 `contactId`, `dealId`), `POST`, `POST bill-due`; per contract `GET`, `PUT`, `DELETE` (draft),
-`POST activate | pause | resume | bill-due | cancel {reason} | renew {months, upliftPercent}`,
+`GET cancel-credit` (what cancelling today would credit),
+`POST activate | pause | resume | bill-due | cancel {reason, creditUnused} | renew {months, upliftPercent}`,
 `POST periods/:periodNo/bill-again`.
 
 ## Not built yet
 
 * Invoices are drafts; there is no automatic posting or e-mailing of contract invoices.
-* No automatic collection (card or mandate); no credit for unused days when a contract billed in advance is cancelled part-way through a period.
+* No automatic collection (card or mandate).
 * Contracts are in the functional currency only.

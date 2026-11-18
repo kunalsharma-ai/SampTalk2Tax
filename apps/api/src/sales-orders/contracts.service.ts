@@ -18,6 +18,7 @@ import {
   renewalState,
   renewedEnd,
   upcomingPeriods,
+  unusedShare,
   upliftPrice,
   type ContractFrequency,
   type ContractStatus,
@@ -357,16 +358,95 @@ export class ContractsService {
     return this.get(org, id);
   }
 
-  async cancel(org: SalesOrg, actor: Actor, id: string, reason: string) {
-    await this.prisma.$transaction(async (tx) => {
+  /**
+   * What cancelling today would credit (AR-011): every period billed in advance on a posted invoice
+   * that runs past today, for its unused days, at the contract's prices. A period whose invoice is
+   * still a draft is listed apart: void or edit that draft instead of crediting it.
+   */
+  async cancelCredit(org: SalesOrg, id: string, today = todayIst()) {
+    return this.prisma.$transaction(async (tx) => {
+      const c = await tx.salesContract.findFirst({ where: { id, orgId: org.id }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
+      if (!c) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Contract not found' });
+      const u = await this.unusedCredit(tx, org, c, today);
+      return {
+        today,
+        timing: c.timing,
+        periods: u.periods.map(({ lines: _l, invoice: { currency: _c, exchangeRate: _r, ...invoice }, ...p }) => ({ ...p, invoice })),
+        drafts: u.drafts,
+        total: u.total,
+      };
+    });
+  }
+
+  private async unusedCredit(tx: Tx, org: SalesOrg, c: Full, today: string) {
+    const scale = this.scale(org);
+    const s = this.schedule(c);
+    const billed = await tx.salesContractPeriod.findMany({ where: { orgId: org.id, contractId: c.id, status: 'BILLED', periodEnd: { gt: toDbDate(today) } }, orderBy: { periodNo: 'asc' } });
+    const docIds = billed.map((p) => p.documentId).filter((x): x is string => !!x);
+    const docs = docIds.length ? await tx.document.findMany({ where: { orgId: org.id, id: { in: docIds } }, select: { id: true, number: true, status: true, currency: true, exchangeRate: true } }) : [];
+    const periods: { periodNo: number; start: string; end: string; from: string; days: number; of: number; invoice: { id: string; number: string | null; currency: string; exchangeRate: string }; lines: (LineInput & { description: string })[]; subtotal: string; total: string }[] = [];
+    const drafts: { periodNo: number; start: string; end: string; invoice: { id: string; number: string | null } }[] = [];
+    for (const row of billed) {
+      const d = docs.find((x) => x.id === row.documentId);
+      if (!d || d.status === 'VOID') continue;
+      const p = contractPeriod(s.start, s.frequency, row.periodNo, s.timing, { billingDay: s.billingDay, end: s.end });
+      if (d.status === 'DRAFT') {
+        drafts.push({ periodNo: row.periodNo, start: p.start, end: p.end, invoice: { id: d.id, number: d.number } });
+        continue;
+      }
+      const share = this.rule(() => unusedShare(p, today));
+      if (!share) continue;
+      const note = `Unused ${share.days} of ${share.of} days, ${periodLabel({ start: share.from, end: p.end })}`;
+      const lines = c.lines.map((l) => ({
+        accountId: l.accountId,
+        description: `${l.description ? `${l.description} (${note.toLowerCase()})` : note}`.slice(0, 500),
+        quantity: l.quantity.toFixed(),
+        unitPrice: proratedPrice(l.unitPrice.toFixed(), share, scale),
+        taxRateId: l.taxRateId,
+        hsnCode: l.hsnCode,
+      }));
+      const k = await this.sales.compute(tx, org, { contactId: c.contactId, date: today, placeOfSupply: c.placeOfSupply, lines });
+      periods.push({ periodNo: row.periodNo, start: p.start, end: p.end, from: share.from, days: share.days, of: share.of, invoice: { id: d.id, number: d.number, currency: d.currency, exchangeRate: d.exchangeRate.toFixed() }, lines, subtotal: new D(k.subtotal).toFixed(scale), total: new D(k.total).toFixed(scale) });
+    }
+    return { periods, drafts, total: periods.reduce((t, p) => t.plus(p.total), new D(0)).toFixed(scale) };
+  }
+
+  /**
+   * Cancel with a reason. With `creditUnused`, each advance-billed period running past today gets a
+   * draft credit note for its unused days (one per invoice, so each can be set against its invoice).
+   */
+  async cancel(org: SalesOrg, actor: Actor, id: string, reason: string, opts: { creditUnused?: boolean } = {}, today = todayIst()) {
+    const creditNotes = await this.prisma.$transaction(async (tx) => {
       const c = await this.lock(tx, org.id, id);
       if (c.status === 'DRAFT') this.sales.invalid('Delete the draft instead', 'CONTRACT_NOT_ACTIVE');
       if (c.status === 'CANCELLED') this.sales.invalid('This contract is already cancelled', 'CONTRACT_CLOSED');
-      await this.event(tx, c, actor, 'CANCELLED', `Cancelled: ${reason.trim()}`);
+      const made: { id: string; number: string | null; invoice: string | null; total: string }[] = [];
+      if (opts.creditUnused) {
+        const u = await this.unusedCredit(tx, org, c, today);
+        if (!u.periods.length) this.sales.invalid(c.timing === 'ARREARS' ? 'This contract bills in arrears: nothing is billed ahead, so there are no unused days to credit' : 'No posted invoice of this contract runs past today, so there are no unused days to credit', 'CONTRACT_NOTHING_TO_CREDIT');
+        for (const p of u.periods) {
+          const r = `${ref(c.number)} unused days${p.invoice.number ? ` of ${p.invoice.number}` : ''}`;
+          const doc = await this.documents.createDraftInTx(tx, org, actor, 'SALES', {
+            kind: 'CREDIT_NOTE',
+            contactId: c.contactId,
+            issueDate: today,
+            reference: r.slice(0, 100),
+            memo: `${c.title}: cancelled (${reason.trim()})`.slice(0, 1000),
+            placeOfSupply: c.placeOfSupply,
+            currency: p.invoice.currency,
+            exchangeRate: p.invoice.exchangeRate,
+            lines: p.lines,
+          });
+          made.push({ id: doc.id, number: doc.number ?? null, invoice: p.invoice.number, total: p.total });
+        }
+      }
+      const credited = made.length ? `; ${made.length === 1 ? 'a draft credit note' : `${made.length} draft credit notes`} for unused days, ${made.reduce((t, m) => t.plus(m.total), new D(0)).toFixed(this.scale(org))}` : '';
+      await this.event(tx, c, actor, 'CANCELLED', `Cancelled: ${reason.trim()}${credited}`, made.length ? { creditNotes: made.map((m) => m.id) } : undefined);
       await tx.salesContract.update({ where: { id }, data: { status: 'CANCELLED', cancelReason: reason.trim(), cancelledAt: new Date() } });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_contract.cancelled', entityType: 'sales_contract', entityId: id, data: { reference: ref(c.number), reason: reason.trim() } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'sales_contract.cancelled', entityType: 'sales_contract', entityId: id, data: { reference: ref(c.number), reason: reason.trim(), ...(made.length ? { creditNotes: made.map((m) => m.id), creditTotal: made.reduce((t, m) => t.plus(m.total), new D(0)).toFixed(this.scale(org)) } : {}) } });
+      return made;
     });
-    return this.get(org, id);
+    return { ...(await this.get(org, id)), creditNotes };
   }
 
   /** Extend the end date by whole periods, optionally raising (or lowering) every price by a percentage. */
