@@ -145,6 +145,7 @@ export default function PayRunPage() {
             </Table>
           </div>
         </Card>
+        {canManage && r.status !== 'VOID' && r.payslips.length ? <SalaryTransfers run={r} /> : null}
         <p className="text-sm text-fg-muted"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/payroll/runs`}>← All pay runs</Link></p>
       </div>
 
@@ -167,6 +168,97 @@ export default function PayRunPage() {
         onClose={(next) => { if (next) void refresh(next); setVoidingPayment(null); }}
       />
     </>
+  );
+}
+
+interface SalaryTransferList {
+  total: string;
+  ready: number;
+  rows: { employeeId: string; code: string; name: string; net: string; account: string | null; ifsc: string | null; issue: string | null }[];
+}
+
+/** Net salaries by bank transfer: who can be paid from the bank's bulk upload file, and the file itself. */
+function SalaryTransfers({ run }: { run: PayRun }) {
+  const { orgId } = useOrg();
+  const accounts = useAccounts();
+  const list = useQuery({ queryKey: ['salary-transfers', orgId, run.id, run.status, run.totals.net], queryFn: () => api<SalaryTransferList>(`/v1/orgs/${orgId}/payroll/runs/${run.id}/salary-transfers`) });
+  const banks = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && a.subtype === 'BANK');
+  const [bankAccountId, setBankAccountId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const from = bankAccountId || banks[0]?.id || '';
+  const posted = run.status === 'POSTED';
+  const download = async () => {
+    setBusy(true);
+    setError(null);
+    setSaved(null);
+    try {
+      const res = await fetch(`/api/t2t/v1/orgs/${orgId}/payroll/runs/${run.id}/salary-file`, { method: 'POST', headers: { 'x-t2t-csrf': '1', 'content-type': 'application/json' }, body: JSON.stringify({ bankAccountId: from }) });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message ?? `Download failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const fileName = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? 'salaries.csv';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      setSaved(fileName);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Download failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const l = list.data;
+  const left = l ? l.rows.filter((x) => x.issue) : [];
+  return (
+    <Card>
+      <CardHeader
+        title="Salary bank transfers"
+        description={posted ? 'Download the bulk transfer file of net salaries and upload it to net banking. Then record the net pay payment above with the bank batch reference.' : 'Who can be paid by bank transfer once this run is posted.'}
+        actions={
+          posted ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Select aria-label="Salaries paid from" value={from} onChange={(e) => setBankAccountId(e.target.value)}>
+                {banks.length ? null : <option value="">No bank account</option>}
+                {banks.map((a) => <option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}
+              </Select>
+              <Button size="sm" loading={busy} disabled={!from || !l?.ready} onClick={() => void download()}>Download salary bank file</Button>
+            </div>
+          ) : null
+        }
+      />
+      {error ? <div className="px-5 pb-3"><Alert title="Not downloaded">{error}</Alert></div> : null}
+      {saved ? <div className="px-5 pb-3"><Alert tone="positive" title="Downloaded">{saved}: {l?.ready} transfer{l?.ready === 1 ? '' : 's'} totalling {money(l?.total ?? '0', 'INR')}. Check it before uploading to the bank.</Alert></div> : null}
+      {left.length ? <div className="px-5 pb-3"><Alert tone="warning" title={`${left.length} employee${left.length === 1 ? ' is' : 's are'} not in the file`}>Pay them another way, or add or correct their salary account on the employee page.</Alert></div> : null}
+      <details className="px-5 pb-4">
+        <summary className="cursor-pointer text-sm text-fg-muted">{l ? `${l.ready} of ${l.rows.length} employee${l.rows.length === 1 ? '' : 's'} by transfer, ${money(l.total, 'INR')}` : 'Loading…'}</summary>
+      <div className="mt-3 overflow-x-auto">
+        <Table className="min-w-[720px]" aria-label="Salary transfers">
+          <thead><tr><Th>Employee</Th><Th>Account</Th><Th>IFSC</Th><Th numeric>Net pay</Th><Th>In the file</Th></tr></thead>
+          <tbody>
+            {(l?.rows ?? []).map((x) => (
+              <tr key={x.employeeId}>
+                <Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/payroll/employees/${x.employeeId}`}>{x.name}</Link><span className="block num text-xs text-fg-muted">{x.code}</span></Td>
+                <Td className="num">{x.account ?? '—'}</Td>
+                <Td className="num">{x.ifsc ?? '—'}</Td>
+                <Td numeric><Money value={x.net} currency="INR" /></Td>
+                <Td>{x.issue ? <Badge tone="warning">{x.issue}</Badge> : <Badge tone="positive">Yes</Badge>}</Td>
+              </tr>
+            ))}
+          </tbody>
+          {l && l.ready ? <tfoot><tr className="font-semibold"><Td>{l.ready} by transfer</Td><Td /><Td /><Td numeric><Money value={l.total} currency="INR" /></Td><Td /></tr></tfoot> : null}
+        </Table>
+      </div>
+      </details>
+    </Card>
   );
 }
 

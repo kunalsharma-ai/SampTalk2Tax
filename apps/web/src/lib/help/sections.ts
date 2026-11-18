@@ -202,6 +202,7 @@ export const SECTION_HELP: Record<string, Help> = {
   Details: { what: 'The employee\'s personal, tax and bank details.', how: 'Keep them correct; payslips and statutory filings use them.' },
   Salary: { what: 'The employee\'s salary structure: each earning and how it is worked out.', how: 'Change it from a date; pay runs from that date use the new structure.' },
   Payslips: { what: 'One payslip per employee in this pay run.', how: 'Open one to check earnings, deductions and tax before posting the run.' },
+  'Salary bank transfers': { what: 'Each employee in the run with their salary account and net pay, and whether they can be paid from the bank\'s bulk transfer file.', how: 'Post the run, choose the bank account the salaries leave from, download the file and upload it in net banking. Then record the net pay payment with the bank\'s batch reference. Employees without a salary account are left out; add theirs on the employee page.' },
   'To pay': { what: 'What the run pays out: net pay to employees and amounts due to the authorities.', how: 'Check the totals, then post the run. Posting checks every payslip again first.' },
   Earnings: { what: 'What the employee earned this month, line by line.', how: 'Check against the salary structure and attendance.' },
   Deductions: { what: 'What was taken from pay: provident fund, insurance, professional tax, income tax and others.', how: 'Each follows the statutory rules in Payroll settings.' },

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { NEW_REGIME_2026_27, PF_RATES, PF_WAGE_CEILINGS, ESI_RULES, PT_MAHARASHTRA } from '@talk2tax/tax-engine';
 import { z } from 'zod';
@@ -47,10 +48,14 @@ const EmployeeFields = {
   pfOnFullWages: z.boolean().optional(),
   uan: optText(20),
   esiNumber: optText(20),
+  bankAccountName: optText(140),
+  bankAccountNumber: optText(40),
+  bankIfsc: optText(11),
   priorTaxYear: z.string().regex(/^\d{4}-\d{2}$/).nullable().optional(),
   priorIncome: money.optional(),
   priorTds: money.optional(),
 };
+const SalaryFileBody = z.object({ bankAccountId: z.string().uuid('Choose the bank account') }).strict();
 const EmployeeBody = z.object({ ...EmployeeFields, structure: Structure }).strict();
 const EmployeeUpdate = z.object(EmployeeFields).strict();
 const RunBody = z.object({ period, payDate: isoDate }).strict();
@@ -273,6 +278,30 @@ export class PayrollController {
   @ApiBody({ schema: openApi(VoidBody) })
   voidRun(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('runId', ParseUUIDPipe) id: string, @Body(new ZodPipe(VoidBody)) body: z.infer<typeof VoidBody>) {
     return this.p.voidRun(org, user, id, { date: body.date ?? todayIso(), reason: body.reason });
+  }
+
+  /** Who can be paid by bank transfer in a posted run, and who still needs a salary account. */
+  @Get('runs/:runId/salary-transfers')
+  @RequirePermission('payroll.manage')
+  async salaryTransfers(@CurrentOrg() org: OrgContext, @Param('runId', ParseUUIDPipe) id: string) {
+    const t = await this.p.salaryTransfers(org, id);
+    return { total: t.total, ready: t.ready.length, rows: t.rows.map((r) => ({ employeeId: r.employeeId, code: r.code, name: r.name, net: r.net, account: r.masked, ifsc: r.bank.ifsc || null, issue: r.issue })) };
+  }
+
+  /** The bank's bulk transfer file (CSV) of net salaries, for upload to net banking. */
+  @Post('runs/:runId/salary-file')
+  @HttpCode(200)
+  @RequirePermission('payroll.manage')
+  @ApiBody({ schema: openApi(SalaryFileBody) })
+  async salaryFile(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('runId', ParseUUIDPipe) id: string, @Body(new ZodPipe(SalaryFileBody)) body: z.infer<typeof SalaryFileBody>, @Res() res: Response) {
+    const f = await this.p.salaryFile(org, user, id, body);
+    const out = Buffer.from(f.csv, 'utf8');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${f.filename}"`);
+    res.setHeader('Content-Length', String(out.length));
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.end(out);
   }
 
   /** Pay one liability of a posted run from a bank account: net salaries, PF, ESI, professional tax or TDS. */
