@@ -1,5 +1,5 @@
 'use client';
-import { Badge, cn } from '@talk2tax/ui';
+import { Badge, cn, tx } from '@talk2tax/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -197,10 +197,10 @@ export function PageHeader({ title, description, actions }: { title: string; des
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{tx(title)}</h1>
           <PageHelp title={title} />
         </div>
-        {description ? <p className="mt-1 text-sm text-fg-muted">{description}</p> : null}
+        {description ? <p className="mt-1 text-sm text-fg-muted">{tx(description)}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>

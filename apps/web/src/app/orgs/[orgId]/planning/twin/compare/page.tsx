@@ -83,7 +83,8 @@ function Compare() {
               actual={actual.data?.actualMonths ?? []}
               series={d.rows.map((r) => ({ name: r.name, months: d.months.map((m, i) => ({ month: m, closingCash: r.cash[i]! }) as TwinMonth) }))}
               currency={c}
-              label="Month-end cash for each scenario compared, after the actual months. The key figures are in the table above."
+              label="Month-end cash for each scenario compared, after the actual months. The figures are in the table that follows."
+              withTable
             />
           </Card>
         </>

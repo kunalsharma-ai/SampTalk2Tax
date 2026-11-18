@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 53 |
+| Implementing | 50 |
 | Implemented | 34 |
-| Tested | 460 |
+| Tested | 463 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1485,11 +1485,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-017 — Adaptive matching suggestions
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI.
+- Status: **Tested**
+- Notes: Suggestions learn from past matches on the account: a statement line that shares name words with lines matched before ranks the same contact (payment) or account (other side of the entry) first and says so; an undone match counts against it. Shown under What matching learned. No AI; same amount and the 14-day window still apply.
 - Evidence:
-  - packages/accounting-engine/src/bank.ts
   - packages/accounting-engine/test/bank.test.ts
+  - apps/api/test/banking.e2e.test.ts › prefers the account similar lines were matched to, and says why
+  - apps/api/test/banking.e2e.test.ts › counts an undone match against the account, so the date decides again
+  - apps/web/e2e/bank-match-learning-flow.test.mjs
 
 ### BANK-018 — Duplicate transaction detection
 
@@ -1881,11 +1883,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### PAY-011 — Leave-related adjustments
 
 - Module: Payroll and workforce finance
-- Status: **Implementing**
-- Notes: Loss-of-pay days (whole or half) per payslip, and pro-rating for joining or leaving mid-month. No leave balances or leave module.
+- Status: **Tested**
+- Notes: Loss-of-pay days per payslip and pro-rating for joiners and leavers. Leave module: paid and unpaid leave types with a yearly allowance (April-March), leave recorded per month with balance checks, unpaid leave carried to the month's payslip as loss of pay (drafts update at once), posted months closed. Not yet: carry-forward, accrual by month, encashment, holiday calendar, employee self-service requests.
 - Evidence:
+  - apps/api/src/payroll/leave.service.ts
+  - apps/api/test/payroll-leave.e2e.test.ts
+  - apps/web/e2e/payroll-leave-flow.test.mjs
   - packages/tax-engine/test/payroll.test.ts
-  - apps/api/test/payroll.e2e.test.ts
   - apps/web/e2e/payroll-flow.test.mjs
 
 ### PAY-016 — Payroll journals
@@ -4443,10 +4447,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 
 - Module: Dashboard design
-- Status: **Implementing**
-- Notes: Dashboard chart has a matching data table; other charts are not built yet.
+- Status: **Tested**
+- Notes: Every chart is a labelled image that names the table holding its figures (or is decorative next to figures shown as text). The month-end cash chart carries its own table on pages without one. A unit test checks every chart in the app.
 - Evidence:
-  - apps/web/src
+  - apps/web/test/charts.test.ts
+  - apps/web/src/components/twin/twin-chart.tsx
+  - apps/web/e2e/recovery-flow.test.mjs
 
 ### DASH-041 — Respect reduced-motion preferences
 
@@ -5386,7 +5392,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator.
+- Notes: Hindi covers the navigation, header, roles, the preferences page, and now every page title and description, table heading, field label, button, dialog and card title that matches a catalogue entry (about 180 common words such as Status, Amount, Date, Save, Cancel). Text built with numbers or names ("New invoice", status badges, tabs) still falls back to English. Translations not yet reviewed by a professional translator.
 - Evidence:
   - packages/accounting-engine/src/locale.ts
   - packages/accounting-engine/test/locale.test.ts
@@ -5398,6 +5404,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/test/i18n.test.ts
   - apps/web/e2e/display-preferences-flow.test.mjs
   - docs/LANGUAGES_AND_FORMATS.md
+  - packages/ui/src/text.tsx
 
 ### I18N-015 — Architect for later support of additional languages
 

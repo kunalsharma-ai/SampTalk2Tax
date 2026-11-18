@@ -25,7 +25,9 @@ import {
 } from '@talk2tax/tax-engine';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, todayIso, toDbDate } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
+import { leaveEntries } from '../db/collections/leave';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
@@ -127,6 +129,7 @@ export class PayrollService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly chart: ChartService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -569,6 +572,32 @@ export class PayrollService {
     };
   }
 
+  /** Unpaid leave recorded for an employee in a month (PAY-011). */
+  private async unpaidLeaveDays(employeeId: string, period: string): Promise<Dec> {
+    const rows = await this.store.collection(leaveEntries).find({ employeeId, period, paid: false, status: 'RECORDED' });
+    return rows.reduce((t, r) => t.plus(r.days), new D(0));
+  }
+
+  /**
+   * After leave changes: the month's payslip for the employee, if it is in a draft run, is
+   * worked out again; returns the run's number. A posted month cannot change (see LeaveService).
+   */
+  async refreshDraftPayslip(orgId: string, employeeId: string, period: string): Promise<string | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const run = await tx.payRun.findFirst({ where: { orgId, period, status: 'DRAFT' } });
+      if (!run) return null;
+      await this.lockRun(tx, orgId, run.id);
+      const slip = await tx.payslip.findUnique({ where: { payRunId_employeeId: { payRunId: run.id, employeeId } } });
+      if (!slip) return null;
+      const e = await this.employeeById(tx, orgId, employeeId);
+      const facts = await this.payslipFacts(tx, orgId, e, period, { lopDays: slip.lopDays.toFixed(), oneOffs: slip.oneOffs as unknown as OneOffInput[] });
+      if (!facts.ok) throw new DomainError('INVALID_PAYSLIP', `${run.number}: ${facts.reason}`);
+      await tx.payslip.update({ where: { id: slip.id }, data: facts.data });
+      await this.updateTotals(tx, run.id);
+      return run.number;
+    });
+  }
+
   private async syncPayslips(tx: Tx, orgId: string, runId: string, period: string, kept: Map<string, { lopDays: string; oneOffs: OneOffInput[] }>) {
     const employees = await tx.employee.findMany({
       where: { orgId, dateOfJoining: { lte: toDbDate(periodEnd(period)) }, OR: [{ dateOfLeaving: null }, { dateOfLeaving: { gte: toDbDate(periodStart(period)) } }] },
@@ -598,8 +627,10 @@ export class PayrollService {
     const outside = before + after;
     const lop = dec(adj.lopDays);
     if (lop.lt(0) || !lop.times(2).isInteger()) return { ok: false as const, reason: 'Loss-of-pay days must be whole or half days' };
-    if (lop.gt(n - outside)) return { ok: false as const, reason: `Loss-of-pay days cannot exceed the ${n - outside} days employed this month` };
-    const paidDays = new D(n - outside).minus(lop);
+    // Unpaid leave recorded for the month counts as loss of pay too.
+    const leaveLop = await this.unpaidLeaveDays(e.id, period);
+    if (lop.plus(leaveLop).gt(n - outside)) return { ok: false as const, reason: `Loss-of-pay days${leaveLop.gt(0) ? ` with ${leaveLop.toFixed()} days of unpaid leave` : ''} cannot exceed the ${n - outside} days employed this month` };
+    const paidDays = new D(n - outside).minus(lop).minus(leaveLop);
 
     // History from posted pay runs before this month.
     const ty = taxYearOf(periodStart(period));
@@ -643,6 +674,7 @@ export class PayrollService {
         daysInMonth: n,
         daysOutside: outside.toFixed(1),
         lopDays: lop.toFixed(1),
+        leaveLopDays: leaveLop.toFixed(1),
         paidDays: paidDays.toFixed(1),
         oneOffs: adj.oneOffs as unknown as Prisma.InputJsonValue,
         earnings: r.earnings as unknown as Prisma.InputJsonValue,
@@ -750,6 +782,7 @@ export class PayrollService {
       daysInMonth: p.daysInMonth,
       daysOutside: p.daysOutside.toFixed(1),
       lopDays: p.lopDays.toFixed(1),
+      leaveLopDays: new D((p.leaveLopDays ?? 0).toString()).toFixed(1),
       paidDays: p.paidDays.toFixed(1),
       oneOffs: p.oneOffs as unknown as OneOffInput[],
       earnings: p.earnings as unknown as { code: string; name: string; kind: PayComponentKind; amount: string }[],

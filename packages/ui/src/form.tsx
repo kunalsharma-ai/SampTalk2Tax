@@ -1,5 +1,6 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { cn } from './cn';
+import { tx } from './text';
 
 const control =
   'h-10 w-full rounded-[var(--t2t-radius-md)] border border-line bg-surface px-3 text-sm text-fg placeholder:text-fg-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 aria-[invalid=true]:border-negative';
@@ -27,7 +28,7 @@ export function Field({ label, error, hint, children }: { label: string; error?:
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-        {label}
+        {tx(label)}
       </label>
       {children({ id, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy })}
       {error ? (
@@ -36,7 +37,7 @@ export function Field({ label, error, hint, children }: { label: string; error?:
         </p>
       ) : hint ? (
         <p id={`${id}-hint`} className="text-xs text-fg-faint">
-          {hint}
+          {tx(hint)}
         </p>
       ) : null}
     </div>
