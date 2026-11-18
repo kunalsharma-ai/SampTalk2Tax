@@ -1,5 +1,6 @@
 'use client';
 import { chartSeries } from '@talk2tax/design-system';
+import { Table, Td, Th, Tr } from '@talk2tax/ui';
 import { CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
 import { monthLabel, type TwinMonth } from '@/lib/twin';
@@ -11,7 +12,11 @@ type Series = { name: string; months: TwinMonth[] };
  * "hypothetical" band, so actual and hypothetical figures are never confused. Floats only place
  * the marks; the tooltip shows the exact decimal strings.
  */
-export function TwinCashChart({ actual, series, currency, label }: { actual: { month: string; cash: string }[]; series: Series[]; currency: string; label: string }) {
+/**
+ * `withTable` adds the same figures as a table under the chart, for pages that do not
+ * already show them month by month.
+ */
+export function TwinCashChart({ actual, series, currency, label, withTable }: { actual: { month: string; cash: string }[]; series: Series[]; currency: string; label: string; withTable?: boolean }) {
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   const rows: Record<string, number | string | undefined>[] = actual.map((a) => ({ month: a.month, actual: Number(a.cash), rawActual: a.cash }));
@@ -30,7 +35,7 @@ export function TwinCashChart({ actual, series, currency, label }: { actual: { m
   const colors = ['var(--t2t-text-faint)', chartSeries[0], chartSeries[4], chartSeries[1], chartSeries[3]];
   const firstProjected = months[0]?.month;
   const lastProjected = months[months.length - 1]?.month;
-  return (
+  const chart = (
     <div className="h-80 w-full" role="img" aria-label={label}>
       <ResponsiveContainer>
         <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -60,5 +65,41 @@ export function TwinCashChart({ actual, series, currency, label }: { actual: { m
         </ComposedChart>
       </ResponsiveContainer>
     </div>
+  );
+  if (!withTable) return chart;
+  return (
+    <>
+      {chart}
+      <details className="mt-3 text-sm">
+        <summary className="cursor-pointer text-fg-muted hover:text-fg">Show the figures</summary>
+        <div className="mt-2 overflow-x-auto">
+          <Table aria-label="Month-end cash figures">
+            <thead>
+              <tr>
+                <Th>Month</Th>
+                {actual.length ? <Th numeric>Actual (from the books)</Th> : null}
+                {series.map((s) => <Th key={s.name} numeric>{s.name}</Th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {actual.map((a) => (
+                <Tr key={`a-${a.month}`}>
+                  <Td>{monthLabel(a.month)}</Td>
+                  <Td numeric>{money(a.cash, currency)}</Td>
+                  {series.map((s) => <Td key={s.name} numeric>—</Td>)}
+                </Tr>
+              ))}
+              {months.map((m, j) => (
+                <Tr key={`p-${m.month}`}>
+                  <Td>{monthLabel(m.month)}</Td>
+                  {actual.length ? <Td numeric>—</Td> : null}
+                  {series.map((s) => <Td key={s.name} numeric>{s.months[j] ? money(s.months[j]!.closingCash, currency) : '—'}</Td>)}
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      </details>
+    </>
   );
 }

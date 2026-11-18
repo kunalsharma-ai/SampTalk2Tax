@@ -85,11 +85,13 @@
       "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     "DASH-040": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "apps/web/test/charts.test.ts",
+        "apps/web/src/components/twin/twin-chart.tsx",
+        "apps/web/e2e/recovery-flow.test.mjs"
       ],
-      "notes": "Dashboard chart has a matching data table; other charts are not built yet."
+      "notes": "Every chart is a labelled image that names the table holding its figures (or is decorative next to figures shown as text). The month-end cash chart carries its own table on pages without one. A unit test checks every chart in the app."
     },
     "DASH-041": {
       "status": "Implemented",

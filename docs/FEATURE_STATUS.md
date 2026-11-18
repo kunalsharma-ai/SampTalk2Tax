@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 53 |
+| Implementing | 52 |
 | Implemented | 34 |
-| Tested | 460 |
+| Tested | 461 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -4443,10 +4443,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 
 - Module: Dashboard design
-- Status: **Implementing**
-- Notes: Dashboard chart has a matching data table; other charts are not built yet.
+- Status: **Tested**
+- Notes: Every chart is a labelled image that names the table holding its figures (or is decorative next to figures shown as text). The month-end cash chart carries its own table on pages without one. A unit test checks every chart in the app.
 - Evidence:
-  - apps/web/src
+  - apps/web/test/charts.test.ts
+  - apps/web/src/components/twin/twin-chart.tsx
+  - apps/web/e2e/recovery-flow.test.mjs
 
 ### DASH-041 — Respect reduced-motion preferences
 
