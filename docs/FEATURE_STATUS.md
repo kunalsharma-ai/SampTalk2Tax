@@ -12,7 +12,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Designed | 0 |
 | Implementing | 49 |
 | Implemented | 34 |
-| Tested | 465 |
+| Tested | 466 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
