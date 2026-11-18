@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { DATE_FORMATS } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
@@ -53,6 +53,7 @@ const PaymentBody = z.object({
 });
 const TransferBody = z.object({ outLineId: z.uuid(), inLineId: z.uuid() });
 const ReasonBody = z.object({ reason: z.string().trim().min(3).max(500) });
+const CurrencyBody = z.object({ currency: z.string().trim().regex(/^[A-Za-z]{3}$/, 'A currency is three letters, such as USD').nullable() }).strict();
 const ReconcileBody = z.object({ statementDate: isoDate, statementBalance: signedDecimal, openingBalance: signedDecimal.optional() });
 
 @ApiTags('banking')
@@ -65,6 +66,14 @@ export class BankingController {
   @RequirePermission('banking.read')
   accounts(@CurrentOrg() org: OrgContext) {
     return this.banking.listAccounts(org);
+  }
+
+  /** Keeps a bank account in another currency (BANK-012), or back in the functional one (null). */
+  @Put('accounts/:accountId/currency')
+  @RequirePermission('accounts.manage')
+  @ApiBody({ schema: openApi(CurrencyBody) })
+  setCurrency(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('accountId', ParseUUIDPipe) accountId: string, @Body(new ZodPipe(CurrencyBody)) body: z.infer<typeof CurrencyBody>) {
+    return this.banking.setCurrency(org, user, accountId, body.currency);
   }
 
   /** Parses a CSV statement. With dryRun the lines are only previewed (duplicates flagged); otherwise new lines are stored. */
