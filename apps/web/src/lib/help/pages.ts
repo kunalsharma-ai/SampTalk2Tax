@@ -380,6 +380,21 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add a loan with its amount, rate and term. Record each repayment, prepayment or rate change; the schedule and interest are worked out for you.',
     where: 'Banking. Repayments post journals; balances appear in the balance sheet and Treasury.',
   },
+  deposits: {
+    what: 'Fixed deposits with banks: what was deposited, interest earned to date, what is accrued in the books and what each pays at maturity.',
+    how: 'Place a deposit with its amount, rate, compounding and dates. At each month or quarter end, accrue interest on every open deposit to that date. When one matures, open it and record what the bank paid and the tax it deducted.',
+    where: 'Banking. Placing a deposit posts Dr the deposit account, Cr the bank; accruals post Dr interest accrued, Cr interest income; closing clears both into the bank and the tax deducted.',
+  },
+  'deposits/new': {
+    what: 'Place a new fixed deposit and see what it will pay at maturity before you save it.',
+    how: 'Enter the bank, amount, rate, how interest compounds, and the start and maturity dates, then choose the accounts. Most bank deposits in India compound quarterly.',
+    where: 'Banking, from Fixed deposits. Saving posts the money leaving the bank on the start date.',
+  },
+  'deposits/[id]': {
+    what: 'One fixed deposit: its terms, interest earned and accrued, and every journal posted for it.',
+    how: 'Accrue interest to a date, or close the deposit with what the bank paid and the tax deducted, at maturity or early. The latest accrual or the closing can be reversed with a reason.',
+    where: 'Banking, from Fixed deposits. Every action posts a journal you can open from the postings table.',
+  },
   expenses: {
     what: 'Expense claims from employees for money they spent on the organisation\'s behalf.',
     how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid.',
