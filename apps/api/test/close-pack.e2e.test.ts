@@ -143,7 +143,7 @@ describe('the report pack of a closed month', () => {
 
     const audit = (await ctx.http().get(`${org.base}/audit-events?entityType=period_close&entityId=${closed.close.id}`).set(owner.auth).expect(200)).body;
     const ev = (audit.items ?? audit).find((e: { action: string }) => e.action === 'close.report_pack_exported');
-    expect(ev.data).toMatchObject({ period: name, sha256: sha(zip), fileName: res.headers['content-disposition'].match(/filename="([^"]+)"/)[1] });
+    expect(ev.data).toMatchObject({ period: name, sha256: sha(zip), fileName: /filename="([^"]+)"/.exec(res.headers['content-disposition'])?.[1] });
     expect(ev.data.files).toHaveLength(7);
     expect(ev.data.files[0]).toEqual({ name: `01-close-certification-${to}.pdf`, sha256: sha(files.get(`01-close-certification-${to}.pdf`)!) });
   });
