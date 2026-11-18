@@ -119,6 +119,7 @@ import { DeferralsService } from './deferrals/deferrals.service';
 import { InvoicePrintController, InvoiceTemplatesController, SignaturesController } from './invoice-templates/invoice-templates.controller';
 import { InvoiceTemplatesService } from './invoice-templates/invoice-templates.service';
 import { LoansController } from './loans/loans.controller';
+import { DepositsController } from './deposits/deposits.controller';
 import { CrmController } from './crm/crm.controller';
 import { CustomerInsightsController } from './crm/customer-insights.controller';
 import { CustomerInsightsService } from './crm/customer-insights.service';
@@ -194,6 +195,7 @@ import { TwinController } from './twin/twin.controller';
 import { TwinService } from './twin/twin.service';
 import { ReportExportService } from './report-exports/report-exports.service';
 import { LoansService } from './loans/loans.service';
+import { DepositsService } from './deposits/deposits.service';
 import { CrmService } from './crm/crm.service';
 import { SalesOrdersService } from './sales-orders/sales-orders.service';
 import { ProFormaController } from './sales-orders/pro-forma.controller';
@@ -311,6 +313,7 @@ export class AppModule {
         FixedAssetsController,
         DeferralsController,
         LoansController,
+        DepositsController,
         CrmController,
         CustomerInsightsController,
         RevenueForecastController,
@@ -442,6 +445,7 @@ export class AppModule {
         FixedAssetsService,
         DeferralsService,
         LoansService,
+        DepositsService,
         CrmService,
         CustomerInsightsService,
         RevenueForecastService,
