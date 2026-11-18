@@ -684,7 +684,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Accounts receivable
 - Status: **Implementing**
-- Notes: Fixed-fee recurring billing works through contracts (CRM-006/AR-010). Not built: usage-based or metered charges, proration of part periods, card/mandate auto-collection.
+- Notes: Fixed-fee recurring billing works through contracts (CRM-006/AR-010), usage charges through meters (AR-012), and part periods are billed by days when a contract is billed on a fixed day of the month. Not built: card or mandate auto-collection (needs a payment gateway), credit for unused days on cancelling mid-period.
 - Evidence:
   - packages/accounting-engine/src/contracts.ts
   - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
@@ -694,6 +694,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/contracts-flow.test.mjs
   - docs/CONTRACTS.md
   - apps/web/src/app/orgs/[orgId]/sales/contracts/[contractId]/page.tsx
+  - packages/accounting-engine/test/contracts.test.ts
+  - apps/web/e2e/contract-part-periods-flow.test.mjs
 
 ### AR-012 — Usage-based billing
 

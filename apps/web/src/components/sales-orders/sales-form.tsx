@@ -56,6 +56,7 @@ export function SalesForm({ mode, existing, contract, proForma, fromQuote, conta
   const [timing, setTiming] = useState<'ADVANCE' | 'ARREARS'>(contract?.timing ?? 'ADVANCE');
   const [rolling, setRolling] = useState(contract ? !contract.endDate : false);
   const [endDate, setEndDate] = useState(contract?.endDate ?? '');
+  const [billingDay, setBillingDay] = useState(contract?.billingDay ? String(contract.billingDay) : '');
   const [autoRenew, setAutoRenew] = useState(contract?.autoRenew ?? false);
   const [renewalMonths, setRenewalMonths] = useState(String(contract?.renewalMonths ?? 12));
   const [noticeDays, setNoticeDays] = useState(String(contract?.noticeDays ?? 30));
@@ -98,6 +99,7 @@ export function SalesForm({ mode, existing, contract, proForma, fromQuote, conta
       if (!title.trim()) issues.push('Give the contract a title');
       if (!rolling && !endDate) issues.push('Give an end date, or make it rolling');
       if (!rolling && endDate && date && endDate < date) issues.push('The end date cannot be before the start date');
+      if (billingDay && (Number(billingDay) < 1 || Number(billingDay) > 28)) issues.push('Bill on a day from 1 to 28');
       if (autoRenew && !rolling && (Number(renewalMonths) % FREQUENCY_MONTHS[frequency] !== 0 || Number(renewalMonths) < FREQUENCY_MONTHS[frequency])) issues.push(`Renew for a whole number of ${FREQUENCY_LABEL[frequency].toLowerCase()} periods (${FREQUENCY_MONTHS[frequency]} months each)`);
     }
     payload.forEach((x, i) => !x.accountId && issues.push(`Line ${i + 1}: choose an income account`));
@@ -117,7 +119,7 @@ export function SalesForm({ mode, existing, contract, proForma, fromQuote, conta
     } catch (e) {
       return { ok: false, issues: [...issues, ...(e instanceof DocumentValidationError ? e.issues : [(e as Error).message])], lines: [], subtotal: null, tax: null, total: null, heads: null };
     }
-  }, [payload, c, taxMap, contact, mode, validUntil, date, gstMode, pos, selected, gstCategories, splitter, title, rolling, endDate, autoRenew, renewalMonths, frequency]);
+  }, [payload, c, taxMap, contact, mode, validUntil, date, gstMode, pos, selected, gstCategories, splitter, title, rolling, endDate, autoRenew, renewalMonths, frequency, billingDay]);
 
   const save = useMutation({
     mutationFn: () => {
@@ -132,6 +134,7 @@ export function SalesForm({ mode, existing, contract, proForma, fromQuote, conta
           timing,
           startDate: date,
           endDate: rolling ? null : endDate,
+          billingDay: billingDay ? Number(billingDay) : null,
           autoRenew: !rolling && autoRenew,
           renewalMonths: !rolling && autoRenew ? Number(renewalMonths) : null,
           noticeDays: Number(noticeDays || '0'),
@@ -211,6 +214,11 @@ export function SalesForm({ mode, existing, contract, proForma, fromQuote, conta
                 <option value="ADVANCE">In advance (first day)</option>
                 <option value="ARREARS">In arrears (last day)</option>
               </Select>
+            </label>
+            <label className={field}>
+              Bill on day of month
+              <Input aria-label="Bill on day of month" inputMode="numeric" className="num" disabled={fixed} value={billingDay} placeholder="Start date's day" onChange={(e) => /^\d{0,2}$/.test(e.target.value) && setBillingDay(e.target.value)} />
+              <span className="normal-case tracking-normal text-fg-faint">1 to 28. Part periods are billed by days.</span>
             </label>
             <label className={field}>
               Payment terms (days)

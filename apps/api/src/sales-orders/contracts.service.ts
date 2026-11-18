@@ -5,12 +5,15 @@ import {
   ContractError,
   D,
   duePeriods,
+  endsInPart,
+  firstBillingDate,
   FREQUENCY_LABEL,
   FREQUENCY_MONTHS,
   fullyBilled,
   minorUnits,
   monthlyValue,
   periodCount,
+  proratedPrice,
   periodLabel,
   renewalState,
   renewedEnd,
@@ -40,6 +43,8 @@ export interface ContractInput {
   timing: 'ADVANCE' | 'ARREARS';
   startDate: string;
   endDate?: string | null;
+  /** Day of the month (1 to 28) periods run from; part periods are billed by days. */
+  billingDay?: number | null;
   autoRenew: boolean;
   renewalMonths?: number | null;
   noticeDays: number;
@@ -93,17 +98,19 @@ export class ContractsService {
     return c;
   }
 
-  private schedule(c: Pick<SalesContract, 'startDate' | 'endDate' | 'frequency' | 'timing' | 'nextPeriodNo'>) {
-    return { start: fromDbDate(c.startDate), end: c.endDate ? fromDbDate(c.endDate) : null, frequency: c.frequency as ContractFrequency, timing: c.timing, nextNo: c.nextPeriodNo };
+  private schedule(c: Pick<SalesContract, 'startDate' | 'endDate' | 'frequency' | 'timing' | 'nextPeriodNo' | 'billingDay'>) {
+    return { start: fromDbDate(c.startDate), end: c.endDate ? fromDbDate(c.endDate) : null, frequency: c.frequency as ContractFrequency, timing: c.timing, nextNo: c.nextPeriodNo, billingDay: c.billingDay ?? null };
   }
 
   /** Checks the terms that do not depend on the database. */
   private checkTerms(input: ContractInput) {
-    if (input.endDate) this.rule(() => periodCount(input.startDate, input.endDate!, input.frequency));
+    if (input.billingDay != null) this.rule(() => firstBillingDate(input.startDate, input.billingDay));
+    if (input.endDate) this.rule(() => periodCount(input.startDate, input.endDate!, input.frequency, input.billingDay));
     if (input.autoRenew) {
       if (!input.endDate) this.sales.invalid('A rolling contract has no end date to renew; give an end date or turn off auto-renew', 'CONTRACT_RENEWAL');
       const m = input.renewalMonths ?? 0;
       if (m < FREQUENCY_MONTHS[input.frequency] || m % FREQUENCY_MONTHS[input.frequency]) this.sales.invalid(`Renew for a whole number of ${FREQUENCY_LABEL[input.frequency].toLowerCase()} periods (${FREQUENCY_MONTHS[input.frequency]} months each)`, 'CONTRACT_RENEWAL');
+      if (endsInPart(input.startDate, input.endDate, input.frequency, input.billingDay)) this.sales.invalid('A contract that renews itself must end on a period end, not part-way through a period', 'CONTRACT_RENEWAL');
     }
   }
 
@@ -116,6 +123,7 @@ export class ContractsService {
       timing: input.timing,
       startDate: toDbDate(input.startDate),
       endDate: input.endDate ? toDbDate(input.endDate) : null,
+      billingDay: input.billingDay ?? null,
       autoRenew: input.autoRenew,
       renewalMonths: input.autoRenew ? (input.renewalMonths ?? null) : null,
       noticeDays: input.noticeDays,
@@ -146,6 +154,7 @@ export class ContractsService {
       timing: c.timing,
       startDate: s.start,
       endDate: s.end,
+      billingDay: s.billingDay,
       autoRenew: c.autoRenew,
       renewalMonths: c.renewalMonths,
       noticeDays: c.noticeDays,
@@ -159,7 +168,7 @@ export class ContractsService {
       total: this.sales.money(org, c.total),
       monthlyValue: monthlyValue(c.subtotal.toString(), c.frequency as ContractFrequency, this.scale(org)),
       renewal: live ? renewalState(s.end, c.noticeDays, today) : null,
-      nextBill: next ? { periodNo: next.no, date: next.billDate, start: next.start, end: next.end } : null,
+      nextBill: next ? { periodNo: next.no, date: next.billDate, start: next.start, end: next.end, part: next.part } : null,
       periodsBilled: c.nextPeriodNo - 1,
       lastError: c.lastError,
       lastErrorAt: c.lastErrorAt?.toISOString() ?? null,
@@ -236,7 +245,7 @@ export class ContractsService {
           canBillAgain: p.status === 'BILLED' && (!d || d.status === 'VOID') && c.status !== 'CANCELLED',
         };
       }),
-      upcoming: live ? upcomingPeriods(s, 6).map((p) => ({ periodNo: p.no, start: p.start, end: p.end, billDate: p.billDate })) : [],
+      upcoming: live ? upcomingPeriods(s, 6).map((p) => ({ periodNo: p.no, start: p.start, end: p.end, billDate: p.billDate, part: p.part })) : [],
       events: c.events.map((e) => ({ id: e.id, kind: e.kind, body: e.body, actor: e.actorId ? { id: e.actorId, name: actors.find((a) => a.id === e.actorId)?.name ?? 'A member' } : null, createdAt: e.createdAt.toISOString() })),
       can: this.sales.can(org),
     };
@@ -268,12 +277,14 @@ export class ContractsService {
       const old = await this.lock(tx, org.id, id);
       if (old.status === 'ENDED' || old.status === 'CANCELLED') this.sales.invalid(`An ${old.status === 'ENDED' ? 'ended' : 'cancelled'} contract does not change${old.status === 'ENDED' ? '; renew it first' : ''}`, 'CONTRACT_CLOSED');
       if (old.status !== 'DRAFT') {
-        if (input.contactId !== old.contactId || input.startDate !== fromDbDate(old.startDate) || input.frequency !== old.frequency || input.timing !== old.timing) {
+        if (input.contactId !== old.contactId || input.startDate !== fromDbDate(old.startDate) || input.frequency !== old.frequency || input.timing !== old.timing || (input.billingDay ?? null) !== (old.billingDay ?? null)) {
           this.sales.invalid('An active contract keeps its customer, start date and billing schedule; cancel it and start a new one to change them', 'CONTRACT_SCHEDULE_FIXED');
         }
         if (old.nextPeriodNo > 1 && input.endDate) {
-          const last = contractPeriod(fromDbDate(old.startDate), old.frequency as ContractFrequency, old.nextPeriodNo - 1);
+          const s0 = this.schedule(old);
+          const last = contractPeriod(s0.start, s0.frequency, old.nextPeriodNo - 1, s0.timing, { billingDay: s0.billingDay, end: s0.end });
           if (input.endDate < last.end) this.sales.invalid(`Periods up to ${last.end} are already billed; the end date cannot be earlier`, 'CONTRACT_END');
+          if (last.part && s0.end === last.end && input.endDate !== s0.end) this.sales.invalid(`The last period was billed as a part period to ${last.end}; the end date cannot change`, 'CONTRACT_END');
         }
       }
       if (input.timing !== 'ARREARS' && (await this.usage.hasMeters(tx, org.id, id))) this.sales.invalid('This contract has usage charges, which are billed in arrears; keep it billed in arrears or remove the usage charges first', 'METER_NEEDS_ARREARS');
@@ -373,7 +384,7 @@ export class ContractsService {
   private async renewInTx(tx: Tx, org: SalesOrg, actor: Actor | null, c: Full, months: number, uplift: string | null, automatic: boolean) {
     const start = fromDbDate(c.startDate);
     const oldEnd = fromDbDate(c.endDate!);
-    const end = this.rule(() => renewedEnd(start, oldEnd, c.frequency as ContractFrequency, months));
+    const end = this.rule(() => renewedEnd(start, oldEnd, c.frequency as ContractFrequency, months, c.billingDay));
     const data: Prisma.SalesContractUpdateInput = { endDate: toDbDate(end), endedAt: null, ...(c.status === 'ENDED' ? { status: 'ACTIVE' } : {}) };
     let note = '';
     if (uplift && !new D(uplift).eq(0)) {
@@ -399,7 +410,8 @@ export class ContractsService {
         const d = await tx.document.findFirst({ where: { id: p.documentId, orgId: org.id }, select: { status: true } });
         if (d && d.status !== 'VOID') this.sales.invalid('That period already has an invoice; void or delete it first', 'CONTRACT_PERIOD_BILLED');
       }
-      const period = contractPeriod(fromDbDate(c.startDate), c.frequency as ContractFrequency, periodNo, c.timing);
+      const s = this.schedule(c);
+      const period = contractPeriod(s.start, s.frequency, periodNo, s.timing, { billingDay: s.billingDay, end: s.end });
       const u = await this.usage.forPeriod(tx, org.id, id, period);
       const doc = await this.invoice(tx, org, actor, c, period, u.lines);
       await tx.salesContractPeriod.update({ where: { id: p.id }, data: { documentId: doc.id } });
@@ -411,7 +423,7 @@ export class ContractsService {
     return { documentId: docId, contract: await this.get(org, id) };
   }
 
-  private invoice(tx: Tx, org: SalesOrg, actor: Actor, c: Full, p: { start: string; end: string; billDate: string }, usage: Awaited<ReturnType<UsageBillingService['forPeriod']>>['lines'] = []) {
+  private invoice(tx: Tx, org: SalesOrg, actor: Actor, c: Full, p: { start: string; end: string; billDate: string; part?: { days: number; of: number } | null }, usage: Awaited<ReturnType<UsageBillingService['forPeriod']>>['lines'] = []) {
     const r = `${ref(c.number)} ${periodLabel(p)}`;
     return this.documents.createDraftInTx(tx, org, actor, 'SALES', {
       kind: 'INVOICE',
@@ -422,7 +434,19 @@ export class ContractsService {
       memo: c.title,
       placeOfSupply: c.placeOfSupply,
       lines: [
-        ...c.lines.map((l) => ({ accountId: l.accountId, description: l.description ?? undefined, quantity: l.quantity.toFixed(), unitPrice: l.unitPrice.toFixed(), taxRateId: l.taxRateId, hsnCode: l.hsnCode })),
+        ...c.lines.map((l) => {
+          const part = p.part;
+          // A part period bills each line for its share of days, and says so on the line.
+          const note = part ? `Part period: ${part.days} of ${part.of} days` : null;
+          return {
+            accountId: l.accountId,
+            description: note ? `${l.description ? `${l.description} (${note.toLowerCase()})` : note}`.slice(0, 500) : (l.description ?? undefined),
+            quantity: l.quantity.toFixed(),
+            unitPrice: part ? proratedPrice(l.unitPrice.toFixed(), part, this.scale(org)) : l.unitPrice.toFixed(),
+            taxRateId: l.taxRateId,
+            hsnCode: l.hsnCode,
+          };
+        }),
         ...usage,
       ],
     });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addMonthsAnchored, contractPeriod, duePeriods, fullyBilled, monthlyValue, periodCount, renewalState, renewedEnd, upcomingPeriods, upliftPrice } from '../src/contracts';
+import { addMonthsAnchored, contractPeriod, duePeriods, endsInPart, firstBillingDate, fullyBilled, monthlyValue, periodCount, proratedPrice, renewalState, renewedEnd, upcomingPeriods, upliftPrice } from '../src/contracts';
 
 describe('contract periods', () => {
   it('keeps the start day, or the month end when the month is shorter', () => {
@@ -7,8 +7,8 @@ describe('contract periods', () => {
     expect(addMonthsAnchored('2028-01-31', 1)).toBe('2028-02-29');
     expect(addMonthsAnchored('2026-01-31', 2)).toBe('2026-03-31');
     expect(addMonthsAnchored('2026-11-15', 3)).toBe('2027-02-15');
-    expect(contractPeriod('2026-01-31', 'MONTHLY', 2)).toEqual({ no: 2, start: '2026-02-28', end: '2026-03-30', billDate: '2026-02-28' });
-    expect(contractPeriod('2026-04-01', 'QUARTERLY', 4, 'ARREARS')).toEqual({ no: 4, start: '2027-01-01', end: '2027-03-31', billDate: '2027-03-31' });
+    expect(contractPeriod('2026-01-31', 'MONTHLY', 2)).toEqual({ no: 2, start: '2026-02-28', end: '2026-03-30', billDate: '2026-02-28', part: null });
+    expect(contractPeriod('2026-04-01', 'QUARTERLY', 4, 'ARREARS')).toEqual({ no: 4, start: '2027-01-01', end: '2027-03-31', billDate: '2027-03-31', part: null });
   });
 
   it('counts whole periods to the end date and names valid end dates otherwise', () => {
@@ -44,5 +44,45 @@ describe('contract periods', () => {
     expect(upliftPrice('40000', '5')).toBe('42000.00');
     expect(upliftPrice('333.33', '7.5')).toBe('358.33');
     expect(() => upliftPrice('1', '-150')).toThrow();
+  });
+});
+
+describe('billing on a fixed day with part periods', () => {
+  it('bills the part period before the first billing day for its share of days', () => {
+    const p1 = contractPeriod('2026-11-15', 'MONTHLY', 1, 'ADVANCE', { billingDay: 1 });
+    expect(p1).toEqual({ no: 1, start: '2026-11-15', end: '2026-11-30', billDate: '2026-11-15', part: { days: 16, of: 30 } });
+    expect(contractPeriod('2026-11-15', 'MONTHLY', 2, 'ADVANCE', { billingDay: 1 })).toEqual({ no: 2, start: '2026-12-01', end: '2026-12-31', billDate: '2026-12-01', part: null });
+    expect(contractPeriod('2026-11-15', 'QUARTERLY', 1, 'ARREARS', { billingDay: 1 })).toMatchObject({ end: '2026-11-30', billDate: '2026-11-30', part: { days: 16, of: 91 } });
+    expect(contractPeriod('2026-11-15', 'QUARTERLY', 2, 'ADVANCE', { billingDay: 1 })).toMatchObject({ start: '2026-12-01', end: '2027-02-28', part: null });
+    expect(firstBillingDate('2026-11-15', 20)).toBe('2026-11-20');
+    expect(firstBillingDate('2026-11-01', 1)).toBe('2026-11-01');
+    expect(() => firstBillingDate('2026-11-01', 31)).toThrow('The billing day must be a day from 1 to 28');
+  });
+
+  it('starts on the billing day with full periods, as without one', () => {
+    expect(contractPeriod('2026-11-01', 'MONTHLY', 1, 'ADVANCE', { billingDay: 1 })).toEqual(contractPeriod('2026-11-01', 'MONTHLY', 1));
+  });
+
+  it('cuts the last period short at an end date that is not a period end', () => {
+    expect(periodCount('2026-11-15', '2027-01-10', 'MONTHLY', 1)).toBe(3);
+    expect(contractPeriod('2026-11-15', 'MONTHLY', 3, 'ADVANCE', { billingDay: 1, end: '2027-01-10' })).toMatchObject({ start: '2027-01-01', end: '2027-01-10', part: { days: 10, of: 31 } });
+    expect(() => periodCount('2026-11-15', '2027-01-10', 'MONTHLY')).toThrow('The end date must be the last day of a monthly period');
+    const c = { start: '2026-11-15', end: '2027-01-10', frequency: 'MONTHLY' as const, timing: 'ADVANCE' as const, nextNo: 1, billingDay: 1 };
+    expect(duePeriods(c, '2027-06-01').map((p) => [p.start, p.end, p.part?.days ?? null])).toEqual([
+      ['2026-11-15', '2026-11-30', 16],
+      ['2026-12-01', '2026-12-31', null],
+      ['2027-01-01', '2027-01-10', 10],
+    ]);
+    expect(fullyBilled({ ...c, nextNo: 4 })).toBe(true);
+    expect(fullyBilled({ ...c, nextNo: 3 })).toBe(false);
+  });
+
+  it('prices a part period by days, and renews only from a period end', () => {
+    expect(proratedPrice('3000', { days: 16, of: 30 })).toBe('1600.00');
+    expect(proratedPrice('1000', { days: 10, of: 31 })).toBe('322.58');
+    expect(endsInPart('2026-11-15', '2027-01-10', 'MONTHLY', 1)).toBe(true);
+    expect(endsInPart('2026-11-15', '2027-01-31', 'MONTHLY', 1)).toBe(false);
+    expect(renewedEnd('2026-11-15', '2027-01-31', 'MONTHLY', 2, 1)).toBe('2027-03-31');
+    expect(() => renewedEnd('2026-11-15', '2027-01-10', 'MONTHLY', 2, 1)).toThrow('A contract that ends part-way through a period cannot be renewed');
   });
 });
