@@ -17,6 +17,8 @@ export interface BankStatementImportDoc {
   lastDate: Date;
   importedById: string;
   createdAt: Date;
+  /** Where the file's running balance did not follow from its lines (BANK-021); absent when the file had no balance column. */
+  balanceBreaks?: { row: number; previousRow: number; date: string; previousDate: string; gap: string }[] | null;
 }
 
 export const bankStatementImports = defineCollection<BankStatementImportDoc>({
@@ -55,6 +57,8 @@ export interface BankStatementLineDoc {
   reference: string | null;
   /** Positive = money in, negative = out. */
   amount: string;
+  /** The statement's running balance after this line, when the file had one. */
+  balance?: string | null;
   fingerprint: string;
   status: StatementLineStatusName;
   excludedReason: string | null;

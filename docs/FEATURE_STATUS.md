@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 60 |
+| Implementing | 59 |
 | Implemented | 34 |
-| Tested | 453 |
+| Tested | 454 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1496,11 +1496,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-021 — Missing transaction identification
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Reconciliation flags when imported lines do not add up to the statement balance (missing or doubled lines). No line-level detection.
+- Status: **Tested**
+- Notes: Line-level: with a running balance column, each imported line is checked against the balance before it; breaks show the rows, dates and missing amount on preview and are kept with the import. Reconciliation also flags lines that do not add up to the statement balance. Gaps between separate files are not chained.
 - Evidence:
-  - packages/accounting-engine/src/bank.ts › reconciliationIssues
-  - apps/api/test/banking.e2e.test.ts
+  - packages/accounting-engine/src/bank.ts › balanceBreaks
+  - packages/accounting-engine/test/balance-breaks.test.ts
+  - apps/api/test/statement-gaps.e2e.test.ts
+  - apps/web/e2e/banking-flow.test.mjs
+  - docs/STATEMENT_GAPS.md
 
 ### BANK-024 — Provide a dedicated banking reconciliation workspace
 

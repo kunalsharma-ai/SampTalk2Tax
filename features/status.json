@@ -1009,12 +1009,15 @@
       "notes": "Detects lines imported before (fingerprint per account). Does not yet flag duplicate transactions inside the books."
     },
     "BANK-021": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/src/bank.ts › reconciliationIssues",
-        "apps/api/test/banking.e2e.test.ts"
+        "packages/accounting-engine/src/bank.ts › balanceBreaks",
+        "packages/accounting-engine/test/balance-breaks.test.ts",
+        "apps/api/test/statement-gaps.e2e.test.ts",
+        "apps/web/e2e/banking-flow.test.mjs",
+        "docs/STATEMENT_GAPS.md"
       ],
-      "notes": "Reconciliation flags when imported lines do not add up to the statement balance (missing or doubled lines). No line-level detection."
+      "notes": "Line-level: with a running balance column, each imported line is checked against the balance before it; breaks show the rows, dates and missing amount on preview and are kept with the import. Reconciliation also flags lines that do not add up to the statement balance. Gaps between separate files are not chained."
     },
     "BANK-024": {
       "status": "Tested",

@@ -20,6 +20,7 @@ const Mapping = z
     hasHeader: z.boolean(),
     delimiter: z.enum([',', ';', '\t']).optional(),
     invertAmount: z.boolean().optional(),
+    balance: column.nullable().optional(),
   })
   .refine((m) => m.amount != null || m.moneyIn != null || m.moneyOut != null, 'Choose an amount column, or money-in / money-out columns');
 const ImportBody = z.object({

@@ -357,7 +357,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'banking/[id]/import': {
     what: 'Bring a bank statement file into the account.',
-    how: 'Upload a CSV, map its columns to date, narration and amount, check the preview, and import. Lines already imported are skipped.',
+    how: 'Upload a CSV, map its columns to date, narration and amount, check the preview, and import. Lines already imported are skipped. Choose the balance column too when the statement has one: each line is checked against the running balance, and the preview shows where lines are missing and how much.',
     where: 'Opened from a bank account. Imported lines wait to be matched on the account page.',
   },
   'banking/[id]/ai': {

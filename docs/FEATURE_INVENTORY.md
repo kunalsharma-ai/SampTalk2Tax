@@ -232,7 +232,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-018 | AI Enhancements | capability | Duplicate transaction detection | Tested |
 | BANK-019 | AI Enhancements | capability | Suspicious transaction monitoring | Not started |
 | BANK-020 | AI Enhancements | capability | Reconciliation exception analysis | Not started |
-| BANK-021 | AI Enhancements | capability | Missing transaction identification | Implementing |
+| BANK-021 | AI Enhancements | capability | Missing transaction identification | Tested |
 | BANK-022 | AI Enhancements | capability | Cash movement forecasting | Not started |
 | BANK-023 | AI Enhancements | capability | Unusual bank activity alerts | Not started |
 | BANK-024 | AI Enhancements | rule | Provide a dedicated banking reconciliation workspace | Tested |

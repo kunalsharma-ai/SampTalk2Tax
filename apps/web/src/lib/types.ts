@@ -483,7 +483,9 @@ export interface LedgerCandidate {
 
 export interface ImportPreview {
   imported: boolean;
-  lines: { row: number; date: string; description: string; reference: string | null; amount: string; duplicate: boolean }[];
+  lines: { row: number; date: string; description: string; reference: string | null; amount: string; balance: string | null; duplicate: boolean }[];
+  /** Null when no balance column was chosen. */
+  balanceCheck: { checked: number; order: 'OLDEST_FIRST' | 'NEWEST_FIRST' | null; breaks: { row: number; previousRow: number; date: string; previousDate: string; expected: string; shown: string; gap: string }[] } | null;
   newCount: number;
   duplicateCount: number;
   moneyIn: string;

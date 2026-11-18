@@ -7,6 +7,7 @@ import {
   StatementMapping,
   dec,
   minorUnits,
+  balanceBreaks,
   parseStatement,
   reconciliationDifference,
   reconciliationIssues,
@@ -19,7 +20,8 @@ import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
-import { BANK_IMPORTS, BANK_LINES, BANK_MATCHES, BANK_RECONCILIATIONS } from '../db/collections/banking';
+import { BANK_IMPORTS, BANK_LINES, BANK_MATCHES, BANK_RECONCILIATIONS, bankStatementImports } from '../db/collections/banking';
+import { runInOrg } from '../common/tenant-context';
 import { MovedTables } from '../db/moved-table';
 import { DocumentStoreService } from '../common/document-store.service';
 import { ledgerLines, lineSums, postedBetween, type LedgerLine } from '../db/ledger-queries';
@@ -131,9 +133,16 @@ export class BankingService {
       return { rows, fresh, blocked, lockedUntil };
     };
     const scale = minorUnits(org.functionalCurrency);
+    const check = balanceBreaks(parsed);
+    const balanceCheck = input.mapping.balance == null ? null : {
+      checked: check.checked,
+      order: check.order,
+      breaks: check.breaks.map((b) => ({ row: b.row, previousRow: b.previousRow, date: b.date, previousDate: b.previousDate, expected: b.expected.toFixed(scale), shown: b.shown.toFixed(scale), gap: b.gap.toFixed(scale) })),
+    };
     const preview = (r: Awaited<ReturnType<typeof run>>) => ({
       accountId,
-      lines: r.rows.map((x) => ({ row: x.row, date: x.date, description: x.description, reference: x.reference, amount: x.amount.toFixed(scale), duplicate: x.duplicate })),
+      balanceCheck,
+      lines: r.rows.map((x) => ({ row: x.row, date: x.date, description: x.description, reference: x.reference, amount: x.amount.toFixed(scale), balance: x.balance ? x.balance.toFixed(scale) : null, duplicate: x.duplicate })),
       newCount: r.fresh.length,
       duplicateCount: r.rows.length - r.fresh.length,
       moneyIn: r.fresh.filter((x) => x.amount.gt(0)).reduce((s, x) => s.plus(x.amount), new D(0)).toFixed(scale),
@@ -165,6 +174,7 @@ export class BankingService {
           lastDate: toDbDate(dates[dates.length - 1]),
           importedById: actor.id,
           createdAt: new Date(),
+          balanceBreaks: balanceCheck ? balanceCheck.breaks.map((b) => ({ row: b.row, previousRow: b.previousRow, date: b.date, previousDate: b.previousDate, gap: b.gap })) : null,
       });
       await this.moved.createMany(tx, BANK_LINES, org.id, r.fresh.map((x) => ({
           accountId,
@@ -173,6 +183,7 @@ export class BankingService {
           description: x.description,
           reference: x.reference,
           amount: x.amount.toFixed(),
+          balance: x.balance ? x.balance.toFixed() : null,
           fingerprint: x.fingerprint,
           status: 'UNMATCHED',
           excludedReason: null,
@@ -186,7 +197,7 @@ export class BankingService {
         action: 'bank.statement_imported',
         entityType: 'bank_statement_import',
         entityId: imp.id,
-        data: { accountId, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount },
+        data: { accountId, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount, balanceBreaks: balanceCheck ? balanceCheck.breaks.length : null },
       });
       return { imported: true, importId: imp.id, ...preview(r) };
     });
@@ -195,7 +206,11 @@ export class BankingService {
   async listImports(org: BankOrg, accountId: string) {
     await this.bankAccount(this.prisma, org.id, accountId);
     const rows = await this.prisma.bankStatementImport.findMany({ where: { orgId: org.id, accountId }, orderBy: { createdAt: 'desc' }, take: 100 });
+    const breaks = new Map((await runInOrg(org.id, () => this.store.collection(bankStatementImports).find({ id: { $in: rows.map((r) => r.id) } }, { projection: { id: 1, balanceBreaks: 1 } }))).map((d) => [d.id, d.balanceBreaks ?? null]));
+    const scale = minorUnits(org.functionalCurrency);
     return rows.map((i) => ({
+      /** Null when the file had no balance column. */
+      balanceBreaks: breaks.get(i.id)?.map((b) => ({ ...b, gap: new D(b.gap).toFixed(scale) })) ?? null,
       id: i.id,
       fileName: i.fileName,
       lineCount: i.lineCount,

@@ -80,6 +80,8 @@ export interface StatementMapping {
   delimiter?: ',' | ';' | '\t';
   /** When the bank shows money out as positive in a single amount column. */
   invertAmount?: boolean;
+  /** The running balance after each line, when the statement has one: used to find missing lines. */
+  balance?: number | null;
 }
 
 export interface ParsedStatementLine {
@@ -88,6 +90,8 @@ export interface ParsedStatementLine {
   description: string;
   reference: string | null;
   amount: Dec;
+  /** The statement's running balance after this line, when the file has a balance column. */
+  balance?: Dec | null;
 }
 
 export class StatementImportError extends Error {
@@ -167,7 +171,9 @@ export function parseStatement(text: string, mapping: StatementMapping, currency
       assertCurrencyPrecision(amount, currency);
       const description = cell(r, mapping.description).replace(/\s+/g, ' ');
       if (!description) throw new Error('description is empty');
-      lines.push({ row: rowNo, date, description: description.slice(0, 500), reference: cell(r, mapping.reference).slice(0, 100) || null, amount });
+      const balance = mapping.balance === undefined || mapping.balance === null ? null : parseStatementAmount(cell(r, mapping.balance));
+      if (balance) assertCurrencyPrecision(balance, currency);
+      lines.push({ row: rowNo, date, description: description.slice(0, 500), reference: cell(r, mapping.reference).slice(0, 100) || null, amount, balance });
     } catch (e) {
       issues.push(`Row ${rowNo}: ${(e as Error).message}`);
     }
@@ -176,6 +182,54 @@ export function parseStatement(text: string, mapping: StatementMapping, currency
   if (lines.length === 0) throw new StatementImportError(['The file has no statement lines']);
   if (lines.length > 5000) throw new StatementImportError(['A file can hold at most 5,000 lines; split it']);
   return lines;
+}
+
+/** A place where the statement's running balance does not follow from the lines: something is missing or extra between them. */
+export interface BalanceBreak {
+  /** The row whose balance is checked, and the row before it in date order. */
+  row: number;
+  previousRow: number;
+  date: string;
+  previousDate: string;
+  /** The previous balance plus this line. */
+  expected: Dec;
+  /** The balance the statement shows after this line. */
+  shown: Dec;
+  /** shown − expected: money in (positive) or out (negative) that no line in the file accounts for. */
+  gap: Dec;
+}
+
+export interface BalanceCheck {
+  /** Lines that carry a balance. */
+  checked: number;
+  /** The file's order, worked out from which reading makes the balances follow. */
+  order: 'OLDEST_FIRST' | 'NEWEST_FIRST' | null;
+  breaks: BalanceBreak[];
+}
+
+/**
+ * Line-level check for missing transactions (BANK-021): with a running balance column, each
+ * line's balance must equal the one before plus its amount. Where it does not, lines are missing
+ * (or doubled) between the two rows, and the gap is the amount unaccounted for. Banks list oldest
+ * or newest first; the order with fewer breaks is taken (oldest first on a tie).
+ */
+export function balanceBreaks(lines: readonly Pick<ParsedStatementLine, 'row' | 'date' | 'amount' | 'balance'>[]): BalanceCheck {
+  const withBalance = lines.filter((l) => l.balance != null);
+  if (withBalance.length < 2) return { checked: withBalance.length, order: null, breaks: [] };
+  const walk = (seq: typeof lines) => {
+    const out: BalanceBreak[] = [];
+    for (let i = 1; i < seq.length; i++) {
+      const prev = seq[i - 1];
+      const cur = seq[i];
+      if (prev.balance == null || cur.balance == null) continue;
+      const expected = prev.balance.plus(cur.amount);
+      if (!expected.eq(cur.balance)) out.push({ row: cur.row, previousRow: prev.row, date: cur.date, previousDate: prev.date, expected, shown: cur.balance, gap: cur.balance.minus(expected) });
+    }
+    return out;
+  };
+  const forward = walk(lines);
+  const backward = walk([...lines].reverse());
+  return backward.length < forward.length ? { checked: withBalance.length, order: 'NEWEST_FIRST', breaks: backward } : { checked: withBalance.length, order: 'OLDEST_FIRST', breaks: forward };
 }
 
 /**

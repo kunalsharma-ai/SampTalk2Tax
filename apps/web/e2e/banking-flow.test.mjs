@@ -16,10 +16,11 @@ const todayIso = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 1
 const day = (n) => new Date(Date.parse(`${todayIso}T00:00:00Z`) - (10 - n) * 86_400_000).toISOString().slice(0, 10);
 const dmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const statement = [
-  'Txn Date,Narration,Chq/Ref No,Withdrawal Amt,Deposit Amt',
-  `${dmy(day(1))},NEFT HARBOUR CAFE,UTR778812,,"11,800.00"`,
-  `${dmy(day(2))},BANK CHARGES OCT,,500.00,`,
-  `${dmy(day(3))},DUPLICATE ENTRY FROM BANK,,999.00,`,
+  'Txn Date,Narration,Chq/Ref No,Withdrawal Amt,Deposit Amt,Closing Balance',
+  `${dmy(day(1))},NEFT HARBOUR CAFE,UTR778812,,"11,800.00","1,11,800.00"`,
+  `${dmy(day(2))},BANK CHARGES OCT,,500.00,,"1,11,300.00"`,
+  // The bank's balance shows 2,000.00 more went out than the lines here: a line is missing.
+  `${dmy(day(3))},DUPLICATE ENTRY FROM BANK,,999.00,,"1,08,301.00"`,
 ].join('\n');
 
 /** Setup calls go through the same proxy the app uses. */
@@ -71,8 +72,14 @@ test('a CSV statement is previewed with detected columns, then imported', async 
   assert.equal(await page.getByLabel('Amounts are in').inputValue(), 'split');
   assert.equal(await page.getByLabel('Description column').locator('option:checked').textContent(), 'Narration');
   assert.equal(await page.getByLabel('Money out column').locator('option:checked').textContent(), 'Withdrawal Amt');
+  assert.equal(await page.getByLabel('Balance column').locator('option:checked').textContent(), 'Closing Balance');
   await page.getByRole('button', { name: 'Preview' }).click();
   await page.getByRole('heading', { name: '3 new lines' }).waitFor();
+  // The running balance shows a line missing between the second and third rows.
+  await page.getByText('The running balance breaks in 1 place: lines may be missing from this file').waitFor();
+  assert.match(await page.getByRole('list', { name: 'Balance breaks' }).textContent(), /Between row 3 .* and row 4 .*1,10,301\.00.*1,08,301\.00.*2,000\.00 went out without a line/);
+  await page.getByRole('row', { name: /DUPLICATE ENTRY FROM BANK/ }).getByText('Gap before').waitFor();
+  if (process.env.E2E_SCREENSHOTS) await page.screenshot({ path: `${process.env.E2E_SCREENSHOTS}/statement-gap-preview.png` });
   await page.getByRole('button', { name: 'Import 3 lines' }).click();
   await page.waitForURL(/\/banking\/[0-9a-f-]{36}$/);
   await page.getByRole('cell', { name: 'NEFT HARBOUR CAFE Ref UTR778812' }).waitFor();
