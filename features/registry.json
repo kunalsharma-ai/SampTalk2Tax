@@ -6264,12 +6264,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/tax-engine/src/india/calendar.ts",
-        "apps/api/test/compliance.e2e.test.ts"
+        "packages/tax-engine/src/india/advance-tax.ts",
+        "packages/tax-engine/test/advance-tax.test.ts",
+        "apps/api/test/advance-tax.e2e.test.ts › works out the tax, credits and instalments from a saved plan",
+        "apps/web/e2e/advance-tax-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/tax/advance-tax/page.tsx",
+        "docs/ADVANCE_TAX.md"
       ],
-      "notes": "Advance tax instalment dates (15/45/75/100%) are tracked and can be marked paid with the challan. The tax itself is not calculated."
+      "notes": "Year's tax for companies, firms and LLPs from book profit (annualised) or an estimate plus adjustments, with surcharge, marginal relief and cess; TDS credits and payments from chosen accounts; four instalments with what was due and paid. Not individuals, presumptive income, MAT or interest on short instalments. Rates not yet reviewed by a tax professional."
     },
     {
       "id": "TAX-022",

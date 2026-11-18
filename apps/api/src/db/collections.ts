@@ -9,6 +9,7 @@ import { financialTags } from './collections/financial-tags';
 import { billCheckReviews } from './collections/bill-checks';
 import { accountReconciliations } from './collections/account-reconciliations';
 import { costAllocationRules, costAllocationRuns } from './collections/cost-allocations';
+import { advanceTaxPlans } from './collections/advance-tax';
 import { journalApprovalPolicies, journalApprovals } from './collections/journal-approvals';
 import { accounts, fiscalPeriods } from './collections/chart';
 import { journalEntries } from './collections/ledger';
@@ -22,4 +23,4 @@ import { invitations, memberships, organizations } from './collections/tenancy';
  * can reach it, and before a $lookup or $unionWith may read it. Modules add their
  * definitions as they move from PostgreSQL (see docs/MONGODB.md › Order of the move).
  */
-export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, billCheckReviews, accountReconciliations, costAllocationRules, costAllocationRuns, journalApprovalPolicies, journalApprovals, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, ...MIRRORED.map((m) => m.def)];
+export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, billCheckReviews, accountReconciliations, costAllocationRules, costAllocationRuns, journalApprovalPolicies, journalApprovals, advanceTaxPlans, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, ...MIRRORED.map((m) => m.def)];
