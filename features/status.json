@@ -1159,11 +1159,17 @@
       "notes": "Evidence files are linked to the records they support with a SHA-256 checksum. Audit-event-level evidence references are not modelled yet."
     },
     "SEC-036": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/attachments-approvals.e2e.test.ts"
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/api/src/journal-approvals/journal-approvals.service.ts",
+        "apps/api/src/db/collections/journal-approvals.ts",
+        "apps/api/test/journal-approvals.e2e.test.ts",
+        "apps/web/src/components/journals/journal-approval.tsx",
+        "apps/web/e2e/journal-approvals-flow.test.mjs",
+        "docs/JOURNAL_APPROVALS.md"
       ],
-      "notes": "Human approval gate for posting covered sales and purchase documents. Not yet applied to journals, payments or AI actions (no AI actions exist)."
+      "notes": "Human approval before posting: sales and purchase documents by amount (approval rules), manual journals by amount (approved by someone else, for the draft exactly as it is), payment batches and AI-proposed close adjustments. Not held: pay runs and journals from template schedules."
     },
     "DS-014": {
       "status": "Implemented",

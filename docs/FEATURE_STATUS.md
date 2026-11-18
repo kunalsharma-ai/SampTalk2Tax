@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 64 |
+| Implementing | 63 |
 | Implemented | 34 |
-| Tested | 449 |
+| Tested | 450 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -5687,10 +5687,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SEC-036 — Human approval gates
 
 - Module: Security and enterprise governance
-- Status: **Implementing**
-- Notes: Human approval gate for posting covered sales and purchase documents. Not yet applied to journals, payments or AI actions (no AI actions exist).
+- Status: **Tested**
+- Notes: Human approval before posting: sales and purchase documents by amount (approval rules), manual journals by amount (approved by someone else, for the draft exactly as it is), payment batches and AI-proposed close adjustments. Not held: pay runs and journals from template schedules.
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts
+  - apps/api/src/journal-approvals/journal-approvals.service.ts
+  - apps/api/src/db/collections/journal-approvals.ts
+  - apps/api/test/journal-approvals.e2e.test.ts
+  - apps/web/src/components/journals/journal-approval.tsx
+  - apps/web/e2e/journal-approvals-flow.test.mjs
+  - docs/JOURNAL_APPROVALS.md
 
 ### UX-002 — Create organization
 
