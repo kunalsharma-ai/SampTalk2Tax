@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 52 |
+| Implementing | 51 |
 | Implemented | 34 |
-| Tested | 461 |
+| Tested | 462 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1881,11 +1881,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### PAY-011 — Leave-related adjustments
 
 - Module: Payroll and workforce finance
-- Status: **Implementing**
-- Notes: Loss-of-pay days (whole or half) per payslip, and pro-rating for joining or leaving mid-month. No leave balances or leave module.
+- Status: **Tested**
+- Notes: Loss-of-pay days per payslip and pro-rating for joiners and leavers. Leave module: paid and unpaid leave types with a yearly allowance (April-March), leave recorded per month with balance checks, unpaid leave carried to the month's payslip as loss of pay (drafts update at once), posted months closed. Not yet: carry-forward, accrual by month, encashment, holiday calendar, employee self-service requests.
 - Evidence:
+  - apps/api/src/payroll/leave.service.ts
+  - apps/api/test/payroll-leave.e2e.test.ts
+  - apps/web/e2e/payroll-leave-flow.test.mjs
   - packages/tax-engine/test/payroll.test.ts
-  - apps/api/test/payroll.e2e.test.ts
   - apps/web/e2e/payroll-flow.test.mjs
 
 ### PAY-016 — Payroll journals

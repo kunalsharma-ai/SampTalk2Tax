@@ -314,7 +314,7 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 | PAY-008 |  | capability | Commissions | Not started |
 | PAY-009 |  | capability | Reimbursements | Implementing |
 | PAY-010 |  | capability | Overtime | Not started |
-| PAY-011 |  | capability | Leave-related adjustments | Implementing |
+| PAY-011 |  | capability | Leave-related adjustments | Tested |
 | PAY-012 |  | capability | Attendance integration | Not started |
 | PAY-013 |  | capability | Employee advances | Not started |
 | PAY-014 |  | capability | Loans | Not started |

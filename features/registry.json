@@ -7497,13 +7497,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
+        "apps/api/src/payroll/leave.service.ts",
+        "apps/api/test/payroll-leave.e2e.test.ts",
+        "apps/web/e2e/payroll-leave-flow.test.mjs",
         "packages/tax-engine/test/payroll.test.ts",
-        "apps/api/test/payroll.e2e.test.ts",
         "apps/web/e2e/payroll-flow.test.mjs"
       ],
-      "notes": "Loss-of-pay days (whole or half) per payslip, and pro-rating for joining or leaving mid-month. No leave balances or leave module."
+      "notes": "Loss-of-pay days per payslip and pro-rating for joiners and leavers. Leave module: paid and unpaid leave types with a yearly allowance (April-March), leave recorded per month with balance checks, unpaid leave carried to the month's payslip as loss of pay (drafts update at once), posted months closed. Not yet: carry-forward, accrual by month, encashment, holiday calendar, employee self-service requests."
     },
     {
       "id": "PAY-012",
