@@ -87,6 +87,8 @@ test('an owner consolidates two companies with an elimination', async () => {
   const ws = page.getByRole('table', { name: 'Consolidation worksheet' });
   await ws.waitFor();
   const row1250 = ws.getByRole('row').filter({ hasText: 'Due from group companies' });
+  // The worksheet can first show the figures from before the rule was added; wait for the elimination.
+  await row1250.getByText('-₹40,000.00').waitFor();
   assert.match(await row1250.innerText(), /40,000\.00[\s\S]*-₹40,000\.00/);
   await page.getByRole('list', { name: 'Eliminations' }).getByText('Agrees').waitFor();
   assert.match(await ws.locator('tfoot').innerText(), /^Total\s+0\.00\s+0\.00\s+0\.00\s+0\.00$/);
