@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { smtpRetryable } from '@talk2tax/accounting-engine';
-import { IntegrationsService, MailSetupError } from '../integrations/integrations.service';
+import { IntegrationsService, MailSetupError, type ResolvedMail } from '../integrations/integrations.service';
 import { brandedEmailAttachments, brandedEmailHtml } from './branded-email';
 
 export interface EmailMessage {
@@ -48,8 +48,16 @@ export class MailerService {
   }
 
   async send(orgId: string, m: EmailMessage): Promise<EmailResult> {
+    return this.deliver(await this.integrations.mail(orgId), m);
+  }
+
+  /** Talk2Tax's own message to a person (a security alert), through the server's mail server only. */
+  async sendAsTalk2Tax(m: EmailMessage): Promise<EmailResult> {
+    return this.deliver(this.integrations.platformMail(), m);
+  }
+
+  private async deliver(mail: ResolvedMail, m: EmailMessage): Promise<EmailResult> {
     const started = Date.now();
-    const mail = await this.integrations.mail(orgId);
     if (mail.source === 'NONE') return { ok: false, status: null, retryable: false, error: EMAIL_NOT_SET_UP, responseSnippet: null, durationMs: 0 };
     const ms = mail.timeoutMs;
     let transport: Awaited<ReturnType<typeof mail.transport>> | null = null;

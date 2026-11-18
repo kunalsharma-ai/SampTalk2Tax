@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
 import { MfaService } from './mfa.service';
 import { AuthUser, CurrentSession, CurrentUser, Public } from './decorators';
 import { AuthRateLimit } from './rate-limit';
+import { DevicesService } from './devices.service';
 import { ClientMeta, SessionsService } from './sessions.service';
 
 const RegisterBody = z.object({
@@ -20,7 +21,7 @@ const RegisterBody = z.object({
   password: z.string().min(1).max(256),
 });
 const LoginBody = z.object({ email: z.email().max(254), password: z.string().min(1).max(256) });
-const LoginCodeBody = z.object({ challengeToken: z.string().min(1).max(200), code: z.string().trim().min(6).max(20) });
+const LoginCodeBody = z.object({ challengeToken: z.string().min(1).max(200), code: z.string().trim().min(6).max(20), trustDevice: z.boolean().optional() });
 const MfaSetupBody = z.object({ password: z.string().min(1).max(256) });
 const MfaCodeBody = z.object({ code: z.string().trim().min(6).max(20) });
 const MfaDisableBody = z.object({ password: z.string().min(1).max(256), code: z.string().trim().min(6).max(20) });
@@ -37,7 +38,8 @@ const PasswordBody = z.object({ currentPassword: z.string().min(1).max(256), new
 
 function meta(req: Request): ClientMeta {
   const ua = req.headers['user-agent'];
-  return { ip: req.ip ?? null, userAgent: typeof ua === 'string' ? ua : null };
+  const device = req.headers['x-t2t-device'];
+  return { ip: req.ip ?? null, userAgent: typeof ua === 'string' ? ua : null, deviceKey: typeof device === 'string' ? device : null };
 }
 
 @ApiTags('auth')
@@ -48,6 +50,7 @@ export class AuthController {
     private readonly sessions: SessionsService,
     private readonly store: DocumentStoreService,
     private readonly mfa: MfaService,
+    private readonly devices: DevicesService,
   ) {}
 
   @Public()
@@ -192,6 +195,34 @@ export class AuthController {
   @HttpCode(204)
   async revokeSession(@CurrentUser() user: AuthUser, @Param('sessionId', new ParseUUIDPipe()) sessionId: string) {
     await this.sessions.revokeOne(user.id, sessionId);
+  }
+
+  /** The browsers this person has signed in from, with the one in use marked. */
+  @Get('devices')
+  @ApiBearerAuth()
+  listDevices(@CurrentUser() user: AuthUser, @CurrentSession() sid: string) {
+    return this.devices.list(user.id, sid);
+  }
+
+  /** Trust the device in use for 30 days: signing in there skips the two-step code. */
+  @Post('devices/current/trust')
+  @ApiBearerAuth()
+  @HttpCode(200)
+  trustDevice(@CurrentUser() user: AuthUser, @CurrentSession() sid: string) {
+    return this.devices.trustCurrent(user.id, sid);
+  }
+
+  @Delete('devices/:deviceId/trust')
+  @ApiBearerAuth()
+  untrustDevice(@CurrentUser() user: AuthUser, @CurrentSession() sid: string, @Param('deviceId', new ParseUUIDPipe()) deviceId: string) {
+    return this.devices.untrust(user.id, deviceId, sid);
+  }
+
+  /** Forget a device: sign it out and treat it as new next time. */
+  @Delete('devices/:deviceId')
+  @ApiBearerAuth()
+  forgetDevice(@CurrentUser() user: AuthUser, @CurrentSession() sid: string, @Param('deviceId', new ParseUUIDPipe()) deviceId: string) {
+    return this.devices.forget(user.id, deviceId, sid);
   }
 
   /** Sign out every other device. */

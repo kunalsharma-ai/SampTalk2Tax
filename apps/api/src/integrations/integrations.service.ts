@@ -118,6 +118,14 @@ export class IntegrationsService {
     return { model: null, modelName: (r?.settings as unknown as AiSettings | undefined)?.model || this.config.COPILOT_MODEL, source: 'NONE' };
   }
 
+/** The server's own mail server only: for Talk2Tax's messages to a person, not sent for an organisation. */
+  platformMail(): ResolvedMail {
+    const timeoutMs = this.config.SMTP_TIMEOUT_SECONDS * 1000;
+    const server = serverMail(this.config);
+    if (server) return { source: 'SERVER', from: server.from, replyTo: null, timeoutMs, transport: async () => createTransport({ ...server.options, connectionTimeout: timeoutMs, greetingTimeout: timeoutMs, socketTimeout: timeoutMs }) };
+    return { source: 'NONE', from: null };
+  }
+
   async mail(orgId: string): Promise<ResolvedMail> {
     const timeoutMs = this.config.SMTP_TIMEOUT_SECONDS * 1000;
     const r = await this.row(orgId, 'EMAIL_SMTP');
