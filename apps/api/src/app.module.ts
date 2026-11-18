@@ -26,6 +26,8 @@ import { TaxNoticesController } from './tax-notices/tax-notices.controller';
 import { TaxNoticesService } from './tax-notices/tax-notices.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
+import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
+import { CostAllocationsService } from './cost-allocations/cost-allocations.service';
 import { FinancialTagsController } from './financial-tags/financial-tags.controller';
 import { FinancialTagsService } from './financial-tags/financial-tags.service';
 import { BillChecksController } from './bill-checks/bill-checks.controller';
@@ -280,6 +282,7 @@ export class AppModule {
         TaxNoticesController,
         FinancialTagsController,
         AccountReconciliationsController,
+        CostAllocationsController,
         BillChecksController,
         GstController,
         WithholdingController,
@@ -402,6 +405,7 @@ export class AppModule {
         TaxNoticesService,
         FinancialTagsService,
         AccountReconciliationsService,
+        CostAllocationsService,
         BillChecksService,
         GstService,
         WithholdingService,

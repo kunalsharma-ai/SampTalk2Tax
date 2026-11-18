@@ -467,6 +467,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Open each record and check the spending is not counted twice. One receipt on two expense claims or one vendor invoice on two bills is serious; a remittance advice on an invoice and its receipt is usually fine. Remove the file from the wrong record, with the reason, and it drops off the list.',
     where: 'Governance. Files are compared by their SHA-256 fingerprint, so a rescanned or edited copy is not found. Only records you may see are listed. Each record\'s Attachments card also names the other records holding the same file.',
   },
+  'cost-allocations': {
+    what: 'Rules that spread shared costs, such as rent, power or software, from where they were booked to the departments (cost centres) that use them.',
+    how: 'Add a rule: the expense accounts, where the cost sits now (often no department) and each department\'s share, adding up to 100 percent. Pick a period, preview, then post. Each rule posts once per period; reverse a run to post it again.',
+    where: 'Accounting, usually during the Month-end close. The journal is dated the last day of the period and shows in Profit by department. Anyone who reads reports sees rules and runs; accounts.manage writes rules; close.manage with journals.post runs them.',
+  },
   'financial-tags': {
     what: 'Tags you define to report by, such as Location (an office, store or branch), Business unit or Sales channel, and their values.',
     how: 'Add a tag from a preset or name your own, then add its values. Pick a value on journal lines; a line using a defined tag must use one of its values in use. Switch a value off to stop new lines using it.',

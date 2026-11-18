@@ -2510,7 +2510,7 @@
       "notes": "Projects: code, name, customer, start and end dates, active; tag any journal or document line; profit and loss by project. Not built: project budgets, time or billing by project."
     },
     "GL-024": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/dimensions.ts",
         "packages/accounting-engine/test/dimensions.test.ts",
@@ -2521,9 +2521,16 @@
         "apps/web/src/components/dimensions/line-dimensions.tsx",
         "apps/web/e2e/dimensions-flow.test.mjs",
         "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
-        "docs/FINANCIAL_DIMENSIONS.md"
+        "docs/FINANCIAL_DIMENSIONS.md",
+        "packages/accounting-engine/src/cost-allocation.ts",
+        "packages/accounting-engine/test/cost-allocation.test.ts",
+        "apps/api/src/cost-allocations/cost-allocations.service.ts",
+        "apps/api/test/cost-allocations.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/cost-allocations/page.tsx",
+        "apps/web/e2e/cost-allocations-flow.test.mjs",
+        "docs/COST_ALLOCATION.md"
       ],
-      "notes": "Departments serve as cost centres: expenses tagged to a department are its costs and the report shows them per department. Not built: a separate cost centre hierarchy, cost allocation rules, cost centre budgets."
+      "notes": "Departments are the cost centres: costs tagged to a department are its costs and Profit by department shows them. Cost allocation rules spread shared costs (from a department or from untagged costs) to departments by fixed percentages, posted once per period and reversible. Not built: a cost centre hierarchy, budgets per cost centre, allocation by changing drivers."
     },
     "RPT-014": {
       "status": "Tested",
