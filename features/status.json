@@ -85,11 +85,13 @@
       "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     "DASH-040": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "apps/web/test/charts.test.ts",
+        "apps/web/src/components/twin/twin-chart.tsx",
+        "apps/web/e2e/recovery-flow.test.mjs"
       ],
-      "notes": "Dashboard chart has a matching data table; other charts are not built yet."
+      "notes": "Every chart is a labelled image that names the table holding its figures (or is decorative next to figures shown as text). The month-end cash chart carries its own table on pages without one. A unit test checks every chart in the app."
     },
     "DASH-041": {
       "status": "Implemented",
@@ -1000,12 +1002,14 @@
       "notes": "Reconciliations are never deleted; undo keeps the record and reason; every step is in the audit trail."
     },
     "BANK-017": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/src/bank.ts",
-        "packages/accounting-engine/test/bank.test.ts"
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/api/test/banking.e2e.test.ts › prefers the account similar lines were matched to, and says why",
+        "apps/api/test/banking.e2e.test.ts › counts an undone match against the account, so the date decides again",
+        "apps/web/e2e/bank-match-learning-flow.test.mjs"
       ],
-      "notes": "Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI."
+      "notes": "Suggestions learn from past matches on the account: a statement line that shares name words with lines matched before ranks the same contact (payment) or account (other side of the entry) first and says so; an undone match counts against it. Shown under What matching learned. No AI; same amount and the 14-day window still apply."
     },
     "BANK-018": {
       "status": "Tested",
@@ -1098,12 +1102,13 @@
       "notes": "Receipts attach to documents, payments and journal entries."
     },
     "DOC-006": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/attachments-approvals.e2e.test.ts",
-        "POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)"
+        "apps/api/test/banking.e2e.test.ts",
+        "apps/web/e2e/bank-line-files-flow.test.mjs",
+        "apps/web/src/components/banking/account-page.tsx"
       ],
-      "notes": "Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*."
+      "notes": "Bank advices and receipts are attached to statement lines from the bank account screen (Files button per line, with a count); removal needs a reason. Statement CSV import itself is BANK-*."
     },
     "DOC-018": {
       "status": "Tested",
@@ -1526,21 +1531,26 @@
       "notes": "Employee PF, ESI, Maharashtra professional tax and TDS on salary (new regime). No voluntary deductions, loans or advances."
     },
     "PAY-007": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/payroll.e2e.test.ts",
+        "packages/tax-engine/src/india/bonus.ts",
+        "packages/tax-engine/test/bonus.test.ts",
+        "apps/api/test/payroll-bonus.e2e.test.ts",
+        "apps/web/e2e/payroll-bonus-flow.test.mjs",
         "apps/web/e2e/payroll-flow.test.mjs"
       ],
-      "notes": "Bonuses can be added as one-off earnings on a payslip and are taxed in the month. No statutory bonus (Payment of Bonus Act) calculation."
+      "notes": "One-off bonuses on a payslip, taxed in the month. Statutory bonus (Code on Wages 2019 Ch. IV) worked out from posted payslips per April-March year (rate 8.33-20%, eligibility amount and calculation ceiling as inputs, 30-day and Rs 100 minimums) and added to a draft run as an advance or the balance. Allocable surplus and set-on/set-off not modelled. Not reviewed by a payroll professional."
     },
     "PAY-011": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
+        "apps/api/src/payroll/leave.service.ts",
+        "apps/api/test/payroll-leave.e2e.test.ts",
+        "apps/web/e2e/payroll-leave-flow.test.mjs",
         "packages/tax-engine/test/payroll.test.ts",
-        "apps/api/test/payroll.e2e.test.ts",
         "apps/web/e2e/payroll-flow.test.mjs"
       ],
-      "notes": "Loss-of-pay days (whole or half) per payslip, and pro-rating for joining or leaving mid-month. No leave balances or leave module."
+      "notes": "Loss-of-pay days per payslip and pro-rating for joiners and leavers. Leave module: paid and unpaid leave types with a yearly allowance (April-March), leave recorded per month with balance checks, unpaid leave carried to the month's payslip as loss of pay (drafts update at once), posted months closed. Not yet: carry-forward, accrual by month, encashment, holiday calendar, employee self-service requests."
     },
     "PAY-016": {
       "status": "Tested",
@@ -4834,9 +4844,10 @@
         "apps/web/test/format.test.ts",
         "apps/web/test/i18n.test.ts",
         "apps/web/e2e/display-preferences-flow.test.mjs",
-        "docs/LANGUAGES_AND_FORMATS.md"
+        "docs/LANGUAGES_AND_FORMATS.md",
+        "packages/ui/src/text.tsx"
       ],
-      "notes": "Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator."
+      "notes": "Hindi covers the navigation, header, roles, the preferences page, and now every page title and description, table heading, field label, button, dialog and card title that matches a catalogue entry (about 180 common words such as Status, Amount, Date, Save, Cancel). Text built with numbers or names (\"New invoice\", status badges, tabs) still falls back to English. Translations not yet reviewed by a professional translator."
     },
     "I18N-015": {
       "status": "Tested",

@@ -467,6 +467,8 @@ export interface StatementLine {
   reconciled: boolean;
   matches: (LedgerLink & { id: string; origin: 'EXISTING' | 'CREATED_ENTRY' | 'CREATED_PAYMENT' })[];
   suggestion: (LedgerLink & { score: number; reasons: string[]; unique: boolean }) | null;
+  /** Files attached to the line (not removed). */
+  attachments: number;
 }
 
 export interface LedgerCandidate {
@@ -908,6 +910,8 @@ export interface PayslipData {
   daysInMonth: number;
   daysOutside: string;
   lopDays: string;
+  /** Unpaid leave recorded for the month (PAY-011). */
+  leaveLopDays: string;
   paidDays: string;
   oneOffs: { name: string; kind: PayComponentKind; amount: string }[];
   earnings: { code: string; name: string; kind: PayComponentKind; amount: string }[];

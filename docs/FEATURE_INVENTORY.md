@@ -228,7 +228,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-014 |  | capability | Bank balance monitoring | Tested |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |
 | BANK-016 | AI Enhancements | capability | Intelligent transaction classification | Integration pending |
-| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Implementing |
+| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Tested |
 | BANK-018 | AI Enhancements | capability | Duplicate transaction detection | Tested |
 | BANK-019 | AI Enhancements | capability | Suspicious transaction monitoring | Not started |
 | BANK-020 | AI Enhancements | capability | Reconciliation exception analysis | Not started |
@@ -310,11 +310,11 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 | PAY-004 |  | capability | Payroll calendars | Implementing |
 | PAY-005 |  | capability | Earnings | Tested |
 | PAY-006 |  | capability | Deductions | Tested |
-| PAY-007 |  | capability | Bonuses | Implementing |
+| PAY-007 |  | capability | Bonuses | Tested |
 | PAY-008 |  | capability | Commissions | Not started |
 | PAY-009 |  | capability | Reimbursements | Implementing |
 | PAY-010 |  | capability | Overtime | Not started |
-| PAY-011 |  | capability | Leave-related adjustments | Implementing |
+| PAY-011 |  | capability | Leave-related adjustments | Tested |
 | PAY-012 |  | capability | Attendance integration | Not started |
 | PAY-013 |  | capability | Employee advances | Not started |
 | PAY-014 |  | capability | Loans | Not started |
@@ -858,7 +858,7 @@ Part 25 · M2 · priority P2 · depends on: AIGW
 | DOC-003 |  | capability | Receipts | Tested |
 | DOC-004 |  | capability | Purchase orders | Not started |
 | DOC-005 |  | capability | Contracts | Not started |
-| DOC-006 |  | capability | Bank statements | Implementing |
+| DOC-006 |  | capability | Bank statements | Tested |
 | DOC-007 |  | capability | Tax notices | Not started |
 | DOC-008 |  | capability | Financial statements | Not started |
 | DOC-009 |  | capability | Payroll documents | Not started |
@@ -974,7 +974,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-037 | Advanced Visualization | capability | Financial dependency graphs | Not started |
 | DASH-038 | Advanced Visualization | rule | Support animated transitions and motion-responsive interactions | Not started |
 | DASH-039 | Advanced Visualization | rule | Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering | Not started |
-| DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Implementing |
+| DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Tested |
 | DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Implemented |
 | DASH-042 | Required Dashboards | capability | Global Super Admin | Not started |
 | DASH-043 | Required Dashboards | capability | Tenant Organization Admin | Not started |

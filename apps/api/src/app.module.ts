@@ -95,6 +95,7 @@ import { PeriodsService } from './periods/periods.service';
 import { ReportsController } from './reports/reports.controller';
 import { ReportsService } from './reports/reports.service';
 import { PayrollController } from './payroll/payroll.controller';
+import { LeaveService } from './payroll/leave.service';
 import { PayrollService } from './payroll/payroll.service';
 import { BudgetsController } from './budgets/budgets.controller';
 import { BudgetsService } from './budgets/budgets.service';
@@ -422,6 +423,7 @@ export class AppModule {
         GstService,
         WithholdingService,
         PayrollService,
+        LeaveService,
         ComplianceService,
         BudgetsService,
         CashFlowService,
