@@ -4,7 +4,7 @@
  * and the section order in the designer and saves; writes an HTML template and sees unsafe code
  * refused; draws and saves a signature; then prints a posted invoice with each template, sets
  * one on the invoice, signs it and withdraws the signature. Real Next.js app → real API → real
- * PostgreSQL. The rendered invoice is read inside its sandboxed frame.
+ * MongoDB. The rendered invoice is read inside its sandboxed frame.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

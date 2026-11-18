@@ -2,7 +2,7 @@
  * Browser end-to-end test for languages and regional formats: a person switches the interface to
  * Hindi with international numbers, ISO dates and their own time zone, sees the navigation, an
  * invoice list and the account page change, the owner changes the organisation's time zone, and
- * the person switches back to English. Real Next.js app → real API → real PostgreSQL.
+ * the person switches back to English. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

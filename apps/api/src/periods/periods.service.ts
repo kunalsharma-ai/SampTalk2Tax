@@ -7,7 +7,7 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { runInOrg } from '../common/tenant-context';
 import { fiscalPeriods, type FiscalPeriodDoc } from '../db/collections/chart';
-import { PostgresMirrorService, postgresWithMongo, thenInPostgres } from '../db/postgres-mirror.service';
+import { transactionWithUndo, thenOrUndo } from '../common/undo';
 import { lockRow } from '../db/locks';
 
 /**
@@ -20,7 +20,6 @@ export class PeriodsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
   ) {}
 
   private periods<T>(orgId: string, fn: (c: ScopedCollection<FiscalPeriodDoc>) => Promise<T>) {
@@ -63,11 +62,10 @@ export class PeriodsService {
       throw e;
     }
     const ids = created.map((p) => p.id);
-    return thenInPostgres(
+    return thenOrUndo(
       created.map(serialize),
       () =>
         this.prisma.$transaction(async (tx) => {
-          await this.mirror.fiscalPeriods(ids, tx);
           await this.audit.append(tx, { orgId, actorId, action: 'fiscal_year.created', entityType: 'fiscal_year', entityId: String(fiscalYear), data: { fiscalYear, periods: created.length } });
         }),
       () => this.removeFiscalYear(orgId, ids),
@@ -87,7 +85,6 @@ export class PeriodsService {
     );
     if (r.modified === 0) throw new ConflictException({ error: 'NO_CHANGE', message: `Period is already ${to}` });
     undoLater(() => this.periods(orgId, (c) => c.updateOne({ id: periodId, status: to }, { $set: { status: from, lockedAt: before?.lockedAt ?? null, lockedById: before?.lockedById ?? null } })));
-    await this.mirror.fiscalPeriods([periodId], tx);
     return (await this.periods(orgId, (c) => c.findOne({ id: periodId })))!;
   }
 
@@ -96,7 +93,7 @@ export class PeriodsService {
    * waits for any posting that holds the period FOR SHARE, and no new posting can slip in.
    */
   async setLocked(orgId: string, periodId: string, actorId: string, locked: boolean) {
-    return postgresWithMongo(this.prisma, async (tx, undoLater) => {
+    return transactionWithUndo(this.prisma, async (tx, undoLater) => {
       const rows = await lockRow<{ id: string }>(tx, 'fiscal_periods', periodId, orgId);
       const p = rows[0] ? await this.periods(orgId, (c) => c.findOne({ id: periodId })) : null;
       if (!p) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Period not found' });

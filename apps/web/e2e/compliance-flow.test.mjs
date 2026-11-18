@@ -3,7 +3,7 @@
  * track, registers for GST from the start of the tax year, sees May's GSTR-1 and GSTR-3B
  * for April, marks GSTR-1 filed with an ARN, voids the record, switches to QRMP in the
  * calendar settings and sees PMT-06 instead, and finds the calendar on the dashboard.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

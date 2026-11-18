@@ -3,7 +3,7 @@
  * assumption and an expected outcome, sees the outcome measured from the books, reviews it with
  * lessons learned, finds it again by searching for a word from the lessons, records a recovery
  * plan as a decision and withdraws that one with a reason.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

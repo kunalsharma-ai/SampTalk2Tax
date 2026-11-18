@@ -3,7 +3,7 @@
  * an invoice for goods over ₹50,000 shows that one is needed, the JSON for the portal is
  * downloaded with the vehicle, the e-way bill number is recorded with its validity, the
  * vehicle is changed after a breakdown, voiding is blocked until the cancellation is
- * recorded, and the register lists it. Real Next.js app → real API → real PostgreSQL.
+ * recorded, and the register lists it. Real Next.js app → real API → real MongoDB.
  * The e-way bill numbers are made up here.
  */
 import assert from 'node:assert/strict';

@@ -3,7 +3,7 @@
  * provision matrix built from the ageing, marks an invoice doubtful at its own percentage, posts
  * the provision, writes off an overdue invoice from its own page (the allowance refuses more than
  * it holds, so the rest goes to the expense), sees the invoice settled, and reverses a write-off.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

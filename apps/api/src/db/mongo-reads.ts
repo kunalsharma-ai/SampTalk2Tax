@@ -23,15 +23,11 @@ type Doc = Record<string, unknown>;
 type Store = Pick<DocumentStore, 'collection'>;
 type Field = Prisma.DMMF.Field;
 
-/** Thrown while translating: this query stays on PostgreSQL for now. */
+/** Thrown while translating: the query uses a part of the model API the data client does not answer. */
 class Untranslatable extends Error {}
 const no = (why: string): never => {
   throw new Untranslatable(why);
 };
-
-const FALLBACKS = new Map<string, number>();
-/** What still reads PostgreSQL, by model and reason, with how often it happened. */
-export const readFallbacks = () => new Map(FALLBACKS);
 
 const MODELS = new Map(Prisma.dmmf.datamodel.models.map((m) => [m.name, m]));
 const ENUM_VALUES = new Map(Prisma.dmmf.datamodel.enums.map((e) => [e.name, e.values.map((v) => v.name)]));
@@ -630,19 +626,14 @@ type Delegate = Record<string, (args?: unknown) => Promise<unknown>>;
 export const notFound = (model: string, cause = 'No record was found for a query.') =>
   new Prisma.PrismaClientKnownRequestError(`No ${model} found`, { code: 'P2025', clientVersion: Prisma.prismaVersion.client, meta: { modelName: model, cause } });
 
-/** Read operations of `info`'s model from MongoDB, falling back to `pg` for what cannot be translated yet. */
-export function mongoReadOps(pg: Delegate, info: MirrorInfo, store: Store): Record<string, (args: Doc) => Promise<unknown>> {
-  const attempt = async (op: string, args: Doc | undefined, run: () => Promise<unknown>) => {
+/** Read operations of `info`'s model from MongoDB. */
+export function mongoReadOps(info: MirrorInfo, store: Store): Record<string, (args: Doc) => Promise<unknown>> {
+  const attempt = async (op: string, _args: Doc | undefined, run: () => Promise<unknown>) => {
     try {
       return await run();
     } catch (e) {
-      if (!(e instanceof Untranslatable)) throw e;
-      // With PostgreSQL off there is nothing to fall back to.
-      if (process.env.T2T_POSTGRES === 'off') throw new Error(`${info.model}.${op} cannot be read from MongoDB: ${e.message}`);
-      const key = `${info.model}.${op}: ${e.message}`;
-      if (!FALLBACKS.has(key)) noteFallback(key);
-      FALLBACKS.set(key, (FALLBACKS.get(key) ?? 0) + 1);
-      return pg[op](args);
+      if (e instanceof Untranslatable) throw new Error(`${info.model}.${op} cannot be read from MongoDB: ${e.message}`);
+      throw e;
     }
   };
   const first = (args: Doc = {}) => findRows(store, info, { ...(args as ReadArgs), take: 1 }).then((r) => r[0] ?? null);
@@ -678,12 +669,4 @@ export function mongoReadOps(pg: Delegate, info: MirrorInfo, store: Store): Reco
         return rows.length;
       }),
   };
-}
-
-// While moving, a run can list what still reads PostgreSQL (READ_FALLBACKS_FILE=path): each
-// model, operation and reason is written once per process, when it first happens.
-function noteFallback(key: string) {
-  const file = process.env.READ_FALLBACKS_FILE;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  if (file) require('node:fs').appendFileSync(file, `${key}\n`);
 }

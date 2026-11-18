@@ -2,7 +2,7 @@
  * Browser end-to-end test for support: an owner asks for help, a support agent answers from
  * Platform admin → Support, the owner gives support read-only access to the books from the
  * ticket, the agent reads them (and cannot change them), and the owner sees what was looked at
- * and ends the access. Real Next.js app → real API → real PostgreSQL.
+ * and ends the access. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

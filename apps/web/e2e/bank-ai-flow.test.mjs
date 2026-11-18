@@ -2,7 +2,7 @@
  * Browser end-to-end test for AI reconciliation: an owner imports a statement, asks the AI
  * for suggestions on the unmatched lines, accepts a receipt it suggests against an open
  * invoice, dismisses an entry it suggests, and finds both in the AI activity log. Real
- * Next.js app → real API → real PostgreSQL → the real Anthropic SDK against a local stand-in
+ * Next.js app → real API → real MongoDB → the real Anthropic SDK against a local stand-in
  * for the Messages API (port 4555). The API must run with ANTHROPIC_API_KEY set and
  * ANTHROPIC_BASE_URL=http://127.0.0.1:4555. Nothing reaches Anthropic.
  */
