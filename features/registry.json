@@ -5357,11 +5357,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src/components/banking/accounts-page.tsx"
+        "packages/accounting-engine/src/bank-watch.ts",
+        "packages/accounting-engine/test/bank-watch.test.ts",
+        "apps/api/test/bank-watch.e2e.test.ts › flags an overdrawn account and one never reconciled",
+        "apps/api/test/bank-watch.e2e.test.ts › warns below the minimum, and clears when fixed or the limit is raised",
+        "apps/web/src/components/banking/accounts-page.tsx",
+        "docs/ALERTS_AND_LEAKAGE.md"
       ],
-      "notes": "Ledger balance, lines to review and last reconciled date per account. No live bank balances, thresholds or alerts."
+      "notes": "Alert rule BANK_ACCOUNT_WATCH: overdrawn (critical), below a set minimum, or not reconciled for more than N days; thresholds in Alerts settings. Balances are ledger balances: no live bank feed."
     },
     {
       "id": "BANK-015",

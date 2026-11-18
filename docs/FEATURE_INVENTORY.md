@@ -225,7 +225,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-011 |  | capability | Interest accounting | Implementing |
 | BANK-012 |  | capability | Foreign exchange accounting | Implementing |
 | BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
-| BANK-014 |  | capability | Bank balance monitoring | Implementing |
+| BANK-014 |  | capability | Bank balance monitoring | Tested |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |
 | BANK-016 | AI Enhancements | capability | Intelligent transaction classification | Integration pending |
 | BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Implementing |

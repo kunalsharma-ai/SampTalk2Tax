@@ -53,6 +53,7 @@ export const ALERT_RULE_KEYS = [
   'DUPLICATE_PAYMENT',
   'UNUSUAL_JOURNAL',
   'VENDOR_RISK',
+  'BANK_ACCOUNT_WATCH',
 ] as const;
 export type AlertRuleKey = (typeof ALERT_RULE_KEYS)[number];
 
@@ -132,6 +133,13 @@ export const ALERT_RULES: readonly AlertRuleDef[] = Object.freeze([
     name: 'Vendor risk needs a review',
     description: 'A vendor has a medium or high risk (bank details changed or shared, tax problems, poor performance, a large share of purchases, onboarding not approved) that nobody has reviewed, a new risk since the last review, or a review date that has come. Critical for a high risk. Clears once someone records a review.',
     params: [],
+  },
+  {
+    key: 'BANK_ACCOUNT_WATCH',
+    area: 'CASH',
+    name: 'Bank account low or not reconciled',
+    description: 'A bank or cash account whose balance in the books is below the set amount (critical when overdrawn), or that has not been reconciled to a statement for more than the set number of days while it has activity.',
+    params: [p('minBalance', 'Balance below', 'amount', '0', '9999999999999', '0', false), p('unreconciledDays', 'Not reconciled for more than', 'days', '7', '365', '45')],
   },
 ] satisfies AlertRuleDef[]);
 

@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 63 |
+| Implementing | 62 |
 | Implemented | 34 |
-| Tested | 450 |
+| Tested | 451 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1442,10 +1442,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-014 — Bank balance monitoring
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Ledger balance, lines to review and last reconciled date per account. No live bank balances, thresholds or alerts.
+- Status: **Tested**
+- Notes: Alert rule BANK_ACCOUNT_WATCH: overdrawn (critical), below a set minimum, or not reconciled for more than N days; thresholds in Alerts settings. Balances are ledger balances: no live bank feed.
 - Evidence:
+  - packages/accounting-engine/src/bank-watch.ts
+  - packages/accounting-engine/test/bank-watch.test.ts
+  - apps/api/test/bank-watch.e2e.test.ts › flags an overdrawn account and one never reconciled
+  - apps/api/test/bank-watch.e2e.test.ts › warns below the minimum, and clears when fixed or the limit is raised
   - apps/web/src/components/banking/accounts-page.tsx
+  - docs/ALERTS_AND_LEAKAGE.md
 
 ### BANK-015 — Reconciliation audit history
 
