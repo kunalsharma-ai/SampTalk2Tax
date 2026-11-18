@@ -1595,7 +1595,7 @@ Part 46 · M1 · priority P1 · depends on: none
 |---|---|---|---|---|
 | DS-001 |  | rule | Create a reusable design system | Not started |
 | DS-002 |  | capability | Navigation sidebar | Not started |
-| DS-003 |  | capability | Command palette | Not started |
+| DS-003 |  | capability | Command palette | Tested |
 | DS-004 |  | capability | Global search | Not started |
 | DS-005 |  | capability | Dashboard cards | Not started |
 | DS-006 |  | capability | Financial KPI cards | Not started |

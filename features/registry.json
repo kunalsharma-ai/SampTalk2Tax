@@ -34293,9 +34293,11 @@
       },
       "status": "Implementing",
       "evidence": [
-        "apps/web/src"
+        "apps/web/src",
+        "apps/web/src/components/command-palette.tsx",
+        "apps/web/e2e/command-palette-flow.test.mjs"
       ],
-      "notes": "Sidebar and org switcher exist for the M1 modules; global search and command palette are not built."
+      "notes": "Sidebar, org switcher and global search (Ctrl+K command palette over pages and records, DS-003) exist. The palette only opens pages and records; it cannot yet start actions."
     },
     {
       "id": "NAV-002",
@@ -35538,9 +35540,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/components/command-palette.tsx",
+        "apps/web/src/lib/palette.ts",
+        "apps/web/test/palette.test.ts",
+        "apps/web/e2e/command-palette-flow.test.mjs"
+      ],
+      "notes": "Ctrl+K or ⌘K (or Search in the header) opens a search of the pages this person can open and, with reports access, records: contacts, invoices and bills, payments, journals, accounts, projects, departments, loans, fixed assets and alerts. Arrow keys and Enter, or click. No actions (create, run) from the palette yet."
     },
     {
       "id": "DS-004",

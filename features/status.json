@@ -385,9 +385,11 @@
     "NAV-001": {
       "status": "Implementing",
       "evidence": [
-        "apps/web/src"
+        "apps/web/src",
+        "apps/web/src/components/command-palette.tsx",
+        "apps/web/e2e/command-palette-flow.test.mjs"
       ],
-      "notes": "Sidebar and org switcher exist for the M1 modules; global search and command palette are not built."
+      "notes": "Sidebar, org switcher and global search (Ctrl+K command palette over pages and records, DS-003) exist. The palette only opens pages and records; it cannot yet start actions."
     },
     "NAV-002": {
       "status": "Implemented",
@@ -6725,6 +6727,16 @@
         "docs/LOANS_AND_TREASURY.md"
       ],
       "notes": "Fixed deposits: placing, interest to date and at maturity, accruals, closing at maturity or early with tax deducted, and reversal. Not built: mutual funds, bonds and shares, market values and gains."
+    },
+    "DS-003": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/components/command-palette.tsx",
+        "apps/web/src/lib/palette.ts",
+        "apps/web/test/palette.test.ts",
+        "apps/web/e2e/command-palette-flow.test.mjs"
+      ],
+      "notes": "Ctrl+K or ⌘K (or Search in the header) opens a search of the pages this person can open and, with reports access, records: contacts, invoices and bills, payments, journals, accounts, projects, departments, loans, fixed assets and alerts. Arrow keys and Enter, or click. No actions (create, run) from the palette yet."
     }
   }
 }
