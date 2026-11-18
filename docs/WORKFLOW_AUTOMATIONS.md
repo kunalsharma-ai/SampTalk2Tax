@@ -54,7 +54,16 @@ The invoice, bill, receipt and payment triggers also offer **contactEmail**, the
 
 ## Conditions
 
-All conditions must hold. With no conditions, the workflow acts every time.
+With two or more conditions, the workflow says whether **all of them** must hold (the default) or **any one** is enough. With no conditions, the workflow acts every time.
+
+### Either/or: the otherwise branch (WFLOW-005)
+
+A workflow with at least one condition can have **otherwise** actions: up to five, done instead of the main actions when the conditions do not hold. For example, *when an invoice is posted, if the total is at least ₹1,00,000 or the customer contains "Banyan", give a review task; otherwise give a spot-check task*.
+
+* The otherwise actions are the same kinds as the main ones (task, email, webhook) and are checked the same way. Their problems are named *Otherwise action 1*, and so on.
+* Each run records its **branch**: `THEN` when the conditions held, `OTHERWISE` when the otherwise actions ran, and none when nothing ran (*Conditions not met*). The run log and the run details show it, and a test says which branch the event would take.
+* The match (`ALL` or `ANY`) and the otherwise actions are part of the version, so changing either makes a new version. Versions saved before branches existed read as `ALL` with no otherwise actions.
+* Not supported: nested groups such as *A and (B or C)*, and more than two branches. Use two workflows for those.
 
 | Fact type | Tests |
 |---|---|
@@ -96,7 +105,7 @@ A definition is checked when it is saved, and every problem is listed:
 3. **Schedules.** In the same pass, for each organisation with a schedule workflow on, the runner takes a per-organisation advisory lock (`pg_try_advisory_xact_lock`), works out the latest time each schedule came round and the invoices or bills that reach their date, skips occurrences that already have a run, and starts the rest, in one transaction.
 4. **A run per workflow and event.**
    * A workflow acts only on events **after it was turned on**. Turning a workflow on records the newest event id while holding the organisation's audit lock. Turning it on never replays history.
-   * Every event a workflow listens to gets a **run**, including runs whose conditions did not hold (recorded as *Conditions not met*, with each condition's actual value).
+   * Every event a workflow listens to gets a **run**, including runs whose conditions did not hold (recorded as *Conditions not met*, with each condition's actual value, unless the workflow has otherwise actions, which then run).
    * A unique index allows one live run per workflow and event.
 5. **Webhooks and emails are sent after the transaction.**
    * Each webhook and email action is stored as *pending*. The delivery loop claims due deliveries with `FOR UPDATE SKIP LOCKED` and a two-minute reservation, sends them, and records the answer.
@@ -168,7 +177,7 @@ Workflows can also come from an approved [policy](POLICY_STUDIO.md). They are na
   * for "an invoice is overdue", the most recently overdue invoice still to be paid; for "a bill is due soon", the next bill to fall due that is still to be paid.
 
   It shows the facts, each condition with whether it holds and the actual value, and the exact task and email each action would make. Nothing is created. **Test and send webhooks** (or **Test and email me**, **Test and send**) also sends each webhook once, with `"test": true`, and each email to the tester only. Test runs are kept in the run log, marked *Test*.
-* **Versions.** A change to the trigger, its settings, the conditions or the actions makes a **new version**.
+* **Versions.** A change to the trigger, its settings, the conditions (or whether all or any must hold) or the actions (main or otherwise) makes a **new version**.
   * Versions are never changed or deleted (database trigger).
   * Each run keeps the version it ran.
   * The editor sends the version it started from, so two people editing at once cannot overwrite each other (`409 WORKFLOW_CHANGED`).
@@ -233,7 +242,7 @@ All six tables have row-level security by organisation (forced).
 ## Not supported yet (do not rely on these)
 
 * **No other "became true" triggers.** "Bank balance below X" and similar are not triggers. Alerts cover some of these: use **An alert opens**, or a schedule with a condition on its figures.
-* **No branches, loops, waits or parallel paths.** One list of conditions, then the actions in order. No reminder sequences (use one workflow per step, such as 3, 10 and 30 days overdue).
+* **No nested conditions, loops, waits or parallel paths.** One list of conditions (all or any), then the main actions or the otherwise actions, in order. No reminder sequences (use one workflow per step, such as 3, 10 and 30 days overdue).
 * **Email is plain text only, and not yet checked against a real mail provider.** It has been tested end to end against a local SMTP server. No HTML, attachments (such as the invoice PDF), reply tracking, bounce handling, unsubscribe or per-contact opt-out. No SMS or chat; use a webhook to a chat service.
 * **No actions that change the books.** No posting, approving, sending invoices, AI agent steps or general API calls; tasks, emails and webhooks only.
 * **No custom webhook headers or bodies, and no signing secrets per address.** The body and headers are fixed.

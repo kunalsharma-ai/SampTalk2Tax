@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   checkTriggerParams,
+  chooseBranch,
   describeTrigger,
   formatAmountText,
   formatDateText,
@@ -233,5 +234,35 @@ describe('text for emails', () => {
     expect(formatAmountText('999.00', 'INR')).toBe('₹999.00');
     expect(formatAmountText('-1234567.5', 'USD')).toBe('USD -1,234,567.5');
     expect(formatDateText('2026-11-02')).toBe('2 Nov 2026');
+  });
+});
+
+describe('either/or branches', () => {
+  const facts = { number: 'BILL-000012', contactName: 'Granite Supplies', total: '118000.00', issueDate: '2026-11-01', dueDate: '2026-12-01', reference: '' };
+  const big = { fact: 'total', op: 'gte' as const, value: '500000' };
+  const granite = { fact: 'contactName', op: 'contains' as const, value: 'granite' };
+  const hook = { type: 'WEBHOOK' as const, url: 'https://hooks.example.test/t2t' };
+  it('ANY needs one condition to hold, ALL needs every one', () => {
+    expect(evaluateConditions('BILL_POSTED', [big, granite], facts, 'ALL').matched).toBe(false);
+    expect(evaluateConditions('BILL_POSTED', [big, granite], facts, 'ANY').matched).toBe(true);
+    expect(evaluateConditions('BILL_POSTED', [big], facts, 'ANY').matched).toBe(false);
+    expect(evaluateConditions('BILL_POSTED', [], facts, 'ANY').matched).toBe(true);
+  });
+  it('takes the otherwise actions when the conditions do not hold, and none without them', () => {
+    const def = validateWorkflow(bill({ conditions: [big], actions: [task], otherwise: [hook] }));
+    expect(def.match).toBe('ALL');
+    const small = chooseBranch(def, facts);
+    expect([small.matched, small.branch, small.actions]).toEqual([false, 'OTHERWISE', [hook]]);
+    const large = chooseBranch(def, { ...facts, total: '600000' });
+    expect([large.branch, large.actions.map((a) => a.type)]).toEqual(['THEN', ['CREATE_TASK']]);
+    expect(chooseBranch({ ...def, otherwise: [] }, facts).branch).toBeNull();
+    expect(chooseBranch({ ...def, match: 'ANY', conditions: [big, granite] }, facts).branch).toBe('THEN');
+  });
+  it('checks the otherwise actions like the others, and needs a condition for them', () => {
+    expect(issues(() => validateWorkflow(bill({ otherwise: [hook] })))).toEqual(['Add a condition before adding actions for when it does not hold']);
+    expect(issues(() => validateWorkflow(bill({ conditions: [big], otherwise: [{ ...task, title: ' ' }] })))).toEqual(['Otherwise action 1: give the task a title']);
+    expect(issues(() => validateWorkflow(bill({ conditions: [big], otherwise: Array(6).fill(hook) })))).toEqual(['At most 5 actions for when the conditions do not hold']);
+    expect(issues(() => validateWorkflow(bill({ conditions: [big], match: 'SOME' as 'ANY' })))).toEqual(['Choose whether all or any of the conditions must hold']);
+    expect(validateWorkflow(bill({ conditions: [big], match: 'ANY', otherwise: [{ ...hook, url: ` ${hook.url} ` }] })).otherwise).toEqual([hook]);
   });
 });

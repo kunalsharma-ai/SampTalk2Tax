@@ -109,6 +109,13 @@ export class BankingController {
     return this.banking.autoMatch(org, user, accountId);
   }
 
+  /** What suggestions on the account have learned from past matches (BANK-017). */
+  @Get('accounts/:accountId/match-patterns')
+  @RequirePermission('banking.read')
+  matchPatterns(@CurrentOrg() org: OrgContext, @Param('accountId', ParseUUIDPipe) accountId: string) {
+    return this.banking.matchPatterns(org, accountId);
+  }
+
   @Get('accounts/:accountId/reconciliations')
   @RequirePermission('banking.read')
   reconciliations(@CurrentOrg() org: OrgContext, @Param('accountId', ParseUUIDPipe) accountId: string) {

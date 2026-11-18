@@ -5,3 +5,4 @@ export * from './surface';
 export * from './table';
 export * from './dialog';
 export * from './help';
+export * from './text';
