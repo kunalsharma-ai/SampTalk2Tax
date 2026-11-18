@@ -436,7 +436,11 @@ export interface BankAccountSummary {
   name: string;
   subtype: 'BANK' | 'CASH';
   isActive: boolean;
+  /** The account's own currency (BANK-012): statements, matching and reconciliation are in it. */
+  currency: string;
+  /** In `currency`; `functionalBalance` is what the books carry, in the organisation's currency. */
   ledgerBalance: string;
+  functionalBalance: string;
   statementLines: number;
   unmatchedLines: number;
   lastStatementDate: string | null;
@@ -462,6 +466,7 @@ export interface StatementLine {
   description: string;
   reference: string | null;
   amount: string;
+  currency: string;
   status: 'UNMATCHED' | 'MATCHED' | 'EXCLUDED';
   excludedReason: string | null;
   reconciled: boolean;
