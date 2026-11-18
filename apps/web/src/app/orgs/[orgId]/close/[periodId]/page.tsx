@@ -9,11 +9,12 @@ import { AiNoticeAlert } from '@/components/ai/ai-notice';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { ADJUSTMENT_STATUS, CLOSE_STATUS, type CloseAdjustmentView, type CloseView } from '@/lib/close';
 import { CONFIDENCE, dateTime } from '@/lib/collections';
 import { date } from '@/lib/format';
 import { useOrg } from '@/lib/org';
+import { can } from '@/lib/types';
 
 export default function ClosePage() {
   const { org, orgId } = useOrg();
@@ -141,6 +142,15 @@ export default function ClosePage() {
           ) : null}
 
           {inProgress ? <CloseCard v={v} base={base} onDone={set} /> : null}
+          {status === 'CLOSED' && can(org.role, 'reports.read') ? (
+            <Card className="mb-4" role="region" aria-label="Report pack">
+              <CardHeader
+                title="Report pack"
+                description="One ZIP for the month: the close certification with its checks and figures, the trial balance, income statement, balance sheet and ageing as PDFs, and a list of each file's SHA-256. Each download is recorded in the audit trail."
+                actions={<PackButton orgId={orgId} periodId={periodId} />}
+              />
+            </Card>
+          ) : null}
           {v.certifications.length ? <Certifications v={v} base={base} currency={cur} onDone={set} /> : null}
         </>
       ) : null}
@@ -334,5 +344,46 @@ function Certifications({ v, base, currency, onDone }: { v: CloseView; base: str
         ))}
       </div>
     </section>
+  );
+}
+
+/** Downloads the month's report pack. Fetched first so a refusal shows here instead of saving an error as a file. */
+function PackButton({ orgId, periodId }: { orgId: string; periodId: string }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const download = async () => {
+    setBusy(true);
+    setError(null);
+    setSaved(null);
+    try {
+      const res = await fetch(`/api/t2t/v1/orgs/${orgId}/close/${periodId}/report-pack`, { headers: { 'x-t2t-csrf': '1' } });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new ApiError(res.status, body.error ?? 'ERROR', body.message ?? `Download failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const fileName = decodeURIComponent(/filename\*=UTF-8''([^;]+)/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? 'close-pack.zip');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      setSaved(fileName);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Download failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button size="sm" loading={busy} onClick={() => void download()}>Download report pack</Button>
+      {error ? <p role="alert" className="max-w-sm text-right text-xs text-negative">{error}</p> : null}
+      {saved ? <p role="status" className="text-xs text-fg-muted">Downloaded {saved}</p> : null}
+    </div>
   );
 }

@@ -146,6 +146,25 @@ Migration `20261102230000_month_end_close` adds these guarantees:
   * an entry is never deleted.
 * **Row-level security** applies on all four tables.
 
+## The report pack
+
+Once a month is closed, the close page has a **Report pack** card. Its button downloads one ZIP
+(`close-pack-<month>.zip`, stored uncompressed) holding:
+
+1. `01-close-certification-<month end>.pdf`: each check with its result (Passed, Failed or
+   Accepted warning) and detail, the certified figures (revenue, expenses, net profit, assets,
+   liabilities, both sides of the trial balance, journals posted), who closed the month and when,
+   and the closing note.
+2. The trial balance and balance sheet at the month end, and the income statement for the month.
+3. The receivables and payables ageing at the month end, for those who can read sales and
+   purchases respectively.
+4. `README.txt`: the organisation, month, who certified it, and the SHA-256 of every file.
+
+The reports are made by the same code as the report exports (and so as the screens), and the
+certification shows the figures as they were when the month closed. A pack can only be made for
+a month that is closed with a certification in force (`409 CLOSE_NOT_CLOSED` otherwise). Each
+download is recorded as `close.report_pack_exported` with the ZIP's and each file's SHA-256.
+
 ## Audit trail
 
 The audit trail records:
@@ -153,7 +172,7 @@ The audit trail records:
 * `close.started`, `close.tasks_created`;
 * `close.review_started`, `close.reviewed`, `close.review_failed`;
 * `close.adjustment_posted`, `close.adjustment_rejected`;
-* `close.certified`, `close.reopened`;
+* `close.certified`, `close.reopened`, `close.report_pack_exported`;
 * `period.locked` and `period.unlocked`, marked as done by the close.
 
 ## API
@@ -169,6 +188,7 @@ The audit trail records:
 | `POST …/close/adjustments/:id/reject` | close.manage | Optional `note`. `409 NOT_REJECTABLE` unless waiting |
 | `POST …/close/:periodId/close` | periods.lock | `note` (required with open warnings) |
 | `POST …/close/:periodId/reopen` | periods.lock | `reason` (at least 10 characters) |
+| `GET …/close/:periodId/report-pack` | reports.read | The month's report pack as a ZIP, with `X-Report-SHA256`. `409 CLOSE_NOT_CLOSED` until the month is closed |
 
 ## Tests
 
@@ -190,6 +210,8 @@ The audit trail records:
   * reversing a posted adjustment;
   * a refusal, a rate limit and one review at a time;
   * the AI activity log.
+* `apps/api/test/close-pack.e2e.test.ts` covers the report pack: refused before closing, the files and their checksums, the certification's contents, the audit event, permissions and other organisations.
+* `apps/web/e2e/close-pack-flow.test.mjs` downloads the pack from the close page and checks the README's checksums.
 * `apps/web/e2e/close-flow.test.mjs` takes an owner through the whole flow in the browser, through the real SDK against the stand-in.
 
 ## Not supported yet
@@ -198,5 +220,5 @@ The audit trail records:
 * A person starts each close and each review. Nothing starts on its own as a month ends, and there is no reminder schedule.
 * Proposed entries cannot be edited before posting: reject one and post a journal by hand.
 * Entries are in the functional currency only. There is no tax, no dimensions, and no recurring accrual templates.
-* No report pack is generated at close. The certification records the headline figures, and the management report for the month is finalised separately.
+* The report pack is downloaded on request; it is not emailed or stored when the month closes.
 * A month can be closed out of order, with a warning. Year-end closing to retained earnings is not part of this.
