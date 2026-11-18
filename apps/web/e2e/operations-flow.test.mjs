@@ -2,7 +2,7 @@
  * Browser end-to-end test for operations: a person who runs Talk2Tax switches a module off
  * (it leaves the owner's menu and the API refuses it), puts the service into maintenance
  * (everyone sees the banner, changes are refused, reading works), and reads system health.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -114,7 +114,7 @@ test('flags hide and refuse a module, maintenance pauses changes for everyone, h
   // System health and errors.
   await admin.goto(`${WEB}/admin/system`);
   await admin.locator('[aria-label="Background runners"]').getByText('Workflow runner').waitFor();
-  await admin.locator('[aria-label="Database"]').getByText('PostgreSQL').waitFor();
+  await admin.locator('[aria-label="Database"]').getByText('MongoDB').waitFor();
   await admin.locator('[aria-label="Routes"]').getByText(/GET \/v1\/orgs\/:orgId/).first().waitFor();
   await admin.goto(`${WEB}/admin/errors`);
   await admin.locator('[aria-label="Error groups"]').waitFor();

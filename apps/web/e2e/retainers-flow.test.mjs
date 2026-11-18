@@ -2,7 +2,7 @@
  * Browser end-to-end test for retainers (AR-015): a new retainer for a customer, a receipt recorded
  * into it (posted as an ordinary receipt), two invoices paid from it oldest due first, the top-up
  * due once it falls below the minimum, and the receipt's allocations on the receipt page.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for the voice assistant: an owner speaks a question, sees it marked as
  * spoken, hears the answer read aloud, and confirms or cancels the actions the copilot proposed.
- * Real Next.js app → real API → real PostgreSQL → the real Anthropic SDK talking to a local
+ * Real Next.js app → real API → real MongoDB → the real Anthropic SDK talking to a local
  * stand-in for the Messages API (see copilot-flow.test.mjs). The browser's speech recognition and
  * speech output are replaced by test doubles, because headless Chromium has no microphone or
  * speech service: the double "hears" a fixed sentence and records what would be spoken.

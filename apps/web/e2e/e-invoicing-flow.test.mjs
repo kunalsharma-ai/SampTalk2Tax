@@ -3,7 +3,7 @@
  * adds a customer with a city and PIN code, downloads the INV-01 JSON for an invoice, has a
  * wrong IRP response refused, imports the right one (QR code drawn, signature not verified),
  * sees it in the register, records the IRN's cancellation and then voids the invoice.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  * The IRP responses are made up here: unsigned tokens with the IRP's shape.
  */
 import assert from 'node:assert/strict';

@@ -3,7 +3,7 @@
  * made and copied, the customer opens it in a browser with no session and sees what they owe,
  * their invoices (not drafts, not other customers'), payments and statement, and can open an
  * invoice; once the link is revoked the portal refuses it.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

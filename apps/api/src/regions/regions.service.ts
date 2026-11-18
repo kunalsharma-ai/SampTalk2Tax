@@ -1,6 +1,5 @@
 import { DocumentStoreService } from '../common/document-store.service';
 import { organizations } from '../db/collections/tenancy';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { HttpException, HttpStatus, Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
@@ -30,7 +29,6 @@ export class RegionsService implements OnApplicationBootstrap {
     private readonly audit: AuditService,
     @Inject(CONFIG) private readonly config: AppConfig,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
   ) {}
 
   /** Organisations from before regions existed belong to the first region that serves this database. */
@@ -44,7 +42,6 @@ export class RegionsService implements OnApplicationBootstrap {
     const untagged = (await orgs.find({ dataRegion: null }, { projection: { id: 1 } })).map((o) => o.id);
     if (!untagged.length) return 0;
     await orgs.updateMany({ id: { $in: untagged }, dataRegion: null }, { $set: { dataRegion: this.config.DEPLOYMENT_REGION } });
-    await this.mirror.organizations(untagged);
     return untagged.length;
   }
 
@@ -108,7 +105,6 @@ export class RegionsService implements OnApplicationBootstrap {
     await orgs.updateOne({ id: orgId }, { $set: { dataRegion: to, updatedAt: new Date() } });
     await this.prisma.$transaction(async (tx) =>
       withSystemAccess(tx, async () => {
-        await this.mirror.organizations([orgId], tx);
         await this.audit.append(tx, { orgId, actorId: null, action: 'organization.region_moved', entityType: 'organization', entityId: orgId, data: { from, to, reason: reason.trim(), by: this.current } });
       }),
     );
