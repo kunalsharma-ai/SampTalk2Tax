@@ -20,7 +20,7 @@
   ],
   "alert_rule_settings": [
    {
-    "def": "CHECK ((((rule)::text = ANY ((ARRAY['CASH_BELOW_MINIMUM'::character varying, 'OVERDUE_RECEIVABLES'::character varying, 'COMPLIANCE_DUE'::character varying, 'KPI_TARGET_MISSED'::character varying, 'BUDGET_OVERRUN'::character varying, 'MISSED_RECURRING_BILLING'::character varying, 'DUPLICATE_BILL'::character varying, 'DUPLICATE_PAYMENT'::character varying, 'UNUSUAL_JOURNAL'::character varying, 'VENDOR_RISK'::character varying])::text[])) AND (jsonb_typeof(params) = 'object'::text)))",
+    "def": "CHECK ((((rule)::text = ANY ((ARRAY['CASH_BELOW_MINIMUM'::character varying, 'OVERDUE_RECEIVABLES'::character varying, 'COMPLIANCE_DUE'::character varying, 'KPI_TARGET_MISSED'::character varying, 'BUDGET_OVERRUN'::character varying, 'MISSED_RECURRING_BILLING'::character varying, 'DUPLICATE_BILL'::character varying, 'DUPLICATE_PAYMENT'::character varying, 'UNUSUAL_JOURNAL'::character varying, 'VENDOR_RISK'::character varying, 'BANK_ACCOUNT_WATCH'::character varying])::text[])) AND (jsonb_typeof(params) = 'object'::text)))",
     "name": "alert_rule_settings_chk"
    }
   ],
@@ -32,7 +32,7 @@
   ],
   "alerts": [
    {
-    "def": "CHECK ((((rule)::text = ANY ((ARRAY['CASH_BELOW_MINIMUM'::character varying, 'OVERDUE_RECEIVABLES'::character varying, 'COMPLIANCE_DUE'::character varying, 'KPI_TARGET_MISSED'::character varying, 'BUDGET_OVERRUN'::character varying, 'MISSED_RECURRING_BILLING'::character varying, 'DUPLICATE_BILL'::character varying, 'DUPLICATE_PAYMENT'::character varying, 'UNUSUAL_JOURNAL'::character varying, 'VENDOR_RISK'::character varying])::text[])) AND (length((fingerprint)::text) > 0) AND (length((title)::text) > 0) AND (jsonb_typeof(evidence) = 'object'::text) AND (last_seen_at >= first_seen_at) AND (reopen_count >= 0) AND ((status <> 'DISMISSED'::\"AlertStatus\") OR ((status_by_id IS NOT NULL) AND (status_note IS NOT NULL) AND (length(btrim((status_note)::text)) > 0))) AND ((status <> 'ACKNOWLEDGED'::\"AlertStatus\") OR (status_by_id IS NOT NULL)) AND ((status = 'CLEARED'::\"AlertStatus\") = (cleared_at IS NOT NULL))))",
+    "def": "CHECK ((((rule)::text = ANY ((ARRAY['CASH_BELOW_MINIMUM'::character varying, 'OVERDUE_RECEIVABLES'::character varying, 'COMPLIANCE_DUE'::character varying, 'KPI_TARGET_MISSED'::character varying, 'BUDGET_OVERRUN'::character varying, 'MISSED_RECURRING_BILLING'::character varying, 'DUPLICATE_BILL'::character varying, 'DUPLICATE_PAYMENT'::character varying, 'UNUSUAL_JOURNAL'::character varying, 'VENDOR_RISK'::character varying, 'BANK_ACCOUNT_WATCH'::character varying])::text[])) AND (length((fingerprint)::text) > 0) AND (length((title)::text) > 0) AND (jsonb_typeof(evidence) = 'object'::text) AND (last_seen_at >= first_seen_at) AND (reopen_count >= 0) AND ((status <> 'DISMISSED'::\"AlertStatus\") OR ((status_by_id IS NOT NULL) AND (status_note IS NOT NULL) AND (length(btrim((status_note)::text)) > 0))) AND ((status <> 'ACKNOWLEDGED'::\"AlertStatus\") OR (status_by_id IS NOT NULL)) AND ((status = 'CLEARED'::\"AlertStatus\") = (cleared_at IS NOT NULL))))",
     "name": "alerts_chk"
    }
   ],

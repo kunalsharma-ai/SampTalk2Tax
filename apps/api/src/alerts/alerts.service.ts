@@ -6,6 +6,7 @@ import {
   AlertRuleDef,
   AlertRuleKey,
   alertPriority,
+  bankWatch,
   AlertSeverity,
   budgetOverruns,
   D,
@@ -35,6 +36,10 @@ import { SubledgerService } from '../ledgers/subledger.service';
 import { TasksService } from '../tasks/tasks.service';
 import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
 import { lockName } from '../db/locks';
+import { BankingService } from '../banking/banking.service';
+import { DocumentStoreService } from '../common/document-store.service';
+import { journalEntries } from '../db/collections/ledger';
+import { runInOrg } from '../common/tenant-context';
 
 type Actor = { id: string };
 
@@ -116,6 +121,8 @@ export class AlertsService {
     private readonly budgets: BudgetsService,
     private readonly tasks: TasksService,
     private readonly vendorRisk: VendorRiskService,
+    private readonly banking: BankingService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ notifications
@@ -518,6 +525,59 @@ export class AlertsService {
               },
             };
           });
+      }
+      case 'BANK_ACCOUNT_WATCH': {
+        const accounts = (await this.banking.listAccounts({ id: orgId, role: 'OWNER', functionalCurrency: o.currency })).filter((a) => a.isActive);
+        if (!accounts.length) return [];
+        const first = await runInOrg(orgId, () =>
+          this.store.collection(journalEntries).aggregate<{ _id: string; first: Date }>([
+            { $match: { status: 'POSTED', 'lines.accountId': { $in: accounts.map((a) => a.id) } } },
+            { $unwind: '$lines' },
+            { $match: { 'lines.accountId': { $in: accounts.map((a) => a.id) } } },
+            { $group: { _id: '$lines.accountId', first: { $min: '$date' } } },
+          ]),
+        );
+        const firstOn = new Map(first.map((f) => [f._id, fromDbDate(f.first)]));
+        const byId = new Map(accounts.map((a) => [a.id, a]));
+        const found = bankWatch(
+          accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, subtype: a.subtype, ledgerBalance: a.ledgerBalance, unmatchedLines: a.unmatchedLines, lastReconciled: a.lastReconciled?.date ?? null, firstActivity: firstOn.get(a.id) ?? null })),
+          today,
+          { minBalance: p.minBalance, unreconciledDays: p.unreconciledDays.toNumber() },
+        );
+        return found.map((f) => {
+          const a = byId.get(f.accountId)!;
+          const label = `${a.code} ${a.name}`;
+          const facts = [
+            { label: 'Account', value: label },
+            { label: 'Balance in the books', value: o.money(f.balance), kind: 'money' as const },
+            { label: 'Last reconciled', value: a.lastReconciled ? `${dateLabel(a.lastReconciled.date)}, statement balance ${o.money(a.lastReconciled.statementBalance)}` : 'Never' },
+            { label: 'Statement lines not matched', value: String(a.unmatchedLines) },
+          ];
+          const links = [{ kind: 'PAGE' as const, path: `/banking/${a.id}/reconcile`, label: `Reconcile ${a.name}` }, { kind: 'PAGE' as const, path: '/banking', label: 'Open banking' }];
+          if (f.code === 'NOT_RECONCILED') {
+            return {
+              rule: def.key,
+              fingerprint: `${a.id}:${f.code}`,
+              severity: f.severity,
+              title: `${a.name} not reconciled for ${f.days} days`,
+              summary: `${a.lastReconciled ? `The last reconciliation was to the statement of ${dateLabel(a.lastReconciled.date)}` : `It has never been reconciled, and has had entries since ${dateLabel(firstOn.get(a.id)!)}`}. Import the latest statement, match the lines and complete a reconciliation.`,
+              amount: null,
+              evidence: { facts, links },
+            };
+          }
+          const overdrawn = f.code === 'OVERDRAWN';
+          return {
+            rule: def.key,
+            fingerprint: `${a.id}:${f.code}`,
+            severity: f.severity,
+            title: overdrawn ? `${a.name} is overdrawn by ${o.money(f.balance.negated())}` : `${a.name} is down to ${o.money(f.balance)}`,
+            summary: overdrawn
+              ? `The balance in the books is below zero. Check for a missing receipt or a wrong entry, or move money in before payments bounce.`
+              : `The balance in the books is below the ${o.money(p.minBalance)} set on this rule. Plan payments or move money in.`,
+            amount: overdrawn ? f.balance.negated() : p.minBalance.minus(f.balance),
+            evidence: { facts, links },
+          };
+        });
       }
       case 'UNUSUAL_JOURNAL': {
         const since = new Date(Date.now() - JOURNAL_WINDOW_DAYS * 86_400_000);

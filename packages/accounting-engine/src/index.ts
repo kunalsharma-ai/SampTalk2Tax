@@ -84,3 +84,4 @@ export * from './account-reconciliation';
 export * from './expense-report';
 export * from './duplicate-files';
 export * from './cost-allocation';
+export * from './bank-watch';
