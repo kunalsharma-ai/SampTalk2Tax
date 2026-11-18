@@ -27,7 +27,7 @@ import { AlertStatus, Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { BudgetsService } from '../budgets/budgets.service';
 import { CashFlowService, todayIst } from '../cash-flow/cash-flow.service';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, toDbDate, istDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { ComplianceService } from '../compliance/compliance.service';
@@ -86,7 +86,6 @@ const monthEndOf = (month: string) => {
   return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 };
 const addDays = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
-const istDate = (d: Date) => new Date(d.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 function shiftMonth(month: string, by: number): string {
   const y = +month.slice(0, 4);
   const m = +month.slice(5, 7) - 1 + by;

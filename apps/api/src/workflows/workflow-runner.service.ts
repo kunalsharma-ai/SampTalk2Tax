@@ -1,3 +1,4 @@
+import { orgZone } from '../common/dates';
 import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import {
   chooseBranch,
@@ -248,13 +249,13 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     return this.prisma.$transaction(
       async (tx) => {
         const workflows = (await this.enabledWorkflows(tx, orgId)).filter((w) => triggerDef(w.versions[0].trigger).kind === 'schedule' && w.activatedAt);
-        const today = istDate(now);
+        const today = istDate(now, orgZone());
         let runs = 0;
         for (const w of workflows) {
           const v = w.versions[0];
           const params = v.triggerParams as TriggerParams;
           if (v.trigger === 'SCHEDULE') {
-            const occ = latestOccurrence(params, now);
+            const occ = latestOccurrence(params, now, orgZone());
             if (occ.at < w.activatedAt!) continue;
             const key = `at:${occ.at.toISOString()}`;
             if (await tx.workflowRun.findFirst({ where: { workflowId: w.id, occurrenceKey: key, status: { not: 'TEST' } }, select: { id: true } })) continue;
@@ -264,7 +265,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
           }
           const trigger = v.trigger as 'INVOICE_OVERDUE' | 'BILL_DUE_SOON';
           const days = params.days ?? 0;
-          const win = dueDateWindow(trigger, days, istDate(w.activatedAt!), today);
+          const win = dueDateWindow(trigger, days, istDate(w.activatedAt!, orgZone()), today);
           const suffix = `:${days}`;
           const ids = await dueDocuments(tx, orgId, { kind: trigger === 'INVOICE_OVERDUE' ? 'INVOICE' : 'BILL', from: win.from, to: win.to, asOf: today, workflowId: w.id, keyPrefix: 'doc:', keySuffix: suffix, limit: DUE_BATCH });
           for (const id of ids) {

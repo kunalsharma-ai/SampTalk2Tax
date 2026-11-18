@@ -220,8 +220,8 @@ export const hi: Record<string, string> = {
   'This organisation’s data is kept in {region}, so it is opened there and not on this server. Nothing about it is read or changed here.': 'इस संगठन का डेटा {region} में रखा गया है, इसलिए यह वहीं खुलता है, इस सर्वर पर नहीं। यहाँ इसका कुछ भी पढ़ा या बदला नहीं जाता।',
   'Open it in {region}': '{region} में खोलें',
   'Ask your administrator for the address of that region.': 'उस क्षेत्र का पता अपने व्यवस्थापक से पूछें।',
-  'Times in this organisation are shown in this zone for everyone who has not chosen their own. Business dates such as today, due dates and periods follow the country rules, not this setting.':
-    'इस संगठन में समय इसी क्षेत्र में दिखाया जाता है, उन सभी को जिन्होंने अपना क्षेत्र नहीं चुना है। आज की तारीख़, देय तिथियाँ और अवधियाँ देश के नियमों के अनुसार चलती हैं, इस सेटिंग के अनुसार नहीं।',
+  'Times in this organisation are shown in this zone for everyone who has not chosen their own. Its business day follows it too: what counts as today, overdue and due, and when scheduled automations run.':
+    'इस संगठन में समय इसी क्षेत्र में दिखाया जाता है, उन सभी को जिन्होंने अपना क्षेत्र नहीं चुना है। संगठन का कारोबारी दिन भी इसी के अनुसार चलता है: आज की तारीख़, देय और बकाया, और तय समय पर चलने वाले स्वचालन।',
   'Only owners and admins can change it.': 'इसे केवल मालिक और एडमिन बदल सकते हैं।',
   // Maintenance banner (M9 slice 6)
   'Maintenance in progress: {message} You can read and export your records; changes are paused until about {until}.': 'रखरखाव चल रहा है: {message} आप अपने रिकॉर्ड पढ़ और निर्यात कर सकते हैं; लगभग {until} तक बदलाव रुके हुए हैं।',

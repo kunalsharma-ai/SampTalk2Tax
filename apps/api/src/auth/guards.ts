@@ -108,7 +108,7 @@ export class AuthGuard implements CanActivate {
       // The organisation may require two-step sign-in of everyone who opens its books.
       await this.orgSecurity.assertAllowed(orgId, user.id);
       await this.assertFlag(targets, orgId);
-      enterOrg(orgId);
+      enterOrg(orgId, membership.org.timeZone);
       req.org = {
         id: orgId,
         role,
@@ -138,7 +138,7 @@ export class AuthGuard implements CanActivate {
       ),
     ]);
     if (!org) return null;
-    return { role: m.role, org: { functionalCurrency: org.functionalCurrency, fiscalYearStartMonth: org.fiscalYearStartMonth, dataRegion: org.dataRegion, suspendedAt: org.suspendedAt, suspendedReason: org.suspendedReason, subscription } };
+    return { role: m.role, org: { timeZone: org.timeZone, functionalCurrency: org.functionalCurrency, fiscalYearStartMonth: org.fiscalYearStartMonth, dataRegion: org.dataRegion, suspendedAt: org.suspendedAt, suspendedReason: org.suspendedReason, subscription } };
   }
 
   /** A module behind a feature flag that is off for this organisation is refused. */
