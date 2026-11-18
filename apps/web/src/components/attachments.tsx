@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { api, uploadFile } from '@/lib/api';
 import { date } from '@/lib/format';
+import { shrinkPhoto } from '@/lib/photo';
 import { useOrg } from '@/lib/org';
 import type { Attachment, AttachmentEntity } from '@/lib/types';
 
@@ -25,6 +26,7 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
   const { orgId } = useOrg();
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
   const [showRemoved, setShowRemoved] = useState(false);
   const [removing, setRemoving] = useState<Attachment | null>(null);
   const [reason, setReason] = useState('');
@@ -37,7 +39,11 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
   };
   const upload = useMutation({
     mutationFn: async (list: File[]) => {
-      for (const f of list) await uploadFile<Attachment>(`${base}?entityType=${entityType}&entityId=${entityId}&fileName=${encodeURIComponent(f.name)}`, f);
+      for (const original of list) {
+        // A large phone photo is redrawn smaller first, so it fits the 5 MB limit and stays legible.
+        const f = await shrinkPhoto(original);
+        await uploadFile<Attachment>(`${base}?entityType=${entityType}&entityId=${entityId}&fileName=${encodeURIComponent(f.name)}`, f);
+      }
     },
     onSettled: refresh,
   });
@@ -74,6 +80,21 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
                     if (list.length) upload.mutate(list);
                   }}
                 />
+                <input
+                  ref={camera}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  aria-label="Photo from camera"
+                  onChange={(e) => {
+                    const list = Array.from(e.target.files ?? []);
+                    e.target.value = '';
+                    if (list.length) upload.mutate(list);
+                  }}
+                />
+                {/* Phones and tablets open the camera straight away; elsewhere the button is hidden. */}
+                <Button size="sm" variant="secondary" className="hidden pointer-coarse:inline-flex" disabled={upload.isPending} onClick={() => { upload.reset(); camera.current?.click(); }}>Take a photo</Button>
                 <Button size="sm" variant="secondary" loading={upload.isPending} onClick={() => { upload.reset(); input.current?.click(); }}>Attach files</Button>
               </>
             ) : null}
