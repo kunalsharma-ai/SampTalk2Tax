@@ -31,6 +31,7 @@ export function BankAccountPage() {
   const [view, setView] = useState<View>('UNMATCHED');
   const [active, setActive] = useState<StatementLine | null>(null);
   const [filesFor, setFilesFor] = useState<StatementLine | null>(null);
+  const [showLearned, setShowLearned] = useState(false);
   const qc = useQueryClient();
   const base = `/v1/orgs/${orgId}/banking`;
   const lines = useQuery({
@@ -66,6 +67,7 @@ export function BankAccountPage() {
           <div className="flex flex-wrap gap-2">
             {manage ? <Link href={`/orgs/${orgId}/banking/${accountId}/import`}><Button variant="secondary">Import statement</Button></Link> : null}
             <Link href={`/orgs/${orgId}/banking/${accountId}/ai`}><Button variant="secondary">AI suggestions</Button></Link>
+            <Button variant="secondary" onClick={() => setShowLearned(true)}>What matching learned</Button>
             <Link href={`/orgs/${orgId}/banking/${accountId}/reconcile`}><Button variant="secondary">Reconcile</Button></Link>
             {manage && view === 'UNMATCHED' ? (
               <Button disabled={!uniqueSuggestions} loading={autoMatch.isPending} onClick={() => autoMatch.mutate()}>
@@ -162,6 +164,7 @@ export function BankAccountPage() {
         )}
       </Card>
       {active ? <ResolveDialog line={active} onClose={() => setActive(null)} onDone={async () => { setActive(null); await refresh(); }} /> : null}
+      {showLearned ? <LearnedDialog base={`${base}/accounts/${accountId}`} onClose={() => setShowLearned(false)} /> : null}
       {filesFor ? (
         <Dialog
           open
@@ -189,6 +192,52 @@ const unmatchPrompt = (l: StatementLine) =>
     : l.matches.some((m) => m.origin === 'CREATED_PAYMENT')
       ? 'Unmatch this line? The receipt or payment stays in the books; void it from its own screen if it was wrong.'
       : 'Unmatch this line? The ledger entry stays as it is.';
+
+interface MatchPattern {
+  counterparty: string;
+  label: string;
+  words: string[];
+  kept: number;
+  undone: number;
+}
+
+/** What suggestions on this account learned from past matches (BANK-017). */
+function LearnedDialog({ base, onClose }: { base: string; onClose: () => void }) {
+  const q = useQuery({ queryKey: ['bank-match-patterns', base], queryFn: () => api<{ decisions: number; patterns: MatchPattern[] }>(`${base}/match-patterns`) });
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title="What matching learned"
+      description="Each time you match a line, suggestions remember who it was with. A similar line later is suggested with the same contact or account first; a match you undo counts against it."
+    >
+      {q.error ? <Alert title="Could not load">{(q.error as Error).message}</Alert> : null}
+      {q.data && q.data.patterns.length === 0 ? <p className="text-sm text-fg-muted">Nothing learned yet. Match a few lines and their names will show here.</p> : null}
+      {q.data && q.data.patterns.length ? (
+        <Table aria-label="Learned matches">
+          <thead>
+            <tr>
+              <Th>Lines that mention</Th>
+              <Th>Matched to</Th>
+              <Th numeric>Kept</Th>
+              <Th numeric>Undone</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {q.data.patterns.map((p) => (
+              <Tr key={p.counterparty}>
+                <Td>{p.words.join(', ')}</Td>
+                <Td>{p.label}</Td>
+                <Td numeric>{p.kept}</Td>
+                <Td numeric>{p.undone}</Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : null}
+    </Dialog>
+  );
+}
 
 function LinkLine({ m, orgId }: { m: LedgerLink; orgId: string }) {
   const href = m.payment

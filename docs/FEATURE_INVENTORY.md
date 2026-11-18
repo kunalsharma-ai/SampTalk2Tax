@@ -228,7 +228,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-014 |  | capability | Bank balance monitoring | Tested |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |
 | BANK-016 | AI Enhancements | capability | Intelligent transaction classification | Integration pending |
-| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Implementing |
+| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Tested |
 | BANK-018 | AI Enhancements | capability | Duplicate transaction detection | Tested |
 | BANK-019 | AI Enhancements | capability | Suspicious transaction monitoring | Not started |
 | BANK-020 | AI Enhancements | capability | Reconciliation exception analysis | Not started |
@@ -314,7 +314,7 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 | PAY-008 |  | capability | Commissions | Not started |
 | PAY-009 |  | capability | Reimbursements | Implementing |
 | PAY-010 |  | capability | Overtime | Not started |
-| PAY-011 |  | capability | Leave-related adjustments | Implementing |
+| PAY-011 |  | capability | Leave-related adjustments | Tested |
 | PAY-012 |  | capability | Attendance integration | Not started |
 | PAY-013 |  | capability | Employee advances | Not started |
 | PAY-014 |  | capability | Loans | Not started |

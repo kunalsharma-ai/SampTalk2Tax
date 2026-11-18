@@ -352,7 +352,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'banking/[id]': {
     what: 'One bank account: imported statement lines, what is matched and what is not.',
-    how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance. Use Files on a line to keep the bank advice or receipt behind it; the button shows how many are attached.',
+    how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance. Use Files on a line to keep the bank advice or receipt behind it; the button shows how many are attached. Suggestions learn from your matches: when two ledger lines have the same amount, the one with the contact or account you matched similar lines to comes first, and What matching learned shows what it has picked up.',
     where: 'Opened from Bank accounts.',
   },
   'banking/[id]/import': {
@@ -405,6 +405,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     what: 'Your employees with their salary structure, PAN, statutory numbers and bank details.',
     how: 'Add an employee and their salary components. Open one to change their structure from a date.',
     where: 'Payroll. Employees are paid in Pay runs.',
+  },
+  'payroll/leave': {
+    what: 'Leave types with a yearly allowance, leave taken by each employee, and the balance left in the April to March year.',
+    how: 'Add leave types (paid with days a year, or unpaid), then record leave one month at a time. Unpaid leave becomes loss-of-pay days on that month\'s payslip; a draft run is updated at once.',
+    where: 'Payroll. Leave in a month whose pay run is posted cannot change.',
   },
   'payroll/bonus': {
     what: 'The statutory bonus each employee is owed for an April to March year under the Code on Wages, from posted payslips, with what has been paid and what is still to pay.',

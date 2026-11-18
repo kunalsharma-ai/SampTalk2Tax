@@ -322,3 +322,54 @@ describe('files on statement lines', () => {
     await upload(viewer, rent.id, Buffer.concat([PDF, Buffer.from('viewer')])).expect(403);
   });
 });
+
+describe('suggestions learn from past matches', () => {
+  // A separate organisation, so the other scenarios' matches do not teach anything here.
+  let o2: Awaited<ReturnType<typeof createOrg>>;
+  let b2: string;
+  type Line = { id: string; description: string; suggestion: { journalLineId: string; reasons: string[] } | null };
+  const post = (lines: unknown[], date: string, memo: string) => ctx.http().post(`${o2.base}/journals`).set(owner.auth).send({ date, memo, post: true, lines }).expect(201);
+  const bankLineOf = (e: { lines: { id: string; accountId: string }[] }) => e.lines.find((l) => l.accountId === b2)!.id;
+  const find2 = async (text: string) => ((await ctx.http().get(`${o2.base}/banking/accounts/${b2}/lines`).set(owner.auth).expect(200)).body.lines as Line[]).find((l) => l.description.includes(text))!;
+  const importLine = (date: string, text: string, amount: string) =>
+    ctx.http().post(`${o2.base}/banking/accounts/${b2}/imports`).set(owner.auth).send({ fileName: `${text}.csv`, csv: `h\n${dmy(date)},${text},,${amount}\n`, mapping }).expect(201);
+  let interest: string; // ledger line of the receipt booked to other income
+  let sales: string; // ledger line of the same-amount receipt booked to sales
+
+  beforeAll(async () => {
+    o2 = await createOrg(ctx, owner);
+    b2 = o2.acc['1120'];
+    // Last month's receipt from Sharma Traders, booked to other income and matched by hand.
+    const first = (await post([{ accountId: b2, debit: '5000.00' }, { accountId: o2.acc['4900'], credit: '5000.00' }], day(1), 'Receipt')).body;
+    await importLine(day(1), 'NEFT SHARMA TRADERS UTR111', '5000.00');
+    await ctx.http().post(`${o2.base}/banking/lines/${(await find2('UTR111')).id}/match`).set(owner.auth).send({ journalLineIds: [bankLineOf(first)] }).expect(200);
+    // Two receipts of the same amount now: sales on the very day, other income two days later.
+    sales = bankLineOf((await post([{ accountId: b2, debit: '5000.00' }, { accountId: o2.acc['4100'], credit: '5000.00' }], day(5), 'Receipt')).body);
+    interest = bankLineOf((await post([{ accountId: b2, debit: '5000.00' }, { accountId: o2.acc['4900'], credit: '5000.00' }], day(7), 'Receipt')).body);
+    await importLine(day(5), 'IMPS SHARMA TRADERS UTR222', '5000.00');
+  });
+
+  it('prefers the account similar lines were matched to, and says why', async () => {
+    const line = await find2('UTR222');
+    expect(line.suggestion!.journalLineId).toBe(interest);
+    expect(line.suggestion!.reasons.join(' · ')).toMatch(/You matched similar lines to .+ 1 time before/);
+    const learned = (await ctx.http().get(`${o2.base}/banking/accounts/${b2}/match-patterns`).set(owner.auth).expect(200)).body;
+    expect(learned.decisions).toBe(1);
+    expect(learned.patterns).toEqual([expect.objectContaining({ words: ['sharma', 'traders'], kept: 1, undone: 0 })]);
+  });
+
+  it('counts an undone match against the account, so the date decides again', async () => {
+    await ctx.http().post(`${o2.base}/banking/lines/${(await find2('UTR111')).id}/unmatch`).set(owner.auth).send({}).expect(200);
+    const line = await find2('UTR222');
+    expect(line.suggestion!.journalLineId).toBe(sales);
+    expect(line.suggestion!.reasons.join(' ')).not.toContain('You matched');
+    const learned = (await ctx.http().get(`${o2.base}/banking/accounts/${b2}/match-patterns`).set(owner.auth).expect(200)).body;
+    expect(learned.patterns[0]).toMatchObject({ kept: 0, undone: 1 });
+  });
+
+  it('keeps each organisation\'s patterns to itself', async () => {
+    await ctx.http().get(`${org.base}/banking/accounts/${b2}/match-patterns`).set(owner.auth).expect(404);
+    const mine = (await ctx.http().get(`${org.base}/banking/accounts/${bank}/match-patterns`).set(owner.auth).expect(200)).body;
+    expect(mine.patterns.map((p: { words: string[] }) => p.words).flat()).not.toContain('sharma');
+  });
+});
