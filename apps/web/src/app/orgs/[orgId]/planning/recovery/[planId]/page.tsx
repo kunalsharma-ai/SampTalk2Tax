@@ -92,7 +92,8 @@ export default function RecoveryPlanPage() {
                 { name: 'With this plan', months: f.withPlan.cash as unknown as TwinMonth[] },
               ]}
               currency={c}
-              label="Month-end cash with no action and with the plan. The key figures are above."
+              label="Month-end cash with no action and with the plan. The figures are in the table that follows."
+              withTable
             />
             {f.risks.length ? (
               <ul className="mt-3 space-y-1 text-sm" aria-label="Risks with this plan">

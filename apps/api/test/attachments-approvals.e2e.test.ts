@@ -253,3 +253,74 @@ describe('approvals', () => {
     expect(seen.items.every((x: { canApprove: boolean }) => !x.canApprove)).toBe(true);
   });
 });
+
+describe('two-level approvals', () => {
+  let second: TestUser;
+  it('sets a second approval level above an amount', async () => {
+    second = await registerUser(ctx, 'Second Approver');
+    await ctx.http().post(`${org.base}/members`).set(owner.auth).send({ email: second.email, role: 'APPROVER' }).expect(201);
+    expect((await ctx.http().put(`${org.base}/approval-policies/BILL`).set(owner.auth).send({ minAmount: '5000', secondApprovalFrom: '1000' }).expect(422)).body.message).toMatch(/second approval/);
+    const p = (await ctx.http().put(`${org.base}/approval-policies/BILL`).set(owner.auth).send({ minAmount: '5000', secondApprovalFrom: '50000', secondApproverSenior: true }).expect(200)).body;
+    expect(p).toMatchObject({ minAmount: '5000.00', secondApprovalFrom: '50000.00', secondApproverSenior: true });
+  });
+
+  it('needs two different approvers, the second an owner or admin, before a large bill posts', async () => {
+    const b = (await bill(accountant, '60000.00').expect(201)).body;
+    expect((await ctx.http().get(`${org.base}/approvals/for-document/${b.id}`).set(accountant.auth).expect(200)).body.policy).toMatchObject({ approvalsNeeded: 2 });
+    const r = (await ctx.http().post(`${org.base}/approvals`).set(accountant.auth).send({ documentId: b.id }).expect(201)).body;
+    expect(r).toMatchObject({ status: 'PENDING', approvalsNeeded: 2, approvals: [] });
+
+    const first = (await ctx.http().post(`${org.base}/approvals/${r.id}/approve`).set(approver.auth).send({ note: 'Prices match the PO', post: true }).expect(200)).body;
+    expect(first).toMatchObject({ posted: false, approval: { status: 'PENDING', approvals: [{ by: 'Approver', note: 'Prices match the PO' }], decidedBy: null } });
+    expect((await ctx.http().post(`${org.base}/purchases/documents/${b.id}/post`).set(owner.auth).send({}).expect(409)).body.error).toBe('APPROVAL_REQUIRED');
+    expect((await ctx.http().post(`${org.base}/approvals/${r.id}/approve`).set(approver.auth).send({}).expect(403)).body.error).toBe('ALREADY_APPROVED_BY_YOU');
+    expect((await ctx.http().post(`${org.base}/approvals/${r.id}/approve`).set(second.auth).send({}).expect(403)).body.error).toBe('SENIOR_APPROVER_NEEDED');
+    const mine = (await ctx.http().get(`${org.base}/approvals?status=PENDING`).set(approver.auth).expect(200)).body.items.find((x: { id: string }) => x.id === r.id);
+    expect(mine).toMatchObject({ canApprove: false, waitingFor: 'ANOTHER_APPROVER' });
+    const theirs = (await ctx.http().get(`${org.base}/approvals?status=PENDING`).set(second.auth).expect(200)).body.items.find((x: { id: string }) => x.id === r.id);
+    expect(theirs).toMatchObject({ canApprove: false, waitingFor: 'OWNER_OR_ADMIN' });
+    expect((await ctx.http().get(`${org.base}/approvals?status=PENDING`).set(owner.auth).expect(200)).body.items.find((x: { id: string }) => x.id === r.id)).toMatchObject({ canApprove: true, waitingFor: null });
+
+    const done = (await ctx.http().post(`${org.base}/approvals/${r.id}/approve`).set(owner.auth).send({ note: 'Second check', post: true }).expect(200)).body;
+    expect(done).toMatchObject({ posted: true, approval: { status: 'APPROVED', decidedBy: 'Owner', decisionNote: 'Second check' }, document: { status: 'POSTED' } });
+    expect(done.approval.approvals.map((a: { by: string }) => a.by)).toEqual(['Approver', 'Owner']);
+    const audit = (await ctx.http().get(`${org.base}/audit-events?entityType=approval_request&entityId=${r.id}`).set(owner.auth).expect(200)).body;
+    expect((audit.items ?? audit).map((e: { action: string }) => e.action)).toEqual(expect.arrayContaining(['approval.requested', 'approval.first_approved', 'approval.approved']));
+  });
+
+  it('keeps one approval below the second level, and rejecting after the first approval ends the request', async () => {
+    const small = (await bill(accountant, '20000.00').expect(201)).body;
+    const r1 = (await ctx.http().post(`${org.base}/approvals`).set(accountant.auth).send({ documentId: small.id }).expect(201)).body;
+    expect(r1.approvalsNeeded).toBe(1);
+    expect((await ctx.http().post(`${org.base}/approvals/${r1.id}/approve`).set(second.auth).send({ post: true }).expect(200)).body).toMatchObject({ posted: true, approval: { status: 'APPROVED' } });
+
+    const big = (await bill(accountant, '75000.00').expect(201)).body;
+    const r2 = (await ctx.http().post(`${org.base}/approvals`).set(accountant.auth).send({ documentId: big.id }).expect(201)).body;
+    await ctx.http().post(`${org.base}/approvals/${r2.id}/approve`).set(second.auth).send({}).expect(200);
+    const rej = (await ctx.http().post(`${org.base}/approvals/${r2.id}/reject`).set(owner.auth).send({ note: 'Not budgeted' }).expect(200)).body;
+    expect(rej).toMatchObject({ status: 'REJECTED', approvals: [{ by: 'Second Approver' }], waitingFor: null });
+  });
+
+  it('raises an alert for an approval left waiting, which clears once decided', async () => {
+    const b = (await bill(accountant, '90000.00').expect(201)).body;
+    const r = (await ctx.http().post(`${org.base}/approvals`).set(accountant.auth).send({ documentId: b.id, note: 'Quarterly service' }).expect(201)).body;
+    await ctx.http().post(`${org.base}/approvals/${r.id}/approve`).set(approver.auth).send({}).expect(200);
+    await ctx.db.collection('approval_requests').updateOne({ _id: r.id }, { $set: { requestedAt: new Date(Date.now() - 10 * 86_400_000) } });
+    await ctx.http().put(`${org.base}/alert-rules/APPROVAL_WAITING`).set(owner.auth).send({ enabled: true, params: { waitingDays: '3' } }).expect(200);
+    const waiting = async () => {
+      await ctx.http().post(`${org.base}/alerts/scan`).set(owner.auth).expect(200);
+      return (await ctx.http().get(`${org.base}/alerts`).query({ status: 'ACTIVE' }).set(owner.auth).expect(200)).body.alerts.filter((a: { rule: string }) => a.rule === 'APPROVAL_WAITING');
+    };
+    const [a] = await waiting();
+    expect(a).toMatchObject({ severity: 'CRITICAL', title: 'Bill draft for Synthetic Supplies waiting 10 days for approval' });
+    expect(a.evidence.facts).toEqual(expect.arrayContaining([{ label: 'Approvals', value: '1 of 2 approvals (Approver)' }, { label: 'Submitted by', value: 'Accountant' }]));
+    expect(a.evidence.links[0]).toMatchObject({ kind: 'BILL', id: b.id });
+    await ctx.http().post(`${org.base}/approvals/${r.id}/reject`).set(owner.auth).send({ note: 'Not this quarter' }).expect(200);
+    expect(await waiting()).toEqual([]);
+  });
+
+  it('turns the second level off', async () => {
+    const p = (await ctx.http().put(`${org.base}/approval-policies/BILL`).set(owner.auth).send({ minAmount: '5000', secondApprovalFrom: null }).expect(200)).body;
+    expect(p).toMatchObject({ secondApprovalFrom: null, secondApproverSenior: false });
+  });
+});

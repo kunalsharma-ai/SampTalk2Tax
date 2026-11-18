@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import {
+  chooseBranch,
   Condition,
+  ConditionMatch,
   CreateTaskAction,
   dueDateWindow,
-  evaluateConditions,
   Facts,
   formatAmountText,
   formatDateText,
@@ -16,6 +17,7 @@ import {
   TriggerParams,
   triggerDef,
   WorkflowAction,
+  WorkflowDefinition,
   WorkflowTrigger,
 } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
@@ -28,6 +30,11 @@ import { addDays, ROLE_LABELS, TasksService, todayIst } from '../tasks/tasks.ser
 import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { sendWebhook, signPayload, WebhookResult } from './webhook';
 import { dueDocuments, EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, WATCHED_ACTIONS } from './workflow-facts';
+
+/** A stored version as a definition; versions saved before branches existed are ALL with no otherwise actions. */
+export function versionDef(v: { trigger: string; conditions: unknown; match?: string | null; actions: unknown; otherwise?: unknown }): WorkflowDefinition {
+  return { trigger: v.trigger as WorkflowTrigger, conditions: v.conditions as Condition[], match: (v.match ?? 'ALL') as ConditionMatch, actions: v.actions as WorkflowAction[], otherwise: (v.otherwise ?? []) as WorkflowAction[] };
+}
 import { lockRow } from '../db/locks';
 import { withLease } from '../db/counters';
 import { claimRecords } from '../db/mirror-writes';
@@ -335,12 +342,11 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     return { to, recipientLabel, subject, body, problem };
   }
 
-  /** Records a live run: conditions, then each action. Tasks are created here; webhooks and emails are queued. */
+  /** Records a live run: conditions, then each action of the branch they lead to. Tasks are created here; webhooks and emails are queued. */
   private async startRun(tx: Tx, orgId: string, w: WorkflowWithVersion, source: RunSource, ev: EventFacts, eventDate: Date) {
     const v = w.versions[0];
-    const conditions = v.conditions as unknown as Condition[];
-    const actions = v.actions as unknown as WorkflowAction[];
-    const result = evaluateConditions(v.trigger as WorkflowTrigger, conditions, ev.facts);
+    const result = chooseBranch(versionDef(v), ev.facts);
+    const actions = result.actions;
     const now = new Date();
     const run = await tx.workflowRun.create({
       data: {
@@ -353,11 +359,12 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
         entityId: ev.entityId,
         facts: (ev.link ? { ...ev.facts, _link: ev.link } : ev.facts) as Prisma.InputJsonValue,
         conditions: result.results as unknown as Prisma.InputJsonValue,
-        status: result.matched ? 'RUNNING' : 'SKIPPED',
-        finishedAt: result.matched ? null : now,
+        branch: result.branch,
+        status: result.branch ? 'RUNNING' : 'SKIPPED',
+        finishedAt: result.branch ? null : now,
       },
     });
-    if (!result.matched) return;
+    if (!result.branch) return;
     for (const [position, a] of actions.entries()) {
       if (a.type === 'CREATE_TASK') {
         const preview = await this.previewTask(tx, orgId, a, ev.facts, eventDate);

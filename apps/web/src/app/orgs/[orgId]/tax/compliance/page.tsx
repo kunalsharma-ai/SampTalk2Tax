@@ -130,7 +130,7 @@ function Compliance() {
 }
 
 function evidenceHref(orgId: string, e: ComplianceItem['evidence'][number]) {
-  return e.type === 'WITHHOLDING_DEPOSIT' ? `/orgs/${orgId}/tax/tds-tcs` : `/orgs/${orgId}/payroll/runs/${e.id}`;
+  return e.type === 'WITHHOLDING_DEPOSIT' ? `/orgs/${orgId}/tax/tds-tcs` : e.type === 'GST_PAYMENT' ? `/orgs/${orgId}/tax/gst-payments` : `/orgs/${orgId}/payroll/runs/${e.id}`;
 }
 
 function workingPaper(orgId: string, i: ComplianceItem): string | null {

@@ -73,6 +73,8 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { href: '/payroll/runs', label: 'Pay runs', needs: 'PAYROLL', plan: 'PAYROLL' },
       { href: '/payroll/employees', label: 'Employees', needs: 'PAYROLL', plan: 'PAYROLL' },
+      { href: '/payroll/leave', label: 'Leave', needs: 'PAYROLL', plan: 'PAYROLL' },
+      { href: '/payroll/bonus', label: 'Statutory bonus', needs: 'PAYROLL', plan: 'PAYROLL' },
       { href: '/settings/payroll', label: 'Payroll settings', needs: 'PAYROLL', plan: 'PAYROLL' },
     ],
   },
@@ -119,6 +121,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/tax/notices', label: 'Tax notices', perm: 'reports.read' },
       { href: '/tax/advance-tax', label: 'Advance tax', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/gst-returns', label: 'GST returns', needs: 'SALES_TAX_RETURNS' },
+      { href: '/tax/gst-payments', label: 'GST payments', needs: 'SALES_TAX_RETURNS', perm: 'reports.read' },
       { href: '/tax/e-invoices', label: 'E-invoices', needs: 'E_INVOICING' },
       { href: '/tax/e-way-bills', label: 'E-way bills', needs: 'TRANSPORT_DOCUMENTS' },
       { href: '/tax/tds-tcs', label: 'TDS and TCS', needs: 'WITHHOLDING' },

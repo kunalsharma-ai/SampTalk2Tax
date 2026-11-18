@@ -11,7 +11,8 @@ import { chromium } from 'playwright';
 
 const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
 const PDF = Buffer.from('%PDF-1.4\n% synthetic e2e receipt\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n');
-let browser, owner, approver, base, orgId, billId;
+let browser, owner, approver, third, base, orgId, billId;
+const SHOTS = process.env.E2E_SCREENSHOTS;
 const consoleErrors = [];
 const approverEmail = `e2e-approver-${randomUUID()}@example.test`;
 
@@ -38,7 +39,8 @@ before(async () => {
   browser = await chromium.launch();
   owner = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   approver = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
-  for (const p of [owner, approver]) {
+  third = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+  for (const p of [owner, approver, third]) {
     p.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()));
     p.on('dialog', (d) => d.accept());
   }
@@ -120,6 +122,51 @@ test('an approver approves and posts it', async () => {
   // An approver can read purchases but not change their files.
   await approver.getByRole('link', { name: 'steel-invoice.pdf' }).waitFor();
   assert.equal(await approver.getByRole('button', { name: 'Attach files' }).count(), 0);
+});
+
+test('a large bill needs a second approval from a different person', async () => {
+  await owner.goto(`${base}/settings/approvals`);
+  await owner.getByRole('button', { name: 'Edit the rule for bills' }).click();
+  const dialog = owner.getByRole('dialog');
+  await dialog.getByLabel('Two approvals from').fill('50000');
+  await dialog.getByRole('button', { name: 'Save rule' }).click();
+  await dialog.waitFor({ state: 'detached' });
+  await owner.getByRole('row', { name: /Bills\s+On/ }).getByText(/by another approver/).waitFor();
+  if (SHOTS) await owner.screenshot({ path: `${SHOTS}/approval-chains-01-rules.png` });
+
+  const acc = Object.fromEntries((await call(owner, `/v1/orgs/${orgId}/accounts`)).body.map((a) => [a.code, a.id]));
+  const vendor = (await call(owner, `/v1/orgs/${orgId}/contacts`, { name: 'Synthetic Alloys', isVendor: true })).body;
+  const big = await call(owner, `/v1/orgs/${orgId}/purchases/documents`, { kind: 'BILL', contactId: vendor.id, issueDate: new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10), lines: [{ accountId: acc['1300'], quantity: '1', unitPrice: '80000.00' }] });
+  assert.equal(big.status, 201);
+  assert.equal((await call(owner, `/v1/orgs/${orgId}/approvals`, { documentId: big.body.id, note: 'Annual steel contract' })).status, 201);
+
+  await approver.goto(`${WEB}/orgs/${orgId}/approvals`);
+  let row = approver.getByRole('row', { name: /Annual steel contract/ });
+  await row.getByText('0 of 2 approvals').waitFor();
+  await row.getByRole('button', { name: 'Approve…' }).click();
+  let d = approver.getByRole('dialog');
+  await d.getByText('This needs 2 approvals from different people; yours is number 1.').waitFor();
+  await d.getByLabel('Note (optional)').fill('Rates checked');
+  await d.getByRole('button', { name: 'Approve', exact: true }).click();
+  await d.getByText('Approval 1 of 2 recorded').waitFor();
+  await d.locator('button', { hasText: 'Close' }).click();
+  await row.getByText('You approved; needs a second approver').waitFor();
+  await row.getByText('1 of 2 approvals: Second Approver').waitFor();
+  if (SHOTS) await approver.screenshot({ path: `${SHOTS}/approval-chains-02-inbox.png` });
+
+  const email = `e2e-third-${randomUUID()}@example.test`;
+  await register(third, 'Finance Head', email);
+  assert.equal((await call(owner, `/v1/orgs/${orgId}/members`, { email, role: 'ADMIN' })).status, 201);
+  await third.goto(`${WEB}/orgs/${orgId}/purchases/bills/${big.body.id}`);
+  await third.getByText(/Needs 2 approvals from different people; 1 given \(Second Approver\)/).waitFor();
+  await third.getByRole('button', { name: 'Approve…' }).click();
+  d = third.getByRole('dialog');
+  await d.getByRole('button', { name: 'Approve and post' }).click();
+  await d.waitFor({ state: 'detached' });
+  await third.getByText(/Approved by Second Approver \(“Rates checked”\), then Finance Head/).waitFor();
+  if (SHOTS) await third.screenshot({ path: `${SHOTS}/approval-chains-03-bill.png` });
+  const after = (await call(owner, `/v1/orgs/${orgId}/purchases/documents/${big.body.id}`)).body;
+  assert.equal(after.status, 'POSTED');
 });
 
 test('no unexpected console errors were logged', () => {

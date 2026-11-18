@@ -77,7 +77,7 @@ export default function RecoveryPage() {
           </div>
           <Card className="mb-4 p-4">
             <CardHeader title="Cash with no action (hypothetical)" description="Month-end cash if nothing changes, from the average of your recent actual months." />
-            <TwinCashChart actual={[]} series={[{ name: 'No action (hypothetical)', months: n.cash as unknown as TwinMonth[] }]} currency={c} label="Month-end cash with no action. The key figures are above." />
+            <TwinCashChart actual={[]} series={[{ name: 'No action (hypothetical)', months: n.cash as unknown as TwinMonth[] }]} currency={c} label="Month-end cash with no action. The figures are in the table that follows." withTable />
           </Card>
         </>
       ) : q.isLoading ? <p className="text-sm text-fg-muted">Working out the options…</p> : null}

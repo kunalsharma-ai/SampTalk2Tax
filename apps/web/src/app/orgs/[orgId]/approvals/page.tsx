@@ -71,12 +71,13 @@ export default function ApprovalsPage() {
                   <Td numeric><Money value={r.total} currency={org.functionalCurrency} /></Td>
                   <Td>
                     <ApprovalBadge status={r.status} />
+                    {r.approvalsNeeded > 1 && r.status === 'PENDING' ? <p className="mt-1 text-xs text-fg-muted">{r.approvals.length} of {r.approvalsNeeded} approvals{r.approvals.length ? `: ${r.approvals.map((a) => a.by ?? 'someone').join(', ')}` : ''}</p> : null}
                     {r.decidedBy && r.status !== 'PENDING' ? <p className="mt-1 text-xs text-fg-muted">{r.decidedBy}{r.decisionNote ? `: ${r.decisionNote}` : ''}</p> : null}
                   </Td>
                   <Td className="text-fg-muted">{r.requestedBy}</Td>
                   <Td className="text-right">
                     <div className="flex justify-end gap-2">
-                      {r.status === 'PENDING' && !r.canApprove && r.ownWork ? <span className="text-xs text-fg-muted">Needs someone else</span> : null}
+                      {r.status === 'PENDING' && r.waitingFor === 'ANOTHER_APPROVER' ? <span className="text-xs text-fg-muted">You approved; needs a second approver</span> : r.status === 'PENDING' && r.waitingFor === 'OWNER_OR_ADMIN' ? <span className="text-xs text-fg-muted">Second approval by an owner or admin</span> : r.status === 'PENDING' && !r.canApprove && r.ownWork ? <span className="text-xs text-fg-muted">Needs someone else</span> : null}
                       <DecisionButtons r={r} currency={org.functionalCurrency} onDone={refresh} />
                     </div>
                   </Td>

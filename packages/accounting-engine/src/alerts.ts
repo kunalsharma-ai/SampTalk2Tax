@@ -54,6 +54,7 @@ export const ALERT_RULE_KEYS = [
   'UNUSUAL_JOURNAL',
   'VENDOR_RISK',
   'BANK_ACCOUNT_WATCH',
+  'APPROVAL_WAITING',
 ] as const;
 export type AlertRuleKey = (typeof ALERT_RULE_KEYS)[number];
 
@@ -140,6 +141,13 @@ export const ALERT_RULES: readonly AlertRuleDef[] = Object.freeze([
     name: 'Bank account low or not reconciled',
     description: 'A bank or cash account whose balance in the books is below the set amount (critical when overdrawn), or that has not been reconciled to a statement for more than the set number of days while it has activity.',
     params: [p('minBalance', 'Balance below', 'amount', '0', '9999999999999', '0', false), p('unreconciledDays', 'Not reconciled for more than', 'days', '7', '365', '45')],
+  },
+  {
+    key: 'APPROVAL_WAITING',
+    area: 'CONTROLS',
+    name: 'Approval waiting too long',
+    description: 'An invoice, bill, credit note or manual journal has been waiting for approval for more than the set number of days, so it goes to the people who get alerts. Critical after three times as long. Clears once someone decides or the request is withdrawn.',
+    params: [p('waitingDays', 'Waiting for more than', 'days', '1', '90', '3')],
   },
 ] satisfies AlertRuleDef[]);
 

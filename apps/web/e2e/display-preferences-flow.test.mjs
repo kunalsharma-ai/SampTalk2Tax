@@ -82,6 +82,10 @@ test('a person reads Talk2Tax in Hindi with their own formats, and the organisat
   await nav.getByRole('link', { name: 'इनवॉइस', exact: true }).click();
   await page.getByText('₹1,234,567.89').first().waitFor();
   await page.getByText(T).first().waitFor();
+  // Shared headings, column names and buttons are in Hindi too; numbers like GST stay as written.
+  await page.getByRole('heading', { name: 'इनवॉइस और क्रेडिट नोट', exact: true }).waitFor();
+  for (const col of ['संख्या', 'ग्राहक', 'तारीख़', 'देय', 'स्थिति', 'कुल', 'अभी बाकी']) await page.getByRole('columnheader', { name: col, exact: true }).waitFor();
+  await page.getByText('पोस्ट करने पर जर्नल अपने-आप बनता है।', { exact: false }).waitFor();
 
   // The owner sets the organisation's time zone.
   await page.goto(`${WEB}/orgs/${orgId}/account`);

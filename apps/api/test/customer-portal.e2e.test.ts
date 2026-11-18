@@ -99,7 +99,9 @@ describe('the portal, without signing in', () => {
     expect(p.invoices.find((i: { id: string }) => i.id === ids.recent)).toMatchObject({ state: 'OPEN', open: '6000.00', payLink: { reference: 'PL-0001', url: `https://rzp.example.test/pay/${ids.plink}` } });
     expect(p.receipts).toEqual([expect.objectContaining({ date: T, amount: '4000.00', currency: 'INR', reference: 'NEFT 8812', status: 'POSTED' })]);
     expect(JSON.stringify(p)).not.toContain('Moonlight');
-    expect(JSON.stringify(p)).not.toContain('7777');
+    // The other customer's ₹7,777 invoice, as an amount: a bare '7777' can turn up inside a random id or token.
+    expect(JSON.stringify(p)).not.toMatch(/"7777(\.0+)?"/);
+    expect(JSON.stringify(p)).not.toContain(ids.others);
     const list = (await ctx.http().get(L()).set(owner.auth).expect(200)).body;
     expect(list[0].viewCount).toBe(1);
     expect(list[0].lastSeenAt).not.toBeNull();

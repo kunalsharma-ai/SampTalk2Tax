@@ -34,12 +34,13 @@ export function DecisionButtons({ r, currency, onDone }: { r: ApprovalRequest; c
         ? api<ApproveResult>(`${base}/approve`, { method: 'POST', body: { note: note || null, post } })
         : api<ApprovalRequest>(`${base}/reject`, { method: 'POST', body: { note } }),
     onSuccess: async (res) => {
-      if (mode === 'approve' && res && 'postError' in res && res.postError) setResult(res);
+      if (mode === 'approve' && res && 'postError' in res && (res.postError || res.approval.status === 'PENDING')) setResult(res);
       else setMode(null);
       await onDone();
     },
   });
-  if (!org || !r.canApprove) return null;
+  // Stays mounted while its dialog is open: after a first approval the viewer can no longer approve, but sees the result.
+  if (!org || (!r.canApprove && !mode)) return null;
   const canPost = can(org.role, 'journals.post');
   const open = (m: 'approve' | 'reject') => {
     decide.reset();
@@ -50,15 +51,24 @@ export function DecisionButtons({ r, currency, onDone }: { r: ApprovalRequest; c
   };
   return (
     <>
-      <Button size="sm" variant="secondary" onClick={() => open('reject')}>Reject…</Button>
-      <Button size="sm" onClick={() => open('approve')}>Approve…</Button>
+      {r.canApprove ? (
+        <>
+          <Button size="sm" variant="secondary" onClick={() => open('reject')}>Reject…</Button>
+          <Button size="sm" onClick={() => open('approve')}>Approve…</Button>
+        </>
+      ) : null}
       <Dialog
         open={!!mode}
         onOpenChange={(o) => !o && setMode(null)}
         title={mode === 'approve' ? `Approve ${r.documentNumber ?? 'draft'} for ${r.contactName}` : `Reject ${r.documentNumber ?? 'draft'} for ${r.contactName}`}
         description={mode === 'approve' ? 'Your name and note are kept with the document. If the draft is edited later, the approval is cancelled.' : 'The preparer sees your reason and can fix the draft and submit it again.'}
       >
-        {result ? (
+        {result && !result.postError ? (
+          <div className="flex flex-col gap-4">
+            <Alert tone="positive" title={`Approval ${result.approval.approvals.length} of ${result.approval.approvalsNeeded} recorded`}>This document needs one more approval from someone else before it can post.</Alert>
+            <div className="flex justify-end"><Button onClick={() => setMode(null)}>Close</Button></div>
+          </div>
+        ) : result ? (
           <div className="flex flex-col gap-4">
             <Alert tone="warning" title="Approved, but not posted">{result.postError!.message}. Open the document to resolve this and post it.</Alert>
             <div className="flex justify-end"><Button onClick={() => setMode(null)}>Close</Button></div>
@@ -70,12 +80,13 @@ export function DecisionButtons({ r, currency, onDone }: { r: ApprovalRequest; c
             <Field label={mode === 'approve' ? 'Note (optional)' : 'Reason'}>
               {(p) => <Input {...p} required={mode === 'reject'} minLength={mode === 'reject' ? 3 : undefined} value={note} onChange={(e) => setNote(e.target.value)} />}
             </Field>
-            {mode === 'approve' && canPost ? (
+            {mode === 'approve' && r.approvalsNeeded > 1 ? <p className="text-sm text-fg-muted">This needs {r.approvalsNeeded} approvals from different people; yours is number {r.approvals.length + 1}.</p> : null}
+            {mode === 'approve' && canPost && r.approvals.length + 1 >= r.approvalsNeeded ? (
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[var(--t2t-accent)]" checked={post} onChange={(e) => setPost(e.target.checked)} /> Post it to the books now</label>
             ) : null}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setMode(null)}>Cancel</Button>
-              <Button type="submit" variant={mode === 'reject' ? 'danger' : 'primary'} loading={decide.isPending}>{mode === 'approve' ? (post && canPost ? 'Approve and post' : 'Approve') : 'Reject'}</Button>
+              <Button type="submit" variant={mode === 'reject' ? 'danger' : 'primary'} loading={decide.isPending}>{mode === 'approve' ? (post && canPost && r.approvals.length + 1 >= r.approvalsNeeded ? 'Approve and post' : 'Approve') : 'Reject'}</Button>
             </div>
           </form>
         )}
@@ -111,8 +122,10 @@ export function ApprovalCard({ documentId, isDraft, canManage, currency, onChang
   let summary: string;
   if (!isDraft) summary = 'Approval history for this document.';
   else if (s.readyToPost) summary = 'Approved. It can be posted.';
+  else if (open?.status === 'PENDING' && open.approvalsNeeded > 1)
+    summary = `Needs ${open.approvalsNeeded} approvals from different people; ${open.approvals.length} given${open.approvals.length ? ` (${open.approvals.map((a) => a.by ?? 'someone').join(', ')})` : ''}.${open.waitingFor === 'ANOTHER_APPROVER' ? ' Someone other than you must give the next one.' : open.waitingFor === 'OWNER_OR_ADMIN' ? ' The last approval must come from an owner or admin.' : open.ownWork && !open.canApprove ? ' Someone other than you must approve it.' : ''}`;
   else if (open?.status === 'PENDING') summary = `Waiting for approval${open.requestedBy ? `, submitted by ${open.requestedBy}` : ''}.${open.ownWork && !open.canApprove ? ' Someone other than you must approve it.' : ''}`;
-  else summary = `Drafts like this one (${s.policy ? `from ${s.policy.minAmount}` : 'covered by a rule'}) need an approval before they can post${s.policy?.requireDifferentApprover ? ', from someone other than the preparer' : ''}.`;
+  else summary = `Drafts like this one (${s.policy ? `from ${s.policy.minAmount}` : 'covered by a rule'}) need ${s.policy && s.policy.approvalsNeeded > 1 ? `${s.policy.approvalsNeeded} approvals from different people` : 'an approval'} before they can post${s.policy?.requireDifferentApprover ? ', from someone other than the preparer' : ''}.`;
   return (
     <Card className="mt-6">
       <CardHeader
@@ -136,6 +149,7 @@ export function ApprovalCard({ documentId, isDraft, canManage, currency, onChang
             <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3">
               <ApprovalBadge status={r.status} />
               <span>Submitted by {r.requestedBy ?? 'someone'} on {date(r.requestedAt.slice(0, 10))} for <Money value={r.total} currency={currency} /></span>
+              {r.approvals.length && (r.status === 'PENDING' || r.approvalsNeeded > 1) ? <span className="text-fg-muted">· Approved by {r.approvals.map((a) => `${a.by ?? 'someone'}${a.note ? ` (“${a.note}”)` : ''}`).join(', then ')}{r.status === 'PENDING' ? `, ${r.approvals.length} of ${r.approvalsNeeded}` : ''}</span> : null}
               {r.decidedAt ? <span className="text-fg-muted">· {r.status === 'CANCELLED' ? '' : `${r.decidedBy ?? 'someone'}: `}{r.decisionNote ?? LABEL[r.status].toLowerCase()}</span> : null}
             </li>
           ))}

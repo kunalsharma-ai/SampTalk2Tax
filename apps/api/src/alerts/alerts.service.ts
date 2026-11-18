@@ -39,6 +39,8 @@ import { lockName } from '../db/locks';
 import { BankingService } from '../banking/banking.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { journalEntries } from '../db/collections/ledger';
+import { approvalRequests } from '../db/collections/sales';
+import { journalApprovals } from '../db/collections/journal-approvals';
 import { runInOrg } from '../common/tenant-context';
 
 type Actor = { id: string };
@@ -578,6 +580,64 @@ export class AlertsService {
             evidence: { facts, links },
           };
         });
+      }
+      case 'APPROVAL_WAITING': {
+        const limit = p.waitingDays.toNumber();
+        const cutoff = new Date(Date.now() - limit * 86_400_000);
+        const [docs, journals] = await Promise.all([
+          runInOrg(orgId, () => this.store.collection(approvalRequests).find({ status: 'PENDING', requestedAt: { $lt: cutoff } })),
+          runInOrg(orgId, () => this.store.collection(journalApprovals).find({ status: 'PENDING', requestedAt: { $lt: cutoff } })),
+        ]);
+        const numbers = new Map(
+          (await this.prisma.document.findMany({ where: { orgId, id: { in: docs.map((d) => d.documentId).filter((x): x is string => !!x) } }, select: { id: true, number: true } })).map((d) => [d.id, d.number]),
+        );
+        const entries = new Map(
+          (await this.prisma.journalEntry.findMany({ where: { orgId, id: { in: journals.map((j) => j.entryId) } }, select: { id: true, entryNumber: true, memo: true } })).map((e) => [e.id, e]),
+        );
+        const who = await this.names([...docs.map((d) => d.requestedById), ...journals.map((j) => j.requestedById), ...docs.flatMap((d) => (d.approvals ?? []).map((a) => a.userId))]);
+        const KIND: Record<string, string> = { INVOICE: 'Invoice', CREDIT_NOTE: 'Credit note', BILL: 'Bill', VENDOR_CREDIT: 'Vendor credit' };
+        const waited = (at: Date) => Math.floor((Date.now() - at.getTime()) / 86_400_000);
+        const items = [
+          ...docs.map((d) => {
+            const label = `${KIND[d.documentKind] ?? 'Document'} ${(d.documentId && numbers.get(d.documentId)) || 'draft'} for ${d.contactName}`;
+            const given = d.approvals ?? [];
+            return {
+              key: `doc:${d.id}`,
+              label,
+              total: new D(d.total),
+              days: waited(d.requestedAt),
+              requestedBy: who.get(d.requestedById) ?? 'someone',
+              requestedAt: d.requestedAt,
+              stage: (d.approvalsNeeded ?? 1) > 1 ? `${given.length} of ${d.approvalsNeeded} approvals${given.length ? ` (${given.map((a) => who.get(a.userId) ?? 'someone').join(', ')})` : ''}` : null,
+              link: d.documentId && (d.documentKind === 'INVOICE' || d.documentKind === 'BILL') ? { kind: d.documentKind, id: d.documentId, label: `Open ${label}` } : null,
+            };
+          }),
+          ...journals.map((j) => {
+            const e = entries.get(j.entryId);
+            const label = `Journal ${e?.entryNumber ? `#${e.entryNumber}` : 'draft'}${e?.memo ? ` (${e.memo})` : ''}`;
+            return { key: `journal:${j.id}`, label, total: new D(j.total), days: waited(j.requestedAt), requestedBy: who.get(j.requestedById) ?? 'someone', requestedAt: j.requestedAt, stage: null as string | null, link: { kind: 'JOURNAL' as 'INVOICE' | 'BILL' | 'JOURNAL', id: j.entryId, label: `Open ${label}` } };
+          }),
+        ];
+        return items.map((i) => ({
+          rule: def.key,
+          fingerprint: i.key,
+          severity: i.days > limit * 3 ? ('CRITICAL' as const) : ('WARNING' as const),
+          title: `${i.label} waiting ${i.days} days for approval`,
+          summary: `Submitted by ${i.requestedBy} on ${dateLabel(istDate(i.requestedAt))} for ${o.money(i.total)}${i.stage ? `; ${i.stage} so far` : ''}. Approve or reject it, or ask the requester to withdraw it.`,
+          amount: i.total,
+          evidence: {
+            facts: [
+              { label: 'Waiting', value: `${i.days} days` },
+              { label: 'Submitted by', value: i.requestedBy },
+              { label: 'Amount', value: o.money(i.total), kind: 'money' as const },
+              ...(i.stage ? [{ label: 'Approvals', value: i.stage }] : []),
+            ],
+            links: [
+              ...(i.link ? [i.link] : []),
+              { kind: 'PAGE' as const, path: '/approvals', label: 'Open approvals' },
+            ],
+          },
+        }));
       }
       case 'UNUSUAL_JOURNAL': {
         const since = new Date(Date.now() - JOURNAL_WINDOW_DAYS * 86_400_000);

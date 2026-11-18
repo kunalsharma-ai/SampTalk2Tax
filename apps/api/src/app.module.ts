@@ -29,6 +29,8 @@ import { AccountReconciliationsService } from './account-reconciliations/account
 import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
 import { CostAllocationsService } from './cost-allocations/cost-allocations.service';
 import { AdvanceTaxController } from './advance-tax/advance-tax.controller';
+import { GstPaymentsController } from './gst/gst-payments.controller';
+import { GstPaymentsService } from './gst/gst-payments.service';
 import { AdvanceTaxService } from './advance-tax/advance-tax.service';
 import { JournalApprovalsController } from './journal-approvals/journal-approvals.controller';
 import { JournalApprovalsService } from './journal-approvals/journal-approvals.service';
@@ -93,6 +95,7 @@ import { PeriodsService } from './periods/periods.service';
 import { ReportsController } from './reports/reports.controller';
 import { ReportsService } from './reports/reports.service';
 import { PayrollController } from './payroll/payroll.controller';
+import { LeaveService } from './payroll/leave.service';
 import { PayrollService } from './payroll/payroll.service';
 import { BudgetsController } from './budgets/budgets.controller';
 import { BudgetsService } from './budgets/budgets.service';
@@ -288,6 +291,7 @@ export class AppModule {
         AccountReconciliationsController,
         CostAllocationsController,
         AdvanceTaxController,
+        GstPaymentsController,
         JournalApprovalsController,
         BillChecksController,
         GstController,
@@ -413,11 +417,13 @@ export class AppModule {
         AccountReconciliationsService,
         CostAllocationsService,
         AdvanceTaxService,
+        GstPaymentsService,
         JournalApprovalsService,
         BillChecksService,
         GstService,
         WithholdingService,
         PayrollService,
+        LeaveService,
         ComplianceService,
         BudgetsService,
         CashFlowService,

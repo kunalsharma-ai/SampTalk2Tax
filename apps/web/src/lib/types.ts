@@ -467,6 +467,8 @@ export interface StatementLine {
   reconciled: boolean;
   matches: (LedgerLink & { id: string; origin: 'EXISTING' | 'CREATED_ENTRY' | 'CREATED_PAYMENT' })[];
   suggestion: (LedgerLink & { score: number; reasons: string[]; unique: boolean }) | null;
+  /** Files attached to the line (not removed). */
+  attachments: number;
 }
 
 export interface LedgerCandidate {
@@ -483,7 +485,12 @@ export interface LedgerCandidate {
 
 export interface ImportPreview {
   imported: boolean;
-  lines: { row: number; date: string; description: string; reference: string | null; amount: string; duplicate: boolean }[];
+  lines: { row: number; date: string; description: string; reference: string | null; amount: string; balance: string | null; duplicate: boolean }[];
+  format: 'CSV' | 'OFX' | 'QIF' | 'MT940';
+  /** For files that state an opening and closing balance (MT940). */
+  fileTotals: { opening: string; closing: string; computed: string; difference: string } | null;
+  /** Null when no balance column was chosen. */
+  balanceCheck: { checked: number; order: 'OLDEST_FIRST' | 'NEWEST_FIRST' | null; breaks: { row: number; previousRow: number; date: string; previousDate: string; expected: string; shown: string; gap: string }[] } | null;
   newCount: number;
   duplicateCount: number;
   moneyIn: string;
@@ -548,6 +555,10 @@ export interface ApprovalPolicy {
   isActive: boolean;
   minAmount: string | null;
   requireDifferentApprover: boolean;
+  /** At or above this total a second, different approver is needed. */
+  secondApprovalFrom: string | null;
+  /** The second approval must come from an owner or admin. */
+  secondApproverSenior: boolean;
   updatedAt: string | null;
 }
 export interface ApprovalRequest {
@@ -568,10 +579,14 @@ export interface ApprovalRequest {
   decisionNote: string | null;
   canApprove: boolean;
   ownWork: boolean;
+  approvalsNeeded: number;
+  approvals: { by: string | null; at: string; note: string | null }[];
+  /** Why the viewer cannot give the next approval, when that is the reason. */
+  waitingFor: 'ANOTHER_APPROVER' | 'OWNER_OR_ADMIN' | null;
 }
 export interface ApprovalState {
   required: boolean;
-  policy: { minAmount: string; requireDifferentApprover: boolean } | null;
+  policy: { minAmount: string; requireDifferentApprover: boolean; approvalsNeeded: number } | null;
   readyToPost: boolean;
   requests: ApprovalRequest[];
 }
@@ -895,6 +910,8 @@ export interface PayslipData {
   daysInMonth: number;
   daysOutside: string;
   lopDays: string;
+  /** Unpaid leave recorded for the month (PAY-011). */
+  leaveLopDays: string;
   paidDays: string;
   oneOffs: { name: string; kind: PayComponentKind; amount: string }[];
   earnings: { code: string; name: string; kind: PayComponentKind; amount: string }[];
@@ -982,7 +999,7 @@ export interface ComplianceItem {
   paid: string | null;
   outstanding: string | null;
   detail: string;
-  evidence: { type: 'WITHHOLDING_DEPOSIT' | 'PAY_RUN' | 'PAYROLL_PAYMENT'; id: string; label: string }[];
+  evidence: { type: 'WITHHOLDING_DEPOSIT' | 'PAY_RUN' | 'PAYROLL_PAYMENT' | 'GST_PAYMENT'; id: string; label: string }[];
   filing: { id: string; filedOn: string; reference: string; note: string | null; createdAt: string } | null;
   source: string;
 }

@@ -24,12 +24,16 @@ export interface Catalogue {
   triggers: TriggerDef[];
   schedule: { frequencies: string[]; weekdays: { value: number; label: string }[]; timeZone: string };
   email: { ready: boolean; from: string | null };
+  matches?: { value: ConditionMatch; label: string }[];
   operators: Record<FactType, { op: string; label: string }[]>;
   roles: { role: string; label: string }[];
   members: { userId: string; name: string; email: string; role: string }[];
   limits: { conditions: number; actions: number; webhookAttempts: number; retryDelaysSeconds: number[] };
   webhooksMustBeHttps: boolean;
 }
+
+export type ConditionMatch = 'ALL' | 'ANY';
+export type Branch = 'THEN' | 'OTHERWISE';
 
 export interface Condition {
   fact: string;
@@ -58,7 +62,9 @@ export interface WorkflowSummary {
   triggerLabel: string;
   triggerKind: 'event' | 'schedule';
   conditions: number;
+  match?: ConditionMatch;
   actions: ActionType[];
+  otherwise?: ActionType[];
   lastRun: { status: RunStatus; at: string } | null;
   last30Days: { acted: number; skipped: number; failed: number };
 }
@@ -84,6 +90,8 @@ export interface Run {
   link: { path: string; label: string } | null;
   facts: { key: string; label: string; type: FactType; value: string | null; display: string | null }[];
   conditions: { label: string; passed: boolean; actual: string | null }[];
+  /** Which actions ran: THEN (the conditions held), OTHERWISE, or null when none did. */
+  branch?: Branch | null;
   actions: {
     position: number;
     type: ActionType;
@@ -127,7 +135,9 @@ export interface Workflow {
   nextOccurrence: string | null;
   activatedAt: string | null;
   conditions: Condition[];
+  match?: ConditionMatch;
   actions: Action[];
+  otherwise?: Action[];
   signingSecret: string;
   createdBy: string | null;
   createdAt: string;

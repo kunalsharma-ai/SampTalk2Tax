@@ -6,7 +6,7 @@ import { decimalString, openApi, ZodPipe } from '../common/zod';
 import { ApprovalsService } from './approvals.service';
 
 const KIND = z.enum(['INVOICE', 'CREDIT_NOTE', 'BILL', 'VENDOR_CREDIT']);
-const PolicyBody = z.object({ minAmount: decimalString, requireDifferentApprover: z.boolean().default(true), isActive: z.boolean().default(true) });
+const PolicyBody = z.object({ minAmount: decimalString, requireDifferentApprover: z.boolean().default(true), isActive: z.boolean().default(true), secondApprovalFrom: decimalString.nullish(), secondApproverSenior: z.boolean().default(false) });
 const ListQuery = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']).optional(),
   documentId: z.uuid().optional(),

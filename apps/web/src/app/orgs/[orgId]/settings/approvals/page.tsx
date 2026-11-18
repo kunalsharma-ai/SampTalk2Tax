@@ -16,6 +16,8 @@ interface Draft {
   minAmount: string;
   requireDifferentApprover: boolean;
   isActive: boolean;
+  secondApprovalFrom: string;
+  secondApproverSenior: boolean;
 }
 
 export default function ApprovalRulesPage() {
@@ -24,7 +26,7 @@ export default function ApprovalRulesPage() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const q = useQuery({ queryKey: ['approval-policies', orgId], queryFn: () => api<ApprovalPolicy[]>(`/v1/orgs/${orgId}/approval-policies`) });
   const save = useMutation({
-    mutationFn: (d: Draft) => api<ApprovalPolicy>(`/v1/orgs/${orgId}/approval-policies/${d.kind}`, { method: 'PUT', body: { minAmount: d.minAmount, requireDifferentApprover: d.requireDifferentApprover, isActive: d.isActive } }),
+    mutationFn: (d: Draft) => api<ApprovalPolicy>(`/v1/orgs/${orgId}/approval-policies/${d.kind}`, { method: 'PUT', body: { minAmount: d.minAmount, requireDifferentApprover: d.requireDifferentApprover, isActive: d.isActive, secondApprovalFrom: d.secondApprovalFrom === '' ? null : d.secondApprovalFrom, secondApproverSenior: d.secondApproverSenior } }),
     onSuccess: async () => {
       setDraft(null);
       for (const k of ['approval-policies', 'approval']) await qc.invalidateQueries({ queryKey: [k, orgId] });
@@ -36,11 +38,11 @@ export default function ApprovalRulesPage() {
     <>
       <PageHeader
         title="Approval rules"
-        description="Choose which drafts need an approval before they post. A covered draft can only be posted once someone with the Approver, Admin or Owner role approves it, and only for the exact total they approved. The database enforces this, not just this screen."
+        description="Choose which drafts need an approval before they post, and from what amount they need a second approval. A covered draft can only be posted once someone with the Approver, Admin or Owner role approves it, and only for the exact total they approved. The database enforces this, not just this screen."
       />
       <Card>
         <Table>
-          <thead><tr><Th>Document type</Th><Th>Rule</Th><Th numeric>Needs approval from</Th><Th>Approver</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
+          <thead><tr><Th>Document type</Th><Th>Rule</Th><Th numeric>Needs approval from</Th><Th>Approver</Th><Th>Second approval</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
           <tbody>
             {(q.data ?? []).map((p) => (
               <Tr key={p.documentKind}>
@@ -48,9 +50,10 @@ export default function ApprovalRulesPage() {
                 <Td>{p.isActive ? <Badge tone="accent">On</Badge> : <Badge>Off</Badge>}</Td>
                 <Td numeric>{p.isActive && p.minAmount ? <Money value={p.minAmount} currency={org.functionalCurrency} /> : <span className="text-fg-muted">—</span>}</Td>
                 <Td className="text-fg-muted">{p.isActive ? (p.requireDifferentApprover ? 'Someone other than the preparer' : 'Anyone who can approve') : '—'}</Td>
+                <Td className="text-fg-muted">{p.isActive && p.secondApprovalFrom ? <>From <Money value={p.secondApprovalFrom} currency={org.functionalCurrency} />{p.secondApproverSenior ? ', by an owner or admin' : ', by another approver'}</> : '—'}</Td>
                 <Td className="text-right">
                   {canManage ? (
-                    <Button size="sm" variant="ghost" aria-label={`Edit the rule for ${LABEL[p.documentKind].toLowerCase()}`} onClick={() => { save.reset(); setDraft({ kind: p.documentKind, minAmount: p.minAmount ?? '0.00', requireDifferentApprover: p.requireDifferentApprover, isActive: p.configured ? p.isActive : true }); }}>Edit</Button>
+                    <Button size="sm" variant="ghost" aria-label={`Edit the rule for ${LABEL[p.documentKind].toLowerCase()}`} onClick={() => { save.reset(); setDraft({ kind: p.documentKind, minAmount: p.minAmount ?? '0.00', requireDifferentApprover: p.requireDifferentApprover, isActive: p.configured ? p.isActive : true, secondApprovalFrom: p.secondApprovalFrom ?? '', secondApproverSenior: p.secondApproverSenior }); }}>Edit</Button>
                   ) : null}
                 </Td>
               </Tr>
@@ -69,6 +72,10 @@ export default function ApprovalRulesPage() {
               {(p) => <Input {...p} required inputMode="decimal" value={draft.minAmount} onChange={(e) => /^\d{0,18}(\.\d{0,2})?$/.test(e.target.value) && setDraft({ ...draft, minAmount: e.target.value })} />}
             </Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[var(--t2t-accent)]" checked={draft.requireDifferentApprover} onChange={(e) => setDraft({ ...draft, requireDifferentApprover: e.target.checked })} /> The approver must be someone other than the person who prepared or submitted it</label>
+            <Field label="Two approvals from" hint="Leave empty for one approval. From this amount two different people must approve, one after the other.">
+              {(p) => <Input {...p} inputMode="decimal" value={draft.secondApprovalFrom} onChange={(e) => /^\d{0,18}(\.\d{0,2})?$/.test(e.target.value) && setDraft({ ...draft, secondApprovalFrom: e.target.value })} />}
+            </Field>
+            {draft.secondApprovalFrom !== '' ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-[var(--t2t-accent)]" checked={draft.secondApproverSenior} onChange={(e) => setDraft({ ...draft, secondApproverSenior: e.target.checked })} /> The second approval must come from an owner or admin</label> : null}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setDraft(null)}>Cancel</Button>
               <Button type="submit" loading={save.isPending} disabled={draft.minAmount === ''}>Save rule</Button>

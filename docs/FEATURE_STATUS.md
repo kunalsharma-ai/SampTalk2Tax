@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 61 |
+| Implementing | 50 |
 | Implemented | 34 |
-| Tested | 452 |
+| Tested | 463 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -203,10 +203,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-013 — Accrual accounting
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: The ledger records accruals (AR/AP based entries). Accrual vs cash reporting basis switch is not done.
+- Status: **Tested**
+- Notes: The books are kept on an accrual basis: invoices and bills post when issued, accruals and deferrals post to the period they belong to, and reports are accrual by default. The profit and loss can be switched to a cash basis from the same entries (GL-014).
 - Evidence:
   - packages/accounting-engine/test/reports.test.ts
+  - apps/api/test/deferrals.e2e.test.ts
+  - apps/api/test/cash-basis.e2e.test.ts
+  - docs/CASH_BASIS_REPORTS.md
 
 ### GL-014 — Cash accounting
 
@@ -1337,11 +1340,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-003 — CSV, OFX, QIF and applicable banking formats
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: CSV only (comma, semicolon or tab; five date formats; single or split amount columns). OFX, QIF, MT940 and PDF are not supported yet.
+- Status: **Tested**
+- Notes: CSV (mapped columns, five date formats, comma/semicolon/tab, optional running balance), OFX/QFX 1.x and 2.x, QIF and MT940, recognised from the content; MT940 opening + lines checked against the closing balance. Not covered: PDF, CAMT.053, Excel.
 - Evidence:
+  - packages/accounting-engine/src/bank-formats.ts
+  - packages/accounting-engine/test/bank-formats.test.ts
   - packages/accounting-engine/test/bank.test.ts
+  - apps/api/test/bank-file-formats.e2e.test.ts
+  - apps/web/e2e/bank-formats-flow.test.mjs
   - apps/web/src/components/banking/import-page.tsx
+  - docs/STATEMENT_FORMATS.md
 
 ### BANK-005 — Bank reconciliation
 
@@ -1477,11 +1485,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-017 — Adaptive matching suggestions
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI.
+- Status: **Tested**
+- Notes: Suggestions learn from past matches on the account: a statement line that shares name words with lines matched before ranks the same contact (payment) or account (other side of the entry) first and says so; an undone match counts against it. Shown under What matching learned. No AI; same amount and the 14-day window still apply.
 - Evidence:
-  - packages/accounting-engine/src/bank.ts
   - packages/accounting-engine/test/bank.test.ts
+  - apps/api/test/banking.e2e.test.ts › prefers the account similar lines were matched to, and says why
+  - apps/api/test/banking.e2e.test.ts › counts an undone match against the account, so the date decides again
+  - apps/web/e2e/bank-match-learning-flow.test.mjs
 
 ### BANK-018 — Duplicate transaction detection
 
@@ -1496,11 +1506,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-021 — Missing transaction identification
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Reconciliation flags when imported lines do not add up to the statement balance (missing or doubled lines). No line-level detection.
+- Status: **Tested**
+- Notes: Line-level: with a running balance column, each imported line is checked against the balance before it; breaks show the rows, dates and missing amount on preview and are kept with the import. Reconciliation also flags lines that do not add up to the statement balance. Gaps between separate files are not chained.
 - Evidence:
-  - packages/accounting-engine/src/bank.ts › reconciliationIssues
-  - apps/api/test/banking.e2e.test.ts
+  - packages/accounting-engine/src/bank.ts › balanceBreaks
+  - packages/accounting-engine/test/balance-breaks.test.ts
+  - apps/api/test/statement-gaps.e2e.test.ts
+  - apps/web/e2e/banking-flow.test.mjs
+  - docs/STATEMENT_GAPS.md
 
 ### BANK-024 — Provide a dedicated banking reconciliation workspace
 
@@ -1709,12 +1722,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### TAX-022 — Tax payment tracking
 
 - Module: Global taxation engine
-- Status: **Implementing**
-- Notes: TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet. The compliance calendar shows each monthly TDS/TCS, PF, ESI and PT payment as done when its challan or payroll payment is recorded; advance tax and GST payments are marked paid/filed by hand.
+- Status: **Tested**
+- Notes: TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST payments settle a month from the books: input tax credit set off in the CGST Act's order (s.49, 49A, rule 88A), reverse-charge tax in cash, and the rest paid by PMT-06 challan (CPIN, CIN) posted as one journal and shown on the month's GSTR-3B in the compliance calendar. Advance tax payments are the debits to the advance tax account on the advance tax page (TAX-021). Not covered: cess, and the electronic cash and credit ledgers as separate balances.
 - Evidence:
   - apps/api/src/withholding/withholding.service.ts
+  - apps/api/src/gst/gst-payments.service.ts
+  - packages/tax-engine/src/india/gst-setoff.ts
+  - packages/tax-engine/test/gst-setoff.test.ts
+  - apps/api/test/gst-payments.e2e.test.ts
   - apps/api/test/compliance.e2e.test.ts
   - apps/api/test/withholding.e2e.test.ts
+  - apps/web/e2e/gst-payments-flow.test.mjs
   - apps/web/e2e/withholding-flow.test.mjs
 
 ### TAX-023 — Statutory deadline calendars
@@ -1845,10 +1863,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### PAY-007 — Bonuses
 
 - Module: Payroll and workforce finance
-- Status: **Implementing**
-- Notes: Bonuses can be added as one-off earnings on a payslip and are taxed in the month. No statutory bonus (Payment of Bonus Act) calculation.
+- Status: **Tested**
+- Notes: One-off bonuses on a payslip, taxed in the month. Statutory bonus (Code on Wages 2019 Ch. IV) worked out from posted payslips per April-March year (rate 8.33-20%, eligibility amount and calculation ceiling as inputs, 30-day and Rs 100 minimums) and added to a draft run as an advance or the balance. Allocable surplus and set-on/set-off not modelled. Not reviewed by a payroll professional.
 - Evidence:
-  - apps/api/test/payroll.e2e.test.ts
+  - packages/tax-engine/src/india/bonus.ts
+  - packages/tax-engine/test/bonus.test.ts
+  - apps/api/test/payroll-bonus.e2e.test.ts
+  - apps/web/e2e/payroll-bonus-flow.test.mjs
   - apps/web/e2e/payroll-flow.test.mjs
 
 ### PAY-009 — Reimbursements
@@ -1862,11 +1883,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### PAY-011 — Leave-related adjustments
 
 - Module: Payroll and workforce finance
-- Status: **Implementing**
-- Notes: Loss-of-pay days (whole or half) per payslip, and pro-rating for joining or leaving mid-month. No leave balances or leave module.
+- Status: **Tested**
+- Notes: Loss-of-pay days per payslip and pro-rating for joiners and leavers. Leave module: paid and unpaid leave types with a yearly allowance (April-March), leave recorded per month with balance checks, unpaid leave carried to the month's payslip as loss of pay (drafts update at once), posted months closed. Not yet: carry-forward, accrual by month, encashment, holiday calendar, employee self-service requests.
 - Evidence:
+  - apps/api/src/payroll/leave.service.ts
+  - apps/api/test/payroll-leave.e2e.test.ts
+  - apps/web/e2e/payroll-leave-flow.test.mjs
   - packages/tax-engine/test/payroll.test.ts
-  - apps/api/test/payroll.e2e.test.ts
   - apps/web/e2e/payroll-flow.test.mjs
 
 ### PAY-016 — Payroll journals
@@ -3445,21 +3468,26 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### WFLOW-005 — Conditional branching
 
 - Module: Autonomous financial workflows
-- Status: **Implementing**
-- Notes: Conditions on the event’s facts (money, text, date, choice), all of which must hold. No either/or branches yet.
+- Status: **Tested**
+- Notes: Conditions on the event’s facts (money, text, date, choice) joined by all or any, with an optional otherwise branch of up to five actions done when they do not hold. Each run records the branch it took. Not covered: nested groups (A and (B or C)) and more than two branches.
 - Evidence:
   - packages/accounting-engine/src/workflows.ts
   - packages/accounting-engine/test/workflows.test.ts
+  - apps/api/test/workflow-branches.e2e.test.ts
   - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-branches.test.mjs
 
 ### WFLOW-006 — Approval workflows
 
 - Module: Autonomous financial workflows
-- Status: **Implementing**
-- Notes: Single-step approval of sales and purchase drafts by amount. No multi-level chains, escalations or approvals for other record types yet.
+- Status: **Tested**
+- Notes: Amount-based approval of sales and purchase drafts with an optional second level (two different approvers, optionally owner or admin for the second), manual journal approval (SEC-036), expense claim approval, and escalation through the Approval waiting too long alert. Not covered: chains longer than two steps, named approvers per rule, delegation.
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
+  - apps/api/test/attachments-approvals.e2e.test.ts › two-level approvals
+  - apps/api/test/journal-approvals.e2e.test.ts
   - apps/web/e2e/approvals-flow.test.mjs
+  - docs/APPROVAL_WORKFLOWS.md
 
 ### WFLOW-009 — Notifications
 
@@ -4192,11 +4220,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DOC-006 — Bank statements
 
 - Module: Document intelligence
-- Status: **Implementing**
-- Notes: Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*.
+- Status: **Tested**
+- Notes: Bank advices and receipts are attached to statement lines from the bank account screen (Files button per line, with a count); removal needs a reason. Statement CSV import itself is BANK-*.
 - Evidence:
-  - apps/api/test/attachments-approvals.e2e.test.ts
-  - POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)
+  - apps/api/test/banking.e2e.test.ts
+  - apps/web/e2e/bank-line-files-flow.test.mjs
+  - apps/web/src/components/banking/account-page.tsx
 
 ### DOC-018 — Duplicate detection
 
@@ -4418,10 +4447,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 
 - Module: Dashboard design
-- Status: **Implementing**
-- Notes: Dashboard chart has a matching data table; other charts are not built yet.
+- Status: **Tested**
+- Notes: Every chart is a labelled image that names the table holding its figures (or is decorative next to figures shown as text). The month-end cash chart carries its own table on pages without one. A unit test checks every chart in the app.
 - Evidence:
-  - apps/web/src
+  - apps/web/test/charts.test.ts
+  - apps/web/src/components/twin/twin-chart.tsx
+  - apps/web/e2e/recovery-flow.test.mjs
 
 ### DASH-041 — Respect reduced-motion preferences
 
@@ -5361,7 +5392,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator.
+- Notes: Hindi covers the navigation, header, roles, the preferences page, and now every page title and description, table heading, field label, button, dialog and card title that matches a catalogue entry (about 180 common words such as Status, Amount, Date, Save, Cancel). Text built with numbers or names ("New invoice", status badges, tabs) still falls back to English. Translations not yet reviewed by a professional translator.
 - Evidence:
   - packages/accounting-engine/src/locale.ts
   - packages/accounting-engine/test/locale.test.ts
@@ -5373,6 +5404,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/test/i18n.test.ts
   - apps/web/e2e/display-preferences-flow.test.mjs
   - docs/LANGUAGES_AND_FORMATS.md
+  - packages/ui/src/text.tsx
 
 ### I18N-015 — Architect for later support of additional languages
 
