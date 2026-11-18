@@ -1,10 +1,12 @@
 import { HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   ASSIGNABLE_ROLES,
+  chooseBranch,
   Condition,
+  CONDITION_MATCHES,
   CONDITION_OPERATORS,
+  ConditionMatch,
   describeTrigger,
-  evaluateConditions,
   istDate,
   latestOccurrence,
   MAX_ACTIONS,
@@ -19,6 +21,7 @@ import {
   WEEKDAYS,
   WORKFLOW_TRIGGER_DEFS,
   WorkflowAction,
+  WorkflowBranch,
   WorkflowDefinition,
   WorkflowError,
   WorkflowTrigger,
@@ -35,7 +38,7 @@ import { ROLE_LABELS, TasksService } from '../tasks/tasks.service';
 import { EMAIL_NOT_SET_UP, MailerService } from './email';
 import { checkWebhookUrl, WebhookAddressError } from './webhook';
 import { EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, sampleDueDocument } from './workflow-facts';
-import { Attempt, EmailPreview, WorkflowRunnerService } from './workflow-runner.service';
+import { Attempt, EmailPreview, versionDef, WorkflowRunnerService } from './workflow-runner.service';
 import { lockName, lockRow } from '../db/locks';
 
 type Actor = { id: string };
@@ -46,8 +49,20 @@ export interface WorkflowInput {
   trigger: WorkflowTrigger;
   triggerParams?: TriggerParams;
   conditions: Condition[];
+  match?: ConditionMatch;
   actions: WorkflowAction[];
+  otherwise?: WorkflowAction[];
 }
+
+/** The stored fields of a checked definition. */
+const versionData = (def: WorkflowDefinition) => ({
+  trigger: def.trigger,
+  triggerParams: (def.triggerParams ?? {}) as Prisma.InputJsonValue,
+  conditions: def.conditions as unknown as Prisma.InputJsonValue,
+  match: def.match ?? 'ALL',
+  actions: def.actions as unknown as Prisma.InputJsonValue,
+  otherwise: (def.otherwise ?? []) as unknown as Prisma.InputJsonValue,
+});
 
 /** Most recent events looked at when choosing one to test a workflow on. */
 const TEST_LOOKBACK = 100;
@@ -85,6 +100,7 @@ export class WorkflowsService {
       triggers: WORKFLOW_TRIGGER_DEFS.map((t) => ({ key: t.key, label: t.label, description: t.description, kind: t.kind, emailsContact: t.emailsContact, facts: t.facts })),
       schedule: { frequencies: SCHEDULE_FREQUENCIES, weekdays: WEEKDAYS.map((label, i) => ({ value: i + 1, label })), timeZone: 'Asia/Kolkata' },
       email: await this.mailer.status(orgId),
+      matches: CONDITION_MATCHES.map((m) => ({ value: m, label: m === 'ALL' ? 'All of the conditions hold' : 'Any one of the conditions holds' })),
       operators: Object.fromEntries(Object.entries(CONDITION_OPERATORS).map(([type, ops]) => [type, ops.map((op) => ({ op, label: OPERATOR_LABELS[op] }))])),
       roles: ASSIGNABLE_ROLES.map((r) => ({ role: r, label: ROLE_LABELS[r] })),
       members: members.filter((m) => hasPermission(m.role as RoleName, 'tasks.use')).map((m) => ({ userId: m.userId, name: m.user.name, email: m.user.email, role: m.role })),
@@ -98,23 +114,24 @@ export class WorkflowsService {
   private async check(tx: Tx, orgId: string, input: WorkflowInput): Promise<WorkflowDefinition> {
     let def: WorkflowDefinition;
     try {
-      def = validateWorkflow({ trigger: input.trigger, triggerParams: input.triggerParams ?? {}, conditions: input.conditions, actions: input.actions }, { allowHttp: this.config.WEBHOOK_ALLOW_PRIVATE_NETWORKS });
+      def = validateWorkflow({ trigger: input.trigger, triggerParams: input.triggerParams ?? {}, conditions: input.conditions, match: input.match ?? 'ALL', actions: input.actions, otherwise: input.otherwise ?? [] }, { allowHttp: this.config.WEBHOOK_ALLOW_PRIVATE_NETWORKS });
     } catch (e) {
       if (e instanceof WorkflowError) throw new DomainError('INVALID_WORKFLOW', e.message, HttpStatus.UNPROCESSABLE_ENTITY, { issues: e.issues });
       throw e;
     }
     const issues: string[] = [];
-    for (const [i, a] of def.actions.entries()) {
+    const all = [...def.actions.map((a, i) => ({ a, n: `Action ${i + 1}` })), ...(def.otherwise ?? []).map((a, i) => ({ a, n: `Otherwise action ${i + 1}` }))];
+    for (const { a, n } of all) {
       if (a.type === 'WEBHOOK') {
         try {
           checkWebhookUrl(a.url, this.config.WEBHOOK_ALLOW_PRIVATE_NETWORKS);
         } catch (e) {
           if (!(e instanceof WebhookAddressError)) throw e;
-          issues.push(`Action ${i + 1}: ${e.message}`);
+          issues.push(`${n}: ${e.message}`);
         }
       }
-      if (a.type === 'CREATE_TASK' && 'userId' in a.assignTo && !(await this.tasks.assignableMember(tx, orgId, a.assignTo.userId))) issues.push(`Action ${i + 1}: that person is not a member who can work on tasks`);
-      if (a.type === 'SEND_EMAIL' && 'userId' in a.to && !(await tx.membership.findFirst({ where: { orgId, userId: a.to.userId }, select: { userId: true } }))) issues.push(`Action ${i + 1}: that person is not a member of the organisation`);
+      if (a.type === 'CREATE_TASK' && 'userId' in a.assignTo && !(await this.tasks.assignableMember(tx, orgId, a.assignTo.userId))) issues.push(`${n}: that person is not a member who can work on tasks`);
+      if (a.type === 'SEND_EMAIL' && 'userId' in a.to && !(await tx.membership.findFirst({ where: { orgId, userId: a.to.userId }, select: { userId: true } }))) issues.push(`${n}: that person is not a member of the organisation`);
     }
     if (issues.length) throw new DomainError('INVALID_WORKFLOW', issues.length === 1 ? issues[0] : `${issues.length} problems in the workflow`, HttpStatus.UNPROCESSABLE_ENTITY, { issues });
     return def;
@@ -124,8 +141,8 @@ export class WorkflowsService {
     const id = await this.prisma.$transaction(async (tx) => {
       const def = await this.check(tx, org.id, input);
       const w = await tx.workflow.create({ data: { orgId: org.id, name: input.name, description: input.description || null, currentVersion: 1, signingSecret: newSecret(), createdById: actor.id } });
-      await tx.workflowVersion.create({ data: { orgId: org.id, workflowId: w.id, version: 1, trigger: def.trigger, triggerParams: (def.triggerParams ?? {}) as Prisma.InputJsonValue, conditions: def.conditions as unknown as Prisma.InputJsonValue, actions: def.actions as unknown as Prisma.InputJsonValue, createdById: actor.id } });
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'workflow.created', entityType: 'workflow', entityId: w.id, data: { name: w.name, trigger: def.trigger, triggerParams: (def.triggerParams ?? {}) as Prisma.InputJsonValue, conditions: def.conditions.length, actions: def.actions.map((a) => a.type) } });
+      await tx.workflowVersion.create({ data: { orgId: org.id, workflowId: w.id, version: 1, ...versionData(def), createdById: actor.id } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'workflow.created', entityType: 'workflow', entityId: w.id, data: { name: w.name, trigger: def.trigger, triggerParams: (def.triggerParams ?? {}) as Prisma.InputJsonValue, conditions: def.conditions.length, match: def.match ?? 'ALL', actions: def.actions.map((a) => a.type), otherwise: (def.otherwise ?? []).map((a) => a.type) } });
       return w.id;
     });
     return this.get(org.id, id);
@@ -151,10 +168,10 @@ export class WorkflowsService {
       const def = await this.check(tx, org.id, input);
       const cur = w.versions[0];
       // Compared with keys sorted: PostgreSQL stores JSON objects with its own key order.
-      const changed = cur.trigger !== def.trigger || stable(cur.triggerParams) !== stable(def.triggerParams ?? {}) || stable(cur.conditions) !== stable(def.conditions) || stable(cur.actions) !== stable(def.actions);
+      const changed = cur.trigger !== def.trigger || stable(cur.triggerParams) !== stable(def.triggerParams ?? {}) || stable(cur.conditions) !== stable(def.conditions) || (cur.match ?? 'ALL') !== def.match || stable(cur.actions) !== stable(def.actions) || stable(cur.otherwise ?? []) !== stable(def.otherwise ?? []);
       const version = changed ? w.currentVersion + 1 : w.currentVersion;
       if (changed) {
-        await tx.workflowVersion.create({ data: { orgId: org.id, workflowId: id, version, trigger: def.trigger, triggerParams: (def.triggerParams ?? {}) as Prisma.InputJsonValue, conditions: def.conditions as unknown as Prisma.InputJsonValue, actions: def.actions as unknown as Prisma.InputJsonValue, note: input.note || null, createdById: actor.id } });
+        await tx.workflowVersion.create({ data: { orgId: org.id, workflowId: id, version, ...versionData(def), note: input.note || null, createdById: actor.id } });
       }
       await tx.workflow.update({ where: { id }, data: { name: input.name, description: input.description || null, currentVersion: version } });
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'workflow.updated', entityType: 'workflow', entityId: id, data: { name: input.name, version, newVersion: changed, note: input.note || null } });
@@ -216,7 +233,9 @@ export class WorkflowsService {
         triggerLabel: describeTrigger(v.trigger as WorkflowTrigger, v.triggerParams as TriggerParams),
         triggerKind: triggerDef(v.trigger).kind,
         conditions: (v.conditions as unknown as Condition[]).length,
+        match: (v.match ?? 'ALL') as ConditionMatch,
         actions: (v.actions as unknown as WorkflowAction[]).map((a) => a.type),
+        otherwise: ((v.otherwise ?? []) as unknown as WorkflowAction[]).map((a) => a.type),
         lastRun: l ? { status: l.status, at: l.createdAt.toISOString() } : null,
         last30Days: { acted: c('SUCCEEDED') + c('RUNNING'), skipped: c('SKIPPED'), failed: c('FAILED') },
       };
@@ -241,7 +260,9 @@ export class WorkflowsService {
       nextOccurrence: w.enabled && v.trigger === 'SCHEDULE' ? this.nextOccurrence(v.triggerParams as TriggerParams) : null,
       activatedAt: w.activatedAt?.toISOString() ?? null,
       conditions: v.conditions as unknown as Condition[],
+      match: (v.match ?? 'ALL') as ConditionMatch,
       actions: v.actions as unknown as WorkflowAction[],
+      otherwise: (v.otherwise ?? []) as unknown as WorkflowAction[],
       signingSecret: w.signingSecret,
       createdBy: users.get(w.createdById) ?? null,
       createdAt: w.createdAt.toISOString(),
@@ -311,6 +332,7 @@ export class WorkflowsService {
         link: path(links[i]),
         facts: def.facts.map((f) => ({ key: f.key, label: f.label, type: f.type, value: facts[f.key] ?? null, display: f.options?.find((o) => o.value === facts[f.key])?.label ?? null })),
         conditions: r.conditions as unknown as { label: string; passed: boolean; actual: string | null }[],
+        branch: (r.branch ?? null) as WorkflowBranch | null,
         actions: r.actions.map((a) => {
           const result = a.result as { taskId?: string; attempts?: Attempt[]; preview?: unknown; test?: Attempt };
           return {
@@ -374,17 +396,17 @@ export class WorkflowsService {
     const v = w.versions[0];
     const def = triggerDef(v.trigger);
     const params = v.triggerParams as TriggerParams;
-    const conditions = v.conditions as unknown as Condition[];
-    const actions = v.actions as unknown as WorkflowAction[];
     const now = new Date();
 
     const sample = await this.prisma.$transaction(async (tx) => {
       const found = await this.sampleFacts(tx, org.id, v.trigger as WorkflowTrigger, params, input.eventId, now);
       if (!found) return null;
+      const chosen = chooseBranch(versionDef(v), found.facts.facts);
+      const actions = chosen.branch ? chosen.actions : (v.actions as unknown as WorkflowAction[]);
       const previews = await Promise.all(
         actions.map((a) => (a.type === 'CREATE_TASK' ? this.runner.previewTask(tx, org.id, a, found.facts.facts, found.at) : a.type === 'SEND_EMAIL' ? this.runner.previewEmail(tx, org.id, w.name, a, found.facts) : null)),
       );
-      return { ...found, previews };
+      return { ...found, previews, chosen, actions };
     });
     if (!sample) {
       const message =
@@ -397,12 +419,11 @@ export class WorkflowsService {
               : `Nothing has happened yet that this workflow listens to (${def.label.toLowerCase()}). Make one happen, then test again.`;
       throw new DomainError('NO_SAMPLE_EVENT', message, HttpStatus.NOT_FOUND);
     }
-    const { facts, previews } = sample;
-    const result = evaluateConditions(v.trigger as WorkflowTrigger, conditions, facts.facts);
+    const { facts, previews, actions, chosen: result } = sample;
     const tester = await this.prisma.user.findUniqueOrThrow({ where: { id: actor.id }, select: { email: true } });
     const runId = randomUUID();
     const actionRows: Prisma.WorkflowActionRunCreateManyInput[] = [];
-    const send = input.sendWebhooks && result.matched;
+    const send = input.sendWebhooks && result.branch !== null;
     for (const [position, a] of actions.entries()) {
       if (a.type === 'CREATE_TASK') {
         actionRows.push({ orgId: org.id, runId, position, type: a.type, status: 'SKIPPED', input: previews[position] as unknown as Prisma.InputJsonValue, finishedAt: now });
@@ -448,6 +469,7 @@ export class WorkflowsService {
           entityId: facts.entityId,
           facts: (facts.link ? { ...facts.facts, _link: facts.link } : facts.facts) as Prisma.InputJsonValue,
           conditions: result.results as unknown as Prisma.InputJsonValue,
+          branch: result.branch,
           status: 'TEST',
           testedById: actor.id,
           finishedAt: now,
@@ -460,10 +482,10 @@ export class WorkflowsService {
         action: 'workflow.tested',
         entityType: 'workflow',
         entityId: w.id,
-        data: { runId, eventId: sample.eventId?.toString() ?? null, matched: result.matched, webhooksSent: actionRows.filter((r) => r.status !== 'SKIPPED' && r.type === 'WEBHOOK').length, testEmailsSent: actionRows.filter((r) => r.status !== 'SKIPPED' && r.type === 'SEND_EMAIL').length },
+        data: { runId, eventId: sample.eventId?.toString() ?? null, matched: result.matched, branch: result.branch, webhooksSent: actionRows.filter((r) => r.status !== 'SKIPPED' && r.type === 'WEBHOOK').length, testEmailsSent: actionRows.filter((r) => r.status !== 'SKIPPED' && r.type === 'SEND_EMAIL').length },
       });
     });
-    return { matched: result.matched, run: await this.run(org.id, runId) };
+    return { matched: result.matched, branch: result.branch, run: await this.run(org.id, runId) };
   }
 
   /** Sends a failed webhook or email once more, now. */

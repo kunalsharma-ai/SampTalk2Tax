@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { parseCsv } from '@talk2tax/accounting-engine';
+import { detectStatementFormat, parseCsv } from '@talk2tax/accounting-engine';
 import { Alert, Badge, Button, Card, CardHeader, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -27,6 +27,8 @@ interface Mapping {
   hasHeader: boolean;
   delimiter: Delim;
   invertAmount: boolean;
+  /** The running balance column, if the statement has one. */
+  balance: number | null;
 }
 
 /** Guesses columns from common bank header names. The user can change every choice. */
@@ -45,6 +47,7 @@ function guess(header: string[], sample: string[] | undefined): Partial<Mapping>
     date: dateCol,
     description: find(/narration|description|particulars|details|remarks/i) ?? 1,
     reference: find(/ref|cheque|chq|utr/i),
+    balance: find(/balance/i),
     ...(amount !== null || moneyIn === null || moneyOut === null ? { mode: 'single' as const, amount: amount ?? 2 } : { mode: 'split' as const, moneyIn, moneyOut }),
     dateFormat,
   };
@@ -58,8 +61,10 @@ export function ImportStatementPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [file, setFile] = useState<{ name: string; text: string } | null>(null);
-  const [m, setM] = useState<Mapping>({ date: 0, description: 1, reference: null, mode: 'single', amount: 2, moneyIn: null, moneyOut: null, dateFormat: 'DD/MM/YYYY', hasHeader: true, delimiter: ',', invertAmount: false });
+  const [m, setM] = useState<Mapping>({ date: 0, description: 1, reference: null, mode: 'single', amount: 2, moneyIn: null, moneyOut: null, dateFormat: 'DD/MM/YYYY', hasHeader: true, delimiter: ',', invertAmount: false, balance: null });
   const [readError, setReadError] = useState<string | null>(null);
+  /** Detected from the file: OFX, QIF and MT940 need no column mapping. */
+  const [format, setFormat] = useState<'CSV' | 'OFX' | 'QIF' | 'MT940'>('CSV');
 
   const rows = useMemo(() => {
     if (!file) return [];
@@ -73,9 +78,10 @@ export function ImportStatementPage() {
   const header = m.hasHeader ? rows[0] ?? [] : Array.from({ length: width }, (_, i) => `Column ${i + 1}`);
   const columns = Array.from({ length: width }, (_, i) => ({ i, label: header[i]?.trim() || `Column ${i + 1}` }));
 
-  const body = () => ({
+  const body = () => format !== 'CSV' ? { fileName: file!.name, csv: file!.text, format, ...(format === 'QIF' ? { dateFormat: m.dateFormat } : {}) } : ({
     fileName: file!.name,
     csv: file!.text,
+    format,
     mapping: {
       date: m.date,
       description: m.description,
@@ -84,6 +90,7 @@ export function ImportStatementPage() {
       dateFormat: m.dateFormat,
       hasHeader: m.hasHeader,
       delimiter: m.delimiter,
+      balance: m.balance,
     },
   });
   const preview = useMutation({ mutationFn: () => api<ImportPreview>(`/v1/orgs/${orgId}/banking/accounts/${accountId}/imports`, { method: 'POST', body: { ...body(), dryRun: true } }) });
@@ -102,6 +109,9 @@ export function ImportStatementPage() {
     if (!f) return setFile(null);
     if (f.size > 2_000_000) return setReadError('The file is larger than 2 MB. Split it into smaller periods.');
     const text = await f.text();
+    const detected = detectStatementFormat(text);
+    setFormat(detected ?? 'CSV');
+    if (detected) return setFile({ name: f.name, text });
     const delimiter: Delim = text.split('\n')[0].includes('\t') ? '\t' : (text.split('\n')[0].match(/;/g)?.length ?? 0) > (text.split('\n')[0].match(/,/g)?.length ?? 0) ? ';' : ',';
     setFile({ name: f.name, text });
     try {
@@ -132,12 +142,27 @@ export function ImportStatementPage() {
     <>
       <PageHeader
         title={`Import a statement${account ? ` · ${account.code} ${account.name}` : ''}`}
-        description="Upload a CSV file downloaded from your bank. Nothing is stored until you confirm the preview, and lines that were imported before are skipped."
+        description="Upload a statement downloaded from your bank: CSV, OFX/QFX, QIF or MT940. Nothing is stored until you confirm the preview, and lines that were imported before are skipped."
       />
       <Card className="mb-6 p-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Statement file (CSV)">{(p) => <Input {...p} type="file" accept=".csv,text/csv,text/plain" onChange={(e) => onFile(e.target.files?.[0])} />}</Field>
-          {file ? (
+          <Field label="Statement file" hint="CSV, OFX/QFX, QIF or MT940">{(p) => <Input {...p} type="file" accept=".csv,.ofx,.qfx,.qif,.sta,.mt940,.940,.txt,text/csv,text/plain" onChange={(e) => onFile(e.target.files?.[0])} />}</Field>
+          {file && format !== 'CSV' ? (
+            <>
+              <div className="self-end pb-2 text-sm"><Badge tone="accent">{format} file</Badge> <span className="text-fg-muted">read as it is: no columns to map</span></div>
+              {format === 'QIF' ? (
+                <Field label="Dates in the file">
+                  {(p) => (
+                    <Select {...p} value={m.dateFormat.startsWith('MM') ? 'MM/DD/YYYY' : 'DD/MM/YYYY'} onChange={(e) => set({ dateFormat: e.target.value as Mapping['dateFormat'] })}>
+                      <option value="DD/MM/YYYY">Day first (25/12/2026)</option>
+                      <option value="MM/DD/YYYY">Month first (12/25/2026)</option>
+                    </Select>
+                  )}
+                </Field>
+              ) : null}
+            </>
+          ) : null}
+          {file && format === 'CSV' ? (
             <>
               <Field label="Separator">
                 {(p) => (
@@ -182,6 +207,7 @@ export function ImportStatementPage() {
                   {colSelect('Money out column', m.moneyOut, (v) => set({ moneyOut: v }), true)}
                 </>
               )}
+              {colSelect('Balance column', m.balance, (v) => set({ balance: v }), true)}
             </>
           ) : null}
         </div>
@@ -214,9 +240,35 @@ export function ImportStatementPage() {
             }
             actions={<Button loading={save.isPending} disabled={!preview.data.newCount || preview.data.blockedRows.length > 0} onClick={() => save.mutate()}>Import {preview.data.newCount} line{preview.data.newCount === 1 ? '' : 's'}</Button>}
           />
+          {preview.data.fileTotals && Number(preview.data.fileTotals.difference) !== 0 ? (
+            <div className="px-5 pb-4">
+              <Alert tone="warning" title="The file does not add up to the bank's closing balance">
+                Opening <Money value={preview.data.fileTotals.opening} currency={c} /> plus these lines gives <Money value={preview.data.fileTotals.computed} currency={c} />, but the file closes at <Money value={preview.data.fileTotals.closing} currency={c} /> (difference <Money value={preview.data.fileTotals.difference} currency={c} signed />). Lines may be missing; download the statement again.
+              </Alert>
+            </div>
+          ) : preview.data.fileTotals ? (
+            <p className="px-5 pb-4 text-sm text-positive">The lines add up from the opening balance <Money value={preview.data.fileTotals.opening} currency={c} /> to the closing balance <Money value={preview.data.fileTotals.closing} currency={c} />.</p>
+          ) : null}
+          {preview.data.balanceCheck ? (
+            <div className="px-5 pb-4">
+              {preview.data.balanceCheck.breaks.length ? (
+                <Alert tone="warning" title={`The running balance breaks in ${preview.data.balanceCheck.breaks.length} place${preview.data.balanceCheck.breaks.length === 1 ? '' : 's'}: lines may be missing from this file`}>
+                  <ul className="mt-1 list-disc pl-5" aria-label="Balance breaks">
+                    {preview.data.balanceCheck.breaks.map((b) => (
+                      <li key={b.row}>
+                        Between row {b.previousRow} ({date(b.previousDate)}) and row {b.row} ({date(b.date)}): the balance should be <Money value={b.expected} currency={c} /> but the statement shows <Money value={b.shown} currency={c} />, so <Money value={b.gap.replace(/^-/, '')} currency={c} /> {b.gap.startsWith('-') ? 'went out' : 'came in'} without a line. Download the statement for those dates again, or add the line by hand after importing.
+                      </li>
+                    ))}
+                  </ul>
+                </Alert>
+              ) : (
+                <p className="text-sm text-positive">Running balance checked on {preview.data.balanceCheck.checked} lines: every line follows from the one before, so none are missing.</p>
+              )}
+            </div>
+          ) : null}
           <Table>
             <thead>
-              <tr><Th>Row</Th><Th>Date</Th><Th>Description</Th><Th>Reference</Th><Th numeric>Amount</Th><Th><span className="sr-only">Status</span></Th></tr>
+              <tr><Th>Row</Th><Th>Date</Th><Th>Description</Th><Th>Reference</Th><Th numeric>Amount</Th>{preview.data.balanceCheck ? <Th numeric>Balance</Th> : null}<Th><span className="sr-only">Status</span></Th></tr>
             </thead>
             <tbody>
               {preview.data.lines.map((x) => (
@@ -226,6 +278,7 @@ export function ImportStatementPage() {
                   <Td>{x.description}</Td>
                   <Td className="text-fg-muted">{x.reference ?? ''}</Td>
                   <Td numeric><Money value={x.amount} currency={c} signed /></Td>
+                  {preview.data!.balanceCheck ? <Td numeric>{x.balance ? <Money value={x.balance} currency={c} /> : ''}{preview.data!.balanceCheck.breaks.some((b) => b.row === x.row) ? <Badge tone="warning" className="ml-2">Gap before</Badge> : null}</Td> : null}
                   <Td>{x.duplicate ? <Badge>Already imported</Badge> : preview.data!.blockedRows.includes(x.row) ? <Badge tone="negative">Reconciled period</Badge> : <Badge tone="accent">New</Badge>}</Td>
                 </Tr>
               ))}

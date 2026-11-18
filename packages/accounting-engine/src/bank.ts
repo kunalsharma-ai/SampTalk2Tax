@@ -80,6 +80,8 @@ export interface StatementMapping {
   delimiter?: ',' | ';' | '\t';
   /** When the bank shows money out as positive in a single amount column. */
   invertAmount?: boolean;
+  /** The running balance after each line, when the statement has one: used to find missing lines. */
+  balance?: number | null;
 }
 
 export interface ParsedStatementLine {
@@ -88,6 +90,8 @@ export interface ParsedStatementLine {
   description: string;
   reference: string | null;
   amount: Dec;
+  /** The statement's running balance after this line, when the file has a balance column. */
+  balance?: Dec | null;
 }
 
 export class StatementImportError extends Error {
@@ -167,7 +171,9 @@ export function parseStatement(text: string, mapping: StatementMapping, currency
       assertCurrencyPrecision(amount, currency);
       const description = cell(r, mapping.description).replace(/\s+/g, ' ');
       if (!description) throw new Error('description is empty');
-      lines.push({ row: rowNo, date, description: description.slice(0, 500), reference: cell(r, mapping.reference).slice(0, 100) || null, amount });
+      const balance = mapping.balance === undefined || mapping.balance === null ? null : parseStatementAmount(cell(r, mapping.balance));
+      if (balance) assertCurrencyPrecision(balance, currency);
+      lines.push({ row: rowNo, date, description: description.slice(0, 500), reference: cell(r, mapping.reference).slice(0, 100) || null, amount, balance });
     } catch (e) {
       issues.push(`Row ${rowNo}: ${(e as Error).message}`);
     }
@@ -176,6 +182,54 @@ export function parseStatement(text: string, mapping: StatementMapping, currency
   if (lines.length === 0) throw new StatementImportError(['The file has no statement lines']);
   if (lines.length > 5000) throw new StatementImportError(['A file can hold at most 5,000 lines; split it']);
   return lines;
+}
+
+/** A place where the statement's running balance does not follow from the lines: something is missing or extra between them. */
+export interface BalanceBreak {
+  /** The row whose balance is checked, and the row before it in date order. */
+  row: number;
+  previousRow: number;
+  date: string;
+  previousDate: string;
+  /** The previous balance plus this line. */
+  expected: Dec;
+  /** The balance the statement shows after this line. */
+  shown: Dec;
+  /** shown − expected: money in (positive) or out (negative) that no line in the file accounts for. */
+  gap: Dec;
+}
+
+export interface BalanceCheck {
+  /** Lines that carry a balance. */
+  checked: number;
+  /** The file's order, worked out from which reading makes the balances follow. */
+  order: 'OLDEST_FIRST' | 'NEWEST_FIRST' | null;
+  breaks: BalanceBreak[];
+}
+
+/**
+ * Line-level check for missing transactions (BANK-021): with a running balance column, each
+ * line's balance must equal the one before plus its amount. Where it does not, lines are missing
+ * (or doubled) between the two rows, and the gap is the amount unaccounted for. Banks list oldest
+ * or newest first; the order with fewer breaks is taken (oldest first on a tie).
+ */
+export function balanceBreaks(lines: readonly Pick<ParsedStatementLine, 'row' | 'date' | 'amount' | 'balance'>[]): BalanceCheck {
+  const withBalance = lines.filter((l) => l.balance != null);
+  if (withBalance.length < 2) return { checked: withBalance.length, order: null, breaks: [] };
+  const walk = (seq: typeof lines) => {
+    const out: BalanceBreak[] = [];
+    for (let i = 1; i < seq.length; i++) {
+      const prev = seq[i - 1];
+      const cur = seq[i];
+      if (prev.balance == null || cur.balance == null) continue;
+      const expected = prev.balance.plus(cur.amount);
+      if (!expected.eq(cur.balance)) out.push({ row: cur.row, previousRow: prev.row, date: cur.date, previousDate: prev.date, expected, shown: cur.balance, gap: cur.balance.minus(expected) });
+    }
+    return out;
+  };
+  const forward = walk(lines);
+  const backward = walk([...lines].reverse());
+  return backward.length < forward.length ? { checked: withBalance.length, order: 'NEWEST_FIRST', breaks: backward } : { checked: withBalance.length, order: 'OLDEST_FIRST', breaks: forward };
 }
 
 /**
@@ -200,6 +254,19 @@ export interface MatchLine {
   date: string;
   amount: Dec;
   text: string;
+  /** Ledger side only: who the line is with (a contact, or the entry's other account), for learning. */
+  counterparty?: string | null;
+}
+
+/**
+ * A past decision on this account (BANK-017): a statement line's text and who its ledger line
+ * was with. A match the user kept counts for; one they unmatched counts against.
+ */
+export interface LearnedMatch {
+  text: string;
+  counterparty: string;
+  label: string;
+  kept: boolean;
 }
 
 export interface MatchSuggestion {
@@ -225,16 +292,80 @@ function words(s: string): Set<string> {
   );
 }
 
+/** How much past matches can add to, or take from, a suggestion's score. */
+export const LEARNED_BOOST_MAX = 30;
+export const LEARNED_PENALTY = 20;
+
+/** Words made of letters only: names and narrations repeat, invoice and UTR numbers do not. */
+const CHANNEL = new Set(['card', 'pos', 'ach', 'nach', 'chq', 'cheque', 'atm', 'bank', 'credit', 'debit', 'txn', 'india', 'online', 'mob', 'net', 'inb', 'clg', 'cms']);
+function nameWords(s: string): Set<string> {
+  return new Set([...words(s)].filter((w) => /^[a-z]+$/.test(w) && !CHANNEL.has(w)));
+}
+
+interface Habit {
+  label: string;
+  /** Matches kept less matches undone, over past lines that read like this one. */
+  net: number;
+}
+
+/**
+ * A past line reads like this one when they share at least two name words, or all of the
+ * past line's name words when it has only one ("SWIGGY" ~ "SWIGGY BANGALORE").
+ */
+function learnedFor(names: Set<string>, history: readonly (LearnedMatch & { names: Set<string> })[]): Map<string, Habit> {
+  const out = new Map<string, Habit>();
+  if (!names.size) return out;
+  for (const h of history) {
+    let shared = 0;
+    for (const w of h.names) if (names.has(w)) shared++;
+    if (shared < Math.min(2, h.names.size)) continue;
+    const cur = out.get(h.counterparty) ?? { label: h.label, net: 0 };
+    cur.net += h.kept ? 1 : -1;
+    out.set(h.counterparty, cur);
+  }
+  return out;
+}
+
+/**
+ * What matching has learned on an account: for each counterparty, the name words that keep
+ * appearing on statement lines matched to it, and how many matches were kept or undone.
+ */
+export function learnedPatterns(learned: readonly LearnedMatch[]): { counterparty: string; label: string; words: string[]; kept: number; undone: number }[] {
+  const by = new Map<string, { label: string; kept: number; undone: number; counts: Map<string, number> }>();
+  for (const h of learned) {
+    const names = nameWords(h.text);
+    if (!names.size) continue;
+    const cur = by.get(h.counterparty) ?? { label: h.label, kept: 0, undone: 0, counts: new Map<string, number>() };
+    if (h.kept) cur.kept++;
+    else cur.undone++;
+    for (const w of names) cur.counts.set(w, (cur.counts.get(w) ?? 0) + 1);
+    by.set(h.counterparty, cur);
+  }
+  return [...by.entries()]
+    .map(([counterparty, v]) => ({
+      counterparty,
+      label: v.label,
+      words: [...v.counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 5).map(([w]) => w),
+      kept: v.kept,
+      undone: v.undone,
+    }))
+    .sort((a, b) => b.kept + b.undone - (a.kept + a.undone) || a.label.localeCompare(b.label));
+}
+
 /**
  * One-to-one suggestions: same amount, within MATCH_WINDOW_DAYS, scored by
  * closeness in date and shared words (e.g. "INV-000012" or a customer name).
  * `unique` is true when the pair is each other's only best candidate, which is
- * the only case the "match all suggested" action applies.
+ * the only case the "match all suggested" action applies. With `learned`, a candidate with
+ * the counterparty the user matched similar lines to before scores higher, and one they
+ * unmatched before scores lower (BANK-017).
  */
-export function suggestMatches(statement: MatchLine[], ledger: MatchLine[]): (MatchSuggestion & { unique: boolean })[] {
+export function suggestMatches(statement: MatchLine[], ledger: MatchLine[], learned: readonly LearnedMatch[] = []): (MatchSuggestion & { unique: boolean })[] {
   const candidates: MatchSuggestion[] = [];
+  const history = learned.map((h) => ({ ...h, names: nameWords(h.text) })).filter((h) => h.names.size > 0);
   for (const s of statement) {
     const sw = words(s.text);
+    const habits = history.length ? learnedFor(nameWords(s.text), history) : new Map<string, Habit>();
     for (const l of ledger) {
       if (!s.amount.eq(l.amount)) continue;
       const gap = days(s.date, l.date);
@@ -242,7 +373,16 @@ export function suggestMatches(statement: MatchLine[], ledger: MatchLine[]): (Ma
       const shared = [...words(l.text)].filter((w) => sw.has(w));
       const reasons = ['Same amount', gap === 0 ? 'Same date' : `${gap} day${gap === 1 ? '' : 's'} apart`];
       if (shared.length) reasons.push(`Shared text: ${shared.slice(0, 3).join(', ')}`);
-      const score = 50 + Math.max(0, 30 - gap * 2) + Math.min(20, shared.length * 10);
+      let score = 50 + Math.max(0, 30 - gap * 2) + Math.min(20, shared.length * 10);
+      const habit = l.counterparty ? habits.get(l.counterparty) : undefined;
+      if (habit && habit.net > 0) {
+        score += Math.min(LEARNED_BOOST_MAX, 15 + 5 * (habit.net - 1));
+        reasons.push(`You matched similar lines to ${habit.label} ${habit.net} time${habit.net === 1 ? '' : 's'} before`);
+      } else if (habit && habit.net < 0) {
+        score -= LEARNED_PENALTY;
+        reasons.push(`You unmatched a similar line from ${habit.label} before`);
+      }
+      score = Math.max(1, Math.min(100, score));
       candidates.push({ statementLineId: s.id, journalLineId: l.id, score, reasons });
     }
   }
