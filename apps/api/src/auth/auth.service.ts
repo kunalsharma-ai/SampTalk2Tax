@@ -5,7 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
 import { users } from '../db/collections/identity';
-import { PostgresMirrorService, thenInPostgres } from '../db/postgres-mirror.service';
+import { thenOrUndo } from '../common/undo';
 import { LoginThrottleService } from './login-throttle.service';
 import { MfaService } from './mfa.service';
 import { ClientMeta, SessionsService } from './sessions.service';
@@ -25,7 +25,6 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
     private readonly sessions: SessionsService,
     private readonly throttle: LoginThrottleService,
     private readonly audit: AuditService,
@@ -61,11 +60,10 @@ export class AuthService {
         throw isDuplicateKeyError(e) ? emailTaken() : e;
       });
     const { u, session } = created;
-    return thenInPostgres(
+    return thenOrUndo(
       { user: { id: u.id, email: u.email, name: u.name }, ...session.issued },
       () =>
         this.prisma.$transaction(async (tx) => {
-          await this.mirror.users([u.id], tx);
           await this.audit.append(tx, { orgId: null, actorId: u.id, action: 'user.registered', entityType: 'user', entityId: u.id });
           await this.sessions.auditCreated(tx, session);
         }),
@@ -105,7 +103,7 @@ export class AuthService {
 
   private async startSession(user: { id: string; email: string; name: string }, meta: ClientMeta, mfa?: 'APP' | 'RECOVERY_CODE') {
     const session = await this.sessions.create(user.id, meta);
-    return thenInPostgres(
+    return thenOrUndo(
       { user: { id: user.id, email: user.email, name: user.name }, ...session.issued },
       () => this.prisma.$transaction((tx) => this.sessions.auditCreated(tx, session, mfa)),
       () => this.sessions.discard(session.issued.sessionId),
@@ -130,7 +128,6 @@ export class AuthService {
     });
     // The password is changed and the other sessions are ended; the record of it follows.
     await this.prisma.$transaction(async (tx) => {
-      await this.mirror.users([userId], tx);
       await this.audit.append(tx, { orgId: null, actorId: userId, action: 'user.password_changed', entityType: 'user', entityId: userId });
       if (signedOut > 0) await this.sessions.auditRevokedMany(tx, userId, signedOut, 'password_changed');
     });

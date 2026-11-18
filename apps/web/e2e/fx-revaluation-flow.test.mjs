@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for exchange rates and revaluation: a person records a USD rate, a
  * journal in USD takes it, the revaluation page shows the balance at a new rate, and posting it
- * leaves a record with its journal and reversal. Real Next.js app → real API → real PostgreSQL.
+ * leaves a record with its journal and reversal. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

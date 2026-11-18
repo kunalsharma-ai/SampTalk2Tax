@@ -2,7 +2,7 @@
  * Browser end-to-end test for the (i) help: a new user sees it on sign-up and onboarding, then on
  * the dashboard, a page title, a section title and the feature guide; it opens and closes with the
  * mouse and the keyboard, and its headings follow the interface language. Real Next.js app → real
- * API → real PostgreSQL.
+ * API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

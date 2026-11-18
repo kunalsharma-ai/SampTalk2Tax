@@ -30,7 +30,7 @@ export interface SystemHealth {
   problems: string[];
   checkedAt: string;
   server: { version: string; commit: string | null; environment: string; node: string; region: string; startedAt: string; uptimeSeconds: number; memory: { rssBytes: number; heapUsedBytes: number; heapTotalBytes: number }; loadAverage: number[] };
-  database: { status: 'OK' | 'SLOW' | 'DOWN'; latencyMs: number | null; sizeBytes: number | null; connections: number | null; maxConnections: number | null; postgres: string | null; lastMigration: { name: string; at: string | null } | null; unfinishedMigrations: number | null; error?: string };
+  database: { status: 'OK' | 'SLOW' | 'DOWN'; latencyMs: number | null; sizeBytes: number | null; connections: number | null; maxConnections: number | null; mongodb: string | null; lastMigration: { name: string; at: string | null } | null; unfinishedMigrations: number | null; error?: string };
   runners: Runner[];
   requests: { windowMinutes: number; since: string; totals: RouteStat; minutes: { at: string; requests: number; serverErrors: number; p95Ms: number | null }[]; routes: (RouteStat & { route: string })[] };
   errors: { open: number | null; lastHour: number | null };

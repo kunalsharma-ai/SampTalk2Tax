@@ -2,7 +2,7 @@
  * Browser end-to-end test for report exports: an owner posts an invoice and a bill, then
  * downloads the trial balance, profit and loss, receivables ageing and profit by department as
  * CSV, Excel and PDF from the report pages, and sees a bad date range refused on screen instead
- * of a downloaded error. Real Next.js app → real API → real PostgreSQL. The downloaded files are
+ * of a downloaded error. Real Next.js app → real API → real MongoDB. The downloaded files are
  * read back and checked against the figures on screen.
  */
 import assert from 'node:assert/strict';

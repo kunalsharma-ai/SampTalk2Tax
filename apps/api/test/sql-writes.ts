@@ -1,32 +1,23 @@
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@talk2tax/database';
 import { runAsSystem, runInOrg, tenantStorage } from '../src/common/tenant-context';
-import { postgresOff } from '../src/db/counters';
 import { parseCheck, valueOf, holds } from '../src/db/constraints/sql-expr';
 import { modelInfo, mongoRows } from '../src/db/mirror-writes';
 import { forMongo } from '../src/db/moved-table';
 import type { Ctx } from './helpers';
 
 /**
- * A test's direct write to a table, written as the SQL it would run against PostgreSQL:
- * `UPDATE t SET a = x, ... WHERE ...` or `DELETE FROM t WHERE ...`. Tests use these to check
- * that the database itself refuses a change the API never makes, or to set up a state (a date
- * moved back) the API can't reach.
+ * A test's direct write to a table, written as SQL over the tables of the model:
+ * `UPDATE t SET a = x, ... WHERE ...`, `DELETE FROM t WHERE ...` or `INSERT INTO t ...`. Tests
+ * use these to check that the data layer itself refuses a change the API never makes, or to set
+ * up a state (a date moved back) the API can't reach.
  *
- * While PostgreSQL runs, the SQL runs there as before. With PostgreSQL off it runs against
- * MongoDB through the data layer: the matching records are found by evaluating the WHERE
- * clause, and each is changed or deleted the way the API would, so guards, checks and
- * references apply. `bypass` runs it as the system (row-level security off).
+ * It runs against MongoDB through the data layer: the matching records are found by evaluating
+ * the WHERE clause, and each is changed or deleted the way the API would, so guards, checks and
+ * references apply. `bypass` runs it as the system (tenant policies off).
  */
 export async function sqlWrite(ctx: Ctx, sql: string, args: unknown[] = [], opts: { bypass?: boolean } = {}): Promise<number> {
-  if (!postgresOff()) {
-    if (!opts.bypass) return ctx.prisma.$executeRawUnsafe(sql, ...args);
-    return ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(`SELECT set_config('t2t.bypass', 'on', true)`);
-      return tx.$executeRawUnsafe(sql, ...args);
-    });
-  }
-  // Guards are switched off with allowInTx('guards_off') around the write; PostgreSQL's trigger switches have no part.
+  // Guards are switched off with allowInTx('guards_off') around the write; trigger switches have no part.
   if (/^ALTER\s+TABLE\s+\w+\s+(DISABLE|ENABLE)\s+TRIGGER\s+\w+$/i.test(sql.trim())) return 0;
   const text = (await subqueries(ctx, bind(sql.trim().replace(/;$/, ''), args)))
     .replace(/\bCURRENT_DATE\b/gi, `DATE '${new Date().toISOString().slice(0, 10)}'`)

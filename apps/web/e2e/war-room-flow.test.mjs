@@ -3,7 +3,7 @@
  * belong to departments, reads what each change does, tries the suggested funding, saves a new
  * version, pins a note to a month and a change, restores an earlier version, and submits it.
  * An approver in a second browser rejects it with a reason, then approves the resubmission. The
- * planning board and the risk map show the result. Real Next.js app → real API → real PostgreSQL.
+ * planning board and the risk map show the result. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

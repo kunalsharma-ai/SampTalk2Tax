@@ -83,7 +83,7 @@ export const contacts = defineCollection<ContactDoc>({
 });
 
 // contacts_start_customer_onboarding opens an onboarding for a new customer or vendor.
-export const CONTACTS: MovedTable = { def: contacts, model: 'contact', triggers: [{ model: 'CustomerOnboarding', key: 'contactId' }], afterWrite: startOnboardings };
+export const CONTACTS: MovedTable = { def: contacts, model: 'contact', afterWrite: startOnboardings };
 
 /**
  * A customer (or vendor) opens an onboarding when the organisation requires one for that party
@@ -327,7 +327,7 @@ export const documents = defineCollection<DocumentDoc>({
   },
 });
 
-export const DOCUMENTS: MovedTable = { def: documents, model: 'document', children: { field: 'lines', model: 'documentLine', parentKey: 'documentId' } };
+export const DOCUMENTS: MovedTable = { def: documents, model: 'document' };
 
 /** A new draft with the columns' defaults, for MovedTables.create. */
 export function newDocument(x: Pick<DocumentDoc, 'kind' | 'contactId' | 'issueDate' | 'dueDate' | 'currency' | 'subtotal' | 'taxTotal' | 'total' | 'createdById'> & Partial<DocumentDoc>, now = new Date()): Omit<DocumentDoc, 'id' | 'orgId'> {
@@ -774,4 +774,4 @@ export const attachments = defineCollection<AttachmentDoc>({
   },
 });
 
-export const ATTACHMENTS: MovedTable = { def: attachments, model: 'attachment', toRow: (d) => ({ ...d, content: new Uint8Array(bytesOf(d.content as Binary | Buffer)) }) };
+export const ATTACHMENTS: MovedTable = { def: attachments, model: 'attachment' };

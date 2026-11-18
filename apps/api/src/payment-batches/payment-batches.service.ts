@@ -7,7 +7,7 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { DocumentsService } from '../ledgers/documents.service';
-import { nextCounter, postgresOff } from '../db/counters';
+import { nextCounter } from '../db/counters';
 import { holdLock, lockRow } from '../db/locks';
 import { allowInTx } from '../db/guards/allow';
 
@@ -118,7 +118,6 @@ export class PaymentBatchesService {
   async verifyBankDetails(org: BatchOrg, actor: Actor, contactId: string, input: { note: string }) {
     if (!this.can(org).verifyBankDetails) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Verifying bank details needs approvals.decide' });
     await this.prisma.$transaction(async (tx) => {
-      if (!postgresOff()) await tx.$queryRaw`SELECT contact_id FROM vendor_bank_details WHERE contact_id = ${contactId}::uuid AND org_id = ${org.id}::uuid FOR UPDATE`;
       await holdLock(`vendor_bank_details:${contactId}`);
       const d = await tx.vendorBankDetails.findFirst({ where: { contactId, orgId: org.id } });
       if (!d) throw new NotFoundException({ error: 'NOT_FOUND', message: 'This vendor has no bank details' });
@@ -126,7 +125,6 @@ export class PaymentBatchesService {
       const self = d.changedById === actor.id;
       if (self) {
         if (await this.otherApprover(tx, org.id, actor.id)) throw new DomainError('SAME_PERSON', 'Bank details must be verified by someone other than the person who changed them', HttpStatus.CONFLICT);
-        await tx.$executeRaw`SELECT set_config('t2t.allow_self_verify', 'on', true)`;
       }
       const verify = () => tx.vendorBankDetails.update({ where: { contactId }, data: { verifiedById: actor.id, verifiedAt: new Date(), verificationNote: input.note.trim() } });
       await (self ? allowInTx('allow_self_verify', async () => await verify()) : verify());

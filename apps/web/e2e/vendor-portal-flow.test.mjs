@@ -3,7 +3,7 @@
  * made; the vendor opens it without a session, sees what they are owed, their bill and their
  * purchase order, and sends an invoice with its PDF; staff find it under Purchases → Vendor
  * invoices and record it against its bill; the vendor sees it recorded. Real Next.js app → real
- * API → real PostgreSQL.
+ * API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -1,5 +1,5 @@
 /**
- * Browser end-to-end test for sales and purchases: real Next.js app → real API → real PostgreSQL.
+ * Browser end-to-end test for sales and purchases: real Next.js app → real API → real MongoDB.
  * Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';

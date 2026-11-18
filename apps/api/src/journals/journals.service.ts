@@ -14,9 +14,9 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { runInOrg } from '../common/tenant-context';
 import { accounts as accountsColl } from '../db/collections/chart';
 import { journalEntries, type JournalEntryDoc } from '../db/collections/ledger';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
-import { nextCounter, postgresOff } from '../db/counters';
+import { nextCounter } from '../db/counters';
 import { lockRow } from '../db/locks';
+import { cascadeDeleted } from '../db/mirror-writes';
 
 export type CreatableJournalType = 'STANDARD' | 'ADJUSTING' | 'OPENING' | 'CLOSING' | 'RECURRING';
 
@@ -52,7 +52,6 @@ export class JournalsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
   ) {}
 
   /**
@@ -90,7 +89,6 @@ export class JournalsService {
   private async insertEntry(tx: Tx, doc: Omit<JournalEntryDoc, 'id' | 'createdAt' | 'updatedAt'>): Promise<JournalEntryDoc> {
     const now = new Date();
     const created = (await this.entries(doc.orgId, (c) => c.insertOne({ ...doc, createdAt: now, updatedAt: now }))) as JournalEntryDoc;
-    await this.mirror.journalEntries([created.id], tx);
     return created;
   }
 
@@ -211,7 +209,6 @@ export class JournalsService {
           },
         ),
       );
-      await this.mirror.journalEntries([id], tx);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'journal.draft_updated', entityType: 'journal_entry', entityId: id, data: { date: input.date, lines: input.lines.length } });
       return id;
     }).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
@@ -222,7 +219,7 @@ export class JournalsService {
       const existing = await this.lockEntry(tx, orgId, id);
       if (existing.status !== 'DRAFT') throw new DomainError('ENTRY_POSTED', 'Posted entries cannot be deleted; reverse them instead', HttpStatus.CONFLICT);
       await this.entries(orgId, (c) => c.deleteOne({ id, status: 'DRAFT' }));
-      await this.mirror.removeJournalEntry(id, orgId, tx);
+      await cascadeDeleted(tx, this.store, 'journal_entries', orgId, [id]);
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'journal.draft_deleted', entityType: 'journal_entry', entityId: id });
     });
   }
@@ -243,7 +240,6 @@ export class JournalsService {
       );
       const posted = await this.posting(tx, org.id, actor.id);
       await this.entries(org.id, (c) => c.updateOne({ id, status: 'DRAFT' }, { $set: { status: 'POSTED', ...posted, updatedAt: new Date() } }));
-      await this.mirror.journalEntries([id], tx);
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'journal.posted', entityType: 'journal_entry', entityId: id, data: { entryNumber: posted.entryNumber } });
       return id;
     }).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
@@ -442,7 +438,7 @@ export class JournalsService {
     }
   }
 
-  /** Holds the entry's PostgreSQL copy FOR UPDATE (one change at a time), then reads the entry from MongoDB. */
+  /** Locks the entry (one change at a time), then reads it. */
   private async lockEntry(tx: Tx, orgId: string, id: string): Promise<JournalEntryDoc> {
     const rows = await lockRow<{ id: string }>(tx, 'journal_entries', id, orgId);
     const e = rows[0] ? await this.entries(orgId, (c) => c.findOne({ id })) : null;
@@ -450,22 +446,15 @@ export class JournalsService {
     return e;
   }
 
-  /** Find the period containing a date and hold it FOR SHARE so it cannot be locked mid-posting. */
+  /**
+   * Find the period containing a date. MongoDB has no shared lock, so the period is read as it
+   * stands in the transaction's snapshot: a lock that commits while a posting is in flight does
+   * not make that posting wait (docs/MONGODB.md › Known gaps).
+   */
   private async lockPeriodForDate(tx: Tx, orgId: string, date: string) {
-    if (postgresOff()) {
-      // MongoDB has no shared lock, so the period is read as it stands (TODO step 10c: make a period lock wait for postings).
-      const p = await tx.fiscalPeriod.findFirst({ where: { orgId, startDate: { lte: toDbDate(date) }, endDate: { gte: toDbDate(date) } }, select: { id: true, name: true, status: true } });
-      if (!p) throw new DomainError('NO_FISCAL_PERIOD', `No fiscal period covers ${date}. Create the fiscal year first.`);
-      return { ...p, status: String(p.status) };
-    }
-    const rows = await tx.$queryRaw<{ id: string; name: string; status: string }[]>`
-      SELECT id, name, status::text AS status FROM fiscal_periods
-      WHERE org_id = ${orgId}::uuid AND ${toDbDate(date)}::date BETWEEN start_date AND end_date
-      FOR SHARE`;
-    if (!rows[0]) {
-      throw new DomainError('NO_FISCAL_PERIOD', `No fiscal period covers ${date}. Create the fiscal year first.`);
-    }
-    return rows[0];
+    const p = await tx.fiscalPeriod.findFirst({ where: { orgId, startDate: { lte: toDbDate(date) }, endDate: { gte: toDbDate(date) } }, select: { id: true, name: true, status: true } });
+    if (!p) throw new DomainError('NO_FISCAL_PERIOD', `No fiscal period covers ${date}. Create the fiscal year first.`);
+    return { ...p, status: String(p.status) };
   }
 
   private async validate(tx: Tx, org: OrgInfo, lines: JournalLineInput[], opts: { allowInactive?: boolean; manual?: boolean } = {}): Promise<NormalizedJournal> {

@@ -1,6 +1,8 @@
-// Talk2Tax authoritative transactional schema.
-// Financial invariants are enforced twice: in the accounting engine and in
-// PostgreSQL itself (see the hand-written SQL appended to the first migration).
+// Talk2Tax models. The records live in MongoDB (docs/MONGODB.md); this schema describes them and
+// generates their TypeScript types and the model description the API's data client reads. No
+// Prisma query engine or SQL database runs. Financial invariants are enforced twice: in the
+// accounting engine and in the data layer's guards and constraints (apps/api/src/db).
+// The datasource is required by Prisma's generator; DATABASE_URL is never read or needed.
 
 generator client {
   provider = "prisma-client-js"

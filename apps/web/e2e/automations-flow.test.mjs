@@ -2,7 +2,7 @@
  * Browser end-to-end test for workflow automations and tasks: an owner builds a workflow,
  * tests it on a real invoice, turns it on, and the running API acts on the next invoice by
  * giving a task and sending a signed webhook to a receiver run here. The owner then works
- * the task and changes the workflow. Real Next.js app → real API → real PostgreSQL → the
+ * the task and changes the workflow. Real Next.js app → real API → real MongoDB → the
  * API's own runner. The API must run with WORKFLOW_RUNNER_INTERVAL_SECONDS small (1 in CI)
  * and WEBHOOK_ALLOW_PRIVATE_NETWORKS=true, because the receiver is on localhost.
  */

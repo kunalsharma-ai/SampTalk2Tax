@@ -15,6 +15,7 @@ import unbilledRevenue from './20261216100000_unbilled_revenue';
 import vendorPortal from './20261217100000_vendor_portal';
 import rowLocks from './20261218100000_row_locks';
 import auditEvents from './20261219100000_audit_events';
+import plans from './20261220100000_plans';
 import twoStepSignIn from './20261220100000_two_step_sign_in';
 import orgSecuritySettings from './20261221100000_org_security_settings';
 import expenseAllowances from './20261222100000_expense_allowances';
@@ -24,4 +25,4 @@ import financialTagsMigration from './20261225100000_financial_tags';
 import billChecksMigration from './20261226100000_bill_checks';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration, billChecksMigration];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration, billChecksMigration];

@@ -3,7 +3,7 @@
  * graduated usage charge is added from the contract page, the contract is activated, usage is
  * recorded by hand (a repeated reference is not added twice), a CSV with a bad row is refused and
  * a good one imported, a mistaken reading is voided, and the period's estimate follows.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
