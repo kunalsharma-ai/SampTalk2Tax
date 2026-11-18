@@ -57,9 +57,25 @@ Banking → **Treasury**:
 * **Repayments over the next 12 months**: principal and interest by month (overdue installments are counted in this month).
 * **Loan accounts against the ledger**: for each loan account, what the ledger says is owed against the loans kept here. A difference means a loan was brought in without posting it, or something was posted to the account outside a loan.
 
+## Fixed deposits
+
+Banking → **Fixed deposits** keeps term deposits with banks and the interest they earn (BANK-011, TRS-012).
+
+**Placing a deposit** takes the bank, amount, annual rate, how interest compounds (quarterly, the usual for Indian bank deposits; monthly; half-yearly; yearly; or simple interest), the start and maturity dates (at most ten years apart), and four accounts: the bank or cash account it is paid from, an other current or non-current asset account for the deposit, an other current asset (or prepaid) account for interest earned but not yet paid, and an other income account for the interest. A new chart has no deposit accounts; add them in the chart of accounts first (the form says so). The form shows the maturity value as you type. Saving posts Dr deposit, Cr bank on the start date.
+
+**How interest is worked out**: interest is added to the balance at the end of each full compounding period counted from the start date (a quarter ends on the start date's day three months later, on the last day of the month when that day does not exist), and the part period after the last full one earns simple interest on the compounded balance by days on a 365-day year. Simple interest is on the principal only, by days. Nothing is rounded until the end, so 100,000 at 7% compounded quarterly for one year earns 7,185.90.
+
+**Accruing** posts the interest earned since the last accrual up to a date you choose (not before the start, not after maturity, not in the future): Dr interest accrued, Cr interest income. Each accrual is the interest earned to the date less what is already accrued, so the accruals add up to the maturity interest. From the list, **Accrue interest** does every open deposit at once to a date, capped at each one's maturity; use it at each month or quarter end.
+
+**Closing**, at maturity or early, takes what the bank paid, the tax it deducted at source and the account the tax is claimed back in (a tax receivable account by default; never the deposit or its accrued interest account). The interest is what was paid plus the tax less the principal. The entry is Dr bank, Dr tax deducted, Cr deposit, Cr interest accrued, and Cr interest income for the rest; after a penalty for closing early, interest accrued but not paid is taken back with Dr interest income. A bank paying back less than the principal is refused.
+
+**Reversing**: the latest accrual or the closing can be reversed with a reason and a date; reversing an accrual puts the accrued figure back, and reversing a closing reopens the deposit. The placement itself is not reversed here.
+
+The list shows, for open deposits, the amount deposited, interest earned to date and what is accrued in the books, what is due at maturity, and how many mature within 30 days. Data is in the `deposits` and `depositEvents` collections.
+
 ## Permissions
 
-Owners, admins and accountants (`loans.manage`) add loans and make entries. Everyone with `journals.read` sees loans and the treasury overview.
+Owners, admins and accountants (`loans.manage`) add loans and deposits and make entries. Everyone with `journals.read` sees loans, deposits and the treasury overview.
 
 ## API
 
@@ -75,9 +91,17 @@ Owners, admins and accountants (`loans.manage`) add loans and make entries. Ever
 | `POST …/loans/:id/prepayments` | loans.manage | Prepay principal |
 | `POST …/loans/:id/rate-changes` | loans.manage | Change the rate |
 | `POST …/loans/:id/events/:eventId/reverse` | loans.manage | Reverse the latest entry |
+| `GET …/deposits` | journals.read | Deposits with interest to date, accrued and at maturity, and totals |
+| `GET …/deposits/accounts` | journals.read | Accounts the deposit forms offer |
+| `GET …/deposits/:id` | journals.read | One deposit with its postings |
+| `POST …/deposits` | loans.manage | Place a deposit |
+| `POST …/deposits/accrue` | loans.manage | Accrue interest on every open deposit to a date |
+| `POST …/deposits/:id/accrue` | loans.manage | Accrue interest on one deposit to a date |
+| `POST …/deposits/:id/close` | loans.manage | Close at maturity or early |
+| `POST …/deposits/:id/reverse` | loans.manage | Reverse the latest accrual or the closing |
 
-Audit events: `loan.created`, `loan.updated`, `loan.repaid`, `loan.prepaid`, `loan.rate_changed`, `loan.event_reversed`.
+Audit events: `loan.created`, `loan.updated`, `loan.repaid`, `loan.prepaid`, `loan.rate_changed`, `loan.event_reversed`, `deposit.placed`, `deposit.interest_accrued`, `deposit.closed`, `deposit.reversed`.
 
 ## Not built yet
 
-Bullet, balloon, quarterly or step-up repayments; moratorium periods; drawdowns in tranches; foreign-currency loans; loans given; interest accrued at month end between installment dates; covenants and security; daily-balance interest; overdraft and cash-credit limits; investments and deposits. The app records borrowings; it never moves money or borrows.
+Bullet, balloon, quarterly or step-up repayments; moratorium periods; drawdowns in tranches; foreign-currency loans; loans given; interest accrued at month end between installment dates; covenants and security; daily-balance interest; overdraft and cash-credit limits; investments other than fixed deposits (mutual funds, bonds, shares) and their market values; interest on savings or current account balances (record it from the bank statement); deposit renewals (close and place a new one); deposits in a foreign currency. The app records borrowings; it never moves money or borrows.
