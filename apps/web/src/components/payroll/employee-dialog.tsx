@@ -25,6 +25,9 @@ interface Draft {
   priorTaxYear: string;
   priorIncome: string;
   priorTds: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankIfsc: string;
 }
 
 const AMT = /^\d{0,13}(\.\d{0,2})?$/;
@@ -47,6 +50,9 @@ function draftOf(e: Employee | null, defaultState: string): Draft {
     priorTaxYear: e?.priorTaxYear ?? '',
     priorIncome: e && e.priorIncome !== '0.00' ? e.priorIncome : '',
     priorTds: e && e.priorTds !== '0.00' ? e.priorTds : '',
+    bankAccountName: e?.bank?.accountName ?? '',
+    bankAccountNumber: e?.bank?.accountNumber ?? '',
+    bankIfsc: e?.bank?.ifsc ?? '',
   };
 }
 
@@ -76,6 +82,9 @@ export function EmployeeDialog({ open, employee, defaultState, onClose }: { open
         priorTaxYear: d.priorIncome || d.priorTds ? d.priorTaxYear || null : null,
         priorIncome: d.priorIncome || '0',
         priorTds: d.priorTds || '0',
+        bankAccountName: d.bankAccountName.trim() || null,
+        bankAccountNumber: d.bankAccountNumber.trim() || null,
+        bankIfsc: d.bankIfsc.trim() || null,
       };
       return employee
         ? api<Employee>(`/v1/orgs/${orgId}/payroll/employees/${employee.id}`, { method: 'PUT', body })
@@ -123,6 +132,12 @@ export function EmployeeDialog({ open, employee, defaultState, onClose }: { open
         </fieldset>
         <Field label="UAN (optional)">{(p) => <Input {...p} className="num" value={d.uan} maxLength={20} onChange={(e) => set({ uan: e.target.value })} />}</Field>
         <Field label="ESI number (optional)">{(p) => <Input {...p} className="num" value={d.esiNumber} maxLength={20} onChange={(e) => set({ esiNumber: e.target.value })} />}</Field>
+        <fieldset className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+          <legend className="mb-1 text-xs font-medium uppercase tracking-wide text-fg-muted">Salary account (optional)</legend>
+          <Field label="Account holder's name" hint="As the bank has it.">{(p) => <Input {...p} value={d.bankAccountName} maxLength={140} onChange={(e) => set({ bankAccountName: e.target.value })} />}</Field>
+          <Field label="Account number">{(p) => <Input {...p} className="num" value={d.bankAccountNumber} maxLength={40} autoComplete="off" onChange={(e) => set({ bankAccountNumber: e.target.value })} />}</Field>
+          <Field label="IFSC" hint="Net salary is paid here by bank transfer.">{(p) => <Input {...p} className="num uppercase" value={d.bankIfsc} maxLength={11} onChange={(e) => set({ bankIfsc: e.target.value.toUpperCase() })} />}</Field>
+        </fieldset>
         <details className="sm:col-span-2" open={!!(d.priorIncome || d.priorTds)}>
           <summary className="cursor-pointer text-sm text-fg-muted">Salary from a previous employer this tax year</summary>
           <div className="mt-3 grid gap-4 sm:grid-cols-3">

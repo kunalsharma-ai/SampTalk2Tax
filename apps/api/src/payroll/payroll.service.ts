@@ -1,6 +1,6 @@
 import { ChartService, type SystemAccountSpec } from '../accounts/chart.service';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { D, dec, Dec } from '@talk2tax/accounting-engine';
+import { bankDetailIssues, D, dec, Dec, maskAccountNumber, normaliseAccountNumber, paymentFileCsv } from '@talk2tax/accounting-engine';
 import { Employee, PayComponentKind, PayrollLiability, PayrollSettings, Prisma, PtCategory, SalaryComponent, SalaryStructure } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import {
@@ -76,6 +76,10 @@ export interface EmployeeInput {
   pfOnFullWages?: boolean;
   uan?: string | null;
   esiNumber?: string | null;
+  /** Salary account; all three or none. */
+  bankAccountName?: string | null;
+  bankAccountNumber?: string | null;
+  bankIfsc?: string | null;
   priorTaxYear?: string | null;
   priorIncome?: string;
   priorTds?: string;
@@ -168,7 +172,11 @@ export class PayrollService {
 
   async listEmployees(orgId: string) {
     const rows = await this.prisma.employee.findMany({ where: { orgId }, include: STRUCTURES, orderBy: { code: 'asc' } });
-    return rows.map((e) => this.serializeEmployee(e));
+    // The list shows only the last digits of salary accounts; the employee's own page has the number.
+    return rows.map((e) => {
+      const x = this.serializeEmployee(e);
+      return { ...x, bank: x.bank ? { accountName: x.bank.accountName, masked: x.bank.masked, ifsc: x.bank.ifsc } : null };
+    });
   }
 
   async getEmployee(orgId: string, id: string) {
@@ -209,7 +217,7 @@ export class PayrollService {
         if (data.dateOfLeaving && fromDbDate(data.dateOfLeaving) < periodStart(last)) throw new DomainError('EMPLOYEE_PAID', `The employee was paid for ${last}; the leaving date cannot be before that month`, HttpStatus.CONFLICT);
       }
       const e = await tx.employee.update({ where: { id }, data });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'payroll.employee_updated', entityType: 'employee', entityId: id, data: { ...input } });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'payroll.employee_updated', entityType: 'employee', entityId: id, data: { ...input, bankAccountNumber: input.bankAccountNumber ? maskAccountNumber(input.bankAccountNumber) : (input.bankAccountNumber ?? null) } });
       return this.serializeEmployee(await this.employeeById(tx, orgId, e.id));
     });
   }
@@ -371,6 +379,47 @@ export class PayrollService {
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'payroll.run_voided', entityType: 'pay_run', entityId: id, data: { number: run.number, date: input.date, reason: input.reason, reversalEntryId: rev.id } });
       return this.serializeRun(tx, org, id);
     });
+  }
+
+  /**
+   * Who can be paid by bank transfer for a posted run: each payslip with net pay, with the
+   * employee's salary account, or the reason it cannot go in the bank file (PAY-017).
+   */
+  async salaryTransfers(org: PayrollOrg, runId: string) {
+    const run = await this.prisma.payRun.findFirst({ where: { id: runId, orgId: org.id } });
+    if (!run) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Pay run not found' });
+    const slips = await this.prisma.payslip.findMany({ where: { payRunId: runId, orgId: org.id }, include: { employee: true } });
+    const rows = slips
+      .filter((p) => new D(p.net.toString()).gt(0))
+      .map((p) => {
+        const e = p.employee;
+        const bank = { accountName: e.bankAccountName ?? '', accountNumber: e.bankAccountNumber ?? '', ifsc: e.bankIfsc ?? '' };
+        const issue = !e.bankAccountNumber ? 'No salary account' : (bankDetailIssues(bank)[0] ?? null);
+        return { employeeId: e.id, code: e.code, name: e.name, email: e.email, net: new D(p.net.toString()).toFixed(2), bank, masked: e.bankAccountNumber ? maskAccountNumber(e.bankAccountNumber) : null, issue };
+      })
+      .sort((a, b) => a.code.localeCompare(b.code));
+    const ready = rows.filter((r) => !r.issue);
+    return { run, rows, ready, total: ready.reduce((s, r) => s.plus(r.net), new D(0)).toFixed(2) };
+  }
+
+  /** The bank's bulk transfer file (CSV) of net salaries for a posted run, for employees with a salary account. */
+  async salaryFile(org: PayrollOrg, actor: { id: string }, runId: string, input: { bankAccountId: string }) {
+    const t = await this.salaryTransfers(org, runId);
+    if (t.run.status !== 'POSTED') throw new DomainError('PAY_RUN_NOT_POSTED', `${t.run.number} must be posted first`, HttpStatus.CONFLICT);
+    if (!t.ready.length) throw new DomainError('NO_SALARY_ACCOUNTS', 'No employee in this run has a salary account to pay into; add them on each employee', HttpStatus.UNPROCESSABLE_ENTITY);
+    const bank = await this.prisma.account.findFirst({ where: { id: input.bankAccountId, orgId: org.id } });
+    if (!bank || !bank.isPostable || !bank.isActive || bank.subtype !== 'BANK') throw new DomainError('INVALID_BANK_ACCOUNT', 'Choose the bank account the salaries are paid from');
+    const reference = `${t.run.number} ${monthName(t.run.period)}`;
+    const csv = paymentFileCsv(
+      { reference, date: fromDbDate(t.run.payDate), debitAccount: `${bank.code} ${bank.name}`, currency: org.functionalCurrency },
+      t.ready.map((r) => ({ vendor: `${r.code} ${r.name}`, accountName: r.bank.accountName, accountNumber: r.bank.accountNumber, ifsc: r.bank.ifsc, amount: r.net, reference: `Salary ${monthName(t.run.period)}`.slice(0, 30), email: r.email })),
+      'Employee',
+    );
+    const left = t.rows.filter((r) => r.issue);
+    await this.prisma.$transaction((tx) =>
+      this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'payroll.salary_file_downloaded', entityType: 'pay_run', entityId: runId, data: { payRun: t.run.number, employees: t.ready.length, total: t.total, left: left.map((r) => r.code) } }),
+    );
+    return { filename: `${t.run.number}-salaries-${fromDbDate(t.run.payDate)}.csv`, csv };
   }
 
   /** Pay out one liability of a posted run: net salaries to employees, or a statutory due to its authority. */
@@ -823,6 +872,7 @@ export class PayrollService {
       priorTaxYear: e.priorTaxYear,
       priorIncome: MONEY(e.priorIncome),
       priorTds: MONEY(e.priorTds),
+      bank: e.bankAccountNumber ? { accountName: e.bankAccountName ?? '', accountNumber: e.bankAccountNumber, masked: maskAccountNumber(e.bankAccountNumber), ifsc: e.bankIfsc ?? '' } : null,
       status: e.dateOfLeaving && fromDbDate(e.dateOfLeaving) < today ? ('LEFT' as const) : fromDbDate(e.dateOfJoining) > today ? ('JOINING' as const) : ('ACTIVE' as const),
       currentSalary: current ? structure(current) : null,
       salaries: e.structures.map(structure),
@@ -858,6 +908,9 @@ export class PayrollService {
     const priorTds = dec(input.priorTds ?? '0');
     if (priorIncome.decimalPlaces() > 2 || priorTds.decimalPlaces() > 2) issues.push('Amounts can have at most two decimal places');
     if ((priorIncome.gt(0) || priorTds.gt(0)) && !input.priorTaxYear) issues.push('Say which tax year the previous employer figures are for');
+    const bank = { accountName: input.bankAccountName?.trim() ?? '', accountNumber: input.bankAccountNumber?.trim() ?? '', ifsc: input.bankIfsc?.trim().toUpperCase() ?? '' };
+    const hasBank = !!(bank.accountName || bank.accountNumber || bank.ifsc);
+    if (hasBank) issues.push(...bankDetailIssues(bank).map((i) => `Salary account: ${i}`));
     if (issues.length) throw new DomainError('INVALID_EMPLOYEE', 'The employee is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
     return {
       code: input.code.trim(),
@@ -873,6 +926,9 @@ export class PayrollService {
       pfOnFullWages: pfMember && (input.pfOnFullWages ?? false),
       uan: input.uan?.trim() || null,
       esiNumber: input.esiNumber?.trim() || null,
+      bankAccountName: hasBank ? bank.accountName : null,
+      bankAccountNumber: hasBank ? normaliseAccountNumber(bank.accountNumber) : null,
+      bankIfsc: hasBank ? bank.ifsc : null,
       priorTaxYear: priorIncome.gt(0) || priorTds.gt(0) ? (input.priorTaxYear ?? null) : null,
       priorIncome: priorIncome.toFixed(2),
       priorTds: priorTds.toFixed(2),

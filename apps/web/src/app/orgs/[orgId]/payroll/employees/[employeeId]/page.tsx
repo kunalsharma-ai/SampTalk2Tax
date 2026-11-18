@@ -66,6 +66,7 @@ export default function EmployeePage() {
             <dt className="text-fg-muted">Provident fund</dt><dd>{x.pfMember ? `Member${x.epsMember ? ', with EPS' : ', no EPS'}${x.pfOnFullWages ? ', on full wages' : ''}` : 'Not a member'}</dd>
             <dt className="text-fg-muted">UAN</dt><dd className="num">{x.uan ?? '—'}</dd>
             <dt className="text-fg-muted">ESI number</dt><dd className="num">{x.esiNumber ?? '—'}</dd>
+            <dt className="text-fg-muted">Salary account</dt><dd>{x.bank ? <><span className="num">{x.bank.masked}</span> · <span className="num">{x.bank.ifsc}</span><span className="block text-xs text-fg-muted">{x.bank.accountName}</span></> : <span className="text-fg-muted">None: paid outside the bank file</span>}</dd>
             {x.priorTaxYear ? (<><dt className="text-fg-muted">Previous employer</dt><dd><Money value={x.priorIncome} currency="INR" /> salary, <Money value={x.priorTds} currency="INR" /> TDS in {x.priorTaxYear}</dd></>) : null}
           </dl>
         </Card>
