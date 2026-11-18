@@ -19,7 +19,7 @@ import {
 } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
@@ -31,9 +31,9 @@ type Actor = { id: string };
 /** Payment history looked at for delays: the year before the forecast date. */
 const HISTORY_DAYS = 365;
 
-/** Today's date in India (the forecast and saved-forecast checks use IST). */
+/** Today's business date, in the organisation's time zone (the forecast and saved-forecast checks use it). */
 export function todayIst(): string {
-  return new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+  return todayIso();
 }
 
 export interface PlannedItemInput {

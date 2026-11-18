@@ -17,6 +17,8 @@ export interface TenantContext {
   apiKey?: { id: string; prefix: string };
   /** Inside an interactive transaction whose settings are already applied. */
   inTx?: boolean;
+  /** The organisation's time zone: its business day ("today", due and overdue) follows it (I18N-008). */
+  timeZone?: string;
 }
 
 export const tenantStorage = new AsyncLocalStorage<TenantContext>();
@@ -46,9 +48,29 @@ export function currentTenantContext(): TenantContext {
 }
 
 /** Narrows the current request to one organisation (used after the membership check, and for a new organisation). */
-export function enterOrg(orgId: string): void {
+export function enterOrg(orgId: string, timeZone?: string): void {
+  if (timeZone) rememberOrgTimeZone(orgId, timeZone);
   const store = tenantStorage.getStore();
-  if (store) store.orgId = orgId;
+  if (store) {
+    store.orgId = orgId;
+    store.timeZone = timeZone ?? orgTimeZones.get(orgId);
+  }
+}
+
+/**
+ * The time zones of organisations this process has seen, so work outside a request (schedulers,
+ * runners) that enters an organisation with runInOrg keeps its business day too. Filled on every
+ * request's membership check, when the zone changes, and at start-up.
+ */
+const orgTimeZones = new Map<string, string>();
+export function rememberOrgTimeZone(orgId: string, timeZone: string): void {
+  orgTimeZones.set(orgId, timeZone);
+}
+
+/** The time zone of the organisation the current work is for, if known. */
+export function currentTimeZone(): string | undefined {
+  const ctx = currentTenantContext();
+  return ctx.timeZone ?? (ctx.orgId ? orgTimeZones.get(ctx.orgId) : undefined);
 }
 
 export function enterUser(userId: string): void {
@@ -73,5 +95,6 @@ export function runAsSystem<T>(fn: () => Promise<T>): Promise<T> {
 
 /** Runs fn inside one organisation: a new one (not yet in the request), or the one an invitation belongs to. */
 export function runInOrg<T>(orgId: string, fn: () => Promise<T>): Promise<T> {
-  return tenantStorage.run({ ...currentTenantContext(), orgId, bypass: false }, fn);
+  const ctx = currentTenantContext();
+  return tenantStorage.run({ ...ctx, orgId, bypass: false, timeZone: ctx.orgId === orgId && ctx.timeZone ? ctx.timeZone : orgTimeZones.get(orgId) }, fn);
 }

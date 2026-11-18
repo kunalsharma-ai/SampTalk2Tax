@@ -299,7 +299,7 @@ export function TriggerSettings({ trigger, params, catalogue, onChange }: { trig
         ) : (
           <span />
         )}
-        <Field label="At (India time)">{(p) => <Input {...p} type="time" value={params.time ?? ''} onChange={(e) => onChange({ ...params, time: e.target.value })} />}</Field>
+        <Field label="At" hint="In the organisation's time zone (Settings → Account and preferences).">{(p) => <Input {...p} type="time" value={params.time ?? ''} onChange={(e) => onChange({ ...params, time: e.target.value })} />}</Field>
       </div>
     );
   }
@@ -356,7 +356,7 @@ export function ActionCard({ index, label = 'Action', a, t, catalogue, onChange,
               </Select>
             )}
           </Field>
-          <Field label="Due" hint="Days after the event, in India time. Empty for no due date.">
+          <Field label="Due" hint="Days after the event, by the organisation's calendar. Empty for no due date.">
             {(p) => <Input {...p} type="number" min={0} max={365} value={a.dueInDays === null ? '' : String(a.dueInDays)} onChange={(e) => onChange({ ...a, dueInDays: e.target.value === '' ? null : Number(e.target.value) })} />}
           </Field>
         </div>

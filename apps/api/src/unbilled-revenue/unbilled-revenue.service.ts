@@ -21,13 +21,12 @@ import {
   type UnbilledSource,
 } from '@talk2tax/accounting-engine';
 import { AuditService } from '../audit/audit.service';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, toDbDate, istDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { todayIst } from '../tasks/tasks.service';
 
 type Actor = { id: string };
-const istDate = (d: Date) => new Date(d.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const shiftMonth = (month: string, by: number) => {
   const m = +month.slice(5, 7) - 1 + by + +month.slice(0, 4) * 12;
   return `${Math.floor(m / 12)}-${String((m % 12) + 1).padStart(2, '0')}`;

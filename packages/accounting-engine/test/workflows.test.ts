@@ -161,7 +161,7 @@ describe('schedule triggers', () => {
   const at = (iso: string) => new Date(iso);
   it('checks schedule settings and keeps only the keys that apply', () => {
     expect(checkTriggerParams('SCHEDULE', { frequency: 'WEEKLY', time: '09:30', weekday: 1, dayOfMonth: 5 })).toEqual({ params: { frequency: 'WEEKLY', time: '09:30', weekday: 1 }, issues: [] });
-    expect(checkTriggerParams('SCHEDULE', { frequency: 'MONTHLY', time: '24:00', dayOfMonth: 31 }).issues).toEqual(['Schedule: enter a time as HH:MM (24-hour, India time)', 'Schedule: choose a day of the month from 1 to 28']);
+    expect(checkTriggerParams('SCHEDULE', { frequency: 'MONTHLY', time: '24:00', dayOfMonth: 31 }).issues).toEqual(['Schedule: enter a time as HH:MM (24-hour)', 'Schedule: choose a day of the month from 1 to 28']);
     expect(checkTriggerParams('SCHEDULE', {}).issues).toEqual(['Schedule: choose every day, every week or every month']);
     expect(checkTriggerParams('INVOICE_OVERDUE', { days: 0 }).issues).toHaveLength(1);
     expect(checkTriggerParams('BILL_DUE_SOON', { days: 0 })).toEqual({ params: { days: 0 }, issues: [] });
@@ -191,6 +191,20 @@ describe('schedule triggers', () => {
     expect(latestOccurrence(monthly, at('2026-11-02T04:00:00Z'))).toEqual({ at: at('2026-10-05T04:30:00Z'), date: '2026-10-05' });
     expect(latestOccurrence(monthly, at('2026-01-02T04:00:00Z')).date).toBe('2025-12-05');
     expect(latestOccurrence(monthly, at('2026-11-05T04:30:00Z')).date).toBe('2026-11-05');
+  });
+  it('finds the latest occurrence in the organisation\'s time zone, across a clock change', () => {
+    const daily = { frequency: 'DAILY' as const, time: '09:00' };
+    // New York: 09:00 is 13:00 UTC in summer (EDT) and 14:00 UTC in winter (EST); clocks went back on 1 Nov 2026.
+    expect(latestOccurrence(daily, at('2026-10-30T15:00:00Z'), 'America/New_York')).toEqual({ at: at('2026-10-30T13:00:00Z'), date: '2026-10-30' });
+    expect(latestOccurrence(daily, at('2026-11-02T15:00:00Z'), 'America/New_York')).toEqual({ at: at('2026-11-02T14:00:00Z'), date: '2026-11-02' });
+    // Before 09:00 there on the day after the change: yesterday's 09:00 EST.
+    expect(latestOccurrence(daily, at('2026-11-02T13:30:00Z'), 'America/New_York')).toEqual({ at: at('2026-11-01T14:00:00Z'), date: '2026-11-01' });
+    // Kiribati (UTC+14) is already on the next day.
+    expect(latestOccurrence({ frequency: 'DAILY', time: '08:00' }, at('2026-11-01T20:00:00Z'), 'Pacific/Kiritimati')).toEqual({ at: at('2026-11-01T18:00:00Z'), date: '2026-11-02' });
+    expect(istDate(at('2026-11-01T20:00:00Z'), 'Pacific/Kiritimati')).toBe('2026-11-02');
+    expect(istDate(at('2026-11-01T20:00:00Z'))).toBe('2026-11-02');
+    expect(istDate(at('2026-11-01T17:00:00Z'), 'America/New_York')).toBe('2026-11-01');
+    expect(describeTrigger('SCHEDULE', { frequency: 'DAILY', time: '09:00' }, 'Europe/London')).toBe('Every day at 09:00 Europe/London time');
   });
   it('works out the due dates that reach a date trigger', () => {
     expect(dueDateWindow('INVOICE_OVERDUE', 7, '2026-11-02', '2026-11-04')).toEqual({ from: '2026-10-26', to: '2026-10-28' });

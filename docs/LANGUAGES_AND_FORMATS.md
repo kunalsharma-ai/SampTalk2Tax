@@ -1,6 +1,6 @@
 # Languages and regional formats (M8, slice 1)
 
-Each person chooses the language of the interface and how numbers, dates and times are shown to them. Each organisation has a time zone. These are **display choices only**:
+Each person chooses the language of the interface and how numbers, dates and times are shown to them. Each organisation has a time zone, which also sets its business day (below). A person's choices are **display choices only**:
 
 * amounts stay exact decimal strings;
 * dates stay calendar dates;
@@ -33,7 +33,9 @@ Tax terms and the names of returns and documents (GST, TDS, GSTR-3B, e-way bill)
 
 * **Where the choices apply.** Amounts, dates and moments shown through the shared formatters (`Money`, `money`, `date`, `dateTime`) follow the choices, which covers most of the app. The page previews a sample amount, date and time before saving.
 * **Saving** redraws the app in the new language and formats.
-* **Time zones.** A time zone changes how *moments* are shown: when something was created, signed, sent or checked. **Business dates** stay in India time for every organisation for now: "today", due dates, overdue counts and periods.
+* **Time zones.** A time zone changes how *moments* are shown: when something was created, signed, sent or checked.
+* **The business day follows the organisation's time zone** (I18N-008). "Today" for future-date checks, due and overdue, ageing, alerts, tasks, the cash forecast, the close checklist and copilot answers is the date in the organisation's zone, in the API (`todayIso()`, from the request's organisation) and in the web app (`today()`). Scheduled automations run at their time in that zone, following daylight-saving changes, and say so ("Every day at 09:00 Europe/London time"). A person's own time zone never moves the business day, so everyone in the organisation sees the same "today". India time is the default, and work outside an organisation (sign-up, the platform's own billing and usage months) stays in India time. E-way bill dates stay India time by law.
+* **Background work** (schedulers, runners) learns every organisation's zone at start-up and on each request; a change made on another API process reaches a runner on its next request or restart.
 
 ## How translation works
 
@@ -68,7 +70,6 @@ Text put together with numbers or names ("New invoice", "Match 3 suggested"), st
 
 * **Hindi coverage:** page titles, headings, labels and buttons follow the catalogue (about 180 common words); longer page text, badges, tabs and messages built with values are in English.
 * **No other languages.** No language other than English and Hindi, and no right-to-left layout.
-* **Business dates** ("today", due dates, periods) are in India time for every organisation; only the display of moments follows the time zone.
 * **Not every format follows the choices.** A few pages format some values themselves:
   * the alert dialog's times;
   * some chart axes;
@@ -81,7 +82,10 @@ Text put together with numbers or names ("New invoice", "Match 3 suggested"), st
   * every number format, with 17 significant digits kept;
   * every date format, in English and Hindi;
   * moments across midnight in different zones;
-  * refused time zones and preferences.
+  * refused time zones and preferences;
+  * business dates in several zones, and an unknown zone falling back to India time.
+* `packages/accounting-engine/test/workflows.test.ts`: schedules in New York across the end of daylight saving, and in Kiribati (UTC+14).
+* `apps/api/test/business-day.e2e.test.ts` (3 tests): India time by default; "today" follows the organisation's zone once set (Kiribati or Samoa, whichever is on another date from India at the time); a person's own zone does not move it.
 * `apps/api/test/display-preferences.e2e.test.ts` (4 tests):
   * defaults;
   * saving for oneself only;

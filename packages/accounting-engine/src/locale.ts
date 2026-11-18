@@ -141,6 +141,27 @@ export function displayDate(iso: string, format: DisplayDateFormat, language: La
   }
 }
 
+const dayFormats = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * The calendar date (YYYY-MM-DD) of a moment in a time zone: an organisation's business day
+ * (I18N-008). An unknown zone falls back to India time, the default for every organisation.
+ */
+export function calendarDate(at: Date, timeZone: string): string {
+  let f = dayFormats.get(timeZone);
+  if (!f) {
+    try {
+      f = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
+      return new Date(at.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+    }
+    dayFormats.set(timeZone, f);
+  }
+  const parts = f.formatToParts(at);
+  const p = (t: string) => parts.find((x) => x.type === t)!.value;
+  return `${p('year')}-${p('month')}-${p('day')}`;
+}
+
 /** The calendar date and wall-clock time of a moment in a time zone. */
 export function zonedParts(at: Date, timeZone: string): { date: string; time: string } {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(at);
