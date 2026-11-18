@@ -37,3 +37,16 @@ category or a person to narrow every table to it.
 - `packages/accounting-engine/test/expense-report.test.ts`
 - `apps/api/test/expense-report.e2e.test.ts`
 - `apps/web/e2e/expense-report-flow.test.mjs`
+
+## Receipts from a phone
+
+On a phone or tablet, every *Attachments* card (expense claims, bills, invoices, payments, journals
+and bank lines) has a *Take a photo* button that opens the rear camera directly. It is hidden on a
+computer with a mouse, where *Attach files* is used. Before upload, a photo over 1.5 MB, or larger
+than 2,000 pixels on its long side, is redrawn at most 2,000 pixels long as a JPEG. This applies
+to photos picked with *Attach files* too. A 12-megapixel phone photo comes down from 5 to 15 MB
+to a few hundred KB, under the 5 MB limit and still legible. A camera's generic `image.jpg` is
+named `receipt-YYYYMMDD-HHMMSS.jpg`. PDFs, small images and anything the browser cannot read are
+uploaded unchanged, and the server checks every file as before.
+
+There is no native mobile app; the web app is used in the phone's browser.

@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 780 |
 | Designed | 0 |
-| Implementing | 46 |
+| Implementing | 45 |
 | Implemented | 34 |
-| Tested | 469 |
+| Tested | 470 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1967,10 +1967,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### EXP-003 — Mobile receipt capture
 
 - Module: Expense management
-- Status: **Implementing**
-- Notes: Receipts (photo or PDF) upload from the browser, including on a phone; there is no native mobile app or camera capture flow.
+- Status: **Tested**
+- Notes: On a phone or tablet, the attachments card's Take a photo button opens the rear camera (capture=environment). Large photos are shrunk in the browser to at most 2,000 px as a JPEG before upload, so they fit the 5 MB limit. It works in the phone's browser; there is no native app.
 - Evidence:
   - apps/web/e2e/expenses-flow.test.mjs
+  - apps/web/src/lib/photo.ts
+  - apps/web/src/components/attachments.tsx
+  - apps/web/test/photo.test.ts
+  - apps/web/e2e/receipt-camera-flow.test.mjs
+  - docs/EXPENSE_REPORTS.md
 
 ### EXP-005 — Expense categories
 
