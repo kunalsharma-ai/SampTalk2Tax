@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { checkExpensePolicy, describeExpensePolicyRule, ExpensePolicyRule, expensePolicyRuleIssues, PolicyClaimLine, PolicyOtherLine, PolicyViolation, POLICY_KINDS_WITH_CATEGORY } from '@talk2tax/accounting-engine';
+import { LineLimit, checkExpensePolicy, describeExpensePolicyRule, ExpensePolicyRule, expensePolicyRuleIssues, PolicyClaimLine, PolicyOtherLine, PolicyViolation, POLICY_KINDS_WITH_CATEGORY } from '@talk2tax/accounting-engine';
 import { AuditService } from '../audit/audit.service';
 import { OrgContext } from '../auth/decorators';
 import { DocumentStoreService } from '../common/document-store.service';
@@ -87,6 +87,12 @@ export class ExpensePolicyService {
 
   private record(orgId: string, actorId: string, action: string, entityId: string, data: Record<string, unknown>) {
     return this.prisma.$transaction((tx) => this.audit.append(tx, { orgId, actorId, action, entityType: 'expense_policy_rule', entityId, data }));
+  }
+
+  /** The active per-receipt limits, for the anomaly checks. */
+  async lineLimits(): Promise<LineLimit[]> {
+    const rows = await this.store.collection(expensePolicyRules).find({ isActive: true, kind: 'LINE_MAX' });
+    return rows.filter((r) => r.amount != null).map((r) => ({ accountId: r.accountId, amount: r.amount! }));
   }
 
   /** The active rules this claim breaks. */

@@ -47,8 +47,24 @@ them. Drafts, rejected and void claims do not count.
 MongoDB collection `expense_policy_rules` (migration `20261223100000_expense_policy`). The check
 itself is `checkExpensePolicy` in `@talk2tax/accounting-engine`.
 
+## Worth a second look (anomaly checks)
+
+Some signs break no rule but are worth a closer look. They are shown on a claim that is still a
+draft, rejected or submitted, in a *Worth a second look* card, to the claimant and the approver.
+They never block a claim and need no note to approve. Mileage and per diem lines are left out.
+
+| Check | When it shows |
+| --- | --- |
+| Unusual amount | The line is more than 3 times the median of this organisation's approved and reimbursed lines for the same category in the last 12 months (at least 8 of them, from any claimant). Where those amounts vary, its robust z-score (median absolute deviation) must also be above 3.5. |
+| Just under the limit | The line is within 5% below an active per-receipt limit for its category (the tightest one that applies). |
+| Split receipts | Two or more lines on the same day and category, each within the per-receipt limit, together go over it. |
+
+The checks are statistical and deterministic: no AI model is involved, and the message gives the
+numbers behind each one.
+
 ## Tests
 
 * `packages/accounting-engine/test/expense-policy.test.ts`
 * `apps/api/test/expense-policy.e2e.test.ts`
 * `apps/web/e2e/expense-policy-flow.test.mjs` (screenshots in `talk2tax-preview/expense-policy/`)
+* Anomaly checks: `packages/accounting-engine/test/expense-anomalies.test.ts`, `apps/api/test/expense-anomalies.e2e.test.ts`, `apps/web/e2e/expense-anomalies-flow.test.mjs` (screenshot `talk2tax-preview/expenses/expense-anomaly.png`)

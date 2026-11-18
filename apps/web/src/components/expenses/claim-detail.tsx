@@ -15,7 +15,7 @@ import { ClaimForm } from './claim-form';
 import { ClaimStatus } from './claims-list';
 
 type DialogKind = 'submit' | 'approve' | 'reject' | 'reimburse' | 'void' | null;
-
+const ANOMALY_LABEL = { UNUSUAL_AMOUNT: 'Unusual amount', JUST_UNDER_LIMIT: 'Just under the limit', SPLIT_UNDER_LIMIT: 'Split receipts' } as const;
 export function ClaimDetail() {
   const { org, orgId } = useOrg();
   const { claimId } = useParams<{ claimId: string }>();
@@ -127,6 +127,19 @@ export function ClaimDetail() {
               <li key={`${v.ruleId}-${i}`} className="flex items-start gap-3 py-2">
                 {v.severity === 'BLOCK' ? <Badge tone="negative">Blocks</Badge> : <Badge tone="warning">Warning</Badge>}
                 <span>{v.message}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+      {c.anomalies?.length ? (
+        <Card className="mb-4" role="region" aria-label="Worth a second look">
+          <CardHeader title="Worth a second look" description="Not against any rule, but unlike this organisation's usual claims. Nothing is blocked; check the receipts before approving." />
+          <ul className="divide-y divide-line px-5 pb-4 text-sm">
+            {c.anomalies.map((x) => (
+              <li key={`${x.code}-${x.lineNo}`} className="flex items-start gap-3 py-2">
+                <Badge tone="warning">{ANOMALY_LABEL[x.code]}</Badge>
+                <span>{x.message}</span>
               </li>
             ))}
           </ul>
