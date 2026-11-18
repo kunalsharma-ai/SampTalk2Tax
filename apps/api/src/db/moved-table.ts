@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { CollectionDef } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../common/document-store.service';
-import { Tx, withSystemAccess } from '../common/prisma.service';
-import { runAsSystem, runInOrg } from '../common/tenant-context';
-import { mirrorParentDeleted, mirrorRowsWhere, mongoRows, pgOf, POSTGRES_OFF } from './mirror-writes';
+import { Tx } from '../common/prisma.service';
+import { runInOrg } from '../common/tenant-context';
+import { cascadeDeleted, mongoRows } from './mirror-writes';
 
 /**
- * Writes for a table that has moved to MongoDB while its readers have not (docs/MONGODB.md ›
- * While both databases run). The write goes to MongoDB, inside the caller's PostgreSQL
- * transaction (so both commit together), and the document is then copied into that
- * transaction from what MongoDB now holds. The PostgreSQL row is returned, so callers and
- * readers keep their types until reads move in the last step.
+ * Writes for a table moved to MongoDB by hand (a collection with its own definition in
+ * db/collections). The write runs in the caller's transaction, and the record is returned in its
+ * model's shape, so callers keep the model API's types.
  */
 @Injectable()
 export class MovedTables {
@@ -44,85 +42,27 @@ export class MovedTables {
     return (await this.copy(tx, table, [id]))[0] as Row;
   }
 
-  /** Deletes the document and its copy (children go with the copy's cascade). */
+  /** Deletes the document; rows that point at it follow their foreign keys' ON DELETE. */
   async remove(tx: Tx, table: MovedTable, orgId: string, id: string): Promise<void> {
     await runInOrg(orgId, () => this.store.collection(table.def).deleteOne({ id }));
-    if (!POSTGRES_OFF()) await withSystemAccess(tx, () => delegate(tx, table).deleteMany({ where: { id } }));
-    await mirrorParentDeleted(tx, this.store, table.def.name, orgId, [id]);
+    await cascadeDeleted(tx, this.store, table.def.name, orgId, [id]);
   }
 
-  /** Copies these documents into PostgreSQL inside `tx`, and returns the copies. */
+  /** The records as written, in the model's shape, after the table's follow-up work has run. */
   async copy(tx: Tx, table: MovedTable, ids: string[]): Promise<unknown[]> {
-    // With PostgreSQL off there is no copy: the records are returned as MongoDB has them.
-    if (POSTGRES_OFF()) {
-      const rows = await mongoRows(this.store, table.model, { id: { in: ids } });
-      await table.afterWrite?.(tx, rows);
-      return ids.map((id) => rows.find((r) => r.id === id)).filter(Boolean);
-    }
-    const docs = await runAsSystem(() => this.store.collection(table.def).find({ id: { $in: ids } }));
-    const out: unknown[] = [];
-    await withSystemAccess(tx, async () => {
-      for (const { id, ...rest } of docs) {
-        const kids = table.children;
-        const items = kids ? ((rest[kids.field] as { id: string }[] | undefined) ?? []) : [];
-        if (kids) delete rest[kids.field];
-        const data = table.toRow ? table.toRow(rest) : rest;
-        if (!kids) {
-          out.push(await write(tx, table, id, data));
-          continue;
-        }
-        // Children (a document's lines) are rewritten only when the set changed: they change only
-        // while the parent is a draft, and the copy's triggers refuse touching a posted one's.
-        const child = delegate(tx, { model: kids.model } as MovedTable);
-        const held = (await child.findMany({ where: { [kids.parentKey]: id }, select: { id: true } })) as { id: string }[];
-        const same = held.length === items.length && items.every((c) => held.some((h) => h.id === c.id));
-        if (!same && held.length) await child.deleteMany({ where: { [kids.parentKey]: id } });
-        const row = await write(tx, table, id, data);
-        if (!same && items.length) await child.createMany({ data: items.map((c) => ({ ...(kids.toRow ? kids.toRow(c) : c), [kids.parentKey]: id, orgId: data.orgId })) });
-        out.push(row);
-      }
-    });
-    for (const t of table.triggers ?? []) await withSystemAccess(tx, () => mirrorRowsWhere(tx, this.store, t.model, { [t.key]: { in: ids } }));
-    return out;
+    const rows = await mongoRows(this.store, table.model, { id: { in: ids } });
+    await table.afterWrite?.(tx, rows);
+    return ids.map((id) => rows.find((r) => r.id === id)).filter(Boolean);
   }
 }
 
 export interface MovedTable {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   def: CollectionDef<any>;
-  /** The Prisma model that holds the PostgreSQL copy (`contact` for `contacts`). */
+  /** The model whose shape the records are returned in (`contact` for `contacts`). */
   model: string;
-  /** Adjusts a document into the copy's columns, when they differ. */
-  toRow?: (doc: Record<string, unknown>) => Record<string, unknown>;
-  /** An array in the document that PostgreSQL keeps as rows of another table (a document's lines). */
-  children?: { field: string; model: string; parentKey: string; toRow?: (item: Record<string, unknown>) => Record<string, unknown> };
-  /** Rows a PostgreSQL trigger writes when the copy changes (a new customer's onboarding), kept in step in MongoDB. */
-  triggers?: { model: string; key: string }[];
-  /** With PostgreSQL off, what those triggers did: run after each write with the records as written. */
+  /** Follow-up work after each write, with the records as written (a new customer's onboarding). */
   afterWrite?: (tx: Tx, rows: Record<string, unknown>[]) => Promise<void>;
-}
-
-/**
- * Update or insert the copy. Not an upsert: PostgreSQL runs BEFORE INSERT triggers for
- * INSERT ... ON CONFLICT even when the row exists, and some refuse a row that is not new.
- */
-async function write(tx: Tx, table: Pick<MovedTable, 'model'>, id: string, data: Record<string, unknown>) {
-  const d = delegate(tx, table);
-  const exists = (await d.findMany({ where: { id }, select: { id: true } })).length > 0;
-  return exists ? d.update({ where: { id }, data }) : d.create({ data: { id, ...data } });
-}
-
-interface Delegate {
-  update(a: unknown): Promise<unknown>;
-  create(a: unknown): Promise<unknown>;
-  deleteMany(a: unknown): Promise<unknown>;
-  findMany(a: unknown): Promise<unknown[]>;
-  createMany(a: unknown): Promise<unknown>;
-}
-
-/** The PostgreSQL delegate: the copy is compared with what PostgreSQL holds, never with MongoDB. */
-function delegate(tx: Tx, table: Pick<MovedTable, 'model'>) {
-  return pgOf((tx as unknown as Record<string, Parameters<typeof pgOf>[0]>)[table.model]!) as unknown as Delegate;
 }
 
 /** Drops undefined fields and turns decimal objects into the decimal strings MongoDB takes (also inside arrays of objects). */

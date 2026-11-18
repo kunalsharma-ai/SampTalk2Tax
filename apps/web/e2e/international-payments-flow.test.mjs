@@ -4,7 +4,7 @@
  * prepared with a purpose code, the detail page asks for the Form 15CA Part C and 15CB numbers above
  * ₹5 lakh, they are entered, the sole approver approves it, the bank instruction is downloaded
  * (which marks it sent) and the payment is recorded at the bank's rate, settling the bills.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

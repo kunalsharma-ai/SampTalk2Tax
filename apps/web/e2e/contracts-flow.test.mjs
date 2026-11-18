@@ -3,7 +3,7 @@
  * two months ago from a deal, activates it (three periods billed into draft invoices, the deal
  * won), sees MRR and ARR, deletes one draft invoice and bills that period again, renews with a
  * price rise, pauses and resumes, and cancels another contract.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

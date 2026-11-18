@@ -3,7 +3,7 @@
  * sets the checklist, a new customer starts onboarding on their own, an invoice to them is refused,
  * the checklist is worked through on the customer's page (file attached, item ticked, terms
  * proposed), submitted and approved, which sets the credit limit, and the invoice then posts.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

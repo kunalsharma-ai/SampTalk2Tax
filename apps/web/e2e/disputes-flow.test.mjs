@@ -3,7 +3,7 @@
  * the dispute dialog; the dispute is raised for part of the invoice; the invoice shows it as
  * disputed; a note and a change of amount go into the history; it is resolved with the customer's
  * credit note; the invoice no longer shows it and the list counts it as resolved.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

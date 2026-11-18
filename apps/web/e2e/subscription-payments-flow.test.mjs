@@ -2,7 +2,7 @@
  * Browser end-to-end test for paying a subscription online: a platform administrator sets up
  * the seller details and Razorpay in Platform admin → Payments, an organisation's owner pays for
  * Growth on the gateway's page, the signed webhook reaches the API through the web app, and the
- * owner comes back to a paid tax invoice. Real Next.js app → real API → real PostgreSQL → the
+ * owner comes back to a paid tax invoice. Real Next.js app → real API → real MongoDB → the
  * real Razorpay client code against a local stand-in for Razorpay's API (port 4557). The API must
  * run with PAYMENTS_RAZORPAY_API_URL=http://127.0.0.1:4557.
  */

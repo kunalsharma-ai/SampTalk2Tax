@@ -13,8 +13,7 @@
     "admin:grant": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/admin/grant-admin.js",
     "region:move": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/regions/move-org.js",
     "test": "vitest run",
-    "db:migrate:mongo": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/db/migrate.js",
-    "db:copy-to-mongo": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/db/copy-from-postgres.js"
+    "db:migrate": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/db/migrate.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.8.0",

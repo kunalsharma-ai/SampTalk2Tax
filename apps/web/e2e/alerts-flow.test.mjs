@@ -2,7 +2,7 @@
  * Browser end-to-end test for alerts: an owner records a bill and a payment twice, opens
  * Alerts (the checks run by themselves), reads the evidence, dismisses one alert with a
  * reason, acknowledges another, fixes its cause and sees it clear, and changes a check's
- * settings. Real Next.js app → real API → real PostgreSQL.
+ * settings. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

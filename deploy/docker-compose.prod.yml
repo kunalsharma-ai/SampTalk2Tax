@@ -4,8 +4,9 @@
 #   docker compose -f docker-compose.prod.yml run --rm migrate
 #   docker compose -f docker-compose.prod.yml up -d --wait api web caddy
 #
-# The database is managed PostgreSQL (backups, point-in-time recovery), not a container here.
-# .env.production next to this file holds DATABASE_URL (the app role, never a superuser),
+# The database is a managed MongoDB replica set (backups, point-in-time recovery), not a container
+# here. .env.production next to this file holds MONGODB_URL (a user with readWrite on the app's
+# database only),
 # JWT_SECRET, INTEGRATIONS_ENCRYPTION_KEY, APP_URL, DOMAIN and the other settings in
 # docs/DEPLOYMENT.md. Only Caddy is reachable from outside; it terminates TLS.
 services:

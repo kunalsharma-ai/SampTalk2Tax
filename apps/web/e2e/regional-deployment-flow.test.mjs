@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for regional deployment: a new organisation is stored in this server's
  * region, and once the operator hands it to another region (the real region:move command) this
- * server stops serving it and says where it lives. Real Next.js app → real API → real PostgreSQL.
+ * server stops serving it and says where it lives. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

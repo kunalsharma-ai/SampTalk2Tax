@@ -3,7 +3,7 @@
  * invoice, a receipt and a bill on the project, then reads the customer's profit, payment
  * behaviour, lifetime value and credit risk; applies the suggested credit limit; puts the customer
  * on credit hold (an invoice then cannot post) and lifts it; and ranks customers on the insights
- * page. Real Next.js app → real API → real PostgreSQL.
+ * page. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

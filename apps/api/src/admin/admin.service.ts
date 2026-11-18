@@ -8,7 +8,6 @@ import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import { SessionsService } from '../auth/sessions.service';
 import { users as usersCollection } from '../db/collections/identity';
 import { organizations } from '../db/collections/tenancy';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
 
 const DAY_MS = 86_400_000;
 
@@ -25,7 +24,6 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
     private readonly sessions: SessionsService,
   ) {}
 
@@ -122,7 +120,6 @@ export class AdminService {
     if (r.modified === 0) throw new DomainError('ALREADY_SUSPENDED', 'The organisation is already suspended', HttpStatus.CONFLICT);
     // In the organisation's own audit trail too, so its members can see who did it and why.
     await this.system(async (tx) => {
-      await this.mirror.organizations([id], tx);
       await this.audit.append(tx, { orgId: id, actorId: actor.id, action: 'platform.org_suspended', entityType: 'organization', entityId: id, data: { reason: why } });
     });
     return this.organisation(id);
@@ -136,7 +133,6 @@ export class AdminService {
     const r = await orgs.updateOne({ id, suspendedAt: { $ne: null } }, { $set: { suspendedAt: null, suspendedReason: null, updatedAt: new Date() } });
     if (r.modified === 0) throw new DomainError('NOT_SUSPENDED', 'The organisation is not suspended', HttpStatus.CONFLICT);
     await this.system(async (tx) => {
-      await this.mirror.organizations([id], tx);
       await this.audit.append(tx, { orgId: id, actorId: actor.id, action: 'platform.org_reinstated', entityType: 'organization', entityId: id, data: { note: note?.trim() || null, suspendedFor: o.suspendedReason } });
     });
     return this.organisation(id);
@@ -237,7 +233,6 @@ export class AdminService {
   /** Copies the changed person to PostgreSQL and records the change in the audit trail. */
   private async recordInPostgres(userId: string, event: Parameters<AuditService['append']>[1]) {
     await this.prisma.$transaction(async (tx) => {
-      await this.mirror.users([userId], tx);
       await this.audit.append(tx, event);
     });
   }
