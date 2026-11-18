@@ -29,6 +29,8 @@ import { AccountReconciliationsService } from './account-reconciliations/account
 import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
 import { CostAllocationsService } from './cost-allocations/cost-allocations.service';
 import { AdvanceTaxController } from './advance-tax/advance-tax.controller';
+import { GstPaymentsController } from './gst/gst-payments.controller';
+import { GstPaymentsService } from './gst/gst-payments.service';
 import { AdvanceTaxService } from './advance-tax/advance-tax.service';
 import { JournalApprovalsController } from './journal-approvals/journal-approvals.controller';
 import { JournalApprovalsService } from './journal-approvals/journal-approvals.service';
@@ -288,6 +290,7 @@ export class AppModule {
         AccountReconciliationsController,
         CostAllocationsController,
         AdvanceTaxController,
+        GstPaymentsController,
         JournalApprovalsController,
         BillChecksController,
         GstController,
@@ -413,6 +416,7 @@ export class AppModule {
         AccountReconciliationsService,
         CostAllocationsService,
         AdvanceTaxService,
+        GstPaymentsService,
         JournalApprovalsService,
         BillChecksService,
         GstService,

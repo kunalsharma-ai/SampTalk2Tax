@@ -1459,14 +1459,19 @@
       "notes": "Tenant-defined TCS sections on invoices, worked out on the invoice value including GST and added to what the customer pays (TCS payable). Same register, challans and ledger check as TDS. No built-in TCS templates, no TCS on receipts, no Form 27EQ file."
     },
     "TAX-022": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/src/withholding/withholding.service.ts",
+        "apps/api/src/gst/gst-payments.service.ts",
+        "packages/tax-engine/src/india/gst-setoff.ts",
+        "packages/tax-engine/test/gst-setoff.test.ts",
+        "apps/api/test/gst-payments.e2e.test.ts",
         "apps/api/test/compliance.e2e.test.ts",
         "apps/api/test/withholding.e2e.test.ts",
+        "apps/web/e2e/gst-payments-flow.test.mjs",
         "apps/web/e2e/withholding-flow.test.mjs"
       ],
-      "notes": "TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet. The compliance calendar shows each monthly TDS/TCS, PF, ESI and PT payment as done when its challan or payroll payment is recorded; advance tax and GST payments are marked paid/filed by hand."
+      "notes": "TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST payments settle a month from the books: input tax credit set off in the CGST Act's order (s.49, 49A, rule 88A), reverse-charge tax in cash, and the rest paid by PMT-06 challan (CPIN, CIN) posted as one journal and shown on the month's GSTR-3B in the compliance calendar. Advance tax payments are the debits to the advance tax account on the advance tax page (TAX-021). Not covered: cess, and the electronic cash and credit ledgers as separate balances."
     },
     "TAX-037": {
       "status": "Implementing",

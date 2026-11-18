@@ -995,7 +995,7 @@ export interface ComplianceItem {
   paid: string | null;
   outstanding: string | null;
   detail: string;
-  evidence: { type: 'WITHHOLDING_DEPOSIT' | 'PAY_RUN' | 'PAYROLL_PAYMENT'; id: string; label: string }[];
+  evidence: { type: 'WITHHOLDING_DEPOSIT' | 'PAY_RUN' | 'PAYROLL_PAYMENT' | 'GST_PAYMENT'; id: string; label: string }[];
   filing: { id: string; filedOn: string; reference: string; note: string | null; createdAt: string } | null;
   source: string;
 }

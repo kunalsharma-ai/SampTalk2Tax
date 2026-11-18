@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 56 |
+| Implementing | 55 |
 | Implemented | 34 |
-| Tested | 457 |
+| Tested | 458 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1720,12 +1720,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### TAX-022 — Tax payment tracking
 
 - Module: Global taxation engine
-- Status: **Implementing**
-- Notes: TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet. The compliance calendar shows each monthly TDS/TCS, PF, ESI and PT payment as done when its challan or payroll payment is recorded; advance tax and GST payments are marked paid/filed by hand.
+- Status: **Tested**
+- Notes: TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST payments settle a month from the books: input tax credit set off in the CGST Act's order (s.49, 49A, rule 88A), reverse-charge tax in cash, and the rest paid by PMT-06 challan (CPIN, CIN) posted as one journal and shown on the month's GSTR-3B in the compliance calendar. Advance tax payments are the debits to the advance tax account on the advance tax page (TAX-021). Not covered: cess, and the electronic cash and credit ledgers as separate balances.
 - Evidence:
   - apps/api/src/withholding/withholding.service.ts
+  - apps/api/src/gst/gst-payments.service.ts
+  - packages/tax-engine/src/india/gst-setoff.ts
+  - packages/tax-engine/test/gst-setoff.test.ts
+  - apps/api/test/gst-payments.e2e.test.ts
   - apps/api/test/compliance.e2e.test.ts
   - apps/api/test/withholding.e2e.test.ts
+  - apps/web/e2e/gst-payments-flow.test.mjs
   - apps/web/e2e/withholding-flow.test.mjs
 
 ### TAX-023 — Statutory deadline calendars

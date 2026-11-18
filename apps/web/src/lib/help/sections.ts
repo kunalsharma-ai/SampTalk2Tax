@@ -324,6 +324,8 @@ export const SECTION_HELP: Record<string, Help> = {
   '1. When': { what: 'The event or schedule that starts the workflow.', how: 'Pick a trigger such as "Invoice overdue" or "Every Monday".' },
   '2. Only if': { what: 'Conditions on the event that decide what the workflow does.', how: 'Add conditions to narrow it down, or leave empty to always run. With two or more, choose whether all of them must hold or any one is enough.' },
   '3. Do': { what: 'The actions the workflow takes, in order, when the conditions hold.', how: 'Add actions such as creating a task or sending an email.' },
+  'GST to settle': { what: 'For each head (IGST, CGST, SGST): the tax payable, what credit pays, the reverse-charge part, the cash to pay and the credit left.', how: 'Check the figures against the GSTR-3B, pay the cash column on the GST portal, then record the payment.' },
+  'GST payments recorded': { what: 'Each GST payment recorded, with its challan, cash, interest and the credit it used.', how: 'Open the number to see the journal. Void the latest one if it was entered wrongly; that reverses its journal.' },
   '4. Otherwise (optional)': { what: 'Actions done instead when the conditions do not hold, so one workflow can handle both cases.', how: 'Add a task, email or webhook for the other case, or leave it empty to do nothing then. Each run shows which branch it took.' },
   'What it does': { what: 'The workflow\'s trigger, conditions and actions in words.', how: 'Read it to check the workflow does what you mean.' },
   'Webhook signing': { what: 'The secret used to sign webhook calls this workflow makes.', how: 'Give it to the receiving system so it can check calls come from you.' },

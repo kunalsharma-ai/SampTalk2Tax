@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
+import { GstPaymentsService } from '../gst/gst-payments.service';
 
 /** How far back the calendar looks for obligations still open. */
 const OVERDUE_LOOKBACK_MONTHS = 24;
@@ -23,7 +24,7 @@ export interface CalendarItem extends Obligation {
   /** Why the status is what it is, in words. */
   detail: string;
   /** Records that settle or explain it. */
-  evidence: { type: 'WITHHOLDING_DEPOSIT' | 'PAY_RUN' | 'PAYROLL_PAYMENT'; id: string; label: string }[];
+  evidence: { type: 'WITHHOLDING_DEPOSIT' | 'PAY_RUN' | 'PAYROLL_PAYMENT' | 'GST_PAYMENT'; id: string; label: string }[];
   filing: { id: string; filedOn: string; reference: string; note: string | null; createdAt: string } | null;
   source: string;
 }
@@ -42,6 +43,7 @@ export class ComplianceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly gstPayments: GstPaymentsService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -188,6 +190,9 @@ export class ComplianceService {
           })
         : Promise.resolve([]),
     ]);
+    // GST payments recorded for the months a GSTR-3B or PMT-06 covers.
+    const gstMonths = [...new Set(obligations.filter((o) => o.kind === 'GSTR3B' || o.kind === 'GST_PMT06').flatMap((o) => monthsBetween(o.periodFrom, o.periodTo)))];
+    const gstPaid = await this.gstPayments.byMonth(orgId, gstMonths);
     const filingByKey = new Map(filings.map((f) => [f.obligationKey, f]));
     const runByMonth = new Map(runs.map((r) => [r.period, r]));
 
@@ -197,6 +202,14 @@ export class ComplianceService {
       const periodOver = o.periodTo < today;
       if (rule.nature === 'RETURN') {
         const f = filingByKey.get(o.key);
+        if (o.kind === 'GSTR3B' || o.kind === 'GST_PMT06') {
+          const months = monthsBetween(o.periodFrom, o.periodTo);
+          const mine = gstPaid.filter((g) => months.includes(g.period));
+          if (mine.length) {
+            base.evidence = mine.map((g) => ({ type: 'GST_PAYMENT' as const, id: g.id, label: `${g.number}${g.cin ? ` · ${g.cin}` : ' · by credit'}` }));
+            base.paid = money(mine.reduce((t, g) => t.plus(g.cash), new D(0)));
+          }
+        }
         if (f) return { ...base, status: 'DONE' as const, detail: fromDbDate(f.filedOn) > o.dueDate ? 'Marked filed after the due date' : 'Marked filed', filing: this.serializeFiling(f) };
         return { ...base, status: openStatus(o.dueDate, today), detail: periodOver ? 'Not marked filed yet' : 'The period has not ended yet' };
       }
@@ -250,4 +263,19 @@ export class ComplianceService {
   private serializeFiling(f: ComplianceFiling) {
     return { id: f.id, filedOn: fromDbDate(f.filedOn), reference: f.reference, note: f.note, createdAt: f.createdAt.toISOString() };
   }
+}
+
+/** The months (YYYY-MM) a period touches. */
+function monthsBetween(from: string, to: string): string[] {
+  const out: string[] = [];
+  let [y, m] = [+from.slice(0, 4), +from.slice(5, 7)];
+  const end = to.slice(0, 7);
+  for (let i = 0; i < 24; i++) {
+    const k = `${y}-${String(m).padStart(2, '0')}`;
+    out.push(k);
+    if (k >= end) break;
+    m += 1;
+    if (m > 12) [y, m] = [y + 1, 1];
+  }
+  return out;
 }

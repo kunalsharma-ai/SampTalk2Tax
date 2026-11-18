@@ -108,6 +108,7 @@ export const hi: Record<string, string> = {
   'Compliance calendar': 'अनुपालन कैलेंडर',
   'Tax notices': 'कर नोटिस',
   'Advance tax': 'अग्रिम कर',
+  'GST payments': 'जीएसटी भुगतान',
   'GST returns': 'GST रिटर्न',
   'E-invoices': 'ई-इनवॉइस',
   'E-way bills': 'ई-वे बिल',

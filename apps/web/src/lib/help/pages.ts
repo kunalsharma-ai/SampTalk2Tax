@@ -574,6 +574,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose how the business is taxed and how to estimate the year (the profit so far scaled up to a full year, or your own figure), add adjustments from book profit to taxable income, and pick the accounts that hold advance tax paid and tax deducted at source. Pay what each instalment shows by its date.',
     where: 'Tax. Reads posted journals for the tax year (April to March); income tax expense and year-end closing are left out. Saving changes only the plan, not the books. For companies, firms and LLPs; not individuals, presumptive income, MAT or interest for late instalments.',
   },
+  'tax/gst-payments': {
+    what: 'Settling a month\'s GST: the tax payable and input tax credit in your books, the credit set off in the order the CGST Act requires, and the cash paid by PMT-06 challan.',
+    how: 'Choose the month, check the set-off, pay the cash on the GST portal, then record the payment with the CPIN and CIN. Interest and late fee go to an expense account you choose.',
+    where: 'Tax. Reads the six GST accounts from GST settings at the end of the month; recording posts one journal (output tax debited, credit used and the bank credited). Months are settled in order; only the latest payment can be voided. Cess is not handled.',
+  },
   'tax/gst-returns': {
     what: 'GSTR-1 and GSTR-3B worked out from your invoices and bills.',
     how: 'Choose the month, check each table and the documents behind it, and export the file to upload on the GST portal.',
