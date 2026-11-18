@@ -1,4 +1,4 @@
-import { addMonthsAnchored } from '@talk2tax/accounting-engine';
+import { addMonthsAnchored, contractPeriod, proratedPrice } from '@talk2tax/accounting-engine';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ContractsService } from '../src/sales-orders/contracts.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
@@ -194,5 +194,69 @@ describe('access and guards', () => {
     await expect(raw(`DELETE FROM sales_contract_periods WHERE contract_id = '${active.id}'`)).rejects.toThrow(/never deleted/);
     await expect(raw(`UPDATE sales_contract_events SET body = 'x' WHERE contract_id = '${active.id}'`)).rejects.toThrow(/append-only/);
     await expect(raw(`UPDATE sales_contracts SET memo = 'x' WHERE org_id = '${org.orgId}' AND status = 'CANCELLED'`)).rejects.toThrow(/cancelled contract/);
+  });
+});
+
+describe('a contract billed on a fixed day of the month', () => {
+  const START = `${months(-2).slice(0, 8)}15`;
+  const END = `${months(2).slice(0, 8)}10`;
+  const opts = { billingDay: 1, end: END };
+  const fixed = (extra: Record<string, unknown> = {}) => body({ title: 'Payroll processing', startDate: START, endDate: END, billingDay: 1, reference: null, lines: [{ accountId: org.acc['4100'], description: 'Payroll', quantity: '2', unitPrice: '15000.00', taxRateId: tax18.id }], ...extra });
+  let id: string;
+
+  it('checks the billing day, and keeps renewal to period ends', async () => {
+    expect((await ctx.http().post(`${org.base}/sales/contracts`).set(owner.auth).send(fixed({ billingDay: 31 })).expect(400)).text).toContain('Use a day from 1 to 28');
+    expect((await ctx.http().post(`${org.base}/sales/contracts`).set(owner.auth).send(fixed({ autoRenew: true, renewalMonths: 12 })).expect(422)).body.message).toBe('A contract that renews itself must end on a period end, not part-way through a period');
+    // Without a billing day the same end date is refused: it is not a period end.
+    expect((await ctx.http().post(`${org.base}/sales/contracts`).set(owner.auth).send(fixed({ billingDay: null })).expect(422)).body.error).toBe('CONTRACT_END');
+    const c = (await ctx.http().post(`${org.base}/sales/contracts`).set(owner.auth).send(fixed()).expect(201)).body;
+    id = c.id;
+    const p1 = contractPeriod(START, 'MONTHLY', 1, 'ADVANCE', opts);
+    expect(c).toMatchObject({ billingDay: 1, endDate: END });
+    expect(c.upcoming.map((p: { start: string; end: string; part: unknown }) => [p.start, p.end, p.part])).toEqual(
+      [1, 2, 3, 4, 5].map((n) => {
+        const p = contractPeriod(START, 'MONTHLY', n, 'ADVANCE', opts);
+        return [p.start, p.end, p.part];
+      }),
+    );
+    expect(c.upcoming[0]).toMatchObject({ start: START, end: p1.end, part: { days: p1.part!.days, of: p1.part!.of } });
+    expect(c.upcoming[1]).toMatchObject({ start: `${months(-1).slice(0, 8)}01`, part: null });
+    expect(c.upcoming[4]).toMatchObject({ start: `${months(2).slice(0, 8)}01`, end: END, part: { days: 10 } });
+  });
+
+  it('bills the first part period for its share of days, and full periods in full', async () => {
+    const a = (await ctx.http().post(`${org.base}/sales/contracts/${id}/activate`).set(owner.auth).expect(200)).body;
+    expect(a.periodsBilled).toBe(3);
+    const first = (await ctx.http().get(`${org.base}/sales/documents/${a.periods.at(-1).invoice.id}`).set(owner.auth).expect(200)).body;
+    const part = contractPeriod(START, 'MONTHLY', 1, 'ADVANCE', opts).part!;
+    const price = proratedPrice('15000.00', part);
+    expect(first.issueDate).toBe(START);
+    expect(first.lines[0].description).toBe(`Payroll (part period: ${part.days} of ${part.of} days)`);
+    expect(Number(first.lines[0].unitPrice).toFixed(2)).toBe(price);
+    expect(first.subtotal).toBe((Number(price) * 2).toFixed(2));
+    const second = (await ctx.http().get(`${org.base}/sales/documents/${a.periods.at(-2).invoice.id}`).set(owner.auth).expect(200)).body;
+    expect(second).toMatchObject({ issueDate: `${months(-1).slice(0, 8)}01`, subtotal: '30000.00' });
+    expect(second.lines[0].description).toBe('Payroll');
+  });
+
+  it('keeps the billing day once active, and the database refuses a change', async () => {
+    expect((await ctx.http().put(`${org.base}/sales/contracts/${id}`).set(owner.auth).send(fixed({ billingDay: 5 })).expect(422)).body.error).toBe('CONTRACT_SCHEDULE_FIXED');
+    await expect(raw(`UPDATE sales_contracts SET billing_day = 5 WHERE id = '${id}'`)).rejects.toThrow(/billing schedule/);
+  });
+
+  it('bills the last part period to the end date, then ends; renewal waits for a period end', async () => {
+    expect((await ctx.http().post(`${org.base}/sales/contracts/${id}/renew`).set(owner.auth).send({ months: 1 }).expect(422)).body.message).toBe('A contract that ends part-way through a period cannot be renewed; change its end date to a period end first');
+    expect(await svc.runAll(END, [org.orgId])).toMatchObject({ billed: 2 });
+    const c = await docs(id);
+    expect(c.periods[0]).toMatchObject({ periodNo: 5, start: `${months(2).slice(0, 8)}01`, end: END });
+    const last = (await ctx.http().get(`${org.base}/sales/documents/${c.periods[0].invoice.id}`).set(owner.auth).expect(200)).body;
+    const part = contractPeriod(START, 'MONTHLY', 5, 'ADVANCE', opts).part!;
+    expect(part.days).toBe(10);
+    expect(last.lines[0].description).toBe(`Payroll (part period: 10 of ${part.of} days)`);
+    expect(Number(last.lines[0].unitPrice).toFixed(2)).toBe(proratedPrice('15000.00', part));
+    // The last period was billed short, so the end date stays.
+    expect((await ctx.http().put(`${org.base}/sales/contracts/${id}`).set(owner.auth).send(fixed({ endDate: `${months(2).slice(0, 8)}20` })).expect(422)).body.message).toContain('was billed as a part period');
+    await svc.runAll(plusDays(END, 1), [org.orgId]);
+    expect((await docs(id)).status).toBe('ENDED');
   });
 });
