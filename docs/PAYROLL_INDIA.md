@@ -63,6 +63,11 @@ Monthly payroll for organisations in India that keep their books in INR. The rul
   * The eligibility amount and the ceiling are inputs. They default to ₹21,000 and ₹7,000, the Payment of Bonus Act figures, until the government notifies its own. Enter the state minimum wage as the ceiling if it is higher.
   * "Add bonus to the run" puts the amount still due on each eligible employee's payslip in a draft run, as a one-off earning named "Statutory bonus 2025-26" and excluded from wages, so it is taxed in that month.
   * Paid during the year, it is an advance. Later runs add only the balance, and the amount added is never negative.
+* **Salary bank transfers.** Each employee can have a salary account: the holder's name as the bank has it, the account number and the IFSC.
+  * The three are checked when saved (account number 6 to 34 letters or digits, IFSC in the bank's 11-character form) and kept all together or not at all.
+  * The employee list and the audit trail show only the last four digits.
+  * A pay run lists who can be paid by transfer and who cannot. Once posted, "Download salary bank file" gives the bulk transfer file of net salaries (CSV, the same layout as the supplier payment batch file) from the chosen bank account, for upload to net banking. Employees without a salary account are left out and named.
+  * Downloading posts nothing. Record the net pay payment on the run afterwards, with the bank's batch reference.
 * **Payslip page.** A printable payslip with earnings, deductions, employer contributions, the income-tax working and year-to-date figures from posted runs.
 
 ## Not supported yet (do not rely on these)
@@ -72,7 +77,7 @@ Monthly payroll for organisations in India that keep their books in INR. The rul
 * Professional tax for states other than Maharashtra. The payslip shows "not built yet" and deducts nothing.
 * Labour welfare fund, gratuity provision, allocable surplus and set-on or set-off for bonus, disqualification from bonus (leave the employee out), the ₹60 minimum bonus for employees under 15, leave carry-forward, monthly leave accrual, leave encashment, a holiday calendar, leave requests by employees, overtime, loans and advances.
 * Daily-wage ESI exemption (employees earning up to ₹176 a day), and the employer PF admin minimum.
-* ECR, ESIC, Form 24Q, Form 16 or bank transfer files. Nothing is filed or uploaded.
+* ECR, ESIC, Form 24Q or Form 16 files. Nothing is filed or uploaded. The salary bank file uses one generic CSV layout; bank-specific formats (fixed width, H2H) are not built, and nothing is sent to the bank directly.
 * Payroll approvals, cost allocation to departments or projects, payroll reports beyond the run and the payslip.
 * Payslip PDF or email delivery.
 
@@ -105,6 +110,8 @@ Monthly payroll for organisations in India that keep their books in INR. The rul
 * `apps/web/e2e/payroll-leave-flow.test.mjs`: leave types, leave and balances in the browser, the run's payslip with unpaid leave, and cancelling.
 * `apps/api/test/payroll-bonus.e2e.test.ts` (5 tests): the report, adding an advance, then the balance, never a negative amount, the posted-run and permission checks.
 * `apps/web/e2e/payroll-bonus-flow.test.mjs`: the bonus page in the browser, through adding the bonus to a draft run.
+* `apps/api/test/payroll-salary-file.e2e.test.ts` (4 tests): salary account checks and masking, the transfer list, the posted-run, bank-account and permission checks, and the file's rows.
+* `apps/web/e2e/salary-bank-file-flow.test.mjs`: adding a salary account in the browser, a refused IFSC, the transfer list and downloading the file.
 * `apps/web/e2e/payroll-flow.test.mjs` (5 tests): in the browser, from setting up payroll through adding an employee, a draft with loss of pay, posting and the payslip to paying net salaries, plus the refused void.
 
 ## Maintenance

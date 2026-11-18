@@ -1915,11 +1915,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### PAY-017 — Salary payment preparation
 
 - Module: Payroll and workforce finance
-- Status: **Implementing**
-- Notes: Records net-pay and statutory payments from a bank account with due dates (Dr liability, Cr bank). No bank transfer files, ECR or challan files.
+- Status: **Tested**
+- Notes: Employees' salary accounts (checked, masked in lists and the audit trail); a pay run's transfer list; the bank bulk transfer file (CSV) of net salaries for a posted run, from a chosen bank account, leaving out and naming employees without an account; and net-pay and statutory payments with due dates (Dr liability, Cr bank). Not built: bank-specific file layouts, direct bank upload, ECR or challan files.
 - Evidence:
+  - apps/api/src/payroll/payroll.service.ts
+  - apps/api/test/payroll-salary-file.e2e.test.ts
   - apps/api/test/payroll.e2e.test.ts
+  - apps/web/e2e/salary-bank-file-flow.test.mjs
   - apps/web/e2e/payroll-flow.test.mjs
+  - docs/PAYROLL_INDIA.md
 
 ### PAY-018 — Payslips
 

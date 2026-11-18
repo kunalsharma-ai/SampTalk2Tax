@@ -905,6 +905,8 @@ export interface Employee extends EmployeeSummary {
   priorTaxYear: string | null;
   priorIncome: string;
   priorTds: string;
+  /** The salary account; the full number only on a single employee, masked in lists. */
+  bank: { accountName: string; accountNumber?: string; masked: string; ifsc: string } | null;
   status: 'ACTIVE' | 'JOINING' | 'LEFT';
   currentSalary: SalaryStructure | null;
   salaries: SalaryStructure[];
