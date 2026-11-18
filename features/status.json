@@ -188,11 +188,14 @@
       "notes": "Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet."
     },
     "GL-013": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/test/reports.test.ts"
+        "packages/accounting-engine/test/reports.test.ts",
+        "apps/api/test/deferrals.e2e.test.ts",
+        "apps/api/test/cash-basis.e2e.test.ts",
+        "docs/CASH_BASIS_REPORTS.md"
       ],
-      "notes": "The ledger records accruals (AR/AP based entries). Accrual vs cash reporting basis switch is not done."
+      "notes": "The books are kept on an accrual basis: invoices and bills post when issued, accruals and deferrals post to the period they belong to, and reports are accrual by default. The profit and loss can be switched to a cash basis from the same entries (GL-014)."
     },
     "GL-015": {
       "status": "Implemented",
@@ -920,12 +923,17 @@
       ]
     },
     "BANK-003": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
+        "packages/accounting-engine/src/bank-formats.ts",
+        "packages/accounting-engine/test/bank-formats.test.ts",
         "packages/accounting-engine/test/bank.test.ts",
-        "apps/web/src/components/banking/import-page.tsx"
+        "apps/api/test/bank-file-formats.e2e.test.ts",
+        "apps/web/e2e/bank-formats-flow.test.mjs",
+        "apps/web/src/components/banking/import-page.tsx",
+        "docs/STATEMENT_FORMATS.md"
       ],
-      "notes": "CSV only (comma, semicolon or tab; five date formats; single or split amount columns). OFX, QIF, MT940 and PDF are not supported yet."
+      "notes": "CSV (mapped columns, five date formats, comma/semicolon/tab, optional running balance), OFX/QFX 1.x and 2.x, QIF and MT940, recognised from the content; MT940 opening + lines checked against the closing balance. Not covered: PDF, CAMT.053, Excel."
     },
     "BANK-005": {
       "status": "Tested",

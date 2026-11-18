@@ -8,7 +8,15 @@ import {
   dec,
   minorUnits,
   balanceBreaks,
+  DateFormat,
+  detectStatementFormat,
+  fileTotalsCheck,
+  ParsedStatementLine,
   parseStatement,
+  parseStatementFile,
+  StatementFile,
+  StatementFormat,
+  StatementImportError,
   reconciliationDifference,
   reconciliationIssues,
   statementLineKeys,
@@ -117,9 +125,17 @@ export class BankingService {
 
   // --------------------------------------------------------------- import
 
-  async importStatement(org: BankOrg, actor: Actor, accountId: string, input: { fileName: string; csv: string; mapping: StatementMapping; dryRun: boolean }) {
+  async importStatement(org: BankOrg, actor: Actor, accountId: string, input: { fileName: string; csv: string; format?: StatementFormat; mapping?: StatementMapping; dateFormat?: DateFormat; dryRun: boolean }) {
     const account = await this.bankAccount(this.prisma, org.id, accountId);
-    const parsed = parseStatement(input.csv, input.mapping, org.functionalCurrency);
+    const format = input.format ?? 'CSV';
+    let file: StatementFile | null = null;
+    let parsed: ParsedStatementLine[];
+    if (format === 'CSV') parsed = parseStatement(input.csv, input.mapping!, org.functionalCurrency);
+    else {
+      if (detectStatementFormat(input.csv) !== format) throw new StatementImportError([`This file does not look like ${format}`]);
+      file = parseStatementFile(format, input.csv, org.functionalCurrency, input.dateFormat);
+      parsed = file.lines;
+    }
     const fingerprints = statementLineKeys(accountId, parsed).map(sha);
     const run = async (db: Tx | PrismaService) => {
       const existing = new Set(
@@ -134,13 +150,17 @@ export class BankingService {
     };
     const scale = minorUnits(org.functionalCurrency);
     const check = balanceBreaks(parsed);
-    const balanceCheck = input.mapping.balance == null ? null : {
+    const totals = file ? fileTotalsCheck(file) : null;
+    const fileTotals = totals ? { opening: totals.opening.toFixed(scale), closing: totals.closing.toFixed(scale), computed: totals.computed.toFixed(scale), difference: totals.difference.toFixed(scale) } : null;
+    const balanceCheck = format !== 'CSV' || input.mapping?.balance == null ? null : {
       checked: check.checked,
       order: check.order,
       breaks: check.breaks.map((b) => ({ row: b.row, previousRow: b.previousRow, date: b.date, previousDate: b.previousDate, expected: b.expected.toFixed(scale), shown: b.shown.toFixed(scale), gap: b.gap.toFixed(scale) })),
     };
     const preview = (r: Awaited<ReturnType<typeof run>>) => ({
       accountId,
+      format,
+      fileTotals,
       balanceCheck,
       lines: r.rows.map((x) => ({ row: x.row, date: x.date, description: x.description, reference: x.reference, amount: x.amount.toFixed(scale), balance: x.balance ? x.balance.toFixed(scale) : null, duplicate: x.duplicate })),
       newCount: r.fresh.length,
@@ -197,7 +217,7 @@ export class BankingService {
         action: 'bank.statement_imported',
         entityType: 'bank_statement_import',
         entityId: imp.id,
-        data: { accountId, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount, balanceBreaks: balanceCheck ? balanceCheck.breaks.length : null },
+        data: { accountId, format, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount, fileTotals, balanceBreaks: balanceCheck ? balanceCheck.breaks.length : null },
       });
       return { imported: true, importId: imp.id, ...preview(r) };
     });

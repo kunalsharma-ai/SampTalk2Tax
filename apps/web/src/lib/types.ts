@@ -484,6 +484,9 @@ export interface LedgerCandidate {
 export interface ImportPreview {
   imported: boolean;
   lines: { row: number; date: string; description: string; reference: string | null; amount: string; balance: string | null; duplicate: boolean }[];
+  format: 'CSV' | 'OFX' | 'QIF' | 'MT940';
+  /** For files that state an opening and closing balance (MT940). */
+  fileTotals: { opening: string; closing: string; computed: string; difference: string } | null;
   /** Null when no balance column was chosen. */
   balanceCheck: { checked: number; order: 'OLDEST_FIRST' | 'NEWEST_FIRST' | null; breaks: { row: number; previousRow: number; date: string; previousDate: string; expected: string; shown: string; gap: string }[] } | null;
   newCount: number;

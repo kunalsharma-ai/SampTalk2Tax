@@ -23,12 +23,19 @@ const Mapping = z
     balance: column.nullable().optional(),
   })
   .refine((m) => m.amount != null || m.moneyIn != null || m.moneyOut != null, 'Choose an amount column, or money-in / money-out columns');
-const ImportBody = z.object({
-  fileName: z.string().trim().min(1).max(200),
-  csv: z.string().min(1).max(2_500_000),
-  mapping: Mapping,
-  dryRun: z.boolean().default(false),
-});
+const ImportBody = z
+  .object({
+    fileName: z.string().trim().min(1).max(200),
+    /** The file's text, whatever its format (the field keeps its first name). */
+    csv: z.string().min(1).max(2_500_000),
+    /** CSV needs a column mapping; OFX, QIF and MT940 are read as they are. */
+    format: z.enum(['CSV', 'OFX', 'QIF', 'MT940']).default('CSV'),
+    mapping: Mapping.optional(),
+    /** For QIF only: whether dates are day or month first. */
+    dateFormat: z.enum(DATE_FORMATS).optional(),
+    dryRun: z.boolean().default(false),
+  })
+  .refine((b) => b.format !== 'CSV' || !!b.mapping, { message: 'Map the CSV columns', path: ['mapping'] });
 const LinesQuery = z.object({
   status: z.enum(['UNMATCHED', 'MATCHED', 'EXCLUDED']).optional(),
   from: isoDate.optional(),

@@ -67,7 +67,7 @@ test('a CSV statement is previewed with detected columns, then imported', async 
   await page.getByRole('link', { name: '1120 · Operating Bank Account' }).click();
   await page.getByText('No statement lines yet').waitFor();
   await page.getByRole('link', { name: 'Import a statement' }).click();
-  await page.getByLabel('Statement file (CSV)').setInputFiles({ name: 'hdfc-oct.csv', mimeType: 'text/csv', buffer: Buffer.from(statement) });
+  await page.getByLabel('Statement file').setInputFiles({ name: 'hdfc-oct.csv', mimeType: 'text/csv', buffer: Buffer.from(statement) });
   // Columns are guessed from the bank's header names.
   assert.equal(await page.getByLabel('Amounts are in').inputValue(), 'split');
   assert.equal(await page.getByLabel('Description column').locator('option:checked').textContent(), 'Narration');
@@ -88,7 +88,7 @@ test('a CSV statement is previewed with detected columns, then imported', async 
 
 test('importing the same file again adds nothing', async () => {
   await page.getByRole('link', { name: 'Import statement' }).click();
-  await page.getByLabel('Statement file (CSV)').setInputFiles({ name: 'hdfc-oct.csv', mimeType: 'text/csv', buffer: Buffer.from(statement) });
+  await page.getByLabel('Statement file').setInputFiles({ name: 'hdfc-oct.csv', mimeType: 'text/csv', buffer: Buffer.from(statement) });
   await page.getByRole('button', { name: 'Preview' }).click();
   await page.getByRole('heading', { name: '0 new lines' }).waitFor();
   assert.equal(await page.getByText('Already imported', { exact: true }).count(), 3);

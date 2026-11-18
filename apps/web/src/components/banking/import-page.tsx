@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { parseCsv } from '@talk2tax/accounting-engine';
+import { detectStatementFormat, parseCsv } from '@talk2tax/accounting-engine';
 import { Alert, Badge, Button, Card, CardHeader, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -63,6 +63,8 @@ export function ImportStatementPage() {
   const [file, setFile] = useState<{ name: string; text: string } | null>(null);
   const [m, setM] = useState<Mapping>({ date: 0, description: 1, reference: null, mode: 'single', amount: 2, moneyIn: null, moneyOut: null, dateFormat: 'DD/MM/YYYY', hasHeader: true, delimiter: ',', invertAmount: false, balance: null });
   const [readError, setReadError] = useState<string | null>(null);
+  /** Detected from the file: OFX, QIF and MT940 need no column mapping. */
+  const [format, setFormat] = useState<'CSV' | 'OFX' | 'QIF' | 'MT940'>('CSV');
 
   const rows = useMemo(() => {
     if (!file) return [];
@@ -76,9 +78,10 @@ export function ImportStatementPage() {
   const header = m.hasHeader ? rows[0] ?? [] : Array.from({ length: width }, (_, i) => `Column ${i + 1}`);
   const columns = Array.from({ length: width }, (_, i) => ({ i, label: header[i]?.trim() || `Column ${i + 1}` }));
 
-  const body = () => ({
+  const body = () => format !== 'CSV' ? { fileName: file!.name, csv: file!.text, format, ...(format === 'QIF' ? { dateFormat: m.dateFormat } : {}) } : ({
     fileName: file!.name,
     csv: file!.text,
+    format,
     mapping: {
       date: m.date,
       description: m.description,
@@ -106,6 +109,9 @@ export function ImportStatementPage() {
     if (!f) return setFile(null);
     if (f.size > 2_000_000) return setReadError('The file is larger than 2 MB. Split it into smaller periods.');
     const text = await f.text();
+    const detected = detectStatementFormat(text);
+    setFormat(detected ?? 'CSV');
+    if (detected) return setFile({ name: f.name, text });
     const delimiter: Delim = text.split('\n')[0].includes('\t') ? '\t' : (text.split('\n')[0].match(/;/g)?.length ?? 0) > (text.split('\n')[0].match(/,/g)?.length ?? 0) ? ';' : ',';
     setFile({ name: f.name, text });
     try {
@@ -136,12 +142,27 @@ export function ImportStatementPage() {
     <>
       <PageHeader
         title={`Import a statement${account ? ` · ${account.code} ${account.name}` : ''}`}
-        description="Upload a CSV file downloaded from your bank. Nothing is stored until you confirm the preview, and lines that were imported before are skipped."
+        description="Upload a statement downloaded from your bank: CSV, OFX/QFX, QIF or MT940. Nothing is stored until you confirm the preview, and lines that were imported before are skipped."
       />
       <Card className="mb-6 p-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Statement file (CSV)">{(p) => <Input {...p} type="file" accept=".csv,text/csv,text/plain" onChange={(e) => onFile(e.target.files?.[0])} />}</Field>
-          {file ? (
+          <Field label="Statement file" hint="CSV, OFX/QFX, QIF or MT940">{(p) => <Input {...p} type="file" accept=".csv,.ofx,.qfx,.qif,.sta,.mt940,.940,.txt,text/csv,text/plain" onChange={(e) => onFile(e.target.files?.[0])} />}</Field>
+          {file && format !== 'CSV' ? (
+            <>
+              <div className="self-end pb-2 text-sm"><Badge tone="accent">{format} file</Badge> <span className="text-fg-muted">read as it is: no columns to map</span></div>
+              {format === 'QIF' ? (
+                <Field label="Dates in the file">
+                  {(p) => (
+                    <Select {...p} value={m.dateFormat.startsWith('MM') ? 'MM/DD/YYYY' : 'DD/MM/YYYY'} onChange={(e) => set({ dateFormat: e.target.value as Mapping['dateFormat'] })}>
+                      <option value="DD/MM/YYYY">Day first (25/12/2026)</option>
+                      <option value="MM/DD/YYYY">Month first (12/25/2026)</option>
+                    </Select>
+                  )}
+                </Field>
+              ) : null}
+            </>
+          ) : null}
+          {file && format === 'CSV' ? (
             <>
               <Field label="Separator">
                 {(p) => (
@@ -219,6 +240,15 @@ export function ImportStatementPage() {
             }
             actions={<Button loading={save.isPending} disabled={!preview.data.newCount || preview.data.blockedRows.length > 0} onClick={() => save.mutate()}>Import {preview.data.newCount} line{preview.data.newCount === 1 ? '' : 's'}</Button>}
           />
+          {preview.data.fileTotals && Number(preview.data.fileTotals.difference) !== 0 ? (
+            <div className="px-5 pb-4">
+              <Alert tone="warning" title="The file does not add up to the bank's closing balance">
+                Opening <Money value={preview.data.fileTotals.opening} currency={c} /> plus these lines gives <Money value={preview.data.fileTotals.computed} currency={c} />, but the file closes at <Money value={preview.data.fileTotals.closing} currency={c} /> (difference <Money value={preview.data.fileTotals.difference} currency={c} signed />). Lines may be missing; download the statement again.
+              </Alert>
+            </div>
+          ) : preview.data.fileTotals ? (
+            <p className="px-5 pb-4 text-sm text-positive">The lines add up from the opening balance <Money value={preview.data.fileTotals.opening} currency={c} /> to the closing balance <Money value={preview.data.fileTotals.closing} currency={c} />.</p>
+          ) : null}
           {preview.data.balanceCheck ? (
             <div className="px-5 pb-4">
               {preview.data.balanceCheck.breaks.length ? (

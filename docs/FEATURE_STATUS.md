@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 59 |
+| Implementing | 57 |
 | Implemented | 34 |
-| Tested | 454 |
+| Tested | 456 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -203,10 +203,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-013 — Accrual accounting
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: The ledger records accruals (AR/AP based entries). Accrual vs cash reporting basis switch is not done.
+- Status: **Tested**
+- Notes: The books are kept on an accrual basis: invoices and bills post when issued, accruals and deferrals post to the period they belong to, and reports are accrual by default. The profit and loss can be switched to a cash basis from the same entries (GL-014).
 - Evidence:
   - packages/accounting-engine/test/reports.test.ts
+  - apps/api/test/deferrals.e2e.test.ts
+  - apps/api/test/cash-basis.e2e.test.ts
+  - docs/CASH_BASIS_REPORTS.md
 
 ### GL-014 — Cash accounting
 
@@ -1337,11 +1340,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-003 — CSV, OFX, QIF and applicable banking formats
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: CSV only (comma, semicolon or tab; five date formats; single or split amount columns). OFX, QIF, MT940 and PDF are not supported yet.
+- Status: **Tested**
+- Notes: CSV (mapped columns, five date formats, comma/semicolon/tab, optional running balance), OFX/QFX 1.x and 2.x, QIF and MT940, recognised from the content; MT940 opening + lines checked against the closing balance. Not covered: PDF, CAMT.053, Excel.
 - Evidence:
+  - packages/accounting-engine/src/bank-formats.ts
+  - packages/accounting-engine/test/bank-formats.test.ts
   - packages/accounting-engine/test/bank.test.ts
+  - apps/api/test/bank-file-formats.e2e.test.ts
+  - apps/web/e2e/bank-formats-flow.test.mjs
   - apps/web/src/components/banking/import-page.tsx
+  - docs/STATEMENT_FORMATS.md
 
 ### BANK-005 — Bank reconciliation
 

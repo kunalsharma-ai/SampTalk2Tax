@@ -80,7 +80,7 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-010 | 5.1 General Ledger | capability | Opening balances | Implemented |
 | GL-011 | 5.1 General Ledger | capability | Closing balances | Tested |
 | GL-012 | 5.1 General Ledger | capability | Journal templates | Tested |
-| GL-013 | 5.1 General Ledger | capability | Accrual accounting | Implementing |
+| GL-013 | 5.1 General Ledger | capability | Accrual accounting | Tested |
 | GL-014 | 5.1 General Ledger | capability | Cash accounting | Tested |
 | GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implemented |
 | GL-016 | 5.1 General Ledger | capability | Financial periods | Tested |
@@ -214,7 +214,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 |---|---|---|---|---|
 | BANK-001 |  | capability | Multiple bank account management | Tested |
 | BANK-002 |  | capability | Bank statement import | Tested |
-| BANK-003 |  | capability | CSV, OFX, QIF and applicable banking formats | Implementing |
+| BANK-003 |  | capability | CSV, OFX, QIF and applicable banking formats | Tested |
 | BANK-004 |  | capability | Bank feed integration framework | Not started |
 | BANK-005 |  | capability | Bank reconciliation | Tested |
 | BANK-006 |  | capability | Transaction matching | Tested |
