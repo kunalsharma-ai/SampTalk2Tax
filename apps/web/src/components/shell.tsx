@@ -31,15 +31,18 @@ export function Shell({ children }: { children: ReactNode }) {
   setOrganisationTimeZone(org?.timeZone ?? null);
 
   const elsewhere = org && org.dataRegion && !org.dataRegion.here ? org.dataRegion : null;
+  const navGroups = navFor(org, flags.data);
+  const longer = navGroups.flatMap((g) => g.items.map((i) => i.href)).filter(Boolean);
   const nav = elsewhere ? null : (
     <nav aria-label={t('Main')} className="flex flex-col gap-6">
-      {navFor(org, flags.data).map((g) => (
+      {navGroups.map((g) => (
         <div key={g.group}>
           <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-faint">{t(g.group)}</p>
           <ul className="mt-2 flex flex-col gap-0.5">
             {g.items.map((i) => {
               const href = `${base}${i.href}`;
-              const active = i.href === '' ? pathname === base : pathname.startsWith(href);
+              // The most specific item wins, so /expenses/report does not also light up /expenses.
+              const active = i.href === '' ? pathname === base : pathname.startsWith(href) && !longer.some((h) => h.startsWith(`${i.href}/`) && pathname.startsWith(`${base}${h}`));
               return (
                 <li key={i.href}>
                   <Link

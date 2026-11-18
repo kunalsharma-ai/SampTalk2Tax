@@ -32,6 +32,8 @@ import { BillChecksController } from './bill-checks/bill-checks.controller';
 import { BillChecksService } from './bill-checks/bill-checks.service';
 import { AllowancesService } from './expenses/allowances.service';
 import { ExpensesService } from './expenses/expenses.service';
+import { ExpenseReportController } from './expenses/expense-report.controller';
+import { ExpenseReportService } from './expenses/expense-report.service';
 import { ErrorFilter } from './common/errors';
 import { ErrorsService } from './operations/errors.service';
 import { FlagsService } from './operations/flags.service';
@@ -272,6 +274,7 @@ export class AppModule {
         AttachmentsController,
         ApprovalsController,
         ExpensesController,
+        ExpenseReportController,
         AllowanceRatesController,
         ExpensePolicyController,
         TaxNoticesController,
@@ -393,6 +396,7 @@ export class AppModule {
         AttachmentsService,
         ApprovalsService,
         ExpensesService,
+        ExpenseReportService,
         AllowancesService,
         ExpensePolicyService,
         TaxNoticesService,

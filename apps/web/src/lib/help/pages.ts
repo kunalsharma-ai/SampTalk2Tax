@@ -385,6 +385,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid.',
     where: 'Expenses. Approved claims post to expense accounts and what is owed to the employee.',
   },
+  'expenses/report': {
+    what: 'Claimed spending in a period by category, month, person, status and merchant.',
+    how: 'Pick the dates and which claims to count: waiting for approval, approved, reimbursed. Click a category or a person to see only theirs; click the filter again to clear it.',
+    where: 'Expenses. Built from the lines of claims, dated by the day the expense happened. Drafts, rejected and void claims are left out. Those who read expenses see everyone; others see their own.',
+  },
   'expenses/allowance-rates': {
     what: 'The rates employees can claim without a receipt: mileage per kilometre and per diem per day, each posting to an expense account.',
     how: 'Add a rate with a clear name, such as Car or Metro city, its amount and the expense account. Change a rate or make it inactive when your policy changes; claims already saved keep the rate they were saved with.',

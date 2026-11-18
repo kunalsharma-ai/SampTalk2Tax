@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 67 |
+| Implementing | 66 |
 | Implemented | 34 |
-| Tested | 446 |
+| Tested | 447 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1999,10 +1999,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### EXP-017 — Expense reporting
 
 - Module: Expense management
-- Status: **Implementing**
-- Notes: Totals by status for a person or the organisation; no expense reports by category or period yet beyond the general ledger.
+- Status: **Tested**
+- Notes: Claimed spending in a period by category (expense account), month, person, status and merchant, with filters to one person or category; claimants see only their own. Drafts, rejected and void claims left out. Not built: expense budgets, download.
 - Evidence:
   - GET /v1/orgs/:orgId/expense-claims (summary by status)
+  - packages/accounting-engine/src/expense-report.ts
+  - packages/accounting-engine/test/expense-report.test.ts
+  - apps/api/src/expenses/expense-report.service.ts
+  - apps/api/test/expense-report.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/report/page.tsx
+  - apps/web/e2e/expense-report-flow.test.mjs
+  - docs/EXPENSE_REPORTS.md
 
 ### EXP-018 — Duplicate expense detection
 
