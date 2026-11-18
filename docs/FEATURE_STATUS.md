@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 792 |
+| Not started | 791 |
 | Designed | 0 |
 | Implementing | 68 |
 | Implemented | 34 |
-| Tested | 435 |
+| Tested | 436 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 9 | 35 |
+| General ledger and accounting engine | M1 | 44 | 8 | 36 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 12 | 24 |
 | Banking and reconciliation | M2 | 24 | 6 | 18 |
@@ -207,6 +207,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: The ledger records accruals (AR/AP based entries). Accrual vs cash reporting basis switch is not done.
 - Evidence:
   - packages/accounting-engine/test/reports.test.ts
+
+### GL-014 — Cash accounting
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Cash-basis profit and loss derived from the accrual ledger (payments, credits applied, claims paid back, payroll payments, bank entries). Balance sheet stays accrual.
+- Evidence:
+  - packages/accounting-engine/src/cash-basis.ts + test/cash-basis.test.ts
+  - apps/api/src/reports/reports.service.ts cashMovements; GET reports/income-statement?basis=CASH; export basis=CASH
+  - apps/api/test/cash-basis.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/income-statement (Basis select)
+  - apps/web/e2e/cash-basis-flow.test.mjs
+  - docs/CASH_BASIS_REPORTS.md
 
 ### GL-015 — Multi-period accounting
 

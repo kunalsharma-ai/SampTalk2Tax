@@ -1504,9 +1504,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cash-basis.ts + test/cash-basis.test.ts",
+        "apps/api/src/reports/reports.service.ts cashMovements; GET reports/income-statement?basis=CASH; export basis=CASH",
+        "apps/api/test/cash-basis.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement (Basis select)",
+        "apps/web/e2e/cash-basis-flow.test.mjs",
+        "docs/CASH_BASIS_REPORTS.md"
+      ],
+      "notes": "Cash-basis profit and loss derived from the accrual ledger (payments, credits applied, claims paid back, payroll payments, bank entries). Balance sheet stays accrual."
     },
     {
       "id": "GL-015",

@@ -12,7 +12,7 @@ const TbQuery = z.object({
   includeZero: z.enum(['true', 'false']).optional().transform((v) => v === 'true'),
 });
 const RangeQuery = z.object({ from: isoDate, to: isoDate });
-const IncomeQuery = RangeQuery.extend({ departmentId: z.uuid().optional(), projectId: z.uuid().optional() });
+const IncomeQuery = RangeQuery.extend({ departmentId: z.uuid().optional(), projectId: z.uuid().optional(), basis: z.enum(['ACCRUAL', 'CASH']).optional() });
 const AsOfQuery = z.object({ asOf: isoDate });
 const LedgerQuery = RangeQuery.extend({ accountId: z.uuid() });
 const StatutoryQuery = RangeQuery.extend({ format: z.enum(STATUTORY_FORMAT_IDS).optional(), comparative: z.enum(['true', 'false']).optional().transform((v) => v !== 'false') }).strict();

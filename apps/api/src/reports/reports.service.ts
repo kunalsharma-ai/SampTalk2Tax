@@ -7,6 +7,9 @@ import {
   buildIncomeStatement,
   buildStatutoryStatements,
   buildTrialBalance,
+  cashBasisMovements,
+  type CashLine,
+  type CashSettlement,
   D,
   defaultStatutoryFormat,
   STATUTORY_FORMATS,
@@ -19,6 +22,10 @@ import { fromDbDate, toDbDate } from '../common/dates';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
 import { lineSums, postedBetween } from '../db/ledger-queries';
+import { runInOrg } from '../common/tenant-context';
+import { journalEntries } from '../db/collections/ledger';
+import { allocations, documents, payments } from '../db/collections/sales';
+import { expenseClaims } from '../db/collections/expenses';
 import { GraphService } from '../graph/graph.service';
 
 /** All reports read only POSTED entries; drafts never affect balances. */
@@ -87,21 +94,89 @@ export class ReportsService {
     };
   }
 
-  async incomeStatement(orgId: string, q: { from: string; to: string; departmentId?: string; projectId?: string }) {
+  async incomeStatement(orgId: string, q: { from: string; to: string; departmentId?: string; projectId?: string; basis?: 'ACCRUAL' | 'CASH' }) {
     const ccy = await this.currency(orgId);
     const f = (d: Dec) => d.toFixed(minorUnits(ccy));
-    const is = buildIncomeStatement(await this.movements(orgId, q.from, q.to, q, true));
+    const accrual = buildIncomeStatement(await this.movements(orgId, q.from, q.to, q, true));
+    const cash = q.basis === 'CASH' ? buildIncomeStatement(await this.cashMovements(orgId, q.from, q.to, q)) : null;
+    const is = cash ?? accrual;
     const line = (l: { accountId: string; code: string; name: string; subtype?: string | null; amount: Dec }) => ({ ...l, subtype: l.subtype ?? null, amount: f(l.amount) });
     return {
       currency: ccy,
       from: q.from,
       to: q.to,
+      basis: cash ? 'CASH' : 'ACCRUAL',
       revenue: is.revenue.map(line),
       expenses: is.expenses.map(line),
       totalRevenue: f(is.totalRevenue),
       totalExpenses: f(is.totalExpenses),
       netIncome: f(is.netIncome),
+      /** Cash basis only: the accrual result for the same period, and what the cash view leaves out or moves to another period. */
+      accrualNetIncome: cash ? f(accrual.netIncome) : null,
+      notInCash: cash ? f(accrual.netIncome.minus(cash.netIncome)) : null,
     };
+  }
+
+  /**
+   * Income and expense movements on a cash basis (GL-014): entries that move a bank or cash
+   * account count in full on their date; invoices, bills, credit notes, expense claims and pay
+   * runs count in the share paid or applied in the period (see cashBasisMovements). Closing
+   * entries are left out, as on the accrual report.
+   */
+  private async cashMovements(orgId: string, from: string, to: string, dims: { departmentId?: string | null; projectId?: string | null }): Promise<AccountMovement[]> {
+    const [fromDate, toDate] = [toDbDate(from), toDbDate(to)];
+    const accs = await this.prisma.account.findMany({ where: { orgId }, select: { id: true, code: true, name: true, type: true, subtype: true } });
+    const accounts = accs.map((a) => ({ accountId: a.id, code: a.code, name: a.name, type: a.type, subtype: a.subtype }));
+    const cashIds = accs.filter((a) => a.subtype === 'BANK' || a.subtype === 'CASH').map((a) => a.id);
+    const plIds = accs.filter((a) => a.type === 'REVENUE' || a.type === 'EXPENSE').map((a) => a.id);
+    const dimFilter = { ...(dims.departmentId ? { departmentId: dims.departmentId } : {}), ...(dims.projectId ? { projectId: dims.projectId } : {}) };
+    const inDims = (l: { departmentId: string | null; projectId: string | null }) => (!dims.departmentId || l.departmentId === dims.departmentId) && (!dims.projectId || l.projectId === dims.projectId);
+
+    return runInOrg(orgId, async () => {
+      // Money in or out with no invoice or bill behind it.
+      const direct: CashLine[] = cashIds.length
+        ? (
+            await lineSums(this.store, orgId, {
+              entry: { ...postedBetween(fromDate, toDate, { excludeClosing: true }), 'lines.accountId': { $in: cashIds } },
+              line: { accountId: { $in: plIds }, ...dimFilter },
+              by: { accountId: 'lines.accountId' },
+            })
+          ).map((x) => ({ accountId: x.key.accountId as string, debit: x.debit, credit: x.credit }))
+        : [];
+
+      // What was paid or applied in the period, by the accrual entry it settles: [entry id, settled, total].
+      const shares: [string, string, string][] = [];
+      const paid = await this.store.collection(payments).find({ status: 'POSTED', date: { $gte: fromDate, $lte: toDate } });
+      const byPayment = paid.length ? await this.store.collection(allocations).find({ paymentId: { $in: paid.map((p) => p.id) }, removedOn: null }) : [];
+      const byCredit = await this.store.collection(allocations).find({ creditDocumentId: { $ne: null }, removedOn: null, date: { $gte: fromDate, $lte: toDate } });
+      const docIds = [...new Set([...byPayment, ...byCredit].flatMap((a) => [a.targetId, a.creditDocumentId]).filter((x): x is string => !!x))];
+      const docs = new Map((docIds.length ? await this.store.collection(documents).find({ id: { $in: docIds }, status: 'POSTED' }) : []).map((d) => [d.id, d]));
+      const settle = (docId: string | null, amount: string) => {
+        const d = docId ? docs.get(docId) : undefined;
+        if (d?.journalEntryId) shares.push([d.journalEntryId, amount, d.total]);
+      };
+      for (const a of byPayment) settle(a.targetId, a.amount);
+      // A credit note applied to an invoice settles both: the invoice's income and the credit note's reversal of it.
+      for (const a of byCredit) {
+        settle(a.targetId, a.amount);
+        settle(a.creditDocumentId, a.amount);
+      }
+      // Expense claims count when the employee is paid back.
+      const claims = await this.store.collection(expenseClaims).find({ status: 'REIMBURSED', reimbursedOn: { $gte: fromDate, $lte: toDate } });
+      for (const c of claims) if (c.journalEntryId) shares.push([c.journalEntryId, c.total, c.total]);
+      // Pay runs count as their salaries and statutory dues are paid.
+      const remitted = await this.prisma.payrollRemittance.findMany({ where: { orgId, status: 'POSTED', date: { gte: fromDate, lte: toDate } }, select: { amount: true, payRun: { select: { journalEntryId: true } } } });
+
+      const entryIds = [...new Set([...shares.map((x) => x[0]), ...remitted.map((r) => r.payRun.journalEntryId).filter((x): x is string => !!x)])];
+      const entries = new Map((entryIds.length ? await this.store.collection(journalEntries).find({ id: { $in: entryIds }, status: 'POSTED' }) : []).map((e) => [e.id, e]));
+      const linesOf = (id: string) => (entries.get(id)?.lines ?? []).filter(inDims).map((l) => ({ accountId: l.accountId, debit: l.functionalDebit, credit: l.functionalCredit }));
+      const settlements: CashSettlement[] = shares.filter(([id]) => entries.has(id)).map(([id, settled, total]) => ({ lines: linesOf(id), settled, total }));
+      for (const r of remitted) {
+        const e = r.payRun.journalEntryId ? entries.get(r.payRun.journalEntryId) : undefined;
+        if (e) settlements.push({ lines: linesOf(e.id), settled: r.amount.toFixed(), total: e.totalCredit });
+      }
+      return cashBasisMovements(accounts, direct, settlements);
+    });
   }
 
   async balanceSheet(orgId: string, q: { asOf: string }) {

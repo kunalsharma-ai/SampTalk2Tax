@@ -20,7 +20,7 @@ const bool = z.enum(['true', 'false']).optional().transform((v) => v === 'true')
 /** Query parameters of each report, the same ones its screen and JSON endpoint take. */
 const PARAMS = {
   'trial-balance': z.object({ from: isoDate.optional(), asOf: isoDate, includeZero: bool }).strict(),
-  'income-statement': z.object({ from: isoDate, to: isoDate, departmentId: z.uuid().optional(), projectId: z.uuid().optional() }).strict(),
+  'income-statement': z.object({ from: isoDate, to: isoDate, departmentId: z.uuid().optional(), projectId: z.uuid().optional(), basis: z.enum(['ACCRUAL', 'CASH']).optional() }).strict(),
   'balance-sheet': z.object({ asOf: isoDate }).strict(),
   'general-ledger': z.object({ accountId: z.uuid(), from: isoDate, to: isoDate }).strict(),
   'receivables-ageing': z.object({ asOf: isoDate }).strict(),
@@ -119,7 +119,8 @@ export class ReportExportService {
         };
       }
       case 'income-statement': {
-        const is = await this.reports.incomeStatement(org.id, { from: s('from'), to: s('to'), departmentId: p.departmentId as string | undefined, projectId: p.projectId as string | undefined });
+        const is = await this.reports.incomeStatement(org.id, { from: s('from'), to: s('to'), departmentId: p.departmentId as string | undefined, projectId: p.projectId as string | undefined, basis: p.basis as 'ACCRUAL' | 'CASH' | undefined });
+        const cash = is.basis === 'CASH';
         const filters: string[] = [];
         for (const id of [p.departmentId, p.projectId].filter(Boolean) as string[]) {
           const v = await this.prisma.dimensionValue.findFirst({ where: { id, orgId: org.id } });
@@ -129,7 +130,7 @@ export class ReportExportService {
         const lines = (xs: { code: string; name: string; amount: string }[]) => xs.map((x): ExportRow => ({ cells: [x.code, x.name, x.amount] }));
         return {
           ...base,
-          title: 'Profit and loss',
+          title: cash ? 'Profit and loss (cash basis)' : 'Profit and loss',
           period: `${d(s('from'))} to ${d(s('to'))}`,
           currency: is.currency,
           columns: [text('Code', 10), text('Account', 44), money('Amount', 16)],
@@ -142,8 +143,12 @@ export class ReportExportService {
             { cells: ['', 'Total expenses', is.totalExpenses], style: 'subtotal' },
             { cells: ['', new D(is.netIncome).isNeg() ? 'Net loss' : 'Net profit', is.netIncome], style: 'total' },
           ],
-          notes: [filters.length ? `Only lines tagged ${filters.join(' and ')}.` : 'All departments and projects.', 'Posted journal entries only.'],
-          fileName: `profit-and-loss-${s('from')}-to-${s('to')}`,
+          notes: [
+            filters.length ? `Only lines tagged ${filters.join(' and ')}.` : 'All departments and projects.',
+            'Posted journal entries only.',
+            ...(cash ? [`Cash basis: income and expenses as money was received or paid (invoices, bills and claims in the share settled in the period). The accrual result for the period is ${exportAmount(is.accrualNetIncome!, is.currency)}.`] : []),
+          ],
+          fileName: `profit-and-loss${cash ? '-cash' : ''}-${s('from')}-to-${s('to')}`,
         };
       }
       case 'balance-sheet': {
