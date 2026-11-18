@@ -108,7 +108,7 @@ export function OrganisationTimeZoneCard() {
   const manage = can(org.role, 'org.manage');
   return (
     <Card className="mb-6" aria-label={t('Organisation time zone')}>
-      <CardHeader title={`${t('Organisation time zone')}: ${org.name}`} description={t('Times in this organisation are shown in this zone for everyone who has not chosen their own. Business dates such as today, due dates and periods follow the country rules, not this setting.')} />
+      <CardHeader title={`${t('Organisation time zone')}: ${org.name}`} description={t('Times in this organisation are shown in this zone for everyone who has not chosen their own. Its business day follows it too: what counts as today, overdue and due, and when scheduled automations run.')} />
       <div className="flex flex-wrap items-end gap-3 px-5 pb-5 pt-4">
         <Field label={t('Time zone')}>
           {(p) => (

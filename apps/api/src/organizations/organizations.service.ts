@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpStatus, Inject, Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { fiscalYearForDate, GENERIC_SMB_COA, isTimeZone } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
@@ -13,7 +13,7 @@ import { isDuplicateKeyError } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService, useOrgInTx, withSystemAccess } from '../common/prisma.service';
 import { DomainError } from '../common/errors';
-import { runAsSystem, runInOrg } from '../common/tenant-context';
+import { enterOrg, rememberOrgTimeZone, runAsSystem, runInOrg } from '../common/tenant-context';
 import { users } from '../db/collections/identity';
 import { accounts } from '../db/collections/chart';
 import { memberships, organizations, type OrganizationDoc } from '../db/collections/tenancy';
@@ -32,7 +32,20 @@ export interface CreateOrgInput {
 }
 
 @Injectable()
-export class OrganizationsService {
+export class OrganizationsService implements OnApplicationBootstrap {
+  /**
+   * Learns every organisation's time zone at start-up, so schedulers and runners that work
+   * outside a request keep each organisation's business day (I18N-008).
+   */
+  async onApplicationBootstrap() {
+    try {
+      const all = await runAsSystem(() => this.store.collection(organizations).find({}));
+      for (const o of all) rememberOrgTimeZone(o.id, o.timeZone);
+    } catch (e) {
+      new Logger('OrganizationsService').warn(`Organisation time zones not loaded at start-up: ${(e as Error).message}`);
+    }
+  }
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -169,12 +182,16 @@ export class OrganizationsService {
     return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(sub) };
   }
 
-  /** The time zone moments are shown in for this organisation (display only). */
+  /**
+   * The organisation's time zone: moments are shown in it, and its business day ("today", due
+   * and overdue, schedules) follows it (I18N-008).
+   */
   async setTimeZone(orgId: string, actorId: string, timeZone: string) {
     if (!isTimeZone(timeZone)) throw new DomainError('INVALID_TIME_ZONE', 'Choose a time zone such as Asia/Kolkata or Europe/London', HttpStatus.UNPROCESSABLE_ENTITY);
     const before = await this.store.collection(organizations).findById(orgId);
     if (!before) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
     await this.store.collection(organizations).updateOne({ id: orgId }, { $set: { timeZone, updatedAt: new Date() } });
+    enterOrg(orgId, timeZone);
     await this.prisma.$transaction(async (tx) => {
       await this.audit.append(tx, { orgId, actorId, action: 'org.time_zone_changed', entityType: 'organization', entityId: orgId, data: { before: before.timeZone, after: timeZone } });
     });

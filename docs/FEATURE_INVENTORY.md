@@ -1154,7 +1154,7 @@ Part 33 · M8 · priority P2 · depends on: none
 | I18N-005 |  | capability | Country-specific tax configurations | Tested |
 | I18N-006 |  | capability | Country-specific invoice formats | Tested |
 | I18N-007 |  | capability | Local financial reporting | Tested |
-| I18N-008 |  | capability | Time-zone awareness | Implementing |
+| I18N-008 |  | capability | Time-zone awareness | Tested |
 | I18N-009 |  | capability | Regional document templates | Tested |
 | I18N-010 |  | capability | Configurable fiscal years | Implemented |
 | I18N-011 |  | capability | Localization framework | Tested |

@@ -4,7 +4,7 @@ import { Prisma, TaskStatus } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { OrgContext } from '../auth/decorators';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, toDbDate, businessDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import type { LinkType } from '../workflows/workflow-facts';
@@ -202,9 +202,9 @@ export class TasksService {
   }
 }
 
-/** Today's date in India time. */
+/** Today's business date, in the organisation's time zone (India by default). */
 export function todayIst(now: Date = new Date()): string {
-  return new Date(now.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+  return businessDate(now);
 }
 export function addDays(iso: string, n: number): string {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);

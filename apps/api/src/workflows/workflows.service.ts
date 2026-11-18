@@ -1,3 +1,4 @@
+import { orgZone } from '../common/dates';
 import { HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   ASSIGNABLE_ROLES,
@@ -230,7 +231,7 @@ export class WorkflowsService {
         version: w.currentVersion,
         trigger: v.trigger,
         triggerParams: v.triggerParams as TriggerParams,
-        triggerLabel: describeTrigger(v.trigger as WorkflowTrigger, v.triggerParams as TriggerParams),
+        triggerLabel: describeTrigger(v.trigger as WorkflowTrigger, v.triggerParams as TriggerParams, orgZone()),
         triggerKind: triggerDef(v.trigger).kind,
         conditions: (v.conditions as unknown as Condition[]).length,
         match: (v.match ?? 'ALL') as ConditionMatch,
@@ -255,7 +256,7 @@ export class WorkflowsService {
       version: w.currentVersion,
       trigger: v.trigger,
       triggerParams: v.triggerParams as TriggerParams,
-      triggerLabel: describeTrigger(v.trigger as WorkflowTrigger, v.triggerParams as TriggerParams),
+      triggerLabel: describeTrigger(v.trigger as WorkflowTrigger, v.triggerParams as TriggerParams, orgZone()),
       triggerKind: triggerDef(v.trigger).kind,
       nextOccurrence: w.enabled && v.trigger === 'SCHEDULE' ? this.nextOccurrence(v.triggerParams as TriggerParams) : null,
       activatedAt: w.activatedAt?.toISOString() ?? null,
@@ -267,7 +268,7 @@ export class WorkflowsService {
       createdBy: users.get(w.createdById) ?? null,
       createdAt: w.createdAt.toISOString(),
       updatedAt: w.updatedAt.toISOString(),
-      versions: w.versions.map((x) => ({ version: x.version, trigger: x.trigger, triggerLabel: describeTrigger(x.trigger as WorkflowTrigger, x.triggerParams as TriggerParams), note: x.note, createdBy: users.get(x.createdById) ?? null, createdAt: x.createdAt.toISOString() })),
+      versions: w.versions.map((x) => ({ version: x.version, trigger: x.trigger, triggerLabel: describeTrigger(x.trigger as WorkflowTrigger, x.triggerParams as TriggerParams, orgZone()), note: x.note, createdBy: users.get(x.createdById) ?? null, createdAt: x.createdAt.toISOString() })),
       recentRuns: await this.runs(orgId, id, { limit: 20 }),
     };
   }
@@ -276,9 +277,9 @@ export class WorkflowsService {
   private nextOccurrence(params: TriggerParams): string | null {
     try {
       const now = Date.now();
-      const latest = latestOccurrence(params, new Date(now)).at.getTime();
+      const latest = latestOccurrence(params, new Date(now), orgZone()).at.getTime();
       for (let t = now + 60_000; t < now + 32 * 86_400_000; t += 3_600_000) {
-        const o = latestOccurrence(params, new Date(t)).at.getTime();
+        const o = latestOccurrence(params, new Date(t), orgZone()).at.getTime();
         if (o > latest) return new Date(o).toISOString();
       }
     } catch {
@@ -366,11 +367,11 @@ export class WorkflowsService {
   private async sampleFacts(tx: Tx, orgId: string, trigger: WorkflowTrigger, params: TriggerParams, eventId: string | undefined, now: Date): Promise<{ eventId: bigint | null; facts: EventFacts; at: Date } | null> {
     const def = triggerDef(trigger);
     if (trigger === 'SCHEDULE') {
-      const occ = latestOccurrence(params, now);
-      return { eventId: null, facts: await loadScheduleFacts(tx, orgId, istDate(now)), at: occ.at };
+      const occ = latestOccurrence(params, now, orgZone());
+      return { eventId: null, facts: await loadScheduleFacts(tx, orgId, istDate(now, orgZone())), at: occ.at };
     }
     if (trigger === 'INVOICE_OVERDUE' || trigger === 'BILL_DUE_SOON') {
-      const today = istDate(now);
+      const today = istDate(now, orgZone());
       const id = await sampleDueDocument(tx, orgId, trigger === 'INVOICE_OVERDUE' ? 'INVOICE' : 'BILL', today);
       const facts = id ? await loadDueDocumentFacts(tx, orgId, trigger, id, today) : null;
       return facts ? { eventId: null, facts, at: now } : null;

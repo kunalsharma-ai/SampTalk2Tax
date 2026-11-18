@@ -4788,7 +4788,7 @@
       "notes": "Each person chooses the interface language (English or Hindi) on Account and preferences; the navigation, header, roles and the preferences page are translated; other pages are still in English and fall back to English text."
     },
     "I18N-008": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/locale.ts",
         "packages/accounting-engine/test/locale.test.ts",
@@ -4799,9 +4799,12 @@
         "apps/web/test/format.test.ts",
         "apps/web/test/i18n.test.ts",
         "apps/web/e2e/display-preferences-flow.test.mjs",
-        "docs/LANGUAGES_AND_FORMATS.md"
+        "docs/LANGUAGES_AND_FORMATS.md",
+        "apps/api/src/common/dates.ts",
+        "apps/api/test/business-day.e2e.test.ts",
+        "packages/accounting-engine/test/workflows.test.ts"
       ],
-      "notes": "Each organisation has a time zone (owners and admins set it, audited) and each person may choose their own; moments (times things happened) are shown in it. Business dates such as today, due dates and periods are still calculated in India time for every organisation."
+      "notes": "Each organisation has a time zone (owners and admins set it, audited) and each person may choose their own; moments are shown in it. The organisation's business day follows its zone: today, due and overdue, alerts, tasks, the cash forecast, the close checklist, copilot and scheduled automations (with daylight saving). India time stays for e-way bills and the platform's own billing and usage months."
     },
     "I18N-011": {
       "status": "Tested",
