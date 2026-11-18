@@ -193,6 +193,7 @@ export const SECTION_HELP: Record<string, Help> = {
   'Reconciliation history': { what: 'Past reconciliations of this account with their closing balances.', how: 'Open one to see what was matched.' },
   'Cash and bank': { what: 'Balances on every bank and cash account today.', how: 'Click an account to see its transactions.' },
   'Due in the next 30 days': { what: 'Customer receipts and supplier payments due in the next 30 days.', how: 'Use it to plan cash: chase what is due in and schedule what is due out.' },
+  'Your devices': { what: 'The browsers you have signed in from, when each was first and last used, and whether it is trusted.', how: 'Trust the device you are using to skip the two-step code there for 30 days. Forget a device you do not recognise: it is signed out, and signing in there again sends you an alert.' },
   'How interest is worked out': { what: 'The rule used for this deposit\'s interest: compounding each period from the start date, and simple interest by days for the part period after.', how: 'Compare the figures with the bank\'s deposit advice. Small differences come from how the bank rounds.' },
   'Terms and accounts': { what: 'The deposit\'s rate, compounding and the accounts its postings use.', how: 'Check the accounts before accruing; to change them, reverse the postings and place the deposit again.' },
   'Deposit postings': { what: 'The placement, each interest accrual and the closing, each with its journal.', how: 'Open a journal to see its lines. Reverse the latest accrual or the closing if it was wrong.' },

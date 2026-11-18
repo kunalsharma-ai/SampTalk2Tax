@@ -29,6 +29,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   // Two-step sign-in: after a right password the API waits for a code from the person's app.
   const [codeStep, setCodeStep] = useState(false);
   const [code, setCode] = useState('');
+  const [trust, setTrust] = useState(false);
   const [sending, setSending] = useState(false);
 
   const finish = () => {
@@ -57,7 +58,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     setError(null);
     setSending(true);
     try {
-      await session('code', { code });
+      await session('code', { code, trustDevice: trust });
       finish();
     } catch (err) {
       if (err instanceof ApiError && err.code === 'MFA_CHALLENGE_EXPIRED') {
@@ -84,6 +85,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           <Field label="Code" hint="6 digits from the app, or a recovery code like ABCD-EFGH-JKLM.">
             {(p) => <Input {...p} autoFocus inputMode="text" autoComplete="one-time-code" maxLength={20} value={code} onChange={(e) => setCode(e.target.value)} />}
           </Field>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={trust} onChange={(e) => setTrust(e.target.checked)} /> Trust this device for 30 days (skip this step here)
+          </label>
           <Button type="submit" loading={sending} disabled={code.trim().length < 6} className="mt-2">
             Verify and sign in
           </Button>

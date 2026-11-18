@@ -1,6 +1,7 @@
+import { randomBytes } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { apiBaseUrl, MFA_CHALLENGE_COOKIE, REFRESH_COOKIE } from '@/lib/server-config';
+import { apiBaseUrl, DEVICE_COOKIE, MFA_CHALLENGE_COOKIE, REFRESH_COOKIE } from '@/lib/server-config';
 import { clearSessionCookies, clientHeaders, setSessionCookies } from '@/lib/session-cookies';
 
 /**
@@ -19,7 +20,7 @@ const Body = z.discriminatedUnion('mode', [
     password: z.string().max(256),
     name: z.string().max(120).optional(),
   }),
-  z.object({ mode: z.literal('code'), code: z.string().max(20) }),
+  z.object({ mode: z.literal('code'), code: z.string().max(20), trustDevice: z.boolean().optional() }),
 ]);
 const secure = () => process.env.NODE_ENV === 'production';
 
@@ -34,18 +35,26 @@ export async function POST(req: NextRequest) {
   if (mode === 'code') {
     const challengeToken = req.cookies.get(MFA_CHALLENGE_COOKIE)?.value;
     if (!challengeToken) return NextResponse.json({ error: 'MFA_CHALLENGE_EXPIRED', message: 'This sign-in took too long. Sign in again.' }, { status: 401 });
-    payload = { challengeToken, code: (parsed.data as { code: string }).code };
+    const c = parsed.data as { code: string; trustDevice?: boolean };
+    payload = { challengeToken, code: c.code, ...(c.trustDevice ? { trustDevice: true } : {}) };
   }
   const path = mode === 'code' ? 'login/code' : mode;
+  // The browser's device key: kept if it has one, made on its first sign-in.
+  const known = req.cookies.get(DEVICE_COOKIE)?.value;
+  const device = known && /^[A-Za-z0-9_-]{22,100}$/.test(known) ? known : randomBytes(24).toString('base64url');
   const upstream = await fetch(`${apiBaseUrl()}/v1/auth/${path}`, {
     method: 'POST',
-    headers: { ...clientHeaders(req), 'content-type': 'application/json' },
+    headers: { ...clientHeaders(req), 'x-t2t-device': device, 'content-type': 'application/json' },
     body: JSON.stringify(payload),
     cache: 'no-store',
   });
   const body = await upstream.json().catch(() => ({}));
+  const keep = (res: NextResponse) => {
+    if (device !== known) res.cookies.set(DEVICE_COOKIE, device, { httpOnly: true, sameSite: 'lax', secure: secure(), path: '/api/session', maxAge: 400 * 86_400 });
+    return res;
+  };
   if (!upstream.ok) {
-    const res = NextResponse.json(body, { status: upstream.status });
+    const res = keep(NextResponse.json(body, { status: upstream.status }));
     const retry = upstream.headers.get('retry-after');
     if (retry) res.headers.set('retry-after', retry);
     // A challenge that is over (too slow, too many wrong codes) is forgotten: sign in again.
@@ -53,11 +62,11 @@ export async function POST(req: NextRequest) {
     return res;
   }
   if (body.mfaRequired) {
-    const res = NextResponse.json({ mfaRequired: true, expiresIn: body.expiresIn });
+    const res = keep(NextResponse.json({ mfaRequired: true, expiresIn: body.expiresIn }));
     res.cookies.set(MFA_CHALLENGE_COOKIE, body.challengeToken, { httpOnly: true, sameSite: 'strict', secure: secure(), path: '/api/session', maxAge: body.expiresIn });
     return res;
   }
-  const res = NextResponse.json({ user: body.user });
+  const res = keep(NextResponse.json({ user: body.user }));
   setSessionCookies(res, body);
   if (mode === 'code') res.cookies.set(MFA_CHALLENGE_COOKIE, '', { httpOnly: true, sameSite: 'strict', path: '/api/session', maxAge: 0 });
   return res;
