@@ -193,6 +193,7 @@ export const SECTION_HELP: Record<string, Help> = {
   'Reconciliation history': { what: 'Past reconciliations of this account with their closing balances.', how: 'Open one to see what was matched.' },
   'Cash and bank': { what: 'Balances on every bank and cash account today.', how: 'Click an account to see its transactions.' },
   'Due in the next 30 days': { what: 'Customer receipts and supplier payments due in the next 30 days.', how: 'Use it to plan cash: chase what is due in and schedule what is due out.' },
+  'Your devices': { what: 'The browsers you have signed in from, when each was first and last used, and whether it is trusted.', how: 'Trust the device you are using to skip the two-step code there for 30 days. Forget a device you do not recognise: it is signed out, and signing in there again sends you an alert.' },
   'Loan accounts against the ledger': { what: 'Each loan\'s balance in the loan records compared with its account in the books.', how: 'A difference means a repayment or interest entry is missing.' },
   'Repayments over the next 12 months': { what: 'Loan instalments due over the coming year.', how: 'Plan the cash for them; overdue ones are flagged.' },
   Entries: { what: 'Drawdowns, repayments and interest recorded on this loan.', how: 'Record each as it happens; each posts a journal.' },

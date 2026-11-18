@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 781 |
 | Designed | 0 |
-| Implementing | 50 |
+| Implementing | 49 |
 | Implemented | 34 |
-| Tested | 464 |
+| Tested | 465 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -5628,11 +5628,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SEC-009 — Device management
 
 - Module: Security and enterprise governance
-- Status: **Implementing**
-- Notes: A device is a signed-in session: listed with browser, address and last activity, and can be signed out. No trusted-device registration, device binding or new-device alerts.
+- Status: **Tested**
+- Notes: Each browser is a known device, recognised by a random key in an httpOnly cookie (only its hash is stored). A sign-in from a new device is emailed to the person and audited. The device in use can be trusted for 30 days, when signing in there skips the two-step code; any device can lose its trust or be forgotten (its sessions signed out). Sessions are listed with browser, address and last activity and can be signed out. Not built: alerts in the app (email only), device attestation or certificates.
 - Evidence:
   - apps/web/src/app/orgs/[orgId]/account
   - apps/web/e2e/security-flow.test.mjs
+  - apps/api/src/auth/devices.service.ts
+  - apps/api/test/known-devices.e2e.test.ts
+  - apps/web/src/components/known-devices.tsx
+  - apps/web/e2e/known-devices-flow.test.mjs
+  - docs/SECURITY.md
 
 ### SEC-012 — Secrets management
 

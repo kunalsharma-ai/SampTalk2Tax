@@ -12,6 +12,7 @@ import { AuditService } from './audit/audit.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { MfaService } from './auth/mfa.service';
+import { DevicesService } from './auth/devices.service';
 import { OrgSecurityService } from './organizations/org-security.service';
 import { AuthGuard } from './auth/guards';
 import { LoginThrottleService } from './auth/login-throttle.service';
@@ -389,6 +390,7 @@ export class AppModule {
         AuditService,
         AuthService,
         MfaService,
+        DevicesService,
         OrgSecurityService,
         SessionsService,
         LoginThrottleService,
