@@ -9520,7 +9520,7 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts",
         "apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules",
@@ -9528,9 +9528,12 @@
         "apps/api/test/expense-policy.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card",
         "apps/web/e2e/expense-policy-flow.test.mjs",
-        "docs/EXPENSE_POLICY.md"
+        "docs/EXPENSE_POLICY.md",
+        "packages/accounting-engine/src/expense-anomalies.ts + test/expense-anomalies.test.ts",
+        "apps/api/test/expense-anomalies.e2e.test.ts",
+        "apps/web/e2e/expense-anomalies-flow.test.mjs"
       ],
-      "notes": "Rule-based detection (limits, missing receipts, receipt age, plus the existing possible-duplicate check). No AI/ML anomaly model yet."
+      "notes": "Rule-based detection covers limits, missing receipts, receipt age and possible duplicates. Statistical anomaly checks are shown for a second look and never block: unusual amount (over 3 times the 12-month category median with robust z above 3.5), just under a per-receipt limit, and receipts split around a limit. No machine-learning model is used."
     },
     {
       "id": "EXP-023",

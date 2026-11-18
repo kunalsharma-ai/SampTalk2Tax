@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 780 |
 | Designed | 0 |
-| Implementing | 43 |
+| Implementing | 42 |
 | Implemented | 34 |
-| Tested | 472 |
+| Tested | 473 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -2092,8 +2092,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### EXP-022 — Policy violation detection
 
 - Module: Expense management
-- Status: **Implementing**
-- Notes: Rule-based detection (limits, missing receipts, receipt age, plus the existing possible-duplicate check). No AI/ML anomaly model yet.
+- Status: **Tested**
+- Notes: Rule-based detection covers limits, missing receipts, receipt age and possible duplicates. Statistical anomaly checks are shown for a second look and never block: unusual amount (over 3 times the 12-month category median with robust z above 3.5), just under a per-receipt limit, and receipts split around a limit. No machine-learning model is used.
 - Evidence:
   - packages/accounting-engine/src/expense-policy.ts + test/expense-policy.test.ts
   - apps/api/src/expenses/expense-policy.service.ts; MongoDB collection expense_policy_rules
@@ -2102,6 +2102,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card
   - apps/web/e2e/expense-policy-flow.test.mjs
   - docs/EXPENSE_POLICY.md
+  - packages/accounting-engine/src/expense-anomalies.ts + test/expense-anomalies.test.ts
+  - apps/api/test/expense-anomalies.e2e.test.ts
+  - apps/web/e2e/expense-anomalies-flow.test.mjs
 
 ### TRS-002 — Cash positioning
 

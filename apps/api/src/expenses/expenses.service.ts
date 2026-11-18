@@ -14,6 +14,8 @@ import {
   computeExpenseClaim,
   minorUnits,
   possibleDuplicateLines,
+  addDays,
+  expenseAnomalies,
 } from '@talk2tax/accounting-engine';
 import { ExpenseClaimStatus, Prisma } from '@talk2tax/database';
 import { hasPermission, Permission } from '@talk2tax/security';
@@ -63,6 +65,8 @@ type ClaimRow = Prisma.ExpenseClaimGetPayload<{ include: typeof CLAIM_INCLUDE }>
 const EDITABLE: ExpenseClaimStatus[] = ['DRAFT', 'REJECTED'];
 /** How far back to look for the same receipt claimed twice. */
 const DUPLICATE_WINDOW = 200;
+/** Past lines read for the usual amount per category. */
+const ANOMALY_HISTORY = 5000;
 
 /**
  * Employee expense claims (Directive Part 13). Anyone with expenses.submit claims their
@@ -365,6 +369,30 @@ export class ExpensesService {
     );
   }
 
+  /**
+   * Unusual amounts against the organisation's approved claims for the same categories in the last
+   * 12 months (any claimant, this claim left out), and lines just under or split around a
+   * per-receipt limit.
+   */
+  private async anomalies(org: OrgContext, db: Pick<Tx, 'expenseClaimLine'>, c: ClaimRow, allowanceByLine: Map<number, unknown>) {
+    const accountIds = [...new Set(c.lines.map((l) => l.accountId))];
+    const past = accountIds.length
+      ? await db.expenseClaimLine.findMany({
+          where: { orgId: org.id, claimId: { not: c.id }, accountId: { in: accountIds }, claim: { status: { in: ['APPROVED', 'REIMBURSED'] } }, date: { gte: toDbDate(addDays(todayIso(), -365)) } },
+          select: { accountId: true, amount: true },
+          take: ANOMALY_HISTORY,
+        })
+      : [];
+    const history = new Map<string, string[]>();
+    for (const p of past) history.set(p.accountId, [...(history.get(p.accountId) ?? []), p.amount.toFixed()]);
+    return expenseAnomalies(
+      c.lines.map((l) => ({ lineNo: l.lineNo, date: fromDbDate(l.date), accountId: l.accountId, accountLabel: `${l.account.code} · ${l.account.name}`, amount: l.amount.toFixed(), isAllowance: allowanceByLine.has(l.lineNo) })),
+      history,
+      await this.policy.lineLimits(),
+      c.currency,
+    );
+  }
+
   private assertCanSee(org: OrgContext, actor: Actor, claimantId: string) {
     if (claimantId !== actor.id && !hasPermission(org.role, 'expenses.read')) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Expense claim not found' });
   }
@@ -447,6 +475,7 @@ export class ExpensesService {
     const own = c.claimantId === actor.id;
     // Checked while the claim can still change or be decided; afterwards the audit trail keeps what was found.
     const policy = ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) ? await this.policyCheck(org, db, c, c.status === 'SUBMITTED' ? c.submittedAt!.toISOString().slice(0, 10) : todayIso()) : null;
+    const anomalies = policy ? await this.anomalies(org, db, c, allowanceByLine) : null;
     const decide = hasPermission(org.role, 'approvals.decide') && hasPermission(org.role, 'journals.post');
     return {
       id: c.id,
@@ -477,6 +506,8 @@ export class ExpensesService {
       receiptCount: receipts,
       /** Expense policy rules the claim breaks (null once decided). */
       policy,
+      /** Signs worth a second look that no rule catches (EXP-022; null once decided). */
+      anomalies,
       lines: c.lines.map((l) => ({
         lineNo: l.lineNo,
         date: fromDbDate(l.date),
