@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, Dialog, Field, Input, Table, Td, Th, Tr } from '@talk2tax/ui';
 import { useState } from 'react';
+import { JournalApprovalPolicyCard } from '@/components/journals/journal-approval';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -58,6 +59,7 @@ export default function ApprovalRulesPage() {
         </Table>
       </Card>
       {!canManage ? <p className="mt-3 text-sm text-fg-muted">Only owners and admins can change these rules.</p> : null}
+      <JournalApprovalPolicyCard orgId={orgId} role={org.role} />
       <Dialog open={!!draft} onOpenChange={(o) => !o && setDraft(null)} title={draft ? `Approval rule for ${LABEL[draft.kind].toLowerCase()}` : ''} description="Changing a rule does not affect documents already posted. Drafts already approved keep their approval.">
         {draft ? (
           <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); save.mutate(draft); }}>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { ApprovalBadge, DecisionButtons } from '@/components/approvals/approval-card';
 import { Money } from '@/components/money';
+import { JournalApprovalsInbox } from '@/components/journals/journal-approval';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date } from '@/lib/format';
@@ -85,6 +86,7 @@ export default function ApprovalsPage() {
           </Table>
         )}
       </Card>
+      <JournalApprovalsInbox orgId={orgId} />
     </>
   );
 }

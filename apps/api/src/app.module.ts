@@ -28,6 +28,8 @@ import { AccountReconciliationsController } from './account-reconciliations/acco
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
 import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
 import { CostAllocationsService } from './cost-allocations/cost-allocations.service';
+import { JournalApprovalsController } from './journal-approvals/journal-approvals.controller';
+import { JournalApprovalsService } from './journal-approvals/journal-approvals.service';
 import { FinancialTagsController } from './financial-tags/financial-tags.controller';
 import { FinancialTagsService } from './financial-tags/financial-tags.service';
 import { BillChecksController } from './bill-checks/bill-checks.controller';
@@ -283,6 +285,7 @@ export class AppModule {
         FinancialTagsController,
         AccountReconciliationsController,
         CostAllocationsController,
+        JournalApprovalsController,
         BillChecksController,
         GstController,
         WithholdingController,
@@ -406,6 +409,7 @@ export class AppModule {
         FinancialTagsService,
         AccountReconciliationsService,
         CostAllocationsService,
+        JournalApprovalsService,
         BillChecksService,
         GstService,
         WithholdingService,

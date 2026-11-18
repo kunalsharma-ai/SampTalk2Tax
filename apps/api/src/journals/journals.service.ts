@@ -2,6 +2,7 @@ import { ConflictException, HttpStatus, Injectable, NotFoundException } from '@n
 import { createHash } from 'node:crypto';
 import { buildReversalLines, JournalLineInput, lineTagIssues, minorUnits, NormalizedJournal, PostingAccount, validateJournal } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
+import { JournalApprovalsService } from '../journal-approvals/journal-approvals.service';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { checkLineDimensions } from '../dimensions/check';
@@ -52,6 +53,7 @@ export class JournalsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly store: DocumentStoreService,
+    private readonly approvals: JournalApprovalsService,
   ) {}
 
   /**
@@ -120,7 +122,7 @@ export class JournalsService {
       if (replay) return { replayed: true, entry: replay };
     }
     try {
-      const created = await this.prisma.$transaction((tx) => this.createInTx(tx, org, actor, input, { post: opts.post, idempotencyKey: opts.idempotencyKey, idempotencyHash: hash }));
+      const created = await this.prisma.$transaction((tx) => this.createInTx(tx, org, actor, input, { post: opts.post, idempotencyKey: opts.idempotencyKey, idempotencyHash: hash, requireApproval: true }));
       return { replayed: false, entry: serialize(await this.detailed(org.id, created.id)) };
     } catch (e) {
       // Concurrent duplicate with the same idempotency key: the other request won the race.
@@ -142,7 +144,7 @@ export class JournalsService {
     org: OrgInfo,
     actor: Actor,
     input: JournalInput,
-    opts: { post: boolean; idempotencyKey?: string; idempotencyHash?: string; auditData?: Record<string, unknown> },
+    opts: { post: boolean; idempotencyKey?: string; idempotencyHash?: string; auditData?: Record<string, unknown>; requireApproval?: boolean },
   ): Promise<{ id: string; entryNumber: number | null }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status === 'CLOSED' || (opts.post && period.status !== 'OPEN')) {
@@ -150,6 +152,8 @@ export class JournalsService {
     }
     input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
     const normalized = await this.validate(tx, org, input.lines, { manual: true });
+    // Journals typed in (not schedules of approved templates) follow the approval policy (SEC-036).
+    if (opts.post && opts.requireApproval) await this.approvals.assertMayCreatePosted(normalized.totalFunctionalDebit.toFixed());
     const posted = opts.post ? await this.posting(tx, org.id, actor.id) : null;
     const created = await this.insertEntry(tx, {
       orgId: org.id,
@@ -211,7 +215,10 @@ export class JournalsService {
       );
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'journal.draft_updated', entityType: 'journal_entry', entityId: id, data: { date: input.date, lines: input.lines.length } });
       return id;
-    }).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
+    }).then(async (entryId) => {
+      await this.approvals.draftChanged(org.id, entryId, actor.id);
+      return serialize(await this.detailed(org.id, entryId));
+    });
   }
 
   async deleteDraft(orgId: string, actor: Actor, id: string) {
@@ -222,12 +229,14 @@ export class JournalsService {
       await cascadeDeleted(tx, this.store, 'journal_entries', orgId, [id]);
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'journal.draft_deleted', entityType: 'journal_entry', entityId: id });
     });
+    await this.approvals.draftChanged(orgId, id, actor.id);
   }
 
   async postDraft(org: OrgInfo, actor: Actor, id: string) {
     return this.prisma.$transaction(async (tx) => {
       const existing = await this.lockEntry(tx, org.id, id);
       if (existing.status !== 'DRAFT') throw new DomainError('ALREADY_POSTED', 'Entry is already posted', HttpStatus.CONFLICT);
+      await this.approvals.assertMayPost(existing);
       const period = await this.lockPeriodForDate(tx, org.id, fromDbDate(existing.date));
       if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
       // Re-validate against the chart as it is now (accounts may have been deactivated since drafting).
