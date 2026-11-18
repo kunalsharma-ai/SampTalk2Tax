@@ -2667,7 +2667,7 @@
       "notes": "Cash and bank balances from posted journals up to today, and net cash after borrowings, on the treasury overview. Not built: intraday or bank-fed balances, balances by entity or currency."
     },
     "BANK-011": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/loans.ts",
         "packages/accounting-engine/test/loans.test.ts",
@@ -2676,9 +2676,15 @@
         "apps/web/src/app/orgs/[orgId]/loans",
         "apps/web/e2e/loans-flow.test.mjs",
         "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
-        "docs/LOANS_AND_TREASURY.md"
+        "docs/LOANS_AND_TREASURY.md",
+        "packages/accounting-engine/src/deposits.ts",
+        "packages/accounting-engine/test/deposits.test.ts",
+        "apps/api/src/deposits/deposits.service.ts",
+        "apps/api/test/deposits.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/deposits",
+        "apps/web/e2e/deposits-flow.test.mjs"
       ],
-      "notes": "Interest on loans is worked out per installment and posted to the interest expense account. Not built: interest earned on bank balances or deposits."
+      "notes": "Interest on loans is worked out per installment and posted to the interest expense account. Interest earned on fixed deposits is worked out from the rate and compounding, accrued to dates the user chooses (one deposit or all at once), and settled on closing with tax deducted at source. Not built: interest on savings or current account balances (recorded from the bank statement)."
     },
     "I18N-006": {
       "status": "Tested",
@@ -6707,6 +6713,18 @@
         "docs/CONSOLIDATION.md"
       ],
       "notes": "Same as ENT-008 and ENT-009: intercompany charges and settlements posted in both companies together, reversed together and eliminated on consolidation."
+    },
+    "TRS-012": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/deposits.ts",
+        "apps/api/src/deposits/deposits.service.ts",
+        "apps/api/test/deposits.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/deposits",
+        "apps/web/e2e/deposits-flow.test.mjs",
+        "docs/LOANS_AND_TREASURY.md"
+      ],
+      "notes": "Fixed deposits: placing, interest to date and at maturity, accruals, closing at maturity or early with tax deducted, and reversal. Not built: mutual funds, bonds and shares, market values and gains."
     }
   }
 }

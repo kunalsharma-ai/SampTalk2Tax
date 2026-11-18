@@ -67,6 +67,7 @@ export const hi: Record<string, string> = {
   'Bank accounts': 'बैंक खाते',
   Treasury: 'ट्रेज़री',
   Loans: 'ऋण',
+  'Fixed deposits': 'सावधि जमा',
   // Expenses
   'Expense claims': 'ख़र्च के दावे',
   'Expense reports': 'ख़र्च की रिपोर्ट',
