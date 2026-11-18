@@ -13,7 +13,6 @@ import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
 import { users } from '../db/collections/identity';
 import { memberships } from '../db/collections/tenancy';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
 import { runInOrg } from '../common/tenant-context';
 import type { INestApplicationContext } from '@nestjs/common';
 import { loadConfig } from '../config';
@@ -49,10 +48,9 @@ function rng(seed: number) {
   return () => (s = (s * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
 }
 
-/** Adds a synthetic person to the demo organisation (MongoDB, with the PostgreSQL copy). */
+/** Adds a synthetic person to the demo organisation. */
 async function addMember(app: INestApplicationContext, orgId: string, userId: string, role: 'EMPLOYEE' | 'APPROVER') {
   const m = await runInOrg(orgId, () => app.get(DocumentStoreService).collection(memberships).insertOne({ userId, role, createdAt: new Date() }));
-  await app.get(PostgresMirrorService).memberships([m.id]);
 }
 
 async function main() {

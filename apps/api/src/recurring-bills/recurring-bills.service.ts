@@ -1,5 +1,4 @@
 import { ForbiddenException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { postgresOff } from '../db/counters';
 import { allowInTx } from '../db/guards/allow';
 import {
   addDays,
@@ -336,15 +335,13 @@ export class RecurringBillsService {
 
   /**
    * Check a recurring bill as its first (or next) bill would be checked, by making that bill
-   * inside a savepoint and rolling it back: the vendor, accounts, tax rates, GST, TDS and the
+   * and removing it again: the vendor, accounts, tax rates, GST, TDS and the
    * vendor reference are refused now, not on the night the schedule runs.
    */
   private async check(tx: Tx, org: BillOrg, actor: Actor, b: Base, date: Date) {
-    if (!postgresOff()) await tx.$executeRawUnsafe('SAVEPOINT recurring_bill_check');
     // As a trial run it records no audit event.
     const draft = await allowInTx('trial_run', () => this.documents.createDraftInTx(tx, org, actor, 'PURCHASES', this.billInput(org, b, fromDbDate(date))));
-    if (!postgresOff()) await tx.$executeRawUnsafe('ROLLBACK TO SAVEPOINT recurring_bill_check');
-    // MongoDB has no savepoints: the trial bill kept there is removed by hand.
+    // MongoDB has no savepoints: the trial bill is removed by hand.
     await this.moved.remove(tx, DOCUMENTS, org.id, draft.id);
   }
 

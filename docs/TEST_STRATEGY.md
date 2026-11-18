@@ -6,13 +6,13 @@
 |---|---|---|---|
 | Unit | vitest | `packages/*/test` | Pure functions |
 | Property | vitest + seeded PRNG | `accounting-engine/test/reports.test.ts` | 300 random balanced journals |
-| API integration | vitest + supertest + Nest app | `apps/api/test/*.e2e.test.ts` | Real PostgreSQL (`TEST_DATABASE_URL`) |
+| API integration | vitest + supertest + Nest app | `apps/api/test/*.e2e.test.ts` | Real MongoDB replica set (`TEST_MONGODB_URL`) |
 | Web unit | vitest | `apps/web/test` | Money formatting |
 | Design tokens | node:test | `packages/design-system/test` | WCAG AA contrast of every text/background pair |
-| End-to-end UI | Playwright + node:test | `apps/web/e2e` | Real browser → web app → API → PostgreSQL |
+| End-to-end UI | Playwright + node:test | `apps/web/e2e` | Real browser → web app → API → MongoDB |
 | Load | k6 | planned (PERF targets) | |
 
-Integration tests never drop or reset data. Each test registers its own users and creates its own organisations, so runs are isolated by tenant and can repeat against the same database. Global setup only runs `prisma migrate deploy`, and refuses a database URL that does not contain "test".
+Integration tests never drop or reset data. Each test registers its own users and creates its own organisations, so runs are isolated by tenant and can repeat against the same database. Global setup only applies the MongoDB migrations, and refuses a database whose name does not contain "test".
 
 ## Financial invariants covered (Directive Part 42)
 
@@ -48,7 +48,7 @@ Integration tests never drop or reset data. Each test registers its own users an
 
 ## Tenant isolation below the application
 
-`apps/api/test/row-level-security.e2e.test.ts` skips the application's own filters, as a bug would: unfiltered queries, another tenant's id, raw SQL, inserts and updates aimed at another organisation, a stray root-client call inside a transaction, and a service patched to ignore its `orgId` during a real HTTP request. PostgreSQL must return only the caller's rows and refuse the writes. It also checks every `org_id` table has row security enabled and forced, and that the API's role cannot bypass it.
+`apps/api/test/tenant-isolation.e2e.test.ts` skips the application's own filters, as a bug would: unfiltered queries, another tenant's id, inserts and updates aimed at another organisation, and a service patched to ignore its `orgId` during a real HTTP request. The data layer must return only the caller's rows and refuse the writes.
 
 ## Browser end-to-end tests
 
@@ -153,13 +153,13 @@ Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluat
 ## Running
 
 ```bash
-pnpm test                               # everything (needs Postgres + TEST_DATABASE_URL)
+pnpm test                               # everything (needs MongoDB + TEST_MONGODB_URL)
 pnpm --filter @talk2tax/accounting-engine test   # engine only, no database
 pnpm e2e                                # browser tests; needs the API on :4000 and the web app on :3000
 ```
 
 Set `WEB_URL` to test another address, and `E2E_SCREENSHOTS=<dir>` to save screenshots.
 
-CI (`.github/workflows/ci.yml`) runs build, typecheck, all tests against a Postgres service, starts the API and web app and runs the browser tests, and checks the feature registry is regenerated.
+CI (`.github/workflows/ci.yml`) runs build, typecheck, all tests against a MongoDB replica set, starts the API and web app and runs the browser tests, and checks the feature registry is regenerated.
 
 Integrations: `apps/api/test/integrations.e2e.test.ts` (6) covers owner-and-admin-only access, encryption at rest and no secret in responses or the audit trail, AI key tests through the official SDK against the local stand-in (rejected and working), the copilot using the organisation's own key and model, switching off, a mail server test with a refused login and a real test email, automations sending through the organisation's server, removal, a secret sealed with another key, the server fallback, and the private-network and unencrypted refusals; `apps/web/e2e/integrations-flow.test.mjs` sets up and tests both in the browser.

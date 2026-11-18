@@ -2,7 +2,7 @@
  * Browser end-to-end test for supplier tax validation (AP-019): two vendors share a GSTIN, one
  * vendor is unregistered, Purchases → Supplier tax checks lists them, and on a vendor's
  * page a GST portal check is recorded as cancelled, which flags the bill dated after it.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

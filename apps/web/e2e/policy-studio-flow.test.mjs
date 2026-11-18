@@ -2,7 +2,7 @@
  * Browser end-to-end test for the policy studio: an accountant writes a policy in words with a
  * rule and tests, runs the tests and a back-test on real bills, and saves it; the owner approves
  * it, which turns the rule into a running automation, and later retires it.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

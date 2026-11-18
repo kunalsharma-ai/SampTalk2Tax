@@ -141,4 +141,4 @@ export const expenseClaims = defineCollection<ExpenseClaimDoc>({
   },
 });
 
-export const EXPENSE_CLAIMS: MovedTable = { def: expenseClaims, model: 'expenseClaim', children: { field: 'lines', model: 'expenseClaimLine', parentKey: 'claimId' } };
+export const EXPENSE_CLAIMS: MovedTable = { def: expenseClaims, model: 'expenseClaim' };

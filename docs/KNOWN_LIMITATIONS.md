@@ -34,7 +34,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Excluded lines must be real non-movements (for example a duplicate in the bank's file); excluding a genuine movement will make the statement total disagree.
 
 ## Attachments and approvals (M2, slice 3)
-* Files are stored inside PostgreSQL (up to 5 MB each, 20 per record). That is fine for evidence at this scale; object storage is planned before larger volumes. Uploaded files are not scanned for malware; they are only served as downloads or in a sandbox.
+* Files are stored inside the database (up to 5 MB each, 20 per record). That is fine for evidence at this scale; object storage is planned before larger volumes. Uploaded files are not scanned for malware; they are only served as downloads or in a sandbox.
 * No OCR or extraction: a file is evidence attached to a record, nothing is read from it. No standalone document vault, folders or search.
 * Bank statement lines accept attachments through the API, but the banking screens do not show them yet.
 * Approvals are single-step: one approver per document, one rule per document type with a minimum total. No multi-level chains, approval by department or vendor, escalations, delegation or notifications. Payments and manual journals have no approval rules yet.
@@ -167,11 +167,12 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Security
 * No MFA or SSO. No email verification or password reset by email (a signed-in user can change their password).
-* Rate-limit counters live in each API process's memory, so several instances multiply the limit; there is no shared store yet. Sign-in lockout is shared (PostgreSQL).
+* Rate-limit counters live in each API process's memory, so several instances multiply the limit; there is no shared store yet. Sign-in lockout is shared (MongoDB).
 * Per-IP limits depend on the reverse proxy in front of the web app setting `X-Forwarded-For`; without one, the address can be faked (see SECURITY.md).
 * A session's "last active" time moves when its access token is renewed (every 15 minutes of use), not on every request.
 * Lockout is per email, so someone can keep an account locked by failing on purpose; there is no CAPTCHA or per-IP backoff on top yet.
-* Tenant isolation is enforced in the application, by composite foreign keys and by PostgreSQL row-level security. `users`, `auth_sessions` and `login_throttles` are not tenant data and have no policies. Every statement outside a transaction costs one extra round trip for the tenant settings.
+* Tenant isolation is enforced in the application and by the data layer (scoped collections, reference checks and tenant policies). `users`, `auth_sessions` and `login_throttles` are not tenant data and have no policies.
+* Locking a fiscal period does not wait for a posting already in flight (MongoDB has no shared row lock); see [`MONGODB.md`](MONGODB.md#known-gaps).
 * Segregation of duties (creator ≠ poster) is possible through roles but not enforced as a policy.
 
 ## Engineering

@@ -38,7 +38,7 @@ Expected refusals (4xx: validation, permissions, limits) are not errors and are 
 | Part | What is shown |
 |---|---|
 | Overall | Healthy, Needs attention (a slow database, a failing or late runner, unfinished migrations, server errors in the last 15 minutes) or Down (database not answering) |
-| Database | Time to answer `SELECT 1`, size, connections in use of the maximum, PostgreSQL version, last migration and any unfinished one |
+| Database | Time to answer a MongoDB `ping`, size (data and indexes), connections in use of the maximum (when the API's user may read server status), MongoDB version, last migration and any not yet applied |
 | API server | Version (and `GIT_SHA` when set), environment, region, uptime, memory, load average |
 | Background runners | Workflow runner, alert checks, renewals and reminders: interval, runs, last pass and how long it took, failures, passes skipped for maintenance, and Late when a pass is overdue by two intervals |
 | Requests | Last 15 minutes: requests, 4xx, 5xx, p50 and p95 per route pattern, and requests per minute |

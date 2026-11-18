@@ -2,7 +2,7 @@
  * Browser end-to-end test for quotations and sales orders: an owner makes a quotation from a deal,
  * sends it, revises the price, sends the revision (the first is superseded), records it accepted
  * (a sales order, and the deal won), bills part of the order into a draft invoice, and enters and
- * cancels a direct order. Real Next.js app → real API → real PostgreSQL.
+ * cancels a direct order. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

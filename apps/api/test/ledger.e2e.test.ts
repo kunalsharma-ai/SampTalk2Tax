@@ -3,7 +3,6 @@ import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helper
 import { sqlWrite } from './sql-writes';
 import { randomUUID } from 'node:crypto';
 import { runInOrg } from '../src/common/tenant-context';
-import { postgresOff } from '../src/db/counters';
 import { journalEntries } from '../src/db/collections/ledger';
 
 let ctx: Ctx;
@@ -123,36 +122,19 @@ describe('immutability and reversal', () => {
     await expect(sqlWrite(ctx, `DELETE FROM journal_entries WHERE id = '${id}'`)).rejects.toThrow(/cannot be deleted/);
   });
 
-  it('refuses an unbalanced posted entry even if inserted directly in SQL', async () => {
+  it('refuses an unbalanced posted entry even if written straight to the ledger', async () => {
     const period = await ctx.prisma.fiscalPeriod.findFirstOrThrow({ where: { orgId: org.orgId, status: 'OPEN', startDate: { lte: new Date(today()) }, endDate: { gte: new Date(today()) } } });
-    if (postgresOff()) {
-      // Written straight to the ledger's collection: the store's guard refuses it.
-      const line = (lineNo: number, accountId: string, debit: string, credit: string) => ({
-        id: randomUUID(), lineNo, accountId, currency: 'INR', exchangeRate: '1', debit, credit, functionalDebit: debit, functionalCredit: credit, description: null, dimensions: null, departmentId: null, projectId: null,
-      });
-      const now = new Date();
-      const entry = {
-        entryNumber: 999999, date: new Date(today()), periodId: period.id, type: 'STANDARD', source: 'MANUAL', status: 'POSTED', memo: null, reference: null, functionalCurrency: 'INR', totalDebit: '10', totalCredit: '10',
-        idempotencyKey: null, idempotencyHash: null, reversesEntryId: null, createdById: owner.id, postedById: owner.id, postedAt: now, createdAt: now, updatedAt: now,
-        lines: [line(1, org.acc['1120'], '10', '0'), line(2, org.acc['4100'], '0', '9')],
-      };
-      await expect(runInOrg(org.orgId, () => ctx.store.collection(journalEntries).insertOne(entry as never))).rejects.toThrow(/does not balance/);
-      return;
-    }
-    await expect(
-      ctx.prisma.$transaction(async (tx) => {
-        const e = await tx.journalEntry.create({
-          data: { orgId: org.orgId, date: new Date(today()), periodId: period.id, functionalCurrency: 'INR', createdById: owner.id, totalDebit: '10', totalCredit: '10' },
-        });
-        await tx.journalLine.createMany({
-          data: [
-            { orgId: org.orgId, entryId: e.id, lineNo: 1, accountId: org.acc['1120'], currency: 'INR', exchangeRate: '1', debit: '10', functionalDebit: '10' },
-            { orgId: org.orgId, entryId: e.id, lineNo: 2, accountId: org.acc['4100'], currency: 'INR', exchangeRate: '1', credit: '9', functionalCredit: '9' },
-          ],
-        });
-        await tx.journalEntry.update({ where: { id: e.id }, data: { status: 'POSTED', entryNumber: 999999, postedAt: new Date(), postedById: owner.id } });
-      }),
-    ).rejects.toThrow(/does not balance/);
+    // Written straight to the ledger's collection: the store's guard refuses it.
+    const line = (lineNo: number, accountId: string, debit: string, credit: string) => ({
+      id: randomUUID(), lineNo, accountId, currency: 'INR', exchangeRate: '1', debit, credit, functionalDebit: debit, functionalCredit: credit, description: null, dimensions: null, departmentId: null, projectId: null,
+    });
+    const now = new Date();
+    const entry = {
+      entryNumber: 999999, date: new Date(today()), periodId: period.id, type: 'STANDARD', source: 'MANUAL', status: 'POSTED', memo: null, reference: null, functionalCurrency: 'INR', totalDebit: '10', totalCredit: '10',
+      idempotencyKey: null, idempotencyHash: null, reversesEntryId: null, createdById: owner.id, postedById: owner.id, postedAt: now, createdAt: now, updatedAt: now,
+      lines: [line(1, org.acc['1120'], '10', '0'), line(2, org.acc['4100'], '0', '9')],
+    };
+    await expect(runInOrg(org.orgId, () => ctx.store.collection(journalEntries).insertOne(entry as never))).rejects.toThrow(/does not balance/);
   });
 
   it('reverses a posted entry exactly once and nets it to zero', async () => {

@@ -2,7 +2,7 @@
  * Browser end-to-end test for unbilled revenue detection (AR-042): a milestone marked complete and
  * a draft invoice left waiting show under Sales → Unbilled revenue with their amounts; the draft is
  * dismissed with a reason, found under Dismissed and brought back; the milestone opens its order.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

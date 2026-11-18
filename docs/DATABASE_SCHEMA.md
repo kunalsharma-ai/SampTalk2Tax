@@ -1,6 +1,8 @@
 # Database schema
 
-PostgreSQL 16. Schema source: `packages/database/prisma/schema.prisma`. Migrations: `packages/database/prisma/migrations/` (the first migration also contains the hand-written integrity controls).
+MongoDB 8 (a replica set). The models are described in `packages/database/prisma/schema.prisma`, which generates their types; the collections, their migrations (`apps/api/src/db/migrations`), guards and constraints are in `apps/api/src/db` (see [`MONGODB.md`](MONGODB.md)).
+
+This document was written when the data lived in PostgreSQL. Tables are now collections of the same name, columns are fields, and each trigger or constraint named below is a guard or catalog rule of the same name in the data layer, with the same behaviour. Row-level security is the data layer's tenant policies.
 
 ## Conventions
 

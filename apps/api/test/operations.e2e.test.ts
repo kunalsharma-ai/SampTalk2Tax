@@ -1,8 +1,7 @@
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AdminService } from '../src/admin/admin.service';
 import { FlagsService } from '../src/operations/flags.service';
+import { MIGRATIONS } from '../src/db/migrations';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
 /** Operations (M9 slice 6) against the real API and database: errors, health, flags, maintenance. */
@@ -91,7 +90,7 @@ describe('system health', () => {
     expect(h.database).toMatchObject({ status: expect.stringMatching(/OK|SLOW/) });
     expect(h.database.latencyMs).toBeGreaterThanOrEqual(0);
     // The newest migration in the repository is the last one applied.
-    expect(h.database.lastMigration.name).toBe(readdirSync(join(__dirname, '../../../packages/database/prisma/migrations')).filter((d) => /^\d{14}_/.test(d)).sort().at(-1));
+    expect(h.database.lastMigration.name).toBe(MIGRATIONS.at(-1)!.id);
     expect(h.runners.map((r: { name: string }) => r.name).sort()).toEqual(['Alert checks', 'CRM webhooks', 'Contract billing', 'Recurring bills', 'Recurring journals', 'Renewals and reminders', 'Workflow runner']);
     expect(h.runners.find((r: { name: string }) => r.name === 'Workflow runner').state).toBe('OFF');
     expect(h.requests.totals.requests).toBeGreaterThan(5);

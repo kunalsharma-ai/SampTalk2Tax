@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for the fixed asset register: an owner adds an asset with its
  * purchase posted, posts two months of depreciation, reverses and re-posts the latest, and
- * disposes of the asset at a loss. Real Next.js app → real API → real PostgreSQL.
+ * disposes of the asset at a loss. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

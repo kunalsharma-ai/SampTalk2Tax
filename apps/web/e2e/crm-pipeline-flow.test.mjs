@@ -2,7 +2,7 @@
  * Browser end-to-end test for the CRM pipeline: an owner adds a lead, logs a call, qualifies it,
  * converts it into a new customer with a deal, moves the deal on the board, marks another deal
  * lost with a reason and reopens it, wins one, and sees the deals on the customer's page.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

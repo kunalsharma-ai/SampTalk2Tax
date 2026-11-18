@@ -3,7 +3,7 @@
  * the parent, adds the subsidiary, adds an elimination rule by picking each company's account,
  * reads the worksheet and the consolidated statements, sees an intercompany difference, and
  * exports the worksheet, then marks the subsidiary as 60% owned and sees non-controlling interests.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
