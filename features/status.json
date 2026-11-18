@@ -1019,11 +1019,20 @@
       ]
     },
     "GL-032": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/banking.e2e.test.ts"
+        "apps/api/test/banking.e2e.test.ts",
+        "packages/accounting-engine/src/account-reconciliation.ts",
+        "packages/accounting-engine/test/account-reconciliation.test.ts",
+        "apps/api/src/db/collections/account-reconciliations.ts",
+        "apps/api/src/account-reconciliations/account-reconciliations.service.ts",
+        "apps/api/test/account-reconciliations.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/account-reconciliations/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/account-reconciliations/[accountId]/page.tsx",
+        "apps/web/e2e/account-reconciliations-flow.test.mjs",
+        "docs/ACCOUNT_RECONCILIATIONS.md"
       ],
-      "notes": "Bank and cash accounts can be reconciled. Other balance-sheet account reconciliations are not built."
+      "notes": "Bank and cash accounts are matched to statements; every other asset and liability account is reconciled at a date with supporting balances and reconciling items, signed off by the preparer only with a nil difference, reviewed by someone else, locked once reviewed, and flagged when the ledger moves after sign-off. Not built: evidence files on a reconciliation, schedules and thresholds."
     },
     "AP-022": {
       "status": "Tested",
@@ -6577,6 +6586,59 @@
         "docs/BILL_CHECKS.md"
       ],
       "notes": "Rule-based checks against the vendor's earlier bills and bank details, with reviews. Fixed thresholds; no AI explanation yet."
+    },
+    "GL-023": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ledgers/subledger.service.ts",
+        "apps/api/test/fx-documents.e2e.test.ts",
+        "packages/accounting-engine/src/account-reconciliation.ts",
+        "packages/accounting-engine/test/account-reconciliation.test.ts",
+        "apps/api/src/db/collections/account-reconciliations.ts",
+        "apps/api/src/account-reconciliations/account-reconciliations.service.ts",
+        "apps/api/test/account-reconciliations.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/account-reconciliations/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/account-reconciliations/[accountId]/page.tsx",
+        "apps/web/e2e/account-reconciliations-flow.test.mjs",
+        "docs/ACCOUNT_RECONCILIATIONS.md"
+      ],
+      "notes": "Receivables and payables subsidiary ledgers (open items per customer and vendor, ageing, statements) with the control account compared to them at any date on Account reconciliations; the open items can be added as the supporting balance."
+    },
+    "GL-025": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-tags.ts",
+        "apps/api/src/financial-tags/financial-tags.service.ts",
+        "apps/api/test/financial-tags.e2e.test.ts",
+        "apps/web/e2e/financial-tags-flow.test.mjs",
+        "docs/FINANCIAL_TAGS.md"
+      ],
+      "notes": "Profit centres are a financial tag (preset Profit centre, key profit_center): values are defined per organisation, journal lines are checked against them, and Profit by tag gives the profit for each centre. Not built: a hierarchy of profit centres."
+    },
+    "GL-027": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-tags.ts",
+        "apps/api/src/financial-tags/financial-tags.service.ts",
+        "apps/api/test/financial-tags.e2e.test.ts",
+        "apps/web/e2e/financial-tags-flow.test.mjs",
+        "docs/FINANCIAL_TAGS.md"
+      ],
+      "notes": "Business units are a financial tag (preset Business unit, key business_unit) with values per organisation, checked on journal lines and reported by in Profit by tag. Not built: separate ledgers or balance sheets per business unit."
+    },
+    "GL-033": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)",
+        "packages/database/prisma/migrations/20261103180000_intercompany/migration.sql",
+        "apps/api/src/consolidation/intercompany.service.ts",
+        "apps/web/src/components/consolidation/intercompany.tsx",
+        "packages/accounting-engine/test/consolidation.test.ts",
+        "apps/api/test/intercompany.e2e.test.ts",
+        "apps/web/e2e/intercompany-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Same as ENT-008 and ENT-009: intercompany charges and settlements posted in both companies together, reversed together and eliminated on consolidation."
     }
   }
 }

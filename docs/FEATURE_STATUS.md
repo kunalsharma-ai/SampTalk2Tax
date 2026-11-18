@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 786 |
+| Not started | 782 |
 | Designed | 0 |
-| Implementing | 68 |
+| Implementing | 67 |
 | Implemented | 34 |
-| Tested | 441 |
+| Tested | 446 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 6 | 38 |
+| General ledger and accounting engine | M1 | 44 | 2 | 42 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 11 | 25 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
@@ -294,6 +294,24 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances
   - apps/web/src
 
+### GL-023 — Subsidiary ledgers
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Receivables and payables subsidiary ledgers (open items per customer and vendor, ageing, statements) with the control account compared to them at any date on Account reconciliations; the open items can be added as the supporting balance.
+- Evidence:
+  - apps/api/src/ledgers/subledger.service.ts
+  - apps/api/test/fx-documents.e2e.test.ts
+  - packages/accounting-engine/src/account-reconciliation.ts
+  - packages/accounting-engine/test/account-reconciliation.test.ts
+  - apps/api/src/db/collections/account-reconciliations.ts
+  - apps/api/src/account-reconciliations/account-reconciliations.service.ts
+  - apps/api/test/account-reconciliations.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/account-reconciliations/page.tsx
+  - apps/web/src/app/orgs/[orgId]/account-reconciliations/[accountId]/page.tsx
+  - apps/web/e2e/account-reconciliations-flow.test.mjs
+  - docs/ACCOUNT_RECONCILIATIONS.md
+
 ### GL-024 — Cost centers
 
 - Module: General ledger and accounting engine
@@ -311,6 +329,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
   - docs/FINANCIAL_DIMENSIONS.md
 
+### GL-025 — Profit centers
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Profit centres are a financial tag (preset Profit centre, key profit_center): values are defined per organisation, journal lines are checked against them, and Profit by tag gives the profit for each centre. Not built: a hierarchy of profit centres.
+- Evidence:
+  - packages/accounting-engine/src/financial-tags.ts
+  - apps/api/src/financial-tags/financial-tags.service.ts
+  - apps/api/test/financial-tags.e2e.test.ts
+  - apps/web/e2e/financial-tags-flow.test.mjs
+  - docs/FINANCIAL_TAGS.md
+
 ### GL-026 — Departments
 
 - Module: General ledger and accounting engine
@@ -327,6 +357,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/dimensions-flow.test.mjs
   - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
   - docs/FINANCIAL_DIMENSIONS.md
+
+### GL-027 — Business units
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Business units are a financial tag (preset Business unit, key business_unit) with values per organisation, checked on journal lines and reported by in Profit by tag. Not built: separate ledgers or balance sheets per business unit.
+- Evidence:
+  - packages/accounting-engine/src/financial-tags.ts
+  - apps/api/src/financial-tags/financial-tags.service.ts
+  - apps/api/test/financial-tags.e2e.test.ts
+  - apps/web/e2e/financial-tags-flow.test.mjs
+  - docs/FINANCIAL_TAGS.md
 
 ### GL-028 — Locations
 
@@ -393,10 +435,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-032 — Account reconciliation
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Bank and cash accounts can be reconciled. Other balance-sheet account reconciliations are not built.
+- Status: **Tested**
+- Notes: Bank and cash accounts are matched to statements; every other asset and liability account is reconciled at a date with supporting balances and reconciling items, signed off by the preparer only with a nil difference, reviewed by someone else, locked once reviewed, and flagged when the ledger moves after sign-off. Not built: evidence files on a reconciliation, schedules and thresholds.
 - Evidence:
   - apps/api/test/banking.e2e.test.ts
+  - packages/accounting-engine/src/account-reconciliation.ts
+  - packages/accounting-engine/test/account-reconciliation.test.ts
+  - apps/api/src/db/collections/account-reconciliations.ts
+  - apps/api/src/account-reconciliations/account-reconciliations.service.ts
+  - apps/api/test/account-reconciliations.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/account-reconciliations/page.tsx
+  - apps/web/src/app/orgs/[orgId]/account-reconciliations/[accountId]/page.tsx
+  - apps/web/e2e/account-reconciliations-flow.test.mjs
+  - docs/ACCOUNT_RECONCILIATIONS.md
+
+### GL-033 — Intercompany accounting
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Same as ENT-008 and ENT-009: intercompany charges and settlements posted in both companies together, reversed together and eliminated on consolidation.
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)
+  - packages/database/prisma/migrations/20261103180000_intercompany/migration.sql
+  - apps/api/src/consolidation/intercompany.service.ts
+  - apps/web/src/components/consolidation/intercompany.tsx
+  - packages/accounting-engine/test/consolidation.test.ts
+  - apps/api/test/intercompany.e2e.test.ts
+  - apps/web/e2e/intercompany-flow.test.mjs
+  - docs/CONSOLIDATION.md
 
 ### GL-035 — Foreign currency revaluation
 

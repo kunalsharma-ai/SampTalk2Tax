@@ -452,6 +452,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Open each bill, read what was compared, check with the vendor where needed, then mark it reviewed with why it is fine. A review covers the findings it saw; a new finding brings the bill back.',
     where: 'Purchases. Rule-based checks: vendor invoice number used before, much more than usual, a price that went up, a new expense account, the first bill from a vendor, bank details changed recently or not verified, odd dates and round amounts without tax. Anyone who reads purchases sees them; those who manage purchases review them.',
   },
+  'account-reconciliations': {
+    what: 'Every asset and liability account at a date, with the items that explain its balance and who signed it off.',
+    how: 'Pick the date, open an account and list what makes up its balance: a count, a statement, a schedule, and reconciling items for timing differences. Sign off when nothing is unexplained; someone else then reviews it. Receivable and payable control accounts are compared with the open items in their ledgers.',
+    where: 'Accounting, usually during the Month-end close. A posting after sign-off shows the account as changed until it is reopened and signed off again. Anyone who reads reports sees them; those who manage the close prepare and review them.',
+  },
   'financial-tags': {
     what: 'Tags you define to report by, such as Location (an office, store or branch), Business unit or Sales channel, and their values.',
     how: 'Add a tag from a preset or name your own, then add its values. Pick a value on journal lines; a line using a defined tag must use one of its values in use. Switch a value off to stop new lines using it.',

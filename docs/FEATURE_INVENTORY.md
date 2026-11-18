@@ -90,17 +90,17 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-020 | 5.1 General Ledger | capability | Audit history | Tested |
 | GL-021 | 5.1 General Ledger | capability | Trial balance | Tested |
 | GL-022 | 5.1 General Ledger | capability | General ledger reports | Implemented |
-| GL-023 | 5.1 General Ledger | capability | Subsidiary ledgers | Not started |
+| GL-023 | 5.1 General Ledger | capability | Subsidiary ledgers | Tested |
 | GL-024 | 5.1 General Ledger | capability | Cost centers | Implementing |
-| GL-025 | 5.1 General Ledger | capability | Profit centers | Not started |
+| GL-025 | 5.1 General Ledger | capability | Profit centers | Tested |
 | GL-026 | 5.1 General Ledger | capability | Departments | Tested |
-| GL-027 | 5.1 General Ledger | capability | Business units | Not started |
+| GL-027 | 5.1 General Ledger | capability | Business units | Tested |
 | GL-028 | 5.1 General Ledger | capability | Locations | Tested |
 | GL-029 | 5.1 General Ledger | capability | Projects | Tested |
 | GL-030 | 5.1 General Ledger | capability | Financial dimensions | Tested |
 | GL-031 | 5.1 General Ledger | capability | Custom financial tags | Tested |
-| GL-032 | 5.1 General Ledger | capability | Account reconciliation | Implementing |
-| GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Not started |
+| GL-032 | 5.1 General Ledger | capability | Account reconciliation | Tested |
+| GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Tested |
 | GL-034 | 5.1 General Ledger | capability | Consolidation adjustments | Not started |
 | GL-035 | 5.1 General Ledger | capability | Foreign currency revaluation | Tested |
 | GL-036 | 5.1 General Ledger | capability | Automated journal suggestions | Not started |
