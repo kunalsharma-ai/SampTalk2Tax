@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 51 |
+| Implementing | 50 |
 | Implemented | 34 |
-| Tested | 462 |
+| Tested | 463 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1485,11 +1485,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-017 — Adaptive matching suggestions
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI.
+- Status: **Tested**
+- Notes: Suggestions learn from past matches on the account: a statement line that shares name words with lines matched before ranks the same contact (payment) or account (other side of the entry) first and says so; an undone match counts against it. Shown under What matching learned. No AI; same amount and the 14-day window still apply.
 - Evidence:
-  - packages/accounting-engine/src/bank.ts
   - packages/accounting-engine/test/bank.test.ts
+  - apps/api/test/banking.e2e.test.ts › prefers the account similar lines were matched to, and says why
+  - apps/api/test/banking.e2e.test.ts › counts an undone match against the account, so the date decides again
+  - apps/web/e2e/bank-match-learning-flow.test.mjs
 
 ### BANK-018 — Duplicate transaction detection
 
