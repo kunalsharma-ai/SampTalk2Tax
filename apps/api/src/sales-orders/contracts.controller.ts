@@ -27,6 +27,7 @@ const ContractBody = z
     timing: z.enum(['ADVANCE', 'ARREARS']),
     startDate: isoDate,
     endDate: isoDate.nullish(),
+    billingDay: z.number().int('Use a day from 1 to 28').min(1, 'Use a day from 1 to 28').max(28, 'Use a day from 1 to 28').nullish(),
     autoRenew: z.boolean(),
     renewalMonths: z.number().int().min(1).max(120).nullish(),
     noticeDays: z.number().int().min(0).max(365),
