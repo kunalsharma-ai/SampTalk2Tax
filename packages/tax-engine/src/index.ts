@@ -4,6 +4,7 @@ export * from './india/gst';
 export * from './india/returns';
 export * from './india/withholding';
 export * from './india/payroll';
+export * from './india/bonus';
 export * from './india/calendar';
 export * from './india/einvoice';
 export * from './india/ewaybill';

@@ -310,7 +310,7 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 | PAY-004 |  | capability | Payroll calendars | Implementing |
 | PAY-005 |  | capability | Earnings | Tested |
 | PAY-006 |  | capability | Deductions | Tested |
-| PAY-007 |  | capability | Bonuses | Implementing |
+| PAY-007 |  | capability | Bonuses | Tested |
 | PAY-008 |  | capability | Commissions | Not started |
 | PAY-009 |  | capability | Reimbursements | Implementing |
 | PAY-010 |  | capability | Overtime | Not started |

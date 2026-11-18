@@ -7385,12 +7385,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/payroll.e2e.test.ts",
+        "packages/tax-engine/src/india/bonus.ts",
+        "packages/tax-engine/test/bonus.test.ts",
+        "apps/api/test/payroll-bonus.e2e.test.ts",
+        "apps/web/e2e/payroll-bonus-flow.test.mjs",
         "apps/web/e2e/payroll-flow.test.mjs"
       ],
-      "notes": "Bonuses can be added as one-off earnings on a payslip and are taxed in the month. No statutory bonus (Payment of Bonus Act) calculation."
+      "notes": "One-off bonuses on a payslip, taxed in the month. Statutory bonus (Code on Wages 2019 Ch. IV) worked out from posted payslips per April-March year (rate 8.33-20%, eligibility amount and calculation ceiling as inputs, 30-day and Rs 100 minimums) and added to a draft run as an advance or the balance. Allocable surplus and set-on/set-off not modelled. Not reviewed by a payroll professional."
     },
     {
       "id": "PAY-008",
