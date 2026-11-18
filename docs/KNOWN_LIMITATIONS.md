@@ -176,7 +176,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Segregation of duties (creator ≠ poster) is possible through roles but not enforced as a policy.
 
 ## Engineering
-* Dependency majors are pinned below the newest releases (TypeScript 5.9 vs 7, NestJS 11 vs 12, Prisma 6 vs 7/8). See ADR-005.
+* Prisma is pinned below the newest major (6 vs 7/8). See ADR-005.
 * Audit appends serialise per organisation with an advisory lock; fine for current volume, to be revisited under load.
 * The Docker image and compose `app` profile are written but have not been built in CI.
 * Performance targets in the directive have not been benchmarked.
