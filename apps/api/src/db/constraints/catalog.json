@@ -1066,7 +1066,7 @@
     "name": "payslips_amounts_chk"
    },
    {
-    "def": "CHECK ((((days_in_month >= 28) AND (days_in_month <= 31)) AND (days_outside >= (0)::numeric) AND (lop_days >= (0)::numeric) AND (paid_days >= (0)::numeric) AND (paid_days = (((days_in_month)::numeric - days_outside) - lop_days))))",
+    "def": "CHECK ((((days_in_month >= 28) AND (days_in_month <= 31)) AND (days_outside >= (0)::numeric) AND (lop_days >= (0)::numeric) AND (leave_lop_days >= (0)::numeric) AND (paid_days >= (0)::numeric) AND (paid_days = ((((days_in_month)::numeric - days_outside) - lop_days) - leave_lop_days))))",
     "name": "payslips_days_chk"
    },
    {
