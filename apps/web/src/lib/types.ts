@@ -69,6 +69,8 @@ export interface JournalLine {
   functionalDebit: string;
   functionalCredit: string;
   description: string | null;
+  /** Financial tags such as a location: tag key to value code. */
+  dimensions?: Record<string, string> | null;
   departmentId: string | null;
   projectId: string | null;
 }

@@ -82,6 +82,7 @@ export const hi: Record<string, string> = {
   'Prepaid and deferred': 'अग्रिम और आस्थगित',
   Accruals: 'उपार्जन',
   'Departments and projects': 'विभाग और परियोजनाएँ',
+  'Locations and tags': 'स्थान और टैग',
   'Month-end close': 'महीने का समापन',
   'Year-end close': 'वर्षांत समापन',
   'Fiscal periods': 'वित्तीय अवधियाँ',

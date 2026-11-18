@@ -24,6 +24,8 @@ import { AllowanceRatesController, ExpensePolicyController, ExpensesController }
 import { ExpensePolicyService } from './expenses/expense-policy.service';
 import { TaxNoticesController } from './tax-notices/tax-notices.controller';
 import { TaxNoticesService } from './tax-notices/tax-notices.service';
+import { FinancialTagsController } from './financial-tags/financial-tags.controller';
+import { FinancialTagsService } from './financial-tags/financial-tags.service';
 import { AllowancesService } from './expenses/allowances.service';
 import { ExpensesService } from './expenses/expenses.service';
 import { ErrorFilter } from './common/errors';
@@ -269,6 +271,7 @@ export class AppModule {
         AllowanceRatesController,
         ExpensePolicyController,
         TaxNoticesController,
+        FinancialTagsController,
         GstController,
         WithholdingController,
         PayrollController,
@@ -387,6 +390,7 @@ export class AppModule {
         AllowancesService,
         ExpensePolicyService,
         TaxNoticesService,
+        FinancialTagsService,
         GstService,
         WithholdingService,
         PayrollService,

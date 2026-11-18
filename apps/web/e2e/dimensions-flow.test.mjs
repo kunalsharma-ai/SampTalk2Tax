@@ -118,7 +118,7 @@ test('an owner tags lines with departments and projects and reads profit for eac
   await invLine.getByText('Sales portal build').waitFor();
 
   await page.getByRole('link', { name: 'Profit by department', exact: true }).click();
-  await page.getByRole('heading', { name: 'Profit by department or project' }).waitFor();
+  await page.getByRole('heading', { name: 'Profit by department, project or tag' }).waitFor();
   const t = page.getByRole('table', { name: 'Profit by department or project' });
   await t.getByRole('columnheader', { name: 'Not assigned' }).waitFor();
   const net = t.getByRole('row', { name: /Net profit/ });

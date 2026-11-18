@@ -95,10 +95,10 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-025 | 5.1 General Ledger | capability | Profit centers | Not started |
 | GL-026 | 5.1 General Ledger | capability | Departments | Tested |
 | GL-027 | 5.1 General Ledger | capability | Business units | Not started |
-| GL-028 | 5.1 General Ledger | capability | Locations | Not started |
+| GL-028 | 5.1 General Ledger | capability | Locations | Tested |
 | GL-029 | 5.1 General Ledger | capability | Projects | Tested |
 | GL-030 | 5.1 General Ledger | capability | Financial dimensions | Tested |
-| GL-031 | 5.1 General Ledger | capability | Custom financial tags | Not started |
+| GL-031 | 5.1 General Ledger | capability | Custom financial tags | Tested |
 | GL-032 | 5.1 General Ledger | capability | Account reconciliation | Implementing |
 | GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Not started |
 | GL-034 | 5.1 General Ledger | capability | Consolidation adjustments | Not started |

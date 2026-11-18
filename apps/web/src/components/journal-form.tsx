@@ -7,7 +7,9 @@ import { useMemo, useRef, useState } from 'react';
 import { api, ApiError, newIdempotencyKey } from '@/lib/api';
 import { money, today } from '@/lib/format';
 import { LineDimensions } from '@/components/dimensions/line-dimensions';
+import { LineTags } from '@/components/dimensions/line-tags';
 import { useDimensions } from '@/lib/dimensions';
+import { useFinancialTags } from '@/lib/financial-tags';
 import { useAccounts, useOrg } from '@/lib/org';
 import { can, type Journal } from '@/lib/types';
 
@@ -21,6 +23,7 @@ interface LineState {
   description: string;
   departmentId: string;
   projectId: string;
+  tags: Record<string, string>;
 }
 
 const AMOUNT = /^\d{0,18}(\.\d{0,6})?$/;
@@ -29,12 +32,13 @@ export function JournalForm({ existing }: { existing?: Journal }) {
   const { org, orgId } = useOrg();
   const accounts = useAccounts();
   const dims = useDimensions();
+  const tags = useFinancialTags();
   const router = useRouter();
   const qc = useQueryClient();
   const c = org?.functionalCurrency ?? 'INR';
   const nextKey = useRef(3);
   const idemKey = useRef(newIdempotencyKey('web-journal'));
-  const blank = (key: number): LineState => ({ key, accountId: '', debit: '', credit: '', currency: c, exchangeRate: '', description: '', departmentId: '', projectId: '' });
+  const blank = (key: number): LineState => ({ key, accountId: '', debit: '', credit: '', currency: c, exchangeRate: '', description: '', departmentId: '', projectId: '', tags: {} });
 
   const [jdate, setDate] = useState(existing?.date ?? today());
   const [memo, setMemo] = useState(existing?.memo ?? '');
@@ -53,6 +57,7 @@ export function JournalForm({ existing }: { existing?: Journal }) {
           description: l.description ?? '',
           departmentId: l.departmentId ?? '',
           projectId: l.projectId ?? '',
+          tags: { ...(l.dimensions ?? {}) },
         }))
       : [blank(1), blank(2)],
   );
@@ -78,6 +83,7 @@ export function JournalForm({ existing }: { existing?: Journal }) {
       description: l.description || undefined,
       departmentId: l.departmentId || null,
       projectId: l.projectId || null,
+      dimensions: Object.keys(l.tags).length ? l.tags : undefined,
     }));
 
   // Live check with the same engine the server uses.
@@ -181,6 +187,7 @@ export function JournalForm({ existing }: { existing?: Journal }) {
                     ))}
                   </Select>
                   <LineDimensions values={dims.data?.values} line={idx + 1} departmentId={l.departmentId} projectId={l.projectId} onChange={(p) => update(l.key, p)} />
+                  <LineTags tags={tags.data?.items} line={idx + 1} value={l.tags} onChange={(t) => update(l.key, { tags: t })} />
                 </Td>
                 <Td>
                   <Input aria-label={`Description for line ${idx + 1}`} value={l.description} maxLength={500} onChange={(e) => update(l.key, { description: e.target.value })} />

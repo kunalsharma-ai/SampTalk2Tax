@@ -78,3 +78,4 @@ export * from './expense-policy';
 export * from './cash-basis';
 export * from './bank-transfers';
 export * from './tax-notices';
+export * from './financial-tags';
