@@ -143,12 +143,21 @@ function AiCard({ orgId, d }: { orgId: string; d: Integrations['ai'] }) {
 
 const PORTS = { TLS: 465, STARTTLS: 587, NONE: 25 } as const;
 
+/** Common providers' SMTP settings. Zoho Mail India first: smtppro.zoho.in, 465, SSL/TLS, signed in as the sender. */
+const PROVIDERS = [
+  { id: 'zoho-in', label: 'Zoho Mail (India)', host: 'smtppro.zoho.in', security: 'TLS' as const },
+  { id: 'zoho', label: 'Zoho Mail (other regions)', host: 'smtppro.zoho.com', security: 'TLS' as const },
+  { id: 'google', label: 'Google Workspace or Gmail', host: 'smtp.gmail.com', security: 'TLS' as const },
+  { id: 'microsoft', label: 'Microsoft 365', host: 'smtp.office365.com', security: 'STARTTLS' as const },
+];
+const providerOf = (host: string) => PROVIDERS.find((p) => p.host === host.trim().toLowerCase())?.id ?? 'other';
+
 function EmailCard({ orgId, d }: { orgId: string; d: Integrations['email'] }) {
   const s = d.settings;
   const [f, setF] = useState({
-    host: s?.host ?? '',
-    port: String(s?.port ?? 587),
-    security: s?.security ?? ('STARTTLS' as EmailSettings['security']),
+    host: s?.host ?? PROVIDERS[0]!.host,
+    port: String(s?.port ?? PORTS[PROVIDERS[0]!.security]),
+    security: s?.security ?? (PROVIDERS[0]!.security as EmailSettings['security']),
     username: s?.username ?? '',
     fromAddress: s?.fromAddress ?? '',
     fromName: s?.fromName ?? '',
@@ -162,7 +171,8 @@ function EmailCard({ orgId, d }: { orgId: string; d: Integrations['email'] }) {
     mutationFn: () =>
       api<Integrations>(`/v1/orgs/${orgId}/integrations/email`, {
         method: 'PUT',
-        body: { host: f.host.trim(), port: Number(f.port), security: f.security, username: f.username.trim() || null, password: password || null, fromAddress: f.fromAddress.trim(), fromName: f.fromName.trim() || null, replyTo: f.replyTo.trim() || null, enabled },
+        // Zoho and most providers sign in as the sender address: an empty username uses it.
+        body: { host: f.host.trim(), port: Number(f.port), security: f.security, username: f.username.trim() || f.fromAddress.trim() || null, password: password || null, fromAddress: f.fromAddress.trim(), fromName: f.fromName.trim() || null, replyTo: f.replyTo.trim() || null, enabled },
       }),
     onSuccess: (r) => (set(r), setPassword(''), setSaved(true)),
   });
@@ -188,6 +198,22 @@ function EmailCard({ orgId, d }: { orgId: string; d: Integrations['email'] }) {
           save.mutate();
         }}
       >
+        <Field label="Provider">
+          {(p) => (
+            <Select
+              {...p}
+              value={providerOf(f.host)}
+              onChange={(e) => {
+                const pr = PROVIDERS.find((x) => x.id === e.target.value);
+                setF((x) => (pr ? { ...x, host: pr.host, security: pr.security, port: String(PORTS[pr.security]) } : { ...x, host: '' }));
+                setSaved(false);
+              }}
+            >
+              {PROVIDERS.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}
+              <option value="other">Other</option>
+            </Select>
+          )}
+        </Field>
         <Field label="Mail server">{(p) => <Input {...p} value={f.host} onChange={upd('host')} placeholder="smtp.example.com" />}</Field>
         <Field label="Security">
           {(p) => (
@@ -201,17 +227,16 @@ function EmailCard({ orgId, d }: { orgId: string; d: Integrations['email'] }) {
               }}
             >
               <option value="STARTTLS">STARTTLS (usually port 587)</option>
-              <option value="TLS">TLS (usually port 465)</option>
+              <option value="TLS">SSL/TLS (usually port 465)</option>
               {d.allowPlain ? <option value="NONE">None (testing only)</option> : null}
             </Select>
           )}
         </Field>
         <Field label="Port">{(p) => <Input {...p} inputMode="numeric" value={f.port} onChange={upd('port')} />}</Field>
-        <Field label="Username">{(p) => <Input {...p} autoComplete="off" value={f.username} onChange={upd('username')} placeholder="Often your email address" />}</Field>
-        <Field label="Password" hint={d.secretHint && !d.secretUnreadable ? `A password ending ${d.secretHint} is stored. Leave empty to keep it.` : 'An app password if your provider uses them. Stored encrypted.'}>
+        <Field label="Username">{(p) => <Input {...p} autoComplete="off" value={f.username} onChange={upd('username')} placeholder="Leave empty to use the sender email" />}</Field>
+        <Field label="Password" hint={d.secretHint && !d.secretUnreadable ? `A password ending ${d.secretHint} is stored. Leave empty to keep it.` : 'An app password if your provider uses them (Zoho: My Account → Security → App passwords). Stored encrypted, never shown again.'}>
           {(p) => <Input {...p} type="password" autoComplete="new-password" value={password} onChange={(e) => (setPassword(e.target.value), setSaved(false))} />}
         </Field>
-        <div />
         <Field label="Sender name">{(p) => <Input {...p} value={f.fromName} onChange={upd('fromName')} placeholder="Accounts team" />}</Field>
         <Field label="Sender email">{(p) => <Input {...p} type="email" value={f.fromAddress} onChange={upd('fromAddress')} placeholder="accounts@yourcompany.com" />}</Field>
         <Field label="Reply-to (optional)">{(p) => <Input {...p} type="email" value={f.replyTo} onChange={upd('replyTo')} />}</Field>

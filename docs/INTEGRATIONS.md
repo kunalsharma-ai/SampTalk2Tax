@@ -5,7 +5,7 @@ Outside services are connected from inside Talk2Tax, by an owner or admin of eac
 | Integration | Used by | What you enter |
 |---|---|---|
 | **AI: Anthropic Claude** | The AI copilot, the collections agent, AI bank reconciliation and the month-end AI review | Your Claude API key (from console.anthropic.com → API keys) and the model: Claude Opus 5.5, Sonnet 5.5, Haiku 5.5, or any other model id |
-| **Email: your mail server (SMTP)** | Payment reminders and automation emails | Mail server, security (STARTTLS on 587 or TLS on 465), port, username, password, sender name and address, optional reply-to. Any provider with SMTP works: Google Workspace, Microsoft 365, Zoho Mail, Amazon SES, SendGrid, Brevo and others |
+| **Email: your mail server (SMTP)** | Payment reminders and automation emails | Mail server, security (STARTTLS on 587 or TLS on 465), port, username, password, sender name and address, optional reply-to. Any provider with SMTP works: Google Workspace, Microsoft 365, Zoho Mail, Amazon SES, SendGrid, Brevo and others. **Provider** fills the server, security and port; a new mail server starts as Zoho Mail India (`smtppro.zoho.in`, 465, SSL/TLS). An empty username signs in as the sender address, as Zoho expects |
 
 Webhooks are already set per automation, each with its own signing secret (see [`WORKFLOW_AUTOMATIONS.md`](WORKFLOW_AUTOMATIONS.md)). E-invoicing and e-way bills work through files (the app prepares the portal JSON and reads the response back); a direct GSP connection is not built yet and will get its own card on this page.
 
@@ -45,7 +45,7 @@ The environment variables still work, but nobody has to set them:
 | Variable | Fallback for |
 |---|---|
 | `ANTHROPIC_API_KEY` (with `COPILOT_MODEL`) | Organisations with no AI key of their own |
-| `SMTP_URL`, `EMAIL_FROM` | Organisations with no mail server of their own |
+| `SMTP_URL`, `EMAIL_FROM`, or `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` | Organisations with no mail server of their own |
 | `ANTHROPIC_BASE_URL` | Where the Claude API is reached, for every key, including organisations' own. Leave unset for Anthropic itself. It is a server setting so a tenant cannot send keys elsewhere |
 
 An organisation's own settings always win over the server's.

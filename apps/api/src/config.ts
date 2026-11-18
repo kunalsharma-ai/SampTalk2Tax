@@ -86,7 +86,27 @@ const schema = z.object({
     .optional()
     .transform((v) => (v && v.trim() ? v.trim() : undefined))
     .pipe(z.string().regex(/^smtps?:\/\/[^\s]+$/, 'SMTP_URL must start with smtp:// or smtps://').optional()),
-  /** The sender of every email, such as "Talk2Tax <no-reply@example.com>". Needed with SMTP_URL. */
+  /**
+   * The same server as separate settings, as nodemailer takes them (used when SMTP_URL is not
+   * set): for Zoho Mail India, SMTP_HOST=smtppro.zoho.in, SMTP_PORT=465, SMTP_SECURE=true,
+   * SMTP_USER=the sender address and SMTP_PASS=its app password.
+   */
+  SMTP_HOST: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined)),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(465),
+  /** true: TLS from the start (port 465). false: STARTTLS when the server offers it (port 587). */
+  SMTP_SECURE: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  SMTP_USER: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : undefined)),
+  SMTP_PASS: z.string().optional(),
+  /** The sender of every email, such as "Talk2Tax <no-reply@example.com>". Needed with SMTP_URL; with SMTP_HOST it defaults to SMTP_USER. */
   EMAIL_FROM: z
     .string()
     .optional()
@@ -162,6 +182,8 @@ const schema = z.object({
     }),
 }).superRefine((c, ctx) => {
   if (c.SMTP_URL && !c.EMAIL_FROM) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM is required when SMTP_URL is set' });
+  if (!c.SMTP_URL && c.SMTP_HOST && !c.EMAIL_FROM && !c.SMTP_USER) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM (or SMTP_USER) is required when SMTP_HOST is set' });
+  if (c.SMTP_USER && !c.SMTP_PASS) ctx.addIssue({ code: 'custom', path: ['SMTP_PASS'], message: 'SMTP_PASS is required with SMTP_USER' });
 });
 
 export type AppConfig = z.infer<typeof schema>;
