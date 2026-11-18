@@ -55,6 +55,7 @@ Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `ta
 | `WEBHOOK_ALLOW_PRIVATE_NETWORKS` | no | `true` lets webhooks use http:// and reach private and loopback addresses. Development and tests only; must be false (the default) in production |
 | `WEBHOOK_TIMEOUT_SECONDS` | no | Longest a webhook delivery may take. Default 10 |
 | `SMTP_URL` | no | Optional fallback. Organisations add their own mail server in Settings → Integrations; this one serves those that have not: `smtp://user:password@host:587` (STARTTLS when offered; add `?requireTLS=true` to insist) or `smtps://user:password@host:465`. Unset: email actions fail with "Email is not set up" |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` | no | The same fallback as separate settings, used when `SMTP_URL` is unset. Zoho Mail India: `smtppro.zoho.in`, `465`, `true`, the sender address and its app password. `SMTP_PORT` defaults to 465 and `SMTP_SECURE` to `true`; `SMTP_PASS` is required with `SMTP_USER` |
 | `EMAIL_FROM` | with `SMTP_URL` | The sender of every email, such as `Talk2Tax <no-reply@example.com>`. Required when `SMTP_URL` is set. Set up SPF and DKIM for its domain with your mail provider |
 | `SMTP_TIMEOUT_SECONDS` | no | Longest one SMTP delivery may take. Default 20 |
 | `INTEGRATIONS_ENCRYPTION_KEY` | no | Encrypts the API keys and SMTP passwords organisations enter in Settings → Integrations (AES-256-GCM). Unset: a key derived from `JWT_SECRET`. Changing either means those secrets must be entered again (the page says so) |

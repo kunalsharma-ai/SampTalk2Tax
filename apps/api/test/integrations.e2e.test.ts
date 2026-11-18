@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAnthropicStandIn } from '../../../test-support/anthropic-stand-in.mjs';
 import { startSmtpStandIn, type SmtpStandIn } from '../../../test-support/smtp-stand-in.mjs';
+import { loadConfig } from '../src/config';
 import { SecretBox } from '../src/integrations/secret-box';
+import { MailerService } from '../src/workflows/email';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
 
 /**
@@ -152,5 +154,35 @@ describe('integrations', () => {
     } finally {
       await server.app.close();
     }
+  });
+
+  it('sends through a server mail server given as host, port, secure, user and password', async () => {
+    // The Zoho style: SMTP_HOST=smtppro.zoho.in, SMTP_PORT=465, SMTP_SECURE=true. Here the local
+    // stand-in, which speaks plain SMTP, so secure is false.
+    const server = await bootApp(
+      { SMTP_URL: '', EMAIL_FROM: '', SMTP_HOST: '127.0.0.1', SMTP_PORT: String(smtp.port), SMTP_SECURE: 'false', SMTP_USER: 'sender@zoho-style.test', SMTP_PASS: 'zoho-app-password', WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true' },
+      { copilotModel: undefined },
+    );
+    try {
+      const v = (await server.http().get(`${other.base}/integrations`).set(owner.auth).expect(200)).body;
+      expect(v.email).toMatchObject({ configured: false, inUse: 'SERVER', serverFallback: true, fromInUse: 'sender@zoho-style.test' });
+      const sent = smtp.messages.length;
+      const logins = smtp.logins.length;
+      const r = await server.app.get(MailerService).send(other.orgId, { to: [owner.email], subject: 'Server mail', text: 'Hello', messageId: `<zoho-style-${Date.now()}@talk2tax.test>` });
+      expect(r).toMatchObject({ ok: true });
+      expect(smtp.messages[sent]).toMatchObject({ from: 'sender@zoho-style.test', to: [owner.email] });
+      expect(smtp.logins.slice(logins)).toEqual([{ user: 'sender@zoho-style.test', pass: 'zoho-app-password' }]);
+    } finally {
+      await server.app.close();
+    }
+  });
+
+  it('checks the server mail settings when the API starts', () => {
+    const base = { MONGODB_URL: 'mongodb://x', JWT_SECRET: 'x'.repeat(40) };
+    const c = loadConfig({ ...base, SMTP_HOST: 'smtppro.zoho.in', SMTP_USER: 'accounts@example.in', SMTP_PASS: 'app-password' });
+    expect(c).toMatchObject({ SMTP_HOST: 'smtppro.zoho.in', SMTP_PORT: 465, SMTP_SECURE: true });
+    expect(() => loadConfig({ ...base, SMTP_HOST: 'smtppro.zoho.in', SMTP_USER: 'accounts@example.in' })).toThrow(/SMTP_PASS is required/);
+    expect(() => loadConfig({ ...base, SMTP_HOST: 'smtppro.zoho.in' })).toThrow(/EMAIL_FROM \(or SMTP_USER\)/);
+    expect(() => loadConfig({ ...base, SMTP_HOST: 'smtppro.zoho.in', SMTP_USER: 'a@b.in', SMTP_PASS: 'p', SMTP_SECURE: 'yes' })).toThrow(/SMTP_SECURE/);
   });
 });

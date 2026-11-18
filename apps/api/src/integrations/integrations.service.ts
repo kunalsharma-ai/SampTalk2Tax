@@ -52,6 +52,21 @@ export type ResolvedMail =
 
 const KIND_PATH: Record<string, IntegrationKind> = { ai: 'AI_ANTHROPIC', email: 'EMAIL_SMTP' };
 
+/**
+ * The server's own mail server, for organisations without one: SMTP_URL, or else SMTP_HOST with
+ * SMTP_PORT, SMTP_SECURE, SMTP_USER and SMTP_PASS (as nodemailer's createTransport takes them).
+ */
+export function serverMail(c: Pick<AppConfig, 'SMTP_URL' | 'EMAIL_FROM' | 'SMTP_HOST' | 'SMTP_PORT' | 'SMTP_SECURE' | 'SMTP_USER' | 'SMTP_PASS'>): { from: string; options: SMTPTransport.Options } | null {
+  if (c.SMTP_URL && c.EMAIL_FROM) return { from: c.EMAIL_FROM, options: { url: c.SMTP_URL } as SMTPTransport.Options };
+  if (c.SMTP_URL || !c.SMTP_HOST) return null;
+  const from = c.EMAIL_FROM ?? c.SMTP_USER;
+  if (!from) return null;
+  return {
+    from,
+    options: { host: c.SMTP_HOST, port: c.SMTP_PORT, secure: c.SMTP_SECURE, ...(c.SMTP_USER ? { auth: { user: c.SMTP_USER, pass: c.SMTP_PASS ?? '' } } : {}) },
+  };
+}
+
 export function kindFromPath(p: string): IntegrationKind {
   const k = KIND_PATH[p];
   if (!k) throw new DomainError('NOT_FOUND', 'No such integration', HttpStatus.NOT_FOUND);
@@ -113,10 +128,8 @@ export class IntegrationsService {
         return { source: 'ORGANISATION', from: formatFrom(s), replyTo: s.replyTo, timeoutMs, transport: () => this.smtpTransport(s, password, timeoutMs) };
       }
     }
-    if (this.config.SMTP_URL && this.config.EMAIL_FROM) {
-      const url = this.config.SMTP_URL;
-      return { source: 'SERVER', from: this.config.EMAIL_FROM, replyTo: null, timeoutMs, transport: async () => createTransport({ url, connectionTimeout: timeoutMs, greetingTimeout: timeoutMs, socketTimeout: timeoutMs }) };
-    }
+    const server = serverMail(this.config);
+    if (server) return { source: 'SERVER', from: server.from, replyTo: null, timeoutMs, transport: async () => createTransport({ ...server.options, connectionTimeout: timeoutMs, greetingTimeout: timeoutMs, socketTimeout: timeoutMs }) };
     return { source: 'NONE', from: null };
   }
 
@@ -183,7 +196,7 @@ export class IntegrationsService {
     };
     return {
       ai: { ...card('AI_ANTHROPIC', ai.source, !!this.serverModel), modelInUse: ai.modelName, models: AI_MODELS, defaultModel: this.config.COPILOT_MODEL },
-      email: { ...card('EMAIL_SMTP', mail.source, !!(this.config.SMTP_URL && this.config.EMAIL_FROM)), fromInUse: mail.from, allowPlain: this.config.WEBHOOK_ALLOW_PRIVATE_NETWORKS },
+      email: { ...card('EMAIL_SMTP', mail.source, !!serverMail(this.config)), fromInUse: mail.from, allowPlain: this.config.WEBHOOK_ALLOW_PRIVATE_NETWORKS },
     };
   }
 

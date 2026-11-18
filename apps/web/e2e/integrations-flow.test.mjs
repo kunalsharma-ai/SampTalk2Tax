@@ -82,8 +82,17 @@ test('an owner connects their own Claude key and mail server in the app and test
   assert.equal(req.headers.authorization, `Bearer ${KEY}`);
   assert.equal(req.body.model, 'claude-sonnet-5-5');
 
-  // Email: the organisation's own server, with a login and its own sender.
+  // Email: a new mail server starts as Zoho Mail India (smtppro.zoho.in, 465, SSL/TLS).
+  assert.equal(await mail.getByLabel('Provider').inputValue(), 'zoho-in');
+  assert.equal(await mail.getByLabel('Mail server').inputValue(), 'smtppro.zoho.in');
+  assert.equal(await mail.getByLabel('Port').inputValue(), '465');
+  assert.equal(await mail.getByLabel('Security').inputValue(), 'TLS');
+  await mail.getByLabel('Provider').selectOption('microsoft');
+  assert.equal(await mail.getByLabel('Mail server').inputValue(), 'smtp.office365.com');
+  assert.equal(await mail.getByLabel('Port').inputValue(), '587');
+  // The organisation's own server, with a login and its own sender.
   await mail.getByLabel('Mail server').fill('127.0.0.1');
+  assert.equal(await mail.getByLabel('Provider').inputValue(), 'other');
   await mail.getByLabel('Security').selectOption('NONE');
   await mail.getByLabel('Port').fill(String(SMTP_PORT));
   await mail.getByLabel('Username').fill('mailer@ownkeys.test');
@@ -99,6 +108,14 @@ test('an owner connects their own Claude key and mail server in the app and test
   assert.equal(m.from, 'accounts@ownkeys.test');
   assert.deepEqual(m.to, [email.toLowerCase()]);
   assert.deepEqual(smtp.logins[smtp.logins.length - 1], { user: 'mailer@ownkeys.test', pass: 'e2e-smtp-pass' });
+  // With the username left empty, it signs in as the sender (as Zoho expects); the stored password is kept.
+  await mail.getByLabel('Username').fill('');
+  await mail.getByRole('button', { name: 'Save' }).click();
+  await mail.getByText('Not tested since it was last changed.').waitFor();
+  const loginsBefore = smtp.logins.length;
+  await mail.getByRole('button', { name: 'Send a test email' }).click();
+  for (let i = 0; i < 100 && smtp.logins.length === loginsBefore; i++) await new Promise((r) => setTimeout(r, 100));
+  assert.deepEqual(smtp.logins[smtp.logins.length - 1], { user: 'accounts@ownkeys.test', pass: 'e2e-smtp-pass' });
 
   // Nothing secret comes back to the browser.
   const v = await call(`/v1/orgs/${orgId}/integrations`);

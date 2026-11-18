@@ -114,7 +114,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     if (every > 0) {
       this.timer = setInterval(() => void this.heartbeats.track('Workflow runner', () => this.tick()), every * 1000);
       this.timer.unref();
-      this.logger.log(`Workflow runner looks for events, schedules and due deliveries every ${every} s; email goes through each organisation's own mail server (Settings → Integrations)${this.config.SMTP_URL ? ', or the server\'s SMTP_URL' : ''}`);
+      this.logger.log(`Workflow runner looks for events, schedules and due deliveries every ${every} s; email goes through each organisation's own mail server (Settings → Integrations)${this.config.SMTP_URL || this.config.SMTP_HOST ? ', or the server\'s own mail server' : ''}`);
     }
   }
   async onModuleDestroy() {
