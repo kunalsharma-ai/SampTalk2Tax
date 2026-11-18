@@ -2,7 +2,7 @@
  * Browser end-to-end test for loans and treasury: an owner adds a term loan with its schedule
  * previewed as they type, records installments (one with the lender's own split), changes the
  * rate and reverses it, prepays with charges, and reads the treasury overview with its ledger
- * check. Real Next.js app → real API → real PostgreSQL.
+ * check. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -9,7 +9,6 @@ import { PrismaService, useOrgInTx } from '../common/prisma.service';
 import { runAsSystem, runInOrg } from '../common/tenant-context';
 import { users } from '../db/collections/identity';
 import { invitations, memberships, organizations } from '../db/collections/tenancy';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
 
 const INVITE_TTL_MS = 7 * 86_400_000;
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
@@ -42,7 +41,6 @@ export class InvitationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
   ) {}
 
   private get invites() {
@@ -74,7 +72,6 @@ export class InvitationsService {
 
   private audited(orgId: string, event: Parameters<AuditService['append']>[1], membershipIds: string[] = []) {
     return this.prisma.$transaction(async (tx) => {
-      if (membershipIds.length) await this.mirror.memberships(membershipIds, tx);
       // Accept and preview routes carry no organisation in their path; the audit row is this org's.
       await useOrgInTx(tx, orgId);
       await this.audit.append(tx, event);

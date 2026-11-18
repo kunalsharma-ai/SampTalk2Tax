@@ -3,7 +3,7 @@
  * Razorpay account in Settings → Payment gateways, makes a payment link on a posted invoice, the
  * customer pays on the gateway's page and lands on the thank-you page, the signed notice reaches
  * the API through the web app, and the invoice shows paid with the receipt the link recorded.
- * Real Next.js app → real API → real PostgreSQL → the real Razorpay client code against a local
+ * Real Next.js app → real API → real MongoDB → the real Razorpay client code against a local
  * stand-in for Razorpay's API (port 4557). The API must run with PAYMENTS_RAZORPAY_API_URL=http://127.0.0.1:4557.
  */
 import assert from 'node:assert/strict';

@@ -6,7 +6,7 @@ import { PrismaService } from '../common/prisma.service';
 import { runInOrg } from '../common/tenant-context';
 import { accounts, type AccountDoc } from '../db/collections/chart';
 import { organizations } from '../db/collections/tenancy';
-import { PostgresMirrorService, thenInPostgres } from '../db/postgres-mirror.service';
+import { thenOrUndo } from '../common/undo';
 
 export interface CreateAccountInput {
   code: string;
@@ -38,7 +38,6 @@ export class AccountsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
   ) {}
 
   private accounts(orgId: string) {
@@ -88,11 +87,10 @@ export class AccountsService {
       createdAt: now,
       updatedAt: now,
     });
-    return thenInPostgres(
+    return thenOrUndo(
       serialize(a),
       () =>
         this.prisma.$transaction(async (tx) => {
-          await this.mirror.accounts([a.id], tx);
           await this.audit.append(tx, { orgId, actorId, action: 'account.created', entityType: 'account', entityId: a.id, data: { ...input } });
         }),
       async () => void (await this.accounts(orgId).remove(a.id)),
@@ -141,11 +139,10 @@ export class AccountsService {
     const changes = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
     await this.accounts(orgId).update(id, { ...changes, updatedAt: new Date() });
     const after = (await this.accounts(orgId).byId(id))!;
-    return thenInPostgres(
+    return thenOrUndo(
       serialize(after),
       () =>
         this.prisma.$transaction(async (tx) => {
-          await this.mirror.accounts([id], tx);
           await this.audit.append(tx, { orgId, actorId, action: 'account.updated', entityType: 'account', entityId: id, data: { before: serialize(before), changes: { ...input } } });
         }),
       async () => {

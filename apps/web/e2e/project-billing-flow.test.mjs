@@ -2,7 +2,7 @@
  * Browser end-to-end test for milestone billing (AR-013) and progress billing (AR-014) of sales
  * orders: choose milestones, plan three, mark one reached and make its draft invoice for its share;
  * on a second order choose progress, claim 40% and see the draft invoice and the claim recorded.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

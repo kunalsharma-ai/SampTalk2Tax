@@ -2,7 +2,7 @@
  * Browser end-to-end test for local financial statements: an Indian organisation posts a few
  * journals and reads its Schedule III balance sheet and statement of profit and loss, opens the
  * accounts behind a line, sees an unclassified account flagged, and switches to the IAS 1 layout.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

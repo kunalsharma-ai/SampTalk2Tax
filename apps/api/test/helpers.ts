@@ -8,7 +8,6 @@ import { loadConfig } from '../src/config';
 import type { Db } from '@talk2tax/document-db';
 import { DocumentStoreService } from '../src/common/document-store.service';
 import { PrismaService } from '../src/common/prisma.service';
-import { PostgresMirrorService } from '../src/db/postgres-mirror.service';
 
 export interface Ctx {
   app: INestApplication;
@@ -41,7 +40,6 @@ export async function bootApp(overrides: Record<string, string> = {}, opts: { co
     CRM_WEBHOOK_RUNNER_INTERVAL_SECONDS: '0',
     WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true',
     NODE_ENV: 'test',
-    DATABASE_URL: process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL,
     MONGODB_URL: process.env.TEST_MONGODB_URL ?? process.env.MONGODB_URL,
     JWT_SECRET: process.env.JWT_SECRET ?? 'test-secret-that-is-long-enough-for-hs256-signing',
     ...overrides,
@@ -85,10 +83,8 @@ export function today(): string {
 }
 
 /**
- * Changes an organisation record directly, as a test set-up step: in MongoDB (the record)
- * and in its PostgreSQL copy, as the app would. Guards do not run.
+ * Changes an organisation record directly, as a test set-up step. Guards do not run.
  */
 export async function setOrgFields(ctx: Ctx, orgId: string, fields: Record<string, unknown>) {
   await ctx.db.collection('organizations').updateOne({ _id: orgId as never }, { $set: fields });
-  await ctx.app.get(PostgresMirrorService).organizations([orgId]);
 }

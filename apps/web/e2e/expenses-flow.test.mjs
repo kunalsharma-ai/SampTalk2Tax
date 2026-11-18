@@ -2,7 +2,7 @@
  * Browser end-to-end test for employee expense claims: an employee (who sees nothing
  * of the books) writes a claim with a tax-inclusive line, attaches a receipt and
  * submits it; the owner approves it, which posts it, and pays it back from the bank.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

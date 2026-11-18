@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PrismaService } from '../common/prisma.service';
+import { DocumentStoreService } from '../common/document-store.service';
+import { databaseStatus } from '../db/database-status';
 import { AppConfig, CONFIG } from '../config';
 import { RegionsService } from '../regions/regions.service';
 import { ErrorsService } from './errors.service';
@@ -26,7 +27,7 @@ export class SystemService {
   private readonly startedAt = new Date();
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly documents: DocumentStoreService,
     private readonly metrics: MetricsService,
     private readonly heartbeats: HeartbeatsService,
     private readonly maintenance: MaintenanceService,
@@ -35,30 +36,8 @@ export class SystemService {
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
-  private async database() {
-    const t0 = process.hrtime.bigint();
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      const latencyMs = Number(process.hrtime.bigint() - t0) / 1e6;
-      const [[size], [conn], migrations] = await Promise.all([
-        this.prisma.$queryRaw<{ bytes: bigint }[]>`SELECT pg_database_size(current_database()) AS bytes`,
-        this.prisma.$queryRaw<{ n: bigint; max: string }[]>`SELECT (SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()) AS n, current_setting('max_connections') AS max`,
-        this.prisma.$queryRaw<{ migration_name: string; finished_at: Date | null; unfinished: bigint }[]>`SELECT migration_name, finished_at, (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL) AS unfinished FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name DESC LIMIT 1`,
-      ]);
-      const [[version]] = await Promise.all([this.prisma.$queryRaw<{ v: string }[]>`SELECT split_part(version(), ' ', 2) AS v`]);
-      return {
-        status: latencyMs > 500 ? 'SLOW' : 'OK',
-        latencyMs: Math.round(latencyMs * 10) / 10,
-        sizeBytes: Number(size?.bytes ?? 0),
-        connections: Number(conn?.n ?? 0),
-        maxConnections: Number(conn?.max ?? 0),
-        postgres: version?.v ?? null,
-        lastMigration: migrations[0] ? { name: migrations[0].migration_name, at: migrations[0].finished_at } : null,
-        unfinishedMigrations: Number(migrations[0]?.unfinished ?? 0),
-      };
-    } catch (e) {
-      return { status: 'DOWN', error: (e as Error).message.slice(0, 300), latencyMs: null, sizeBytes: null, connections: null, maxConnections: null, postgres: null, lastMigration: null, unfinishedMigrations: null };
-    }
+  private database() {
+    return databaseStatus(this.documents);
   }
 
   async health() {

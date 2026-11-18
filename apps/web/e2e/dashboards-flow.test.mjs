@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for dashboards: an owner with posted invoices builds a dashboard from
  * approved metrics, previews it, saves it, views another month, changes it and deletes it.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -3,7 +3,7 @@
  * enters a vendor's bank details, a second person (an approver) verifies them; the owner prepares
  * a batch of two bills (one paid in part), which is blocked while the other vendor has no verified
  * details; the approver approves it, the owner downloads the bank file and records the payments,
- * and each bill links to its payment. Real Next.js app → real API → real PostgreSQL.
+ * and each bill links to its payment. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
