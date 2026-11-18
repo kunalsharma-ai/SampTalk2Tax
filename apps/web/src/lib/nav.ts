@@ -88,6 +88,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/dimensions', label: 'Departments and projects' },
       { href: '/financial-tags', label: 'Locations and tags', perm: 'accounts.read' },
       { href: '/account-reconciliations', label: 'Account reconciliations', perm: 'reports.read' },
+      { href: '/cost-allocations', label: 'Cost allocation', perm: 'reports.read' },
       { href: '/close', label: 'Month-end close' },
       { href: '/year-end', label: 'Year-end close' },
       { href: '/periods', label: 'Fiscal periods' },

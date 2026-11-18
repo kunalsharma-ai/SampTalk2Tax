@@ -86,6 +86,7 @@ export const hi: Record<string, string> = {
   'Departments and projects': 'विभाग और परियोजनाएँ',
   'Locations and tags': 'स्थान और टैग',
   'Account reconciliations': 'खाता मिलान',
+  'Cost allocation': 'लागत आवंटन',
   'Duplicate files': 'दोहराई गई फ़ाइलें',
   'Unusual bills': 'असामान्य बिल',
   'Month-end close': 'महीने का समापन',

@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 65 |
+| Implementing | 64 |
 | Implemented | 34 |
-| Tested | 448 |
+| Tested | 449 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -315,8 +315,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-024 — Cost centers
 
 - Module: General ledger and accounting engine
-- Status: **Implementing**
-- Notes: Departments serve as cost centres: expenses tagged to a department are its costs and the report shows them per department. Not built: a separate cost centre hierarchy, cost allocation rules, cost centre budgets.
+- Status: **Tested**
+- Notes: Departments are the cost centres: costs tagged to a department are its costs and Profit by department shows them. Cost allocation rules spread shared costs (from a department or from untagged costs) to departments by fixed percentages, posted once per period and reversible. Not built: a cost centre hierarchy, budgets per cost centre, allocation by changing drivers.
 - Evidence:
   - packages/accounting-engine/src/dimensions.ts
   - packages/accounting-engine/test/dimensions.test.ts
@@ -328,6 +328,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/dimensions-flow.test.mjs
   - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
   - docs/FINANCIAL_DIMENSIONS.md
+  - packages/accounting-engine/src/cost-allocation.ts
+  - packages/accounting-engine/test/cost-allocation.test.ts
+  - apps/api/src/cost-allocations/cost-allocations.service.ts
+  - apps/api/test/cost-allocations.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/cost-allocations/page.tsx
+  - apps/web/e2e/cost-allocations-flow.test.mjs
+  - docs/COST_ALLOCATION.md
 
 ### GL-025 — Profit centers
 
