@@ -548,6 +548,10 @@ export interface ApprovalPolicy {
   isActive: boolean;
   minAmount: string | null;
   requireDifferentApprover: boolean;
+  /** At or above this total a second, different approver is needed. */
+  secondApprovalFrom: string | null;
+  /** The second approval must come from an owner or admin. */
+  secondApproverSenior: boolean;
   updatedAt: string | null;
 }
 export interface ApprovalRequest {
@@ -568,10 +572,14 @@ export interface ApprovalRequest {
   decisionNote: string | null;
   canApprove: boolean;
   ownWork: boolean;
+  approvalsNeeded: number;
+  approvals: { by: string | null; at: string; note: string | null }[];
+  /** Why the viewer cannot give the next approval, when that is the reason. */
+  waitingFor: 'ANOTHER_APPROVER' | 'OWNER_OR_ADMIN' | null;
 }
 export interface ApprovalState {
   required: boolean;
-  policy: { minAmount: string; requireDifferentApprover: boolean } | null;
+  policy: { minAmount: string; requireDifferentApprover: boolean; approvalsNeeded: number } | null;
   readyToPost: boolean;
   requests: ApprovalRequest[];
 }

@@ -723,8 +723,8 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'settings/approvals': {
     what: 'Rules that send documents for approval before they post.',
-    how: 'Add a rule for a document kind above an amount, and choose who approves.',
-    where: 'Governance. Requests appear in Approvals.',
+    how: 'Add a rule for a document kind above an amount, and choose who approves. Set a second approval amount to need two different approvers above it, and choose whether the second must be an owner or admin.',
+    where: 'Governance. Requests appear in Approvals. The approval levels a request needs are fixed when it is submitted.',
   },
   'settings/invoice-templates': {
     what: 'How your invoices look: layout, colours, sections and signature.',

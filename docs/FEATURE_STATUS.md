@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 61 |
+| Implementing | 60 |
 | Implemented | 34 |
-| Tested | 452 |
+| Tested | 453 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3455,11 +3455,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### WFLOW-006 — Approval workflows
 
 - Module: Autonomous financial workflows
-- Status: **Implementing**
-- Notes: Single-step approval of sales and purchase drafts by amount. No multi-level chains, escalations or approvals for other record types yet.
+- Status: **Tested**
+- Notes: Amount-based approval of sales and purchase drafts with an optional second level (two different approvers, optionally owner or admin for the second), manual journal approval (SEC-036), expense claim approval, and escalation through the Approval waiting too long alert. Not covered: chains longer than two steps, named approvers per rule, delegation.
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts › approvals
+  - apps/api/test/attachments-approvals.e2e.test.ts › two-level approvals
+  - apps/api/test/journal-approvals.e2e.test.ts
   - apps/web/e2e/approvals-flow.test.mjs
+  - docs/APPROVAL_WORKFLOWS.md
 
 ### WFLOW-009 — Notifications
 

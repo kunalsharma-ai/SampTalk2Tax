@@ -15219,12 +15219,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/test/attachments-approvals.e2e.test.ts › approvals",
-        "apps/web/e2e/approvals-flow.test.mjs"
+        "apps/api/test/attachments-approvals.e2e.test.ts › two-level approvals",
+        "apps/api/test/journal-approvals.e2e.test.ts",
+        "apps/web/e2e/approvals-flow.test.mjs",
+        "docs/APPROVAL_WORKFLOWS.md"
       ],
-      "notes": "Single-step approval of sales and purchase drafts by amount. No multi-level chains, escalations or approvals for other record types yet."
+      "notes": "Amount-based approval of sales and purchase drafts with an optional second level (two different approvers, optionally owner or admin for the second), manual journal approval (SEC-036), expense claim approval, and escalation through the Approval waiting too long alert. Not covered: chains longer than two steps, named approvers per rule, delegation."
     },
     {
       "id": "WFLOW-007",

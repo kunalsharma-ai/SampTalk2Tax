@@ -549,6 +549,10 @@ export interface ApprovalPolicyDoc {
   documentKind: DocumentKindName;
   minAmount: string;
   requireDifferentApprover: boolean;
+  /** At or above this functional-currency total a second, different approver is needed (WFLOW-006); null for one approval. */
+  secondApprovalFrom?: string | null;
+  /** The second approval must come from an owner or admin. */
+  secondApproverSenior?: boolean;
   isActive: boolean;
   updatedById: string;
   createdAt: Date;
@@ -558,7 +562,7 @@ export interface ApprovalPolicyDoc {
 export const approvalPolicies = defineCollection<ApprovalPolicyDoc>({
   name: 'approval_policies',
   scope: 'tenant',
-  decimals: ['minAmount'],
+  decimals: ['minAmount', 'secondApprovalFrom'],
   schema: {
     bsonType: 'object',
     required: ['documentKind', 'minAmount', 'requireDifferentApprover', 'isActive', 'updatedById', 'createdAt', 'updatedAt'],
@@ -568,13 +572,19 @@ export const approvalPolicies = defineCollection<ApprovalPolicyDoc>({
   guards: {
     beforeInsert(p) {
       if (n(p.minAmount).isNeg()) throw new GuardViolation('The minimum amount cannot be negative');
+      checkSecondLevel(p);
     },
     afterUpdate(before, after) {
       if (n(after.minAmount).isNeg()) throw new GuardViolation('The minimum amount cannot be negative');
+      checkSecondLevel(after);
       if (after.documentKind !== before.documentKind || after.orgId !== before.orgId) throw new GuardViolation('A policy keeps its document type');
     },
   },
 });
+
+function checkSecondLevel(p: ApprovalPolicyDoc) {
+  if (p.secondApprovalFrom != null && n(p.secondApprovalFrom).lt(p.minAmount)) throw new GuardViolation('A second approval can only start at or above the amount that needs the first');
+}
 
 export const APPROVAL_POLICIES: MovedTable = { def: approvalPolicies, model: 'approvalPolicy' };
 
@@ -594,6 +604,10 @@ export interface ApprovalRequestDoc {
   decidedById: string | null;
   decidedAt: Date | null;
   decisionNote: string | null;
+  /** How many different people must approve (WFLOW-006); missing on older requests, which need one. */
+  approvalsNeeded?: number;
+  /** Approvals given so far, in order; the last one of an approved request is its decision. */
+  approvals?: { userId: string; at: Date; note: string | null }[];
 }
 
 /** Were approval_requests_total_chk and approval_requests_decided_chk. */
@@ -636,10 +650,19 @@ export const approvalRequests = defineCollection<ApprovalRequestDoc>({
           if (!d || d.status !== 'DRAFT') throw new GuardViolation('The request is for a document that is no longer a draft');
           const p = await ctx.collection(approvalPolicies).findOne({ orgId: after.orgId, documentKind: after.documentKind });
           if ((p?.requireDifferentApprover ?? true) && (after.decidedById === after.requestedById || after.decidedById === d.createdById)) throw new GuardViolation('The request must be approved by someone other than its author and requester');
+          if ((after.approvalsNeeded ?? 1) > 1 && (after.approvals?.length ?? 0) < after.approvalsNeeded!) throw new GuardViolation('This request needs another approval first');
         }
       } else if (before.status !== 'PENDING' && (after.decidedById !== before.decidedById || +(after.decidedAt ?? 0) !== +(before.decidedAt ?? 0) || after.decisionNote !== before.decisionNote)) {
         throw new GuardViolation('An approval decision cannot be changed');
       }
+      // Approvals only accumulate, while the request is pending, from different people.
+      const was = before.approvals ?? [];
+      const now = after.approvals ?? [];
+      if ((after.approvalsNeeded ?? 1) !== (before.approvalsNeeded ?? 1)) throw new GuardViolation('An approval request cannot be changed');
+      if (now.length < was.length || was.some((a, i) => a.userId !== now[i].userId || +a.at !== +now[i].at)) throw new GuardViolation('Approvals given cannot be changed');
+      if (now.length > was.length && before.status !== 'PENDING') throw new GuardViolation('Only a pending request can be approved');
+      if (new Set(now.map((a) => a.userId)).size !== now.length) throw new GuardViolation('Each approval must come from a different person');
+      if (now.length > (after.approvalsNeeded ?? 1)) throw new GuardViolation('This request has all the approvals it needs');
       checkRequest(after);
     },
     beforeDelete() {

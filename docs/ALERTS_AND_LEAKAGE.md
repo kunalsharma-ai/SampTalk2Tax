@@ -32,6 +32,7 @@ Every change is kept in the alert's history and in the audit trail.
 | Possible duplicate payment | Leakage | Posted payments to the same vendor for the same amount, each within N days of the one before | Critical | Days (3) |
 | Unusual manual journal | Controls | A manual journal posted in the last 90 days that is N times the median manual journal of the year before and at least an amount, or that was posted more than N days after its date | Info, or warning when both apply | 5×, 100,000, 30 days |
 | Bank account low or not reconciled | Cash | A bank or cash account in use whose balance in the books is below zero (overdrawn) or below the set amount, or a bank account not reconciled to a statement for more than N days (counted from its first entry when it was never reconciled) | Critical when overdrawn, otherwise warning | 0 (overdrawn only), 45 days |
+| Approval waiting too long | Controls | An invoice, bill, credit note or manual journal waiting for approval for more than N days | Warning, critical after 3×N days | 3 days |
 | Vendor risk needs a review | Controls | A vendor with a medium or high risk never reviewed, a new risk since the last review, or a review date reached (see VENDOR_RISK.md) | Critical for high risk, warning for medium, info for low | None |
 
 Notes on individual checks:
