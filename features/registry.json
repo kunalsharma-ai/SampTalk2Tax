@@ -19748,12 +19748,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/attachments-approvals.e2e.test.ts",
-        "POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)"
+        "apps/api/test/banking.e2e.test.ts",
+        "apps/web/e2e/bank-line-files-flow.test.mjs",
+        "apps/web/src/components/banking/account-page.tsx"
       ],
-      "notes": "Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*."
+      "notes": "Bank advices and receipts are attached to statement lines from the bank account screen (Files button per line, with a count); removal needs a reason. Statement CSV import itself is BANK-*."
     },
     {
       "id": "DOC-007",

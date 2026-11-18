@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 55 |
+| Implementing | 54 |
 | Implemented | 34 |
-| Tested | 458 |
+| Tested | 459 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -4213,11 +4213,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DOC-006 — Bank statements
 
 - Module: Document intelligence
-- Status: **Implementing**
-- Notes: Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*.
+- Status: **Tested**
+- Notes: Bank advices and receipts are attached to statement lines from the bank account screen (Files button per line, with a count); removal needs a reason. Statement CSV import itself is BANK-*.
 - Evidence:
-  - apps/api/test/attachments-approvals.e2e.test.ts
-  - POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)
+  - apps/api/test/banking.e2e.test.ts
+  - apps/web/e2e/bank-line-files-flow.test.mjs
+  - apps/web/src/components/banking/account-page.tsx
 
 ### DOC-018 — Duplicate detection
 

@@ -697,6 +697,8 @@ export class BankingService {
         })
       : [];
     const entryIds = [...new Set([...matches.map((m) => m.journalLine.entryId)])];
+    // Files attached to each line (receipts, bank advices), counted without their bytes.
+    const files = ids.length ? await db.attachment.findMany({ where: { orgId: org.id, entityType: 'BANK_STATEMENT_LINE', entityId: { in: ids }, removedAt: null }, select: { entityId: true } }) : [];
     const suggested = suggestions.length
       ? await db.journalLine.findMany({ where: { id: { in: suggestions.map((s) => s.journalLineId) } }, include: { entry: true } })
       : [];
@@ -734,6 +736,7 @@ export class BankingService {
         reconciled: !!l.reconciliationId,
         matches: matches.filter((m) => m.statementLineId === l.id).map((m) => ({ id: m.id, origin: m.origin, ...link(m.journalLine) })),
         suggestion: s && sl ? { ...link(sl), score: s.score, reasons: s.reasons, unique: s.unique } : null,
+        attachments: files.filter((f) => f.entityId === l.id).length,
       };
     });
   }

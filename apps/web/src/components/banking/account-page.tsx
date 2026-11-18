@@ -5,6 +5,7 @@ import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Select, T
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { AttachmentsPanel } from '@/components/attachments';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -29,6 +30,7 @@ export function BankAccountPage() {
   const account = accounts.data?.find((a) => a.id === accountId);
   const [view, setView] = useState<View>('UNMATCHED');
   const [active, setActive] = useState<StatementLine | null>(null);
+  const [filesFor, setFilesFor] = useState<StatementLine | null>(null);
   const qc = useQueryClient();
   const base = `/v1/orgs/${orgId}/banking`;
   const lines = useQuery({
@@ -134,6 +136,10 @@ export function BankAccountPage() {
                       )}
                     </Td>
                     <Td className="whitespace-nowrap text-right align-top">
+                      <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setFilesFor(l)}>
+                        {l.attachments ? `Files (${l.attachments})` : 'Files'}
+                      </Button>
                       {manage && !l.reconciled ? (
                         l.status === 'UNMATCHED' ? (
                           <div className="flex justify-end gap-2">
@@ -146,6 +152,7 @@ export function BankAccountPage() {
                           <Button size="sm" variant="ghost" onClick={() => include.mutate(l)}>Include again</Button>
                         )
                       ) : null}
+                      </div>
                     </Td>
                   </Tr>
                 );
@@ -155,6 +162,22 @@ export function BankAccountPage() {
         )}
       </Card>
       {active ? <ResolveDialog line={active} onClose={() => setActive(null)} onDone={async () => { setActive(null); await refresh(); }} /> : null}
+      {filesFor ? (
+        <Dialog
+          open
+          onOpenChange={(o) => !o && setFilesFor(null)}
+          title={`Files · ${filesFor.description}`}
+          description={`${date(filesFor.date)} · ${money(new D(filesFor.amount).abs().toFixed(2), c)} ${filesFor.amount.startsWith('-') ? 'out' : 'in'}${filesFor.reference ? ` · Ref ${filesFor.reference}` : ''}`}
+        >
+          <AttachmentsPanel
+            entityType="BANK_STATEMENT_LINE"
+            entityId={filesFor.id}
+            canManage={manage}
+            description="Bank advices, receipts or letters behind this line. PDF, PNG, JPEG or WebP up to 5 MB each."
+            onChanged={refresh}
+          />
+        </Dialog>
+      ) : null}
     </>
   );
 }

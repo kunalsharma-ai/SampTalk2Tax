@@ -467,6 +467,8 @@ export interface StatementLine {
   reconciled: boolean;
   matches: (LedgerLink & { id: string; origin: 'EXISTING' | 'CREATED_ENTRY' | 'CREATED_PAYMENT' })[];
   suggestion: (LedgerLink & { score: number; reasons: string[]; unique: boolean }) | null;
+  /** Files attached to the line (not removed). */
+  attachments: number;
 }
 
 export interface LedgerCandidate {

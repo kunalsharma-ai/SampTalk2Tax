@@ -858,7 +858,7 @@ Part 25 · M2 · priority P2 · depends on: AIGW
 | DOC-003 |  | capability | Receipts | Tested |
 | DOC-004 |  | capability | Purchase orders | Not started |
 | DOC-005 |  | capability | Contracts | Not started |
-| DOC-006 |  | capability | Bank statements | Implementing |
+| DOC-006 |  | capability | Bank statements | Tested |
 | DOC-007 |  | capability | Tax notices | Not started |
 | DOC-008 |  | capability | Financial statements | Not started |
 | DOC-009 |  | capability | Payroll documents | Not started |

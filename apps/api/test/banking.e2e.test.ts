@@ -295,3 +295,30 @@ describe('roles and tenants', () => {
     expect(res.body.message).toContain('not found');
   });
 });
+
+describe('files on statement lines', () => {
+  const PDF = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n');
+  const upload = (user: TestUser, lineId: string, body: Buffer) =>
+    ctx.http().post(`${org.base}/attachments?entityType=BANK_STATEMENT_LINE&entityId=${lineId}&fileName=advice.pdf`).set(user.auth).set('Content-Type', 'application/pdf').send(body);
+
+  it('counts the files on each line, leaving out removed ones', async () => {
+    const rent = await lineBy('RENT OCTOBER');
+    expect(rent as unknown).toMatchObject({ attachments: 0 });
+    const a = (await upload(accountant, rent.id, PDF).expect(201)).body;
+    await upload(accountant, rent.id, Buffer.concat([PDF, Buffer.from('second')])).expect(201);
+    expect((await lineBy('RENT OCTOBER')) as unknown).toMatchObject({ attachments: 2 });
+    // Other lines are not affected.
+    expect((await lineBy('BANK CHARGES')) as unknown).toMatchObject({ attachments: 0 });
+    await ctx.http().post(`${org.base}/attachments/${a.id}/remove`).set(accountant.auth).send({ reason: 'Duplicate advice' }).expect(200);
+    expect((await lineBy('RENT OCTOBER')) as unknown).toMatchObject({ attachments: 1 });
+    expect((await ctx.http().get(`${org.base}/banking/lines/${rent.id}`).set(owner.auth).expect(200)).body.attachments).toBe(1);
+  });
+
+  it('lets a viewer read the files but not add them', async () => {
+    const viewer = await registerUser(ctx, 'Line viewer');
+    await ctx.http().post(`${org.base}/members`).set(owner.auth).send({ email: viewer.email, role: 'VIEWER' }).expect(201);
+    const rent = await lineBy('RENT OCTOBER');
+    expect((await ctx.http().get(`${org.base}/attachments?entityType=BANK_STATEMENT_LINE&entityId=${rent.id}`).set(viewer.auth).expect(200)).body).toHaveLength(1);
+    await upload(viewer, rent.id, Buffer.concat([PDF, Buffer.from('viewer')])).expect(403);
+  });
+});

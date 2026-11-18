@@ -352,7 +352,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'banking/[id]': {
     what: 'One bank account: imported statement lines, what is matched and what is not.',
-    how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance.',
+    how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance. Use Files on a line to keep the bank advice or receipt behind it; the button shows how many are attached.',
     where: 'Opened from Bank accounts.',
   },
   'banking/[id]/import': {
