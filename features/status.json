@@ -85,11 +85,13 @@
       "notes": "Colour token defined and checked for WCAG AA contrast."
     },
     "DASH-040": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "apps/web/test/charts.test.ts",
+        "apps/web/src/components/twin/twin-chart.tsx",
+        "apps/web/e2e/recovery-flow.test.mjs"
       ],
-      "notes": "Dashboard chart has a matching data table; other charts are not built yet."
+      "notes": "Every chart is a labelled image that names the table holding its figures (or is decorative next to figures shown as text). The month-end cash chart carries its own table on pages without one. A unit test checks every chart in the app."
     },
     "DASH-041": {
       "status": "Implemented",
@@ -188,11 +190,14 @@
       "notes": "Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet."
     },
     "GL-013": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/test/reports.test.ts"
+        "packages/accounting-engine/test/reports.test.ts",
+        "apps/api/test/deferrals.e2e.test.ts",
+        "apps/api/test/cash-basis.e2e.test.ts",
+        "docs/CASH_BASIS_REPORTS.md"
       ],
-      "notes": "The ledger records accruals (AR/AP based entries). Accrual vs cash reporting basis switch is not done."
+      "notes": "The books are kept on an accrual basis: invoices and bills post when issued, accruals and deferrals post to the period they belong to, and reports are accrual by default. The profit and loss can be switched to a cash basis from the same entries (GL-014)."
     },
     "GL-015": {
       "status": "Implemented",
@@ -920,12 +925,17 @@
       ]
     },
     "BANK-003": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
+        "packages/accounting-engine/src/bank-formats.ts",
+        "packages/accounting-engine/test/bank-formats.test.ts",
         "packages/accounting-engine/test/bank.test.ts",
-        "apps/web/src/components/banking/import-page.tsx"
+        "apps/api/test/bank-file-formats.e2e.test.ts",
+        "apps/web/e2e/bank-formats-flow.test.mjs",
+        "apps/web/src/components/banking/import-page.tsx",
+        "docs/STATEMENT_FORMATS.md"
       ],
-      "notes": "CSV only (comma, semicolon or tab; five date formats; single or split amount columns). OFX, QIF, MT940 and PDF are not supported yet."
+      "notes": "CSV (mapped columns, five date formats, comma/semicolon/tab, optional running balance), OFX/QFX 1.x and 2.x, QIF and MT940, recognised from the content; MT940 opening + lines checked against the closing balance. Not covered: PDF, CAMT.053, Excel."
     },
     "BANK-005": {
       "status": "Tested",
@@ -992,12 +1002,14 @@
       "notes": "Reconciliations are never deleted; undo keeps the record and reason; every step is in the audit trail."
     },
     "BANK-017": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/src/bank.ts",
-        "packages/accounting-engine/test/bank.test.ts"
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/api/test/banking.e2e.test.ts › prefers the account similar lines were matched to, and says why",
+        "apps/api/test/banking.e2e.test.ts › counts an undone match against the account, so the date decides again",
+        "apps/web/e2e/bank-match-learning-flow.test.mjs"
       ],
-      "notes": "Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI."
+      "notes": "Suggestions learn from past matches on the account: a statement line that shares name words with lines matched before ranks the same contact (payment) or account (other side of the entry) first and says so; an undone match counts against it. Shown under What matching learned. No AI; same amount and the 14-day window still apply."
     },
     "BANK-018": {
       "status": "Tested",
@@ -1090,12 +1102,13 @@
       "notes": "Receipts attach to documents, payments and journal entries."
     },
     "DOC-006": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/attachments-approvals.e2e.test.ts",
-        "POST /v1/orgs/:orgId/attachments (entityType BANK_STATEMENT_LINE)"
+        "apps/api/test/banking.e2e.test.ts",
+        "apps/web/e2e/bank-line-files-flow.test.mjs",
+        "apps/web/src/components/banking/account-page.tsx"
       ],
-      "notes": "Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*."
+      "notes": "Bank advices and receipts are attached to statement lines from the bank account screen (Files button per line, with a count); removal needs a reason. Statement CSV import itself is BANK-*."
     },
     "DOC-018": {
       "status": "Tested",
@@ -1451,14 +1464,19 @@
       "notes": "Tenant-defined TCS sections on invoices, worked out on the invoice value including GST and added to what the customer pays (TCS payable). Same register, challans and ledger check as TDS. No built-in TCS templates, no TCS on receipts, no Form 27EQ file."
     },
     "TAX-022": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/src/withholding/withholding.service.ts",
+        "apps/api/src/gst/gst-payments.service.ts",
+        "packages/tax-engine/src/india/gst-setoff.ts",
+        "packages/tax-engine/test/gst-setoff.test.ts",
+        "apps/api/test/gst-payments.e2e.test.ts",
         "apps/api/test/compliance.e2e.test.ts",
         "apps/api/test/withholding.e2e.test.ts",
+        "apps/web/e2e/gst-payments-flow.test.mjs",
         "apps/web/e2e/withholding-flow.test.mjs"
       ],
-      "notes": "TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST cash payments (PMT-06) and advance tax are not tracked yet. The compliance calendar shows each monthly TDS/TCS, PF, ESI and PT payment as done when its challan or payroll payment is recorded; advance tax and GST payments are marked paid/filed by hand."
+      "notes": "TDS and TCS challans are recorded with due dates (7th of the next month, 30 April for March) and overdue amounts. GST payments settle a month from the books: input tax credit set off in the CGST Act's order (s.49, 49A, rule 88A), reverse-charge tax in cash, and the rest paid by PMT-06 challan (CPIN, CIN) posted as one journal and shown on the month's GSTR-3B in the compliance calendar. Advance tax payments are the debits to the advance tax account on the advance tax page (TAX-021). Not covered: cess, and the electronic cash and credit ledgers as separate balances."
     },
     "TAX-037": {
       "status": "Implementing",
@@ -1513,21 +1531,26 @@
       "notes": "Employee PF, ESI, Maharashtra professional tax and TDS on salary (new regime). No voluntary deductions, loans or advances."
     },
     "PAY-007": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/payroll.e2e.test.ts",
+        "packages/tax-engine/src/india/bonus.ts",
+        "packages/tax-engine/test/bonus.test.ts",
+        "apps/api/test/payroll-bonus.e2e.test.ts",
+        "apps/web/e2e/payroll-bonus-flow.test.mjs",
         "apps/web/e2e/payroll-flow.test.mjs"
       ],
-      "notes": "Bonuses can be added as one-off earnings on a payslip and are taxed in the month. No statutory bonus (Payment of Bonus Act) calculation."
+      "notes": "One-off bonuses on a payslip, taxed in the month. Statutory bonus (Code on Wages 2019 Ch. IV) worked out from posted payslips per April-March year (rate 8.33-20%, eligibility amount and calculation ceiling as inputs, 30-day and Rs 100 minimums) and added to a draft run as an advance or the balance. Allocable surplus and set-on/set-off not modelled. Not reviewed by a payroll professional."
     },
     "PAY-011": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
+        "apps/api/src/payroll/leave.service.ts",
+        "apps/api/test/payroll-leave.e2e.test.ts",
+        "apps/web/e2e/payroll-leave-flow.test.mjs",
         "packages/tax-engine/test/payroll.test.ts",
-        "apps/api/test/payroll.e2e.test.ts",
         "apps/web/e2e/payroll-flow.test.mjs"
       ],
-      "notes": "Loss-of-pay days (whole or half) per payslip, and pro-rating for joining or leaving mid-month. No leave balances or leave module."
+      "notes": "Loss-of-pay days per payslip and pro-rating for joiners and leavers. Leave module: paid and unpaid leave types with a yearly allowance (April-March), leave recorded per month with balance checks, unpaid leave carried to the month's payslip as loss of pay (drafts update at once), posted months closed. Not yet: carry-forward, accrual by month, encashment, holiday calendar, employee self-service requests."
     },
     "PAY-016": {
       "status": "Tested",
@@ -2040,13 +2063,15 @@
       "notes": "Runner in the API process (WORKFLOW_RUNNER_INTERVAL_SECONDS) with a per-organisation cursor locked FOR UPDATE SKIP LOCKED; one live run per workflow and event, enforced by a unique index."
     },
     "WFLOW-005": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/workflows.ts",
         "packages/accounting-engine/test/workflows.test.ts",
-        "apps/api/test/workflows.e2e.test.ts"
+        "apps/api/test/workflow-branches.e2e.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-branches.test.mjs"
       ],
-      "notes": "Conditions on the event’s facts (money, text, date, choice), all of which must hold. No either/or branches yet."
+      "notes": "Conditions on the event’s facts (money, text, date, choice) joined by all or any, with an optional otherwise branch of up to five actions done when they do not hold. Each run records the branch it took. Not covered: nested groups (A and (B or C)) and more than two branches."
     },
     "WFLOW-012": {
       "status": "Tested",
@@ -4819,9 +4844,10 @@
         "apps/web/test/format.test.ts",
         "apps/web/test/i18n.test.ts",
         "apps/web/e2e/display-preferences-flow.test.mjs",
-        "docs/LANGUAGES_AND_FORMATS.md"
+        "docs/LANGUAGES_AND_FORMATS.md",
+        "packages/ui/src/text.tsx"
       ],
-      "notes": "Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator."
+      "notes": "Hindi covers the navigation, header, roles, the preferences page, and now every page title and description, table heading, field label, button, dialog and card title that matches a catalogue entry (about 180 common words such as Status, Amount, Date, Save, Cancel). Text built with numbers or names (\"New invoice\", status badges, tabs) still falls back to English. Translations not yet reviewed by a professional translator."
     },
     "I18N-015": {
       "status": "Tested",

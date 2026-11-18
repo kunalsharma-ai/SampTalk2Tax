@@ -4,6 +4,11 @@ import { D, dec, Dec } from '@talk2tax/accounting-engine';
 import { Employee, PayComponentKind, PayrollLiability, PayrollSettings, Prisma, PtCategory, SalaryComponent, SalaryStructure } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import {
+  BONUS_RULES,
+  BonusRuleError,
+  bonusYearMonths,
+  checkBonusOptions,
+  statutoryBonus,
   checkPan,
   computePayslip,
   daysInMonth,
@@ -20,7 +25,9 @@ import {
 } from '@talk2tax/tax-engine';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, todayIso, toDbDate } from '../common/dates';
+import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
+import { leaveEntries } from '../db/collections/leave';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
@@ -31,6 +38,17 @@ export interface PayrollOrg {
   role: RoleName;
   functionalCurrency: string;
 }
+
+export interface BonusInput {
+  /** Accounting year, e.g. 2025-26. */
+  year: string;
+  ratePct: string;
+  eligibilityCeiling?: string;
+  calculationCeiling?: string;
+}
+
+/** The one-off earning a statutory bonus is paid as; its name ties it to the year. */
+export const bonusEarningName = (year: string) => `Statutory bonus ${year}`;
 
 export interface ComponentInput {
   code: string;
@@ -111,6 +129,7 @@ export class PayrollService {
     private readonly audit: AuditService,
     private readonly journals: JournalsService,
     private readonly chart: ChartService,
+    private readonly store: DocumentStoreService,
   ) {}
 
   // ------------------------------------------------------------------ settings
@@ -429,6 +448,156 @@ export class PayrollService {
   // ------------------------------------------------------------------ calculation
 
   /** Create payslips for everyone employed in the month who has a salary. Returns who was left out and why. */
+  /**
+   * Statutory bonus for an accounting year, worked out from posted payslips of that
+   * year (Code on Wages 2019 Chapter IV). Read-only; see addBonusToRun to pay it.
+   */
+  async bonusReport(org: PayrollOrg, input: BonusInput) {
+    return this.bonusRows(this.prisma, org.id, input);
+  }
+
+  /**
+   * Adds each eligible employee's bonus still due for the year to a draft pay run, as a
+   * one-off earning (excluded from wages). Paid during the year it is an advance on the
+   * months posted so far; a later run adds the balance.
+   */
+  async addBonusToRun(org: PayrollOrg, actor: { id: string }, runId: string, input: BonusInput & { employeeIds?: string[] }) {
+    return this.prisma.$transaction(async (tx) => {
+      const run = await this.lockRun(tx, org.id, runId);
+      if (run.status !== 'DRAFT') throw new DomainError('PAY_RUN_POSTED', `${run.number} is ${run.status.toLowerCase()}`, HttpStatus.CONFLICT);
+      const report = await this.bonusRows(tx, org.id, input);
+      if (run.period < report.months[0]) throw new DomainError('INVALID_BONUS', `Bonus for ${input.year} can be paid from ${report.months[0]} on`, HttpStatus.CONFLICT);
+      const name = bonusEarningName(input.year);
+      const slips = await tx.payslip.findMany({ where: { payRunId: runId } });
+      const wanted = input.employeeIds ? new Set(input.employeeIds) : null;
+      const added: { employeeId: string; name: string; amount: string }[] = [];
+      const skipped: { employeeId: string; name: string; reason: string }[] = [];
+      for (const r of report.employees) {
+        if (wanted && !wanted.has(r.employeeId)) continue;
+        const slip = slips.find((x) => x.employeeId === r.employeeId);
+        const why = !r.eligible ? r.reason : new D(r.due).lte(0) ? `Already paid in ${r.paid.runs.join(', ')}` : !slip ? `Not in ${run.number}` : null;
+        if (why || !slip) {
+          skipped.push({ employeeId: r.employeeId, name: r.name, reason: why ?? `Not in ${run.number}` });
+          continue;
+        }
+        const others = (slip.oneOffs as unknown as OneOffInput[]).filter((o) => o.name !== name);
+        if (others.length >= 10) {
+          skipped.push({ employeeId: r.employeeId, name: r.name, reason: 'The payslip already has 10 one-off earnings' });
+          continue;
+        }
+        const oneOffs = [...others, { name, kind: 'EXCLUDED' as const, amount: r.due }];
+        const e = await this.employeeById(tx, org.id, r.employeeId);
+        const facts = await this.payslipFacts(tx, org.id, e, run.period, { lopDays: slip.lopDays.toFixed(), oneOffs });
+        if (!facts.ok) {
+          skipped.push({ employeeId: r.employeeId, name: r.name, reason: facts.reason });
+          continue;
+        }
+        await tx.payslip.update({ where: { id: slip.id }, data: facts.data });
+        added.push({ employeeId: r.employeeId, name: r.name, amount: r.due });
+      }
+      if (wanted) for (const id of wanted) if (!report.employees.some((r) => r.employeeId === id)) skipped.push({ employeeId: id, name: '', reason: `Not paid in ${input.year}` });
+      if (!added.length) throw new DomainError('NO_BONUS_TO_ADD', skipped.length ? `No bonus to add: ${skipped.map((x) => `${x.name || x.employeeId}: ${x.reason}`).join('; ')}` : `No one was paid in ${input.year}`, HttpStatus.UNPROCESSABLE_ENTITY);
+      await this.updateTotals(tx, runId);
+      await this.audit.append(tx, {
+        orgId: org.id,
+        actorId: actor.id,
+        action: 'payroll.bonus_added',
+        entityType: 'pay_run',
+        entityId: runId,
+        data: { year: input.year, ratePct: input.ratePct, eligibilityCeiling: report.eligibilityCeiling, calculationCeiling: report.calculationCeiling, added },
+      });
+      return { added, skipped, run: await this.serializeRun(tx, org, runId) };
+    });
+  }
+
+  private async bonusRows(db: Tx | PrismaService, orgId: string, input: BonusInput) {
+    let months: string[];
+    try {
+      months = bonusYearMonths(input.year);
+      checkBonusOptions(input);
+    } catch (e) {
+      if (e instanceof BonusRuleError) throw new DomainError('INVALID_BONUS', e.message);
+      throw e;
+    }
+    const eligibilityCeiling = new D(input.eligibilityCeiling ?? BONUS_RULES.eligibilityCeiling).toFixed(2);
+    const calculationCeiling = new D(input.calculationCeiling ?? BONUS_RULES.calculationCeiling).toFixed(2);
+    const slips = await db.payslip.findMany({
+      where: { orgId, payRun: { status: 'POSTED', period: { gte: months[0], lte: months[11] } } },
+      select: { employeeId: true, wages: true, paidDays: true, daysInMonth: true, daysOutside: true, lopDays: true, payRun: { select: { period: true } } },
+    });
+    // Bonus for this year already paid in posted runs: in advance during the year, or after it.
+    const name = bonusEarningName(input.year);
+    const paidSlips = await db.payslip.findMany({
+      where: { orgId, payRun: { status: 'POSTED', period: { gte: months[0] } } },
+      select: { employeeId: true, oneOffs: true, payRun: { select: { number: true, period: true } } },
+    });
+    const ids = [...new Set(slips.map((x) => x.employeeId))];
+    const employees = ids.length ? await db.employee.findMany({ where: { orgId, id: { in: ids } }, select: { id: true, code: true, name: true } }) : [];
+    const rows = employees
+      .sort((a, b) => a.code.localeCompare(b.code))
+      .map((e) => {
+        const mine = slips.filter((x) => x.employeeId === e.id);
+        const r = statutoryBonus(
+          mine.map((x) => {
+            const wages = new D(x.wages.toString());
+            const paid = new D(x.paidDays.toString());
+            // Wages for a full month decide eligibility, so unpaid leave or a part month does not.
+            const full = paid.gt(0) ? wages.times(x.daysInMonth).div(paid).toDecimalPlaces(2, D.ROUND_HALF_UP) : wages;
+            return { period: x.payRun.period, wages, paidDays: paid, fullMonthWages: full };
+          }),
+          { ratePct: input.ratePct, eligibilityCeiling, calculationCeiling },
+        );
+        const paidIn = paidSlips
+          .filter((x) => x.employeeId === e.id)
+          .flatMap((x) => (x.oneOffs as unknown as OneOffInput[]).filter((o) => o.name === name).map((o) => ({ run: x.payRun.number, amount: new D(o.amount) })));
+        const paid = paidIn.reduce((t, x) => t.plus(x.amount), new D(0));
+        const due = r.eligible ? D.max(new D(r.bonus).minus(paid), 0) : new D(0);
+        return { employeeId: e.id, code: e.code, name: e.name, ...r, paid: { amount: paid.toFixed(2), runs: paidIn.map((x) => x.run) }, due: due.toFixed(2) };
+      });
+    const eligible = rows.filter((r) => r.eligible);
+    return {
+      year: input.year,
+      months,
+      ratePct: new D(input.ratePct).toFixed(2),
+      eligibilityCeiling,
+      calculationCeiling,
+      source: BONUS_RULES.source,
+      employees: rows,
+      totals: {
+        eligible: eligible.length,
+        bonus: eligible.reduce((t, r) => t.plus(r.bonus), new D(0)).toFixed(2),
+        paid: rows.reduce((t, r) => t.plus(r.paid.amount), new D(0)).toFixed(2),
+        due: rows.reduce((t, r) => t.plus(r.due), new D(0)).toFixed(2),
+      },
+    };
+  }
+
+  /** Unpaid leave recorded for an employee in a month (PAY-011). */
+  private async unpaidLeaveDays(employeeId: string, period: string): Promise<Dec> {
+    const rows = await this.store.collection(leaveEntries).find({ employeeId, period, paid: false, status: 'RECORDED' });
+    return rows.reduce((t, r) => t.plus(r.days), new D(0));
+  }
+
+  /**
+   * After leave changes: the month's payslip for the employee, if it is in a draft run, is
+   * worked out again; returns the run's number. A posted month cannot change (see LeaveService).
+   */
+  async refreshDraftPayslip(orgId: string, employeeId: string, period: string): Promise<string | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const run = await tx.payRun.findFirst({ where: { orgId, period, status: 'DRAFT' } });
+      if (!run) return null;
+      await this.lockRun(tx, orgId, run.id);
+      const slip = await tx.payslip.findUnique({ where: { payRunId_employeeId: { payRunId: run.id, employeeId } } });
+      if (!slip) return null;
+      const e = await this.employeeById(tx, orgId, employeeId);
+      const facts = await this.payslipFacts(tx, orgId, e, period, { lopDays: slip.lopDays.toFixed(), oneOffs: slip.oneOffs as unknown as OneOffInput[] });
+      if (!facts.ok) throw new DomainError('INVALID_PAYSLIP', `${run.number}: ${facts.reason}`);
+      await tx.payslip.update({ where: { id: slip.id }, data: facts.data });
+      await this.updateTotals(tx, run.id);
+      return run.number;
+    });
+  }
+
   private async syncPayslips(tx: Tx, orgId: string, runId: string, period: string, kept: Map<string, { lopDays: string; oneOffs: OneOffInput[] }>) {
     const employees = await tx.employee.findMany({
       where: { orgId, dateOfJoining: { lte: toDbDate(periodEnd(period)) }, OR: [{ dateOfLeaving: null }, { dateOfLeaving: { gte: toDbDate(periodStart(period)) } }] },
@@ -458,8 +627,10 @@ export class PayrollService {
     const outside = before + after;
     const lop = dec(adj.lopDays);
     if (lop.lt(0) || !lop.times(2).isInteger()) return { ok: false as const, reason: 'Loss-of-pay days must be whole or half days' };
-    if (lop.gt(n - outside)) return { ok: false as const, reason: `Loss-of-pay days cannot exceed the ${n - outside} days employed this month` };
-    const paidDays = new D(n - outside).minus(lop);
+    // Unpaid leave recorded for the month counts as loss of pay too.
+    const leaveLop = await this.unpaidLeaveDays(e.id, period);
+    if (lop.plus(leaveLop).gt(n - outside)) return { ok: false as const, reason: `Loss-of-pay days${leaveLop.gt(0) ? ` with ${leaveLop.toFixed()} days of unpaid leave` : ''} cannot exceed the ${n - outside} days employed this month` };
+    const paidDays = new D(n - outside).minus(lop).minus(leaveLop);
 
     // History from posted pay runs before this month.
     const ty = taxYearOf(periodStart(period));
@@ -503,6 +674,7 @@ export class PayrollService {
         daysInMonth: n,
         daysOutside: outside.toFixed(1),
         lopDays: lop.toFixed(1),
+        leaveLopDays: leaveLop.toFixed(1),
         paidDays: paidDays.toFixed(1),
         oneOffs: adj.oneOffs as unknown as Prisma.InputJsonValue,
         earnings: r.earnings as unknown as Prisma.InputJsonValue,
@@ -610,6 +782,7 @@ export class PayrollService {
       daysInMonth: p.daysInMonth,
       daysOutside: p.daysOutside.toFixed(1),
       lopDays: p.lopDays.toFixed(1),
+      leaveLopDays: new D((p.leaveLopDays ?? 0).toString()).toFixed(1),
       paidDays: p.paidDays.toFixed(1),
       oneOffs: p.oneOffs as unknown as OneOffInput[],
       earnings: p.earnings as unknown as { code: string; name: string; kind: PayComponentKind; amount: string }[],

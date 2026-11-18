@@ -12,7 +12,7 @@ import { taxYearOf } from './withholding';
  *
  * Not modelled: the old tax regime, exemptions and deductions an employee
  * declares (none apply under the new regime except the standard deduction and
- * employer NPS), perquisites, arrears, gratuity, bonus under the Code, labour
+ * employer NPS), perquisites, arrears, gratuity (bonus under the Code on Wages is in bonus.ts), labour
  * welfare fund, professional tax outside Maharashtra, ESI on daily wages up to
  * Rs 176 (no employee share), and the EPF administrative-charge minimum per establishment.
  */

@@ -189,7 +189,7 @@ export class AttachmentsService {
       ...pays.map((p) => ['PAYMENT', p.id, { label: `${p.kind === 'RECEIPT' ? 'Receipt' : 'Payment'} ${p.number}`, path: `${p.kind === 'RECEIPT' ? 'sales/receipts' : 'purchases/payments'}/${p.id}`, use: 'OTHER' }] as const),
       ...journals.map((j) => ['JOURNAL_ENTRY', j.id, { label: `Journal ${j.entryNumber ?? '(draft)'}`, path: `journals/${j.id}`, use: 'OTHER' }] as const),
       ...claims.map((c) => ['EXPENSE_CLAIM', c.id, { label: `Expense claim ${c.number}: ${c.title}`, path: `expenses/${c.id}`, use: 'EXPENSE_CLAIM' }] as const),
-      ...lines.map((l) => ['BANK_STATEMENT_LINE', l.id, { label: `Bank line: ${l.description}`, path: `banking/${l.accountId}/reconcile`, use: 'OTHER' }] as const),
+      ...lines.map((l) => ['BANK_STATEMENT_LINE', l.id, { label: `Bank line: ${l.description}`, path: `banking/${l.accountId}`, use: 'OTHER' }] as const),
       ...ids('CUSTOMER_ONBOARDING').map((id) => ['CUSTOMER_ONBOARDING', id, { label: 'Onboarding documents', path: null, use: 'OTHER' }] as const),
     ] as never;
     for (const [type, id, d] of found) {

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { api } from '@/lib/api';
-import type { Action, Catalogue, Condition, EmailTo, FactDef, TriggerDef, TriggerParams, Workflow } from '@/lib/workflows';
+import type { Action, Catalogue, Condition, ConditionMatch, EmailTo, FactDef, TriggerDef, TriggerParams, Workflow } from '@/lib/workflows';
 
 /** A condition being edited: the value is kept as typed until saving. */
 interface Draft {
@@ -15,7 +15,9 @@ interface Draft {
   trigger: string;
   triggerParams: TriggerParams;
   conditions: Condition[];
+  match: ConditionMatch;
   actions: Action[];
+  otherwise: Action[];
   note: string;
 }
 
@@ -34,13 +36,15 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
   const qc = useQueryClient();
   const [d, setD] = useState<Draft>(() =>
     workflow
-      ? { name: workflow.name, description: workflow.description ?? '', trigger: workflow.trigger, triggerParams: workflow.triggerParams ?? {}, conditions: workflow.conditions, actions: workflow.actions, note: '' }
-      : { name: '', description: '', trigger: catalogue.triggers[0].key, triggerParams: {}, conditions: [], actions: [{ type: 'CREATE_TASK', title: '', assignTo: { role: 'ACCOUNTANT' }, dueInDays: 3 }], note: '' },
+      ? { name: workflow.name, description: workflow.description ?? '', trigger: workflow.trigger, triggerParams: workflow.triggerParams ?? {}, conditions: workflow.conditions, match: workflow.match ?? 'ALL', actions: workflow.actions, otherwise: workflow.otherwise ?? [], note: '' }
+      : { name: '', description: '', trigger: catalogue.triggers[0].key, triggerParams: {}, conditions: [], match: 'ALL', actions: [{ type: 'CREATE_TASK', title: '', assignTo: { role: 'ACCOUNTANT' }, dueInDays: 3 }], otherwise: [], note: '' },
   );
   const t = catalogue.triggers.find((x) => x.key === d.trigger)!;
   const set = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
   const setCondition = (i: number, c: Condition) => set({ conditions: d.conditions.map((x, j) => (j === i ? c : x)) });
   const setAction = (i: number, a: Action) => set({ actions: d.actions.map((x, j) => (j === i ? a : x)) });
+  const setOtherwise = (i: number, a: Action) => set({ otherwise: d.otherwise.map((x, j) => (j === i ? a : x)) });
+  const matches = catalogue.matches ?? [{ value: 'ALL' as const, label: 'All of the conditions hold' }, { value: 'ANY' as const, label: 'Any one of the conditions holds' }];
 
   const save = useMutation({
     mutationFn: () => {
@@ -50,7 +54,10 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
         trigger: d.trigger,
         triggerParams: d.triggerParams,
         conditions: d.conditions.map((c) => (c.op === 'is_empty' || c.op === 'not_empty' ? { fact: c.fact, op: c.op } : c)),
-        actions: d.actions.map((a) => (a.type === 'CREATE_TASK' ? { ...a, description: a.description || undefined } : a)),
+        match: d.match,
+        actions: d.actions.map(cleanAction),
+        // Otherwise actions need a condition to be "otherwise" to; without one they are dropped.
+        otherwise: d.conditions.length ? d.otherwise.map(cleanAction) : [],
       };
       return workflow
         ? api<Workflow>(`/v1/orgs/${orgId}/workflows/${workflow.id}`, { method: 'PUT', body: { ...body, baseVersion: workflow.version, note: d.note || null } })
@@ -93,7 +100,8 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
                   const next = catalogue.triggers.find((x) => x.key === e.target.value)!;
                   // An email to the customer or vendor needs a trigger that has one.
                   const actions = d.actions.map((a): Action => (a.type === 'SEND_EMAIL' && 'contact' in a.to && !next.emailsContact ? { ...a, to: { role: 'OWNER' } } : a));
-                  set({ trigger: next.key, triggerParams: defaultParams(next.key), conditions: [], actions });
+                  const otherwise = d.otherwise.map((a): Action => (a.type === 'SEND_EMAIL' && 'contact' in a.to && !next.emailsContact ? { ...a, to: { role: 'OWNER' } } : a));
+                  set({ trigger: next.key, triggerParams: defaultParams(next.key), conditions: [], actions, otherwise });
                 }}
               >
                 <optgroup label="When something is recorded">
@@ -118,8 +126,23 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
       </Card>
 
       <Card>
-        <CardHeader title="2. Only if" description="Every condition must hold. With no conditions, the workflow acts every time." />
+        <CardHeader title="2. Only if" description="All of the conditions, or any one of them. With no conditions, the workflow acts every time." />
         <div className="flex flex-col gap-3 p-5">
+          {d.conditions.length > 1 ? (
+            <div className="max-w-sm">
+              <Field label="Acts when">
+                {(p) => (
+                  <Select {...p} value={d.match} onChange={(e) => set({ match: e.target.value as ConditionMatch })}>
+                    {matches.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
+          ) : null}
           {d.conditions.map((c, i) => (
             <ConditionRow key={i} index={i} c={c} t={t} catalogue={catalogue} onChange={(x) => setCondition(i, x)} onRemove={() => set({ conditions: d.conditions.filter((_, j) => j !== i) })} />
           ))}
@@ -132,30 +155,26 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
       </Card>
 
       <Card>
-        <CardHeader title="3. Do" description={`Up to ${catalogue.limits.actions} actions, in order. In tasks and emails, ${placeholders} are replaced by the values when it runs.`} />
+        <CardHeader title="3. Do" description={`${d.conditions.length ? 'When the conditions hold: up' : 'Up'} to ${catalogue.limits.actions} actions, in order. In tasks and emails, ${placeholders} are replaced by the values when it runs.`} />
         <div className="flex flex-col gap-3 p-5">
           {d.actions.map((a, i) => (
             <ActionCard key={i} index={i} a={a} t={t} catalogue={catalogue} onChange={(x) => setAction(i, x)} onRemove={() => set({ actions: d.actions.filter((_, j) => j !== i) })} />
           ))}
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" size="sm" disabled={d.actions.length >= catalogue.limits.actions} onClick={() => set({ actions: [...d.actions, { type: 'CREATE_TASK', title: '', assignTo: { role: 'ACCOUNTANT' }, dueInDays: 3 }] })}>
-              Add a task
-            </Button>
-            <Button type="button" variant="secondary" size="sm" disabled={d.actions.length >= catalogue.limits.actions} onClick={() => set({ actions: [...d.actions, { type: 'WEBHOOK', url: '' }] })}>
-              Add a webhook
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={d.actions.length >= catalogue.limits.actions}
-              onClick={() => set({ actions: [...d.actions, { type: 'SEND_EMAIL', to: t.emailsContact ? { contact: true } : { role: 'OWNER' }, subject: '', body: '' }] })}
-            >
-              Add an email
-            </Button>
-          </div>
+          <AddActionButtons t={t} full={d.actions.length >= catalogue.limits.actions} onAdd={(a) => set({ actions: [...d.actions, a] })} />
         </div>
       </Card>
+
+      {d.conditions.length ? (
+        <Card aria-label="Otherwise">
+          <CardHeader title="4. Otherwise (optional)" description="Done instead when the conditions do not hold. Leave it empty to do nothing then." />
+          <div className="flex flex-col gap-3 p-5">
+            {d.otherwise.map((a, i) => (
+              <ActionCard key={i} index={i} label="Otherwise action" a={a} t={t} catalogue={catalogue} onChange={(x) => setOtherwise(i, x)} onRemove={() => set({ otherwise: d.otherwise.filter((_, j) => j !== i) })} />
+            ))}
+            <AddActionButtons instead t={t} full={d.otherwise.length >= catalogue.limits.actions} onAdd={(a) => set({ otherwise: [...d.otherwise, a] })} />
+          </div>
+        </Card>
+      ) : null}
 
       {workflow ? (
         <Card>
@@ -178,6 +197,27 @@ export function WorkflowEditor({ orgId, catalogue, workflow }: { orgId: string; 
         {!workflow ? <p className="text-sm text-fg-muted">A new workflow starts off. Test it, then turn it on.</p> : null}
       </div>
     </form>
+  );
+}
+
+const cleanAction = (a: Action): Action => (a.type === 'CREATE_TASK' ? { ...a, description: a.description || undefined } : a);
+
+/** The add buttons; `instead` names them for the otherwise branch, so the two sets differ. */
+function AddActionButtons({ t, full, onAdd, instead = false }: { t: TriggerDef; full: boolean; onAdd: (a: Action) => void; instead?: boolean }) {
+  // Worded differently from the main buttons so each has its own name.
+  const label = (word: string, article: string) => (instead ? `Add ${word} instead` : `Add ${article} ${word}`);
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button type="button" variant="secondary" size="sm" disabled={full} onClick={() => onAdd({ type: 'CREATE_TASK', title: '', assignTo: { role: 'ACCOUNTANT' }, dueInDays: 3 })}>
+        {label('task', 'a')}
+      </Button>
+      <Button type="button" variant="secondary" size="sm" disabled={full} onClick={() => onAdd({ type: 'WEBHOOK', url: '' })}>
+        {label('webhook', 'a')}
+      </Button>
+      <Button type="button" variant="secondary" size="sm" disabled={full} onClick={() => onAdd({ type: 'SEND_EMAIL', to: t.emailsContact ? { contact: true } : { role: 'OWNER' }, subject: '', body: '' })}>
+        {label('email', 'an')}
+      </Button>
+    </div>
   );
 }
 
@@ -279,8 +319,8 @@ export function TriggerSettings({ trigger, params, catalogue, onChange }: { trig
   return null;
 }
 
-export function ActionCard({ index, a, t, catalogue, onChange, onRemove }: { index: number; a: Action; t: TriggerDef; catalogue: Catalogue; onChange: (a: Action) => void; onRemove: () => void }) {
-  const n = `Action ${index + 1}`;
+export function ActionCard({ index, label = 'Action', a, t, catalogue, onChange, onRemove }: { index: number; label?: string; a: Action; t: TriggerDef; catalogue: Catalogue; onChange: (a: Action) => void; onRemove: () => void }) {
+  const n = `${label} ${index + 1}`;
   return (
     <fieldset className="rounded-[var(--t2t-radius-md)] border border-line p-4" aria-label={n}>
       <div className="mb-3 flex items-center justify-between">

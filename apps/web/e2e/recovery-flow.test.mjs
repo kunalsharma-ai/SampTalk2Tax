@@ -93,6 +93,11 @@ test('an owner builds a recovery plan from options worked out from the books', a
   await plan.getByRole('listitem', { name: loanTitle }).waitFor();
   await page.getByText('The plan closes the gap').waitFor();
   await page.getByText('Lasts all 12 months').waitFor();
+  // The forecast chart's figures are in a table too (DASH-040).
+  await page.getByText('Show the figures').click();
+  const figures = page.getByRole('table', { name: 'Month-end cash figures' });
+  await figures.getByRole('columnheader', { name: 'With this plan' }).waitFor();
+  assert.ok((await figures.locator('tbody tr').count()) >= 6);
 
   // Owner, due date and progress on the loan.
   const loan = plan.getByRole('listitem', { name: loanTitle });

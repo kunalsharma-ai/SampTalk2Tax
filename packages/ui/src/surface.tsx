@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from './cn';
 import { SectionHelpSlot } from './help';
+import { tx } from './text';
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn('rounded-[var(--t2t-radius-lg)] border border-line bg-surface shadow-[var(--t2t-shadow)]', className)} {...props} />;
@@ -16,10 +17,10 @@ export function CardHeader({ title, description, actions, help }: { title: React
     <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
       <div>
         <div className="flex items-center gap-1.5">
-          <h2 className="text-sm font-semibold text-fg">{title}</h2>
+          <h2 className="text-sm font-semibold text-fg">{tx(title)}</h2>
           {tip}
         </div>
-        {description ? <p className="mt-0.5 text-xs text-fg-muted">{description}</p> : null}
+        {description ? <p className="mt-0.5 text-xs text-fg-muted">{tx(description)}</p> : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>
@@ -43,7 +44,7 @@ export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; 
 export function Alert({ tone = 'negative', title, children }: { tone?: Tone; title?: string; children?: ReactNode }) {
   return (
     <div role={tone === 'negative' ? 'alert' : 'status'} className={cn('rounded-[var(--t2t-radius-md)] border px-4 py-3 text-sm', tones[tone])}>
-      {title ? <p className="font-semibold">{title}</p> : null}
+      {title ? <p className="font-semibold">{tx(title)}</p> : null}
       {children ? <div className={cn(title && 'mt-1', 'text-fg-muted')}>{children}</div> : null}
     </div>
   );
@@ -52,7 +53,7 @@ export function Alert({ tone = 'negative', title, children }: { tone?: Tone; tit
 export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-      <p className="text-sm font-semibold text-fg">{title}</p>
+      <p className="text-sm font-semibold text-fg">{tx(title)}</p>
       {children ? <p className="max-w-md text-sm text-fg-muted">{children}</p> : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>
@@ -63,7 +64,7 @@ export function Stat({ label, value, sub, tone = 'neutral' }: { label: string; v
   const accent: Record<Tone, string> = { neutral: 'before:bg-line', accent: 'before:bg-accent', positive: 'before:bg-positive', warning: 'before:bg-warning', negative: 'before:bg-negative', violet: 'before:bg-violet' };
   return (
     <Card className={cn('relative overflow-hidden px-5 py-4 before:absolute before:inset-x-0 before:top-0 before:h-0.5', accent[tone])}>
-      <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">{tx(label)}</p>
       <p className="mt-2 font-mono text-2xl font-semibold tabular-nums text-fg">{value}</p>
       {sub ? <p className="mt-1 text-xs text-fg-muted">{sub}</p> : null}
     </Card>

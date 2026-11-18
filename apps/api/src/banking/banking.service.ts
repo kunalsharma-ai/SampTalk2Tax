@@ -8,11 +8,21 @@ import {
   dec,
   minorUnits,
   balanceBreaks,
+  DateFormat,
+  detectStatementFormat,
+  fileTotalsCheck,
+  ParsedStatementLine,
   parseStatement,
+  parseStatementFile,
+  StatementFile,
+  StatementFormat,
+  StatementImportError,
   reconciliationDifference,
   reconciliationIssues,
   statementLineKeys,
   suggestMatches,
+  learnedPatterns,
+  type LearnedMatch,
   suggestTransfers,
 } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
@@ -40,6 +50,8 @@ interface Actor {
 }
 
 const BANK_SUBTYPES = ['BANK', 'CASH'];
+/** How many recent matches in the organisation suggestions learn from. */
+const LEARN_FROM_MATCHES = 2000;
 const entryNo = (n: number | null) => (n ? `JE-${String(n).padStart(6, '0')}` : null);
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 const addDay = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
@@ -117,9 +129,17 @@ export class BankingService {
 
   // --------------------------------------------------------------- import
 
-  async importStatement(org: BankOrg, actor: Actor, accountId: string, input: { fileName: string; csv: string; mapping: StatementMapping; dryRun: boolean }) {
+  async importStatement(org: BankOrg, actor: Actor, accountId: string, input: { fileName: string; csv: string; format?: StatementFormat; mapping?: StatementMapping; dateFormat?: DateFormat; dryRun: boolean }) {
     const account = await this.bankAccount(this.prisma, org.id, accountId);
-    const parsed = parseStatement(input.csv, input.mapping, org.functionalCurrency);
+    const format = input.format ?? 'CSV';
+    let file: StatementFile | null = null;
+    let parsed: ParsedStatementLine[];
+    if (format === 'CSV') parsed = parseStatement(input.csv, input.mapping!, org.functionalCurrency);
+    else {
+      if (detectStatementFormat(input.csv) !== format) throw new StatementImportError([`This file does not look like ${format}`]);
+      file = parseStatementFile(format, input.csv, org.functionalCurrency, input.dateFormat);
+      parsed = file.lines;
+    }
     const fingerprints = statementLineKeys(accountId, parsed).map(sha);
     const run = async (db: Tx | PrismaService) => {
       const existing = new Set(
@@ -134,13 +154,17 @@ export class BankingService {
     };
     const scale = minorUnits(org.functionalCurrency);
     const check = balanceBreaks(parsed);
-    const balanceCheck = input.mapping.balance == null ? null : {
+    const totals = file ? fileTotalsCheck(file) : null;
+    const fileTotals = totals ? { opening: totals.opening.toFixed(scale), closing: totals.closing.toFixed(scale), computed: totals.computed.toFixed(scale), difference: totals.difference.toFixed(scale) } : null;
+    const balanceCheck = format !== 'CSV' || input.mapping?.balance == null ? null : {
       checked: check.checked,
       order: check.order,
       breaks: check.breaks.map((b) => ({ row: b.row, previousRow: b.previousRow, date: b.date, previousDate: b.previousDate, expected: b.expected.toFixed(scale), shown: b.shown.toFixed(scale), gap: b.gap.toFixed(scale) })),
     };
     const preview = (r: Awaited<ReturnType<typeof run>>) => ({
       accountId,
+      format,
+      fileTotals,
       balanceCheck,
       lines: r.rows.map((x) => ({ row: x.row, date: x.date, description: x.description, reference: x.reference, amount: x.amount.toFixed(scale), balance: x.balance ? x.balance.toFixed(scale) : null, duplicate: x.duplicate })),
       newCount: r.fresh.length,
@@ -197,7 +221,7 @@ export class BankingService {
         action: 'bank.statement_imported',
         entityType: 'bank_statement_import',
         entityId: imp.id,
-        data: { accountId, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount, balanceBreaks: balanceCheck ? balanceCheck.breaks.length : null },
+        data: { accountId, format, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount, fileTotals, balanceBreaks: balanceCheck ? balanceCheck.breaks.length : null },
       });
       return { imported: true, importId: imp.id, ...preview(r) };
     });
@@ -636,10 +660,76 @@ export class BankingService {
   async suggestionsFor(db: Tx | PrismaService, org: BankOrg, accountId: string, lines: { id: string; date: Date; amount: Prisma.Decimal; description: string; reference: string | null }[]) {
     const dates = lines.map((l) => fromDbDate(l.date)).sort();
     const ledger = await this.unmatchedLedgerLines(db, org.id, accountId, { from: addDay(dates[0], -14), to: addDay(dates[dates.length - 1], 14) });
+    const [who, learned] = await Promise.all([this.counterparties(db, org.id, accountId, ledger.map((r) => ({ id: r.id, entryId: r.entry_id }))), this.learnedMatches(db, org.id, accountId)]);
     return suggestMatches(
       lines.map((l) => ({ id: l.id, date: fromDbDate(l.date), amount: new D(l.amount.toString()), text: `${l.description} ${l.reference ?? ''}` })),
-      ledger.map((r) => ({ id: r.id, date: fromDbDate(r.date), amount: new D(r.net.toString()), text: `${r.memo ?? ''} ${r.reference ?? ''} ${r.description ?? ''}` })),
+      ledger.map((r) => ({ id: r.id, date: fromDbDate(r.date), amount: new D(r.net.toString()), text: `${r.memo ?? ''} ${r.reference ?? ''} ${r.description ?? ''}`, counterparty: who.get(r.id)?.key ?? null })),
+      learned,
     );
+  }
+
+  /** What matching on this account has learned from past matches (BANK-017). */
+  async matchPatterns(org: BankOrg, accountId: string) {
+    await this.bankAccount(this.prisma, org.id, accountId);
+    const learned = await this.learnedMatches(this.prisma, org.id, accountId);
+    return { decisions: learned.length, patterns: learnedPatterns(learned).slice(0, 50) };
+  }
+
+  /**
+   * Past matches on the account, newest first: each statement line's text with who its ledger
+   * line was with. A match later undone counts against that counterparty, unless the same line
+   * is matched to that counterparty again now (an unmatch to fix a detail, not a wrong match).
+   */
+  private async learnedMatches(db: Tx | PrismaService, orgId: string, accountId: string): Promise<LearnedMatch[]> {
+    const matches = (
+      await db.bankMatch.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: LEARN_FROM_MATCHES, include: { statementLine: true, journalLine: true } })
+    ).filter((m) => m.statementLine.accountId === accountId);
+    if (!matches.length) return [];
+    const who = await this.counterparties(db, orgId, accountId, matches.map((m) => ({ id: m.journalLineId, entryId: m.journalLine.entryId })));
+    const byPair = new Map<string, LearnedMatch>();
+    for (const m of matches) {
+      const c = who.get(m.journalLineId);
+      if (!c) continue;
+      const key = `${m.statementLineId}\u0001${c.key}`;
+      const kept = m.removedAt == null;
+      const cur = byPair.get(key);
+      if (!cur) byPair.set(key, { text: `${m.statementLine.description} ${m.statementLine.reference ?? ''}`, counterparty: c.key, label: c.label, kept });
+      else if (kept) cur.kept = true;
+    }
+    return [...byPair.values()];
+  }
+
+  /**
+   * Who each ledger line is with: the contact on its payment, or else the account on the
+   * entry's largest other line (bank charges, rent, a transfer).
+   */
+  private async counterparties(db: Tx | PrismaService, orgId: string, bankAccountId: string, lines: { id: string; entryId: string }[]) {
+    const out = new Map<string, { key: string; label: string }>();
+    if (!lines.length) return out;
+    const entryIds = [...new Set(lines.map((l) => l.entryId))];
+    const [payments, others] = await Promise.all([
+      db.payment.findMany({ where: { orgId, journalEntryId: { in: entryIds } }, include: { contact: { select: { id: true, name: true } } } }),
+      db.journalLine.findMany({ where: { entryId: { in: entryIds } } }),
+    ]);
+    const paidBy = new Map(payments.map((p) => [p.journalEntryId, p.contact]));
+    const offset = new Map<string, { accountId: string; size: Dec }>();
+    for (const l of others) {
+      if (l.accountId === bankAccountId) continue;
+      const size = new D(l.functionalDebit.toString()).plus(l.functionalCredit.toString());
+      const cur = offset.get(l.entryId);
+      if (!cur || size.gt(cur.size)) offset.set(l.entryId, { accountId: l.accountId, size });
+    }
+    const accountIds = [...new Set([...offset.values()].map((o) => o.accountId))];
+    const names = new Map((accountIds.length ? await db.account.findMany({ where: { orgId, id: { in: accountIds } }, select: { id: true, name: true } }) : []).map((a) => [a.id, a.name]));
+    for (const l of lines) {
+      const contact = paidBy.get(l.entryId);
+      if (contact) out.set(l.id, { key: `contact:${contact.id}`, label: contact.name });
+      else {
+        const o = offset.get(l.entryId);
+        if (o) out.set(l.id, { key: `account:${o.accountId}`, label: names.get(o.accountId) ?? 'another account' });
+      }
+    }
+    return out;
   }
 
   async unmatchedLedgerLines(db: Tx | PrismaService, orgId: string, accountId: string, q: { from: string; to: string; search?: string }) {
@@ -677,6 +767,8 @@ export class BankingService {
         })
       : [];
     const entryIds = [...new Set([...matches.map((m) => m.journalLine.entryId)])];
+    // Files attached to each line (receipts, bank advices), counted without their bytes.
+    const files = ids.length ? await db.attachment.findMany({ where: { orgId: org.id, entityType: 'BANK_STATEMENT_LINE', entityId: { in: ids }, removedAt: null }, select: { entityId: true } }) : [];
     const suggested = suggestions.length
       ? await db.journalLine.findMany({ where: { id: { in: suggestions.map((s) => s.journalLineId) } }, include: { entry: true } })
       : [];
@@ -714,6 +806,7 @@ export class BankingService {
         reconciled: !!l.reconciliationId,
         matches: matches.filter((m) => m.statementLineId === l.id).map((m) => ({ id: m.id, origin: m.origin, ...link(m.journalLine) })),
         suggestion: s && sl ? { ...link(sl), score: s.score, reasons: s.reasons, unique: s.unique } : null,
+        attachments: files.filter((f) => f.entityId === l.id).length,
       };
     });
   }

@@ -94,7 +94,7 @@ export default function PayRunPage() {
                 {r.payslips.map((s) => (
                   <tr key={s.id}>
                     <Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/payroll/runs/${r.id}/payslips/${s.employee.id}`}>{s.employee.name}</Link><span className="block num text-xs text-fg-muted">{s.employee.code}</span></Td>
-                    <Td numeric className="whitespace-nowrap">{s.paidDays.replace(/\.0$/, '')}/{s.daysInMonth}{Number(s.lopDays) ? <span className="block text-xs text-warning">{s.lopDays.replace(/\.0$/, '')} LOP</span> : null}</Td>
+                    <Td numeric className="whitespace-nowrap">{s.paidDays.replace(/\.0$/, '')}/{s.daysInMonth}{Number(s.lopDays) ? <span className="block text-xs text-warning">{s.lopDays.replace(/\.0$/, '')} LOP</span> : null}{Number(s.leaveLopDays) ? <span className="block text-xs text-warning">{s.leaveLopDays.replace(/\.0$/, '')} unpaid leave</span> : null}</Td>
                     <Td numeric><Money value={s.gross} currency="INR" />{s.oneOffs.length ? <span className="block text-xs text-fg-muted">incl. one-off</span> : null}</Td>
                     <Td numeric><Money value={s.pf.employee} currency="INR" /></Td>
                     <Td numeric>{s.esi.covered ? <Money value={s.esi.employee} currency="INR" /> : <span className="text-xs text-fg-faint">Not covered</span>}</Td>

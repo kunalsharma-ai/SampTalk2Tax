@@ -352,12 +352,12 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'banking/[id]': {
     what: 'One bank account: imported statement lines, what is matched and what is not.',
-    how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance.',
+    how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance. Use Files on a line to keep the bank advice or receipt behind it; the button shows how many are attached. Suggestions learn from your matches: when two ledger lines have the same amount, the one with the contact or account you matched similar lines to comes first, and What matching learned shows what it has picked up.',
     where: 'Opened from Bank accounts.',
   },
   'banking/[id]/import': {
     what: 'Bring a bank statement file into the account.',
-    how: 'Upload a CSV, map its columns to date, narration and amount, check the preview, and import. Lines already imported are skipped. Choose the balance column too when the statement has one: each line is checked against the running balance, and the preview shows where lines are missing and how much.',
+    how: 'Upload a CSV, OFX/QFX, QIF or MT940 file. For a CSV, map its columns to date, narration and amount; the other formats are read as they are. Check the preview, and import. Lines already imported are skipped. Choose the balance column too when the statement has one: each line is checked against the running balance, and the preview shows where lines are missing and how much.',
     where: 'Opened from a bank account. Imported lines wait to be matched on the account page.',
   },
   'banking/[id]/ai': {
@@ -405,6 +405,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     what: 'Your employees with their salary structure, PAN, statutory numbers and bank details.',
     how: 'Add an employee and their salary components. Open one to change their structure from a date.',
     where: 'Payroll. Employees are paid in Pay runs.',
+  },
+  'payroll/leave': {
+    what: 'Leave types with a yearly allowance, leave taken by each employee, and the balance left in the April to March year.',
+    how: 'Add leave types (paid with days a year, or unpaid), then record leave one month at a time. Unpaid leave becomes loss-of-pay days on that month\'s payslip; a draft run is updated at once.',
+    where: 'Payroll. Leave in a month whose pay run is posted cannot change.',
+  },
+  'payroll/bonus': {
+    what: 'The statutory bonus each employee is owed for an April to March year under the Code on Wages, from posted payslips, with what has been paid and what is still to pay.',
+    how: 'Choose the year and the bonus rate (8.33% to 20%), check the two ceilings, then add the bonus to a draft pay run. It is paid and taxed with that month\'s salary.',
+    where: 'Payroll. The bonus appears as a one-off earning on the payslips of the run you choose.',
   },
   'payroll/runs': {
     what: 'Monthly payroll: gross pay, deductions (PF, ESI, PT, TDS) and net pay for every employee.',
@@ -573,6 +583,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     what: 'The advance income tax for the tax year: the year\'s estimated income, the tax on it with surcharge and cess, and how much should be paid by each of the four instalment dates.',
     how: 'Choose how the business is taxed and how to estimate the year (the profit so far scaled up to a full year, or your own figure), add adjustments from book profit to taxable income, and pick the accounts that hold advance tax paid and tax deducted at source. Pay what each instalment shows by its date.',
     where: 'Tax. Reads posted journals for the tax year (April to March); income tax expense and year-end closing are left out. Saving changes only the plan, not the books. For companies, firms and LLPs; not individuals, presumptive income, MAT or interest for late instalments.',
+  },
+  'tax/gst-payments': {
+    what: 'Settling a month\'s GST: the tax payable and input tax credit in your books, the credit set off in the order the CGST Act requires, and the cash paid by PMT-06 challan.',
+    how: 'Choose the month, check the set-off, pay the cash on the GST portal, then record the payment with the CPIN and CIN. Interest and late fee go to an expense account you choose.',
+    where: 'Tax. Reads the six GST accounts from GST settings at the end of the month; recording posts one journal (output tax debited, credit used and the bank credited). Months are settled in order; only the latest payment can be voided. Cess is not handled.',
   },
   'tax/gst-returns': {
     what: 'GSTR-1 and GSTR-3B worked out from your invoices and bills.',

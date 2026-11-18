@@ -20,6 +20,13 @@ describe('Hindi interface text', () => {
     expect(clashes).toEqual([]);
   });
 
+  it('covers the headings, labels and buttons the shared components show most', () => {
+    // Table headings, field labels and buttons are translated by the shared components, so the
+    // words that appear on most screens must be in the catalogue.
+    const common = ['Status', 'Amount', 'Date', 'Cancel', 'Save', 'Name', 'Month', 'Reason', 'Total', 'Due', 'Description', 'Customer', 'Vendor', 'Account', 'Balance', 'Reference', 'Edit', 'Debit', 'Credit', 'Close', 'Add', 'Remove', 'Delete', 'Approve', 'Reject', 'Download', 'Search', 'Could not load'];
+    expect(common.filter((w) => !hi[w])).toEqual([]);
+  });
+
   it('keeps every {placeholder} of the English text', () => {
     const bad = Object.entries(hi).filter(([en, h]) => (en.match(/\{\w+\}/g) ?? []).some((p) => !h.includes(p)));
     expect(bad).toEqual([]);

@@ -1,7 +1,8 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { DEFAULT_PREFERENCES, LANGUAGES, type DisplayDateFormat, type Language, type NumberFormat } from '@talk2tax/accounting-engine';
-import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { UiTextContext } from '@talk2tax/ui';
+import { createContext, useCallback, useContext, useEffect, type ReactNode } from 'react';
 import { api } from './api';
 import { setDisplayPreferences } from './format';
 import { hi } from './messages/hi';
@@ -49,13 +50,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = language === 'hi' ? 'hi' : 'en';
     document.documentElement.dir = LANGUAGES.find((l) => l.code === language)?.dir ?? 'ltr';
   }, [language]);
+  const uiText = useCallback((text: string) => translate(language, text), [language]);
   const key = `${preferences.language}|${preferences.numberFormat}|${preferences.dateFormat}|${preferences.timeZone ?? ''}`;
   return (
     <I18nContext.Provider value={{ language, preferences, t: (text, vars) => translate(language, text, vars) }}>
       {/* Remounted when a preference changes, so text formatted outside React state is redone. */}
-      <div key={key} className="contents">
-        {children}
-      </div>
+      <UiTextContext.Provider value={uiText}>
+        <div key={key} className="contents">
+          {children}
+        </div>
+      </UiTextContext.Provider>
     </I18nContext.Provider>
   );
 }
