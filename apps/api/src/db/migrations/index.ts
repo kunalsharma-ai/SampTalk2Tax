@@ -18,6 +18,7 @@ import auditEvents from './20261219100000_audit_events';
 import plans from './20261220100000_plans';
 import twoStepSignIn from './20261220100000_two_step_sign_in';
 import orgSecuritySettings from './20261221100000_org_security_settings';
+import expenseAllowances from './20261222100000_expense_allowances';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances];

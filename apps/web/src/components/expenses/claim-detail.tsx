@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, CardHeader, Dialog, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, Dialog, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -155,7 +155,7 @@ export function ClaimDetail() {
                 <Td className="text-fg-muted">{l.lineNo}</Td>
                 <Td>{date(l.date)}</Td>
                 <Td className="text-fg-muted"><span className="num">{l.accountCode}</span> {l.accountName}</Td>
-                <Td>{[l.merchant, l.description].filter(Boolean).join(' · ') || <span className="text-fg-faint">—</span>}{l.possibleDuplicateOf.length ? <p className="text-xs text-warning">Same date and amount as {l.possibleDuplicateOf.join(', ')}</p> : null}</Td>
+                <Td>{l.allowance ? <Badge tone="violet">{l.allowance.kind === 'MILEAGE' ? 'Mileage' : 'Per diem'}</Badge> : null} {[l.merchant, l.description].filter(Boolean).join(' · ') || <span className="text-fg-faint">—</span>}{l.possibleDuplicateOf.length ? <p className="text-xs text-warning">Same date and amount as {l.possibleDuplicateOf.join(', ')}</p> : null}</Td>
                 <Td className="text-fg-muted">{l.taxName ?? '—'}</Td>
                 <Td numeric><Money value={l.taxAmount} currency={cur} /></Td>
                 <Td numeric><Money value={l.amount} currency={cur} /></Td>

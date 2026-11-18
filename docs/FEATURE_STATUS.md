@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 797 |
+| Not started | 795 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 431 |
+| Tested | 433 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 30 | 24 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 19 | 8 |
+| Expense management | M2 | 27 | 17 | 10 |
 | Treasury management | M6 | 28 | 22 | 6 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -1775,6 +1775,32 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Categories are the organisation's active expense accounts; no separate category list or per-category limits.
 - Evidence:
   - apps/api/src/expenses/expenses.service.ts › options
+
+### EXP-006 — Mileage claims
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Mileage at organisation rates per km (vehicle types as named rates). No map/GPS distance lookup.
+- Evidence:
+  - packages/accounting-engine/src/allowances.ts + test/allowances.test.ts
+  - apps/api/src/expenses/allowances.service.ts; MongoDB collections expense_allowance_rates, expense_claim_allowances
+  - /v1/orgs/:orgId/expense-allowance-rates; claim lines with allowance { rateId, quantity, from, to, purpose }
+  - apps/api/test/expense-allowances.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/allowance-rates, claim form line kinds
+  - apps/web/e2e/expense-allowances-flow.test.mjs
+
+### EXP-008 — Per diem
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Per diem at organisation daily rates (places as named rates), whole or half days.
+- Evidence:
+  - packages/accounting-engine/src/allowances.ts + test/allowances.test.ts
+  - apps/api/src/expenses/allowances.service.ts; MongoDB collections expense_allowance_rates, expense_claim_allowances
+  - /v1/orgs/:orgId/expense-allowance-rates; claim lines with allowance { rateId, quantity, from, to, purpose }
+  - apps/api/test/expense-allowances.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/allowance-rates, claim form line kinds
+  - apps/web/e2e/expense-allowances-flow.test.mjs
 
 ### EXP-009 — Reimbursements
 

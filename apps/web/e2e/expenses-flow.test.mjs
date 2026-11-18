@@ -73,7 +73,7 @@ test('the employee sees only their claims and writes one with live totals', asyn
   await employee.getByLabel('Amount for line 1').fill('1180');
   await employee.getByLabel('Tax for line 1').selectOption({ label: 'GST 18%' });
   await employee.getByText('incl. tax ₹180.00').first().waitFor();
-  await employee.getByRole('button', { name: '+ Add line' }).click();
+  await employee.getByRole('button', { name: '+ Add receipt' }).click();
   await employee.getByLabel('Category for line 2').selectOption({ label: '6700 · Travel' });
   await employee.getByLabel('Merchant for line 2').fill('Synthetic Diner');
   await employee.getByLabel('Amount for line 2').fill('450.50');

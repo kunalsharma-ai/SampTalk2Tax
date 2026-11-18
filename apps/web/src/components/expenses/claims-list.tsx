@@ -53,7 +53,12 @@ export function ClaimsList() {
       <PageHeader
         title={role === 'EMPLOYEE' ? 'My expense claims' : 'Expense claims'}
         description="Money people spent for the business and want paid back. A claim is approved by someone other than the claimant, which records the expense; it is then paid back from a bank account."
-        actions={can(role, 'expenses.submit') ? <Link href={`/orgs/${orgId}/expenses/new`}><Button>New claim</Button></Link> : null}
+        actions={
+          <>
+            {can(role, 'expenses.read') ? <Link href={`/orgs/${orgId}/expenses/allowance-rates`}><Button variant="secondary">Mileage and per diem rates</Button></Link> : null}
+            {can(role, 'expenses.submit') ? <Link href={`/orgs/${orgId}/expenses/new`}><Button>New claim</Button></Link> : null}
+          </>
+        }
       />
       {view === 'mine' && q.data ? (
         <div className="mb-6 grid gap-4 sm:grid-cols-3">

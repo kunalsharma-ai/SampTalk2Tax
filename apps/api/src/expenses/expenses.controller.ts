@@ -4,15 +4,30 @@ import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { decimalString, isoDate, openApi, ZodPipe } from '../common/zod';
 import { ExpensesService } from './expenses.service';
+import { AllowancesService } from './allowances.service';
 
-const Line = z.object({
-  date: isoDate,
-  accountId: z.uuid(),
-  merchant: z.string().trim().max(200).nullish(),
-  description: z.string().trim().max(500).nullish(),
-  amount: decimalString,
-  taxRateId: z.uuid().nullish(),
+const Allowance = z.object({
+  rateId: z.uuid(),
+  /** Kilometres or days. */
+  quantity: decimalString,
+  from: z.string().trim().max(120).nullish(),
+  to: z.string().trim().max(120).nullish(),
+  purpose: z.string().trim().max(200).nullish(),
 });
+/** A receipt line (account and amount), or a mileage / per diem line (allowance; the server works out the amount and account). */
+const Line = z
+  .object({
+    date: isoDate,
+    accountId: z.uuid().nullish(),
+    merchant: z.string().trim().max(200).nullish(),
+    description: z.string().trim().max(500).nullish(),
+    amount: decimalString.nullish(),
+    taxRateId: z.uuid().nullish(),
+    allowance: Allowance.nullish(),
+  })
+  .refine((l) => !!l.allowance || (!!l.accountId && !!l.amount), 'A line needs a category and an amount, or a mileage or per diem rate');
+const RateBody = z.object({ kind: z.enum(['MILEAGE', 'PER_DIEM']), name: z.string().trim().min(1).max(80), rate: decimalString, accountId: z.uuid() });
+const RateUpdateBody = z.object({ name: z.string().trim().min(1).max(80), rate: decimalString, accountId: z.uuid(), isActive: z.boolean() });
 const ClaimBody = z.object({ title: z.string().trim().min(1).max(200), lines: z.array(Line).min(1).max(100) });
 const ListQuery = z.object({
   status: z.enum(['DRAFT', 'SUBMITTED', 'REJECTED', 'APPROVED', 'REIMBURSED', 'VOID']).optional(),
@@ -118,5 +133,33 @@ export class ExpensesController {
   @ApiBody({ schema: openApi(VoidBody) })
   void(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('claimId', ParseUUIDPipe) id: string, @Body(new ZodPipe(VoidBody)) body: z.infer<typeof VoidBody>) {
     return this.expenses.void(org, user, id, body);
+  }
+}
+
+/** Mileage and per diem rates (EXP-006, EXP-008). Everyone who claims can read the active ones through the claim options. */
+@ApiTags('expenses')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/expense-allowance-rates')
+export class AllowanceRatesController {
+  constructor(private readonly allowances: AllowancesService) {}
+
+  @Get()
+  @RequirePermission('expenses.read')
+  list(@CurrentOrg() org: OrgContext) {
+    return this.allowances.listRates(org);
+  }
+
+  @Post()
+  @RequirePermission('expenses.reimburse')
+  @ApiBody({ schema: openApi(RateBody) })
+  create(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(RateBody)) body: z.infer<typeof RateBody>) {
+    return this.allowances.createRate(org, user.id, body);
+  }
+
+  @Put(':rateId')
+  @RequirePermission('expenses.reimburse')
+  @ApiBody({ schema: openApi(RateUpdateBody) })
+  update(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('rateId', ParseUUIDPipe) id: string, @Body(new ZodPipe(RateUpdateBody)) body: z.infer<typeof RateUpdateBody>) {
+    return this.allowances.updateRate(org, user.id, id, body);
   }
 }

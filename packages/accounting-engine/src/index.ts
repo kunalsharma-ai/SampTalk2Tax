@@ -7,6 +7,7 @@ export * from './coa-templates';
 export * from './documents';
 export * from './bank';
 export * from './expenses';
+export * from './allowances';
 export * from './budgets';
 export * from './cashflow';
 export * from './kpis';

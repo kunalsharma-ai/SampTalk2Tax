@@ -55,7 +55,9 @@ test('a quotation from a deal is sent, revised, accepted into an order, and part
   await page.getByRole('heading', { name: 'Quotations, orders and contracts' }).waitFor();
   await page.getByRole('link', { name: 'New quotation' }).click();
   await page.getByRole('heading', { name: 'New quotation' }).waitFor();
+  // Customers and deals load separately; a select shows its value only once that option exists.
   await page.getByLabel('Deal', { exact: true }).locator('option', { hasText: 'Annual bookkeeping' }).waitFor({ state: 'attached' });
+  await page.getByLabel('Customer', { exact: true }).locator('option', { hasText: 'Nair Logistics' }).waitFor({ state: 'attached' });
   assert.equal(await page.getByLabel('Customer', { exact: true }).inputValue(), customer.id);
   assert.equal(await page.getByLabel('Deal', { exact: true }).inputValue(), deal.id);
   await page.getByLabel('Account for line 1').selectOption({ label: '4100 · Sales Revenue' });

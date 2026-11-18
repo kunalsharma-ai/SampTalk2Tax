@@ -6438,6 +6438,30 @@
         "Organisation rule: GET/PUT /v1/orgs/:orgId/security (org_security_settings); AuthGuard refuses MFA_REQUIRED; apps/web/e2e/two-step-required-flow.test.mjs"
       ],
       "notes": "Authenticator-app codes (TOTP) and ten single-use recovery codes; an organisation can require it for every member. SMS and email codes are not offered."
+    },
+    "EXP-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/allowances.ts + test/allowances.test.ts",
+        "apps/api/src/expenses/allowances.service.ts; MongoDB collections expense_allowance_rates, expense_claim_allowances",
+        "/v1/orgs/:orgId/expense-allowance-rates; claim lines with allowance { rateId, quantity, from, to, purpose }",
+        "apps/api/test/expense-allowances.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/allowance-rates, claim form line kinds",
+        "apps/web/e2e/expense-allowances-flow.test.mjs"
+      ],
+      "notes": "Mileage at organisation rates per km (vehicle types as named rates). No map/GPS distance lookup."
+    },
+    "EXP-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/allowances.ts + test/allowances.test.ts",
+        "apps/api/src/expenses/allowances.service.ts; MongoDB collections expense_allowance_rates, expense_claim_allowances",
+        "/v1/orgs/:orgId/expense-allowance-rates; claim lines with allowance { rateId, quantity, from, to, purpose }",
+        "apps/api/test/expense-allowances.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/allowance-rates, claim form line kinds",
+        "apps/web/e2e/expense-allowances-flow.test.mjs"
+      ],
+      "notes": "Per diem at organisation daily rates (places as named rates), whole or half days."
     }
   }
 }
