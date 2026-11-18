@@ -25,6 +25,7 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | Least privilege for staff | EMPLOYEE role: its own expense claims and their receipts only; every ledger, report, banking and audit route answers 403, other people's claims 404; claim options endpoint so employees never read the chart of accounts | `expenses.e2e.test.ts › the Employee role` |
 | Money controls | Credit limit enforced on posting (override is permission-checked and audited); duplicate vendor invoice numbers refused by service and unique index; idempotent payments keyed by `Idempotency-Key` + body hash | same |
 | Audit trail | Append-only, SHA-256 hash-chained per org; verify endpoint; triggers block edits | `ledger.e2e.test.ts › audit trail` |
+| Evidence references | An audit event about a bill, invoice, payment, journal, bank line, expense claim or customer onboarding stores `data.evidence`: each file attached to that record at that moment (attachment id, file name, SHA-256), up to 20, hashed into the chain. Removed files drop out of later events; the audit trail page links each file | `audit-evidence.e2e.test.ts` |
 | HTTP hardening | `helmet` headers; CORS allow-list from config | `bootstrap.ts` |
 | Secrets | Environment only; `.env` git-ignored; `.env.example` has placeholders | |
 | Errors | Stable error codes; no stack traces or SQL in responses | `common/errors.ts` |

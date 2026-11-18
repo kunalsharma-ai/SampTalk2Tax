@@ -19577,11 +19577,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/attachments-approvals.e2e.test.ts"
+        "apps/api/test/attachments-approvals.e2e.test.ts",
+        "apps/api/src/audit/audit.service.ts",
+        "apps/api/test/audit-evidence.e2e.test.ts",
+        "apps/web/e2e/audit-evidence-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/audit/page.tsx",
+        "docs/SECURITY.md"
       ],
-      "notes": "Evidence files are linked to the records they support with a SHA-256 checksum. Audit-event-level evidence references are not modelled yet."
+      "notes": "Evidence files are linked to the records they support with a SHA-256 checksum. Every audit event about a record that can hold files also carries a reference to each file attached at that moment: id, name and SHA-256, hashed into the chain. The audit trail page shows and links them."
     },
     {
       "id": "AUDIT-029",

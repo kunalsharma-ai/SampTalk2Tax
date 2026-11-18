@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
-interface Event { id: string; actorId: string | null; action: string; entityType: string; entityId: string | null; hash: string; createdAt: string }
+interface EvidenceRef { attachmentId: string; fileName: string; sha256: string }
+interface Event { id: string; actorId: string | null; action: string; entityType: string; entityId: string | null; data: { evidence?: EvidenceRef[] } | null; hash: string; createdAt: string }
 
 export default function AuditPage() {
   const { org, orgId } = useOrg();
@@ -22,7 +23,7 @@ export default function AuditPage() {
     <>
       <PageHeader
         title="Audit trail"
-        description="Every change is recorded here. Events cannot be edited or deleted, and each one is chained to the previous by a SHA-256 hash."
+        description="Every change is recorded here. Events cannot be edited or deleted, and each one is chained to the previous by a SHA-256 hash. An event about a bill, invoice, payment, journal, bank line or expense claim names the files attached to it at that moment, with their checksums."
         actions={<Button variant="secondary" loading={verify.isPending} onClick={() => verify.mutate()}>Verify integrity</Button>}
       />
       {verify.data ? (
@@ -43,6 +44,7 @@ export default function AuditPage() {
               <Th>Who</Th>
               <Th>Action</Th>
               <Th>Record</Th>
+              <Th>Evidence</Th>
               <Th>Hash</Th>
             </tr>
           </thead>
@@ -53,6 +55,18 @@ export default function AuditPage() {
                 <Td>{who(e.actorId)}</Td>
                 <Td><Badge tone="accent">{e.action}</Badge></Td>
                 <Td className="text-xs text-fg-muted">{e.entityType}{e.entityId ? ` · ${e.entityId.slice(0, 8)}` : ''}</Td>
+                <Td className="text-xs">
+                  {e.data?.evidence?.length ? (
+                    <ul aria-label={`Evidence for event ${e.id}`} className="grid gap-0.5">
+                      {e.data.evidence.map((f) => (
+                        <li key={f.attachmentId}>
+                          <a className="break-all text-accent hover:underline" href={`/api/t2t/v1/orgs/${orgId}/attachments/${f.attachmentId}/content?inline=1`} target="_blank" rel="noopener noreferrer">{f.fileName}</a>{' '}
+                          <span className="num text-fg-faint" title={`SHA-256 ${f.sha256}`}>{f.sha256.slice(0, 8)}…</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <span className="text-fg-faint">None</span>}
+                </Td>
                 <Td className="num text-xs text-fg-faint" title={e.hash}>{e.hash.slice(0, 12)}…</Td>
               </Tr>
             ))}
