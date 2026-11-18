@@ -32,6 +32,13 @@ export class AttachmentsController {
     return this.attachments.list(org, user, q.entityType, q.entityId, q.includeRemoved);
   }
 
+  /** The same file on more than one record (DOC-018), most serious first; only records the caller may see. */
+  @Get('duplicates')
+  @RequirePermission('reports.read')
+  duplicates(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser) {
+    return this.attachments.duplicates(org, user);
+  }
+
   /** Send the file's bytes as the body (Content-Type: application/pdf, image/png, image/jpeg, image/webp or application/octet-stream). */
   @Post()
   @RequirePermission('org.read')

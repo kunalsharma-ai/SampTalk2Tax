@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 66 |
+| Implementing | 65 |
 | Implemented | 34 |
-| Tested | 447 |
+| Tested | 448 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -4185,10 +4185,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DOC-018 — Duplicate detection
 
 - Module: Document intelligence
-- Status: **Implementing**
-- Notes: Exact duplicate files (same SHA-256) on the same record are refused. No cross-record or fuzzy duplicate detection.
+- Status: **Tested**
+- Notes: Exact duplicates (same SHA-256): refused on the same record; on other records named when uploaded and listed (only records the person may see), and listed on Duplicate files with a risk (two claims or two bills first). Not built: near-duplicate detection of rescans or photos.
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files
+  - packages/accounting-engine/src/duplicate-files.ts
+  - packages/accounting-engine/test/duplicate-files.test.ts
+  - apps/api/src/attachments/attachments.service.ts
+  - apps/api/test/duplicate-files.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/duplicate-files/page.tsx
+  - apps/web/e2e/duplicate-files-flow.test.mjs
+  - docs/DUPLICATE_FILES.md
 
 ### RPT-013 — Project profitability
 

@@ -24,6 +24,7 @@ import taxNoticesMigration from './20261224100000_tax_notices';
 import financialTagsMigration from './20261225100000_financial_tags';
 import billChecksMigration from './20261226100000_bill_checks';
 import accountReconciliationsMigration from './20261227100000_account_reconciliations';
+import attachmentHashesMigration from './20261228100000_attachment_hashes';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration, billChecksMigration, accountReconciliationsMigration];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration, billChecksMigration, accountReconciliationsMigration, attachmentHashesMigration];

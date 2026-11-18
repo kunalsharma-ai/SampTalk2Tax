@@ -82,3 +82,4 @@ export * from './financial-tags';
 export * from './bill-checks';
 export * from './account-reconciliation';
 export * from './expense-report';
+export * from './duplicate-files';

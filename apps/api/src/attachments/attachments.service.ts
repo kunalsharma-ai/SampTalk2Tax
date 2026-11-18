@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { compareDuplicates, duplicateFileRisk, type FileUse } from '@talk2tax/accounting-engine';
 import { AttachmentEntity } from '@talk2tax/database';
 import { hasPermission, Permission } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -7,7 +8,8 @@ import { OrgContext } from '../auth/decorators';
 import { ExpensesService } from '../expenses/expenses.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
-import { ATTACHMENTS } from '../db/collections/sales';
+import { DocumentStoreService } from '../common/document-store.service';
+import { ATTACHMENTS, attachments } from '../db/collections/sales';
 import { MovedTables } from '../db/moved-table';
 import { UsageService } from '../usage/usage.service';
 
@@ -49,6 +51,7 @@ export class AttachmentsService {
     private readonly expenses: ExpensesService,
     private readonly usage: UsageService,
     private readonly moved: MovedTables,
+    private readonly store: DocumentStoreService,
   ) {}
 
   async list(org: Org, actor: { id: string }, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
@@ -59,8 +62,10 @@ export class AttachmentsService {
       orderBy: { createdAt: 'asc' },
     });
     const users = await this.prisma.user.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.uploadedById))] } }, select: { id: true, name: true } });
+    const elsewhere = await this.elsewhere(org, actor, rows.filter((r) => !r.removedAt).map((r) => r.sha256), { entityType, entityId });
     return rows.map((r) => ({
       ...r,
+      alsoOn: r.removedAt ? [] : (elsewhere.get(r.sha256) ?? []),
       uploadedBy: users.find((u) => u.id === r.uploadedById)?.name ?? null,
       createdAt: r.createdAt.toISOString(),
       removedAt: r.removedAt?.toISOString() ?? null,
@@ -74,7 +79,7 @@ export class AttachmentsService {
     const contentType = sniffContentType(input.content);
     if (!contentType) throw new DomainError('UNSUPPORTED_FILE', 'Only PDF, PNG, JPEG and WebP files can be attached', HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     const sha256 = createHash('sha256').update(input.content).digest('hex');
-    return this.prisma.$transaction(async (tx) => {
+    const saved = await this.prisma.$transaction(async (tx) => {
       const count = await tx.attachment.count({ where: { orgId: org.id, entityType: input.entityType, entityId: input.entityId, removedAt: null } });
       if (count >= MAX_PER_RECORD) throw new DomainError('TOO_MANY_FILES', `A record can have at most ${MAX_PER_RECORD} files`, HttpStatus.CONFLICT);
       const same = await tx.attachment.findFirst({ where: { orgId: org.id, entityType: input.entityType, entityId: input.entityId, sha256, removedAt: null }, select: { id: true } });
@@ -106,6 +111,96 @@ export class AttachmentsService {
       });
       return { ...a, createdAt: a.createdAt.toISOString() };
     });
+    const elsewhere = await this.elsewhere(org, actor, [saved.sha256], { entityType: input.entityType, entityId: input.entityId });
+    return { ...saved, alsoOn: elsewhere.get(saved.sha256) ?? [] };
+  }
+
+  /**
+   * Duplicate files across records (DOC-018): files with the same SHA-256 on more than one record
+   * the caller may see, most serious first. One receipt on two claims, or one vendor invoice on two
+   * bills, may mean spending counted twice.
+   */
+  async duplicates(org: Org, actor: { id: string }) {
+    const groups = await this.store.collection(attachments).aggregate<{ _id: string; files: { id: string; fileName: string; createdAt: Date; uploadedById: string; entityType: AttachmentEntity; entityId: string }[]; records: number }>([
+      { $match: { removedAt: null } },
+      { $group: { _id: '$sha256', files: { $push: { id: '$_id', fileName: '$fileName', createdAt: '$createdAt', uploadedById: '$uploadedById', entityType: '$entityType', entityId: '$entityId' } }, refs: { $addToSet: { t: '$entityType', i: '$entityId' } }, latest: { $max: '$createdAt' } } },
+      { $project: { files: 1, latest: 1, records: { $size: '$refs' } } },
+      { $match: { records: { $gt: 1 } } },
+      { $sort: { latest: -1 } },
+      { $limit: 300 },
+    ]);
+    const refs = await this.describe(org, actor, groups.flatMap((g) => g.files.map((f) => ({ entityType: f.entityType, entityId: f.entityId }))));
+    const users = await this.prisma.user.findMany({ where: { id: { in: [...new Set(groups.flatMap((g) => g.files.map((f) => f.uploadedById)))] } }, select: { id: true, name: true } });
+    const name = new Map(users.map((u) => [u.id, u.name]));
+    const out = [];
+    for (const g of groups) {
+      const seen = g.files.filter((f) => refs.has(`${f.entityType}:${f.entityId}`));
+      const records = new Set(seen.map((f) => `${f.entityType}:${f.entityId}`));
+      if (records.size < 2) continue;
+      const verdict = duplicateFileRisk([...records].map((k) => refs.get(k)!.use));
+      out.push({
+        sha256: g._id,
+        ...verdict,
+        latest: seen.reduce((m, f) => (f.createdAt > m ? f.createdAt : m), seen[0]!.createdAt).toISOString(),
+        files: seen
+          .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+          .map((f) => {
+            const r = refs.get(`${f.entityType}:${f.entityId}`)!;
+            return { attachmentId: f.id, fileName: f.fileName, uploadedAt: f.createdAt.toISOString(), uploadedBy: name.get(f.uploadedById) ?? null, entityType: f.entityType, entityId: f.entityId, label: r.label, path: r.path };
+          }),
+      });
+    }
+    out.sort(compareDuplicates);
+    return { summary: { groups: out.length, high: out.filter((g) => g.risk === 'HIGH').length, medium: out.filter((g) => g.risk === 'MEDIUM').length }, items: out };
+  }
+
+  /** For each hash, the other records (that the caller may see) holding the same file. */
+  private async elsewhere(org: Org, actor: { id: string }, hashes: string[], self: { entityType: AttachmentEntity; entityId: string }) {
+    const out = new Map<string, { entityType: AttachmentEntity; entityId: string; label: string; path: string | null; fileName: string }[]>();
+    if (!hashes.length) return out;
+    const rows = await this.store.collection(attachments).find({ sha256: { $in: [...new Set(hashes)] }, removedAt: null }, { projection: { content: 0 } });
+    const others = rows.filter((r) => !(r.entityType === self.entityType && r.entityId === self.entityId));
+    if (!others.length) return out;
+    const refs = await this.describe(org, actor, others.map((r) => ({ entityType: r.entityType as AttachmentEntity, entityId: r.entityId })));
+    for (const r of others) {
+      const d = refs.get(`${r.entityType}:${r.entityId}`);
+      if (!d) continue;
+      const list = out.get(r.sha256) ?? [];
+      if (!list.some((x) => x.entityType === r.entityType && x.entityId === r.entityId)) list.push({ entityType: r.entityType as AttachmentEntity, entityId: r.entityId, label: d.label, path: d.path, fileName: r.fileName });
+      out.set(r.sha256, list);
+    }
+    return out;
+  }
+
+  /** Names and screen paths of records, keeping only those the caller may see. */
+  private async describe(org: Org, actor: { id: string }, list: { entityType: AttachmentEntity; entityId: string }[]) {
+    const out = new Map<string, { label: string; path: string | null; use: FileUse }>();
+    const ids = (t: AttachmentEntity) => [...new Set(list.filter((l) => l.entityType === t).map((l) => l.entityId))];
+    const [docs, pays, journals, claims, lines] = await Promise.all([
+      ids('DOCUMENT').length ? this.prisma.document.findMany({ where: { orgId: org.id, id: { in: ids('DOCUMENT') } }, select: { id: true, kind: true, number: true } }) : [],
+      ids('PAYMENT').length ? this.prisma.payment.findMany({ where: { orgId: org.id, id: { in: ids('PAYMENT') } }, select: { id: true, kind: true, number: true } }) : [],
+      ids('JOURNAL_ENTRY').length ? this.prisma.journalEntry.findMany({ where: { orgId: org.id, id: { in: ids('JOURNAL_ENTRY') } }, select: { id: true, entryNumber: true } }) : [],
+      ids('EXPENSE_CLAIM').length ? this.prisma.expenseClaim.findMany({ where: { orgId: org.id, id: { in: ids('EXPENSE_CLAIM') } }, select: { id: true, number: true, title: true } }) : [],
+      ids('BANK_STATEMENT_LINE').length ? this.prisma.bankStatementLine.findMany({ where: { orgId: org.id, id: { in: ids('BANK_STATEMENT_LINE') } }, select: { id: true, accountId: true, description: true } }) : [],
+    ]);
+    const DOC: Record<string, { label: string; path: string }> = { INVOICE: { label: 'Invoice', path: 'sales/invoices' }, CREDIT_NOTE: { label: 'Credit note', path: 'sales/invoices' }, BILL: { label: 'Bill', path: 'purchases/bills' }, VENDOR_CREDIT: { label: 'Vendor credit', path: 'purchases/bills' } };
+    const found: [AttachmentEntity, string, { label: string; path: string | null; use: FileUse }][] = [
+      ...docs.map((d) => ['DOCUMENT', d.id, { label: `${DOC[d.kind]?.label ?? d.kind} ${d.number ?? '(draft)'}`, path: `${DOC[d.kind]?.path ?? 'sales/invoices'}/${d.id}`, use: d.kind === 'BILL' ? 'BILL' : 'OTHER' }] as const),
+      ...pays.map((p) => ['PAYMENT', p.id, { label: `${p.kind === 'RECEIPT' ? 'Receipt' : 'Payment'} ${p.number}`, path: `${p.kind === 'RECEIPT' ? 'sales/receipts' : 'purchases/payments'}/${p.id}`, use: 'OTHER' }] as const),
+      ...journals.map((j) => ['JOURNAL_ENTRY', j.id, { label: `Journal ${j.entryNumber ?? '(draft)'}`, path: `journals/${j.id}`, use: 'OTHER' }] as const),
+      ...claims.map((c) => ['EXPENSE_CLAIM', c.id, { label: `Expense claim ${c.number}: ${c.title}`, path: `expenses/${c.id}`, use: 'EXPENSE_CLAIM' }] as const),
+      ...lines.map((l) => ['BANK_STATEMENT_LINE', l.id, { label: `Bank line: ${l.description}`, path: `banking/${l.accountId}/reconcile`, use: 'OTHER' }] as const),
+      ...ids('CUSTOMER_ONBOARDING').map((id) => ['CUSTOMER_ONBOARDING', id, { label: 'Onboarding documents', path: null, use: 'OTHER' }] as const),
+    ] as never;
+    for (const [type, id, d] of found) {
+      try {
+        await this.entity(org, actor, type, id, 'read');
+        out.set(`${type}:${id}`, d);
+      } catch {
+        // Not the caller's to see: left out rather than named.
+      }
+    }
+    return out;
   }
 
   async content(org: Org, actor: { id: string }, id: string) {

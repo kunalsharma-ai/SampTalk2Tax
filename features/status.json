@@ -1090,11 +1090,18 @@
       "notes": "Files can be attached to bank statement lines through the API; no screen for it yet. Statement CSV import itself is BANK-*."
     },
     "DOC-018": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files"
+        "apps/api/test/attachments-approvals.e2e.test.ts › checks the bytes, not the claimed type, and refuses empty, oversized and duplicate files",
+        "packages/accounting-engine/src/duplicate-files.ts",
+        "packages/accounting-engine/test/duplicate-files.test.ts",
+        "apps/api/src/attachments/attachments.service.ts",
+        "apps/api/test/duplicate-files.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/duplicate-files/page.tsx",
+        "apps/web/e2e/duplicate-files-flow.test.mjs",
+        "docs/DUPLICATE_FILES.md"
       ],
-      "notes": "Exact duplicate files (same SHA-256) on the same record are refused. No cross-record or fuzzy duplicate detection."
+      "notes": "Exact duplicates (same SHA-256): refused on the same record; on other records named when uploaded and listed (only records the person may see), and listed on Duplicate files with a risk (two claims or two bills first). Not built: near-duplicate detection of rescans or photos."
     },
     "AP-006": {
       "status": "Tested",

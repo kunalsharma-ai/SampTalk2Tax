@@ -115,6 +115,7 @@ export const SECTION_HELP: Record<string, Help> = {
   'Spending by person': { what: 'Spending by each person who claimed, largest first.', how: 'Click a name to see only their spending.' },
   'Spending by merchant': { what: 'The ten merchants with the most spending; names written differently only in capitals or spaces count as one.', how: 'Lines without a merchant are left out of this table, not of the totals.' },
   'Spending by status': { what: 'How much of the spending is waiting for approval, approved but not yet paid, and reimbursed.', how: 'Untick a status above to leave it out of every table.' },
+  'Files on more than one record': { what: 'Each file found on two or more records, with why it matters and links to every record.', how: 'High: spending supported twice (two claims or two bills). Medium: a receipt an employee claimed that a vendor also billed. Low: shared evidence, usually fine.' },
   'Bills to review': { what: 'Bills with unusual findings that nobody has reviewed yet, most serious first.', how: 'Open a bill to see each finding and mark it reviewed. Show reviewed lists the ones already looked at too.' },
   'Add a tag': { what: 'A new financial tag to report by.', how: 'Choose a preset such as Location, or Another tag to name your own.' },
   'Tag values': { what: 'A tag you report by and its values, with how many are in use.', how: 'Choose Edit to rename it, add values or switch values off. Switched-off values stay on old lines and in reports.' },

@@ -1,6 +1,7 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, CardHeader, Dialog, Field, Input } from '@talk2tax/ui';
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { api, uploadFile } from '@/lib/api';
 import { date } from '@/lib/format';
@@ -96,6 +97,18 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
                   {a.contentType.replace('application/', '').replace('image/', '').toUpperCase()} · {size(a.sizeBytes)} · added {date(a.createdAt.slice(0, 10))}{a.uploadedBy ? ` by ${a.uploadedBy}` : ''}
                   {a.removedAt ? ` · removed: ${a.removedReason}` : ''}
                 </p>
+                {a.alsoOn?.length ? (
+                  <p className="mt-1 text-xs text-warning">
+                    The same file is also on{' '}
+                    {a.alsoOn.map((o, i) => (
+                      <span key={`${o.entityType}:${o.entityId}`}>
+                        {i ? ', ' : ''}
+                        {o.path ? <Link className="underline" href={`/orgs/${orgId}/${o.path}`}>{o.label}</Link> : o.label}
+                      </span>
+                    ))}
+                    . Check it is not counted twice.
+                  </p>
+                ) : null}
               </div>
               {!a.removedAt ? (
                 <div className="flex gap-1">

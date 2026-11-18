@@ -462,6 +462,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the date, open an account and list what makes up its balance: a count, a statement, a schedule, and reconciling items for timing differences. Sign off when nothing is unexplained; someone else then reviews it. Receivable and payable control accounts are compared with the open items in their ledgers.',
     where: 'Accounting, usually during the Month-end close. A posting after sign-off shows the account as changed until it is reopened and signed off again. Anyone who reads reports sees them; those who manage the close prepare and review them.',
   },
+  'duplicate-files': {
+    what: 'The same file (byte for byte) attached to more than one record, most serious first.',
+    how: 'Open each record and check the spending is not counted twice. One receipt on two expense claims or one vendor invoice on two bills is serious; a remittance advice on an invoice and its receipt is usually fine. Remove the file from the wrong record, with the reason, and it drops off the list.',
+    where: 'Governance. Files are compared by their SHA-256 fingerprint, so a rescanned or edited copy is not found. Only records you may see are listed. Each record\'s Attachments card also names the other records holding the same file.',
+  },
   'financial-tags': {
     what: 'Tags you define to report by, such as Location (an office, store or branch), Business unit or Sales channel, and their values.',
     how: 'Add a tag from a preset or name your own, then add its values. Pick a value on journal lines; a line using a defined tag must use one of its values in use. Switch a value off to stop new lines using it.',
