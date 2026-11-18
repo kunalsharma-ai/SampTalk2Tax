@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
 import type { NavItem } from '@/lib/nav';
-import { matchPages } from '@/lib/palette';
+import { matchActions, matchPages } from '@/lib/palette';
 
 /** A record the search found (the relationship graph's search). */
 interface FoundRecord {
@@ -40,9 +40,10 @@ const KIND: Record<string, string> = {
 /**
  * Search everything from the header (Ctrl+K or ⌘K): the pages this person can open, and records
  * (contacts, documents, payments, journals, accounts, projects, departments, loans, fixed assets) when they
- * can read reports. Arrow keys move, Enter opens.
+ * can read reports, and actions that start something new (New invoice, Record a payment) that
+ * their role allows. Arrow keys move, Enter opens.
  */
-export function CommandPalette({ orgId, groups, searchRecords }: { orgId: string; groups: { group: string; items: NavItem[] }[]; searchRecords: boolean }) {
+export function CommandPalette({ orgId, groups, searchRecords, allowed }: { orgId: string; groups: { group: string; items: NavItem[] }[]; searchRecords: boolean; allowed: (perm: string) => boolean }) {
   const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -76,10 +77,11 @@ export function CommandPalette({ orgId, groups, searchRecords }: { orgId: string
   });
 
   const pages: Hit[] = useMemo(() => matchPages(groups, text).map(({ group, item }) => ({ key: `page:${item.href}`, label: t(item.label), hint: t(group), href: `${base}${item.href}` })), [groups, text, base, t]);
+  const actions: Hit[] = useMemo(() => matchActions(groups, text, allowed).map((a) => ({ key: `action:${a.href}`, label: t(a.label), hint: t('Start'), href: `${base}${a.href}` })), [groups, text, allowed, base, t]);
   const found: Hit[] = (term === text.trim() ? (records.data ?? []) : [])
     .filter((r) => r.path)
     .map((r) => ({ key: `${r.type}:${r.id}`, label: r.label, hint: [t(KIND[r.type] ?? r.type), r.subtitle].filter(Boolean).join(' · '), href: `${base}${r.path}` }));
-  const hits = [...pages, ...found];
+  const hits = [...actions, ...pages, ...found];
   const go = (h: Hit) => {
     setOpen(false);
     setText('');
@@ -102,7 +104,7 @@ export function CommandPalette({ orgId, groups, searchRecords }: { orgId: string
         ⌕
       </button>
       {open ? (
-        <Dialog open onOpenChange={(o) => (setOpen(o), o || setText(''))} title="Search" description="Pages and records: customers, invoices, bills, payments, journals, accounts and more.">
+        <Dialog open onOpenChange={(o) => (setOpen(o), o || setText(''))} title="Search" description="Pages, records and actions: customers, invoices, bills, payments, journals, accounts, New invoice and more.">
           <input
             ref={input}
             autoFocus

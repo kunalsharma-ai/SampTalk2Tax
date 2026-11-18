@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 781 |
 | Designed | 0 |
-| Implementing | 50 |
+| Implementing | 49 |
 | Implemented | 34 |
-| Tested | 464 |
+| Tested | 465 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -7084,12 +7084,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### NAV-001 — Create a premium sidebar and global navigation system
 
 - Module: Navigation structure
-- Status: **Implementing**
-- Notes: Sidebar, org switcher and global search (Ctrl+K command palette over pages and records, DS-003) exist. The palette only opens pages and records; it cannot yet start actions.
+- Status: **Tested**
+- Notes: Sidebar, org switcher and global search (Ctrl+K command palette over pages and records, DS-003) exist. The palette also starts actions (New invoice, New bill, Record a payment, New journal entry and ten more) that the person's role and plan allow.
 - Evidence:
   - apps/web/src
   - apps/web/src/components/command-palette.tsx
   - apps/web/e2e/command-palette-flow.test.mjs
+  - apps/web/src/lib/palette.ts
+  - apps/web/test/palette.test.ts
 
 ### NAV-002 — Overview
 
