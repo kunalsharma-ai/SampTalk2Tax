@@ -188,7 +188,7 @@ registerGuards({
     }
     if (changedNe(o, n, ['org_id', 'number', 'created_by_id'])) fail('A contract keeps its number and creator');
     if (o.status === 'CANCELLED') fail('A cancelled contract does not change');
-    if (ne(o.status, 'DRAFT') && (changedNe(o, n, ['contact_id', 'start_date', 'frequency', 'timing']) || n.status === 'DRAFT')) fail('An active contract keeps its customer and billing schedule');
+    if (ne(o.status, 'DRAFT') && (changedNe(o, n, ['contact_id', 'start_date', 'frequency', 'timing']) || differs(o.billing_day ?? null, n.billing_day ?? null) || n.status === 'DRAFT')) fail('An active contract keeps its customer and billing schedule');
     if (n.next_period_no < o.next_period_no) fail('Billed periods are not undone');
   },
 });
