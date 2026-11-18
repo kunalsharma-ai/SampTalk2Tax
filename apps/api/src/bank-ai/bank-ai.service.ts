@@ -283,7 +283,11 @@ export class BankAiService {
    */
   async start(org: BankOrg, actor: Actor, accountId: string) {
     await this.guard.assert(org.id, 'BANKING');
-    await this.bankAccount(org.id, accountId);
+    const account = await this.bankAccount(org.id, accountId);
+    // The assistant reads the books in the functional currency; a foreign account's lines are matched by hand.
+    if (account.currency && account.currency !== org.functionalCurrency) {
+      throw new DomainError('FOREIGN_ACCOUNT', `${account.code} ${account.name} is kept in ${account.currency}; AI suggestions work on accounts in ${org.functionalCurrency} only`, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
     const ai = await this.integrations.ai(org.id);
     const model = ai.model!;
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true, functionalCurrency: true } });

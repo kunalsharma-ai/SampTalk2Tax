@@ -24,6 +24,7 @@ import {
   learnedPatterns,
   type LearnedMatch,
   suggestTransfers,
+  isSupportedCurrency,
 } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, Permission, RoleName } from '@talk2tax/security';
@@ -56,7 +57,17 @@ const entryNo = (n: number | null) => (n ? `JE-${String(n).padStart(6, '0')}` : 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 const addDay = (iso: string, n: number) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
-const toRow = (l: LedgerLine): LedgerLineRow => ({ id: l.id, entry_id: l.entry_id, entry_number: l.entry_number, date: l.date, memo: l.memo, reference: l.reference, description: l.description, source: l.source, reverses_entry_id: l.reverses_entry_id, net: new Prisma.Decimal(l.net.toFixed()) });
+/** A ledger line as the bank sees it: in the account's own currency when it keeps another one (BANK-012). */
+const toRow = (l: LedgerLine, foreign = false): LedgerLineRow => ({ id: l.id, entry_id: l.entry_id, entry_number: l.entry_number, date: l.date, memo: l.memo, reference: l.reference, description: l.description, source: l.source, reverses_entry_id: l.reverses_entry_id, net: new Prisma.Decimal((foreign ? l.tx_net : l.net).toFixed()) });
+
+/** The currency a bank account's statements are in, and whether it differs from the books'. */
+interface Book {
+  currency: string;
+  foreign: boolean;
+  scale: number;
+  /** Ledger lines that belong on its statements: in a foreign account, only those in its currency. */
+  lineFilter: Record<string, unknown>;
+}
 
 interface LedgerLineRow {
   id: string;
@@ -101,24 +112,34 @@ export class BankingService {
     const ids = accounts.map((a) => a.id);
     if (!ids.length) return [];
     const [ledger, lines, recs] = await Promise.all([
-      lineSums(this.store, org.id, { entry: { status: 'POSTED' }, line: { accountId: { $in: ids } }, by: { accountId: 'lines.accountId' } }).then((r) => r.map((x) => ({ account_id: x.key.accountId as string, net: x.debit.minus(x.credit) }))),
+      lineSums(this.store, org.id, { entry: { status: 'POSTED' }, line: { accountId: { $in: ids } }, by: { accountId: 'lines.accountId', currency: 'lines.currency' } }).then((r) =>
+        r.map((x) => ({ account_id: x.key.accountId as string, currency: x.key.currency as string, net: x.debit.minus(x.credit), txNet: x.txDebit.minus(x.txCredit) })),
+      ),
       Promise.all([
         this.prisma.bankStatementLine.groupBy({ by: ['accountId'], where: { orgId: org.id }, _count: true, _max: { date: true } }),
         this.prisma.bankStatementLine.groupBy({ by: ['accountId'], where: { orgId: org.id, status: 'UNMATCHED' }, _count: true }),
       ]).then(([all, open]) => all.map((g) => ({ account_id: g.accountId, total: g._count, unmatched: open.find((o) => o.accountId === g.accountId)?._count ?? 0, last_date: g._max.date }))),
       this.prisma.bankReconciliation.findMany({ where: { orgId: org.id, status: 'COMPLETED' }, orderBy: { statementDate: 'desc' } }),
     ]);
-    const scale = minorUnits(org.functionalCurrency);
+    const fscale = minorUnits(org.functionalCurrency);
     return accounts.map((a) => {
       const l = lines.find((x) => x.account_id === a.id);
       const r = recs.find((x) => x.accountId === a.id);
+      const b = this.bookOf(org, a);
+      const mine = ledger.filter((x) => x.account_id === a.id);
+      const functional = mine.reduce((s, x) => s.plus(x.net), new D(0));
+      const own = b.foreign ? mine.filter((x) => x.currency === b.currency).reduce((s, x) => s.plus(x.txNet), new D(0)) : functional;
+      const scale = b.scale;
       return {
         id: a.id,
         code: a.code,
         name: a.name,
         subtype: a.subtype,
         isActive: a.isActive,
-        ledgerBalance: new D((ledger.find((x) => x.account_id === a.id)?.net ?? 0).toString()).toFixed(scale),
+        currency: b.currency,
+        /** In the account's currency; `functionalBalance` is what the books carry for it. */
+        ledgerBalance: own.toFixed(scale),
+        functionalBalance: functional.toFixed(fscale),
         statementLines: Number(l?.total ?? 0),
         unmatchedLines: Number(l?.unmatched ?? 0),
         lastStatementDate: l?.last_date ? fromDbDate(l.last_date) : null,
@@ -131,13 +152,14 @@ export class BankingService {
 
   async importStatement(org: BankOrg, actor: Actor, accountId: string, input: { fileName: string; csv: string; format?: StatementFormat; mapping?: StatementMapping; dateFormat?: DateFormat; dryRun: boolean }) {
     const account = await this.bankAccount(this.prisma, org.id, accountId);
+    const book = this.bookOf(org, account);
     const format = input.format ?? 'CSV';
     let file: StatementFile | null = null;
     let parsed: ParsedStatementLine[];
-    if (format === 'CSV') parsed = parseStatement(input.csv, input.mapping!, org.functionalCurrency);
+    if (format === 'CSV') parsed = parseStatement(input.csv, input.mapping!, book.currency);
     else {
       if (detectStatementFormat(input.csv) !== format) throw new StatementImportError([`This file does not look like ${format}`]);
-      file = parseStatementFile(format, input.csv, org.functionalCurrency, input.dateFormat);
+      file = parseStatementFile(format, input.csv, book.currency, input.dateFormat);
       parsed = file.lines;
     }
     const fingerprints = statementLineKeys(accountId, parsed).map(sha);
@@ -152,7 +174,7 @@ export class BankingService {
       const blocked = lockedUntil ? fresh.filter((r) => r.date <= lockedUntil) : [];
       return { rows, fresh, blocked, lockedUntil };
     };
-    const scale = minorUnits(org.functionalCurrency);
+    const scale = book.scale;
     const check = balanceBreaks(parsed);
     const totals = file ? fileTotalsCheck(file) : null;
     const fileTotals = totals ? { opening: totals.opening.toFixed(scale), closing: totals.closing.toFixed(scale), computed: totals.computed.toFixed(scale), difference: totals.difference.toFixed(scale) } : null;
@@ -163,6 +185,7 @@ export class BankingService {
     };
     const preview = (r: Awaited<ReturnType<typeof run>>) => ({
       accountId,
+      currency: book.currency,
       format,
       fileTotals,
       balanceCheck,
@@ -221,7 +244,7 @@ export class BankingService {
         action: 'bank.statement_imported',
         entityType: 'bank_statement_import',
         entityId: imp.id,
-        data: { accountId, format, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount, fileTotals, balanceBreaks: balanceCheck ? balanceCheck.breaks.length : null },
+        data: { accountId, currency: book.currency, format, fileName: imp.fileName, fileHash: imp.fileHash, lines: imp.lineCount, skipped: imp.skippedCount, fileTotals, balanceBreaks: balanceCheck ? balanceCheck.breaks.length : null },
       });
       return { imported: true, importId: imp.id, ...preview(r) };
     });
@@ -273,11 +296,12 @@ export class BankingService {
   /** Unmatched posted ledger lines on the account, nearest in amount and date first. */
   async candidates(org: BankOrg, lineId: string, q: { search?: string }) {
     const line = await this.findLine(this.prisma, org.id, lineId);
+    const book = await this.book(this.prisma, org, line.accountId);
     const rows = await this.unmatchedLedgerLines(this.prisma, org.id, line.accountId, {
       from: addDay(fromDbDate(line.date), -90),
       to: addDay(fromDbDate(line.date), 90),
       search: q.search,
-    });
+    }, book);
     const target = new D(line.amount.toString());
     const day = Date.parse(fromDbDate(line.date));
     rows.sort((a, b) => {
@@ -285,7 +309,7 @@ export class BankingService {
       if (da) return da;
       return Math.abs(Date.parse(fromDbDate(a.date)) - day) - Math.abs(Date.parse(fromDbDate(b.date)) - day);
     });
-    return rows.slice(0, 100).map((r) => this.serializeLedgerLine(org, r));
+    return rows.slice(0, 100).map((r) => this.serializeLedgerLine(r, book.scale));
   }
 
   async match(org: BankOrg, actor: Actor, lineId: string, journalLineIds: string[], outer?: Tx) {
@@ -356,8 +380,11 @@ export class BankingService {
       const amount = new D(line.amount.toString());
       const abs = amount.abs().toFixed();
       const text = (input.description?.trim() || line.description).slice(0, 500);
-      const bankSide = { accountId: line.accountId, description: text, ...(amount.gt(0) ? { debit: abs } : { credit: abs }) };
-      const otherSide = { accountId: input.accountId, description: text, ...(amount.gt(0) ? { credit: abs } : { debit: abs }) };
+      // In an account kept in another currency both sides are in it, at the day's recorded rate.
+      const book = await this.book(tx, org, line.accountId);
+      const ccy = book.foreign ? { currency: book.currency } : {};
+      const bankSide = { accountId: line.accountId, description: text, ...ccy, ...(amount.gt(0) ? { debit: abs } : { credit: abs }) };
+      const otherSide = { accountId: input.accountId, description: text, ...ccy, ...(amount.gt(0) ? { credit: abs } : { debit: abs }) };
       const je = await this.journals.postSystemEntry(tx, org, actor, {
         date: fromDbDate(line.date),
         source: 'BANK',
@@ -378,26 +405,27 @@ export class BankingService {
    * bank or cash accounts (BANK-007): the same amount out of one and into another within a few days.
    */
   async transferSuggestions(org: BankOrg) {
-    const accounts = await this.prisma.account.findMany({ where: { orgId: org.id, subtype: { in: BANK_SUBTYPES }, isPostable: true, isActive: true }, select: { id: true, code: true, name: true } });
+    const accounts = await this.prisma.account.findMany({ where: { orgId: org.id, subtype: { in: BANK_SUBTYPES }, isPostable: true, isActive: true }, select: { id: true, code: true, name: true, currency: true } });
+    const ccyOf = new Map(accounts.map((a) => [a.id, a.currency ?? org.functionalCurrency]));
     if (accounts.length < 2) return { items: [] };
     const lines = await this.prisma.bankStatementLine.findMany({
       where: { orgId: org.id, status: 'UNMATCHED', reconciliationId: null, accountId: { in: accounts.map((a) => a.id) } },
       orderBy: { date: 'desc' },
       take: 2000,
     });
+    // The same amount only means a transfer between accounts in the same currency.
     const found = suggestTransfers(
       lines.map((l) => ({ id: l.id, accountId: l.accountId, date: fromDbDate(l.date), amount: new D(l.amount.toString()), text: `${l.description} ${l.reference ?? ''}` })),
-      accounts,
-    );
+      accounts.map((a) => ({ id: a.id, code: a.code, name: a.name })),
+    ).filter((f) => ccyOf.get(lines.find((l) => l.id === f.outLineId)!.accountId) === ccyOf.get(lines.find((l) => l.id === f.inLineId)!.accountId));
     const byLine = new Map(lines.map((l) => [l.id, l]));
     const label = new Map(accounts.map((a) => [a.id, `${a.code} · ${a.name}`]));
-    const scale = minorUnits(org.functionalCurrency);
     const side = (id: string) => {
       const l = byLine.get(id)!;
       return { id, accountId: l.accountId, account: label.get(l.accountId)!, date: fromDbDate(l.date), description: l.description, reference: l.reference };
     };
     return {
-      items: found.map((f) => ({ amount: new D(byLine.get(f.inLineId)!.amount.toString()).toFixed(scale), days: f.days, score: f.score, reasons: f.reasons, unique: f.unique, out: side(f.outLineId), in: side(f.inLineId) })),
+      items: found.map((f) => ({ amount: new D(byLine.get(f.inLineId)!.amount.toString()).toFixed(minorUnits(ccyOf.get(byLine.get(f.inLineId)!.accountId)!)), currency: ccyOf.get(byLine.get(f.inLineId)!.accountId)!, days: f.days, score: f.score, reasons: f.reasons, unique: f.unique, out: side(f.outLineId), in: side(f.inLineId) })),
     };
   }
 
@@ -425,6 +453,11 @@ export class BankingService {
       if (gap > 31) issues.push('The two lines are more than 31 days apart');
       if (issues.length) throw new DomainError('INVALID_TRANSFER', issues.join('; '), HttpStatus.UNPROCESSABLE_ENTITY, { issues });
       const [from, to] = [await this.bankAccount(tx, org.id, out.accountId), await this.bankAccount(tx, org.id, into.accountId)];
+      const [fromBook, toBook] = [this.bookOf(org, from), this.bookOf(org, to)];
+      if (fromBook.currency !== toBook.currency) {
+        throw new DomainError('INVALID_TRANSFER', `${from.code} is in ${fromBook.currency} and ${to.code} in ${toBook.currency}; money changed between currencies is not a same-amount transfer. Record each side as its own entry.`);
+      }
+      const ccy = fromBook.foreign ? { currency: fromBook.currency } : {};
       const amount = inAmount.toFixed();
       const memo = `Transfer ${from.code} ${from.name} → ${to.code} ${to.name}`;
       const je = await this.journals.postSystemEntry(tx, org, actor, {
@@ -433,8 +466,8 @@ export class BankingService {
         memo,
         reference: out.reference ?? into.reference ?? undefined,
         lines: [
-          { accountId: to.id, debit: amount, description: into.description.slice(0, 500) },
-          { accountId: from.id, credit: amount, description: out.description.slice(0, 500) },
+          { accountId: to.id, debit: amount, description: into.description.slice(0, 500), ...ccy },
+          { accountId: from.id, credit: amount, description: out.description.slice(0, 500), ...ccy },
         ],
       });
       const jl = await tx.journalLine.findMany({ where: { entryId: je.id } });
@@ -453,10 +486,12 @@ export class BankingService {
       const amount = new D(line.amount.toString());
       const ledger: Ledger = amount.gt(0) ? 'SALES' : 'PURCHASES';
       this.require(org, ledger === 'SALES' ? 'sales.manage' : 'purchases.manage', ledger === 'SALES' ? 'record receipts' : 'record payments');
+      const book = await this.book(tx, org, line.accountId);
       const p = await this.documents.recordPaymentInTx(tx, org, actor, ledger, {
         contactId: input.contactId,
         date: fromDbDate(line.date),
         bankAccountId: line.accountId,
+        ...(book.foreign ? { currency: book.currency } : {}),
         amount: amount.abs().toFixed(),
         reference: line.reference ?? line.description.slice(0, 100),
         memo: input.memo ?? null,
@@ -525,18 +560,18 @@ export class BankingService {
         entityId: rec.id,
         data: { accountId, statementDate: f.statementDate, statementBalance: f.statementBalance, ledgerBalance: f.ledgerBalance, uncleared: f.uncleared, lines: updated.count },
       });
-      return this.serializeReconciliation(org, rec, updated.count);
+      return this.serializeReconciliation(rec, updated.count, (await this.book(tx, org, accountId)).scale);
     });
   }
 
   async listReconciliations(org: BankOrg, accountId: string) {
-    await this.bankAccount(this.prisma, org.id, accountId);
+    const book = this.bookOf(org, await this.bankAccount(this.prisma, org.id, accountId));
     const recs = await this.prisma.bankReconciliation.findMany({
       where: { orgId: org.id, accountId },
       orderBy: [{ statementDate: 'desc' }, { completedAt: 'desc' }],
       include: { _count: { select: { lines: true } } },
     });
-    return recs.map((r) => this.serializeReconciliation(org, r, r._count.lines));
+    return recs.map((r) => this.serializeReconciliation(r, r._count.lines, book.scale));
   }
 
   /** Only the latest completed reconciliation of an account can be undone. */
@@ -553,16 +588,17 @@ export class BankingService {
       const released = { count: await this.moved.updateMany(tx, BANK_LINES, org.id, { reconciliationId: id }, { reconciliationId: null }) };
       const done = (await this.moved.update<Prisma.BankReconciliationGetPayload<object>>(tx, BANK_RECONCILIATIONS, org.id, id, { status: 'UNDONE', undoneAt: new Date(), undoneById: actor.id, undoReason: reason }))!;
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.reconciliation_undone', entityType: 'bank_reconciliation', entityId: id, data: { reason, lines: released.count } });
-      return this.serializeReconciliation(org, done, 0);
+      return this.serializeReconciliation(done, 0, (await this.book(tx, org, rec.accountId)).scale);
     });
   }
 
   // ------------------------------------------------------------- internals
 
   private async figures(db: Tx | PrismaService, org: BankOrg, accountId: string, input: { statementDate: string; statementBalance: string; openingBalance?: string }) {
-    const scale = minorUnits(org.functionalCurrency);
+    const book = await this.book(db, org, accountId);
+    const scale = book.scale;
     const statementDate = input.statementDate;
-    const statementBalance = this.amount(org, input.statementBalance, 'Statement balance');
+    const statementBalance = this.amount(scale, input.statementBalance, 'Statement balance');
     const completed = await db.bankReconciliation.findMany({ where: { orgId: org.id, accountId, status: 'COMPLETED' }, orderBy: { statementDate: 'asc' } });
     const prev = completed[completed.length - 1];
     let startDate: string;
@@ -573,12 +609,12 @@ export class BankingService {
       }
       startDate = addDay(fromDbDate(prev.statementDate), 1);
       openingBalance = new D(prev.statementBalance.toString());
-      if (input.openingBalance !== undefined && !this.amount(org, input.openingBalance, 'Opening balance').eq(openingBalance)) {
+      if (input.openingBalance !== undefined && !this.amount(scale, input.openingBalance, 'Opening balance').eq(openingBalance)) {
         throw new DomainError('OPENING_MISMATCH', `The opening balance is the last reconciled balance, ${openingBalance.toFixed(scale)}`);
       }
     } else {
       if (input.openingBalance === undefined) throw new DomainError('OPENING_REQUIRED', 'Enter the opening balance shown on the first statement');
-      openingBalance = this.amount(org, input.openingBalance, 'Opening balance');
+      openingBalance = this.amount(scale, input.openingBalance, 'Opening balance');
       const first = await db.bankStatementLine.findFirst({ where: { orgId: org.id, accountId, reconciliationId: null }, orderBy: { date: 'asc' } });
       startDate = first && fromDbDate(first.date) <= statementDate ? fromDbDate(first.date) : statementDate;
     }
@@ -592,10 +628,11 @@ export class BankingService {
     const movement = inRange.filter((l) => l.status !== 'EXCLUDED').reduce((s, l) => s.plus(l.amount.toString()), new D(0));
     const unmatched = inRange.filter((l) => l.status === 'UNMATCHED');
 
-    const [bal] = await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(statementDate)), line: { accountId }, by: {} });
-    const ledgerBalance = bal ? bal.debit.minus(bal.credit) : new D(0);
+    // A foreign account's ledger balance is in its own currency: the amounts of its lines in it.
+    const [bal] = await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(statementDate)), line: book.lineFilter, by: {} });
+    const ledgerBalance = bal ? (book.foreign ? bal.txDebit.minus(bal.txCredit) : bal.debit.minus(bal.credit)) : new D(0);
 
-    const onAccount = await ledgerLines(this.store, org.id, { entry: postedBetween(null, toDbDate(statementDate)), line: { accountId } });
+    const onAccount = await ledgerLines(this.store, org.id, { entry: postedBetween(null, toDbDate(statementDate)), line: book.lineFilter });
     const matchedOn = await this.activeMatchDates(db, org.id, onAccount.map((l) => l.id));
     const cutoff = toDbDate(statementDate);
     const before = toDbDate(clearedBefore);
@@ -605,7 +642,7 @@ export class BankingService {
         if (dates.some((d) => d <= cutoff)) return false;
         return l.date >= before || dates.length > 0;
       })
-      .map(toRow);
+      .map((l) => toRow(l, book.foreign));
     const outstanding = dropReversalPairs(uncleared);
     const unclearedTotal = outstanding.reduce((s, r) => s.plus(r.net.toString()), new D(0));
 
@@ -613,6 +650,7 @@ export class BankingService {
     const issues = reconciliationIssues(f, unmatched.length);
     if (statementDate > todayIso()) issues.unshift('The statement date cannot be in the future');
     return {
+      currency: book.currency,
       startDate,
       statementDate,
       openingBalance: openingBalance.toFixed(scale),
@@ -623,7 +661,7 @@ export class BankingService {
       difference: reconciliationDifference(f).toFixed(scale),
       linesInRange: inRange.length,
       unmatchedLines: unmatched.map((l) => ({ id: l.id, date: fromDbDate(l.date), description: l.description, amount: new D(l.amount.toString()).toFixed(scale) })),
-      unclearedLines: outstanding.map((r) => this.serializeLedgerLine(org, r)),
+      unclearedLines: outstanding.map((r) => this.serializeLedgerLine(r, scale)),
       firstReconciliation: !prev,
       issues,
       canComplete: issues.length === 0,
@@ -638,18 +676,20 @@ export class BankingService {
     for (const id of [...ids].sort()) await holdLock(`journal_lines:${id}`);
     const found = await ledgerLines(this.store, org.id, { line: { id: { $in: ids } } });
     const active = await this.activeMatchDates(tx, org.id, ids);
-    const rows = found.map((l) => ({ id: l.id, account_id: l.account_id, status: l.status, net: l.net, matched: (active.get(l.id) ?? []).length > 0 }));
+    const book = await this.book(tx, org, line.accountId);
+    const rows = found.map((l) => ({ id: l.id, account_id: l.account_id, status: l.status, currency: l.currency, net: book.foreign ? l.tx_net : l.net, matched: (active.get(l.id) ?? []).length > 0 }));
     const issues: string[] = [];
     if (rows.length !== ids.length) issues.push('Some ledger lines were not found');
     for (const r of rows) {
       if (r.account_id !== line.accountId) issues.push('Every ledger line must be on this bank account');
+      else if (book.foreign && r.currency !== book.currency) issues.push(`This account's statements are in ${book.currency}; a line in ${r.currency} is not on them`);
       else if (r.status !== 'POSTED') issues.push('Only posted ledger lines can be matched');
       else if (r.matched) issues.push('A chosen ledger line is already matched to another statement line');
     }
     const total = rows.reduce((s, r) => s.plus(r.net.toString()), new D(0));
     const amount = new D(line.amount.toString());
     if (!issues.length && !total.eq(amount)) {
-      issues.push(`The chosen ledger lines add up to ${total.toFixed(2)}, not ${amount.toFixed(2)}`);
+      issues.push(`The chosen ledger lines add up to ${total.toFixed(book.scale)}, not ${amount.toFixed(book.scale)}`);
     }
     if (issues.length) throw new DomainError('INVALID_MATCH', [...new Set(issues)].join('; '), HttpStatus.UNPROCESSABLE_ENTITY, { issues: [...new Set(issues)] });
     await this.moved.createMany(tx, BANK_MATCHES, org.id, ids.map((journalLineId) => ({ statementLineId: line.id, journalLineId, origin, createdById: actor.id, createdAt: new Date(), removedAt: null, removedById: null })));
@@ -659,7 +699,7 @@ export class BankingService {
 
   async suggestionsFor(db: Tx | PrismaService, org: BankOrg, accountId: string, lines: { id: string; date: Date; amount: Prisma.Decimal; description: string; reference: string | null }[]) {
     const dates = lines.map((l) => fromDbDate(l.date)).sort();
-    const ledger = await this.unmatchedLedgerLines(db, org.id, accountId, { from: addDay(dates[0], -14), to: addDay(dates[dates.length - 1], 14) });
+    const ledger = await this.unmatchedLedgerLines(db, org.id, accountId, { from: addDay(dates[0], -14), to: addDay(dates[dates.length - 1], 14) }, await this.book(db, org, accountId));
     const [who, learned] = await Promise.all([this.counterparties(db, org.id, accountId, ledger.map((r) => ({ id: r.id, entryId: r.entry_id }))), this.learnedMatches(db, org.id, accountId)]);
     return suggestMatches(
       lines.map((l) => ({ id: l.id, date: fromDbDate(l.date), amount: new D(l.amount.toString()), text: `${l.description} ${l.reference ?? ''}` })),
@@ -732,15 +772,15 @@ export class BankingService {
     return out;
   }
 
-  async unmatchedLedgerLines(db: Tx | PrismaService, orgId: string, accountId: string, q: { from: string; to: string; search?: string }) {
+  async unmatchedLedgerLines(db: Tx | PrismaService, orgId: string, accountId: string, q: { from: string; to: string; search?: string }, book?: Book) {
     const term = q.search?.trim().toLowerCase();
-    const lines = await ledgerLines(this.store, orgId, { entry: postedBetween(toDbDate(q.from), toDbDate(q.to)), line: { accountId } });
+    const lines = await ledgerLines(this.store, orgId, { entry: postedBetween(toDbDate(q.from), toDbDate(q.to)), line: book?.lineFilter ?? { accountId } });
     const matched = await this.activeMatchDates(db, orgId, lines.map((l) => l.id));
     return lines
       .filter((l) => !matched.has(l.id))
       .filter((l) => !term || [l.memo, l.reference, l.description].some((t) => t?.toLowerCase().includes(term)))
       .slice(0, 1000)
-      .map(toRow);
+      .map((l) => toRow(l, !!book?.foreign));
   }
 
   /** For each journal line, the statement dates of the bank matches on it that are not removed. */
@@ -758,7 +798,8 @@ export class BankingService {
     lines: { id: string; accountId: string; date: Date; description: string; reference: string | null; amount: Prisma.Decimal; status: string; excludedReason: string | null; reconciliationId: string | null; importId: string }[],
     suggestions: ReturnType<typeof suggestMatches>,
   ) {
-    const scale = minorUnits(org.functionalCurrency);
+    const books = new Map<string, Book>();
+    for (const a of [...new Set(lines.map((l) => l.accountId))]) books.set(a, await this.book(db, org, a));
     const ids = lines.map((l) => l.id);
     const matches = ids.length
       ? await db.bankMatch.findMany({
@@ -776,8 +817,9 @@ export class BankingService {
       where: { orgId: org.id, journalEntryId: { in: [...entryIds, ...suggested.map((s) => s.entryId)] } },
       include: { contact: { select: { name: true } } },
     });
-    const link = (l: { id: string; entryId: string; functionalDebit: Prisma.Decimal; functionalCredit: Prisma.Decimal; description: string | null; entry: { entryNumber: number | null; date: Date; memo: string | null; reference: string | null; source: string } }) => {
+    const link = (l: { id: string; entryId: string; debit: Prisma.Decimal; credit: Prisma.Decimal; functionalDebit: Prisma.Decimal; functionalCredit: Prisma.Decimal; description: string | null; entry: { entryNumber: number | null; date: Date; memo: string | null; reference: string | null; source: string } }, book: Book) => {
       const p = payments.find((x) => x.journalEntryId === l.entryId);
+      const [dr, cr] = book.foreign ? [l.debit, l.credit] : [l.functionalDebit, l.functionalCredit];
       return {
         journalLineId: l.id,
         entryId: l.entryId,
@@ -786,13 +828,14 @@ export class BankingService {
         memo: l.entry.memo,
         reference: l.entry.reference,
         source: l.entry.source,
-        amount: new D(l.functionalDebit.toString()).minus(l.functionalCredit.toString()).toFixed(scale),
+        amount: new D(dr.toString()).minus(cr.toString()).toFixed(book.scale),
         payment: p ? { id: p.id, number: p.number, kind: p.kind, contactName: p.contact.name } : null,
       };
     };
     return lines.map((l) => {
       const s = suggestions.find((x) => x.statementLineId === l.id);
       const sl = s ? suggested.find((x) => x.id === s.journalLineId) : undefined;
+      const book = books.get(l.accountId)!;
       return {
         id: l.id,
         accountId: l.accountId,
@@ -800,18 +843,19 @@ export class BankingService {
         date: fromDbDate(l.date),
         description: l.description,
         reference: l.reference,
-        amount: new D(l.amount.toString()).toFixed(scale),
+        amount: new D(l.amount.toString()).toFixed(book.scale),
+        currency: book.currency,
         status: l.status,
         excludedReason: l.excludedReason,
         reconciled: !!l.reconciliationId,
-        matches: matches.filter((m) => m.statementLineId === l.id).map((m) => ({ id: m.id, origin: m.origin, ...link(m.journalLine) })),
-        suggestion: s && sl ? { ...link(sl), score: s.score, reasons: s.reasons, unique: s.unique } : null,
+        matches: matches.filter((m) => m.statementLineId === l.id).map((m) => ({ id: m.id, origin: m.origin, ...link(m.journalLine, book) })),
+        suggestion: s && sl ? { ...link(sl, book), score: s.score, reasons: s.reasons, unique: s.unique } : null,
         attachments: files.filter((f) => f.entityId === l.id).length,
       };
     });
   }
 
-  private serializeLedgerLine(org: BankOrg, r: LedgerLineRow) {
+  private serializeLedgerLine(r: LedgerLineRow, scale: number) {
     return {
       journalLineId: r.id,
       entryId: r.entry_id,
@@ -821,16 +865,15 @@ export class BankingService {
       reference: r.reference,
       description: r.description,
       source: r.source,
-      amount: new D(r.net.toString()).toFixed(minorUnits(org.functionalCurrency)),
+      amount: new D(r.net.toString()).toFixed(scale),
     };
   }
 
   private serializeReconciliation(
-    org: BankOrg,
     r: { id: string; accountId: string; startDate: Date; statementDate: Date; openingBalance: Prisma.Decimal; statementBalance: Prisma.Decimal; ledgerBalance: Prisma.Decimal; uncleared: Prisma.Decimal; status: string; completedAt: Date; undoneAt: Date | null; undoReason: string | null },
     lines: number,
+    scale: number,
   ) {
-    const scale = minorUnits(org.functionalCurrency);
     return {
       id: r.id,
       accountId: r.accountId,
@@ -853,9 +896,9 @@ export class BankingService {
     return (await this.serializeLines(tx, org, [line], []))[0];
   }
 
-  private amount(org: BankOrg, v: string, label: string): Dec {
+  private amount(scale: number, v: string, label: string): Dec {
     const n = dec(v);
-    if (n.decimalPlaces() > minorUnits(org.functionalCurrency)) throw new DomainError('INVALID_AMOUNT', `${label} has too many decimal places`);
+    if (n.decimalPlaces() > scale) throw new DomainError('INVALID_AMOUNT', `${label} has too many decimal places`);
     return n;
   }
 
@@ -876,6 +919,42 @@ export class BankingService {
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Bank account not found' });
     if (!a.isPostable || !BANK_SUBTYPES.includes(a.subtype ?? '')) throw new DomainError('INVALID_BANK_ACCOUNT', `${a.code} ${a.name} is not a bank or cash account`);
     return a;
+  }
+
+  /** The currency a bank account's statements are in (BANK-012). */
+  private bookOf(org: BankOrg, a: { id: string; currency?: string | null }): Book {
+    const currency = a.currency ?? org.functionalCurrency;
+    const foreign = currency !== org.functionalCurrency;
+    return { currency, foreign, scale: minorUnits(currency), lineFilter: foreign ? { accountId: a.id, currency } : { accountId: a.id } };
+  }
+
+  private async book(db: Tx | PrismaService, org: BankOrg, accountId: string): Promise<Book> {
+    const a = await db.account.findFirst({ where: { id: accountId, orgId: org.id }, select: { id: true, currency: true } });
+    return this.bookOf(org, a ?? { id: accountId, currency: null });
+  }
+
+  /**
+   * Keeps a bank or cash account in another currency, or back in the functional one. Only before
+   * anything depends on its currency: no statement lines and no postings in another currency.
+   */
+  async setCurrency(org: BankOrg, actor: Actor, accountId: string, currencyIn: string | null) {
+    this.require(org, 'accounts.manage', 'change the currency of a bank account');
+    const currency = currencyIn ? currencyIn.toUpperCase() : null;
+    if (currency && !isSupportedCurrency(currency)) throw new DomainError('FX_INVALID', `${currency} is not a supported currency`);
+    const keep = currency === org.functionalCurrency ? null : currency;
+    return this.inTx(async (tx) => {
+      const a = await this.lockAccount(tx, org.id, accountId);
+      if ((a.currency ?? null) === keep) return { accountId, currency: keep ?? org.functionalCurrency };
+      const issues: string[] = [];
+      if (await tx.bankStatementLine.count({ where: { orgId: org.id, accountId } })) issues.push('It has imported statement lines');
+      const lines = await ledgerLines(this.store, org.id, { entry: { status: 'POSTED' }, line: { accountId } });
+      const other = [...new Set(lines.filter((l) => l.source !== 'FX_REVALUATION' && l.currency !== (keep ?? org.functionalCurrency)).map((l) => l.currency))];
+      if (other.length) issues.push(`It has postings in ${other.join(', ')}`);
+      if (issues.length) throw new DomainError('CURRENCY_IN_USE', `${a.code} ${a.name} cannot change currency: ${issues.join('; ').toLowerCase()}. Use a new account for the other currency.`, HttpStatus.CONFLICT, { issues });
+      await tx.account.update({ where: { id: accountId }, data: { currency: keep } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bank.account_currency_set', entityType: 'account', entityId: accountId, data: { from: a.currency ?? org.functionalCurrency, to: keep ?? org.functionalCurrency } });
+      return { accountId, currency: keep ?? org.functionalCurrency };
+    });
   }
 
   /** Serialises imports, auto-matching and reconciliation per bank account. */

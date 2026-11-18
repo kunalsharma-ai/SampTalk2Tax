@@ -2,6 +2,7 @@ import { Prisma } from '@talk2tax/database';
 import { defineCollection, GuardViolation, type GuardContext } from '@talk2tax/document-db';
 import type { MovedTable } from '../moved-table';
 import { journalEntries } from './ledger';
+import { accounts } from './chart';
 
 /** Bank statements, matching statement lines to the ledger, and reconciliations. */
 
@@ -85,6 +86,9 @@ async function checkMatches(l: BankStatementLineDoc, ctx: GuardContext) {
   }
   const ids = active.map((m) => m.journalLineId);
   const entries = ids.length ? await ctx.collection(journalEntries).find({ orgId: l.orgId, 'lines.id': { $in: ids } }) : [];
+  // A bank account kept in another currency (BANK-012) is matched on the lines' amounts in that currency.
+  const account = await ctx.collection(accounts).findOne({ orgId: l.orgId, id: l.accountId });
+  const own = account?.currency ?? null;
   let net = n('0');
   let found = 0;
   for (const e of entries) {
@@ -92,7 +96,8 @@ async function checkMatches(l: BankStatementLineDoc, ctx: GuardContext) {
       if (!ids.includes(jl.id)) continue;
       found++;
       if (jl.accountId !== l.accountId || e.status !== 'POSTED') throw new GuardViolation('The statement line is matched to a ledger line on a different account or not posted');
-      net = net.plus(jl.functionalDebit).minus(jl.functionalCredit);
+      if (own && jl.currency !== own) throw new GuardViolation(`The statement line is in ${own} and is matched to a ledger line in ${jl.currency}`);
+      net = own ? net.plus(jl.debit).minus(jl.credit) : net.plus(jl.functionalDebit).minus(jl.functionalCredit);
     }
   }
   if (!found || found !== ids.length || !net.eq(l.amount)) throw new GuardViolation(`The statement line amount ${n(l.amount).toFixed()} does not equal its matched ledger lines ${net.toFixed()}`);

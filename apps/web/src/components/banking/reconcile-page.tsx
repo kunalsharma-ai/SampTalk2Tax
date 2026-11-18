@@ -41,7 +41,7 @@ export function ReconcilePage() {
   });
   const [undoing, setUndoing] = useState<Reconciliation | null>(null);
   if (!org) return null;
-  const c = org.functionalCurrency;
+  const c = account?.currency ?? org.functionalCurrency;
   const p = check.data;
   const ready = !!statementBalance && (!!last || !!openingBalance);
   return (

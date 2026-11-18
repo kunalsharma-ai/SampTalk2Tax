@@ -163,6 +163,7 @@ export function serialize(a: {
   parentId: string | null;
   isPostable: boolean;
   isActive: boolean;
+  currency?: string | null;
 }) {
   return {
     id: a.id,
@@ -174,5 +175,7 @@ export function serialize(a: {
     parentId: a.parentId,
     isPostable: a.isPostable,
     isActive: a.isActive,
+    // A bank account kept in another currency (BANK-012).
+    ...(a.currency ? { currency: a.currency } : {}),
   };
 }
