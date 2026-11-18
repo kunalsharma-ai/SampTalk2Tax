@@ -218,7 +218,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-004 |  | capability | Bank feed integration framework | Not started |
 | BANK-005 |  | capability | Bank reconciliation | Tested |
 | BANK-006 |  | capability | Transaction matching | Tested |
-| BANK-007 |  | capability | Transfer detection | Not started |
+| BANK-007 |  | capability | Transfer detection | Tested |
 | BANK-008 |  | capability | Deposit matching | Tested |
 | BANK-009 |  | capability | Payment matching | Tested |
 | BANK-010 |  | capability | Bank charges | Tested |
