@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 781 |
+| Not started | 780 |
 | Designed | 0 |
 | Implementing | 50 |
 | Implemented | 34 |
-| Tested | 464 |
+| Tested | 465 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -32,7 +32,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 14 | 13 |
-| Treasury management | M6 | 28 | 22 | 6 |
+| Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
 | AI Virtual CFO | M7 | 35 | 0 | 35 |
@@ -1411,8 +1411,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-011 — Interest accounting
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Interest on loans is worked out per installment and posted to the interest expense account. Not built: interest earned on bank balances or deposits.
+- Status: **Tested**
+- Notes: Interest on loans is worked out per installment and posted to the interest expense account. Interest earned on fixed deposits is worked out from the rate and compounding, accrued to dates the user chooses (one deposit or all at once), and settled on closing with tax deducted at source. Not built: interest on savings or current account balances (recorded from the bank statement).
 - Evidence:
   - packages/accounting-engine/src/loans.ts
   - packages/accounting-engine/test/loans.test.ts
@@ -1422,6 +1422,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/loans-flow.test.mjs
   - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
   - docs/LOANS_AND_TREASURY.md
+  - packages/accounting-engine/src/deposits.ts
+  - packages/accounting-engine/test/deposits.test.ts
+  - apps/api/src/deposits/deposits.service.ts
+  - apps/api/test/deposits.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/deposits
+  - apps/web/e2e/deposits-flow.test.mjs
 
 ### BANK-012 — Foreign exchange accounting
 
@@ -2138,6 +2144,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/loans
   - apps/web/e2e/loans-flow.test.mjs
   - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - docs/LOANS_AND_TREASURY.md
+
+### TRS-012 — Investment tracking
+
+- Module: Treasury management
+- Status: **Implementing**
+- Notes: Fixed deposits: placing, interest to date and at maturity, accruals, closing at maturity or early with tax deducted, and reversal. Not built: mutual funds, bonds and shares, market values and gains.
+- Evidence:
+  - packages/accounting-engine/src/deposits.ts
+  - apps/api/src/deposits/deposits.service.ts
+  - apps/api/test/deposits.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/deposits
+  - apps/web/e2e/deposits-flow.test.mjs
   - docs/LOANS_AND_TREASURY.md
 
 ### TRS-013 — Foreign exchange exposure

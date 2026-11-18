@@ -30,6 +30,7 @@ import advanceTaxMigration from './20261231100000_advance_tax';
 import journalApprovalsMigration from './20261230100000_journal_approvals';
 import gstPaymentsMigration from './20270101100000_gst_payments';
 import leaveMigration from './20270102100000_leave';
+import depositsMigration from './20270103100000_deposits';
 
 /** In order. Never edit a migration that has been applied anywhere; add a new one. */
-export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration, billChecksMigration, accountReconciliationsMigration, attachmentHashesMigration, costAllocationsMigration, journalApprovalsMigration, advanceTaxMigration, gstPaymentsMigration, leaveMigration];
+export const MIGRATIONS: readonly Migration[] = [foundation, identity, tenancy, chart, ledger, sales, mirrored, usageBilling, revenueRecognition, customerPortal, supplierTaxChecks, vendorRisk, unbilledRevenue, vendorPortal, rowLocks, auditEvents, plans, twoStepSignIn, orgSecuritySettings, expenseAllowances, expensePolicy, taxNoticesMigration, financialTagsMigration, billChecksMigration, accountReconciliationsMigration, attachmentHashesMigration, costAllocationsMigration, journalApprovalsMigration, advanceTaxMigration, gstPaymentsMigration, leaveMigration, depositsMigration];
