@@ -73,6 +73,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { href: '/payroll/runs', label: 'Pay runs', needs: 'PAYROLL', plan: 'PAYROLL' },
       { href: '/payroll/employees', label: 'Employees', needs: 'PAYROLL', plan: 'PAYROLL' },
+      { href: '/payroll/bonus', label: 'Statutory bonus', needs: 'PAYROLL', plan: 'PAYROLL' },
       { href: '/settings/payroll', label: 'Payroll settings', needs: 'PAYROLL', plan: 'PAYROLL' },
     ],
   },

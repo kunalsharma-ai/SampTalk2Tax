@@ -49,6 +49,13 @@ Monthly payroll for organisations in India that keep their books in INR. The rul
   * TDS is due on the 7th of the next month, or 30 April for March.
   * Maharashtra PT is due at the end of the next month.
   * Recording a payment posts Dr payable, Cr bank (PAYP-000001…). A payment can be voided.
+* **Statutory bonus** (Payroll → Statutory bonus) follows the Code on Wages 2019, Chapter IV, which replaced the Payment of Bonus Act from 21 November 2025.
+  * The bonus for an April to March year is worked out from posted payslips.
+  * Months where the full-month wages are above the eligibility amount count as nothing. Other months count their wages, up to the calculation ceiling.
+  * The employee needs at least 30 days worked in the year. The bonus is the rate (8.33% to 20%, chosen by the employer) times those wages, with a minimum of ₹100.
+  * The eligibility amount and the ceiling are inputs. They default to ₹21,000 and ₹7,000, the Payment of Bonus Act figures, until the government notifies its own. Enter the state minimum wage as the ceiling if it is higher.
+  * "Add bonus to the run" puts the amount still due on each eligible employee's payslip in a draft run, as a one-off earning named "Statutory bonus 2025-26" and excluded from wages, so it is taxed in that month.
+  * Paid during the year, it is an advance. Later runs add only the balance, and the amount added is never negative.
 * **Payslip page.** A printable payslip with earnings, deductions, employer contributions, the income-tax working and year-to-date figures from posted runs.
 
 ## Not supported yet (do not rely on these)
@@ -56,7 +63,7 @@ Monthly payroll for organisations in India that keep their books in INR. The rul
 * The old tax regime, and declarations or proofs (HRA exemption, 80C, and so on). Every employee is taxed under the new regime.
 * Perquisites, arrears and relief under s.157 (formerly s.89).
 * Professional tax for states other than Maharashtra. The payslip shows "not built yet" and deducts nothing.
-* Labour welfare fund, gratuity provision, Payment of Bonus Act bonus, leave encashment, overtime, loans and advances.
+* Labour welfare fund, gratuity provision, allocable surplus and set-on or set-off for bonus, disqualification from bonus (leave the employee out), the ₹60 minimum bonus for employees under 15, leave encashment, overtime, loans and advances.
 * Daily-wage ESI exemption (employees earning up to ₹176 a day), and the employer PF admin minimum.
 * ECR, ESIC, Form 24Q, Form 16 or bank transfer files. Nothing is filed or uploaded.
 * Payroll approvals, cost allocation to departments or projects, payroll reports beyond the run and the payslip.
@@ -69,6 +76,7 @@ Monthly payroll for organisations in India that keep their books in INR. The rul
 * Notification S.O. 5109(E) of 17 September 2026: PF wage ceiling ₹25,000 (also reported by KPMG and Keka).
 * ESI (Central) Rules 1950 rules 50 and 51; contribution rates from 1 July 2019.
 * Maharashtra State Tax on Professions, Trades, Callings and Employments Act 1975, Schedule I entry 1. **These slabs were taken from secondary sources (ClearTax, August 2025) and still need checking against the official schedule.**
+* Code on Wages 2019 ss.26 and 27 (bonus), in force from 21 November 2025. The bonus amounts are as in the Payment of Bonus Act 1965 ss.2(13), 10, 12 and 31A until notified.
 * Income-tax Act 2025 s.202 (new regime) and s.392 (TDS on salary). Rates are as in the Finance Act 2025 and unchanged for 2026-27.
 
 ## Tests
@@ -85,6 +93,9 @@ Monthly payroll for organisations in India that keep their books in INR. The rul
   * Posting and the journal; refusal when payslips changed.
   * Payments and voids in the right order.
   * Database guards; viewer 403; other organisation 404.
+* `packages/tax-engine/test/bonus.test.ts` (6 tests): the year's months, the ceiling, months above the eligibility amount (including unpaid leave), the 30 days and the ₹100 minimum, and the rate range.
+* `apps/api/test/payroll-bonus.e2e.test.ts` (5 tests): the report, adding an advance, then the balance, never a negative amount, the posted-run and permission checks.
+* `apps/web/e2e/payroll-bonus-flow.test.mjs`: the bonus page in the browser, through adding the bonus to a draft run.
 * `apps/web/e2e/payroll-flow.test.mjs` (5 tests): in the browser, from setting up payroll through adding an employee, a draft with loss of pay, posting and the payslip to paying net salaries, plus the refused void.
 
 ## Maintenance

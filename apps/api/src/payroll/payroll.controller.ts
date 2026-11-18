@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { NEW_REGIME_2026_27, PF_RATES, PF_WAGE_CEILINGS, ESI_RULES, PT_MAHARASHTRA } from '@talk2tax/tax-engine';
 import { z } from 'zod';
@@ -61,6 +61,9 @@ const PayslipBody = z
   })
   .strict();
 const PayBody = z.object({ liability: z.enum(['NET_PAY', 'PF', 'ESI', 'PT', 'TDS']), date: isoDate, bankAccountId: z.uuid(), reference: z.string().trim().min(1).max(100) }).strict();
+const rate = z.string().regex(/^\d{1,2}(\.\d{1,2})?$/, 'A percentage, e.g. "8.33"');
+const BonusQuery = z.object({ year: z.string().regex(/^\d{4}-\d{2}$/, 'Expected a year like 2025-26'), ratePct: rate, eligibilityCeiling: money.optional(), calculationCeiling: money.optional() }).strict();
+const BonusBody = BonusQuery.extend({ employeeIds: z.array(z.uuid()).min(1).max(1000).optional() }).strict();
 const VoidBody = z.object({ date: isoDate.optional(), reason: z.string().trim().min(3).max(500) }).strict();
 
 @ApiTags('payroll')
@@ -171,6 +174,22 @@ export class PayrollController {
     @Body(new ZodPipe(PayslipBody)) body: z.infer<typeof PayslipBody>,
   ) {
     return this.p.updatePayslip(org, user, runId, employeeId, body);
+  }
+
+  /** Statutory bonus for an accounting year from posted payslips (Code on Wages 2019 Chapter IV). */
+  @Get('bonus')
+  @RequirePermission('payroll.read')
+  bonus(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(BonusQuery)) q: z.infer<typeof BonusQuery>) {
+    return this.p.bonusReport(org, q);
+  }
+
+  /** Add each eligible employee's unpaid bonus for the year to a draft pay run, as a one-off earning. */
+  @Post('runs/:runId/bonus')
+  @HttpCode(200)
+  @RequirePermission('payroll.manage')
+  @ApiBody({ schema: openApi(BonusBody) })
+  addBonus(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('runId', ParseUUIDPipe) runId: string, @Body(new ZodPipe(BonusBody)) body: z.infer<typeof BonusBody>) {
+    return this.p.addBonusToRun(org, user, runId, body);
   }
 
   @Get('runs/:runId/payslips/:employeeId')

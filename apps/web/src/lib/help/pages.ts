@@ -406,6 +406,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add an employee and their salary components. Open one to change their structure from a date.',
     where: 'Payroll. Employees are paid in Pay runs.',
   },
+  'payroll/bonus': {
+    what: 'The statutory bonus each employee is owed for an April to March year under the Code on Wages, from posted payslips, with what has been paid and what is still to pay.',
+    how: 'Choose the year and the bonus rate (8.33% to 20%), check the two ceilings, then add the bonus to a draft pay run. It is paid and taxed with that month\'s salary.',
+    where: 'Payroll. The bonus appears as a one-off earning on the payslips of the run you choose.',
+  },
   'payroll/runs': {
     what: 'Monthly payroll: gross pay, deductions (PF, ESI, PT, TDS) and net pay for every employee.',
     how: 'Create a run for the month, check each payslip, then post it. Record the remittances to the authorities when paid.',

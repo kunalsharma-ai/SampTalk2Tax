@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 54 |
+| Implementing | 53 |
 | Implemented | 34 |
-| Tested | 459 |
+| Tested | 460 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1861,10 +1861,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### PAY-007 — Bonuses
 
 - Module: Payroll and workforce finance
-- Status: **Implementing**
-- Notes: Bonuses can be added as one-off earnings on a payslip and are taxed in the month. No statutory bonus (Payment of Bonus Act) calculation.
+- Status: **Tested**
+- Notes: One-off bonuses on a payslip, taxed in the month. Statutory bonus (Code on Wages 2019 Ch. IV) worked out from posted payslips per April-March year (rate 8.33-20%, eligibility amount and calculation ceiling as inputs, 30-day and Rs 100 minimums) and added to a draft run as an advance or the balance. Allocable surplus and set-on/set-off not modelled. Not reviewed by a payroll professional.
 - Evidence:
-  - apps/api/test/payroll.e2e.test.ts
+  - packages/tax-engine/src/india/bonus.ts
+  - packages/tax-engine/test/bonus.test.ts
+  - apps/api/test/payroll-bonus.e2e.test.ts
+  - apps/web/e2e/payroll-bonus-flow.test.mjs
   - apps/web/e2e/payroll-flow.test.mjs
 
 ### PAY-009 — Reimbursements

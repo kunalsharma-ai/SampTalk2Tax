@@ -74,6 +74,7 @@ export const hi: Record<string, string> = {
   'My expense claims': 'मेरे ख़र्च के दावे',
   // Payroll
   'Pay runs': 'वेतन भुगतान',
+  'Statutory bonus': 'वैधानिक बोनस',
   Employees: 'कर्मचारी',
   'Payroll settings': 'वेतन सेटिंग',
   // Accounting
