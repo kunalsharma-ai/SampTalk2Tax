@@ -27,7 +27,7 @@ Talk2Tax starts as one deployable API (`apps/api`, NestJS) over one PostgreSQL d
 ```
 apps/
   api/                     NestJS REST API, seed script, integration tests
-  web/                     Next.js 15 App Router web app, Playwright browser tests
+  web/                     Next.js 16 App Router web app, Playwright browser tests
 packages/
   ui/                      Accessible React components (Radix dialog, forms, tables)
   design-system/           Colour/type tokens (TS + CSS variables), WCAG contrast test
@@ -75,7 +75,7 @@ The directive's full target layout (`apps/web|admin|mobile|documentation`, `pack
 *Decision:* money is `decimal.js` in code, `NUMERIC(24,6)` in the database (rates `NUMERIC(24,10)`), and strings in JSON. JS numbers are rejected. *Why:* Directive Part 5 forbids binary floating point.
 
 ### ADR-005 Pinned, proven dependency versions
-*Decision:* TypeScript 5.9, NestJS 11, Prisma 6.19, zod 4, vitest 3, Node 26 (upgraded from 22 in November 2026, when 26 became LTS). *Why:* newer majors exist at the time of writing (TypeScript 7, NestJS 12, Prisma 7/8 pre-release) but have breaking changes in decorators, ESM and the Prisma client generator. Upgrade deliberately once the foundation is stable; tracked in KNOWN_LIMITATIONS.
+*Decision:* TypeScript 5.9, NestJS 12 (from 11 in November 2026), Prisma 6.19, zod 4, vitest 3, Node 26 (upgraded from 22 in November 2026, when 26 became LTS). *Why:* newer majors exist at the time of writing (TypeScript 7, NestJS 12, Prisma 7/8 pre-release) but have breaking changes in decorators, ESM and the Prisma client generator. Upgrade deliberately once the foundation is stable; tracked in KNOWN_LIMITATIONS.
 
 ### ADR-006 JWT via `jose`, passwords via Node scrypt
 *Decision:* short-lived HS256 access tokens signed with `jose`; scrypt (N=2^15, r=8, p=1) with per-hash parameters for passwords. *Why:* no native build dependencies, well-reviewed primitives. Refresh tokens, MFA and SSO are later SEC items.
@@ -88,7 +88,7 @@ The directive's full target layout (`apps/web|admin|mobile|documentation`, `pack
 
 ## Web app (`apps/web`)
 
-* Next.js 15 App Router, React 19, Tailwind 4 on design-system CSS variables, TanStack Query for server state, React Hook Form + zod for forms, Recharts for the dashboard chart (with a data table beside it).
+* Next.js 16 App Router, React 19, Tailwind 4 on design-system CSS variables, TanStack Query for server state, React Hook Form + zod for forms, Recharts for the dashboard chart (with a data table beside it).
 * **Backend-for-frontend session.** `POST /api/session` calls the API's login or register endpoint and stores the returned token in an httpOnly, SameSite=Lax cookie. Browser code never sees the token.
 * **Same-origin proxy.** The browser calls `/api/t2t/v1/...`; the route handler adds the bearer token and forwards to `T2T_API_URL`. Only `v1/*` paths are forwarded, and writes need an `x-t2t-csrf: 1` header that cross-site forms cannot send.
 * The journal form runs `validateJournal` from `packages/accounting-engine` in the browser for live feedback. The API and database still enforce every rule; the browser check is only a hint.

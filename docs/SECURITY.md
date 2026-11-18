@@ -31,7 +31,7 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | CSRF | Non-GET calls through the web proxy must carry `x-t2t-csrf: 1`, which a cross-site form cannot set; SameSite=Lax as a second layer | `apps/web/src/app/api/t2t/[...path]/route.ts`, browser test |
 | Proxy allow-list | The web proxy forwards only `v1/*` API paths | same |
 | Web headers | Baseline (no Content-Security-Policy yet): `X-Frame-Options: DENY`, `nosniff`, strict referrer policy, permissions policy | `apps/web/next.config.ts` |
-| Signed-out access | Middleware redirects to `/login` when both session cookies are missing; the API still checks every request | `apps/web/src/middleware.ts` |
+| Signed-out access | The web proxy (`proxy.ts`, Next.js middleware) redirects to `/login` when both session cookies are missing; the API still checks every request | `apps/web/src/proxy.ts` |
 
 ## Role permissions
 
