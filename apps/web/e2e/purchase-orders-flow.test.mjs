@@ -3,7 +3,7 @@
  * a purchase order is drafted and issued, goods received are recorded, a bill is made from what was
  * received and matches; a second bill that bills more than received at a higher price is refused at
  * posting until the differences are accepted with a reason, then posts.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

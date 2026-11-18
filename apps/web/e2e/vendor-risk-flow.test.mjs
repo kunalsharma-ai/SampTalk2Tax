@@ -3,7 +3,7 @@
  * account, Purchases → Vendor risk lists them as high risk waiting for review, Alerts raises the
  * same, a review is refused without a proper note and then recorded on the vendor's page, and the
  * vendor leaves the waiting list.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

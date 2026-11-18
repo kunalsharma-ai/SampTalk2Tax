@@ -3,7 +3,7 @@
  * sees the checklist worked out from the books, makes tasks for open checks, has the AI review
  * the month, posts the rent accrual it proposes (with its reversal next month) and rejects
  * another entry, closes the month with a note, sees the certification, and reopens it.
- * Real Next.js app → real API → real PostgreSQL → the real Anthropic SDK against a local
+ * Real Next.js app → real API → real MongoDB → the real Anthropic SDK against a local
  * stand-in for the Messages API (port 4555). The API must run with ANTHROPIC_API_KEY set and
  * ANTHROPIC_BASE_URL=http://127.0.0.1:4555. Nothing reaches Anthropic.
  */

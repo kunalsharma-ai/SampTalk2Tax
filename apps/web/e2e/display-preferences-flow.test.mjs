@@ -2,7 +2,7 @@
  * Browser end-to-end test for languages and regional formats: a person switches the interface to
  * Hindi with international numbers, ISO dates and their own time zone, sees the navigation, an
  * invoice list and the account page change, the owner changes the organisation's time zone, and
- * the person switches back to English. Real Next.js app → real API → real PostgreSQL.
+ * the person switches back to English. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -87,7 +87,10 @@ test('a person reads Talk2Tax in Hindi with their own formats, and the organisat
   await page.goto(`${WEB}/orgs/${orgId}/account`);
   const tzCard = page.locator('[aria-label="संगठन का समय क्षेत्र"]');
   await tzCard.getByLabel('समय क्षेत्र').selectOption('Asia/Dubai');
+  // The button is also disabled while the save is in flight, so wait for the save itself first.
+  const saved = page.waitForResponse((r) => r.url().endsWith(`/v1/orgs/${orgId}/time-zone`) && r.request().method() === 'PUT');
   await tzCard.getByRole('button', { name: 'सहेजें' }).click();
+  assert.equal((await saved).status(), 200);
   // Saving redraws the page in the new zone; the choice stays selected.
   await page.waitForFunction(() => document.querySelector('[aria-label="संगठन का समय क्षेत्र"] select')?.value === 'Asia/Dubai' && !document.querySelector('[aria-label="संगठन का समय क्षेत्र"] button:not([disabled])'));
   assert.equal((await call(base)).body.timeZone, 'Asia/Dubai');

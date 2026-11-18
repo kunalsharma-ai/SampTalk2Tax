@@ -3,7 +3,7 @@
  * cash balance the business cannot meet, opens Alerts and sees the critical alert ranked first
  * with its score explained, finds its task in the work queue filtered to alerts, changes the
  * task setting, then dismisses the alert and sees the task cancelled by itself.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

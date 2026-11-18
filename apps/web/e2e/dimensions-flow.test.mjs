@@ -2,7 +2,7 @@
  * Browser end-to-end test for financial dimensions: an owner adds departments and a project, tags
  * journal lines on the journal form, sees a tagged invoice line on the invoice, reads the profit by
  * department and by project, filters the profit and loss by department, and makes a department
- * inactive so new lines can no longer pick it. Real Next.js app → real API → real PostgreSQL.
+ * inactive so new lines can no longer pick it. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

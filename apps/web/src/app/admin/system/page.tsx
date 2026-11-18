@@ -37,7 +37,7 @@ export default function SystemHealthPage() {
       {d ? (
         <>
           <section aria-label="Summary" className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Database" value={d.database.latencyMs === null ? 'Down' : ms(d.database.latencyMs)} sub={d.database.status === 'DOWN' ? d.database.error : `${d.database.connections} of ${d.database.maxConnections} connections · ${d.database.sizeBytes !== null ? bytes(d.database.sizeBytes) : ''}`} tone={d.database.status === 'OK' ? 'positive' : d.database.status === 'SLOW' ? 'warning' : 'negative'} />
+            <Stat label="Database" value={d.database.latencyMs === null ? 'Down' : ms(d.database.latencyMs)} sub={d.database.status === 'DOWN' ? d.database.error : [d.database.connections !== null ? `${d.database.connections} of ${d.database.maxConnections} connections` : null, d.database.sizeBytes !== null ? bytes(d.database.sizeBytes) : null].filter(Boolean).join(' · ')} tone={d.database.status === 'OK' ? 'positive' : d.database.status === 'SLOW' ? 'warning' : 'negative'} />
             <Stat label="Requests (15 min)" value={d.requests.totals.requests.toLocaleString('en-IN')} sub={`p95 ${ms(d.requests.totals.p95Ms)} · p50 ${ms(d.requests.totals.p50Ms)}`} tone="accent" />
             <Stat label="Server errors (15 min)" value={d.requests.totals.serverErrors.toLocaleString('en-IN')} sub={`${d.requests.totals.clientErrors.toLocaleString('en-IN')} refused or invalid requests (4xx)`} tone={d.requests.totals.serverErrors ? 'negative' : 'neutral'} />
             <Stat label="Open error groups" value={d.errors.open ?? '—'} sub={<Link className="text-accent hover:underline" href="/admin/errors">{d.errors.lastHour ?? 0} in the last hour</Link>} tone={d.errors.open ? 'warning' : 'neutral'} />
@@ -72,7 +72,7 @@ export default function SystemHealthPage() {
               <CardHeader title="Database" />
               <dl className="grid grid-cols-[10rem_1fr] gap-y-2 px-5 pb-5 pt-3 text-sm">
                 <dt className="text-fg-muted">Answers in</dt><dd>{ms(d.database.latencyMs)}</dd>
-                <dt className="text-fg-muted">PostgreSQL</dt><dd className="font-mono">{d.database.postgres ?? '—'}</dd>
+                <dt className="text-fg-muted">MongoDB</dt><dd className="font-mono">{d.database.mongodb ?? '—'}</dd>
                 <dt className="text-fg-muted">Size</dt><dd>{d.database.sizeBytes !== null ? bytes(d.database.sizeBytes) : '—'}</dd>
                 <dt className="text-fg-muted">Connections</dt><dd>{d.database.connections ?? '—'} of {d.database.maxConnections ?? '—'}</dd>
                 <dt className="text-fg-muted">Last migration</dt><dd className="break-all font-mono text-xs">{d.database.lastMigration ? `${d.database.lastMigration.name}${d.database.lastMigration.at ? ` · ${dateTime(d.database.lastMigration.at)}` : ''}` : '—'}</dd>

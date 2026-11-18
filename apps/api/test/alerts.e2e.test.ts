@@ -271,7 +271,10 @@ describe('settings', () => {
     const s3 = await scan();
     expect(s3.reopened).toBe(6);
     const back = byRule((await list()).alerts, 'UNUSUAL_JOURNAL');
-    expect(back.every((a) => a.reopenCount === 1 && a.status === 'OPEN')).toBe(true);
+    // The six cleared ones are back. From the 16th of a month the default setting also flags the
+    // rent journal dated the 15th of last month as back-dated: a new alert, not a reopened one.
+    expect(back.filter((a) => a.reopenCount === 1).map((a) => a.status)).toEqual(Array(6).fill('OPEN'));
+    expect(back.filter((a) => a.reopenCount !== 1).every((a) => a.reopenCount === 0 && /posted \d+ days after its date/.test(a.title))).toBe(true);
     const audit = await ctx.prisma.auditEvent.count({ where: { orgId: org.orgId, action: 'alert_rule.updated' } });
     expect(audit).toBe(4);
   });

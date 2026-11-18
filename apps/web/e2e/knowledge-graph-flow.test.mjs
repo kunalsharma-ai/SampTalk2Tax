@@ -3,7 +3,7 @@
  * customer, sees its invoice and the receipt that settled it with the reason for each connection,
  * walks from the customer to the invoice, and then traces a profit-and-loss figure to the general
  * ledger, to the invoice that created the line and back into the explorer.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

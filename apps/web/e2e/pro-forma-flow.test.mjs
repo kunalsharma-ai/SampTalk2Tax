@@ -2,7 +2,7 @@
  * Browser end-to-end test for pro forma invoices (AR-008): from a sent quotation, Make pro forma
  * invoice… fills the form; the draft is saved as PF-0001, issued, printed with the invoice template
  * as a pro forma (not a tax invoice), and turned into a draft tax invoice with the same lines.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

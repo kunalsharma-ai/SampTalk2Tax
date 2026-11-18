@@ -2,7 +2,7 @@
  * Browser end-to-end test for intercompany transactions: an owner of two companies sets each
  * company's intercompany accounts, posts a charge and a settlement in both companies at once,
  * sees them eliminated exactly in the consolidation, opens the posted entry, and reverses the
- * charge in both companies. Real Next.js app → real API → real PostgreSQL.
+ * charge in both companies. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

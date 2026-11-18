@@ -4,7 +4,7 @@
  * be late, prepares a board pack, writes commentary, has the AI write the summary (the scripted
  * Anthropic stand-in plays the model: one summary quotes a made-up figure and is rejected, the
  * next copies the figures and is kept), and finalises the pack. Nothing is posted.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

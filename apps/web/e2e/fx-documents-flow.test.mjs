@@ -2,7 +2,7 @@
  * Browser end-to-end test for foreign-currency documents: an invoice in USD takes the recorded
  * rate, a USD receipt at a higher rate settles it and posts a realised exchange gain, the
  * receivables ageing ties to the books in rupees, and the customer statement is in USD.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
