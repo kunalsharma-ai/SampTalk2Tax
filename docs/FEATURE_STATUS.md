@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 62 |
+| Implementing | 61 |
 | Implemented | 34 |
-| Tested | 451 |
+| Tested | 452 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1696,11 +1696,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### TAX-021 — Advance tax calculations
 
 - Module: Global taxation engine
-- Status: **Implementing**
-- Notes: Advance tax instalment dates (15/45/75/100%) are tracked and can be marked paid with the challan. The tax itself is not calculated.
+- Status: **Tested**
+- Notes: Year's tax for companies, firms and LLPs from book profit (annualised) or an estimate plus adjustments, with surcharge, marginal relief and cess; TDS credits and payments from chosen accounts; four instalments with what was due and paid. Not individuals, presumptive income, MAT or interest on short instalments. Rates not yet reviewed by a tax professional.
 - Evidence:
-  - packages/tax-engine/src/india/calendar.ts
-  - apps/api/test/compliance.e2e.test.ts
+  - packages/tax-engine/src/india/advance-tax.ts
+  - packages/tax-engine/test/advance-tax.test.ts
+  - apps/api/test/advance-tax.e2e.test.ts › works out the tax, credits and instalments from a saved plan
+  - apps/web/e2e/advance-tax-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/tax/advance-tax/page.tsx
+  - docs/ADVANCE_TAX.md
 
 ### TAX-022 — Tax payment tracking
 

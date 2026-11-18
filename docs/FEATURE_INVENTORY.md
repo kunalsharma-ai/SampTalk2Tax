@@ -263,7 +263,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-018 | India Module | capability | TCS | Tested |
 | TAX-019 | India Module | capability | Income tax preparation support | Not started |
 | TAX-020 | India Module | capability | Corporate tax support | Not started |
-| TAX-021 | India Module | capability | Advance tax calculations | Implementing |
+| TAX-021 | India Module | capability | Advance tax calculations | Tested |
 | TAX-022 | India Module | capability | Tax payment tracking | Implementing |
 | TAX-023 | India Module | capability | Statutory deadline calendars | Tested |
 | TAX-024 | India Module | capability | Tax notices | Tested |

@@ -569,6 +569,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Check what is due this month, open an item to see what to file, and mark it filed with the reference.',
     where: 'Tax. Dates come from your GST, TDS/TCS and payroll settings.',
   },
+  'tax/advance-tax': {
+    what: 'The advance income tax for the tax year: the year\'s estimated income, the tax on it with surcharge and cess, and how much should be paid by each of the four instalment dates.',
+    how: 'Choose how the business is taxed and how to estimate the year (the profit so far scaled up to a full year, or your own figure), add adjustments from book profit to taxable income, and pick the accounts that hold advance tax paid and tax deducted at source. Pay what each instalment shows by its date.',
+    where: 'Tax. Reads posted journals for the tax year (April to March); income tax expense and year-end closing are left out. Saving changes only the plan, not the books. For companies, firms and LLPs; not individuals, presumptive income, MAT or interest for late instalments.',
+  },
   'tax/gst-returns': {
     what: 'GSTR-1 and GSTR-3B worked out from your invoices and bills.',
     how: 'Choose the month, check each table and the documents behind it, and export the file to upload on the GST portal.',
