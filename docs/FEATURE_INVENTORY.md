@@ -222,7 +222,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-008 |  | capability | Deposit matching | Tested |
 | BANK-009 |  | capability | Payment matching | Tested |
 | BANK-010 |  | capability | Bank charges | Tested |
-| BANK-011 |  | capability | Interest accounting | Implementing |
+| BANK-011 |  | capability | Interest accounting | Tested |
 | BANK-012 |  | capability | Foreign exchange accounting | Tested |
 | BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
 | BANK-014 |  | capability | Bank balance monitoring | Tested |
@@ -427,7 +427,7 @@ Part 13 · M6 · priority P2 · depends on: GL, BANK
 | TRS-009 |  | capability | Debt management | Tested |
 | TRS-010 |  | capability | Loan schedules | Tested |
 | TRS-011 |  | capability | Interest calculations | Tested |
-| TRS-012 |  | capability | Investment tracking | Not started |
+| TRS-012 |  | capability | Investment tracking | Implementing |
 | TRS-013 |  | capability | Foreign exchange exposure | Tested |
 | TRS-014 |  | capability | Currency risk monitoring | Not started |
 | TRS-015 |  | capability | Payment planning | Not started |
