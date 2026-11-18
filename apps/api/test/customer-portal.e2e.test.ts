@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { mirrorRows } from '../src/common/prisma.service';
 import { tenantStorage } from '../src/common/tenant-context';
 import { allowInTx } from '../src/db/guards/allow';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
@@ -58,7 +57,6 @@ beforeAll(async () => {
   await raw(`INSERT INTO payment_links (id, org_id, number, document_id, provider, gateway_ref, url, currency, amount, created_by_id, updated_at) VALUES (gen_random_uuid(), $1::uuid, 1, $2::uuid, 'RAZORPAY', $4, 'https://rzp.example.test/pay/' || $4, 'INR', 6000, $3::uuid, now())`, org.orgId, recent.id, me, `plink_${recent.id.slice(0, 8)}`);
   ids.plink = `plink_${recent.id.slice(0, 8)}`;
   // Written past the API, so MongoDB is brought in step by hand.
-  await tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'PaymentLink', { documentId: recent.id }));
 });
 afterAll(async () => {
   await ctx?.app.close();
@@ -142,7 +140,6 @@ describe('the portal, without signing in', () => {
       await raw(`UPDATE customer_portal_links SET created_at = now() - interval '40 days', expires_at = now() - interval '1 day' WHERE id = $1::uuid`, fresh.id);
       await raw(`ALTER TABLE customer_portal_links ENABLE TRIGGER customer_portal_links_guard`);
     });
-    await allowInTx('guards_off', () => tenantStorage.run({ bypass: true }, () => mirrorRows(ctx.prisma, 'CustomerPortalLink', { id: fresh.id })));
     expect((await portal(fresh.token).expect(404)).body.message).toBe('This link from Bright Ledger Services has expired. Ask them for a new one.');
     expect((await ctx.http().get(L()).set(owner.auth).expect(200)).body.map((l: { state: string }) => l.state).sort()).toEqual(['EXPIRED', 'REVOKED']);
   });

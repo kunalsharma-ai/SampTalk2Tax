@@ -4,7 +4,7 @@
  * second signed-in user) sends it back with a reason, the owner submits again and the
  * approver approves it; budget vs actual compares it with journals posted this month,
  * including an account nobody budgeted; and a new version starts from the approved one.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

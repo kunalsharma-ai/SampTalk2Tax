@@ -2,7 +2,7 @@
  * Browser end-to-end test for the revenue forecast: an owner with an active contract, an open
  * order, a deal and recent sales reads the forecast by month and what it is made of, changes the
  * horizon, saves it with a note and opens the saved forecast. Real Next.js app → real API → real
- * PostgreSQL.
+ * MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

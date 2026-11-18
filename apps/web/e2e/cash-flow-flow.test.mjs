@@ -2,7 +2,7 @@
  * Browser end-to-end test for cash-flow forecasting: an owner with cash, an open invoice and
  * an open bill adds planned payments in the page, sets a minimum balance and sees the
  * warning, saves the forecast, and saves a backtest from an earlier day and opens its
- * accuracy page. Real Next.js app → real API → real PostgreSQL.
+ * accuracy page. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

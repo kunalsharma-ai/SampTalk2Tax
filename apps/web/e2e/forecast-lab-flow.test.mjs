@@ -3,7 +3,7 @@
  * sales opens the lab, sees the methods ranked on their own books with the straight-line trend
  * best, switches the figure and the months checked, saves a run with a note and opens the saved
  * run with its forecasts waiting to be measured.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -5,7 +5,7 @@
  * shows its upcoming bills; Make due bills now makes today's bill as a draft with the reference
  * filled; the draft opens in Bills; pausing shows in the list; and the API refuses the same
  * reference again.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

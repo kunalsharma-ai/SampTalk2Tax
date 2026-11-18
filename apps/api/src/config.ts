@@ -8,7 +8,6 @@ const RegionDirectory = z.record(
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   /**
    * MongoDB, which is replacing PostgreSQL module by module (docs/MONGODB.md). Must be a
    * replica set (one node is enough) because postings use multi-document transactions.

@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for sessions: silent renewal of an expired access cookie,
  * signing another device out, changing the password, sign-out ending the session in the
- * API, and the sign-in lockout message. Real Next.js app → real API → real PostgreSQL.
+ * API, and the sign-in lockout message. Real Next.js app → real API → real MongoDB.
  * Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';

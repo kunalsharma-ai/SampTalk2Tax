@@ -3,7 +3,7 @@
  * recognised over twelve months from the invoice page, the invoice posts to deferred revenue, the
  * monthly release run recognises the first month, the Revenue recognition page shows the deferred
  * revenue account, the waterfall and the line, and voiding the invoice ends the schedule.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

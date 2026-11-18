@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for the year-end close: an owner closes last year's profit to retained
  * earnings after checking the closing journal, opens it, closes again after a late adjustment
- * (only the difference), and reopens the year. Real Next.js app → real API → real PostgreSQL.
+ * (only the difference), and reopens the year. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

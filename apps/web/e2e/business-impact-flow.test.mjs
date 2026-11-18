@@ -2,7 +2,7 @@
  * Browser end-to-end test for business impact: an owner starts from "win a new customer",
  * adds a hire, assesses and saves it, adds equipment, sees each change and each business area,
  * turns the assessment into a digital-twin scenario and deletes it.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

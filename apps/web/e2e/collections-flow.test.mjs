@@ -3,7 +3,7 @@
  * reminders for overdue customers, sees the one it could not email left out, opens a draft,
  * watches the checks against the books catch a wrong amount as it is typed, fixes it, sends
  * the reminder and finds the call in the AI activity log. Real Next.js app → real API → real
- * PostgreSQL → the real Anthropic SDK against a local stand-in for the Messages API (port
+ * MongoDB → the real Anthropic SDK against a local stand-in for the Messages API (port
  * 4555) → nodemailer → a local SMTP server (port 4556). The API must run with
  * ANTHROPIC_API_KEY set, ANTHROPIC_BASE_URL=http://127.0.0.1:4555, SMTP_URL=smtp://127.0.0.1:4556
  * and EMAIL_FROM set. Nothing reaches Anthropic or a real mailbox.

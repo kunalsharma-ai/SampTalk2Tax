@@ -2,11 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runInOrg } from '../src/common/tenant-context';
 import { journalEntries } from '../src/db/collections/ledger';
 import { bootApp, createOrg, Ctx, registerUser, today } from './helpers';
-import { postgresOnly } from '../src/db/mirror-writes';
-import { postgresOff } from '../src/db/counters';
 
-/** Reads the PostgreSQL copy itself (reads through the API come from MongoDB). */
-const pg = () => postgresOnly(ctx.prisma);
 
 let ctx: Ctx;
 beforeAll(async () => {
@@ -26,9 +22,8 @@ const je = (acc: Record<string, string>, debit: string, credit: string, amount: 
   ...extra,
 });
 
-// These check the PostgreSQL copy kept while both databases run, so only while PostgreSQL does.
-describe.skipIf(postgresOff())('the ledger lives in MongoDB', () => {
-  it('a posted journal is stored in MongoDB with decimal amounts, and copied to PostgreSQL with the same line ids', async () => {
+describe('the ledger lives in MongoDB', () => {
+  it('a posted journal is stored in MongoDB with decimal amounts, and read back with the same line ids', async () => {
     const owner = await registerUser(ctx, 'Ledger Owner');
     const org = await createOrg(ctx, owner);
     const res = await ctx.http().post(`${org.base}/journals`).set(owner.auth).send(je(org.acc, '1120', '3100', '1250.50')).expect(201);
@@ -36,10 +31,9 @@ describe.skipIf(postgresOff())('the ledger lives in MongoDB', () => {
     expect(doc?.status).toBe('POSTED');
     expect(doc?.totalDebit?._bsontype).toBe('Decimal128');
     expect(doc?.totalDebit.toString()).toBe('1250.5');
-    const copy = await pg().journalEntry.findUniqueOrThrow({ where: { id: res.body.id }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
+    const copy = await ctx.prisma.journalEntry.findUniqueOrThrow({ where: { id: res.body.id }, include: { lines: { orderBy: { lineNo: 'asc' } } } });
     expect(copy).toMatchObject({ status: 'POSTED', entryNumber: res.body.entryNumber });
     expect(copy.lines.map((l) => l.id)).toEqual((doc!.lines as { id: string }[]).map((l) => l.id));
-    // Reports still read the copy.
     const tb = (await ctx.http().get(`${org.base}/reports/trial-balance?asOf=${today()}`).set(owner.auth).expect(200)).body;
     expect(JSON.stringify(tb)).toContain('1250.50');
   });
@@ -49,13 +43,13 @@ describe.skipIf(postgresOff())('the ledger lives in MongoDB', () => {
     const org = await createOrg(ctx, owner);
     const draft = (await ctx.http().post(`${org.base}/journals`).set(owner.auth).send(je(org.acc, '6200', '2200', '10.00', { post: false })).expect(201)).body;
     await ctx.http().put(`${org.base}/journals/${draft.id}`).set(owner.auth).send({ date: today(), type: 'STANDARD', lines: je(org.acc, '6200', '2200', '12.00').lines }).expect(200);
-    expect((await pg().journalEntry.findUniqueOrThrow({ where: { id: draft.id } })).totalDebit.toFixed(2)).toBe('12.00');
+    expect((await ctx.prisma.journalEntry.findUniqueOrThrow({ where: { id: draft.id } })).totalDebit.toFixed(2)).toBe('12.00');
     await ctx.http().delete(`${org.base}/journals/${draft.id}`).set(owner.auth).expect((r) => expect([200, 204]).toContain(r.status));
     expect(await ctx.db.collection('journal_entries').countDocuments({ _id: draft.id })).toBe(0);
-    expect(await pg().journalEntry.count({ where: { id: draft.id } })).toBe(0);
+    expect(await ctx.prisma.journalEntry.count({ where: { id: draft.id } })).toBe(0);
   });
 
-  it('the data layer keeps the rules the PostgreSQL triggers kept', async () => {
+  it('the data layer keeps the rules the triggers kept', async () => {
     const owner = await registerUser(ctx, 'Rule Ledger');
     const org = await createOrg(ctx, owner);
     const posted = (await ctx.http().post(`${org.base}/journals`).set(owner.auth).send(je(org.acc, '1120', '3100', '100.00')).expect(201)).body;
@@ -78,16 +72,16 @@ describe.skipIf(postgresOff())('the ledger lives in MongoDB', () => {
     await ctx.http().post(`${org.base}/journals`).set(owner.auth).send(je(org.acc, '1120', '3100', '1.00')).expect(409);
   });
 
-  it('MongoDB work inside a PostgreSQL transaction commits only if PostgreSQL commits', async () => {
+  it('store work inside a transaction commits only if the transaction does', async () => {
     const owner = await registerUser(ctx, 'Bridge');
     const org = await createOrg(ctx, owner);
     const posted = (await ctx.http().post(`${org.base}/journals`).set(owner.auth).send(je(org.acc, '1120', '3100', '7.00', { post: false })).expect(201)).body;
     await expect(
       ctx.prisma.$transaction(async () => {
         await runInOrg(org.orgId, () => ctx.store.collection(journalEntries).updateOne({ id: posted.id }, { $set: { memo: 'inside a failed transaction' } }));
-        throw new Error('postgres refused');
+        throw new Error('refused');
       }),
-    ).rejects.toThrow('postgres refused');
+    ).rejects.toThrow('refused');
     expect((await ctx.db.collection('journal_entries').findOne({ _id: posted.id }))?.memo).not.toBe('inside a failed transaction');
     await ctx.prisma.$transaction(() => runInOrg(org.orgId, () => ctx.store.collection(journalEntries).updateOne({ id: posted.id }, { $set: { memo: 'committed' } })));
     expect((await ctx.db.collection('journal_entries').findOne({ _id: posted.id }))?.memo).toBe('committed');
