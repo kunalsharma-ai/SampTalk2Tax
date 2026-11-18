@@ -67,7 +67,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/loans', label: 'Loans' },
     ],
   },
-  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }] },
+  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }, { href: '/expenses/report', label: 'Expense reports' }] },
   {
     group: 'Payroll',
     items: [
@@ -133,7 +133,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
 ];
 
 /** Employees only claim expenses; the rest of the books is not theirs to see. */
-export const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/expenses', label: 'My expense claims' }] }, { group: 'Help', items: [{ href: '/guide', label: 'Feature guide' }, { href: '/support', label: 'Help and support' }] }];
+export const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/expenses', label: 'My expense claims' }, { href: '/expenses/report', label: 'My expense report' }] }, { group: 'Help', items: [{ href: '/guide', label: 'Feature guide' }, { href: '/support', label: 'Help and support' }] }];
 
 
 /** The navigation an organisation sees: its role's items, in its country, without empty groups. */

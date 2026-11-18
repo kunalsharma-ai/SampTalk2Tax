@@ -9315,11 +9315,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "GET /v1/orgs/:orgId/expense-claims (summary by status)"
+        "GET /v1/orgs/:orgId/expense-claims (summary by status)",
+        "packages/accounting-engine/src/expense-report.ts",
+        "packages/accounting-engine/test/expense-report.test.ts",
+        "apps/api/src/expenses/expense-report.service.ts",
+        "apps/api/test/expense-report.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/report/page.tsx",
+        "apps/web/e2e/expense-report-flow.test.mjs",
+        "docs/EXPENSE_REPORTS.md"
       ],
-      "notes": "Totals by status for a person or the organisation; no expense reports by category or period yet beyond the general ledger."
+      "notes": "Claimed spending in a period by category (expense account), month, person, status and merchant, with filters to one person or category; claimants see only their own. Drafts, rejected and void claims left out. Not built: expense budgets, download."
     },
     {
       "id": "EXP-018",
