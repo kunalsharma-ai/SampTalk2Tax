@@ -112,6 +112,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Tax',
     items: [
       { href: '/tax/compliance', label: 'Compliance calendar', needs: 'COMPLIANCE_CALENDAR' },
+      { href: '/tax/notices', label: 'Tax notices', perm: 'reports.read' },
       { href: '/tax/gst-returns', label: 'GST returns', needs: 'SALES_TAX_RETURNS' },
       { href: '/tax/e-invoices', label: 'E-invoices', needs: 'E_INVOICING' },
       { href: '/tax/e-way-bills', label: 'E-way bills', needs: 'TRANSPORT_DOCUMENTS' },

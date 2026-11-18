@@ -77,3 +77,4 @@ export * from './vendor-portal';
 export * from './expense-policy';
 export * from './cash-basis';
 export * from './bank-transfers';
+export * from './tax-notices';

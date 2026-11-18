@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 790 |
+| Not started | 789 |
 | Designed | 0 |
 | Implementing | 68 |
 | Implemented | 34 |
-| Tested | 437 |
+| Tested | 438 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 12 | 24 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
-| Global taxation engine | M3 | 54 | 30 | 24 |
+| Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 14 | 13 |
@@ -1604,6 +1604,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/compliance.e2e.test.ts
   - apps/web/e2e/compliance-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/tax/compliance
+
+### TAX-024 — Tax notices
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Notice register with deadlines, files, history and outcomes. Not yet in the compliance calendar; no reminders.
+- Evidence:
+  - packages/accounting-engine/src/tax-notices.ts + test/tax-notices.test.ts
+  - apps/api/src/tax-notices; MongoDB collections tax_notices, tax_notice_files
+  - /v1/orgs/:orgId/tax-notices (+ respond, close, reopen, notes, files)
+  - apps/api/test/tax-notices.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/notices
+  - apps/web/e2e/tax-notices-flow.test.mjs
+  - docs/TAX_NOTICES.md
 
 ### TAX-027 — External government submission must be implemented only through approved and authorized integrations
 

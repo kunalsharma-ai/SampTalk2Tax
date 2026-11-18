@@ -478,6 +478,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the date. Open an account to see the entries behind its balance.',
     where: 'Reports. The starting point for checking the books and for audits.',
   },
+  'tax/notices': {
+    what: 'Letters from tax authorities (GST, income tax, TDS, PF, ESI, professional tax and others) that ask for a reply, information or payment, each with its reply deadline.',
+    how: 'Record a notice from the letter, add the letter as a file, note what is done, record the reply when it is sent, and close it with the outcome. Overdue and due-soon notices are listed first.',
+    where: 'Tax. Anyone who reads reports sees notices; those who manage the accounts (accounts.manage) record and work them. Every step is kept in the notice history and the audit trail.',
+  },
   'reports/income-statement': {
     what: 'Profit and loss: revenue less expenses for a period.',
     how: 'Choose the period and the basis. Accrual (the default) counts income and expenses when invoiced or billed; Cash counts them when money is received or paid, in the share of each invoice, bill, expense claim or pay run settled in the period, and shows the accrual result beside it. Open a line to see its entries. Export to Excel or PDF.',

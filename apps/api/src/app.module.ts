@@ -22,6 +22,8 @@ import { BankingController } from './banking/banking.controller';
 import { BankingService } from './banking/banking.service';
 import { AllowanceRatesController, ExpensePolicyController, ExpensesController } from './expenses/expenses.controller';
 import { ExpensePolicyService } from './expenses/expense-policy.service';
+import { TaxNoticesController } from './tax-notices/tax-notices.controller';
+import { TaxNoticesService } from './tax-notices/tax-notices.service';
 import { AllowancesService } from './expenses/allowances.service';
 import { ExpensesService } from './expenses/expenses.service';
 import { ErrorFilter } from './common/errors';
@@ -266,6 +268,7 @@ export class AppModule {
         ExpensesController,
         AllowanceRatesController,
         ExpensePolicyController,
+        TaxNoticesController,
         GstController,
         WithholdingController,
         PayrollController,
@@ -383,6 +386,7 @@ export class AppModule {
         ExpensesService,
         AllowancesService,
         ExpensePolicyService,
+        TaxNoticesService,
         GstService,
         WithholdingService,
         PayrollService,
