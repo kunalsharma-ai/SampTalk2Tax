@@ -1,8 +1,10 @@
-import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
+import { ClosePackService } from './close-pack.service';
 import { CloseService } from './close.service';
 
 const periodId = z.string().uuid('Not a period id');
@@ -15,7 +17,10 @@ const RejectBody = z.object({ note: z.string().trim().max(1000, 'Keep the note u
 @ApiBearerAuth()
 @Controller('v1/orgs/:orgId/close')
 export class CloseController {
-  constructor(private readonly close: CloseService) {}
+  constructor(
+    private readonly close: CloseService,
+    private readonly packs: ClosePackService,
+  ) {}
 
   /** Months up to the current one, newest first, with where each close stands. */
   @Get()
@@ -29,6 +34,23 @@ export class CloseController {
   @RequirePermission('periods.read')
   get(@CurrentOrg() org: OrgContext, @Param('periodId', new ZodPipe(periodId)) p: string) {
     return this.close.get(org, p);
+  }
+
+  /**
+   * The report pack of a closed month: a ZIP with the close certification and the month's
+   * reports as PDFs, and a README listing each file's SHA-256. Recorded in the audit trail.
+   */
+  @Get(':periodId/report-pack')
+  @RequirePermission('reports.read')
+  async reportPack(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('periodId', new ZodPipe(periodId)) p: string, @Res() res: Response) {
+    const file = await this.packs.pack(org, user, p);
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"; filename*=UTF-8''${encodeURIComponent(file.fileName)}`);
+    res.setHeader('Content-Length', String(file.body.length));
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Report-SHA256', file.sha256);
+    res.end(file.body);
   }
 
   @Post(':periodId/start')

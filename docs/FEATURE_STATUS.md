@@ -3623,7 +3623,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Autonomous financial workflows
 - Status: **Implementing**
-- Notes: Built: a checklist worked out from the books (draft journals, unmatched bank lines, trial balance, draft documents, reconciliation, approvals, expense claims, payroll, depreciation, negative cash, AI items waiting, earlier months), tasks for accountants for each open check, an AI review that proposes adjusting entries, approval by a person, closing that locks the period with a certification of the figures, and reopening with a reason. Not built: starting the close automatically as a period ends, and generating the report pack at close.
+- Notes: Built: a checklist worked out from the books (draft journals, unmatched bank lines, trial balance, draft documents, reconciliation, approvals, expense claims, payroll, depreciation, negative cash, AI items waiting, earlier months), tasks for accountants for each open check, an AI review that proposes adjusting entries, approval by a person, closing that locks the period with a certification of the figures, reopening with a reason, and a report pack for a closed month (a ZIP with the certification, the trial balance, income statement, balance sheet and ageing as PDFs, and a README of SHA-256 checksums, recorded in the audit trail). Not built: starting the close automatically as a period ends.
 - Evidence:
   - packages/accounting-engine/src/close.ts
   - packages/accounting-engine/test/close.test.ts
@@ -3632,6 +3632,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx
   - apps/web/e2e/close-flow.test.mjs
   - docs/MONTH_END_CLOSE.md
+  - apps/api/src/close/close-pack.service.ts
+  - apps/api/test/close-pack.e2e.test.ts
+  - apps/web/e2e/close-pack-flow.test.mjs
 
 ### ENT-001 — Multi-company accounting
 

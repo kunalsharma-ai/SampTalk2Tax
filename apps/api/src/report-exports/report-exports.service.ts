@@ -98,6 +98,12 @@ export class ReportExportService {
     return { fileName, contentType: CONTENT_TYPES[fmt], body, sha256 };
   }
 
+  /** The report as an export model, without writing a file or an audit event (for packs that audit as a whole). */
+  async model(org: OrgContext, report: ExportableReport, params: Record<string, string | boolean | undefined>, now = new Date()): Promise<ExportReport> {
+    const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true } });
+    return this.build(org, report, params, { orgName: o.name, generatedAt: now.toISOString() });
+  }
+
   private async build(org: OrgContext, r: ExportableReport, p: Record<string, string | boolean | undefined>, base: { orgName: string; generatedAt: string }): Promise<ExportReport> {
     const s = (k: string) => p[k] as string;
     switch (r) {
