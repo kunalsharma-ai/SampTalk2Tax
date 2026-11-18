@@ -13,5 +13,5 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --test test/contrast.test.mjs"
   },
-  "devDependencies": { "typescript": "5.9.3" }
+  "devDependencies": { "typescript": "7.0.2" }
 }
