@@ -1,26 +1,9 @@
-# Local development: `docker compose up -d postgres mongo` gives the databases only.
+# Local development: `docker compose up -d mongo` gives the database only.
 # The whole stack in containers: `docker compose --profile app up --build`
 #   database → migrations (run once, then exit) → API → web app on http://localhost:3000
-# Host ports can be moved with POSTGRES_PORT, API_PORT and WEB_PORT. Images are tagged
+# Host ports can be moved with MONGO_PORT, API_PORT and WEB_PORT. Images are tagged
 # talk2tax-{migrate,api,web}:${IMAGE_TAG:-local}, so images built elsewhere run with --no-build.
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      # Superuser for administration only; the app role is created by infrastructure/postgres/init.
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
   # MongoDB as a one-node replica set: transactions need a replica set. The health check
   # initiates the set on first start (and is a no-op afterwards).
   mongo:
@@ -45,12 +28,9 @@ services:
       target: migrate
     profiles: ["app"]
     depends_on:
-      postgres:
-        condition: service_healthy
       mongo:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://talk2tax:talk2tax@postgres:5432/talk2tax?schema=public
       MONGODB_URL: mongodb://mongo:27017/talk2tax?replicaSet=rs0
     restart: "no"
 
@@ -67,7 +47,6 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      DATABASE_URL: postgresql://talk2tax:talk2tax@postgres:5432/talk2tax?schema=public
       MONGODB_URL: mongodb://mongo:27017/talk2tax?replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       PORT: 4000
@@ -94,5 +73,4 @@ services:
       - "${WEB_PORT:-3000}:3000"
 
 volumes:
-  pgdata:
   mongodata:

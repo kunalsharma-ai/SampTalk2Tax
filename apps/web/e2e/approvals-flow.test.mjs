@@ -2,7 +2,7 @@
  * Browser end-to-end test for attachments and approvals: an owner sets a rule for
  * bills, attaches a receipt to a draft and submits it; the owner cannot approve their
  * own bill; a second person with the Approver role approves and posts it.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

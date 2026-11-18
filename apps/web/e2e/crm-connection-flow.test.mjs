@@ -3,7 +3,7 @@
  * Settings → Integrations (shown once), another system uses it through the app's /api/crm
  * address to create a lead (once, by its own id), the owner adds a webhook to a local receiver,
  * sends a test, sees a new lead delivered, and revokes the key. Real Next.js app → real API →
- * real PostgreSQL.
+ * real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { createHmac, randomUUID } from 'node:crypto';

@@ -1,4 +1,3 @@
-import { postgresOnly } from '../db/mirror-writes';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { isDuplicateKeyError } from '@talk2tax/document-db';
 import { AuditService } from '../audit/audit.service';
@@ -7,7 +6,6 @@ import { DomainError } from '../common/errors';
 import { Tx } from '../common/prisma.service';
 import { runInOrg } from '../common/tenant-context';
 import { accounts, type AccountDoc, type AccountTypeName } from '../db/collections/chart';
-import { PostgresMirrorService } from '../db/postgres-mirror.service';
 
 export interface SystemAccountSpec {
   code: string;
@@ -32,7 +30,6 @@ export interface SystemAccountSpec {
 export class ChartService {
   constructor(
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
     private readonly audit: AuditService,
   ) {}
 
@@ -65,12 +62,12 @@ export class ChartService {
       if (existing && (existing.name !== spec.name || existing.type !== spec.type)) {
         throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} is already used by "${existing.name}". Choose the accounts yourself.`, HttpStatus.CONFLICT);
       }
-      out[key] = existing ? (await this.copied(tx, orgId, actorId, existing, reason)).id : await this.create(tx, orgId, actorId, spec, reason);
+      out[key] = existing ? existing.id : await this.create(tx, orgId, actorId, spec, reason);
     }
     return out;
   }
 
-  /** Adds one account and copies it into `tx`. Returns its id. */
+  /** Adds one account and records it in the audit trail in `tx`. Returns its id. */
   async create(tx: Tx, orgId: string, actorId: string, spec: SystemAccountSpec, reason: string): Promise<string> {
     const parent = spec.parentCode ? await this.chart(orgId).byCode(spec.parentCode) : null;
     const now = new Date();
@@ -93,17 +90,9 @@ export class ChartService {
       // Set up at the same moment by another request.
       const other = await this.chart(orgId).byCode(spec.code);
       if (!other || other.name !== spec.name || other.type !== spec.type) throw new DomainError('ACCOUNT_CODE_TAKEN', `Account code ${spec.code} was just taken`, HttpStatus.CONFLICT);
-      a = other;
+      return other.id; // that request records it in the audit trail
     }
-    return (await this.copied(tx, orgId, actorId, a, reason)).id;
-  }
-
-  /** Makes sure PostgreSQL has its copy; the first copy is when the account is audited as created. */
-  private async copied(tx: Tx, orgId: string, actorId: string, a: AccountDoc, reason: string) {
-    const present = await postgresOnly(tx).account.findFirst({ where: { id: a.id, orgId }, select: { id: true } });
-    if (present) return a;
-    await this.mirror.accounts([...(a.parentId ? [a.parentId] : []), a.id], tx);
     await this.audit.append(tx, { orgId, actorId, action: 'account.created', entityType: 'account', entityId: a.id, data: { code: a.code, name: a.name, type: a.type, subtype: a.subtype, reason } });
-    return a;
+    return a.id;
   }
 }

@@ -2,7 +2,7 @@
  * Browser end-to-end test for the AI control center: an owner sees every agent with its
  * action level, sees this month's usage after the collections agent drafts a reminder, sets
  * a budget, turns an agent off and on, presses the emergency stop with a reason (which the
- * copilot then shows), and turns AI back on. Real Next.js app → real API → real PostgreSQL →
+ * copilot then shows), and turns AI back on. Real Next.js app → real API → real MongoDB →
  * the real Anthropic SDK against a local stand-in for the Messages API (port 4555).
  */
 import assert from 'node:assert/strict';

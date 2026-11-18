@@ -1,5 +1,5 @@
 /**
- * Browser end-to-end test: real Next.js app → real API → real PostgreSQL.
+ * Browser end-to-end test: real Next.js app → real API → real MongoDB.
  * Prerequisites: API on T2T_API_URL (default :4000) and web on WEB_URL (default :3000).
  *   pnpm --filter @talk2tax/web e2e
  * Uses the `playwright` library (not @playwright/test) with Node's built-in test runner.

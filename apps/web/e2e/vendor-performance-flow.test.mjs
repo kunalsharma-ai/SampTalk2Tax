@@ -3,7 +3,7 @@
  * goods rejected and billed above the order price, the vendor's page shows the scorecard and the
  * late delivery, a review is refused without a note at rating 2, added with one, then withdrawn by
  * its author, and Purchases → Vendor performance lists the vendor with its grade.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for the AI copilot: an owner turns it on, asks a question, sees
  * the answer with the reports it came from, gets a clear message when the provider fails,
- * asks again, and deletes the conversation. Real Next.js app → real API → real PostgreSQL →
+ * asks again, and deletes the conversation. Real Next.js app → real API → real MongoDB →
  * the real Anthropic SDK, which talks to a local stand-in for the Messages API (the API
  * must run with ANTHROPIC_API_KEY set and ANTHROPIC_BASE_URL=http://127.0.0.1:4555). The
  * stand-in's replies are scripted here; it is not a model and nothing reaches Anthropic.

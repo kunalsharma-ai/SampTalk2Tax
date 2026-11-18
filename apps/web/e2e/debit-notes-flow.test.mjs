@@ -4,7 +4,7 @@
  * invoice), posts it as DN-000001, sees the link both ways and in the invoices list, cannot void
  * the invoice while it stands, finds it in GSTR-1 table 9B as type D and in table 13 as its own
  * series, and prints it titled "Debit note" against the invoice.
- * Real Next.js app → real API → real PostgreSQL.
+ * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

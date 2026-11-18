@@ -19,7 +19,7 @@ import { accounts } from '../db/collections/chart';
 import { memberships, organizations, type OrganizationDoc } from '../db/collections/tenancy';
 import { PeriodsService } from '../periods/periods.service';
 import { OrgSecurityService } from './org-security.service';
-import { PostgresMirrorService, thenInPostgres } from '../db/postgres-mirror.service';
+import { thenOrUndo } from '../common/undo';
 
 export interface CreateOrgInput {
   name: string;
@@ -38,7 +38,6 @@ export class OrganizationsService {
     private readonly audit: AuditService,
     private readonly regions: RegionsService,
     private readonly store: DocumentStoreService,
-    private readonly mirror: PostgresMirrorService,
     private readonly orgSecurity: OrgSecurityService,
     private readonly periods: PeriodsService,
     @Inject(CONFIG) private readonly config: AppConfig,
@@ -98,18 +97,13 @@ export class OrganizationsService {
       made.periodIds = (await this.periods.insertFiscalYear(id, fy, input.fiscalYearStartMonth)).map((p) => p.id);
       return org;
     });
-    return thenInPostgres(
+    return thenOrUndo(
       org,
       async () => {
         await this.prisma.$transaction(async (tx) => {
           // The new organisation is the tenant for the rest of this transaction (row-level security).
           await useOrgInTx(tx, id);
           // The organisation and its control accounts point at each other.
-          await this.mirror.organizations([id], tx, { withoutAccounts: true });
-          await this.mirror.memberships([made.ownerId], tx);
-          await this.mirror.accounts(made.accountIds, tx);
-          await this.mirror.organizations([id], tx);
-          await this.mirror.fiscalPeriods(made.periodIds, tx);
           await startSubscription(tx, org, userId, this.trialDays);
           await this.audit.append(tx, {
             orgId: org.id,
@@ -182,7 +176,6 @@ export class OrganizationsService {
     if (!before) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Organization not found' });
     await this.store.collection(organizations).updateOne({ id: orgId }, { $set: { timeZone, updatedAt: new Date() } });
     await this.prisma.$transaction(async (tx) => {
-      await this.mirror.organizations([orgId], tx);
       await this.audit.append(tx, { orgId, actorId, action: 'org.time_zone_changed', entityType: 'organization', entityId: orgId, data: { before: before.timeZone, after: timeZone } });
     });
     return this.get(orgId);
@@ -211,11 +204,10 @@ export class OrganizationsService {
     const m = await runInOrg(orgId, () => members.insertOne({ userId: user.id, role: role as Role, createdAt: new Date() })).catch((e: unknown) => {
       throw isDuplicateKeyError(e) ? new ConflictException({ error: 'ALREADY_MEMBER', message: 'User is already a member' }) : e;
     });
-    return thenInPostgres(
+    return thenOrUndo(
       { userId: user.id, email: user.email, name: user.name, role: m.role },
       () =>
         this.prisma.$transaction(async (tx) => {
-          await this.mirror.memberships([m.id], tx);
           await this.audit.append(tx, { orgId, actorId: actor.id, action: 'member.added', entityType: 'membership', entityId: m.id, data: { userId: user.id, role } });
         }),
       () => runInOrg(orgId, async () => void (await members.deleteOne({ id: m.id }))),

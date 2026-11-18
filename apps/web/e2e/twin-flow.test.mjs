@@ -2,7 +2,7 @@
  * Browser end-to-end test for the financial digital twin: an owner posts a month of activity,
  * starts a scenario from the "Hire a team" template, edits it and watches the projection
  * change, adds the tax rate it asks for, saves, reopens and compares it with no change, and
- * the books are untouched. Real Next.js app → real API → real PostgreSQL.
+ * the books are untouched. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

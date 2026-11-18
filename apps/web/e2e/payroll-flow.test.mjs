@@ -5,7 +5,7 @@
  * to the ledger, opens the payslip, pays net salaries from the bank, and cannot void the
  * run while a payment stands. Expected figures come from the same tax engine the API uses,
  * and for October 2026 they are also checked against hand-worked numbers.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

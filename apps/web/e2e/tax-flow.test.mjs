@@ -3,7 +3,7 @@
  * rate, adds a registered customer, raises an invoice whose CGST/SGST split changes
  * to IGST when the place of supply moves to another state, posts it, and reviews
  * GSTR-3B (which ties to the ledger) and GSTR-1.
- * Real Next.js app → real API → real PostgreSQL. Same prerequisites as ledger-flow.test.mjs.
+ * Real Next.js app → real API → real MongoDB. Same prerequisites as ledger-flow.test.mjs.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

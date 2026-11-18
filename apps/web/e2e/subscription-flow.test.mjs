@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for plans and subscriptions: a new organisation is on a free trial,
  * its owner asks for a plan, a platform administrator activates it on payment, and modules the
- * plan does not include are marked for upgrade. Real Next.js app → real API → real PostgreSQL.
+ * plan does not include are marked for upgrade. Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';

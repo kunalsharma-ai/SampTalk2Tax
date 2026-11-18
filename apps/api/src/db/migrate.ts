@@ -4,7 +4,7 @@ import { MIGRATIONS } from './migrations';
 
 /**
  * Applies pending MongoDB migrations to MONGODB_URL, then exits.
- *   pnpm --filter @talk2tax/api run db:migrate:mongo
+ *   pnpm db:migrate
  * The release step runs it once before new API containers start.
  */
 export async function migrate(url: string, log: (line: string) => void = console.log): Promise<string[]> {
