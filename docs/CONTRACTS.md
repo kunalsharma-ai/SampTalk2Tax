@@ -13,7 +13,8 @@ deal's page (with *New contract*).
 |---|---|
 | Billed | Monthly, quarterly, half-yearly or yearly, from the start date |
 | Invoice dated | In advance (the period's first day) or in arrears (its last day) |
-| End date | The last day of a period, or none (rolling until cancelled) |
+| End date | The last day of a period, or none (rolling until cancelled); with a billing day, any date |
+| Bill on day of month | Optional, 1 to 28: periods run from that day, and part periods are billed by days |
 | Auto-renew | At the end date, run on for a renewal term (a whole number of periods) |
 | Renewal notice | Days before the end date from which the contract shows *Renewal due* |
 | Payment terms | Days to the invoice's due date; blank uses the customer's terms |
@@ -22,6 +23,21 @@ deal's page (with *New contract*).
 Periods keep the start date's day of the month; when a month is shorter they use its last day
 (a contract from 31 January bills on 28/29 February, then 31 March). An end date that is not a
 period end is refused with the nearest valid dates.
+
+### Part periods
+
+With a **billing day**, periods run from that day of the month instead of the start date. A
+contract starting on 15 November and billed on the 1st has a first part period of 15 to 30
+November, then full periods from 1 December. Its end date can be any date: the last period is
+cut short there (to 10 March, say). A part period bills each line at its share of days, the
+unit price × days in the part ÷ days in the full period it belongs to, rounded half up to the
+paisa, and the line says so: *Payroll (part period: 16 of 30 days)*. Usage charges are billed
+as recorded. Coming up on the contract shows each period as a full period or its days.
+
+A contract that ends part-way through a period cannot renew automatically, and is renewed by
+hand only after its end date is moved to a period end. Once its last part period is billed, the
+end date no longer changes. The billing day is fixed once the contract is active, like the rest
+of the schedule.
 
 ## Life of a contract
 
@@ -76,5 +92,5 @@ Under `/v1/orgs/:orgId/sales/contracts`: `GET` (`view` active/renewals/draft/clo
 ## Not built yet
 
 * Invoices are drafts; there is no automatic posting or e-mailing of contract invoices.
-* No proration of part periods, no usage-based or metered charges, no automatic collection.
+* No automatic collection (card or mandate); no credit for unused days when a contract billed in advance is cancelled part-way through a period.
 * Contracts are in the functional currency only.

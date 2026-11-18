@@ -99,6 +99,7 @@ export default function ContractPage() {
               <dt className="text-fg-muted">Customer</dt><dd>{c.contact ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}/sales/customers/${c.contact.id}`}>{c.contact.name}</Link> : '—'}</dd>
               <dt className="text-fg-muted">Per period</dt><dd className="font-medium"><Money value={c.total} currency={cur} /> <span className="text-xs text-fg-muted">incl. tax</span></dd>
               <dt className="text-fg-muted">MRR</dt><dd><Money value={c.monthlyValue} currency={cur} /></dd>
+              {c.billingDay ? <><dt className="text-fg-muted">Billing day</dt><dd>Day {c.billingDay} of the month; part periods are billed by days</dd></> : null}
               <dt className="text-fg-muted">Next invoice</dt><dd>{c.nextBill && c.status === 'ACTIVE' ? `${date(c.nextBill.date)} (period ${c.nextBill.periodNo})` : '—'}</dd>
               <dt className="text-fg-muted">Periods billed</dt><dd>{c.periodsBilled}</dd>
               <dt className="text-fg-muted">Renewal</dt><dd>{c.endDate ? (c.autoRenew ? `Automatic, ${c.renewalMonths} months at a time` : `By hand; reminder ${c.noticeDays} days before the end`) : 'Rolling until cancelled'}</dd>
@@ -127,9 +128,9 @@ export default function ContractPage() {
             <Card>
               <CardHeader title="Coming up" description={c.status === 'DRAFT' ? 'Activate the contract to start billing.' : 'Each becomes a draft invoice on its invoice date.'} />
               <Table aria-label="Upcoming periods">
-                <thead><tr><Th>Period</Th><Th>From</Th><Th>To</Th><Th>Invoice date</Th></tr></thead>
+                <thead><tr><Th>Period</Th><Th>From</Th><Th>To</Th><Th>Invoice date</Th><Th>Billed for</Th></tr></thead>
                 <tbody>
-                  {c.upcoming.map((p) => <Tr key={p.periodNo}><Td>{p.periodNo}</Td><Td>{date(p.start)}</Td><Td>{date(p.end)}</Td><Td>{date(p.billDate)}</Td></Tr>)}
+                  {c.upcoming.map((p) => <Tr key={p.periodNo}><Td>{p.periodNo}</Td><Td>{date(p.start)}</Td><Td>{date(p.end)}</Td><Td>{date(p.billDate)}</Td><Td className="text-sm">{p.part ? `${p.part.days} of ${p.part.of} days` : 'Full period'}</Td></Tr>)}
                 </tbody>
               </Table>
             </Card>
