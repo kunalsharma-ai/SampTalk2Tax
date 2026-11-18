@@ -8,6 +8,14 @@ import { date } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can, type Invitation, type Member, type Role } from '@/lib/types';
 
+interface OrgSecurity {
+  requireTwoStep: boolean;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  membersWithoutTwoStep: number;
+  youHaveTwoStep: boolean;
+}
+
 const ROLE_HELP: Record<Role, string> = {
   OWNER: 'Everything, including granting owner',
   ADMIN: 'Everything except granting owner',
@@ -38,6 +46,14 @@ export default function MembersPage() {
     for (const k of ['members', 'invitations']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
   const members = useQuery({ queryKey: ['members', orgId], queryFn: () => api<Member[]>(`/v1/orgs/${orgId}/members`) });
+  const security = useQuery({ queryKey: ['org-security', orgId], queryFn: () => api<OrgSecurity>(`/v1/orgs/${orgId}/security`) });
+  const setRequired = useMutation({
+    mutationFn: (requireTwoStep: boolean) => api<OrgSecurity>(`/v1/orgs/${orgId}/security`, { method: 'PUT', body: { requireTwoStep } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['org-security', orgId] });
+      await qc.invalidateQueries({ queryKey: ['orgs'] });
+    },
+  });
   const invitations = useQuery({ queryKey: ['invitations', orgId], queryFn: () => api<Invitation[]>(`/v1/orgs/${orgId}/invitations`) });
   const show = (r: Issued) => {
     setCopied(false);
@@ -92,12 +108,39 @@ export default function MembersPage() {
         </Card>
       ) : null}
 
+      <Card className="mb-6">
+        <CardHeader
+          title="Two-step sign-in for members"
+          description="When required, everyone in this organisation must have two-step sign-in on before they can open its books. Members without it are asked to set it up the next time they open the organisation."
+          actions={security.data ? security.data.requireTwoStep ? <Badge tone="positive">Required</Badge> : <Badge>Not required</Badge> : null}
+        />
+        <div className="flex flex-col gap-3 px-5 pb-5 pt-2 text-sm">
+          {setRequired.error ? <Alert title="Not changed">{setRequired.error.message}</Alert> : null}
+          {security.data ? (
+            <p className="text-fg-muted">
+              {security.data.membersWithoutTwoStep === 0 ? 'Every member has two-step sign-in on.' : `${security.data.membersWithoutTwoStep} member${security.data.membersWithoutTwoStep === 1 ? ' does' : 's do'} not have two-step sign-in on${security.data.requireTwoStep ? ' and cannot open the books until they turn it on' : ''}.`}
+              {security.data.updatedAt ? ` Last changed ${date(security.data.updatedAt.slice(0, 10))}${security.data.updatedBy ? ` by ${security.data.updatedBy}` : ''}.` : ''}
+            </p>
+          ) : null}
+          {manage && security.data ? (
+            <div className="flex flex-wrap items-center gap-3">
+              {security.data.requireTwoStep ? (
+                <Button size="sm" variant="secondary" loading={setRequired.isPending} onClick={() => setRequired.mutate(false)}>Stop requiring two-step sign-in</Button>
+              ) : (
+                <Button size="sm" loading={setRequired.isPending} disabled={!security.data.youHaveTwoStep} onClick={() => setRequired.mutate(true)}>Require two-step sign-in</Button>
+              )}
+              {!security.data.requireTwoStep && !security.data.youHaveTwoStep ? <span className="text-fg-faint">Turn it on for yourself first, under Account.</span> : null}
+            </div>
+          ) : null}
+        </div>
+      </Card>
+
       {actionError ? <div className="mb-4"><Alert title="That did not work">{actionError.message}</Alert></div> : null}
 
       <Card className="mb-6">
         <CardHeader title="Members" />
         <Table>
-          <thead><tr><Th>Name</Th><Th>Email</Th><Th>Role</Th><Th>Member since</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
+          <thead><tr><Th>Name</Th><Th>Email</Th><Th>Role</Th><Th>Two-step sign-in</Th><Th>Member since</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
           <tbody>
             {(members.data ?? []).map((m) => {
               const editable = manage && grantable(org.role, m.role);
@@ -115,6 +158,7 @@ export default function MembersPage() {
                     )}
                     <span className="ml-2 text-xs text-fg-faint">{ROLE_HELP[m.role]}</span>
                   </Td>
+                  <Td>{m.twoStepOn ? <Badge tone="positive">On</Badge> : <Badge tone={security.data?.requireTwoStep ? 'warning' : 'neutral'}>Off</Badge>}</Td>
                   <Td className="text-fg-muted">{date(m.since.slice(0, 10))}</Td>
                   <Td className="text-right">
                     {editable ? <Button size="sm" variant="ghost" aria-label={`Remove ${m.name}`} onClick={() => { remove.reset(); setRemoving(m); }}>Remove</Button> : null}

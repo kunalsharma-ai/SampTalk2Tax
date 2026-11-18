@@ -5326,7 +5326,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Tested**
-- Notes: Authenticator-app codes (TOTP) and ten single-use recovery codes. SMS and email codes are not offered. An organisation rule to require it for members is a separate slice.
+- Notes: Authenticator-app codes (TOTP) and ten single-use recovery codes; an organisation can require it for every member. SMS and email codes are not offered.
 - Evidence:
   - packages/security/src/totp.ts (RFC 6238 TOTP, recovery codes) + test/totp.test.ts
   - apps/api/src/auth/mfa.service.ts, MongoDB collections user_mfa and mfa_challenges
@@ -5334,6 +5334,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/two-step-sign-in.e2e.test.ts
   - apps/web/src/components/two-step-sign-in.tsx (Account and preferences), sign-in code step in auth-form.tsx
   - apps/web/e2e/two-step-sign-in-flow.test.mjs
+  - Organisation rule: GET/PUT /v1/orgs/:orgId/security (org_security_settings); AuthGuard refuses MFA_REQUIRED; apps/web/e2e/two-step-required-flow.test.mjs
 
 ### SEC-008 — Session management
 

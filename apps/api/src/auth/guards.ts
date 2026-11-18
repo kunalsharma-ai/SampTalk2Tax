@@ -14,6 +14,7 @@ import { MaintenanceService } from '../operations/maintenance.service';
 import { SupportAccessService } from '../support/support-access.service';
 import { ALLOW_READ_ONLY, FEATURE_FLAG, IS_PUBLIC, PERMISSION, PLAN_FEATURE, PLATFORM_PERMISSION, PLATFORM_PERMISSIONS, PlatformPermission, PlatformRole } from './decorators';
 import { SessionsService } from './sessions.service';
+import { OrgSecurityService } from '../organizations/org-security.service';
 import { TokensService } from './tokens.service';
 
 /** Global guard: authenticates the bearer token, then enforces tenant membership and permission. */
@@ -29,6 +30,7 @@ export class AuthGuard implements CanActivate {
     private readonly maintenance: MaintenanceService,
     private readonly flags: FlagsService,
     private readonly store: DocumentStoreService,
+    private readonly orgSecurity: OrgSecurityService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -103,6 +105,8 @@ export class AuthGuard implements CanActivate {
       if (!hasPermission(role, permission)) {
         throw new ForbiddenException({ error: 'FORBIDDEN', message: `Your role (${role}) does not have ${permission}` });
       }
+      // The organisation may require two-step sign-in of everyone who opens its books.
+      await this.orgSecurity.assertAllowed(orgId, user.id);
       await this.assertFlag(targets, orgId);
       enterOrg(orgId);
       req.org = {

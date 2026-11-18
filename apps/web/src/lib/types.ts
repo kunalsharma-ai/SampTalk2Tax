@@ -18,6 +18,8 @@ export interface Org {
   dataRegion: DataRegion;
   /** Suspended by the platform: readable, not changeable. */
   suspended: { at: string; reason: string } | null;
+  /** The organisation requires two-step sign-in; satisfied when the signed-in person has it on. Listed organisations only. */
+  twoStep?: { required: boolean; satisfied: boolean };
   /** The organisation's Talk2Tax plan and whether its books can change. */
   subscription: OrgSubscription | null;
   role: Role;
@@ -669,6 +671,8 @@ export interface Member {
   name: string;
   role: Role;
   since: string;
+  /** Whether the person has two-step sign-in on. */
+  twoStepOn: boolean;
 }
 export interface InvitationPreview {
   organization: { id: string; name: string; isDemo: boolean };

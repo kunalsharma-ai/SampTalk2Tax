@@ -45,11 +45,23 @@ before, so it does not reveal whether two-step sign-in is on.
 The web app keeps the challenge in an httpOnly, SameSite=Strict cookie (`t2t_mfa`) limited to
 the `/api/session` path, so page scripts never see it.
 
+## Requiring it in an organisation
+
+On **Team and roles → Two-step sign-in for members**, someone with `members.manage` can
+require two-step sign-in for everyone in the organisation. They must have it on themselves
+first (`409 MFA_NEEDED_FIRST`), so they cannot lock themselves out. While it is required, every
+route of the organisation answers `403 MFA_REQUIRED` to a member without it on; their own
+account routes stay open. `GET /v1/orgs` marks each organisation with
+`twoStep: { required, satisfied }`, and the web app shows such a member the set-up card in
+place of the books; the organisation opens once their recovery codes are saved. The Members
+table shows who has it on. Audit: `org.two_step_required`, `org.two_step_not_required`.
+
 ## Data (MongoDB)
 
 | Collection | What it holds |
 | --- | --- |
 | `user_mfa` (global, id = user id) | status PENDING or ACTIVE, sealed secret and key id, last used step, recovery code hashes with when each was used, when it was turned on. Guards: starts pending; active records when it was turned on; an active secret cannot be swapped in place; a used step cannot be made usable again. |
+| `org_security_settings` (tenant, one per organisation) | whether two-step sign-in is required, who last changed it and when. |
 | `mfa_challenges` (global) | sign-ins waiting for a code: user, hash of the challenge secret, wrong attempts (at most 5), expiry, when used, address and browser. A TTL index removes expired ones. Guards: cannot be changed or reused, attempts only go up. |
 
 ## Audit trail
@@ -60,5 +72,5 @@ the `/api/session` path, so page scripts never see it.
 
 ## Not included
 
-SMS and email codes (weaker, and need a provider), passkeys / WebAuthn, and an organisation
-rule that requires two-step sign-in for its members (next slice).
+SMS and email codes (weaker, and need a provider), passkeys / WebAuthn, and requiring a
+second step on every session (today the rule checks that the person has it on).

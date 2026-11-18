@@ -103,6 +103,10 @@ export const SECTION_HELP: Record<string, Help> = {
   'Ask for help': { what: 'Open a support ticket with the Talk2Tax team.', how: 'Describe the problem, how urgent it is, and what you expected. You get replies on the ticket and by email.' },
   'Response times': { what: 'How quickly the support team aims to reply and to solve a ticket at each priority.', how: 'Use the priority that matches the impact on your work.' },
   'Change password': { what: 'Set a new password for signing in.', how: 'Enter your current password and a new long one. Every other device is signed out; this one stays signed in.' },
+  'Two-step sign-in for members': {
+    what: 'Whether everyone in this organisation must use two-step sign-in (a code from an authenticator app after the password) to open its books.',
+    how: 'Turn two-step sign-in on for yourself under Account, then choose Require. Members without it see a set-up page instead of the books until they turn it on. The Members table shows who has it.',
+  },
   'Two-step sign-in': {
     what: 'A second check after your password: a 6-digit code from an authenticator app on your phone, which changes every 30 seconds. Someone who learns your password still cannot sign in.',
     how: 'Choose Turn on, enter your password, scan the QR code with your app and type the code it shows. Save the ten recovery codes: each signs you in once if you lose your phone. Get new codes when few are left.',
