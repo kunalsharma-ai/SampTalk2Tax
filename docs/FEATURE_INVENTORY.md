@@ -1538,7 +1538,7 @@ Part 45 · M1 · priority P1 · depends on: DS
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| NAV-001 |  | rule | Create a premium sidebar and global navigation system | Implementing |
+| NAV-001 |  | rule | Create a premium sidebar and global navigation system | Tested |
 | NAV-002 |  | capability | Overview | Implemented |
 | NAV-003 |  | capability | Executive Command Center | Not started |
 | NAV-004 |  | capability | AI Finance Copilot | Integration pending |

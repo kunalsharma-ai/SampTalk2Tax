@@ -2,7 +2,7 @@
 import { Badge, cn, tx } from '@talk2tax/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { signOut } from '@/lib/api';
 import { dateTime, setOrganisationTimeZone } from '@/lib/format';
 import { useT } from '@/lib/i18n';
@@ -34,6 +34,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const elsewhere = org && org.dataRegion && !org.dataRegion.here ? org.dataRegion : null;
   const navGroups = navFor(org, flags.data);
+  const role = org?.role;
+  const paletteAllowed = useCallback((perm: string) => can(role, perm), [role]);
   const longer = navGroups.flatMap((g) => g.items.map((i) => i.href)).filter(Boolean);
   const nav = elsewhere ? null : (
     <nav aria-label={t('Main')} className="flex flex-col gap-6">
@@ -105,7 +107,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {org?.isDemo ? <Badge tone="warning">{t('Synthetic demo data')}</Badge> : null}
           </span>
           <div className="ml-auto flex shrink-0 items-center gap-1">
-            {org && !elsewhere ? <CommandPalette orgId={orgId} groups={navGroups} searchRecords={can(org.role, 'reports.read')} /> : null}
+            {org && !elsewhere ? <CommandPalette orgId={orgId} groups={navGroups} searchRecords={can(org.role, 'reports.read')} allowed={paletteAllowed} /> : null}
             {me.data?.user.platformRole ? (
               <Link href="/admin" className="rounded px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-hover hover:text-fg">
                 {t('Platform admin')}

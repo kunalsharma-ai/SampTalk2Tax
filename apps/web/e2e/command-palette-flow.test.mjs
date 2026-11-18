@@ -30,7 +30,7 @@ before(async () => {
 });
 after(async () => browser?.close());
 
-test('Ctrl+K finds pages and records and opens them', async () => {
+test('Ctrl+K finds pages, records and actions and opens them', async () => {
   await page.goto(`${WEB}/register`);
   await page.getByLabel('Full name').fill('Search Owner');
   await page.getByLabel('Email').fill(`e2e-search-${randomUUID()}@example.test`);
@@ -74,6 +74,15 @@ test('Ctrl+K finds pages and records and opens them', async () => {
   await box.press('ArrowUp');
   await box.press('Enter');
   await page.waitForURL(new RegExp(inv.id));
+
+  // An action: start a new bill.
+  await page.keyboard.press('Control+k');
+  await box.fill('new bill');
+  await dialog.getByRole('option', { name: /^New bill Start/ }).waitFor();
+  assert.equal(await dialog.getByRole('option').first().getAttribute('aria-selected'), 'true');
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/02-actions.png` });
+  await box.press('Enter');
+  await page.waitForURL(new RegExp(`/orgs/${orgId}/purchases/bills/new$`));
 
   // Nothing found says so.
   await page.keyboard.press('Control+k');
