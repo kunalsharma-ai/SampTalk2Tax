@@ -41,6 +41,9 @@ before(async () => {
 });
 after(async () => browser?.close());
 
+/** The sessions table on the account page (the devices table lists the same browsers). */
+const signedIn = (p) => p.getByRole('table', { name: "Where you're signed in" });
+
 test('one account signed in on two devices', async () => {
   await laptop.goto(`${WEB}/register`);
   await laptop.getByLabel('Full name').fill('Security Owner');
@@ -62,16 +65,16 @@ test('an expired access cookie is renewed without signing in again', async () =>
   await laptopCtx.clearCookies({ name: 't2t_session' });
   await laptop.goto(`${WEB}/orgs/${orgId}/account`);
   await laptop.getByRole('heading', { name: 'Account and preferences' }).waitFor();
-  await laptop.getByText('Chrome on macOS').waitFor();
+  await signedIn(laptop).getByText('Chrome on macOS').waitFor();
   assert.ok(await cookie(laptopCtx, 't2t_session'), 'a new access cookie was set');
   const after = await cookie(laptopCtx, 't2t_refresh');
   assert.ok(after && after !== before, 'the refresh token was rotated');
 });
 
 test('the laptop sees both devices and signs the phone out', async () => {
-  const row = laptop.getByRole('row', { name: /Chrome on Android/ });
+  const row = signedIn(laptop).getByRole('row', { name: /Chrome on Android/ });
   await row.waitFor();
-  await laptop.getByRole('row', { name: /This device/ }).getByText('Chrome on macOS').waitFor();
+  await signedIn(laptop).getByRole('row', { name: /This device/ }).getByText('Chrome on macOS').waitFor();
   await row.getByRole('button', { name: /^Sign out Chrome on Android/ }).click();
   await row.waitFor({ state: 'detached' });
 
@@ -86,7 +89,7 @@ test('changing the password signs out the other devices', async () => {
   await signIn(phone);
   await phone.waitForURL(/\/orgs\//);
   await laptop.reload();
-  await laptop.getByRole('row', { name: /Chrome on Android/ }).waitFor();
+  await signedIn(laptop).getByRole('row', { name: /Chrome on Android/ }).waitFor();
   await laptop.getByLabel('Current password').fill(password);
   await laptop.getByLabel('New password', { exact: true }).fill(newPassword);
   await laptop.getByLabel('Confirm new password').fill(newPassword + 'x');
@@ -95,7 +98,7 @@ test('changing the password signs out the other devices', async () => {
   await laptop.getByLabel('Confirm new password').fill(newPassword);
   await laptop.getByRole('button', { name: 'Change password' }).click();
   await laptop.getByText('1 other device was signed out.').waitFor();
-  await laptop.getByRole('row', { name: /Chrome on Android/ }).waitFor({ state: 'detached' });
+  await signedIn(laptop).getByRole('row', { name: /Chrome on Android/ }).waitFor({ state: 'detached' });
 
   const mark = consoleErrors.length;
   await phone.goto(`${WEB}/orgs/${orgId}/journals`);

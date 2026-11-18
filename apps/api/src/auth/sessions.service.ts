@@ -14,6 +14,8 @@ export const REFRESH_GRACE_MS = 30_000;
 export interface ClientMeta {
   userAgent?: string | null;
   ip?: string | null;
+  /** The web app's device key (x-t2t-device), to recognise the browser (SEC-009). */
+  deviceKey?: string | null;
 }
 
 export interface IssuedSession {
@@ -60,7 +62,7 @@ export class SessionsService {
   }
 
   /** Creates the session (inside the caller's MongoDB transaction, if any). Record it with auditCreated. */
-  async create(userId: string, meta: ClientMeta): Promise<CreatedSession> {
+  async create(userId: string, meta: ClientMeta, deviceId: string | null = null): Promise<CreatedSession> {
     const { secret, hash } = this.tokens.newSecret();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + this.config.SESSION_TTL_DAYS * DAY_MS);
@@ -76,12 +78,13 @@ export class SessionsService {
       expiresAt,
       revokedAt: null,
       revokedReason: null,
+      deviceId,
     });
     const access = await this.tokens.signAccess({ userId, sessionId: s.id });
     return { issued: { ...access, refreshToken: `${s.id}.${secret}`, sessionId: s.id, sessionExpiresAt: expiresAt.toISOString() }, userId, ipAddress: s.ipAddress };
   }
 
-  async auditCreated(tx: Tx, s: CreatedSession, mfa?: 'APP' | 'RECOVERY_CODE'): Promise<void> {
+  async auditCreated(tx: Tx, s: CreatedSession, mfa?: 'APP' | 'RECOVERY_CODE' | 'TRUSTED_DEVICE'): Promise<void> {
     await this.audit.append(tx, { orgId: null, actorId: s.userId, action: 'session.created', entityType: 'session', entityId: s.issued.sessionId, data: { ip: s.ipAddress, ...(mfa ? { secondStep: mfa } : {}) } });
   }
 
