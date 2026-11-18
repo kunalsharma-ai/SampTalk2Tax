@@ -5457,12 +5457,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/src/bank.ts",
-        "packages/accounting-engine/test/bank.test.ts"
+        "packages/accounting-engine/test/bank.test.ts",
+        "apps/api/test/banking.e2e.test.ts › prefers the account similar lines were matched to, and says why",
+        "apps/api/test/banking.e2e.test.ts › counts an undone match against the account, so the date decides again",
+        "apps/web/e2e/bank-match-learning-flow.test.mjs"
       ],
-      "notes": "Rule-based suggestions (amount, date within 14 days, shared words). Nothing learns from past matches yet; no AI."
+      "notes": "Suggestions learn from past matches on the account: a statement line that shares name words with lines matched before ranks the same contact (payment) or account (other side of the entry) first and says so; an undone match counts against it. Shown under What matching learned. No AI; same amount and the 14-day window still apply."
     },
     {
       "id": "BANK-018",
@@ -26473,9 +26475,10 @@
         "apps/web/test/format.test.ts",
         "apps/web/test/i18n.test.ts",
         "apps/web/e2e/display-preferences-flow.test.mjs",
-        "docs/LANGUAGES_AND_FORMATS.md"
+        "docs/LANGUAGES_AND_FORMATS.md",
+        "packages/ui/src/text.tsx"
       ],
-      "notes": "Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator."
+      "notes": "Hindi covers the navigation, header, roles, the preferences page, and now every page title and description, table heading, field label, button, dialog and card title that matches a catalogue entry (about 180 common words such as Status, Amount, Date, Save, Cancel). Text built with numbers or names (\"New invoice\", status badges, tabs) still falls back to English. Translations not yet reviewed by a professional translator."
     },
     {
       "id": "I18N-015",

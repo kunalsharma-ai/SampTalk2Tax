@@ -11,6 +11,7 @@ import {
   reconciliationIssues,
   statementLineKeys,
   suggestMatches,
+  learnedPatterns,
 } from '../src';
 
 const base: StatementMapping = { date: 0, description: 1, reference: 2, amount: 3, dateFormat: 'DD/MM/YYYY', hasHeader: true };
@@ -99,6 +100,41 @@ describe('matching', () => {
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ statementLineId: 's1', journalLineId: 'j2', unique: false });
     expect(out[0].reasons).toContain('Shared text: harbour, cafe');
+  });
+
+  it('learns from past matches which of two same-amount lines a narration belongs to', () => {
+    const stmt = [s('s1', '2026-10-05', '11800', 'NEFT HDFC0001 SHARMA TRADERS UTR998877')];
+    const ledger = [
+      { ...s('j1', '2026-10-05', '11800', 'RCPT-000010'), counterparty: 'contact:a' },
+      { ...s('j2', '2026-10-05', '11800', 'RCPT-000011'), counterparty: 'contact:b' },
+    ];
+    // Without history the tie goes to the lower id.
+    expect(suggestMatches(stmt, ledger)[0].journalLineId).toBe('j1');
+    const learned = [
+      { text: 'NEFT HDFC0001 SHARMA TRADERS UTR112233', counterparty: 'contact:b', label: 'Sharma Traders', kept: true },
+      { text: 'IMPS SHARMA TRADERS 4455', counterparty: 'contact:b', label: 'Sharma Traders', kept: true },
+      { text: 'NEFT OTHER COMPANY', counterparty: 'contact:a', label: 'Other Co', kept: true },
+    ];
+    const out = suggestMatches(stmt, ledger, learned)[0];
+    expect(out.journalLineId).toBe('j2');
+    expect(out.reasons).toContain('You matched similar lines to Sharma Traders 2 times before');
+    expect(out.score).toBe(100);
+  });
+
+  it('scores a counterparty lower after a similar match was undone, and needs two shared name words', () => {
+    const stmt = [s('s1', '2026-10-05', '-500', 'UPI SWIGGY BANGALORE')];
+    const ledger = [
+      { ...s('j1', '2026-10-05', '-500', 'x'), counterparty: 'account:food' },
+      { ...s('j2', '2026-10-08', '-500', 'y'), counterparty: 'account:travel' },
+    ];
+    const undone = [{ text: 'UPI SWIGGY BANGALORE 1', counterparty: 'account:food', label: 'Staff welfare', kept: false }];
+    expect(suggestMatches(stmt, ledger, undone)[0].journalLineId).toBe('j2');
+    // One shared word is not enough when the past line had two name words.
+    const weak = suggestMatches(stmt, ledger, [{ text: 'SWIGGY MUMBAI', counterparty: 'account:food', label: 'Staff welfare', kept: false }])[0];
+    expect(weak.journalLineId).toBe('j1');
+    expect(weak.reasons.join(' ')).not.toContain('before');
+    // Numbers and channel words never count as names.
+    expect(learnedPatterns([{ text: 'UPI 12345 CARD SWIGGY', counterparty: 'x', label: 'X', kept: true }])).toEqual([{ counterparty: 'x', label: 'X', words: ['swiggy'], kept: 1, undone: 0 }]);
   });
 
   it('marks a pair unique only when neither side has another candidate', () => {

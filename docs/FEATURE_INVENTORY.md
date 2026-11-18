@@ -228,7 +228,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-014 |  | capability | Bank balance monitoring | Tested |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |
 | BANK-016 | AI Enhancements | capability | Intelligent transaction classification | Integration pending |
-| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Implementing |
+| BANK-017 | AI Enhancements | capability | Adaptive matching suggestions | Tested |
 | BANK-018 | AI Enhancements | capability | Duplicate transaction detection | Tested |
 | BANK-019 | AI Enhancements | capability | Suspicious transaction monitoring | Not started |
 | BANK-020 | AI Enhancements | capability | Reconciliation exception analysis | Not started |

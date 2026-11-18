@@ -53,9 +53,10 @@ The Hindi catalogue covers:
 * the navigation;
 * the header (organisation, account, sign out);
 * role names;
-* the **Account and preferences** page.
+* the **Account and preferences** page;
+* on every page, the shared components' plain text: page titles and descriptions, table headings, field labels and hints, buttons, dialog titles, card titles, alerts and empty states. The app hands its catalogue to `@talk2tax/ui` through `UiTextContext`; text the catalogue does not have stays in English.
 
-Other pages are still in English. The Hindi has **not yet been reviewed by a professional translator**.
+Text put together with numbers or names ("New invoice", "Match 3 suggested"), status badges and tabs are still in English. The Hindi has **not yet been reviewed by a professional translator**.
 
 ## Database
 
@@ -65,7 +66,7 @@ Other pages are still in English. The Hindi has **not yet been reviewed by a pro
 
 ## Not supported yet (do not rely on these)
 
-* **Hindi coverage:** Hindi covers the shell and the preferences page only; page content is in English.
+* **Hindi coverage:** page titles, headings, labels and buttons follow the catalogue (about 180 common words); longer page text, badges, tabs and messages built with values are in English.
 * **No other languages.** No language other than English and Hindi, and no right-to-left layout.
 * **Business dates** ("today", due dates, periods) are in India time for every organisation; only the display of moments follows the time zone.
 * **Not every format follows the choices.** A few pages format some values themselves:
