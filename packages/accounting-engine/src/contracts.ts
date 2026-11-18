@@ -193,6 +193,19 @@ export function proratedPrice(unitPrice: string, part: { days: number; of: numbe
   return new D(unitPrice).times(part.days).div(part.of).toDecimalPlaces(scale, D.ROUND_HALF_UP).toFixed(scale);
 }
 
+/**
+ * The days of a billed period left unused when a contract is cancelled on `cancelOn` (the
+ * customer is served to the end of that day), as a share of the full period the price was set
+ * for: a part period keeps its full-period length, so the credit never exceeds what was billed.
+ * Null when nothing of the period is left.
+ */
+export function unusedShare(p: Pick<ContractPeriod, 'start' | 'end' | 'part'>, cancelOn: string): { from: string; days: number; of: number } | null {
+  if (!ISO.test(cancelOn)) throw new ContractError('CONTRACT_DATE', 'Use a date as YYYY-MM-DD');
+  const from = cancelOn < p.start ? p.start : addDays(cancelOn, 1);
+  if (from > p.end) return null;
+  return { from, days: daysIn(from, p.end), of: p.part ? p.part.of : daysIn(p.start, p.end) };
+}
+
 /** A unit price raised by `percent` (for a price rise at renewal), rounded to 2 decimal places. */
 export function upliftPrice(unitPrice: string, percent: string): string {
   const p = new D(percent);

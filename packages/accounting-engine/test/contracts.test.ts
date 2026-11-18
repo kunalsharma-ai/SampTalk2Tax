@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addMonthsAnchored, contractPeriod, duePeriods, endsInPart, firstBillingDate, fullyBilled, monthlyValue, periodCount, proratedPrice, renewalState, renewedEnd, upcomingPeriods, upliftPrice } from '../src/contracts';
+import { addMonthsAnchored, contractPeriod, duePeriods, endsInPart, firstBillingDate, fullyBilled, monthlyValue, periodCount, proratedPrice, renewalState, renewedEnd, unusedShare, upcomingPeriods, upliftPrice } from '../src/contracts';
 
 describe('contract periods', () => {
   it('keeps the start day, or the month end when the month is shorter', () => {
@@ -84,5 +84,27 @@ describe('billing on a fixed day with part periods', () => {
     expect(endsInPart('2026-11-15', '2027-01-31', 'MONTHLY', 1)).toBe(false);
     expect(renewedEnd('2026-11-15', '2027-01-31', 'MONTHLY', 2, 1)).toBe('2027-03-31');
     expect(() => renewedEnd('2026-11-15', '2027-01-10', 'MONTHLY', 2, 1)).toThrow('A contract that ends part-way through a period cannot be renewed');
+  });
+});
+
+describe('credit for unused days on cancelling', () => {
+  it('counts the days after the cancel date against the full period', () => {
+    const p = contractPeriod('2026-11-01', 'MONTHLY', 1);
+    expect(unusedShare(p, '2026-11-18')).toEqual({ from: '2026-11-19', days: 12, of: 30 });
+    expect(proratedPrice('3000', unusedShare(p, '2026-11-18')!)).toBe('1200.00');
+  });
+  it('credits a period not yet started in full, and nothing once the period is used up', () => {
+    const p = contractPeriod('2026-11-01', 'MONTHLY', 2);
+    expect(unusedShare(p, '2026-11-18')).toEqual({ from: '2026-12-01', days: 31, of: 31 });
+    expect(unusedShare(contractPeriod('2026-11-01', 'MONTHLY', 1), '2026-11-30')).toBeNull();
+    expect(unusedShare(contractPeriod('2026-11-01', 'MONTHLY', 1), '2026-12-05')).toBeNull();
+  });
+  it('measures a part period against the full period its price was set for', () => {
+    const p = contractPeriod('2026-11-15', 'MONTHLY', 1, 'ADVANCE', { billingDay: 1 });
+    expect(p.part).toEqual({ days: 16, of: 30 });
+    expect(unusedShare(p, '2026-11-20')).toEqual({ from: '2026-11-21', days: 10, of: 30 });
+  });
+  it('refuses a malformed date', () => {
+    expect(() => unusedShare(contractPeriod('2026-11-01', 'MONTHLY', 1), '18/11/2026')).toThrow('YYYY-MM-DD');
   });
 });

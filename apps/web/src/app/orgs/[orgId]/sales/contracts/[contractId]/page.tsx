@@ -15,7 +15,7 @@ import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date, dateTime } from '@/lib/format';
 import { useOrg } from '@/lib/org';
-import type { ContractDetail } from '@/lib/sales-orders';
+import type { CancelCredit, ContractDetail } from '@/lib/sales-orders';
 
 const DOC_TONE = { DRAFT: 'neutral', POSTED: 'positive', VOID: 'negative' } as const;
 
@@ -31,6 +31,8 @@ export default function ContractPage() {
   const [uplift, setUplift] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState('');
+  const [creditUnused, setCreditUnused] = useState(true);
+  const credit = useQuery({ queryKey: [...key, 'cancel-credit'], queryFn: () => api<CancelCredit>(`/v1/orgs/${orgId}/sales/contracts/${contractId}/cancel-credit`), enabled: cancelling });
   const base = `/v1/orgs/${orgId}/sales/contracts/${contractId}`;
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: key });
@@ -42,7 +44,7 @@ export default function ContractPage() {
     mutationFn: (a: 'activate' | 'pause' | 'resume' | 'bill-due' | 'delete' | 'cancel' | 'renew') =>
       a === 'delete'
         ? api(base, { method: 'DELETE' })
-        : api(`${base}/${a}`, { method: 'POST', body: a === 'cancel' ? { reason } : a === 'renew' ? { months: Number(months), upliftPercent: uplift.trim() || null } : undefined }),
+        : api(`${base}/${a}`, { method: 'POST', body: a === 'cancel' ? { reason, creditUnused: creditUnused && !!credit.data?.periods.length } : a === 'renew' ? { months: Number(months), upliftPercent: uplift.trim() || null } : undefined }),
     onSuccess: async (_r, a) => {
       setRenewing(false);
       setCancelling(false);
@@ -169,10 +171,55 @@ export default function ContractPage() {
       <Dialog open={cancelling} onOpenChange={setCancelling} title={`Cancel ${c.reference}`} description="Nothing more is billed. Invoices already made stay as they are.">
         <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); act.mutate('cancel'); }}>
           <Field label="Why is it cancelled?">{(p) => <Textarea {...p} rows={2} value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} placeholder="Customer moved the work in-house" />}</Field>
+          <UnusedCredit credit={credit.data} loading={credit.isLoading} error={credit.error} currency={cur} on={creditUnused} setOn={setCreditUnused} orgId={orgId} />
           <ErrorAlert title="Could not cancel it" error={act.error} />
-          <div className="flex justify-end"><Button type="submit" variant="danger" loading={act.isPending} disabled={!reason.trim()}>Cancel contract</Button></div>
+          <div className="flex justify-end"><Button type="submit" variant="danger" loading={act.isPending} disabled={!reason.trim() || credit.isLoading}>Cancel contract</Button></div>
         </form>
       </Dialog>
     </>
+  );
+}
+
+/** The credit for unused days in the cancel dialog: what it covers, and a switch to issue it. */
+function UnusedCredit({ credit, loading, error, currency, on, setOn, orgId }: { credit?: CancelCredit; loading: boolean; error: Error | null; currency: string; on: boolean; setOn: (v: boolean) => void; orgId: string }) {
+  if (loading) return <p className="text-sm text-fg-muted">Checking for unused days already billed…</p>;
+  if (error) return <ErrorAlert title="Could not work out the credit for unused days" error={error} />;
+  if (!credit) return null;
+  const drafts = credit.drafts.length ? (
+    <p className="text-sm text-fg-muted">
+      {credit.drafts.length === 1 ? 'An invoice' : `${credit.drafts.length} invoices`} for a period still to run {credit.drafts.length === 1 ? 'is' : 'are'} a draft (
+      {credit.drafts.map((d, i) => (
+        <span key={d.periodNo}>{i ? ', ' : ''}<Link className="text-accent hover:underline" href={`/orgs/${orgId}/sales/invoices/${d.invoice.id}`}>{d.invoice.number ?? `period ${d.periodNo}`}</Link></span>
+      ))}
+      ): edit or void {credit.drafts.length === 1 ? 'it' : 'them'} instead of crediting.
+    </p>
+  ) : null;
+  if (!credit.periods.length)
+    return (
+      <div className="grid gap-2">
+        <p className="text-sm text-fg-muted">{credit.timing === 'ARREARS' ? 'This contract bills in arrears, so nothing is billed ahead and there are no unused days to credit.' : 'No posted invoice of this contract runs past today, so there are no unused days to credit.'}</p>
+        {drafts}
+      </div>
+    );
+  return (
+    <section aria-label="Credit for unused days" className="grid gap-2 rounded-md border border-border p-3">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input type="checkbox" className="accent-[var(--t2t-accent)]" checked={on} onChange={(e) => setOn(e.target.checked)} /> Credit the unused days: <Money value={credit.total} currency={currency} />
+      </label>
+      <Table aria-label="Unused days to credit">
+        <thead><Tr><Th>Invoice</Th><Th>Unused</Th><Th className="text-right">Credit</Th></Tr></thead>
+        <tbody>
+          {credit.periods.map((p) => (
+            <Tr key={p.periodNo}>
+              <Td className="whitespace-nowrap"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/sales/invoices/${p.invoice.id}`}>{p.invoice.number ?? `Period ${p.periodNo}`}</Link></Td>
+              <Td>{p.days} of {p.of} days, {date(p.from)} to {date(p.end)}</Td>
+              <Td className="text-right"><Money value={p.total} currency={currency} /></Td>
+            </Tr>
+          ))}
+        </tbody>
+      </Table>
+      <p className="text-xs text-fg-muted">Each invoice gets its own draft credit note at the contract&apos;s prices, with tax. Review and post it, then set it against the invoice.</p>
+      {drafts}
+    </section>
   );
 }
