@@ -419,8 +419,15 @@ function describe(c: Condition, f: FactDef): string {
   return `${f.label} ${OPERATOR_LABELS[c.op]}${c.op === 'is_empty' || c.op === 'not_empty' ? '' : ` ${v}`}`;
 }
 
-/** Checks every condition (all must pass). Text comparisons ignore case and surrounding spaces. */
-export function evaluateConditions(trigger: WorkflowTrigger, conditions: Condition[], facts: Facts): { matched: boolean; results: ConditionResult[] } {
+/** How the conditions combine: every one must hold, or any one is enough. */
+export const CONDITION_MATCHES = ['ALL', 'ANY'] as const;
+export type ConditionMatch = (typeof CONDITION_MATCHES)[number];
+
+/**
+ * Checks the conditions: with ALL every one must pass, with ANY one is enough. No conditions
+ * always match. Text comparisons ignore case and surrounding spaces.
+ */
+export function evaluateConditions(trigger: WorkflowTrigger, conditions: Condition[], facts: Facts, match: ConditionMatch = 'ALL'): { matched: boolean; results: ConditionResult[] } {
   const t = triggerDef(trigger);
   const results = conditions.map((c): ConditionResult => {
     const f = t.facts.find((x) => x.key === c.fact);
@@ -444,7 +451,8 @@ export function evaluateConditions(trigger: WorkflowTrigger, conditions: Conditi
     }
     return { condition: c, label: describe(c, f), passed, actual };
   });
-  return { matched: results.every((r) => r.passed), results };
+  const matched = !results.length || (match === 'ANY' ? results.some((r) => r.passed) : results.every((r) => r.passed));
+  return { matched, results };
 }
 
 // ---------------------------------------------------------------- actions
@@ -482,7 +490,23 @@ export interface WorkflowDefinition {
   /** Settings of a schedule trigger; {} for event triggers. */
   triggerParams?: TriggerParams;
   conditions: Condition[];
+  /** ALL (the default) or ANY of the conditions. */
+  match?: ConditionMatch;
+  /** Done when the conditions hold. */
   actions: WorkflowAction[];
+  /** Done instead when they do not hold (the "otherwise" branch); empty for none. */
+  otherwise?: WorkflowAction[];
+}
+
+/** Which branch an event takes: THEN (the conditions hold), OTHERWISE, or none (skipped). */
+export type WorkflowBranch = 'THEN' | 'OTHERWISE';
+
+/** Evaluates the conditions and picks the actions to do: the main ones, the otherwise ones, or none. */
+export function chooseBranch(def: Pick<WorkflowDefinition, 'trigger' | 'conditions' | 'match' | 'actions' | 'otherwise'>, facts: Facts): { matched: boolean; results: ConditionResult[]; branch: WorkflowBranch | null; actions: WorkflowAction[] } {
+  const r = evaluateConditions(def.trigger, def.conditions, facts, def.match ?? 'ALL');
+  if (r.matched) return { ...r, branch: 'THEN', actions: def.actions };
+  const otherwise = def.otherwise ?? [];
+  return { ...r, branch: otherwise.length ? 'OTHERWISE' : null, actions: otherwise };
 }
 
 export const MAX_CONDITIONS = 10;
@@ -538,8 +562,7 @@ export function validateWorkflow(def: WorkflowDefinition, opts: { allowHttp?: bo
   const placeholders = (s: string, where: string) => {
     for (const m of s.matchAll(PLACEHOLDER)) if (!known.has(m[1])) issues.push(`${where}: {{${m[1]}}} is not available for ${t.label.toLowerCase()}`);
   };
-  const actions = def.actions.map((a, i): WorkflowAction => {
-    const n = `Action ${i + 1}`;
+  const checkAction = (a: WorkflowAction, n: string): WorkflowAction => {
     if (a.type === 'CREATE_TASK') {
       const title = (a.title ?? '').trim();
       const description = (a.description ?? '').trim();
@@ -587,9 +610,16 @@ export function validateWorkflow(def: WorkflowDefinition, opts: { allowHttp?: bo
     }
     issues.push(`${n}: unknown action`);
     return a;
-  });
+  };
+  const actions = def.actions.map((a, i) => checkAction(a, `Action ${i + 1}`));
+  const match = def.match ?? 'ALL';
+  if (!(CONDITION_MATCHES as readonly string[]).includes(match)) issues.push('Choose whether all or any of the conditions must hold');
+  const otherwiseIn = def.otherwise ?? [];
+  if (otherwiseIn.length && !conditions.length) issues.push('Add a condition before adding actions for when it does not hold');
+  if (otherwiseIn.length > MAX_ACTIONS) issues.push(`At most ${MAX_ACTIONS} actions for when the conditions do not hold`);
+  const otherwise = otherwiseIn.map((a, i) => checkAction(a, `Otherwise action ${i + 1}`));
   if (issues.length) throw new WorkflowError(issues.length === 1 ? issues[0] : `${issues.length} problems in the workflow`, issues);
-  return { trigger: def.trigger, triggerParams: tp.params, conditions, actions };
+  return { trigger: def.trigger, triggerParams: tp.params, conditions, match, actions, otherwise };
 }
 
 /** Fills {{fact}} placeholders with the event's values; money is shown as given (a decimal string). Unknown or missing values become "—". */

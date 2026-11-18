@@ -2067,7 +2067,11 @@ model WorkflowVersion {
   /// Settings of a schedule trigger (frequency and time, or days); {} for event triggers.
   triggerParams Json         @default("{}") @map("trigger_params")
   conditions    Json
+  /// ALL: every condition must hold; ANY: one is enough.
+  match         String       @default("ALL") @db.VarChar(3)
   actions       Json
+  /// Actions done instead when the conditions do not hold; [] for none.
+  otherwise     Json         @default("[]")
   note          String?      @db.VarChar(500)
   createdById   String       @map("created_by_id") @db.Uuid
   createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -2094,6 +2098,8 @@ model WorkflowRun {
   facts         Json
   /// Each condition with its result and the value it saw.
   conditions    Json
+  /// Which actions ran: THEN (the conditions held) or OTHERWISE; null when none did.
+  branch        String?             @db.VarChar(10)
   status        WorkflowRunStatus
   error         String?             @db.VarChar(1000)
   testedById    String?             @map("tested_by_id") @db.Uuid

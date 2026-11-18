@@ -2048,13 +2048,15 @@
       "notes": "Runner in the API process (WORKFLOW_RUNNER_INTERVAL_SECONDS) with a per-organisation cursor locked FOR UPDATE SKIP LOCKED; one live run per workflow and event, enforced by a unique index."
     },
     "WFLOW-005": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/workflows.ts",
         "packages/accounting-engine/test/workflows.test.ts",
-        "apps/api/test/workflows.e2e.test.ts"
+        "apps/api/test/workflow-branches.e2e.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-branches.test.mjs"
       ],
-      "notes": "Conditions on the event’s facts (money, text, date, choice), all of which must hold. No either/or branches yet."
+      "notes": "Conditions on the event’s facts (money, text, date, choice) joined by all or any, with an optional otherwise branch of up to five actions done when they do not hold. Each run records the branch it took. Not covered: nested groups (A and (B or C)) and more than two branches."
     },
     "WFLOW-012": {
       "status": "Tested",

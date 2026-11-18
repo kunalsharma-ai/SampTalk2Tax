@@ -641,7 +641,7 @@ Part 18 · M5 · priority P2 · depends on: SEC
 | WFLOW-002 |  | capability | Trigger-based automation | Tested |
 | WFLOW-003 |  | capability | Scheduled automation | Tested |
 | WFLOW-004 |  | capability | Event-based automation | Tested |
-| WFLOW-005 |  | capability | Conditional branching | Implementing |
+| WFLOW-005 |  | capability | Conditional branching | Tested |
 | WFLOW-006 |  | capability | Approval workflows | Tested |
 | WFLOW-007 |  | capability | Parallel tasks | Not started |
 | WFLOW-008 |  | capability | Escalations | Not started |

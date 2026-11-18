@@ -15202,13 +15202,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/workflows.ts",
         "packages/accounting-engine/test/workflows.test.ts",
-        "apps/api/test/workflows.e2e.test.ts"
+        "apps/api/test/workflow-branches.e2e.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/web/e2e/automations-branches.test.mjs"
       ],
-      "notes": "Conditions on the event’s facts (money, text, date, choice), all of which must hold. No either/or branches yet."
+      "notes": "Conditions on the event’s facts (money, text, date, choice) joined by all or any, with an optional otherwise branch of up to five actions done when they do not hold. Each run records the branch it took. Not covered: nested groups (A and (B or C)) and more than two branches."
     },
     {
       "id": "WFLOW-006",

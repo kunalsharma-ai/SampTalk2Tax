@@ -50,8 +50,8 @@ export default function AutomationsPage() {
                         <Link className="font-medium text-accent hover:underline" href={`${base}/${w.id}`}>{w.name}</Link>
                         <p className="text-xs text-fg-muted">Version {w.version}{w.description ? ` · ${w.description}` : ''}</p>
                       </Td>
-                      <Td>{w.triggerLabel}{w.conditions ? <span className="text-fg-muted"> · {w.conditions} condition{w.conditions === 1 ? '' : 's'}</span> : null}</Td>
-                      <Td>{summariseActions(w.actions)}</Td>
+                      <Td>{w.triggerLabel}{w.conditions ? <span className="text-fg-muted"> · {w.match === 'ANY' && w.conditions > 1 ? 'any of ' : ''}{w.conditions} condition{w.conditions === 1 ? '' : 's'}</span> : null}</Td>
+                      <Td>{summariseActions(w.actions)}{w.otherwise?.length ? <span className="text-fg-muted"> · otherwise {summariseActions(w.otherwise)}</span> : null}</Td>
                       <Td>{w.lastRun ? <span className="flex items-center gap-2"><Badge tone={RUN_STATUS[w.lastRun.status].tone}>{RUN_STATUS[w.lastRun.status].label}</Badge><span className="text-xs text-fg-muted">{ago(w.lastRun.at)}</span></span> : <span className="text-fg-muted">Not yet</span>}</Td>
                       <Td numeric className="text-xs"><span className="num">{w.last30Days.acted}</span> acted · <span className="num">{w.last30Days.skipped}</span> skipped{w.last30Days.failed ? <> · <span className="num text-negative">{w.last30Days.failed} failed</span></> : null}</Td>
                       <Td>{w.enabled ? <Badge tone="positive">On</Badge> : <Badge>Off</Badge>}</Td>

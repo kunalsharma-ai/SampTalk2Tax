@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
-import { ASSIGNABLE_ROLES, SCHEDULE_FREQUENCIES, WORKFLOW_TRIGGERS } from '@talk2tax/accounting-engine';
+import { ASSIGNABLE_ROLES, CONDITION_MATCHES, SCHEDULE_FREQUENCIES, WORKFLOW_TRIGGERS } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
@@ -47,7 +47,9 @@ const Definition = {
   trigger: z.enum(WORKFLOW_TRIGGERS),
   triggerParams: TriggerParamsBody.default({}),
   conditions: z.array(ConditionBody).max(20),
+  match: z.enum(CONDITION_MATCHES).default('ALL'),
   actions: z.array(ActionBody).max(10),
+  otherwise: z.array(ActionBody).max(10).default([]),
 };
 const CreateBody = z.object(Definition).strict();
 const UpdateBody = z.object({ ...Definition, baseVersion: z.number().int().min(1), note: z.string().trim().max(500).nullable().optional() }).strict();

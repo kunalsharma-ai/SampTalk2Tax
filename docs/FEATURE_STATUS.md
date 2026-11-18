@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 782 |
 | Designed | 0 |
-| Implementing | 57 |
+| Implementing | 56 |
 | Implemented | 34 |
-| Tested | 456 |
+| Tested | 457 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3456,12 +3456,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### WFLOW-005 — Conditional branching
 
 - Module: Autonomous financial workflows
-- Status: **Implementing**
-- Notes: Conditions on the event’s facts (money, text, date, choice), all of which must hold. No either/or branches yet.
+- Status: **Tested**
+- Notes: Conditions on the event’s facts (money, text, date, choice) joined by all or any, with an optional otherwise branch of up to five actions done when they do not hold. Each run records the branch it took. Not covered: nested groups (A and (B or C)) and more than two branches.
 - Evidence:
   - packages/accounting-engine/src/workflows.ts
   - packages/accounting-engine/test/workflows.test.ts
+  - apps/api/test/workflow-branches.e2e.test.ts
   - apps/api/test/workflows.e2e.test.ts
+  - apps/web/e2e/automations-branches.test.mjs
 
 ### WFLOW-006 — Approval workflows
 

@@ -9,7 +9,7 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { useOrg } from '@/lib/org';
-import { ACTION_LABEL, ACTION_STATUS, assigneeLabel, dateTime, describeCondition, emailToLabel, RUN_STATUS, seconds, type Catalogue, type Run, type RunStatus, type Workflow } from '@/lib/workflows';
+import { ACTION_LABEL, ACTION_STATUS, assigneeLabel, dateTime, describeCondition, emailToLabel, RUN_STATUS, seconds, type Action, type Catalogue, type Run, type RunStatus, type Workflow } from '@/lib/workflows';
 
 export default function WorkflowPage() {
   const { org, orgId } = useOrg();
@@ -19,7 +19,7 @@ export default function WorkflowPage() {
   const base = `/v1/orgs/${orgId}/workflows/${workflowId}`;
   const [filter, setFilter] = useState<RunStatus | ''>('');
   const [openRun, setOpenRun] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ matched: boolean; run: Run } | null>(null);
+  const [testResult, setTestResult] = useState<{ matched: boolean; branch?: string | null; run: Run } | null>(null);
   const [confirmRotate, setConfirmRotate] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
 
@@ -100,24 +100,21 @@ export default function WorkflowPage() {
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">Only if</dt>
-                <dd className="mt-1 text-sm">{wf.conditions.length ? <ul className="flex flex-col gap-1">{wf.conditions.map((c, i) => <li key={i}>{describeCondition(c, t, cat.data)}</li>)}</ul> : 'Every time'}</dd>
+                <dd className="mt-1 text-sm">
+                  {wf.conditions.length > 1 ? <p className="mb-1 text-xs text-fg-muted">{wf.match === 'ANY' ? 'Any one of:' : 'All of:'}</p> : null}
+                  {wf.conditions.length ? <ul className="flex flex-col gap-1">{wf.conditions.map((c, i) => <li key={i}>{describeCondition(c, t, cat.data)}</li>)}</ul> : 'Every time'}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-fg-muted">Do</dt>
                 <dd className="mt-1 text-sm">
-                  <ol className="flex list-inside list-decimal flex-col gap-1">
-                    {wf.actions.map((a, i) => (
-                      <li key={i}>
-                        {a.type === 'CREATE_TASK' ? (
-                          <>Task “{a.title}” for {assigneeLabel(a.assignTo, cat.data)}{a.dueInDays === null ? '' : `, due ${a.dueInDays === 0 ? 'the same day' : `in ${a.dueInDays} day${a.dueInDays === 1 ? '' : 's'}`}`}</>
-                        ) : a.type === 'SEND_EMAIL' ? (
-                          <>Email “{a.subject}” to {emailToLabel(a.to, cat.data, `the ${contactWord}`)}</>
-                        ) : (
-                          <>Webhook to <span className="break-all font-mono text-xs">{a.url}</span></>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
+                  <ActionList actions={wf.actions} cat={cat.data} contactWord={contactWord} />
+                  {wf.otherwise?.length ? (
+                    <div className="mt-3" aria-label="Otherwise">
+                      <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">Otherwise</p>
+                      <ActionList actions={wf.otherwise} cat={cat.data} contactWord={contactWord} />
+                    </div>
+                  ) : null}
                 </dd>
               </div>
             </dl>
@@ -148,7 +145,7 @@ export default function WorkflowPage() {
                       <Td>{r.link ? <Link className="text-accent hover:underline" href={`/orgs/${orgId}${r.link.path}`}>{r.link.label}</Link> : r.trigger === 'SCHEDULE' ? `Schedule, ${r.facts.find((f) => f.key === 'date')?.value ?? ''}` : '—'}</Td>
                       <Td className="num">{r.version}</Td>
                       <Td><Badge tone={RUN_STATUS[r.status].tone}>{RUN_STATUS[r.status].label}</Badge>{r.error ? <p className="mt-1 text-xs text-negative">{r.error}</p> : null}</Td>
-                      <Td className="text-xs text-fg-muted">{r.actions.length ? r.actions.map((a) => `${ACTION_LABEL[a.type]}: ${ACTION_STATUS[a.status].label.toLowerCase()}`).join(' · ') : 'None'}</Td>
+                      <Td className="text-xs text-fg-muted">{r.branch === 'OTHERWISE' ? 'Otherwise: ' : ''}{r.actions.length ? r.actions.map((a) => `${ACTION_LABEL[a.type]}: ${ACTION_STATUS[a.status].label.toLowerCase()}`).join(' · ') : 'None'}</Td>
                       <Td><Button size="sm" variant="ghost" onClick={() => setOpenRun(r.id)}>Details</Button></Td>
                     </Tr>
                   ))}
@@ -192,12 +189,30 @@ export default function WorkflowPage() {
   );
 }
 
-function TestResult({ result, onClose, orgId }: { result: { matched: boolean; run: Run }; onClose: () => void; orgId: string }) {
+function ActionList({ actions, cat, contactWord }: { actions: Action[]; cat: Catalogue | undefined; contactWord: string }) {
+  return (
+    <ol className="flex list-inside list-decimal flex-col gap-1">
+      {actions.map((a, i) => (
+        <li key={i}>
+          {a.type === 'CREATE_TASK' ? (
+            <>Task “{a.title}” for {assigneeLabel(a.assignTo, cat)}{a.dueInDays === null ? '' : `, due ${a.dueInDays === 0 ? 'the same day' : `in ${a.dueInDays} day${a.dueInDays === 1 ? '' : 's'}`}`}</>
+          ) : a.type === 'SEND_EMAIL' ? (
+            <>Email “{a.subject}” to {emailToLabel(a.to, cat, `the ${contactWord}`)}</>
+          ) : (
+            <>Webhook to <span className="break-all font-mono text-xs">{a.url}</span></>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function TestResult({ result, onClose, orgId }: { result: { matched: boolean; branch?: string | null; run: Run }; onClose: () => void; orgId: string }) {
   const r = result.run;
   return (
     <Card aria-label="Test result">
       <CardHeader
-        title={result.matched ? 'Test: the conditions hold, so it would act' : 'Test: the conditions do not hold, so it would do nothing'}
+        title={result.matched ? 'Test: the conditions hold, so it would act' : result.branch === 'OTHERWISE' ? 'Test: the conditions do not hold, so it would do the otherwise actions' : 'Test: the conditions do not hold, so it would do nothing'}
         description={
           <>
             {r.trigger === 'SCHEDULE' ? (
@@ -248,7 +263,7 @@ function RunBody({ run, retry, narrow }: { run: Run; retry?: (position: number) 
         )}
       </section>
       <section aria-label="Actions">
-        <h3 className="text-xs font-medium uppercase tracking-wide text-fg-muted">Actions</h3>
+        <h3 className="text-xs font-medium uppercase tracking-wide text-fg-muted">{run.branch === 'OTHERWISE' ? 'Actions (otherwise)' : 'Actions'}</h3>
         {run.actions.length ? (
           <ol className="mt-2 flex flex-col gap-3 text-sm">
             {run.actions.map((a) => (
