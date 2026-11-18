@@ -146,3 +146,17 @@ shown before recording, the ageing and the USD statement).
   charge and GST above 0% on foreign-currency documents.
 * Rate feeds from a central bank or provider; rates are entered by people.
 * Revaluation of open receivables and payables by document, and sensitivity or hedging views.
+
+## Treasury: cash by currency
+
+Treasury lists each bank and cash account with its balance in the functional currency. When an
+account is kept in another currency, two things are added:
+
+* An *In its currency* column on that account, for example $3,000.00 next to ₹2,50,500.00.
+* A *Cash by currency* table. For each currency it shows the number of accounts, the amount
+  held, what the books carry for it in the functional currency, and its share of total cash.
+
+The functional amounts use the rates at which each transaction was recorded. A period-end
+revaluation brings them to the closing rate. The API returns `cash.accounts[].currency` and
+`currencyBalance`, plus `cash.byCurrency`, from `GET /v1/orgs/:orgId/loans/treasury`.
+

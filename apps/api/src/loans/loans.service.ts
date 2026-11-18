@@ -626,13 +626,45 @@ export class LoansService {
     const scale = this.scale(org);
     const today = todayIst();
     const loanAccounts = (await this.prisma.loan.findMany({ where: { orgId: org.id }, select: { liabilityAccountId: true } })).map((l) => l.liabilityAccountId);
-    const accounts = (await this.prisma.account.findMany({ where: { orgId: org.id, OR: [{ subtype: { in: ['BANK', 'CASH'] } }, { id: { in: loanAccounts } }] }, select: { id: true, code: true, name: true, subtype: true } })).sort(byCode);
-    const sums = accounts.length ? await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(today)), line: { accountId: { $in: accounts.map((a) => a.id) } }, by: { accountId: 'lines.accountId' } }) : [];
-    const net = new Map(sums.map((r) => [r.key.accountId as string, new Prisma.Decimal(r.debit.minus(r.credit).toFixed())]));
-    const balances = accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, subtype: a.subtype as string | null, balance: net.get(a.id) ?? null }));
+    const accounts = (await this.prisma.account.findMany({ where: { orgId: org.id, OR: [{ subtype: { in: ['BANK', 'CASH'] } }, { id: { in: loanAccounts } }] }, select: { id: true, code: true, name: true, subtype: true, currency: true } })).sort(byCode);
+    const sums = accounts.length ? await lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(today)), line: { accountId: { $in: accounts.map((a) => a.id) } }, by: { accountId: 'lines.accountId', currency: 'lines.currency' } }) : [];
+    const net = new Map<string, Prisma.Decimal>();
+    for (const r of sums) {
+      const k = r.key.accountId as string;
+      net.set(k, new Prisma.Decimal(new D(net.get(k)?.toString() ?? '0').plus(r.debit.minus(r.credit)).toFixed()));
+    }
+    // A bank account kept in another currency (BANK-012) also has its balance in that currency.
+    const own = (a: { id: string; currency?: string | null }) =>
+      sums.filter((r) => r.key.accountId === a.id && r.key.currency === a.currency).reduce((t, r) => t.plus(r.txDebit.minus(r.txCredit)), new D(0));
+    const balances = accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, subtype: a.subtype as string | null, currency: a.currency ?? null, balance: net.get(a.id) ?? null }));
     const bal = (b: Prisma.Decimal | null) => new D(b?.toString() ?? '0');
-    const cashAccounts = balances.filter((b) => b.subtype === 'BANK' || b.subtype === 'CASH').map((b) => ({ id: b.id, code: b.code, name: b.name, kind: b.subtype as 'BANK' | 'CASH', balance: bal(b.balance).toFixed(scale) }));
+    const cashAccounts = balances
+      .filter((b) => b.subtype === 'BANK' || b.subtype === 'CASH')
+      .map((b) => {
+        const currency = b.currency && b.currency !== org.functionalCurrency ? b.currency : org.functionalCurrency;
+        const foreign = currency !== org.functionalCurrency;
+        return {
+          id: b.id,
+          code: b.code,
+          name: b.name,
+          kind: b.subtype as 'BANK' | 'CASH',
+          /** What the books carry, in the functional currency. */
+          balance: bal(b.balance).toFixed(scale),
+          currency,
+          /** In the account's own currency (the same as `balance` for a functional-currency account). */
+          currencyBalance: foreign ? own(b).toFixed(minorUnits(currency)) : bal(b.balance).toFixed(scale),
+        };
+      });
     const cash = cashAccounts.reduce((t, a) => t.plus(a.balance), new D(0));
+    // Cash by currency: what is held in each, and what the books carry for it.
+    const currencies = new Map<string, { accounts: number; amount: InstanceType<typeof D>; functional: InstanceType<typeof D> }>();
+    for (const a of cashAccounts) {
+      const c = currencies.get(a.currency) ?? { accounts: 0, amount: new D(0), functional: new D(0) };
+      currencies.set(a.currency, { accounts: c.accounts + 1, amount: c.amount.plus(a.currencyBalance), functional: c.functional.plus(a.balance) });
+    }
+    const byCurrency = [...currencies.entries()]
+      .sort(([a], [b]) => (a === org.functionalCurrency ? -1 : b === org.functionalCurrency ? 1 : a.localeCompare(b)))
+      .map(([currency, c]) => ({ currency, accounts: c.accounts, amount: c.amount.toFixed(minorUnits(currency)), functional: c.functional.toFixed(scale), share: cash.isZero() ? null : c.functional.div(cash).times(100).toDecimalPlaces(1, D.ROUND_HALF_UP).toFixed(1) }));
     const list = await this.list(org);
     const borrowed = new D(list.totals.balance);
     const loans = await this.prisma.loan.findMany({ where: { orgId: org.id, status: 'ACTIVE' }, orderBy: { number: 'asc' } });
@@ -667,7 +699,7 @@ export class LoansService {
       });
     return {
       asOf: today,
-      cash: { total: cash.toFixed(scale), accounts: cashAccounts },
+      cash: { total: cash.toFixed(scale), currency: org.functionalCurrency, accounts: cashAccounts, byCurrency },
       borrowings: list.totals,
       netCash: cash.minus(borrowed).toFixed(scale),
       upcoming,

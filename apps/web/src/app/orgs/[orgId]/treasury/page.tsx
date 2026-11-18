@@ -17,6 +17,7 @@ export default function TreasuryPage() {
   const cur = org.functionalCurrency;
   const t = q.data;
   const peak = t ? Math.max(1, ...t.byMonth.map((m) => +m.total)) : 1;
+  const multi = !!t && t.cash.byCurrency.some((c) => c.currency !== cur);
   return (
     <>
       <PageHeader
@@ -37,16 +38,35 @@ export default function TreasuryPage() {
             <Card className="overflow-x-auto">
               <div className="p-4 pb-0"><CardHeader title="Cash and bank" /></div>
               <Table aria-label="Cash and bank balances">
-                <thead><tr><Th>Account</Th><Th numeric>Balance</Th></tr></thead>
+                <thead><tr><Th>Account</Th>{multi ? <Th numeric>In its currency</Th> : null}<Th numeric>Balance</Th></tr></thead>
                 <tbody>
                   {t.cash.accounts.map((a) => (
                     <Tr key={a.id}>
                       <Td><span className="num text-fg-muted">{a.code}</span> {a.name} <span className="text-xs text-fg-faint">{a.kind === 'CASH' ? 'Cash' : 'Bank'}</span></Td>
+                      {multi ? <Td numeric>{a.currency !== cur ? <Money value={a.currencyBalance} currency={a.currency} signed /> : <span className="text-fg-faint">—</span>}</Td> : null}
                       <Td numeric><Money value={a.balance} currency={cur} signed /></Td>
                     </Tr>
                   ))}
                 </tbody>
               </Table>
+              {multi ? (
+                <>
+                  <div className="p-4 pb-0"><CardHeader title="Cash by currency" description={`What is held in each currency, and what the books carry for it in ${cur} at the rates used when it was recorded.`} /></div>
+                  <Table aria-label="Cash by currency">
+                    <thead><tr><Th>Currency</Th><Th numeric>Held</Th><Th numeric>In {cur}</Th><Th numeric>Share</Th></tr></thead>
+                    <tbody>
+                      {t.cash.byCurrency.map((c) => (
+                        <Tr key={c.currency}>
+                          <Td>{c.currency} <span className="text-xs text-fg-faint">{c.accounts} {c.accounts === 1 ? 'account' : 'accounts'}</span></Td>
+                          <Td numeric><Money value={c.amount} currency={c.currency} signed /></Td>
+                          <Td numeric><Money value={c.functional} currency={cur} signed /></Td>
+                          <Td numeric>{c.share === null ? '—' : `${c.share}%`}</Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </>
+              ) : null}
             </Card>
             <Card className="overflow-x-auto">
               <div className="p-4 pb-0"><CardHeader title="Due in the next 30 days" description="And any installment already due that is not recorded." /></div>
