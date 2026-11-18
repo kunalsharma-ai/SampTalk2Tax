@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 781 |
 | Designed | 0 |
-| Implementing | 50 |
+| Implementing | 49 |
 | Implemented | 34 |
-| Tested | 464 |
+| Tested | 465 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1426,8 +1426,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### BANK-012 — Foreign exchange accounting
 
 - Module: Banking and reconciliation
-- Status: **Implementing**
-- Notes: Receipts and payments in a foreign currency into any bank account, realised gains and losses on settlement and period-end revaluation of foreign balances. Bank statement import and reconciliation are still in the functional currency only.
+- Status: **Tested**
+- Notes: Receipts and payments in a foreign currency into any bank account, realised gains and losses on settlement, period-end revaluation of foreign balances, and bank accounts kept in another currency: statements imported, matched, booked and reconciled in that currency while the books carry the functional amount. Not built: one-entry currency exchange between two accounts, AI suggestions on foreign accounts.
 - Evidence:
   - packages/accounting-engine/src/fx-documents.ts
   - packages/accounting-engine/test/fx-documents.test.ts
@@ -1439,6 +1439,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/fx-documents-flow.test.mjs
   - docs/MULTI_CURRENCY.md
   - apps/api/src/fx/fx.service.ts
+  - apps/api/src/banking/banking.service.ts
+  - apps/api/test/fx-bank-statements.e2e.test.ts
+  - apps/web/e2e/fx-bank-statement-flow.test.mjs
 
 ### BANK-013 — Unreconciled transaction reporting
 

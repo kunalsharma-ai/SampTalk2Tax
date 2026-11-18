@@ -90,6 +90,9 @@ export interface LedgerLine {
   account_id: string;
   /** Functional debit less credit. */
   net: Dec;
+  /** The line's transaction currency, and its debit less credit in that currency. */
+  currency: string;
+  tx_net: Dec;
 }
 
 /** Journal lines matching `line` on entries matching `entry`, ordered by entry date and number (PostgreSQL's NULLs last). */
@@ -116,11 +119,14 @@ export async function ledgerLines(store: DocumentStoreService, orgId: string, q:
       account_id: '$lines.accountId',
       debit: '$lines.functionalDebit',
       credit: '$lines.functionalCredit',
+      currency: '$lines.currency',
+      tx_debit: '$lines.debit',
+      tx_credit: '$lines.credit',
     },
   });
-  const rows = await runInOrg(orgId, () => store.collection(journalEntries).aggregate<Omit<LedgerLine, 'net'> & { debit: string; credit: string }>(pipeline));
+  const rows = await runInOrg(orgId, () => store.collection(journalEntries).aggregate<Omit<LedgerLine, 'net' | 'tx_net'> & { debit: string; credit: string; tx_debit: string; tx_credit: string }>(pipeline));
   return rows
-    .map(({ debit, credit, ...r }) => ({ ...r, entry_number: r.entry_number ?? null, memo: r.memo ?? null, reference: r.reference ?? null, description: r.description ?? null, reverses_entry_id: r.reverses_entry_id ?? null, net: new D(String(debit)).minus(String(credit)) }))
+    .map(({ debit, credit, tx_debit, tx_credit, ...r }) => ({ ...r, tx_net: new D(String(tx_debit ?? '0')).minus(String(tx_credit ?? '0')), entry_number: r.entry_number ?? null, memo: r.memo ?? null, reference: r.reference ?? null, description: r.description ?? null, reverses_entry_id: r.reverses_entry_id ?? null, net: new D(String(debit)).minus(String(credit)) }))
     .sort((a, b) => a.date.getTime() - b.date.getTime() || (a.entry_number ?? Infinity) - (b.entry_number ?? Infinity));
 }
 

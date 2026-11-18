@@ -12,7 +12,7 @@ import { api } from '@/lib/api';
 import { date, money } from '@/lib/format';
 import { PURCHASES, SALES } from '@/lib/ledgers';
 import { useAccounts, useContacts, useOrg } from '@/lib/org';
-import { can, type DocumentSummary, type LedgerCandidate, type LedgerLink, type StatementLine } from '@/lib/types';
+import { can, type BankAccountSummary, type DocumentSummary, type LedgerCandidate, type LedgerLink, type StatementLine } from '@/lib/types';
 import { useBankAccounts } from './accounts-page';
 
 type View = 'UNMATCHED' | 'MATCHED' | 'EXCLUDED' | 'ALL';
@@ -47,7 +47,8 @@ export function BankAccountPage() {
   const unmatch = useMutation({ mutationFn: (l: StatementLine) => api(`${base}/lines/${l.id}/unmatch`, { method: 'POST', body: {} }), onSuccess: refresh });
   const include = useMutation({ mutationFn: (l: StatementLine) => api(`${base}/lines/${l.id}/include`, { method: 'POST' }), onSuccess: refresh });
   if (!org) return null;
-  const c = org.functionalCurrency;
+  const c = account?.currency ?? org.functionalCurrency;
+  const foreign = c !== org.functionalCurrency;
   const manage = can(org.role, 'banking.manage');
   const uniqueSuggestions = (lines.data?.lines ?? []).filter((l) => l.suggestion?.unique).length;
   const error = autoMatch.error ?? quickMatch.error ?? unmatch.error ?? include.error;
@@ -59,12 +60,14 @@ export function BankAccountPage() {
           account ? (
             <span>
               Balance in the books <Money value={account.ledgerBalance} currency={c} signed />
+              {foreign ? <> (<Money value={account.functionalBalance} currency={org.functionalCurrency} signed /> in the accounts)</> : null}
               {account.lastReconciled ? <> · reconciled to {date(account.lastReconciled.date)}</> : <> · not reconciled yet</>}
             </span>
           ) : undefined
         }
         actions={
           <div className="flex flex-wrap gap-2">
+            {account && can(org.role, 'accounts.manage') ? <CurrencyButton account={account} /> : null}
             {manage ? <Link href={`/orgs/${orgId}/banking/${accountId}/import`}><Button variant="secondary">Import statement</Button></Link> : null}
             <Link href={`/orgs/${orgId}/banking/${accountId}/ai`}><Button variant="secondary">AI suggestions</Button></Link>
             <Button variant="secondary" onClick={() => setShowLearned(true)}>What matching learned</Button>
@@ -253,6 +256,34 @@ function LinkLine({ m, orgId }: { m: LedgerLink; orgId: string }) {
 
 type Mode = 'match' | 'payment' | 'entry' | 'exclude';
 
+/** Keeps the account in another currency (BANK-012): only before statements or other-currency postings depend on it. */
+function CurrencyButton({ account }: { account: BankAccountSummary }) {
+  const { org, orgId } = useOrg();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [currency, setCurrency] = useState(account.currency);
+  const save = useMutation({
+    mutationFn: () => api(`/v1/orgs/${orgId}/banking/accounts/${account.id}/currency`, { method: 'PUT', body: { currency: currency.trim().toUpperCase() || null } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['bank-accounts', orgId] });
+      setOpen(false);
+    },
+  });
+  if (!org) return null;
+  return (
+    <>
+      <Button variant="secondary" onClick={() => { setCurrency(account.currency); save.reset(); setOpen(true); }}>Currency: {account.currency}</Button>
+      <Dialog open={open} onOpenChange={setOpen} title={`Currency of ${account.code} · ${account.name}`} description={`For an account the bank keeps in another currency, such as a USD account. Its statements are imported, matched and reconciled in that currency, every posting to it must be in it, and the books carry it in ${org.functionalCurrency} at each entry's rate.`}>
+        <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+          <Field label="Account currency" hint={`Three letters, such as USD. ${org.functionalCurrency} is the organisation's own. It can change only before statements are imported or postings in another currency are made.`}>{(p) => <Input {...p} className="num uppercase" maxLength={3} value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />}</Field>
+          {save.error ? <Alert title="Not changed">{save.error.message}</Alert> : null}
+          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={save.isPending} disabled={!/^[A-Za-z]{3}$/.test(currency)}>Save currency</Button></div>
+        </form>
+      </Dialog>
+    </>
+  );
+}
+
 function ResolveDialog({ line, onClose, onDone }: { line: StatementLine; onClose: () => void; onDone: () => Promise<void> }) {
   const { org } = useOrg();
   const inflow = !line.amount.startsWith('-');
@@ -264,7 +295,7 @@ function ResolveDialog({ line, onClose, onDone }: { line: StatementLine; onClose
     { m: 'entry', label: inflow ? 'Other money in' : 'Other money out', show: can(org?.role, 'journals.post') },
     { m: 'exclude', label: 'Exclude', show: true },
   ];
-  const c = org?.functionalCurrency ?? 'INR';
+  const c = line.currency ?? org?.functionalCurrency ?? 'INR';
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title={`${inflow ? 'Money in' : 'Money out'} · ${money(new D(line.amount).abs().toFixed(2), c)}`} description={`${date(line.date)} · ${line.description}${line.reference ? ` · Ref ${line.reference}` : ''}`}>
       <div role="tablist" aria-label="How to resolve" className="mb-4 flex flex-wrap gap-1">

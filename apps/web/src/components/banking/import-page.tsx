@@ -123,7 +123,7 @@ export function ImportStatementPage() {
   };
 
   if (!org) return null;
-  const c = org.functionalCurrency;
+  const c = account?.currency ?? org.functionalCurrency;
   const failure = preview.error ?? save.error;
   const issues = failure instanceof ApiError ? failure.issues : undefined;
   const colSelect = (label: string, value: number | null, set: (v: number | null) => void, optional = false) => (
@@ -142,7 +142,7 @@ export function ImportStatementPage() {
     <>
       <PageHeader
         title={`Import a statement${account ? ` · ${account.code} ${account.name}` : ''}`}
-        description="Upload a statement downloaded from your bank: CSV, OFX/QFX, QIF or MT940. Nothing is stored until you confirm the preview, and lines that were imported before are skipped."
+        description={`Upload a statement downloaded from your bank: CSV, OFX/QFX, QIF or MT940. Nothing is stored until you confirm the preview, and lines that were imported before are skipped.${c !== org.functionalCurrency ? ` This account is kept in ${c}: the amounts are read as ${c}.` : ''}`}
       />
       <Card className="mb-6 p-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

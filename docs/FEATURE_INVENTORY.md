@@ -223,7 +223,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-009 |  | capability | Payment matching | Tested |
 | BANK-010 |  | capability | Bank charges | Tested |
 | BANK-011 |  | capability | Interest accounting | Implementing |
-| BANK-012 |  | capability | Foreign exchange accounting | Implementing |
+| BANK-012 |  | capability | Foreign exchange accounting | Tested |
 | BANK-013 |  | capability | Unreconciled transaction reporting | Tested |
 | BANK-014 |  | capability | Bank balance monitoring | Tested |
 | BANK-015 |  | capability | Reconciliation audit history | Tested |

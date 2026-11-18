@@ -6002,7 +6002,7 @@
       "notes": "Invoices, credit notes, bills, vendor credits, receipts and payments in any supported currency, at the recorded rate on the date or one entered and kept with the record. Settling at another rate posts a realised exchange gain or loss (reversed if the allocation is removed). Receivables and payables, ageing, balances, credit limits and approvals are in the functional currency at each record's rate; customer statements are per currency. Not yet: TDS/TCS, reverse charge or GST charged on foreign-currency documents, e-invoices for them, quotations/orders/contracts in other currencies, rate feeds."
     },
     "BANK-012": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/fx-documents.ts",
         "packages/accounting-engine/test/fx-documents.test.ts",
@@ -6013,9 +6013,12 @@
         "apps/web/src/components/ledger/currency-rate.tsx",
         "apps/web/e2e/fx-documents-flow.test.mjs",
         "docs/MULTI_CURRENCY.md",
-        "apps/api/src/fx/fx.service.ts"
+        "apps/api/src/fx/fx.service.ts",
+        "apps/api/src/banking/banking.service.ts",
+        "apps/api/test/fx-bank-statements.e2e.test.ts",
+        "apps/web/e2e/fx-bank-statement-flow.test.mjs"
       ],
-      "notes": "Receipts and payments in a foreign currency into any bank account, realised gains and losses on settlement and period-end revaluation of foreign balances. Bank statement import and reconciliation are still in the functional currency only."
+      "notes": "Receipts and payments in a foreign currency into any bank account, realised gains and losses on settlement, period-end revaluation of foreign balances, and bank accounts kept in another currency: statements imported, matched, booked and reconciled in that currency while the books carry the functional amount. Not built: one-entry currency exchange between two accounts, AI suggestions on foreign accounts."
     },
     "DS-012": {
       "status": "Tested",
