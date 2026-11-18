@@ -267,7 +267,9 @@ describe('settings', () => {
     const one = byRule((await list(owner.auth, 'CLEARED')).alerts, 'UNUSUAL_JOURNAL')[0];
     expect((await ctx.http().get(`${org.base}/alerts/${one.id}`).set(owner.auth).expect(200)).body.history.at(-1)).toMatchObject({ action: 'CLEARED', note: 'The check was turned off' });
 
-    await ctx.http().put(`${org.base}/alert-rules/UNUSUAL_JOURNAL`).set(owner.auth).send({ enabled: true, params: {} }).expect(200);
+    // Same threshold as before, so only the alerts it cleared come back. (With the default of 30 days the
+    // rent journal dated the 15th of last month is also backdated after mid-month, a new alert.)
+    await ctx.http().put(`${org.base}/alert-rules/UNUSUAL_JOURNAL`).set(owner.auth).send({ enabled: true, params: { backdatedDays: '100' } }).expect(200);
     const s3 = await scan();
     expect(s3.reopened).toBe(6);
     const back = byRule((await list()).alerts, 'UNUSUAL_JOURNAL');

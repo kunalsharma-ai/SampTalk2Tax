@@ -707,7 +707,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Opened from an invoice, bill, quotation or order. The layout comes from Invoice templates.',
   },
   // ---------------------------------------------------------------- onboarding and auth
-  login: { what: 'Sign in to Talk2Tax.', how: 'Enter your email and password.', where: 'The start of every session.' },
+  login: {
+    what: 'Sign in to Talk2Tax.',
+    how: 'Enter your email and password. If you turned on two-step sign-in, type the 6-digit code from your authenticator app next, or one of your recovery codes if you do not have your phone.',
+    where: 'The start of every session. Two-step sign-in is turned on under Account and preferences.',
+  },
   register: { what: 'Create your Talk2Tax account.', how: 'Enter your name, email and a long password.', where: 'After this you create or join an organisation.' },
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },
   'invite/[id]': { what: 'An invitation to join an organisation.', how: 'Sign in or create an account, then accept.', where: 'After accepting, the organisation appears in your list.' },

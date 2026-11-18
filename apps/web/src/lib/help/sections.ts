@@ -102,7 +102,11 @@ export const SECTION_HELP: Record<string, Help> = {
   'What to do next': { what: 'The actions the assessment suggests, most important first.', how: 'Work down the list. Each item says why it matters and links to where to act.' },
   'Ask for help': { what: 'Open a support ticket with the Talk2Tax team.', how: 'Describe the problem, how urgent it is, and what you expected. You get replies on the ticket and by email.' },
   'Response times': { what: 'How quickly the support team aims to reply and to solve a ticket at each priority.', how: 'Use the priority that matches the impact on your work.' },
-  'Change password': { what: 'Set a new password for signing in.', how: 'Enter your current password and a new long one. Other sessions stay signed in until they expire.' },
+  'Change password': { what: 'Set a new password for signing in.', how: 'Enter your current password and a new long one. Every other device is signed out; this one stays signed in.' },
+  'Two-step sign-in': {
+    what: 'A second check after your password: a 6-digit code from an authenticator app on your phone, which changes every 30 seconds. Someone who learns your password still cannot sign in.',
+    how: 'Choose Turn on, enter your password, scan the QR code with your app and type the code it shows. Save the ten recovery codes: each signs you in once if you lose your phone. Get new codes when few are left.',
+  },
 
   // ---------------------------------------------------------------- sales and CRM
   Lead: { what: 'Who the lead is, where they came from and where they stand.', how: 'Qualify the lead when it is a real opportunity, or mark it lost with a reason. Converting creates the customer and a deal.' },

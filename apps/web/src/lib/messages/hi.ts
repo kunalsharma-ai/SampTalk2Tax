@@ -154,8 +154,8 @@ export const hi: Record<string, string> = {
   // Account: language and formats
   'Account and preferences': 'खाता और प्राथमिकताएँ',
   'Language and formats': 'भाषा और प्रारूप',
-  "Your language and formats, where you are signed in, and your password. These settings are for your own account and apply in every organisation, except the organisation's time zone.":
-    'आपकी भाषा और प्रारूप, आप कहाँ साइन इन हैं, और आपका पासवर्ड। ये सेटिंग आपके अपने खाते की हैं और हर संगठन में लागू होती हैं, सिवाय संगठन के समय क्षेत्र के।',
+  "Your language and formats, where you are signed in, two-step sign-in and your password. These settings are for your own account and apply in every organisation, except the organisation's time zone.":
+    'आपकी भाषा और प्रारूप, आप कहाँ साइन इन हैं, दो-चरण साइन-इन और आपका पासवर्ड। ये सेटिंग आपके अपने खाते की हैं और हर संगठन में लागू होती हैं, सिवाय संगठन के समय क्षेत्र के।',
   'How Talk2Tax looks to you. These are your own choices and apply in every organisation. They change how things are shown, never the figures or any tax or legal rule.':
     'Talk2Tax आपको कैसा दिखे। ये आपकी अपनी पसंद हैं और हर संगठन में लागू होती हैं। इनसे केवल दिखावट बदलती है, आँकड़े या कोई कर या क़ानूनी नियम नहीं।',
   Language: 'भाषा',

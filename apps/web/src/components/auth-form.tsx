@@ -26,18 +26,76 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const form = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(schema as typeof registerSchema), defaultValues: { email: params.get('email') ?? '' } });
   const { errors, isSubmitting } = form.formState;
 
+  // Two-step sign-in: after a right password the API waits for a code from the person's app.
+  const [codeStep, setCodeStep] = useState(false);
+  const [code, setCode] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const finish = () => {
+    const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+    // A new account goes to onboarding unless it came from an invitation link.
+    router.replace(mode === 'register' && !safeNext.startsWith('/invite/') ? '/onboarding' : safeNext);
+    router.refresh();
+  };
+
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
     try {
-      await session(mode, values);
-      const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
-      // A new account goes to onboarding unless it came from an invitation link.
-      router.replace(mode === 'register' && !safeNext.startsWith('/invite/') ? '/onboarding' : safeNext);
-      router.refresh();
+      const r = await session(mode, values);
+      if (r.mfaRequired) {
+        setCodeStep(true);
+        return;
+      }
+      finish();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong. Try again.');
     }
   });
+
+  const sendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSending(true);
+    try {
+      await session('code', { code });
+      finish();
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'MFA_CHALLENGE_EXPIRED') {
+        setCodeStep(false);
+        setCode('');
+        form.setValue('password', '');
+      }
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (codeStep) {
+    return (
+      <div>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-semibold tracking-tight">Two-step sign-in</h2>
+          <PageHelp title="Two-step sign-in" />
+        </div>
+        <p className="mt-1 text-sm text-fg-muted">Open your authenticator app and type the 6-digit code it shows for Talk2Tax. Lost your phone? Type one of your recovery codes instead.</p>
+        <form onSubmit={sendCode} className="mt-8 flex flex-col gap-4" noValidate>
+          {error ? <Alert title="Sign-in failed">{error}</Alert> : null}
+          <Field label="Code" hint="6 digits from the app, or a recovery code like ABCD-EFGH-JKLM.">
+            {(p) => <Input {...p} autoFocus inputMode="text" autoComplete="one-time-code" maxLength={20} value={code} onChange={(e) => setCode(e.target.value)} />}
+          </Field>
+          <Button type="submit" loading={sending} disabled={code.trim().length < 6} className="mt-2">
+            Verify and sign in
+          </Button>
+        </form>
+        <p className="mt-6 text-sm text-fg-muted">
+          <button type="button" className="text-accent hover:underline" onClick={() => { setCodeStep(false); setCode(''); setError(null); }}>
+            Start again with another account
+          </button>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>

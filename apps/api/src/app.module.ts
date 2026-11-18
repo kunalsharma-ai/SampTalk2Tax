@@ -11,6 +11,7 @@ import { AuditController } from './audit/audit.controller';
 import { AuditService } from './audit/audit.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
+import { MfaService } from './auth/mfa.service';
 import { AuthGuard } from './auth/guards';
 import { LoginThrottleService } from './auth/login-throttle.service';
 import { RateLimitGuard } from './auth/rate-limit';
@@ -354,6 +355,7 @@ export class AppModule {
         TokensService,
         AuditService,
         AuthService,
+        MfaService,
         SessionsService,
         LoginThrottleService,
         OrganizationsService,

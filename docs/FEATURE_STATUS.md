@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 798 |
+| Not started | 797 |
 | Designed | 0 |
 | Implementing | 67 |
 | Implemented | 34 |
-| Tested | 430 |
+| Tested | 431 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 23 | 15 |
+| Security and enterprise governance | M1 | 38 | 22 | 16 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 5 | 27 |
@@ -5321,6 +5321,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/security/test/security.test.ts
   - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
+
+### SEC-005 — MFA
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Authenticator-app codes (TOTP) and ten single-use recovery codes. SMS and email codes are not offered. An organisation rule to require it for members is a separate slice.
+- Evidence:
+  - packages/security/src/totp.ts (RFC 6238 TOTP, recovery codes) + test/totp.test.ts
+  - apps/api/src/auth/mfa.service.ts, MongoDB collections user_mfa and mfa_challenges
+  - POST /v1/auth/login → mfaRequired; POST /v1/auth/login/code; /v1/auth/mfa, /mfa/setup, /mfa/confirm, /mfa/recovery-codes, /mfa/disable
+  - apps/api/test/two-step-sign-in.e2e.test.ts
+  - apps/web/src/components/two-step-sign-in.tsx (Account and preferences), sign-in code step in auth-form.tsx
+  - apps/web/e2e/two-step-sign-in-flow.test.mjs
 
 ### SEC-008 — Session management
 

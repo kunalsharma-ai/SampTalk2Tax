@@ -7,6 +7,7 @@ import { PrismaService } from '../common/prisma.service';
 import { users } from '../db/collections/identity';
 import { thenOrUndo } from '../common/undo';
 import { LoginThrottleService } from './login-throttle.service';
+import { MfaService } from './mfa.service';
 import { ClientMeta, SessionsService } from './sessions.service';
 
 // A real hash of a random string, used so unknown-email logins take as long as real ones.
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly sessions: SessionsService,
     private readonly throttle: LoginThrottleService,
     private readonly audit: AuditService,
+    private readonly mfa: MfaService,
   ) {}
 
   async register(input: { email: string; name: string; password: string }, meta: ClientMeta) {
@@ -86,10 +88,24 @@ export class AuthService {
       throw new UnauthorizedException({ error: 'INVALID_CREDENTIALS', message: 'Email or password is incorrect' });
     }
     await this.throttle.clear(email);
+    // With two-step sign-in on, the password alone opens nothing: the client sends a code next.
+    if (await this.mfa.isActive(user.id)) return this.mfa.challenge(user.id, meta);
+    return this.startSession(user, meta);
+  }
+
+  /** The second step: the challenge from login plus a code from the authenticator app (or a recovery code). */
+  async loginWithCode(input: { challengeToken: string; code: string }, meta: ClientMeta) {
+    const { userId, via } = await this.mfa.completeChallenge(input.challengeToken, input.code);
+    const user = await this.store.collection(users).findById(userId);
+    if (!user || !user.isActive) throw new UnauthorizedException({ error: 'MFA_CHALLENGE_EXPIRED', message: 'This sign-in took too long or had too many wrong codes. Sign in again.' });
+    return this.startSession(user, meta, via);
+  }
+
+  private async startSession(user: { id: string; email: string; name: string }, meta: ClientMeta, mfa?: 'APP' | 'RECOVERY_CODE') {
     const session = await this.sessions.create(user.id, meta);
     return thenOrUndo(
       { user: { id: user.id, email: user.email, name: user.name }, ...session.issued },
-      () => this.prisma.$transaction((tx) => this.sessions.auditCreated(tx, session)),
+      () => this.prisma.$transaction((tx) => this.sessions.auditCreated(tx, session, mfa)),
       () => this.sessions.discard(session.issued.sessionId),
     );
   }
