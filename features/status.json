@@ -1265,11 +1265,16 @@
       "notes": "Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy."
     },
     "EXP-003": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/e2e/expenses-flow.test.mjs"
+        "apps/web/e2e/expenses-flow.test.mjs",
+        "apps/web/src/lib/photo.ts",
+        "apps/web/src/components/attachments.tsx",
+        "apps/web/test/photo.test.ts",
+        "apps/web/e2e/receipt-camera-flow.test.mjs",
+        "docs/EXPENSE_REPORTS.md"
       ],
-      "notes": "Receipts (photo or PDF) upload from the browser, including on a phone; there is no native mobile app or camera capture flow."
+      "notes": "On a phone or tablet, the attachments card's Take a photo button opens the rear camera (capture=environment). Large photos are shrunk in the browser to at most 2,000 px as a JPEG before upload, so they fit the 5 MB limit. It works in the phone's browser; there is no native app."
     },
     "EXP-017": {
       "status": "Tested",
