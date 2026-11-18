@@ -1568,12 +1568,16 @@
       "notes": "Posting a pay run journals gross salary and employer PF/ESI against net pay, PF, ESI, PT and TDS payables; voiding reverses it. Source PAYROLL."
     },
     "PAY-017": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
+        "apps/api/src/payroll/payroll.service.ts",
+        "apps/api/test/payroll-salary-file.e2e.test.ts",
         "apps/api/test/payroll.e2e.test.ts",
-        "apps/web/e2e/payroll-flow.test.mjs"
+        "apps/web/e2e/salary-bank-file-flow.test.mjs",
+        "apps/web/e2e/payroll-flow.test.mjs",
+        "docs/PAYROLL_INDIA.md"
       ],
-      "notes": "Records net-pay and statutory payments from a bank account with due dates (Dr liability, Cr bank). No bank transfer files, ECR or challan files."
+      "notes": "Employees' salary accounts (checked, masked in lists and the audit trail); a pay run's transfer list; the bank bulk transfer file (CSV) of net salaries for a posted run, from a chosen bank account, leaving out and naming employees without an account; and net-pay and statutory payments with due dates (Dr liability, Cr bank). Not built: bank-specific file layouts, direct bank upload, ECR or challan files."
     },
     "PAY-018": {
       "status": "Tested",

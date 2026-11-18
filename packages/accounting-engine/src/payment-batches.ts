@@ -97,9 +97,9 @@ export interface PaymentFileRow {
  * banks' bulk-upload templates ask for; text that a spreadsheet could read as a formula is
  * neutralised.
  */
-export function paymentFileCsv(batch: { reference: string; date: string; debitAccount: string; currency: string }, rows: readonly PaymentFileRow[]): string {
+export function paymentFileCsv(batch: { reference: string; date: string; debitAccount: string; currency: string }, rows: readonly PaymentFileRow[], partyLabel = 'Vendor'): string {
   const t = (s: string) => csvField(neutraliseFormula(s));
-  const lines = [['Payment date', 'Debit account', 'Beneficiary name', 'Beneficiary account number', 'IFSC', 'Amount', 'Currency', 'Payment reference', 'Beneficiary email', 'Vendor'].map(t).join(',')];
+  const lines = [['Payment date', 'Debit account', 'Beneficiary name', 'Beneficiary account number', 'IFSC', 'Amount', 'Currency', 'Payment reference', 'Beneficiary email', partyLabel].map(t).join(',')];
   for (const r of rows) {
     lines.push([batch.date, batch.debitAccount, r.accountName, r.accountNumber, r.ifsc, r.amount, batch.currency, r.reference.slice(0, 30), r.email ?? '', r.vendor].map((x) => t(String(x))).join(','));
   }

@@ -320,7 +320,7 @@ Part 10 · M3 · priority P2 · depends on: GL, TAX, WFLOW
 | PAY-014 |  | capability | Loans | Not started |
 | PAY-015 |  | capability | Benefits accounting | Not started |
 | PAY-016 |  | capability | Payroll journals | Tested |
-| PAY-017 |  | capability | Salary payment preparation | Implementing |
+| PAY-017 |  | capability | Salary payment preparation | Tested |
 | PAY-018 |  | capability | Payslips | Tested |
 | PAY-019 |  | capability | Payroll approvals | Not started |
 | PAY-020 |  | capability | Payroll cost allocation | Not started |

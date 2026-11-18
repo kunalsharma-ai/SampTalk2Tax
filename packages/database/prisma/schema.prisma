@@ -1204,6 +1204,10 @@ model Employee {
   pfOnFullWages Boolean           @default(false) @map("pf_on_full_wages")
   uan           String?
   esiNumber     String?           @map("esi_number")
+  /// Salary account: the holder's name as the bank has it, the number and the IFSC (PAY-017).
+  bankAccountName   String?       @map("bank_account_name")
+  bankAccountNumber String?       @map("bank_account_number")
+  bankIfsc          String?       @map("bank_ifsc") @db.Char(11)
   /// Salary and tax from a previous employer in the tax year of joining.
   priorTaxYear  String?           @map("prior_tax_year")
   priorIncome   Decimal           @default(0) @map("prior_income") @db.Decimal(24, 6)
