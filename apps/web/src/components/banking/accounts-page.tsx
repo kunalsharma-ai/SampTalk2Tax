@@ -54,10 +54,10 @@ export function BankAccountsPage() {
                       <Link className="text-accent hover:underline" href={href} onClick={(e) => e.stopPropagation()}>{a.code} · {a.name}</Link>
                       <p className="text-xs text-fg-muted">{a.subtype === 'CASH' ? 'Cash' : 'Bank'}{a.isActive ? '' : ' · inactive'}</p>
                     </Td>
-                    <Td numeric><Money value={a.ledgerBalance} currency={c} signed /></Td>
+                    <Td numeric><Money value={a.ledgerBalance} currency={a.currency ?? c} signed />{a.currency && a.currency !== c ? <span className="block text-xs text-fg-muted"><Money value={a.functionalBalance} currency={c} signed /> in the accounts</span> : null}</Td>
                     <Td className="text-fg-muted">{a.statementLines ? `${a.statementLines} · last ${date(a.lastStatementDate!)}` : 'None imported'}</Td>
                     <Td>{a.unmatchedLines ? <Badge tone="warning">{a.unmatchedLines} to review</Badge> : a.statementLines ? <Badge tone="positive">All matched</Badge> : <span className="text-fg-faint">—</span>}</Td>
-                    <Td>{a.lastReconciled ? <span>{date(a.lastReconciled.date)} · <Money value={a.lastReconciled.statementBalance} currency={c} /></span> : <span className="text-fg-faint">Never</span>}</Td>
+                    <Td>{a.lastReconciled ? <span>{date(a.lastReconciled.date)} · <Money value={a.lastReconciled.statementBalance} currency={a.currency ?? c} /></span> : <span className="text-fg-faint">Never</span>}</Td>
                   </Tr>
                 );
               })}
@@ -81,6 +81,7 @@ interface TransferSide {
 }
 interface TransferSuggestion {
   amount: string;
+  currency?: string;
   days: number;
   reasons: string[];
   unique: boolean;
@@ -117,7 +118,7 @@ function TransferSuggestions() {
               <Tr key={`${s.out.id}-${s.in.id}`}>
                 <Td><span className="font-medium">{s.out.account}</span><p className="text-xs text-fg-muted">{date(s.out.date)} · {s.out.description}</p></Td>
                 <Td><span className="font-medium">{s.in.account}</span><p className="text-xs text-fg-muted">{date(s.in.date)} · {s.in.description}</p></Td>
-                <Td numeric><Money value={s.amount} currency={org.functionalCurrency} /></Td>
+                <Td numeric><Money value={s.amount} currency={s.currency ?? org.functionalCurrency} /></Td>
                 <Td className="text-xs text-fg-muted">{s.reasons.join(' · ')}{s.unique ? null : <p className="text-warning">Other lines could also pair; check before recording.</p>}</Td>
                 <Td className="whitespace-nowrap text-right">{manage ? <Button size="sm" loading={record.isPending && record.variables === s} aria-label={`Record transfer of ${s.amount} from ${s.out.account} to ${s.in.account}`} onClick={() => record.mutate(s)}>Record transfer</Button> : null}</Td>
               </Tr>

@@ -17,8 +17,16 @@ export interface AccountDoc {
   parentId: string | null;
   isPostable: boolean;
   isActive: boolean;
+  /** A bank or cash account kept in another currency (BANK-012); null or absent: the functional currency. */
+  currency?: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Only bank and cash accounts keep their own currency. */
+function checkCurrency(a: AccountDoc) {
+  if (a.currency == null) return;
+  if (a.subtype !== 'BANK' && a.subtype !== 'CASH') throw new GuardViolation('Only a bank or cash account can be kept in another currency');
 }
 
 /** Was the accounts parent foreign key: a parent is another account of the same organisation. */
@@ -43,6 +51,7 @@ export const accounts = defineCollection<AccountDoc>({
       parentId: { bsonType: ['string', 'null'] },
       isPostable: { bsonType: 'bool' },
       isActive: { bsonType: 'bool' },
+      currency: { bsonType: ['string', 'null'], pattern: '^[A-Z]{3}$' },
       createdAt: { bsonType: 'date' },
       updatedAt: { bsonType: 'date' },
     },
@@ -53,8 +62,12 @@ export const accounts = defineCollection<AccountDoc>({
     { key: { orgId: 1, parentId: 1 }, name: 'org_parent' },
   ],
   guards: {
-    beforeInsert: checkParent,
+    async beforeInsert(a, ctx) {
+      checkCurrency(a);
+      await checkParent(a, ctx);
+    },
     async afterUpdate(before, after, ctx) {
+      checkCurrency(after);
       if (after.type !== before.type) throw new GuardViolation('The type of an account cannot change');
       if (after.parentId !== before.parentId) await checkParent(after, ctx);
     },

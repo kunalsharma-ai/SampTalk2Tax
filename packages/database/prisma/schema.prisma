@@ -382,6 +382,9 @@ model Account {
   parentId         String?               @map("parent_id") @db.Uuid
   isPostable       Boolean               @default(true) @map("is_postable")
   isActive         Boolean               @default(true) @map("is_active")
+  /// A bank or cash account held in another currency (a USD account): its statements, matching and
+  /// reconciliation are in this currency, and every posting to it must be. Null: the functional currency.
+  currency         String?               @db.Char(3)
   createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   org              Organization          @relation(fields: [orgId], references: [id], onDelete: Restrict)

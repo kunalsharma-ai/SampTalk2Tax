@@ -41,6 +41,27 @@ At a period end, balances kept in another currency are restated at the closing r
 Refusals: `FX_ORDER` (not after the last one), `FX_RATE_MISSING`, `FX_ACCOUNT_MISSING` (no active
 FX_GAIN_LOSS account), `FX_NOTHING` (no balances, or already at these rates), `FX_INVALID`.
 
+## Bank accounts in another currency
+
+**Banking → (account) → Currency.** A bank or cash account the bank keeps in another currency (a
+USD or EEFC account) can be kept in that currency, by people with `accounts.manage`, before any
+statement is imported into it or anything is posted to it in another currency (`CURRENCY_IN_USE`
+otherwise; audited as `bank.account_currency_set`). Then:
+
+* Every posting to it must be in its currency (`ACCOUNT_CURRENCY`), at the line's rate or the day's
+  recorded rate. Revaluations are the exception: they restate it in the functional currency only,
+  and reversals mirror their original.
+* Statements are imported in its currency, and suggestions, matching, "Other money in / out",
+  customer receipts and vendor payments work on the amounts in that currency. Entries from a line
+  take the day's recorded rate; receipts and payments are in its currency.
+* Reconciliation compares the statement with the account's lines in its currency. The account
+  list shows the balance in its currency and what the books carry in the functional currency.
+* A transfer is recorded only between accounts in the same currency; money changed between
+  currencies is two entries. AI suggestions are not offered on these accounts yet.
+
+Without a currency, an account is in the functional currency as before: foreign receipts into it
+count at their functional amounts.
+
 ## API
 
 | Endpoint | Permission | Notes |
@@ -51,6 +72,7 @@ FX_GAIN_LOSS account), `FX_NOTHING` (no balances, or already at these rates), `F
 | `GET /v1/orgs/:orgId/fx/exposure?asOf=&rate.USD=` | reports.read | Balances by account and currency, rates used, the revaluation it would post, missing rates, balances kept at historical rates, the last revaluation |
 | `GET /v1/orgs/:orgId/fx/revaluations` | reports.read | Past revaluations with their journals |
 | `POST /v1/orgs/:orgId/fx/revaluations` | accounts.manage | `date`, optional `rates`; posts and reverses; 201 with the record |
+| `PUT /v1/orgs/:orgId/banking/accounts/:id/currency` | accounts.manage | `currency` (or null for the functional one); 409 `CURRENCY_IN_USE` once statements or other-currency postings exist |
 
 ## Tests
 
@@ -62,6 +84,12 @@ FX_GAIN_LOSS account), `FX_NOTHING` (no balances, or already at these rates), `F
   next day's reversal in the trial balance, immutability, and every refusal.
 * Browser (`e2e/fx-revaluation-flow.test.mjs`): recording a rate, a USD journal using it, the
   preview at a new rate, posting, and the record.
+* API (`test/fx-bank-statements.e2e.test.ts`): setting a bank account's currency (permissions,
+  checks, audit), refusing postings in another currency, a USD statement imported, matched,
+  booked and reconciled in USD, revaluation leaving the USD balance alone, the currency locked
+  once in use, and no transfers across currencies.
+* Browser (`e2e/fx-bank-statement-flow.test.mjs`): keeping an account in USD, importing a USD
+  statement, a receipt, a fee and a suggested match, reconciling in USD, and the account list.
 
 ## Invoices, bills and payments in another currency
 
@@ -110,6 +138,9 @@ browser `e2e/fx-documents-flow.test.mjs` (a USD invoice, a receipt at a higher r
 shown before recording, the ageing and the USD statement).
 
 ## Not built
+
+* Exchanging currencies between two bank accounts as one entry (record each side), and AI
+  suggestions on accounts in another currency.
 
 * Quotations, sales orders, contracts and expense claims in a foreign currency; TDS/TCS, reverse
   charge and GST above 0% on foreign-currency documents.

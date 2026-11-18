@@ -340,7 +340,8 @@ export class JournalsService {
   ): Promise<{ id: string; entryNumber: number }> {
     const period = await this.lockPeriodForDate(tx, org.id, input.date);
     if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
-    const normalized = await this.validate(tx, org, input.lines);
+    input = { ...input, lines: await this.fillRates(tx, org, input.date, input.lines) };
+    const normalized = await this.validate(tx, org, input.lines, { source: input.source });
     const posted = await this.posting(tx, org.id, actor.id);
     const created = await this.insertEntry(tx, {
       orgId: org.id,
@@ -466,7 +467,7 @@ export class JournalsService {
     return { ...p, status: String(p.status) };
   }
 
-  private async validate(tx: Tx, org: OrgInfo, lines: JournalLineInput[], opts: { allowInactive?: boolean; manual?: boolean } = {}): Promise<NormalizedJournal> {
+  private async validate(tx: Tx, org: OrgInfo, lines: JournalLineInput[], opts: { allowInactive?: boolean; manual?: boolean; source?: string } = {}): Promise<NormalizedJournal> {
     const ids = [...new Set(lines.map((l) => l.accountId))];
     if (opts.manual) {
       const o = await tx.organization.findUniqueOrThrow({ where: { id: org.id }, select: { arAccountId: true, apAccountId: true, claimsAccountId: true } });
@@ -482,6 +483,13 @@ export class JournalsService {
       accounts.map((a) => [a.id, { id: a.id, code: a.code, type: a.type, isPostable: a.isPostable, isActive: opts.allowInactive ? true : a.isActive }]),
     );
     const normalized = validateJournal(lines, { functionalCurrency: org.functionalCurrency, accounts: map });
+    // A bank account kept in another currency (BANK-012) only moves in that currency; a
+    // revaluation restates it in the functional currency alone, and a reversal mirrors its original.
+    for (const a of accounts) {
+      if (!a.currency || a.currency === org.functionalCurrency || opts.source === 'FX_REVALUATION' || opts.allowInactive) continue;
+      const off = lines.find((l) => l.accountId === a.id && (l.currency ?? org.functionalCurrency).toUpperCase() !== a.currency);
+      if (off) throw new DomainError('ACCOUNT_CURRENCY', `${a.code} ${a.name} is kept in ${a.currency}; its lines must be in ${a.currency}`, HttpStatus.UNPROCESSABLE_ENTITY, { issues: [`${a.code} ${a.name} is kept in ${a.currency}; enter the amount in ${a.currency}`] });
+    }
     await checkLineDimensions(tx, org.id, lines, { allowInactive: opts.allowInactive });
     if (!opts.allowInactive && lines.some((l) => l.dimensions && Object.keys(l.dimensions).length)) {
       const defs = await runInOrg(org.id, () => this.store.collection(financialTags).find({}));
