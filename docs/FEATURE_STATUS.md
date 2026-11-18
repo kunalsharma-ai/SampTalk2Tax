@@ -5392,7 +5392,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Internationalization
 - Status: **Implementing**
-- Notes: Hindi covers the navigation, header, roles and the preferences page; the rest falls back to English. Translations not yet reviewed by a professional translator.
+- Notes: Hindi covers the navigation, header, roles, the preferences page, and now every page title and description, table heading, field label, button, dialog and card title that matches a catalogue entry (about 180 common words such as Status, Amount, Date, Save, Cancel). Text built with numbers or names ("New invoice", status badges, tabs) still falls back to English. Translations not yet reviewed by a professional translator.
 - Evidence:
   - packages/accounting-engine/src/locale.ts
   - packages/accounting-engine/test/locale.test.ts
@@ -5404,6 +5404,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/test/i18n.test.ts
   - apps/web/e2e/display-preferences-flow.test.mjs
   - docs/LANGUAGES_AND_FORMATS.md
+  - packages/ui/src/text.tsx
 
 ### I18N-015 — Architect for later support of additional languages
 
