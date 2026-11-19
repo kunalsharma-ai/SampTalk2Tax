@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 761 |
+| Not started | 760 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 35 |
-| Tested | 495 |
+| Tested | 496 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 8 | 30 |
+| Security and enterprise governance | M1 | 38 | 7 | 31 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5756,6 +5756,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/known-devices.e2e.test.ts
   - apps/web/src/components/known-devices.tsx
   - apps/web/e2e/known-devices-flow.test.mjs
+  - docs/SECURITY.md
+
+### SEC-010 — Encryption in transit
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: HTTPS_ONLY (API: follows APP_URL; web: on in production builds): the web app redirects http:// visitors to https:// (308, localhost exempt) and sends HSTS on HTTPS responses; the API refuses non-HTTPS requests (X-Forwarded-Proto across trusted hops) with 403 HTTPS_REQUIRED except /health, and refuses to start with HTTPS_ONLY and TRUST_PROXY_HOPS=0. MONGODB_REQUIRE_TLS refuses an unencrypted MONGODB_URL at startup. System health shows how visitors, the database, email, the AI model, payment gateways and webhooks are protected, and lists HTTP or an unencrypted database as problems in production. TLS ends at the customer's load balancer; no mTLS, no TLS between web and API inside the private network unless T2T_API_URL is https.
+- Evidence:
+  - apps/api/src/common/https-only.ts
+  - apps/api/src/config.ts
+  - apps/api/src/operations/system.service.ts
+  - apps/web/src/lib/transport.ts
+  - apps/web/src/proxy.ts
+  - apps/web/src/app/admin/system/page.tsx
+  - apps/api/test/encryption-in-transit.e2e.test.ts
+  - apps/web/e2e/encryption-in-transit-flow.test.mjs
   - docs/SECURITY.md
 
 ### SEC-012 — Secrets management

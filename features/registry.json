@@ -28161,9 +28161,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/common/https-only.ts",
+        "apps/api/src/config.ts",
+        "apps/api/src/operations/system.service.ts",
+        "apps/web/src/lib/transport.ts",
+        "apps/web/src/proxy.ts",
+        "apps/web/src/app/admin/system/page.tsx",
+        "apps/api/test/encryption-in-transit.e2e.test.ts",
+        "apps/web/e2e/encryption-in-transit-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "HTTPS_ONLY (API: follows APP_URL; web: on in production builds): the web app redirects http:// visitors to https:// (308, localhost exempt) and sends HSTS on HTTPS responses; the API refuses non-HTTPS requests (X-Forwarded-Proto across trusted hops) with 403 HTTPS_REQUIRED except /health, and refuses to start with HTTPS_ONLY and TRUST_PROXY_HOPS=0. MONGODB_REQUIRE_TLS refuses an unencrypted MONGODB_URL at startup. System health shows how visitors, the database, email, the AI model, payment gateways and webhooks are protected, and lists HTTP or an unencrypted database as problems in production. TLS ends at the customer's load balancer; no mTLS, no TLS between web and API inside the private network unless T2T_API_URL is https."
     },
     {
       "id": "SEC-011",

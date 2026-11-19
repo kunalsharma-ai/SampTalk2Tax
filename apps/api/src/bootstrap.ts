@@ -10,6 +10,7 @@ import { tenantContextMiddleware } from './common/tenant-context';
 import { MetricsService } from './operations/metrics.service';
 import { requestContext } from './operations/request-context';
 import { AppConfig } from './config';
+import { httpsOnly } from './common/https-only';
 
 /**
  * opts.copilotModel replaces the AI model built from the configuration (Anthropic when
@@ -25,7 +26,10 @@ export async function createApp(config: AppConfig, opts: { logger?: boolean; cop
   app.useBodyParser('raw', { limit: '6mb', type: ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'] });
   // Client IPs (rate limits, session list) come from X-Forwarded-For only across trusted hops.
   app.set('trust proxy', config.TRUST_PROXY_HOPS);
+  // Strict-Transport-Security (one year, subdomains) is among helmet's defaults.
   app.use(helmet());
+  // Encryption in transit (SEC-010): refuse requests that did not reach Talk2Tax over HTTPS.
+  if (config.HTTPS_ONLY) app.use(httpsOnly());
   // A request id for every request (X-Request-Id), and its timing for System health.
   app.use(requestContext(app.get(MetricsService)));
   // Each request gets its own tenant context for row-level security (filled in by the auth guard).
