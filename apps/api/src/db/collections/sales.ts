@@ -1,3 +1,4 @@
+import { storedSizeFits } from '../../integrations/secret-box';
 import { Prisma } from '@talk2tax/database';
 import { defineCollection, GuardViolation, type GuardContext } from '@talk2tax/document-db';
 import type { Binary } from '@talk2tax/document-db';
@@ -746,8 +747,10 @@ export interface AttachmentDoc {
   contentType: string;
   sizeBytes: number;
   sha256: string;
-  /** The file's bytes (BSON binary; files are at most 5 MB). */
+  /** The file's bytes (BSON binary; files are at most 5 MB), sealed when contentKeyId is set. */
   content: Binary | Buffer;
+  /** Encryption at rest (SEC-011): the id of the key that sealed content; absent or null for a file stored before. */
+  contentKeyId?: string | null;
   uploadedById: string;
   createdAt: Date;
   removedAt: Date | null;
@@ -761,7 +764,7 @@ const bytesOf = (c: Binary | Buffer | Uint8Array) => (Buffer.isBuffer(c) ? c : c
 /** Were attachments_*_chk. */
 function checkAttachment(a: AttachmentDoc) {
   const size = bytesOf(a.content).length;
-  if (a.sizeBytes <= 0 || a.sizeBytes > 5 * 1024 * 1024 || a.sizeBytes !== size) throw new GuardViolation('An attachment is 1 byte to 5 MB, and its size is its content');
+  if (a.sizeBytes <= 0 || a.sizeBytes > 5 * 1024 * 1024 || !storedSizeFits(size, a.sizeBytes, !!a.contentKeyId)) throw new GuardViolation('An attachment is 1 byte to 5 MB, and its size is its content');
   if ((a.removedAt === null) !== (a.removedReason === null)) throw new GuardViolation('A removed attachment says why');
 }
 
@@ -777,6 +780,7 @@ export const attachments = defineCollection<AttachmentDoc>({
       sha256: { bsonType: 'string', pattern: '^[0-9a-f]{64}$' },
       sizeBytes: { bsonType: ['int', 'long'] },
       content: { bsonType: 'binData' },
+      contentKeyId: { bsonType: ['string', 'null'] },
     },
   },
   indexes: [
@@ -791,7 +795,10 @@ export const attachments = defineCollection<AttachmentDoc>({
     afterUpdate(before, after) {
       const fixed = (['sha256', 'sizeBytes', 'fileName', 'contentType', 'entityType', 'entityId', 'orgId'] as const).some((k) => after[k] !== before[k]);
       const removedAgain = before.removedAt !== null && (+before.removedAt !== +(after.removedAt ?? 0) || after.removedReason !== before.removedReason);
-      if (fixed || !bytesOf(after.content).equals(bytesOf(before.content)) || removedAgain) throw new GuardViolation('An attachment cannot be changed');
+      // The bytes change only when they are sealed again (SEC-011): under a new key id, never back to plain.
+      const resealed = !!after.contentKeyId && after.contentKeyId !== (before.contentKeyId ?? null);
+      const bytesChanged = !bytesOf(after.content).equals(bytesOf(before.content)) || (after.contentKeyId ?? null) !== (before.contentKeyId ?? null);
+      if (fixed || (bytesChanged && !resealed) || removedAgain) throw new GuardViolation('An attachment cannot be changed');
       checkAttachment(after);
     },
     beforeDelete() {

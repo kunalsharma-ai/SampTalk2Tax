@@ -898,6 +898,8 @@ model Attachment {
   sizeBytes     Int              @map("size_bytes")
   sha256        String
   content       Bytes
+  /// Encryption at rest (SEC-011): the key that sealed content; null for a file stored before.
+  contentKeyId  String?          @map("content_key_id") @db.VarChar(12)
   uploadedById  String           @map("uploaded_by_id") @db.Uuid
   createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   removedAt     DateTime?        @map("removed_at") @db.Timestamptz(6)
@@ -5937,6 +5939,8 @@ model VendorPortalSubmission {
   sizeBytes       Int?      @map("size_bytes")
   sha256          String?   @db.Char(64)
   content         Bytes?
+  /// Encryption at rest (SEC-011): the key that sealed content; null for a file stored before.
+  contentKeyId    String?   @map("content_key_id") @db.VarChar(12)
   /// RECEIVED, RECORDED or REJECTED.
   status          String    @default("RECEIVED") @db.VarChar(8)
   documentId      String?   @map("document_id") @db.Uuid

@@ -1,3 +1,4 @@
+import { storedSizeFits } from '../../integrations/secret-box';
 import type { Binary } from '@talk2tax/document-db';
 import { defineCollection, GuardViolation } from '@talk2tax/document-db';
 
@@ -89,6 +90,8 @@ export interface TaxNoticeFileDoc {
   sizeBytes: number;
   sha256: string;
   content: Binary | Buffer;
+  /** Encryption at rest (SEC-011): the id of the key that sealed content; absent or null for a file stored before. */
+  contentKeyId?: string | null;
   uploadedById: string;
   createdAt: Date;
 }
@@ -104,15 +107,26 @@ export const taxNoticeFiles = defineCollection<TaxNoticeFileDoc>({
       sha256: { bsonType: 'string', pattern: '^[0-9a-f]{64}$' },
       sizeBytes: { bsonType: ['int', 'long'], minimum: 1, maximum: 5242880 },
       content: { bsonType: 'binData' },
+      contentKeyId: { bsonType: ['string', 'null'] },
     },
   },
   indexes: [{ key: { orgId: 1, noticeId: 1 }, name: 'org_notice' }],
   guards: {
-    afterUpdate() {
-      throw new GuardViolation('A notice file is kept as uploaded');
+    beforeInsert(f) {
+      if (!storedSizeFits(storedLength(f.content), f.sizeBytes, !!f.contentKeyId)) throw new GuardViolation('A notice file\'s size is its content');
+    },
+    // The only change: the bytes sealed again under a new key (SEC-011), never back to plain.
+    afterUpdate(before, after) {
+      const fixed = (['orgId', 'noticeId', 'fileName', 'contentType', 'sizeBytes', 'sha256', 'uploadedById'] as const).some((k) => after[k] !== before[k]) || +after.createdAt !== +before.createdAt;
+      const resealed = !!after.contentKeyId && after.contentKeyId !== (before.contentKeyId ?? null) && storedSizeFits(storedLength(after.content), after.sizeBytes, true);
+      if (fixed || !resealed) throw new GuardViolation('A notice file is kept as uploaded');
     },
     beforeDelete() {
       throw new GuardViolation('A notice file is kept as uploaded');
     },
   },
 });
+
+function storedLength(c: Binary | Buffer): number {
+  return Buffer.isBuffer(c) ? c.length : c instanceof Uint8Array ? (c as Uint8Array).byteLength : Buffer.from((c as Binary).buffer).length;
+}

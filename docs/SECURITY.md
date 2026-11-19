@@ -274,6 +274,28 @@ database only after the whole file has been checked. Every run is recorded (unch
 shown under Platform admin → Backups; overdue backups and drills show there and in System health.
 The recovery runbook, schedule and RPO/RTO are in [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md).
 
+## Encryption at rest (SEC-011)
+
+* **Uploaded files** (attachments on bills, receipts, statements and records; tax notice files;
+  invoices vendors send through the portal) are stored sealed with AES-256-GCM under the server's
+  encryption key (`INTEGRATIONS_ENCRYPTION_KEY`, or one derived from `JWT_SECRET`), with the key's
+  short id beside them. The SHA-256 taken at upload is checked on every read, so a file changed in
+  the database is refused (`FILE_DAMAGED`) rather than served. The stored bytes can only be sealed
+  again under a new key, never swapped or put back in plain.
+* **Secrets kept in the app** (integration keys, webhook and SSO secrets, two-step secrets) are
+  sealed the same way (SEC-013).
+* **Files stored before** this are read as they are, counted as not encrypted under Platform admin
+  → Encryption keys, and encrypted there with one button, which also re-encrypts files under a
+  previous key after a key rotation.
+* **Backups** are encrypted files of their own (SEC-021).
+* **The database's own storage** must be encrypted by the deployment: MongoDB Atlas encrypts
+  storage and backups by default; a self-run MongoDB needs an encrypted volume (LUKS, cloud disk
+  encryption) or MongoDB Enterprise's encrypted storage engine. Talk2Tax cannot see this from
+  inside and does not claim it.
+* Not covered: field-level encryption of ledger fields (amounts, names, PAN and bank details stay
+  readable by the database so they can be searched and reported on), customer-managed keys per
+  organisation, and the business logo and signature images.
+
 ## Encryption in transit (SEC-010)
 
 * **Visitors and apps.** TLS ends at the load balancer in front of the web app (or the API, if it

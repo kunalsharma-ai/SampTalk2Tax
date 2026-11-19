@@ -1,3 +1,4 @@
+import { FileVault } from '../files/file-vault';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
   D,
@@ -69,6 +70,7 @@ export class VendorPortalService {
     private readonly usage: UsageService,
     private readonly moved: MovedTables,
     private readonly scanner: FileScannerService,
+    private readonly vault: FileVault,
   ) {}
 
   // ------------------------------------------------------------------ staff: links
@@ -186,9 +188,9 @@ export class VendorPortalService {
   }
 
   async submissionFile(org: StaffOrg, id: string) {
-    const s = await this.prisma.vendorPortalSubmission.findFirst({ where: { id, orgId: org.id }, select: { fileName: true, contentType: true, sizeBytes: true, content: true, sha256: true } });
+    const s = await this.prisma.vendorPortalSubmission.findFirst({ where: { id, orgId: org.id }, select: { fileName: true, contentType: true, sizeBytes: true, content: true, contentKeyId: true, sha256: true } });
     if (!s?.content) throw new NotFoundException({ error: 'NOT_FOUND', message: 'No file was sent with this invoice' });
-    return { fileName: s.fileName!, contentType: s.contentType!, sizeBytes: s.sizeBytes!, sha256: s.sha256!, content: Buffer.from(s.content) };
+    return { fileName: s.fileName!, contentType: s.contentType!, sizeBytes: s.sizeBytes!, sha256: s.sha256!, content: this.vault.open(s.content, s.contentKeyId, s.sha256) };
   }
 
   /** Bills of the vendor that could record the sent invoice: not void, and not recording another one. */
@@ -240,7 +242,9 @@ export class VendorPortalService {
               contentType: s.contentType!,
               sizeBytes: s.sizeBytes!,
               sha256: s.sha256!,
+              // Still sealed as the vendor's file was (SEC-011).
               content: Buffer.from(s.content),
+              contentKeyId: s.contentKeyId ?? null,
               uploadedById: actor.id,
               createdAt: new Date(),
               removedAt: null,
@@ -454,7 +458,7 @@ export class VendorPortalService {
       // Counted against the plan's uploads for the month (refused past it).
       await this.usage.takeUpload(tx, org.id, content.length);
       const digest = sha(content);
-      await tx.vendorPortalSubmission.update({ where: { id: s.id }, data: { fileName: cleanFileName(fileName), contentType, sizeBytes: content.length, sha256: digest, content: new Uint8Array(content) } });
+      await tx.vendorPortalSubmission.update({ where: { id: s.id }, data: { fileName: cleanFileName(fileName), contentType, sizeBytes: content.length, sha256: digest, ...((v) => ({ content: new Uint8Array(v.content), contentKeyId: v.contentKeyId }))(this.vault.seal(content)) } });
       await this.audit.append(tx, { orgId: org.id, actorId: null, action: 'vendor_portal.file_sent', entityType: 'vendor_portal_submission', entityId: s.id, data: { contactId: contact.id, linkPrefix: link.prefix, invoiceNumber: s.invoiceNumber, sha256: digest, sizeBytes: content.length } });
     });
     return { id, file: cleanFileName(fileName) };

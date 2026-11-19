@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 758 |
+| Not started | 757 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 35 |
-| Tested | 498 |
+| Tested | 499 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 5 | 33 |
+| Security and enterprise governance | M1 | 38 | 4 | 34 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5772,6 +5772,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/system/page.tsx
   - apps/api/test/encryption-in-transit.e2e.test.ts
   - apps/web/e2e/encryption-in-transit-flow.test.mjs
+  - docs/SECURITY.md
+
+### SEC-011 — Encryption at rest
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Attachments, tax notice files and vendor portal invoices are stored sealed with AES-256-GCM under the server key (contentKeyId beside the bytes); the upload SHA-256 is checked on every read (FILE_DAMAGED otherwise); guards allow the bytes to change only when sealed again under a new key. Files stored before are read as they are and encrypted from Platform admin -> Encryption keys, which also re-encrypts files after a key rotation (audited). Integration secrets were already sealed (SEC-013); backups are encrypted (SEC-021). Database storage encryption is the deployment's (Atlas, encrypted volumes) and is documented, not detected. Not built: field-level encryption of ledger fields, per-organisation keys, logo and signature images.
+- Evidence:
+  - apps/api/src/files/file-vault.ts
+  - apps/api/src/integrations/secret-box.ts
+  - apps/api/src/security/key-rotation.service.ts
+  - apps/api/src/db/collections/sales.ts
+  - apps/api/src/db/collections/tax-notices.ts
+  - apps/web/src/app/admin/encryption-keys/page.tsx
+  - apps/api/test/file-encryption.e2e.test.ts
+  - apps/web/e2e/key-rotation-flow.test.mjs
   - docs/SECURITY.md
 
 ### SEC-012 — Secrets management

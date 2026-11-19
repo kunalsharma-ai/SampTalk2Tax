@@ -1,3 +1,4 @@
+import { FileVault } from '../files/file-vault';
 import { createHash, randomUUID } from 'node:crypto';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { minorUnits, TAX_AUTHORITY_LABEL, taxNoticeIssues, taxNoticeUrgency, D } from '@talk2tax/accounting-engine';
@@ -40,6 +41,7 @@ export class TaxNoticesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly scanner: FileScannerService,
+    private readonly vault: FileVault,
   ) {}
 
   private invalid(issues: string[]) {
@@ -201,7 +203,7 @@ export class TaxNoticesService {
     const name = cleanFileName(fileName);
     await this.scanner.check({ orgId: org.id, source: 'TAX_NOTICE', fileName: name, contentType, content, actorId });
     const sha256 = createHash('sha256').update(content).digest('hex');
-    const f = await this.store.collection(taxNoticeFiles).insertOne({ orgId: org.id, noticeId: id, fileName: name, contentType, sizeBytes: content.length, sha256, content, uploadedById: actorId, createdAt: new Date() });
+    const f = await this.store.collection(taxNoticeFiles).insertOne({ orgId: org.id, noticeId: id, fileName: name, contentType, sizeBytes: content.length, sha256, ...this.vault.seal(content), uploadedById: actorId, createdAt: new Date() });
     await this.push(id, this.event('FILE', actorId, name));
     await this.record(org.id, actorId, 'tax_notice.file_added', id, { fileId: f.id, fileName: name, sha256 });
     return this.get(org, id);
@@ -210,8 +212,7 @@ export class TaxNoticesService {
   async file(id: string, fileId: string) {
     const f = await this.store.collection(taxNoticeFiles).findOne({ id: fileId, noticeId: id });
     if (!f) throw new NotFoundException({ error: 'NOT_FOUND', message: 'File not found' });
-    const c = f.content as { buffer?: ArrayBufferLike } | Buffer;
-    return { fileName: f.fileName, contentType: f.contentType, sizeBytes: f.sizeBytes, sha256: f.sha256, content: Buffer.isBuffer(c) ? c : Buffer.from((c as { buffer: ArrayBuffer }).buffer) };
+    return { fileName: f.fileName, contentType: f.contentType, sizeBytes: f.sizeBytes, sha256: f.sha256, content: this.vault.open(f.content, f.contentKeyId, f.sha256) };
   }
 
   private async push(id: string, event: ReturnType<TaxNoticesService['event']>, set: Partial<TaxNoticeDoc> = {}) {
