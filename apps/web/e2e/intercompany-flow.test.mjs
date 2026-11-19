@@ -98,7 +98,7 @@ test('an owner posts, eliminates and reverses intercompany transactions', async 
   assert.match(await bal.innerText(), /From intercompany transactions[\s\S]*Agrees[\s\S]*₹30,000\.00[\s\S]*-₹30,000\.00/);
   assert.match(await el.getByRole('listitem').filter({ hasText: 'Intercompany charges: IC Holding to IC Subsidiary' }).innerText(), /Agrees/);
   const ws = page.getByRole('table', { name: 'Consolidation worksheet' });
-  assert.match(await ws.getByRole('row').filter({ hasText: 'Due from group companies' }).innerText(), /^1250 Due from group companies\s+₹30,000\.00\s+—\s+-₹30,000\.00\s+—$/);
+  assert.match(await ws.getByRole('row').filter({ hasText: 'Due from group companies' }).innerText(), /^1250 Due from group companies\s+₹30,000\.00\s+—\s+-₹30,000\.00\s+—\s+—$/);
 
   // The posted entry explains where it came from.
   await page.getByRole('tab', { name: 'Intercompany' }).click();
