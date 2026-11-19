@@ -77,6 +77,68 @@ export interface LedgerElimination {
   right: { entityId: string; code: string; netDebit: string };
 }
 
+/**
+ * A consolidation adjustment (GL-034): a balanced entry made in the consolidation only, in the
+ * presentation currency, never in any company's books (goodwill, fair value at acquisition,
+ * unrealised profit in stock, reclassifications). Each line is a signed net debit; a revenue or
+ * expense line dated before the period is added to earnings brought forward instead.
+ */
+export interface ConsolidationAdjustment {
+  id: string;
+  name: string;
+  lines: { code: string; name: string; type: AccountType; netDebit: string; broughtForward?: boolean }[];
+}
+
+/** An adjustment as recorded: dated lines with a debit or a credit each. */
+export interface RecordedAdjustment {
+  id: string;
+  name: string;
+  /** YYYY-MM-DD. */
+  date: string;
+  lines: { code: string; name: string; type: AccountType; debit: string; credit: string }[];
+}
+
+const ADJ_CODE = /^[A-Za-z0-9][A-Za-z0-9.-]{0,19}$/;
+const ACCOUNT_TYPES: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
+
+/** Problems with an adjustment's lines before it is recorded: two or more, each a debit or a credit, balanced. */
+export function adjustmentProblems(lines: RecordedAdjustment['lines'], currency: string): string[] {
+  const out: string[] = [];
+  const scale = minorUnits(currency);
+  const amount = new RegExp(scale ? `^\\d{1,15}(\\.\\d{1,${scale}})?$` : "^\\d{1,15}$");
+  if (lines.length < 2) out.push('An adjustment needs at least two lines');
+  let debit = new D(0);
+  let credit = new D(0);
+  lines.forEach((l, i) => {
+    const n = `Line ${i + 1}`;
+    if (!ADJ_CODE.test(l.code ?? '')) out.push(`${n}: an account code is 1 to 20 letters, digits, dots or dashes`);
+    if (!l.name?.trim() || l.name.length > 120) out.push(`${n}: name the account`);
+    if (!ACCOUNT_TYPES.includes(l.type)) out.push(`${n}: choose the account type`);
+    const d = l.debit?.trim() || '0';
+    const c = l.credit?.trim() || '0';
+    if (!amount.test(d) || !amount.test(c)) {
+      out.push(`${n}: amounts are numbers with at most ${scale} decimals`);
+      return;
+    }
+    if (dec(d).isZero() === dec(c).isZero()) out.push(`${n}: enter a debit or a credit, not both`);
+    debit = debit.plus(d);
+    credit = credit.plus(c);
+  });
+  if (!out.length && !debit.equals(credit)) out.push(`Debits (${debit.toFixed(scale)}) and credits (${credit.toFixed(scale)}) must be equal`);
+  return out;
+}
+
+/** The adjustments that apply to a period: dated on or before its end; revenue and expense before its start go to earnings brought forward. */
+export function adjustmentsForPeriod(recorded: readonly RecordedAdjustment[], from: string, to: string): ConsolidationAdjustment[] {
+  return recorded
+    .filter((a) => a.date <= to)
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      lines: a.lines.map((l) => ({ code: l.code, name: l.name, type: l.type, netDebit: dec(l.debit || '0').minus(l.credit || '0').toFixed(), broughtForward: !isBalanceSheetType(l.type) && a.date < from })),
+    }));
+}
+
 export type WorksheetRowKind = 'ACCOUNT' | 'EARNINGS_BROUGHT_FORWARD' | 'TRANSLATION_RESERVE' | 'INTERCOMPANY_DIFFERENCE';
 
 export interface WorksheetRow {
@@ -88,6 +150,8 @@ export interface WorksheetRow {
   amounts: string[];
   /** Signed net debit removed by eliminations (and the differences they leave). */
   elimination: string;
+  /** Signed net debit added by consolidation adjustments. */
+  adjustment: string;
   consolidated: string;
 }
 
@@ -130,7 +194,9 @@ export interface ConsolidationResult {
   }[];
   rows: WorksheetRow[];
   eliminations: EliminationResult[];
-  /** Per entity, plus eliminations and consolidated: every column sums to zero. */
+  /** The consolidation adjustments applied, with each line's effect. */
+  adjustments: { id: string; name: string; lines: { code: string; name: string; netDebit: string; broughtForward: boolean }[] }[];
+  /** Per entity, plus eliminations, adjustments and consolidated: every column sums to zero. */
   balanced: boolean;
   incomeStatement: {
     revenue: ConsolidatedLine[];
@@ -193,7 +259,7 @@ const SYNTHETIC: Record<Exclude<WorksheetRowKind, 'ACCOUNT'>, { code: string; na
   INTERCOMPANY_DIFFERENCE: { code: '', name: 'Intercompany differences to resolve' },
 };
 
-export function consolidate(input: { currency: string; entities: ConsolidationEntity[]; rules: EliminationRule[]; ledger?: LedgerElimination[] }): ConsolidationResult {
+export function consolidate(input: { currency: string; entities: ConsolidationEntity[]; rules: EliminationRule[]; ledger?: LedgerElimination[]; adjustments?: ConsolidationAdjustment[] }): ConsolidationResult {
   const { currency, entities, rules } = input;
   const ledger = input.ledger ?? [];
   const scale = minorUnits(currency);
@@ -211,15 +277,18 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
     }
     if (e.ownershipPercent != null) issues.push(...checkOwnershipPercent(e.ownershipPercent).map((m) => `${e.name}: ${m}`));
   }
+  for (const a of input.adjustments ?? []) {
+    if (!sum(a.lines.map((l) => dec(l.netDebit))).isZero()) issues.push(`Adjustment ${a.name} does not balance`);
+  }
   if (issues.length) throw new ConsolidationError('The group cannot be consolidated yet', issues);
 
   const n = entities.length;
   // key → row; key is the account code, or the synthetic kind.
-  const rows = new Map<string, { kind: WorksheetRowKind; code: string; name: string; type: AccountType; amounts: Dec[]; elimination: Dec }>();
+  const rows = new Map<string, { kind: WorksheetRowKind; code: string; name: string; type: AccountType; amounts: Dec[]; elimination: Dec; adjustment: Dec }>();
   const row = (key: string, init: () => { kind: WorksheetRowKind; code: string; name: string; type: AccountType }) => {
     let r = rows.get(key);
     if (!r) {
-      r = { ...init(), amounts: Array.from({ length: n }, () => new D(0)), elimination: new D(0) };
+      r = { ...init(), amounts: Array.from({ length: n }, () => new D(0)), elimination: new D(0), adjustment: new D(0) };
       rows.set(key, r);
     }
     return r;
@@ -356,17 +425,33 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
     });
   }
 
+  // Consolidation adjustments, after the eliminations; an account the companies do not have is added.
+  const adjustments: ConsolidationResult['adjustments'] = [];
+  const typeIssues: string[] = [];
+  for (const a of input.adjustments ?? []) {
+    const lines: ConsolidationResult['adjustments'][number]['lines'] = [];
+    for (const l of a.lines) {
+      const amount = round(dec(l.netDebit));
+      const r = l.broughtForward ? synthetic('EARNINGS_BROUGHT_FORWARD') : row(l.code, () => ({ kind: 'ACCOUNT', code: l.code, name: l.name, type: l.type }));
+      if (!l.broughtForward && r.type !== l.type) typeIssues.push(`Adjustment ${a.name}: account ${l.code} is ${r.type.toLowerCase()} in the companies' books, not ${l.type.toLowerCase()}`);
+      r.adjustment = r.adjustment.plus(amount);
+      lines.push({ code: l.broughtForward ? '' : l.code, name: l.broughtForward ? `${l.name} (brought forward)` : r.name, netDebit: fmt(amount), broughtForward: !!l.broughtForward });
+    }
+    adjustments.push({ id: a.id, name: a.name, lines });
+  }
+  if (typeIssues.length) throw new ConsolidationError('An adjustment does not fit the accounts', typeIssues);
+
   const ORDER: Record<WorksheetRowKind, number> = { ACCOUNT: 0, EARNINGS_BROUGHT_FORWARD: 1, TRANSLATION_RESERVE: 2, INTERCOMPANY_DIFFERENCE: 3 };
   const typeOrder: Record<AccountType, number> = { ASSET: 0, LIABILITY: 1, EQUITY: 2, REVENUE: 3, EXPENSE: 4 };
   const sorted = [...rows.values()].sort((a, b) =>
     a.kind === 'ACCOUNT' && b.kind === 'ACCOUNT' ? a.code.localeCompare(b.code) : ORDER[a.kind] - ORDER[b.kind] || typeOrder[a.type] - typeOrder[b.type],
   );
   const outRows: WorksheetRow[] = sorted.map((r) => {
-    const total = sum(r.amounts).plus(r.elimination);
-    return { kind: r.kind, code: r.code, name: r.name, type: r.type, amounts: r.amounts.map(fmt), elimination: fmt(r.elimination), consolidated: fmt(total) };
+    const total = sum(r.amounts).plus(r.elimination).plus(r.adjustment);
+    return { kind: r.kind, code: r.code, name: r.name, type: r.type, amounts: r.amounts.map(fmt), elimination: fmt(r.elimination), adjustment: fmt(r.adjustment), consolidated: fmt(total) };
   });
   const columnsZero =
-    entities.every((_, i) => sum(sorted.map((r) => r.amounts[i]!)).isZero()) && sum(sorted.map((r) => r.elimination)).isZero();
+    entities.every((_, i) => sum(sorted.map((r) => r.amounts[i]!)).isZero()) && sum(sorted.map((r) => r.elimination)).isZero() && sum(sorted.map((r) => r.adjustment)).isZero();
 
   // Statements from the consolidated column.
   const line = (r: WorksheetRow, sign: 1 | -1): ConsolidatedLine => ({ code: r.code, name: r.name, kind: r.kind, amount: fmt(dec(r.consolidated).times(sign)) });
@@ -391,6 +476,7 @@ export function consolidate(input: { currency: string; entities: ConsolidationEn
     entities: outEntities,
     rows: outRows,
     eliminations,
+    adjustments,
     balanced: columnsZero,
     incomeStatement: {
       revenue,

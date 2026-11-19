@@ -159,8 +159,8 @@ describe('consolidation groups', () => {
   it('exports the worksheet and statements and audits each export', async () => {
     const csv = await ctx.http().get(`${G}/${groupId}/export/worksheet?from=${FROM}&to=${T}&format=csv`).set(owner.auth).expect(200);
     expect(csv.headers['content-disposition']).toContain(`holding-group-consolidation-worksheet-${T}.csv`);
-    expect(csv.text).toContain('Code,Account,Holding Ltd,Sub Pvt Ltd,US Inc,Eliminations,Consolidated');
-    expect(csv.text).toContain('1120,Bank,300000.00,200000.00,935000.00,0.00,1435000.00'.replace('Bank', csv.text.match(/\r\n1120,([^,]+),/)![1]!));
+    expect(csv.text).toContain('Code,Account,Holding Ltd,Sub Pvt Ltd,US Inc,Eliminations,Adjustments,Consolidated');
+    expect(csv.text).toContain('1120,Bank,300000.00,200000.00,935000.00,0.00,0.00,1435000.00'.replace('Bank', csv.text.match(/\r\n1120,([^,]+),/)![1]!));
     expect(csv.text).toContain('US Inc: USD translated at closing 85, average 82, historical 80.');
     expect(csv.text).toContain('"Elimination ""Current accounts"" leaves a difference of -5000.00."');
     const pdf = await ctx.http().get(`${G}/${groupId}/export/balance-sheet?from=${FROM}&to=${T}&format=pdf`).set(owner.auth).expect(200);

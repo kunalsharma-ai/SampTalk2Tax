@@ -6847,6 +6847,20 @@
         "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
       "notes": "Payroll, foreign currencies and group consolidation can be added to a plan that lacks them, priced per currency and billing by platform administrators. Added at checkout (an upgrade for the days left mid-period), removed at the renewal, carried on renewal invoices, listed on the tax invoice, and counted for module access. The AI assistant is not an add-on (its use is set by a plan's AI requests)."
+    },
+    "GL-034": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/consolidation.ts (adjustmentProblems, adjustmentsForPeriod, consolidate adjustments)",
+        "apps/api/src/db/migrations/20270113100000_consolidation_adjustments.ts",
+        "apps/api/src/consolidation/consolidation.service.ts",
+        "apps/web/src/components/consolidation/adjustments.tsx",
+        "packages/accounting-engine/test/consolidation-adjustments.test.ts",
+        "apps/api/test/consolidation-adjustments.e2e.test.ts",
+        "apps/web/e2e/consolidation-flow.test.mjs",
+        "docs/CONSOLIDATION.md"
+      ],
+      "notes": "Consolidation adjustments in the group's currency, in the consolidation only: goodwill, fair value or unrealised profit entered by hand, shown in the worksheet's Adjustments column, voided once with a reason."
     }
   }
 }

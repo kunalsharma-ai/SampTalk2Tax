@@ -106,9 +106,11 @@ Method (`packages/accounting-engine/src/consolidation.ts`, `consolidate`):
 
 The page shows four tabs:
 
-* **Worksheet:** one column per company, plus eliminations and consolidated.
+* **Worksheet:** one column per company, plus eliminations, adjustments and consolidated.
 * **Profit and loss.**
 * **Balance sheet.**
+* **Intercompany.**
+* **Adjustments** (see below).
 * **Companies, rates and rules.**
 
 It also shows the status of each elimination, a translation summary and, for partly owned
@@ -118,6 +120,30 @@ partly owned company.
 `GET …/export/worksheet|income-statement|balance-sheet?from&to&format=csv|xlsx|pdf` downloads
 the file with the report-export writers (see [`REPORT_EXPORTS.md`](REPORT_EXPORTS.md)). Each
 download is audited as `report.exported` with the file's SHA-256.
+
+## Consolidation adjustments (GL-034)
+
+A consolidation adjustment is a balanced entry made in the consolidation only: goodwill on
+acquisition, fair value changes, unrealised profit in stock, or any other entry the group needs
+that no company should post in its own books.
+
+* Each line names an account by code, name and type, with a debit or a credit in the group's
+  currency. A company's account code adds to that account; a new code (goodwill, say) adds an
+  account to the consolidation. A line whose type differs from the companies' account of that
+  code is refused when the consolidation runs, and the adjustment can be voided.
+* An adjustment applies to every consolidation that ends on or after its date. Balance sheet
+  lines carry forward as they are; revenue and expense lines dated before the period start go to
+  earnings brought forward, so later periods stay balanced.
+* The worksheet has an **Adjustments** column, and the statements include its effect. Exports
+  carry the column and a note per adjustment.
+* Adjustments are numbered `CA-0001` per group. They are never edited: one is voided once, with a
+  reason, and a group with adjustments cannot be deleted. Recording and voiding need
+  `org.manage` in the parent; reading needs `reports.read`.
+* API: `GET …/groups/:id/adjustments`, `POST …/groups/:id/adjustments`
+  (`{ date, description, lines: [{ code, name, type, debit, credit }] }`) and
+  `POST …/groups/:id/adjustments/:adjustmentId/void` (`{ reason }`). Audited as
+  `consolidation_adjustment.posted` and `.voided`.
+* Data: collection `consolidation_adjustments`; the guard allows only the one void.
 
 ## Data and security
 
@@ -140,14 +166,19 @@ download is audited as `report.exported` with the file's SHA-256.
   admin only, outsiders 404), rates for a USD member, rules checked against each member,
   translated and eliminated figures, a mismatch, report access in every member, exports with the
   audit, removing members and deleting the group.
+* **Adjustments:** engine `packages/accounting-engine/test/consolidation-adjustments.test.ts` (4)
+  and API `apps/api/test/consolidation-adjustments.e2e.test.ts` (5): checks before recording,
+  goodwill replacing the investment and capital, earnings brought forward, a type mismatch,
+  voiding, the audit, the guard and the export column.
 * **Browser** (`apps/web/e2e/consolidation-flow.test.mjs`): sets up a group and a rule on screen,
-  checks the worksheet, statements and a difference, and exports the worksheet.
+  checks the worksheet, statements and a difference, exports the worksheet, and records and
+  voids a goodwill adjustment.
 
 ## Limitations
 
 * **Full consolidation with a simple non-controlling interest.** The outside share is taken of the
-  subsidiary's reported net assets. Goodwill, fair value adjustments at acquisition, changes in
-  ownership during the period, indirect holdings (a subsidiary of a subsidiary) and associates or
+  subsidiary's reported net assets. Goodwill and fair value adjustments are not calculated: enter
+  them as consolidation adjustments. Changes in ownership during the period, indirect holdings (a subsidiary of a subsidiary) and associates or
   equity accounting are not handled. For a partly owned subsidiary, an elimination rule pairing
   the parent's investment with the subsidiary's full share capital leaves a difference (the
   outside shareholders' part, plus any goodwill), shown as an intercompany difference.

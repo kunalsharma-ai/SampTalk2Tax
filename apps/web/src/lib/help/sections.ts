@@ -262,6 +262,8 @@ export const SECTION_HELP: Record<string, Help> = {
   'Non-controlling interests': { what: 'The share of subsidiaries\' profit and equity that belongs to outside owners.', how: 'It follows each company\'s ownership percentage.' },
   Translation: { what: 'Converting foreign subsidiaries into the group currency.', how: 'Balance sheets use the closing rate and profit and loss the average rate; the difference goes to a translation reserve.' },
   'Translation rates': { what: 'The closing and average rates used for each currency.', how: 'Add any rate that is missing before running the consolidation.' },
+  'Consolidation adjustments': { what: 'Entries made in the consolidation only, such as goodwill on acquisition, fair value changes or unrealised profit in stock. No company\'s books change.', how: 'Each adjustment shows in the worksheet\'s Adjustments column from its date. Void one with a reason if it was wrong; it cannot be edited.' },
+  'Record a consolidation adjustment': { what: 'A balanced entry in the group\'s currency: each line an account code, name and type, with a debit or a credit.', how: 'Use the companies\' account codes, or a new code (goodwill, say) to add an account to the consolidation. Revenue and expenses dated before the period go to earnings brought forward.' },
   'Intercompany transactions': { what: 'Charges and settlements between group companies, recorded on both sides at once.', how: 'Record a charge once; both companies\' books get their entry.' },
 
   // ---------------------------------------------------------------- tax

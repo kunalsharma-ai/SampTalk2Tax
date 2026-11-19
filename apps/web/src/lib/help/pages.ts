@@ -585,7 +585,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   consolidation: {
     what: 'Combined accounts for a group of companies, with eliminations and non-controlling interests.',
-    how: 'Create a group, add companies and ownership, set rates and elimination rules, and run the consolidation for a date.',
+    how: 'Create a group, add companies and ownership, set rates and elimination rules, record any consolidation adjustments such as goodwill, and run the consolidation for a date.',
     where: 'Reports. Reads each company\'s books; posts nothing to them.',
   },
   // ---------------------------------------------------------------- tax

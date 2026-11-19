@@ -1719,6 +1719,12 @@
     "def": "CHECK ((((billing_interval)::text = ANY ((ARRAY['MONTHLY'::character varying, 'ANNUAL'::character varying])::text[])) AND ((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'ENDED'::character varying])::text[])) AND (price > (0)::numeric) AND (ends_on > starts_on) AND (((status)::text = 'ENDED'::text) = (ended_at IS NOT NULL))))",
     "name": "enterprise_contracts_chk"
    }
+  ],
+  "consolidation_adjustments": [
+   {
+    "def": "CHECK ((((status)::text = ANY ((ARRAY['POSTED'::character varying, 'VOID'::character varying])::text[])) AND (total > (0)::numeric) AND (number > 0) AND ((((status)::text = 'VOID'::text) = (voided_at IS NOT NULL)) AND (((status)::text <> 'VOID'::text) OR (void_reason IS NOT NULL)))))",
+    "name": "consolidation_adjustments_chk"
+   }
   ]
  },
  "foreignKeys": [
@@ -10059,6 +10065,22 @@
    ],
    "references": "enterprise_contracts",
    "table": "subscriptions"
+  },
+  {
+   "columns": [
+    "group_id",
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "consolidation_adjustments_group_fk",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id",
+    "org_id"
+   ],
+   "references": "consolidation_groups",
+   "table": "consolidation_adjustments"
   }
  ],
  "uniques": [

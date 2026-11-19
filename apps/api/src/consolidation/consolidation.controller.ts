@@ -36,6 +36,9 @@ const ReverseBody = z.object({ date: isoDate }).strict();
 const RateBody = z.object({ memberOrgId: z.uuid(), periodEnd: isoDate, closing: rate, average: rate, historical: rate }).strict();
 const RuleBody = z.object({ name, left: side, right: side, isActive: z.boolean().optional() }).strict();
 const PeriodQuery = z.object({ from: isoDate, to: isoDate }).strict();
+const AdjustmentLine = z.object({ code: z.string().max(20), name: z.string().max(120), type: z.enum(['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE']), debit: z.string().max(20).default(''), credit: z.string().max(20).default('') }).strict();
+const AdjustmentBody = z.object({ date: z.string().max(10), description: z.string().max(200), lines: z.array(AdjustmentLine).max(50) }).strict();
+const VoidBody = z.object({ reason: z.string().max(300) }).strict();
 const ExportQuery = PeriodQuery.extend({ format: z.string().optional() }).strict();
 
 /**
@@ -185,6 +188,28 @@ export class ConsolidationController {
     @Body(new ZodPipe(ReverseBody)) body: z.infer<typeof ReverseBody>,
   ) {
     return this.ic.reverse(org, user, id, txnId, body);
+  }
+
+  /** Consolidation adjustments (GL-034): entries in the consolidation only. */
+  @Get(':groupId/adjustments')
+  @RequirePermission('reports.read')
+  adjustments(@CurrentOrg() org: OrgContext, @Param('groupId', ParseUUIDPipe) id: string) {
+    return this.svc.adjustments(org, id);
+  }
+
+  @Post(':groupId/adjustments')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(AdjustmentBody) })
+  addAdjustment(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Body(new ZodPipe(AdjustmentBody)) body: z.infer<typeof AdjustmentBody>) {
+    return this.svc.addAdjustment(org, user, id, body);
+  }
+
+  @Post(':groupId/adjustments/:adjustmentId/void')
+  @HttpCode(200)
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(VoidBody) })
+  voidAdjustment(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('groupId', ParseUUIDPipe) id: string, @Param('adjustmentId', ParseUUIDPipe) adjustmentId: string, @Body(new ZodPipe(VoidBody)) body: z.infer<typeof VoidBody>) {
+    return this.svc.voidAdjustment(org, user, id, adjustmentId, body.reason);
   }
 
   /** The consolidation worksheet with consolidated profit and loss and balance sheet. */

@@ -101,7 +101,7 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-031 | 5.1 General Ledger | capability | Custom financial tags | Tested |
 | GL-032 | 5.1 General Ledger | capability | Account reconciliation | Tested |
 | GL-033 | 5.1 General Ledger | capability | Intercompany accounting | Tested |
-| GL-034 | 5.1 General Ledger | capability | Consolidation adjustments | Not started |
+| GL-034 | 5.1 General Ledger | capability | Consolidation adjustments | Tested |
 | GL-035 | 5.1 General Ledger | capability | Foreign currency revaluation | Tested |
 | GL-036 | 5.1 General Ledger | capability | Automated journal suggestions | Not started |
 | GL-037 | Critical accounting invariants | rule | Every posted journal must balance | Tested |
