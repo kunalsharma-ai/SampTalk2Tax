@@ -55,6 +55,7 @@ export const MIRRORED_MODEL_NAMES = [
   'BankAiRun',
   'BankAiSuggestion',
   'PeriodClose',
+  'CloseSettings',
   'CloseCertification',
   'CloseAiReview',
   'CloseAdjustment',

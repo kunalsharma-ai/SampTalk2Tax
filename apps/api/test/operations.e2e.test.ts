@@ -91,7 +91,7 @@ describe('system health', () => {
     expect(h.database.latencyMs).toBeGreaterThanOrEqual(0);
     // The newest migration in the repository is the last one applied.
     expect(h.database.lastMigration.name).toBe(MIGRATIONS.at(-1)!.id);
-    expect(h.runners.map((r: { name: string }) => r.name).sort()).toEqual(['Alert checks', 'CRM webhooks', 'Contract billing', 'Recurring bills', 'Recurring journals', 'Renewals and reminders', 'Workflow runner']);
+    expect(h.runners.map((r: { name: string }) => r.name).sort()).toEqual(['Alert checks', 'CRM webhooks', 'Contract billing', 'Month-end close start', 'Recurring bills', 'Recurring journals', 'Renewals and reminders', 'Workflow runner']);
     expect(h.runners.find((r: { name: string }) => r.name === 'Workflow runner').state).toBe('OFF');
     expect(h.requests.totals.requests).toBeGreaterThan(5);
     expect(h.requests.minutes).toHaveLength(15);

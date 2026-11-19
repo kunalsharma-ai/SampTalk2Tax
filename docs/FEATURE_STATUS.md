@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 780 |
 | Designed | 0 |
-| Implementing | 42 |
+| Implementing | 41 |
 | Implemented | 34 |
-| Tested | 473 |
+| Tested | 474 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3622,8 +3622,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### WFLOW-021 — Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked
 
 - Module: Autonomous financial workflows
-- Status: **Implementing**
-- Notes: Built: a checklist worked out from the books (draft journals, unmatched bank lines, trial balance, draft documents, reconciliation, approvals, expense claims, payroll, depreciation, negative cash, AI items waiting, earlier months), tasks for accountants for each open check, an AI review that proposes adjusting entries, approval by a person, closing that locks the period with a certification of the figures, reopening with a reason, and a report pack for a closed month (a ZIP with the certification, the trial balance, income statement, balance sheet and ageing as PDFs, and a README of SHA-256 checksums, recorded in the audit trail). Not built: starting the close automatically as a period ends.
+- Status: **Tested**
+- Notes: Built: a checklist worked out from the books (draft journals, unmatched bank lines, trial balance, draft documents, reconciliation, approvals, expense claims, payroll, depreciation, negative cash, AI items waiting, earlier months), tasks for accountants for each open check, an AI review that proposes adjusting entries, approval by a person, closing that locks the period with a certification of the figures, reopening with a reason, and a report pack for a closed month (a ZIP with the certification, the trial balance, income statement, balance sheet and ageing as PDFs, and a README of SHA-256 checksums, recorded in the audit trail). The close can start on its own the day after a month ends (an organisation setting; the close runner starts the most recently ended month once, in the name of whoever turned it on, with tasks for open checks if asked). AI reviews are still started by a person.
 - Evidence:
   - packages/accounting-engine/src/close.ts
   - packages/accounting-engine/test/close.test.ts
@@ -3635,6 +3635,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/close/close-pack.service.ts
   - apps/api/test/close-pack.e2e.test.ts
   - apps/web/e2e/close-pack-flow.test.mjs
+  - apps/api/src/close/close-runner.service.ts
+  - apps/api/test/close-auto-start.e2e.test.ts
+  - apps/web/e2e/close-auto-start-flow.test.mjs
 
 ### ENT-001 — Multi-company accounting
 

@@ -657,7 +657,7 @@ Part 18 · M5 · priority P2 · depends on: SEC
 | WFLOW-018 |  | capability | Execution logs | Tested |
 | WFLOW-019 | Invoice Collection | rule | Invoice becomes overdue → AI assesses risk → Drafts reminder → Checks communication policy → Sends approved reminder → Monitors response → Updates collections dashboard | Implementing |
 | WFLOW-020 | Vendor Invoice Processing | rule | Invoice received → Document extracted → Supplier validated → Duplicate check → PO matching → Tax validation → Approval → Ledger posting → Payment scheduling | Not started |
-| WFLOW-021 | Financial Close | rule | Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked | Implementing |
+| WFLOW-021 | Financial Close | rule | Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked | Tested |
 | WFLOW-022 | Tax Compliance | rule | Filing deadline approaches → Required records collected → Reconciliation performed → Exceptions highlighted → Tax professional reviews → Filing package prepared → Authorized submission → Confirmation stored | Not started |
 
 ## Enterprise financial management

@@ -219,6 +219,7 @@ import { PurchaseOrdersService } from './purchase-orders/purchase-orders.service
 import { DimensionsController } from './dimensions/dimensions.controller';
 import { DimensionsService } from './dimensions/dimensions.service';
 import { ClosePackService } from './close/close-pack.service';
+import { CloseRunnerService } from './close/close-runner.service';
 import { CloseService } from './close/close.service';
 import { CollectionsController } from './collections/collections.controller';
 import { CollectionsService } from './collections/collections.service';
@@ -443,6 +444,7 @@ export class AppModule {
         BankAiService,
         CloseService,
         ClosePackService,
+        CloseRunnerService,
         AiControlService,
         FixedAssetsService,
         DeferralsService,

@@ -2334,7 +2334,7 @@
       "notes": "Month-end closing agent: the AI model (Anthropic Claude) is shown the close checklist and how every account moved in the month against the three months before, points out what looks unusual, and proposes adjusting entries (accruals that reverse next month, prepayment releases, reclasses) using account codes only. Every entry is checked (allowed accounts, balanced, amounts, somewhere open to reverse) and posted only when a person approves it, through the normal journal code. Tested with a scripted model and a local Messages API stand-in; waiting on ANTHROPIC_API_KEY for a live check."
     },
     "WFLOW-021": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/close.ts",
         "packages/accounting-engine/test/close.test.ts",
@@ -2345,9 +2345,12 @@
         "docs/MONTH_END_CLOSE.md",
         "apps/api/src/close/close-pack.service.ts",
         "apps/api/test/close-pack.e2e.test.ts",
-        "apps/web/e2e/close-pack-flow.test.mjs"
+        "apps/web/e2e/close-pack-flow.test.mjs",
+        "apps/api/src/close/close-runner.service.ts",
+        "apps/api/test/close-auto-start.e2e.test.ts",
+        "apps/web/e2e/close-auto-start-flow.test.mjs"
       ],
-      "notes": "Built: a checklist worked out from the books (draft journals, unmatched bank lines, trial balance, draft documents, reconciliation, approvals, expense claims, payroll, depreciation, negative cash, AI items waiting, earlier months), tasks for accountants for each open check, an AI review that proposes adjusting entries, approval by a person, closing that locks the period with a certification of the figures, reopening with a reason, and a report pack for a closed month (a ZIP with the certification, the trial balance, income statement, balance sheet and ageing as PDFs, and a README of SHA-256 checksums, recorded in the audit trail). Not built: starting the close automatically as a period ends."
+      "notes": "Built: a checklist worked out from the books (draft journals, unmatched bank lines, trial balance, draft documents, reconciliation, approvals, expense claims, payroll, depreciation, negative cash, AI items waiting, earlier months), tasks for accountants for each open check, an AI review that proposes adjusting entries, approval by a person, closing that locks the period with a certification of the figures, reopening with a reason, and a report pack for a closed month (a ZIP with the certification, the trial balance, income statement, balance sheet and ageing as PDFs, and a README of SHA-256 checksums, recorded in the audit trail). The close can start on its own the day after a month ends (an organisation setting; the close runner starts the most recently ended month once, in the name of whoever turned it on, with tasks for open checks if asked). AI reviews are still started by a person."
     },
     "AUDIT-015": {
       "status": "Tested",

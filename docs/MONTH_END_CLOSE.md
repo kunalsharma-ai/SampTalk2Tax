@@ -146,6 +146,23 @@ Migration `20261102230000_month_end_close` adds these guarantees:
   * an entry is never deleted.
 * **Row-level security** applies on all four tables.
 
+## Starting automatically
+
+The Month-end close page has a **Start automatically** card. Someone who manages the close
+(close.manage) can turn it on, and choose whether tasks are made for open checks. The close
+runner (`CLOSE_RUNNER_INTERVAL_SECONDS`, default 3600; 0 turns it off; shown on the operations
+heartbeat page as *Month-end close start*) then, for each organisation that turned it on:
+
+* finds the month that ended most recently (its last day is before today) and, if it is open and
+  its close has not started, starts it once, recorded as `close.started` with `automatic: true`;
+* starts it in the name of whoever last saved the setting, and the month's page says *Started
+  automatically for* them; if that person is no longer a member who can manage the close,
+  nothing is started until someone who can saves the setting again;
+* makes the tasks for open checks, as *Create tasks for open checks* would, if asked.
+
+Earlier months are never started this way. Changing the setting is recorded as
+`close.settings_changed` with what it was before.
+
 ## The report pack
 
 Once a month is closed, the close page has a **Report pack** card. Its button downloads one ZIP
@@ -173,6 +190,7 @@ The audit trail records:
 * `close.review_started`, `close.reviewed`, `close.review_failed`;
 * `close.adjustment_posted`, `close.adjustment_rejected`;
 * `close.certified`, `close.reopened`, `close.report_pack_exported`;
+* `close.settings_changed`;
 * `period.locked` and `period.unlocked`, marked as done by the close.
 
 ## API
@@ -188,6 +206,8 @@ The audit trail records:
 | `POST …/close/adjustments/:id/reject` | close.manage | Optional `note`. `409 NOT_REJECTABLE` unless waiting |
 | `POST …/close/:periodId/close` | periods.lock | `note` (required with open warnings) |
 | `POST …/close/:periodId/reopen` | periods.lock | `reason` (at least 10 characters) |
+| `GET …/close/settings` | periods.read | Whether the close starts automatically, with tasks, who changed it last |
+| `PUT …/close/settings` | close.manage | `{ autoStart, createTasks }` |
 | `GET …/close/:periodId/report-pack` | reports.read | The month's report pack as a ZIP, with `X-Report-SHA256`. `409 CLOSE_NOT_CLOSED` until the month is closed |
 
 ## Tests
@@ -210,6 +230,8 @@ The audit trail records:
   * reversing a posted adjustment;
   * a refusal, a rate limit and one review at a time;
   * the AI activity log.
+* `apps/api/test/close-auto-start.e2e.test.ts` covers starting automatically: off by default, who can turn it on, the most recently ended month started once with tasks, earlier months and other organisations left alone, no tasks when asked, and stopping when its owner can no longer manage the close.
+* `apps/web/e2e/close-auto-start-flow.test.mjs` turns it on in the browser and waits for the runner to start last month's close.
 * `apps/api/test/close-pack.e2e.test.ts` covers the report pack: refused before closing, the files and their checksums, the certification's contents, the audit event, permissions and other organisations.
 * `apps/web/e2e/close-pack-flow.test.mjs` downloads the pack from the close page and checks the README's checksums.
 * `apps/web/e2e/close-flow.test.mjs` takes an owner through the whole flow in the browser, through the real SDK against the stand-in.
@@ -217,7 +239,7 @@ The audit trail records:
 ## Not supported yet
 
 * Not yet run against the live Claude API (there is no `ANTHROPIC_API_KEY`).
-* A person starts each close and each review. Nothing starts on its own as a month ends, and there is no reminder schedule.
+* A person starts each AI review; only the close itself can start on its own. There is no reminder schedule.
 * Proposed entries cannot be edited before posting: reject one and post a journal by hand.
 * Entries are in the functional currency only. There is no tax, no dimensions, and no recurring accrual templates.
 * The report pack is downloaded on request; it is not emailed or stored when the month closes.
