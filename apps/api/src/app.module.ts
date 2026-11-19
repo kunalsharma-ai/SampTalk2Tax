@@ -116,6 +116,9 @@ import { BankAiService } from './bank-ai/bank-ai.service';
 import { AiControlController } from './ai-control/ai-control.controller';
 import { PlatformAiController } from './ai-control/platform-ai.controller';
 import { KeyRotationController } from './security/key-rotation.controller';
+import { RetentionController } from './retention/retention.controller';
+import { RetentionRunnerService } from './retention/retention-runner.service';
+import { RetentionService } from './retention/retention.service';
 import { KeyRotationService } from './security/key-rotation.service';
 import { AiControlService } from './ai-control/ai-control.service';
 import { CloseController } from './close/close.controller';
@@ -323,6 +326,7 @@ export class AppModule {
         AiControlController,
         PlatformAiController,
         KeyRotationController,
+        RetentionController,
         FixedAssetsController,
         DeferralsController,
         LoansController,
@@ -484,6 +488,7 @@ export class AppModule {
         JournalTemplatesService,
         JournalSuggestionsService,
         KeyRotationService,
+        RetentionService,
         BadDebtsService,
         YearEndService,
         PaymentBatchesService,
@@ -499,6 +504,7 @@ export class AppModule {
     InternationalPaymentsService,
     PurchaseOrdersService,
         JournalTemplatesRunnerService,
+        RetentionRunnerService,
         RecurringBillsService,
         RecurringBillsRunnerService,
         InvoiceTemplatesService,

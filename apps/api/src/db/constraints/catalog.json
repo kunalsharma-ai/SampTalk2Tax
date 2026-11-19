@@ -1737,6 +1737,18 @@
     "def": "CHECK ((((action)::text = ANY ((ARRAY['STOPPED'::character varying, 'RESUMED'::character varying])::text[])) AND (length(btrim((reason)::text)) >= 3)))",
     "name": "platform_ai_switches_chk"
    }
+  ],
+  "retention_settings": [
+   {
+    "def": "CHECK ((((category)::text = ANY ((ARRAY['COPILOT_CONVERSATIONS'::character varying, 'CRM_WEBHOOK_DELIVERIES'::character varying])::text[])) AND (days >= 30) AND (days <= 3650)))",
+    "name": "retention_settings_chk"
+   }
+  ],
+  "retention_runs": [
+   {
+    "def": "CHECK ((((trigger)::text = ANY ((ARRAY['SCHEDULE'::character varying, 'MANUAL'::character varying])::text[])) AND (jsonb_typeof(deleted) = 'object'::text) AND (((trigger)::text = 'SCHEDULE'::text) OR (actor_id IS NOT NULL))))",
+    "name": "retention_runs_chk"
+   }
   ]
  },
  "foreignKeys": [
@@ -10121,6 +10133,34 @@
    ],
    "references": "users",
    "table": "platform_ai_switches"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "retention_settings_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "retention_settings"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "retention_runs_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "retention_runs"
   }
  ],
  "uniques": [

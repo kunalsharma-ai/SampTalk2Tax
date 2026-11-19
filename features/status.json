@@ -6914,6 +6914,19 @@
         "docs/SECURITY.md"
       ],
       "notes": "Rotation of the key that encrypts stored secrets (integrations, payment gateways, CRM webhooks, two-step sign-in): previous keys keep opening what they sealed, a platform admin re-encrypts everything readable with the current key (audited), unreadable secrets are counted and left for re-entry. Not built: KMS/Vault, JWT signing key rotation, per-organisation keys."
+    },
+    "SEC-020": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/retention.ts",
+        "apps/api/src/retention/retention.service.ts",
+        "apps/api/src/retention/retention-runner.service.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/retention/page.tsx",
+        "apps/api/test/retention.e2e.test.ts",
+        "apps/web/e2e/data-retention-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Per-organisation retention periods for working data (copilot conversations, CRM webhook delivery log) with minimums, a daily runner and Apply now, audited; statutory records (books, GST, income tax, payroll, audit trail) are never deleted on a schedule and the page lists India's minimum periods. Not built: retention for uploaded files and email logs, legal hold, export before deletion."
     }
   }
 }

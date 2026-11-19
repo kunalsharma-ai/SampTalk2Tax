@@ -141,6 +141,7 @@ export const hi: Record<string, string> = {
   // Governance
   'Audit trail': 'ऑडिट ट्रेल',
   'AI control center': 'AI नियंत्रण केंद्र',
+  'Data retention': 'डेटा प्रतिधारण',
   'AI activity': 'AI गतिविधि',
   'Team and roles': 'टीम और भूमिकाएँ',
   Integrations: 'इंटीग्रेशन',
