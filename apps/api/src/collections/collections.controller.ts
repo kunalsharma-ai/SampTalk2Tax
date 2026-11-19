@@ -12,6 +12,7 @@ const body = z.string().max(20_000, 'Keep the message under 20,000 characters');
 const SendBody = z.object({ subject: subject.optional(), body: body.optional() }).strict();
 const CheckBody = z.object({ subject, body }).strict();
 const RejectBody = z.object({ note: z.string().trim().max(1000, 'Keep the note under 1,000 characters').nullish() }).strict();
+const ResultsQuery = z.object({ days: z.coerce.number().int().min(7, 'Look back at least 7 days').max(365, 'Look back at most 365 days').optional(), window: z.coerce.number().int().min(1, 'Count at least 1 day after each reminder').max(90, 'Count at most 90 days after each reminder').optional() }).strict();
 const ActivityQuery = z.object({ limit: z.coerce.number().int().min(1).max(500).optional() }).strict();
 
 @ApiTags('collections')
@@ -33,6 +34,13 @@ export class CollectionsController {
   @RequirePermission('collections.manage')
   start(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser) {
     return this.collections.start({ orgId: org.id, role: org.role }, user);
+  }
+
+  /** What the reminders sent recently achieved: what each customer paid after it against what was overdue then. */
+  @Get('collections/results')
+  @RequirePermission('collections.manage')
+  results(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(ResultsQuery)) q: z.infer<typeof ResultsQuery>) {
+    return this.collections.results(org.id, q.days ?? 90, q.window ?? 30);
   }
 
   @Get('collections/reminders')

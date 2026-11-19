@@ -3613,7 +3613,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Autonomous financial workflows
 - Status: **Implementing**
-- Notes: Built: overdue invoices → AI risk assessment → drafted reminder → checks against the books → sent only once a person approves. Not built: tracking replies and a collections dashboard beyond the queue; the AI step is waiting on a live key.
+- Notes: Built: overdue invoices → AI risk assessment → drafted reminder → checks against the books → sent only once a person approves; and what reminders achieved (what each customer paid in the 30 days after a reminder against what was overdue then, from receipts in the books, with totals per currency). Not built: reading or tracking customers' email replies; the AI step is waiting on a live key.
 - Evidence:
   - apps/api/src/collections/collections.service.ts
   - apps/api/test/collections.e2e.test.ts
@@ -3621,6 +3621,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
   - apps/web/e2e/collections-flow.test.mjs
   - docs/AI_COLLECTIONS.md
+  - packages/accounting-engine/src/collection-results.ts
+  - packages/accounting-engine/test/collection-results.test.ts
 
 ### WFLOW-021 — Period approaches closing → Reconciliation tasks generated → Missing records identified → Exceptions investigated → Adjustments proposed → Accountant approves → Reports generated → Period locked
 

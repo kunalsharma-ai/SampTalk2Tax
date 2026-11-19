@@ -70,6 +70,24 @@ Migration `20261102180000_collections_agent`, tables `collection_runs` and `coll
 * Drafting only moves to "to review" or "failed", and "not delivered" only to "sent" or "not delivered" again.
 * Send attempts only go up, and drafts are never deleted.
 
+## What reminders achieved
+
+Under the reminders, the Collections page shows **What reminders achieved** for reminders sent in
+the last 90 days (`packages/accounting-engine/src/collection-results.ts`):
+
+* For each reminder: what was overdue when it went (from the facts it was drafted from), what
+  the customer paid in the 30 days after it (posted receipts in the same currency), the days to
+  the first payment, and a result: *Paid*, *Part paid*, *Waiting* (nothing yet, 30 days not over)
+  or *Not paid*.
+* A receipt counts for the latest reminder to that customer sent on or before it within the
+  window, so a receipt is never counted twice; a receipt dated the day a reminder went counts
+  only if it was recorded after the reminder was sent; and what counts is capped at what was
+  overdue then, since more is for other invoices.
+* Per currency: collected against overdue (and its share), how many were paid in full, part paid,
+  not paid or waiting, and the average days to the first payment.
+
+It shows what happened after a reminder, not that the reminder caused it.
+
 ## AI activity
 
 `GET /v1/orgs/:orgId/ai-activity` (and the page) lists the newest copilot answers and reminder drafts together. Each row shows:
@@ -87,6 +105,7 @@ Copilot questions are not shown: they stay private to the member who asked.
 |---|---|---|
 | `GET /v1/orgs/:orgId/collections` | collections.manage | `aiConfigured`, `aiEnabled`, `emailReady`, `emailFrom`, `model`, `canChangeAi`, `limits`, `counts` by status, `latestRun` (status, started by, `skipped` with reasons, drafts) |
 | `POST /v1/orgs/:orgId/collections/runs` | collections.manage | Start drafting; returns the overview. `503 AI_NOT_CONFIGURED`, `409 AI_OFF`, `409 COLLECTIONS_BUSY` |
+| `GET /v1/orgs/:orgId/collections/results?days=&window=` | collections.manage | What reminders sent in the last `days` (7 to 365, default 90) achieved in the `window` days after each (1 to 90, default 30): `byCurrency` and `reminders` |
 | `GET /v1/orgs/:orgId/collections/reminders?status=` | collections.manage | Reminders, newest first, with facts, risk, checks, `canSend` |
 | `GET /v1/orgs/:orgId/collections/reminders/:id` | collections.manage | One reminder, with the send log and decision |
 | `POST …/reminders/:id/check` | collections.manage | `subject`, `body`: `{checks, passes}`, nothing saved |
@@ -95,6 +114,8 @@ Copilot questions are not shown: they stay private to the member who asked.
 | `GET /v1/orgs/:orgId/ai-activity?limit=` | audit.read | Rows and totals (calls, tokens) |
 
 ## Tests
+
+* `packages/accounting-engine/test/collection-results.test.ts` covers what reminders achieved: the window, the cap at what was overdue, a receipt given to the latest reminder only, same-day receipts recorded before the reminder, other currencies, and waiting.
 
 * `packages/accounting-engine/test/collections.test.ts`: facts from invoices and payments, and every check.
 * `apps/api/test/collections.e2e.test.ts` (14 tests): runs with a scripted model and real SMTP to a local server. It covers:
@@ -117,7 +138,7 @@ Copilot questions are not shown: they stay private to the member who asked.
 ## Not supported yet
 
 * Not yet run against the live Claude API (no `ANTHROPIC_API_KEY`), nor against a real mail provider.
-* There are no reminder sequences, escalation by stage or scheduled drafting runs: a person starts each run. No replies are read or tracked, and nothing is sent by WhatsApp, SMS or post.
+* There are no reminder sequences, escalation by stage or scheduled drafting runs: a person starts each run. No replies are read or tracked (results come from receipts in the books only), and nothing is sent by WhatsApp, SMS or post.
 * Reminders contain no links or attachments (such as the invoice PDF or a payment link). There is no per-customer opt-out or "do not chase" flag, and no customer-specific tone settings.
 * The risk level is the model's assessment from the facts given. It is not a credit score, and it does not change credit limits or terms.
 * English only. Up to 20 customers per run.

@@ -15,6 +15,7 @@ export * from './kpis';
 export * from './alerts';
 export * from './workflows';
 export * from './collections';
+export * from './collection-results';
 export * from './bank-ai';
 export * from './close';
 export * from './fixed-assets';

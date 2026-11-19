@@ -15641,9 +15641,11 @@
         "apps/web/src/app/orgs/[orgId]/sales/collections/page.tsx",
         "apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx",
         "apps/web/e2e/collections-flow.test.mjs",
-        "docs/AI_COLLECTIONS.md"
+        "docs/AI_COLLECTIONS.md",
+        "packages/accounting-engine/src/collection-results.ts",
+        "packages/accounting-engine/test/collection-results.test.ts"
       ],
-      "notes": "Built: overdue invoices → AI risk assessment → drafted reminder → checks against the books → sent only once a person approves. Not built: tracking replies and a collections dashboard beyond the queue; the AI step is waiting on a live key."
+      "notes": "Built: overdue invoices → AI risk assessment → drafted reminder → checks against the books → sent only once a person approves; and what reminders achieved (what each customer paid in the 30 days after a reminder against what was overdue then, from receipts in the books, with totals per currency). Not built: reading or tracking customers' email replies; the AI step is waiting on a live key."
     },
     {
       "id": "WFLOW-020",

@@ -46,7 +46,7 @@ after(async () => {
   await smtp?.close();
 });
 
-test('an owner has reminders drafted, fixes a wrong amount the checks catch, sends one and finds it in the AI log', async () => {
+test('an owner has reminders drafted, fixes a wrong amount the checks catch, sends one, sees what it achieved and finds it in the AI log', async () => {
   await page.goto(`${WEB}/register`);
   await page.getByLabel('Full name').fill('Collections Owner');
   await page.getByLabel('Email').fill(`e2e-collections-${randomUUID()}@example.test`);
@@ -116,6 +116,21 @@ test('an owner has reminders drafted, fixes a wrong amount the checks catch, sen
   assert.equal(sent[0].subject, `Payment reminder: ${inv.number}`);
   assert.match(sent[0].text, /Our bank details are on the invoice\./);
   assert.match(sent[0].text, /Please pay ₹25,000\.00/);
+
+  // What the reminder achieved: Saffron pays 10,000 of the 25,000 after it.
+  assert.equal((await call(`${base}/sales/payments`, { contactId: saffron.id, date: T, bankAccountId: accounts['1120'], amount: '10000.00', allocations: [{ documentId: inv.id, amount: '10000.00' }], post: true })).status, 201);
+  await page.getByRole('link', { name: 'Collections', exact: true }).click();
+  const results = page.getByRole('region', { name: 'What reminders achieved' });
+  await results.getByText('40.0% of the overdue reminded about').waitFor();
+  const resultRow = results.getByRole('row', { name: /Saffron Foods/ });
+  await resultRow.getByText('₹25,000.00').waitFor();
+  await resultRow.getByText('₹10,000.00').waitFor();
+  await resultRow.getByText('Same day').waitFor();
+  await resultRow.getByText('Part paid').waitFor();
+  if (process.env.SHOTS_DIR) {
+    await results.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${process.env.SHOTS_DIR}/collections-results.png` });
+  }
 
   // The explainable AI log.
   await page.getByRole('link', { name: 'AI activity', exact: true }).click();
