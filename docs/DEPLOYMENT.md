@@ -51,6 +51,7 @@ Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `ta
 | `ANTHROPIC_BASE_URL` | no | Claude API endpoint, for a gateway; the browser tests point it at a local stand-in |
 | `COPILOT_MODEL`, `COPILOT_MAX_TOOL_ROUNDS`, `COPILOT_TURN_TIMEOUT_SECONDS` | no | Default `claude-opus-5-5`, 8 rounds of tool calls, 240 seconds per answer |
 | `AI_AGENT_TASKS_PER_HOUR` | no | AI tasks each agent may start per hour in one organisation, unless the organisation sets its own (default 500; 0 = no default limit) |
+| `SECURITY_MONITOR_INTERVAL_SECONDS`, `SECURITY_LOCKOUT_ALERT_COUNT` | no | How often the audit trail is checked for security alerts (default 300 s; 0 = off) and how many lockouts in an hour raise one (default 5). Alerts are emailed to super admins through `SMTP_*` |
 | `ALERTS_RUNNER_INTERVAL_SECONDS` | no | How often the background alert checks look for organisations not checked in the last hour (20 a pass). Default 300; 0 turns them off (alerts are still checked when opened). |
 | `WORKFLOW_RUNNER_INTERVAL_SECONDS` | no | How often the automation runner looks for events and due webhooks. Default 10; 0 turns the runner off |
 | `WEBHOOK_ALLOW_PRIVATE_NETWORKS` | no | `true` lets webhooks use http:// and reach private and loopback addresses. Development and tests only; must be false (the default) in production |

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 763 |
+| Not started | 762 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 494 |
+| Tested | 495 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 10 | 28 |
+| Security and enterprise governance | M1 | 38 | 9 | 29 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5860,6 +5860,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/retention/page.tsx
   - apps/api/test/retention.e2e.test.ts
   - apps/web/e2e/data-retention-flow.test.mjs
+  - docs/SECURITY.md
+
+### SEC-023 — Security event monitoring
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Reads the audit trail every SECURITY_MONITOR_INTERVAL_SECONDS (default 5 min). 23 audit actions are security events (HIGH or MEDIUM). Six rules raise alerts: many lockouts in an hour (SECURITY_LOCKOUT_ALERT_COUNT), failed two-step codes after a right password, platform role changes, a platform admin turning two-step off, infected uploads, 5+ SSO refusals in an hour for an organisation. One alert per rule and key (security_alerts; findings never change or get deleted), each new one emailed once to every super admin through the server's mail server. Platform admins review events and alerts; super admins acknowledge with a note (audited). No SIEM export, no pager or chat notifications, no anomaly detection beyond these rules.
+- Evidence:
+  - apps/api/src/security-monitor/security-monitor.service.ts
+  - apps/api/src/security-monitor/security-monitor-runner.service.ts
+  - apps/api/src/security-monitor/security-monitor.controller.ts
+  - apps/web/src/app/admin/security/page.tsx
+  - apps/api/test/security-monitor.e2e.test.ts
+  - apps/web/e2e/security-monitoring-flow.test.mjs
   - docs/SECURITY.md
 
 ### SEC-025 — Dependency scanning

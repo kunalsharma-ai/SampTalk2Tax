@@ -5995,6 +5995,40 @@ model PlatformModelPolicy {
   @@map("platform_model_policies")
 }
 
+/// A security alert for the people who run Talk2Tax (SEC-023): something the security monitor found in the audit trail. One per rule and key; repeats add to it.
+model SecurityAlert {
+  id               String    @id @default(uuid()) @db.Uuid
+  rule             String    @db.VarChar(40)
+  /// What makes the alert one alert: an event, a user and day, an hour.
+  key              String    @db.VarChar(200)
+  /// HIGH or MEDIUM.
+  severity         String    @db.VarChar(8)
+  title            String    @db.VarChar(200)
+  detail           String    @db.VarChar(1000)
+  /// The organisation it concerns, when it concerns one.
+  orgId            String?   @map("org_id") @db.Uuid
+  /// The user it concerns, when it concerns one.
+  userId           String?   @map("user_id") @db.Uuid
+  /// Audit event ids behind it (the last 50).
+  eventIds         Json      @default("[]") @map("event_ids")
+  count            Int       @default(1)
+  firstSeenAt      DateTime  @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt       DateTime  @map("last_seen_at") @db.Timestamptz(6)
+  /// OPEN or ACKNOWLEDGED.
+  status           String    @default("OPEN") @db.VarChar(16)
+  acknowledgedById String?   @map("acknowledged_by_id") @db.Uuid
+  acknowledgedAt   DateTime? @map("acknowledged_at") @db.Timestamptz(6)
+  note             String?   @db.VarChar(500)
+  /// When platform administrators were emailed, and why not when that failed.
+  notifiedAt       DateTime? @map("notified_at") @db.Timestamptz(6)
+  notifyError      String?   @map("notify_error") @db.VarChar(500)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([rule, key])
+  @@index([status, lastSeenAt])
+  @@map("security_alerts")
+}
+
 /// An organisation's retention period for a kind of working data (SEC-020); no row keeps it.
 model RetentionSetting {
   orgId       String   @map("org_id") @db.Uuid

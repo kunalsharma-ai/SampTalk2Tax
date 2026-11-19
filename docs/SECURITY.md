@@ -214,6 +214,36 @@ records 6 years from the end of the assessment year (Income-tax Rules, 1962, rul
 
 Not built: periods for uploaded files and email logs, legal hold, and an export before deletion.
 
+## Security event monitoring (SEC-023)
+
+The audit trail already records sign-ins, lockouts, two-step failures, role changes and refused
+uploads. The security monitor reads it for the people who run Talk2Tax, under **Platform admin →
+Security monitoring**.
+
+* **Events**: 23 audit actions count as security events, each HIGH or MEDIUM: for example locked
+  sign-ins, failed two-step codes, two-step turned off, refused single sign-ons and uploads,
+  platform role changes, new devices, password changes, API keys, member role changes and
+  removals. The page lists the last 7 days with the person, organisation, actor and address, and
+  can filter by severity.
+* **Alerts**: every `SECURITY_MONITOR_INTERVAL_SECONDS` (default 300; 0 = off), or on **Check
+  now**, the monitor reads the last two hours and applies six rules:
+  * many sign-ins locked within one hour (`SECURITY_LOCKOUT_ALERT_COUNT`, default 5), across
+    Talk2Tax;
+  * failed two-step codes after a right password (one alert per person and day);
+  * a platform role given or changed;
+  * a platform administrator turning two-step sign-in off;
+  * an upload with a virus signature;
+  * five or more refused single sign-ons into one organisation within an hour.
+* Each finding is one row in `security_alerts` (unique by rule and key). Repeats add to its count.
+  What was found never changes, and alerts are never deleted (guard).
+* Each new alert is emailed once to every platform super admin through the server's own mail
+  server (`SMTP_*`). A failure to send is shown on the alert.
+* Platform admins (super admin or support) can read the page and API: `GET /v1/admin/security`
+  (`?severity=HIGH|MEDIUM`). Super admins run a check (`POST /v1/admin/security/scan`) and
+  acknowledge an alert with a note (`POST /v1/admin/security/alerts/:id/acknowledge`).
+  Acknowledging is audited as `security.alert_acknowledged`, and new alerts as
+  `security.alert_opened`.
+
 ## AI model access (SEC-034)
 
 Platform administrators choose the AI models allowed across Talk2Tax, and each organisation can
