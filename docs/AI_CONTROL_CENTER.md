@@ -64,12 +64,27 @@ These need `org.manage` (owners and admins). Accountants and approvers can look 
   * Proposals already made stay for people to decide.
 * **Turn AI back on.** This clears the stop. Turning AI on from the copilot page also clears it.
 
+* **Copilot tools (SEC-030).** Owners and admins can turn individual copilot tools off, such as
+  the balance sheet or the Virtual CFO answers.
+  * A tool that is off is never offered to the AI model.
+  * If the model asks for it anyway, the call is refused with an error the model sees ("This tool
+    is turned off for this organisation in the AI control center").
+  * The list is read again before each round of tool calls, so turning a tool off also applies
+    to an answer being written.
+  * Each tool also needs its own permission (`reports.read`, `tasks.use`, `alerts.manage`), which
+    is checked on every call. A tool the member's role does not allow is not offered either.
+  * `PUT /v1/orgs/:orgId/copilot/tools` `{ disabled: [names] }` needs `org.manage`, and an
+    unknown name gets `422 UNKNOWN_TOOL`. The copilot status lists every tool with its title,
+    permission, whether it is on, and whether your role allows it. Changes are audited as
+    `copilot.tools_changed` with before and after.
+
 Every change is recorded in the audit trail: `ai.agent_updated` (with before and after), `ai.emergency_stop` (with the reason and how much was running) and `ai.resumed`.
 
 ## How agents are checked
 
-`AiControlService.check(orgId, agent)` is the single guard. It checks four things:
+`AiControlService.check(orgId, agent)` is the single guard. It checks five things:
 
+1. AI is not stopped across Talk2Tax (below);
 1. the server has an AI key;
 2. the organisation has AI on;
 3. the agent is on;
@@ -83,6 +98,26 @@ Each agent calls the guard when it starts and again before every model call:
 * once more when the month-end review's answer arrives.
 
 So every control takes effect on work that is already running, not only on new work.
+
+## Platform-wide shutdown (SEC-038)
+
+The people who run Talk2Tax can stop AI for every organisation at once, under **Platform admin → AI
+shutdown**. It is for an incident with the AI provider, or with how the agents behave.
+
+* Stopping and turning AI back on each need a platform `SUPER_ADMIN` and a reason of at least 10
+  characters. Support staff can see the state and history.
+* While stopped, every agent's guard refuses with `503 AI_SHUTDOWN`. This holds even for an
+  organisation with its own key, and comes before every organisation-level check.
+  * The refusal says "AI is stopped across Talk2Tax by the people who run it", followed by the
+    reason.
+  * Work already running stops before its next model call, as with the organisation stop.
+* Organisations see the reason in their AI control center. An organisation cannot lift it.
+* Each stop and resume is a row in `platform_ai_switches`, which can only be inserted into (the
+  guard refuses changes and deletes). The latest row decides. The rows are audited as
+  `platform.ai_stopped` and `platform.ai_resumed`.
+* API: `GET /v1/admin/ai` (platform.read) returns the state and the last 50 changes.
+  `POST /v1/admin/ai/stop` and `POST /v1/admin/ai/resume`, each with `{ reason }`
+  (platform.manage), return `409` when there is nothing to do.
 
 ## API
 
@@ -105,7 +140,6 @@ So every control takes effect on work that is already running, not only on new w
 ## Not built yet
 
 * Costs in currencies other than US dollars, and budgets in money rather than tokens.
-* A platform-wide stop across all organisations. Removing the server's `ANTHROPIC_API_KEY` stops only organisations without a key of their own.
 * Accuracy against a labelled evaluation set.
 * An orchestrator that hands work between agents.
 * Agents above level 2.

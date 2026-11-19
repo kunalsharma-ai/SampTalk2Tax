@@ -22,6 +22,8 @@ export interface AiAgentView {
 }
 
 export interface AiControlView {
+  /** Set while the people who run Talk2Tax have stopped AI for everyone (SEC-038). */
+  platformShutdown: { reason: string; since: string } | null;
   month: string;
   accuracyDays: number;
   configured: boolean;
@@ -61,3 +63,12 @@ export const tokens = (n: number) => n.toLocaleString('en-IN');
 
 /** "2026-11" as "November 2026". */
 export const monthName = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+/** A copilot tool and whether the organisation allows it (SEC-030). */
+export interface CopilotToolView {
+  name: string;
+  title: string;
+  permission: string;
+  enabled: boolean;
+  youCanUse: boolean;
+}

@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
-import { monthName, tokens, usd, type AiAgentView, type AiControlView } from '@/lib/ai-control';
+import { monthName, tokens, usd, type AiAgentView, type AiControlView, type CopilotToolView } from '@/lib/ai-control';
 import { dateTime } from '@/lib/collections';
 import { useOrg } from '@/lib/org';
 
@@ -34,6 +34,13 @@ export default function AiControlPage() {
         description="Every AI agent in one place: what each may do on its own, whether it is on, how many tokens it has used this month against its budget, and how often people accept what it proposes. No agent changes the books or sends anything without a person's approval."
       />
       <ErrorAlert title="Could not load the AI control center" error={q.error} />
+      {v?.platformShutdown ? (
+        <div className="mb-4">
+          <Alert tone="negative" title="AI is stopped across Talk2Tax">
+            The people who run Talk2Tax stopped AI for every organisation on {dateTime(v.platformShutdown.since)}: {v.platformShutdown.reason}. No agent sends anything to the AI model until they turn it back on.
+          </Alert>
+        </div>
+      ) : null}
       {v ? (
         <>
           <Card className={cn('mb-4 p-4', v.stopped && 'border-negative/50')} aria-label="AI for this organisation">
@@ -100,6 +107,8 @@ export default function AiControlPage() {
           </ul>
 
           <ModelPrices v={v} base={base} onDone={set} />
+
+          <CopilotTools orgId={orgId} canManage={v.canManage} />
 
           <Card className="mt-4 p-4">
             <CardHeader title="Action levels" description="What an agent may do without a person. Every agent here is at level 2 or below: none posts, pays or sends on its own." />
@@ -318,4 +327,49 @@ function addAmounts(a: string, b: string): string {
   };
   const t = units(a) + units(b);
   return `${t / 10000n}.${String(t % 10000n).padStart(4, '0')}`;
+}
+
+/** Copilot tool permissions (SEC-030): tools turned off are never offered to the model or run. */
+function CopilotTools({ orgId, canManage }: { orgId: string; canManage: boolean }) {
+  const qc = useQueryClient();
+  const status = useQuery({ queryKey: ['copilot-status', orgId], queryFn: () => api<{ toolCatalog: CopilotToolView[]; disabledTools: string[] }>(`/v1/orgs/${orgId}/copilot/status`) });
+  const save = useMutation({
+    mutationFn: (disabled: string[]) => api<{ toolCatalog: CopilotToolView[]; disabledTools: string[] }>(`/v1/orgs/${orgId}/copilot/tools`, { method: 'PUT', body: { disabled } }),
+    onSuccess: (s) => qc.setQueryData(['copilot-status', orgId], s),
+  });
+  const tools = status.data?.toolCatalog ?? [];
+  const off = status.data?.disabledTools ?? [];
+  return (
+    <Card className="mt-4 p-4">
+      <CardHeader title="Copilot tools" description="What the finance copilot may look at or propose. A tool turned off is never offered to the AI model, and is refused if the model asks for it anyway. Each member also needs the tool's own permission." />
+      <ErrorAlert title="Could not load the copilot tools" error={status.error} />
+      <ErrorAlert title="The tools were not changed" error={save.error} />
+      {tools.length ? (
+        <Table aria-label="Copilot tools">
+          <thead><tr><Th>Tool</Th><Th>Needs</Th><Th>For you</Th><Th>Allowed</Th></tr></thead>
+          <tbody>
+            {tools.map((t) => (
+              <Tr key={t.name}>
+                <Td>{t.title}<span className="block text-xs text-fg-faint">{t.name}</span></Td>
+                <Td className="text-xs">{t.permission}</Td>
+                <Td>{t.youCanUse ? <Badge tone="positive">Your role allows it</Badge> : <Badge tone="neutral">Not your role</Badge>}</Td>
+                <Td>
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      aria-label={`Allow ${t.title}`}
+                      checked={t.enabled}
+                      disabled={!canManage || save.isPending}
+                      onChange={(e) => save.mutate(e.target.checked ? off.filter((x) => x !== t.name) : [...off, t.name])}
+                    />
+                    {t.enabled ? 'On' : 'Off'}
+                  </label>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : null}
+    </Card>
+  );
 }

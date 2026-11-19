@@ -1256,7 +1256,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-027 |  | rule | Build toward relevant security and privacy frameworks, including SOC 2, ISO 27001 and applicable data protection laws | Not started |
 | SEC-028 |  | rule | Do not claim certification without a completed independent assessment | Not started |
 | SEC-029 | AI Security | capability | Prompt injection defenses | Not started |
-| SEC-030 | AI Security | capability | Tool permission enforcement | Not started |
+| SEC-030 | AI Security | capability | Tool permission enforcement | Tested |
 | SEC-031 | AI Security | capability | Sensitive data redaction | Not started |
 | SEC-032 | AI Security | capability | AI action logging | Tested |
 | SEC-033 | AI Security | capability | AI usage controls | Tested |
@@ -1264,7 +1264,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-035 | AI Security | capability | Cross-tenant data leakage tests | Tested |
 | SEC-036 | AI Security | capability | Human approval gates | Tested |
 | SEC-037 | AI Security | capability | Agent execution limits | Not started |
-| SEC-038 | AI Security | capability | AI emergency shutdown | Not started |
+| SEC-038 | AI Security | capability | AI emergency shutdown | Tested |
 
 ## User experience and onboarding
 

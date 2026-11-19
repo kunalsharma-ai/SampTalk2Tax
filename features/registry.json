@@ -28607,9 +28607,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot/copilot.tools.ts (definitions, refusal, catalog)",
+        "apps/api/src/copilot/copilot.service.ts (saveTools, disabledTools)",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (Copilot tools)",
+        "apps/api/test/ai-safety.e2e.test.ts",
+        "apps/api/test/copilot.e2e.test.ts",
+        "apps/web/e2e/ai-safety-flow.test.mjs",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Every copilot tool needs a permission checked on every call; owners and admins can turn tools off per organisation. A tool that is off or outside the member's role is never offered to the model and is refused if the model calls it anyway; the list is re-read before each tool round. Copilot actions are re-checked when the member confirms."
     },
     {
       "id": "SEC-031",
@@ -28806,9 +28814,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts (platformShutdown, platformStop, platformResume)",
+        "apps/api/src/ai-control/platform-ai.controller.ts",
+        "apps/api/src/db/migrations/20270115100000_platform_ai_switch.ts",
+        "apps/web/src/app/admin/ai/page.tsx",
+        "apps/api/test/ai-safety.e2e.test.ts",
+        "apps/web/e2e/ai-safety-flow.test.mjs",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Platform-wide AI emergency shutdown by a platform super admin with a reason: every agent's guard refuses (503 AI_SHUTDOWN) before any model call, also mid-run; organisations see the reason and cannot lift it; append-only history, audited. The organisation-level stop is AGENT-060."
     },
     {
       "id": "UX-001",
