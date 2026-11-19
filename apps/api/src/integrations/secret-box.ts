@@ -45,6 +45,30 @@ export class SecretBox {
     return { cipher: Buffer.concat([iv, c.getAuthTag(), body]).toString('base64'), keyId: this.keyId };
   }
 
+  /**
+   * Encryption at rest for file bytes (SEC-011): the same AES-256-GCM key, as
+   * MAGIC (5 bytes) + iv (12) + tag (16) + ciphertext. The key id is kept beside the bytes.
+   */
+  sealBytes(plain: Buffer): { content: Buffer; keyId: string } {
+    const iv = randomBytes(12);
+    const c = createCipheriv('aes-256-gcm', this.key, iv);
+    const body = Buffer.concat([c.update(plain), c.final()]);
+    return { content: Buffer.concat([FILE_MAGIC, iv, c.getAuthTag(), body]), keyId: this.keyId };
+  }
+
+  /** The file's bytes, or null when they were sealed with a key this server does not have, or changed. */
+  openBytes(sealed: Buffer, keyId: string): Buffer | null {
+    const key = keyId === this.keyId ? this.key : this.previous.get(keyId);
+    if (!key || sealed.length < FILE_OVERHEAD || !sealed.subarray(0, FILE_MAGIC.length).equals(FILE_MAGIC)) return null;
+    try {
+      const d = createDecipheriv('aes-256-gcm', key, sealed.subarray(5, 17));
+      d.setAuthTag(sealed.subarray(17, 33));
+      return Buffer.concat([d.update(sealed.subarray(33)), d.final()]);
+    } catch {
+      return null;
+    }
+  }
+
   /** The secret, or null when it was sealed with another key or has been tampered with. */
   open(cipher: string, keyId: string): string | null {
     const key = keyId === this.keyId ? this.key : this.previous.get(keyId);
@@ -58,6 +82,15 @@ export class SecretBox {
       return null;
     }
   }
+}
+
+/** Sealed file bytes start with these five bytes; a sealed file is FILE_OVERHEAD bytes longer than the file. */
+export const FILE_MAGIC = Buffer.from('T2TF1');
+export const FILE_OVERHEAD = 5 + 12 + 16;
+
+/** Whether a stored file's length fits its size: the file itself, or sealed (FILE_OVERHEAD longer). */
+export function storedSizeFits(stored: number, sizeBytes: number, sealed: boolean): boolean {
+  return stored === sizeBytes + (sealed ? FILE_OVERHEAD : 0);
 }
 
 function deriveKey(encryptionKey: string | undefined, jwtSecret: string): Buffer {

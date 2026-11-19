@@ -1,3 +1,4 @@
+import { FileVault } from '../files/file-vault';
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { FileScannerService } from '../files/file-scanner.service';
 import { createHash } from 'node:crypto';
@@ -54,6 +55,7 @@ export class AttachmentsService {
     private readonly moved: MovedTables,
     private readonly store: DocumentStoreService,
     private readonly scanner: FileScannerService,
+    private readonly vault: FileVault,
   ) {}
 
   async list(org: Org, actor: { id: string }, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
@@ -96,7 +98,8 @@ export class AttachmentsService {
         contentType,
         sizeBytes: input.content.length,
         sha256,
-        content: input.content,
+        // Encryption at rest (SEC-011).
+        ...this.vault.seal(input.content),
         uploadedById: actor.id,
         createdAt: new Date(),
         removedAt: null,
@@ -211,7 +214,7 @@ export class AttachmentsService {
     if (!a) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Attachment not found' });
     await this.entity(org, actor, a.entityType, a.entityId, 'read');
     if (a.removedAt) throw new DomainError('REMOVED', 'This file was removed', HttpStatus.GONE);
-    return a;
+    return { ...a, content: this.vault.open(a.content, a.contentKeyId, a.sha256) };
   }
 
   async remove(org: Org, actor: { id: string }, id: string, reason: string) {

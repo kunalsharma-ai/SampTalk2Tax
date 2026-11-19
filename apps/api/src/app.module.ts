@@ -121,6 +121,7 @@ import { SsoSettingsController, SsoSignInController } from './sso/sso.controller
 import { SsoService } from './sso/sso.service';
 import { FileScanningController } from './files/file-scanning.controller';
 import { FileScannerService } from './files/file-scanner.service';
+import { FileVault } from './files/file-vault';
 import { RetentionRunnerService } from './retention/retention-runner.service';
 import { BackupsController } from './backups/backups.controller';
 import { BackupsService } from './backups/backups.service';
@@ -505,6 +506,7 @@ export class AppModule {
         RetentionService,
         SsoService,
         FileScannerService,
+        FileVault,
         SecurityMonitorService,
         SecurityMonitorRunnerService,
         BackupsService,

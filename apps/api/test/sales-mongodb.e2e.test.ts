@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runInOrg } from '../src/common/tenant-context';
+import { FileVault } from '../src/files/file-vault';
 import { allocations, contacts, documents, payments } from '../src/db/collections/sales';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
@@ -100,8 +101,12 @@ describe('sales and purchases live in MongoDB', () => {
     const pdf = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n');
     const att = (await ctx.http().post(`${org.base}/attachments?entityType=EXPENSE_CLAIM&entityId=${claim.id}&fileName=taxi.pdf`).set(owner.auth).set('Content-Type', 'application/pdf').send(pdf).expect(201)).body;
     const file = await ctx.db.collection('attachments').findOne({ _id: att.id });
-    expect(Buffer.from(file!.content.buffer).equals(pdf)).toBe(true);
-    expect(Buffer.from((await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: att.id } })).content).equals(pdf)).toBe(true);
+    // Stored encrypted (SEC-011): the bytes in MongoDB are sealed, open to the original, and the
+    // Prisma view reads the same stored bytes.
+    const sealed = Buffer.from(file!.content.buffer);
+    expect(sealed.equals(pdf)).toBe(false);
+    expect(ctx.app.get(FileVault).open(sealed, file!.contentKeyId, file!.sha256).equals(pdf)).toBe(true);
+    expect(Buffer.from((await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: att.id } })).content).equals(sealed)).toBe(true);
 
     const csv = ['Date,Narration,Ref,Amount', `${today().split('-').reverse().join('/')},Coffee beans,CB1,-250.00`].join('\n');
     await ctx.http().post(`${org.base}/banking/accounts/${org.acc['1120']}/imports`).set(owner.auth).send({ fileName: 'nov.csv', csv, mapping: { date: 0, description: 1, reference: 2, amount: 3, dateFormat: 'DD/MM/YYYY', hasHeader: true } }).expect(201);

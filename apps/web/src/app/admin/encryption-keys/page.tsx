@@ -11,7 +11,10 @@ type Report = {
   previousKeyIds: string[];
   stores: { key: string; name: string; current: number; previous: number; unreadable: number }[];
   totals: { current: number; previous: number; unreadable: number };
+  files: { key: string; name: string; current: number; previous: number; unencrypted: number; unreadable: number }[];
+  fileTotals: { current: number; previous: number; unencrypted: number; unreadable: number };
   resealed?: Record<string, number>;
+  filesSealed?: Record<string, number>;
 };
 
 /** Encryption key rotation (SEC-013). */
@@ -23,15 +26,17 @@ export default function AdminEncryptionKeysPage() {
   const manage = me.data?.user.platformRole === 'SUPER_ADMIN';
   const r = q.data;
   const resealed = reseal.data?.resealed ? Object.values(reseal.data.resealed).reduce((a, b) => a + b, 0) : null;
+  const filesSealed = reseal.data?.filesSealed ? Object.values(reseal.data.filesSealed).reduce((a, b) => a + b, 0) : 0;
+  const waiting = r ? r.totals.previous + r.fileTotals.previous + r.fileTotals.unencrypted : 0;
   return (
     <>
       <PageHeader
         title="Encryption keys"
-        description="Secrets kept in the app (AI and email keys, payment gateway keys, webhook secrets and two-step sign-in) are encrypted with the server's key. To rotate it, set a new INTEGRATIONS_ENCRYPTION_KEY, list the old one in INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS and restart; then re-encrypt here, and remove the old key once nothing is left under it."
+        description="Secrets kept in the app (AI and email keys, payment gateway keys, webhook secrets and two-step sign-in) and uploaded files (attachments, tax notice files and invoices from the vendor portal) are encrypted with the server's key. To rotate it, set a new INTEGRATIONS_ENCRYPTION_KEY, list the old one in INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS and restart; then re-encrypt here, and remove the old key once nothing is left under it."
       />
       <ErrorAlert title="Could not load the encryption keys" error={q.error} />
       <ErrorAlert title="Re-encryption failed" error={reseal.error} />
-      {resealed !== null ? <div className="mb-4"><Alert tone="positive" title={`${resealed} ${resealed === 1 ? 'secret' : 'secrets'} re-encrypted`}>Everything readable is now under the current key.</Alert></div> : null}
+      {resealed !== null ? <div className="mb-4"><Alert tone="positive" title={`${resealed} ${resealed === 1 ? 'secret' : 'secrets'} and ${filesSealed} ${filesSealed === 1 ? 'file' : 'files'} encrypted again`}>Everything readable is now under the current key.</Alert></div> : null}
       {r ? (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -56,10 +61,27 @@ export default function AdminEncryptionKeysPage() {
               </tbody>
             </Table>
           </Card>
+          <Card className="mb-4" role="region" aria-label="Encrypted files">
+            <CardHeader title="Encrypted files" description="Uploaded files are stored encrypted (AES-256-GCM). Files stored before encryption at rest, or under a previous key, are encrypted with the current key by the button below." />
+            <Table aria-label="Encrypted files">
+              <thead><tr><Th>What</Th><Th numeric>Current key</Th><Th numeric>Previous key</Th><Th numeric>Not encrypted</Th><Th numeric>Cannot be opened</Th></tr></thead>
+              <tbody>
+                {r.files.map((f) => (
+                  <Tr key={f.key}>
+                    <Td>{f.name}</Td>
+                    <Td numeric>{f.current}</Td>
+                    <Td numeric>{f.previous ? <Badge tone="warning">{f.previous}</Badge> : 0}</Td>
+                    <Td numeric>{f.unencrypted ? <Badge tone="warning">{f.unencrypted}</Badge> : 0}</Td>
+                    <Td numeric>{f.unreadable ? <Badge tone="negative">{f.unreadable}</Badge> : 0}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          </Card>
           {manage ? (
             <Card className="p-4">
-              <CardHeader title="Re-encrypt with the current key" description="Opens every secret under a previous key and encrypts it again with the current key. Safe to run more than once; it is audited." />
-              <Button className="mt-2" loading={reseal.isPending} disabled={!r.totals.previous} onClick={() => reseal.mutate()}>Re-encrypt {r.totals.previous} {r.totals.previous === 1 ? 'secret' : 'secrets'}</Button>
+              <CardHeader title="Re-encrypt with the current key" description="Opens every secret and file under a previous key, and every file stored before encryption at rest, and encrypts it with the current key. Safe to run more than once; it is audited." />
+              <Button className="mt-2" loading={reseal.isPending} disabled={!waiting} onClick={() => reseal.mutate()}>Encrypt {waiting} {waiting === 1 ? 'item' : 'items'} with the current key</Button>
             </Card>
           ) : null}
         </>

@@ -1237,7 +1237,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-008 |  | capability | Session management | Tested |
 | SEC-009 |  | capability | Device management | Tested |
 | SEC-010 |  | capability | Encryption in transit | Tested |
-| SEC-011 |  | capability | Encryption at rest | Not started |
+| SEC-011 |  | capability | Encryption at rest | Tested |
 | SEC-012 |  | capability | Secrets management | Implementing |
 | SEC-013 |  | capability | Key rotation | Tested |
 | SEC-014 |  | capability | Audit logging | Tested |

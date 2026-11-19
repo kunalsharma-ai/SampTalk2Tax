@@ -45,8 +45,13 @@ test('an administrator sees which key encrypts the stored secrets', async () => 
   const rows = await table.locator('tbody tr').allInnerTexts();
   assert.deepEqual(rows.map((r) => r.split('\t')[0].trim()), ['AI and email keys (Settings → Integrations)', "Organisations' payment gateways", 'Platform payment gateways', 'CRM webhook signing secrets', 'Single sign-on client secrets', 'Two-step sign-in authenticators']);
   await page.getByText('No previous key listed').waitFor();
-  // Nothing is under a previous key on this server, so there is nothing to re-encrypt.
-  assert.equal(await page.getByRole('button', { name: /^Re-encrypt/ }).isDisabled(), true);
+  // Uploaded files are counted too (SEC-011); every new upload is under the current key.
+  const files = await page.getByRole('table', { name: 'Encrypted files' }).locator('tbody tr').allInnerTexts();
+  assert.deepEqual(files.map((r) => r.split('\t')[0].trim()), ['Attachments (bills, receipts, statements, documents)', 'Tax notice files', 'Invoices sent through the vendor portal']);
+  // Nothing is under a previous key on this server; only files stored before encryption could be waiting.
+  const button = page.getByRole('button', { name: /^Encrypt \d+ items? with the current key$/ });
+  const waiting = Number((await button.innerText()).match(/\d+/)[0]);
+  assert.equal(await button.isDisabled(), waiting === 0);
   if (SHOTS) {
     mkdirSync(SHOTS, { recursive: true });
     await page.screenshot({ path: `${SHOTS}/admin-encryption-keys.png`, fullPage: true });

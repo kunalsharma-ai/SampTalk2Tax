@@ -228,7 +228,9 @@ registerGuards({
       fail('An invoice sent through the vendor portal stays as it was sent');
     }
     // The file can be added once, while the invoice is still waiting.
-    if (o.content !== null && changed(o, n, ['content', 'sha256', 'file_name'])) fail('The file of a sent invoice cannot be replaced');
+    // The bytes change after that only when sealed again under a new key (SEC-011), never back to plain.
+    const resealed = !!n.content_key_id && (n.content_key_id ?? null) !== (o.content_key_id ?? null);
+    if (o.content !== null && (changed(o, n, ['sha256', 'file_name']) || (changed(o, n, ['content', 'content_key_id']) && !resealed))) fail('The file of a sent invoice cannot be replaced');
     if (o.content === null && n.content !== null && ne(o.status, 'RECEIVED')) fail('A file can be added only while the invoice is waiting');
     if (ne(o.status, 'RECEIVED') && (changedNe(o, n, ['status']) || changed(o, n, ['document_id', 'decided_at', 'decided_by_id', 'reject_reason']))) fail('A sent invoice is decided once');
   },
