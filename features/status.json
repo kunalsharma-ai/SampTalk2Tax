@@ -5127,7 +5127,7 @@
         "apps/web/e2e/subscription-payments-flow.test.mjs",
         "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
-      "notes": "Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons are built (SUBS-024); add-ons and usage metering are later slices."
+      "notes": "Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons (SUBS-024), promotions (SUBS-025) and add-on modules (SUBS-017) are built."
     },
     "SUBS-002": {
       "status": "Tested",
@@ -6813,6 +6813,23 @@
         "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
       "notes": "Promotions are coupons applied automatically: shown beside the plans they fit with their last day, and the one taking the most off is applied at checkout without a code for organisations that have not used it. Never stacked with a coupon; not applied to runner-issued renewals."
+    },
+    "SUBS-017": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/add-ons.ts",
+        "packages/accounting-engine/test/add-ons.test.ts",
+        "apps/api/src/billing/add-ons.service.ts",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/src/db/migrations/20270110100000_add_ons.ts",
+        "apps/api/test/subscription-add-ons.e2e.test.ts",
+        "apps/web/src/app/admin/plans/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-add-ons-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Payroll, foreign currencies and group consolidation can be added to a plan that lacks them, priced per currency and billing by platform administrators. Added at checkout (an upgrade for the days left mid-period), removed at the renewal, carried on renewal invoices, listed on the tax invoice, and counted for module access. The AI assistant is not an add-on (its use is set by a plan's AI requests)."
     }
   }
 }

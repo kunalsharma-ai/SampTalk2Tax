@@ -26,6 +26,7 @@ interface Invoice {
   subtotal: string;
   amount: string;
   discount: string;
+  addOnLines: { feature: string; label: string; price: string }[];
   couponCode: string | null;
   taxLines: { code: string; rate: string; amount: string }[];
   taxTotal: string;
@@ -105,6 +106,7 @@ export default function SubscriptionInvoicePage() {
                 <td className="py-3">
                   Talk2Tax {i.plan.name} subscription, billed {i.billingInterval === 'ANNUAL' ? 'annually' : 'monthly'}{KIND[i.kind]}
                   <span className="block text-xs text-fg-muted">{dateTime(i.periodStart)} to {dateTime(i.periodEnd)}</span>
+                  {i.addOnLines?.length ? <span className="block text-xs text-fg-muted">With add-on modules: {i.addOnLines.map((l) => `${l.label} (${l.price} ${i.currency} a ${i.billingInterval === 'ANNUAL' ? 'year' : 'month'})`).join(', ')}</span> : null}
                 </td>
                 <td className="py-3 num">{i.seller.sacCode}</td>
                 <td className="py-3 text-right num"><Money value={i.amount} currency={i.currency} /></td>

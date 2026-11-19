@@ -124,5 +124,5 @@ Organisations in `GET /v1/orgs` carry `subscription: { plan: { code, name, featu
 * Online checkout, renewals, dunning, subscription invoices and tax: built in slice 3, see
   [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md).
 * Coupons: built, see [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md#coupons-subs-024). Promotions (coupons applied without a code) are built too.
-* Add-ons.
+* Add-on modules: built, see [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md#add-on-modules-subs-017).
 * Counting AI requests and uploads against their limits.

@@ -1,4 +1,5 @@
 import { Dec, dec, minorUnits, roundToCurrency } from './money';
+import { sameAddOns } from './add-ons';
 import { BillingCurrency, BillingInterval, GRACE_DAYS, PlanError, periodEnd, upgradeCharge } from './plans';
 
 /**
@@ -22,12 +23,15 @@ export interface CheckoutInput {
   status: 'TRIALING' | 'ACTIVE' | 'CANCELLED' | 'COMPLIMENTARY';
   planCode: string;
   interval: BillingInterval | null;
-  /** The price of the paid period running now (null outside a paid period). */
+  /** Add-on modules on the subscription now (SUBS-017). */
+  addOns?: string[];
+  /** The price of the paid period running now, add-ons included (null outside a paid period). */
   price: string | Dec | null;
   trialEndsAt: Date | null;
   currentPeriodStart: Date | null;
   currentPeriodEnd: Date | null;
-  target: { planCode: string; interval: BillingInterval; price: string | Dec };
+  /** The plan and add-ons being paid for, and their price together. */
+  target: { planCode: string; interval: BillingInterval; price: string | Dec; addOns?: string[] };
   currency: BillingCurrency;
   now: Date;
 }
@@ -43,6 +47,7 @@ export type CheckoutPlan =
  *   During a trial the paid period starts when the trial ends, so no trial days are lost.
  * - In a paid period (including grace and a cancellation still running), the same plan and
  *   billing: a RENEWAL for the next period, straight after the current one.
+ * - The same plan with more add-ons is priced like a dearer plan, and with fewer like a cheaper one.
  * - A dearer plan with the same billing before the period ends: an UPGRADE now, charged for the
  *   days left (upgradeCharge), ending with the current period.
  * - A cheaper plan or another billing interval in a paid period: SCHEDULED, taking effect at the
@@ -61,7 +66,7 @@ export function checkoutPlan(i: CheckoutInput): CheckoutPlan {
   }
   const end = i.currentPeriodEnd!;
   const sameBilling = i.interval === i.target.interval;
-  if (sameBilling && i.planCode === i.target.planCode) return { kind: 'RENEWAL', amount: price, periodStart: end, periodEnd: periodEnd(end, i.target.interval) };
+  if (sameBilling && i.planCode === i.target.planCode && sameAddOns(i.addOns, i.target.addOns)) return { kind: 'RENEWAL', amount: price, periodStart: end, periodEnd: periodEnd(end, i.target.interval) };
   const current = dec(String(i.price));
   if (sameBilling && price.gt(current)) {
     if (i.now < end) {
@@ -72,7 +77,7 @@ export function checkoutPlan(i: CheckoutInput): CheckoutPlan {
   }
   return {
     kind: 'SCHEDULED',
-    reason: !sameBilling ? 'A change of billing takes effect at the renewal' : 'A cheaper plan takes effect at the renewal; the current plan runs to the end of the period paid for',
+    reason: !sameBilling ? 'A change of billing takes effect at the renewal' : i.planCode === i.target.planCode ? 'Removing an add-on takes effect at the renewal; it stays until the end of the period paid for' : 'A cheaper plan takes effect at the renewal; the current plan runs to the end of the period paid for',
   };
 }
 

@@ -110,6 +110,7 @@ export const MIRRORED_MODEL_NAMES = [
   'SubscriptionInvoice',
   'Coupon',
   'CouponRedemption',
+  'AddOnPrice',
   'PaymentWebhookEvent',
   'SupportTicket',
   'SupportMessage',

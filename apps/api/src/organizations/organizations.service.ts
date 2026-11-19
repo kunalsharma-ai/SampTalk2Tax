@@ -1,6 +1,6 @@
 import { ConflictException, ForbiddenException, HttpStatus, Inject, Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { fiscalYearForDate, GENERIC_SMB_COA, isTimeZone } from '@talk2tax/accounting-engine';
+import { fiscalYearForDate, GENERIC_SMB_COA, isTimeZone, effectiveFeatures } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
 import { canAssignRole, RoleName } from '@talk2tax/security';
 import { RegionsService } from '../regions/regions.service';
@@ -267,7 +267,7 @@ function serializeOrg(o: Pick<OrganizationDoc, 'id' | 'name' | 'legalName' | 'co
 }
 
 /** What the web app needs to show plan state: the plan, its modules, and whether the books can change. */
-function subscriptionSummary(s: { status: string; trialEndsAt: Date | null; currentPeriodEnd: Date | null; plan: { code: string; name: string; features: string[] } } | null) {
+function subscriptionSummary(s: { status: string; trialEndsAt: Date | null; currentPeriodEnd: Date | null; addOns?: string[]; plan: { code: string; name: string; features: string[] } } | null) {
   if (!s) return null;
-  return { plan: { code: s.plan.code, name: s.plan.name, features: s.plan.features }, status: s.status, access: accessOf(s) };
+  return { plan: { code: s.plan.code, name: s.plan.name, features: effectiveFeatures(s.plan.features, s.addOns) }, addOns: s.addOns ?? [], status: s.status, access: accessOf(s) };
 }

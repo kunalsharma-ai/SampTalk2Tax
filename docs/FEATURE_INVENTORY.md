@@ -1344,7 +1344,7 @@ Part 38 · M9 · priority P2 · depends on: SEC
 | SUBS-014 | Billing Capabilities | capability | Free trials | Tested |
 | SUBS-015 | Billing Capabilities | capability | Plan upgrades | Tested |
 | SUBS-016 | Billing Capabilities | capability | Plan downgrades | Tested |
-| SUBS-017 | Billing Capabilities | capability | Add-on modules | Not started |
+| SUBS-017 | Billing Capabilities | capability | Add-on modules | Tested |
 | SUBS-018 | Billing Capabilities | capability | Usage-based AI credits | Implementing |
 | SUBS-019 | Billing Capabilities | capability | Document processing quotas | Tested |
 | SUBS-020 | Billing Capabilities | capability | User-based licensing | Tested |

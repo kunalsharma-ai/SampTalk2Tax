@@ -113,7 +113,7 @@ export class ApiKeysService {
           where: { orgId_userId: { orgId: k.orgId, userId: k.createdById } },
           include: {
             user: { select: { id: true, email: true, name: true } },
-            org: { select: { functionalCurrency: true, fiscalYearStartMonth: true, dataRegion: true, suspendedAt: true, suspendedReason: true, subscription: { select: { status: true, trialEndsAt: true, currentPeriodEnd: true, plan: { select: { name: true, features: true } } } } } },
+            org: { select: { functionalCurrency: true, fiscalYearStartMonth: true, dataRegion: true, suspendedAt: true, suspendedReason: true, subscription: { select: { status: true, trialEndsAt: true, currentPeriodEnd: true, addOns: true, plan: { select: { name: true, features: true } } } } } },
           },
         });
         return { k, member };

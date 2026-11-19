@@ -122,10 +122,25 @@ Platform administrators create coupons under Platform admin → Coupons. An orga
 - **Promotions (SUBS-025).** A coupon marked *apply automatically* is a promotion. It is shown beside the plans it fits, with its last day, and taken off at checkout without a code, for organisations that have not used it before. When several promotions fit, the one that takes the most off that charge applies. Promotions never stack: a code entered, or a coupon the subscription is already using, comes first. A promotion is not applied to renewal invoices the billing runner issues, only at checkout; once paid it stays with the subscription like any coupon, for the payments it covers. Switching it off removes it from the plans.
 - **Tests.** Engine: `packages/accounting-engine/test/coupons.test.ts`. API: `apps/api/test/subscription-coupons.e2e.test.ts` (checkout, limits, renewals until the payments are used up, the admin list, switching off, promotions). Browser: `apps/web/e2e/subscription-coupons-flow.test.mjs`.
 
+## Add-on modules (SUBS-017)
+
+A module a plan does not include can be bought on top of it for its own price. The modules are payroll, foreign currencies (exchange rates and revaluation) and group consolidation. The AI assistant is not an add-on, because what it may use is set by a plan's monthly AI requests.
+
+- **Prices.** Platform administrators price each add-on under Platform admin → Plans → Add-on modules: monthly and annual, in INR and USD. A module without a price is not offered. Switching one off stops new purchases; organisations that have it keep it at its price until they remove it. Changes are audited (`platform.add_on_saved`).
+- **Buying.** At checkout the owner ticks the add-ons the chosen plan does not include. The invoice's list price is the plan's price plus the add-ons'. The invoice keeps each add-on with its price, and the tax invoice lists them under the plan line. Coupons and promotions apply to the whole amount.
+- **Changing.** Adding a module during a paid period is an upgrade, charged for the days left like a dearer plan. Removing one, like a cheaper plan, takes effect at the renewal: the module stays until the end of the period paid for. Renewal invoices carry the subscription's add-ons, or those chosen with a scheduled change. An add-on the new plan already includes is dropped.
+- **Access.** A module can be used if the plan or an add-on includes it. The same rule applies to the API's module check (`FEATURE_NOT_IN_PLAN`) and the menu.
+- **API.**
+  - `GET /v1/orgs/:orgId/subscription/quote?…&addOns=PAYROLL,MULTI_CURRENCY`, and `POST …/checkout` and `POST …/request` with `addOns: []`.
+  - The subscription returns `addOns`, `features` (plan and add-ons) and `addOnOffers`.
+  - `GET /v1/admin/add-ons`, and `PUT /v1/admin/add-ons/:feature { prices, isActive }` (platform.manage).
+  - Refusal: 422 `ADD_ON_INVALID`.
+- **Tests.** Engine: `packages/accounting-engine/test/add-ons.test.ts`. API: `apps/api/test/subscription-add-ons.e2e.test.ts`. Browser: `apps/web/e2e/subscription-add-ons-flow.test.mjs`.
+
 ## Not yet
 
 - Checked against real Razorpay and Stripe test accounts (INTG-007, INTG-009 are marked Integration pending).
 - Automatic charging of saved cards, UPI AutoPay or e-mandates. Renewals are paid by the customer.
 - Refunds and credit notes. A payment on a replaced invoice is flagged for staff to refund at the gateway.
-- Add-ons and usage-based charges. Coupons on scheduled plan changes: a change that takes effect at the renewal is not charged now, so no coupon is entered with it.
+- Usage-based charges. Multi-entity add-ons (SUBS-021). Coupons on scheduled plan changes: a change that takes effect at the renewal is not charged now, so no coupon is entered with it.
 - Tax for suppliers outside India (VAT, sales tax).

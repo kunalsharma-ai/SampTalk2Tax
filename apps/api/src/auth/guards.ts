@@ -97,8 +97,8 @@ export class AuthGuard implements CanActivate {
           throw new HttpException({ error: 'PLAN_REQUIRED', message: `${why}. Your records can be read and exported; choose a plan under Settings → Subscription to make changes again.`, state: access.state }, HttpStatus.PAYMENT_REQUIRED);
         }
         const feature = this.reflector.getAllAndOverride<string | undefined>(PLAN_FEATURE, targets);
-        if (feature && !sub.plan.features.includes(feature)) {
-          throw new ForbiddenException({ error: 'FEATURE_NOT_IN_PLAN', message: `The ${sub.plan.name} plan does not include this module. Choose a plan that does under Settings → Subscription.`, feature });
+        if (feature && !sub.plan.features.includes(feature) && !(sub.addOns ?? []).includes(feature)) {
+          throw new ForbiddenException({ error: 'FEATURE_NOT_IN_PLAN', message: `The ${sub.plan.name} plan does not include this module. Choose a plan that does, or add the module, under Settings → Subscription.`, feature });
         }
       }
       if (!permission) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'Route has no permission declared' });
@@ -132,7 +132,7 @@ export class AuthGuard implements CanActivate {
         withSystemAccess(tx, () =>
           tx.subscription.findUnique({
             where: { orgId },
-            select: { status: true, trialEndsAt: true, currentPeriodEnd: true, plan: { select: { name: true, features: true } } },
+            select: { status: true, trialEndsAt: true, currentPeriodEnd: true, addOns: true, plan: { select: { name: true, features: true } } },
           }),
         ),
       ),

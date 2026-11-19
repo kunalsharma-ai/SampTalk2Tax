@@ -93,6 +93,46 @@ export default function AdminPlansPage() {
           </tbody>
         </Table>
       </Card>
+      <AddOns manage={manage} />
     </>
+  );
+}
+
+interface AddOn { feature: string; label: string; prices: Plan['prices'] | null; isActive: boolean; subscriptions: number }
+const noPrices: Plan['prices'] = { INR: { monthly: '', annual: '' }, USD: { monthly: '', annual: '' } };
+
+/** Add-on modules (SUBS-017): a module a plan does not include, bought on top of it. */
+function AddOns({ manage }: { manage: boolean }) {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['admin-add-ons'], queryFn: () => api<AddOn[]>('/v1/admin/add-ons') });
+  return (
+    <Card className="mt-6" aria-label="Add-on modules">
+      <CardHeader title="Add-on modules" description="Modules an organisation can add to a plan that does not include them, for their own price each month or year. The AI assistant is not offered as an add-on: what it may use is a plan's monthly AI requests." />
+      <ErrorAlert title="Could not load the add-ons" error={q.error} />
+      <div className="divide-y divide-line">
+        {q.data?.map((a) => <AddOnRow key={a.feature} a={a} manage={manage} onSaved={() => qc.invalidateQueries({ queryKey: ['admin-add-ons'] })} />)}
+      </div>
+    </Card>
+  );
+}
+
+function AddOnRow({ a, manage, onSaved }: { a: AddOn; manage: boolean; onSaved: () => Promise<void> }) {
+  const [prices, setPrices] = useState<Plan['prices']>(a.prices ?? noPrices);
+  const [active, setActive] = useState(a.prices ? a.isActive : true);
+  const save = useMutation({ mutationFn: () => api(`/v1/admin/add-ons/${a.feature.toLowerCase()}`, { method: 'PUT', body: { prices, isActive: active } }), onSuccess: onSaved });
+  return (
+    <form className="flex flex-wrap items-end gap-3 px-5 py-4" aria-label={`${a.label} add-on`} onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+      <div className="min-w-48 flex-1">
+        <p className="font-medium">{a.label}</p>
+        <p className="text-xs text-fg-muted">{a.prices ? (a.isActive ? 'Offered' : 'Not offered to new organisations') : 'No price yet: not offered'} · {a.subscriptions} organisation{a.subscriptions === 1 ? '' : 's'}</p>
+      </div>
+      {(['INR', 'USD'] as const).flatMap((c) => (['monthly', 'annual'] as const).map((k) => (
+        <Field key={`${c}-${k}`} label={`${c} ${k}`}>{(p) => <Input {...p} className="w-28 num" inputMode="decimal" disabled={!manage} value={prices[c][k]} onChange={(e) => setPrices({ ...prices, [c]: { ...prices[c], [k]: e.target.value } })} />}</Field>
+      )))}
+      <label className="inline-flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={active} disabled={!manage} onChange={(e) => setActive(e.target.checked)} /> Offered</label>
+      {manage ? <Button type="submit" size="sm" loading={save.isPending}>Save</Button> : null}
+      {save.isSuccess ? <span role="status" className="pb-2 text-sm text-positive">Saved</span> : null}
+      <div className="basis-full"><ErrorAlert title="Not saved" error={save.error} /></div>
+    </form>
   );
 }
