@@ -103,10 +103,28 @@ This page lists every invoice. Staff can:
   - paying an open renewal online.
 - Browser: `e2e/subscription-payments-flow.test.mjs`. An admin sets up the seller details and Razorpay in the UI. An owner pays on the stand-in page, the webhook comes back through the web app, and the owner sees the tax invoice.
 
+## Coupons (SUBS-024)
+
+Platform administrators create coupons under Platform admin → Coupons. An organisation's owner or admin enters the code at checkout.
+
+- **Terms.** A coupon is a percentage off (0.01 to 99.99%, any currency) or a fixed amount off in one currency. It covers the first 1 to 36 payments, or every payment. It can be limited to some plans, to monthly or annual billing, to a number of organisations, and to a last day for new organisations to start using it (the end of that day in India). Terms cannot change once a coupon exists; switch it off and create another.
+- **Before tax.** The discount comes off what the checkout charges (the plan price, or the upgrade charge for the days left), and GST is worked out on what remains. The invoice keeps the list price, the discount, the coupon code and the taxable value, and none of them can change afterwards. The tax invoice prints "Less: coupon CODE" and the taxable value.
+- **Never to nothing.** A coupon that would leave nothing to pay is refused at checkout. A free plan is a complimentary subscription instead.
+- **Starts when paid.** The organisation starts using the coupon when the first discounted invoice is paid. From then on the coupon stays with the subscription. Renewal invoices issued by the billing runner, and later checkouts, apply it automatically while it has payments left and fits the plan, billing and currency. A renewal for another plan the coupon does not cover is charged in full, and the quote says why.
+- **Who can use it.** Switching a coupon off, its last day passing, or reaching its number of organisations stops new organisations from using it. Organisations already using it keep it for the payments left. Each organisation can start using a coupon once.
+- **Platform admin → Coupons** lists each coupon with the organisations using it, how many payments it has taken money off, what it has taken off paid invoices per currency, and the payments left. Creating a coupon and switching one off or on are audited (`platform.coupon_created`, `platform.coupon_switched_off`, `platform.coupon_switched_on`).
+- **API.**
+  - `GET /v1/orgs/:orgId/subscription/quote?plan=&interval=&coupon=` returns `amount` (before the coupon), `discount`, `coupon`, `couponNote` and `subtotal` (the taxable value).
+  - `POST /v1/orgs/:orgId/subscription/checkout` accepts `{ plan, interval, coupon? }`.
+  - `GET /v1/admin/coupons` and `POST /v1/admin/coupons` need `platform.read` and `platform.manage`.
+  - `POST /v1/admin/coupons/:id/active { active }` needs `platform.manage`.
+  - Refusals: 422 `COUPON_NOT_FOUND`, `COUPON_NOT_VALID` (with the reason) or `COUPON_TOO_LARGE`.
+- **Tests.** Engine: `packages/accounting-engine/test/coupons.test.ts`. API: `apps/api/test/subscription-coupons.e2e.test.ts` (checkout, limits, renewals until the payments are used up, the admin list, switching off). Browser: `apps/web/e2e/subscription-coupons-flow.test.mjs`.
+
 ## Not yet
 
 - Checked against real Razorpay and Stripe test accounts (INTG-007, INTG-009 are marked Integration pending).
 - Automatic charging of saved cards, UPI AutoPay or e-mandates. Renewals are paid by the customer.
 - Refunds and credit notes. A payment on a replaced invoice is flagged for staff to refund at the gateway.
-- Coupons, add-ons and usage-based charges.
+- Add-ons and usage-based charges. Coupons on scheduled plan changes: a change that takes effect at the renewal is not charged now, so no coupon is entered with it.
 - Tax for suppliers outside India (VAT, sales tax).

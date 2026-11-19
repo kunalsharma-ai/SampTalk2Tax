@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, CardHeader, Table, Td, Th, Tr, cn } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, Input, Table, Td, Th, Tr, cn } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
@@ -31,6 +31,7 @@ interface Sub {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   request: { plan: Plan; interval: 'MONTHLY' | 'ANNUAL'; at: string } | null;
+  coupon: { code: string; description: string; terms: string; paymentsUsed: number; paymentsLeft: number | null } | null;
   usage: { members: number; openInvitations: number };
   plans: Plan[];
   featureLabels: Record<string, string>;
@@ -44,6 +45,10 @@ interface Quote {
   currency?: string;
   periodStart?: string;
   periodEnd?: string;
+  amount?: string;
+  discount?: string;
+  coupon?: { code: string; description: string; terms: string; continuing: boolean } | null;
+  couponNote?: string | null;
   subtotal?: string;
   lines?: { code: string; rate: string; amount: string }[];
   total?: string;
@@ -123,10 +128,13 @@ function Subscription() {
   const withdraw = useMutation({ mutationFn: () => api(`/v1/orgs/${orgId}/subscription/request`, { method: 'DELETE' }), onSuccess: done });
   const invoices = useQuery({ queryKey: ['subscription-invoices', orgId], queryFn: () => api<SubscriptionInvoice[]>(`/v1/orgs/${orgId}/subscription/invoices`) });
   const [choice, setChoice] = useState<string | null>(null);
-  const quote = useQuery({ queryKey: ['subscription-quote', orgId, choice, interval], queryFn: () => api<Quote>(`/v1/orgs/${orgId}/subscription/quote?plan=${choice}&interval=${interval}`), enabled: !!choice });
+  // The coupon code being typed, and the one the price is worked out with.
+  const [code, setCode] = useState('');
+  const [coupon, setCoupon] = useState('');
+  const quote = useQuery({ queryKey: ['subscription-quote', orgId, choice, interval, coupon], queryFn: () => api<Quote>(`/v1/orgs/${orgId}/subscription/quote?plan=${choice}&interval=${interval}${coupon ? `&coupon=${encodeURIComponent(coupon)}` : ''}`), enabled: !!choice, retry: false });
   const all = async () => { await done(); await qc.invalidateQueries({ queryKey: ['subscription-invoices', orgId] }); };
   const checkout = useMutation({
-    mutationFn: (plan: string) => api<Checkout>(`/v1/orgs/${orgId}/subscription/checkout`, { method: 'POST', body: { plan, interval } }),
+    mutationFn: (plan: string) => api<Checkout>(`/v1/orgs/${orgId}/subscription/checkout`, { method: 'POST', body: { plan, interval, coupon: coupon || null } }),
     onSuccess: async (r) => {
       if (r.url) window.location.assign(r.url);
       else { setChoice(null); await all(); }
@@ -180,6 +188,11 @@ function Subscription() {
                 </p>
               </div>
             </div>
+            {s.coupon ? (
+              <p className="border-t border-line px-5 py-3 text-sm" data-testid="subscription-coupon">
+                <Badge tone="violet">Coupon {s.coupon.code}</Badge> <span className="ml-1">{s.coupon.terms}{s.coupon.description ? ` (${s.coupon.description})` : ''}: used on {s.coupon.paymentsUsed} payment{s.coupon.paymentsUsed === 1 ? '' : 's'}{s.coupon.paymentsLeft === null ? ', and on every renewal' : s.coupon.paymentsLeft ? `, ${s.coupon.paymentsLeft} more to come` : ', none left'}.</span>
+              </p>
+            ) : null}
             {s.access.level === 'READ_ONLY' ? (
               <div className="px-5 pb-5"><Alert tone="warning" title="Read only">Your records can be read and exported. Choose a plan below to make changes again.</Alert></div>
             ) : null}
@@ -268,7 +281,15 @@ function Subscription() {
             </div>
             {choice ? (
               <div className="mx-5 mb-5 rounded-[var(--t2t-radius-lg)] border border-accent/60 bg-accent/5 p-4" aria-label="Checkout">
-                <ErrorAlert title="Could not price the plan" error={quote.error} />
+                <form className="mb-3 flex flex-wrap items-end gap-2 text-sm" aria-label="Coupon" onSubmit={(e) => { e.preventDefault(); setCoupon(code.trim().toUpperCase()); }}>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs font-medium uppercase tracking-wide text-fg-muted">Coupon code</span>
+                    <Input className="w-48 uppercase" maxLength={20} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Optional" />
+                  </label>
+                  <Button type="submit" variant="secondary" size="sm" disabled={!code.trim() || code.trim().toUpperCase() === coupon}>Apply</Button>
+                  {coupon ? <Button type="button" variant="ghost" size="sm" onClick={() => { setCoupon(''); setCode(''); }}>Remove coupon</Button> : null}
+                </form>
+                <ErrorAlert title={coupon ? 'Coupon not applied' : 'Could not price the plan'} error={quote.error} />
                 {quote.data ? (
                   quote.data.kind === 'SCHEDULED' ? (
                     <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -283,12 +304,19 @@ function Subscription() {
                         <p className="text-fg-muted">{dateTime(quote.data.periodStart!)} to {dateTime(quote.data.periodEnd!)}</p>
                         <table className="mt-2 w-full max-w-sm text-sm" aria-label="Amount">
                           <tbody>
-                            <tr><td>Subscription</td><td className="text-right num"><Money value={quote.data.subtotal!} currency={quote.data.currency!} /></td></tr>
+                            <tr><td>Subscription</td><td className="text-right num"><Money value={quote.data.amount!} currency={quote.data.currency!} /></td></tr>
+                            {quote.data.coupon ? (
+                              <>
+                                <tr><td>Coupon {quote.data.coupon.code} <span className="text-xs text-fg-muted">({quote.data.coupon.terms})</span></td><td className="text-right num">−<Money value={quote.data.discount!} currency={quote.data.currency!} /></td></tr>
+                                <tr className="border-t border-line"><td>Taxable value</td><td className="text-right num"><Money value={quote.data.subtotal!} currency={quote.data.currency!} /></td></tr>
+                              </>
+                            ) : null}
                             {quote.data.lines!.map((l) => <tr key={l.code}><td>{l.code} {l.rate}%</td><td className="text-right num"><Money value={l.amount} currency={quote.data!.currency!} /></td></tr>)}
                             <tr className="border-t border-line font-semibold"><td>Total</td><td className="text-right num"><Money value={quote.data.total!} currency={quote.data.currency!} /></td></tr>
                           </tbody>
                         </table>
                         {quote.data.note ? <p className="mt-1 text-xs text-fg-faint">{quote.data.note}</p> : null}
+                        {quote.data.couponNote ? <p className="mt-1 text-xs text-fg-muted">Your coupon is not used on this payment: {quote.data.couponNote}.</p> : null}
                       </div>
                       <div className="flex flex-col items-stretch gap-2 md:w-56">
                         {quote.data.payOnline ? (
@@ -341,7 +369,7 @@ function Subscription() {
                   <Tr key={i}>
                     <Td className="whitespace-nowrap">{dateTime(h.at)}</Td>
                     <Td>{EVENT[h.kind] ?? h.kind}</Td>
-                    <Td className="text-sm text-fg-muted">{[h.data.plan, h.data.interval, h.data.price ? `${h.data.price} ${h.data.currency ?? ''}` : null, h.data.paymentReference ? `ref ${h.data.paymentReference}` : null, h.data.invoice ? String(h.data.invoice) : null, h.data.number ? String(h.data.number) : null, h.data.total ? `${h.data.total} ${h.data.currency ?? ''}` : null, h.data.gateway ? String(h.data.gateway).toLowerCase() : null, h.data.stage ? (h.data.emailed ? 'emailed' : `not emailed${h.data.error ? `: ${h.data.error}` : ''}`) : null, h.data.reason, h.data.days ? `${h.data.days} days` : null].filter(Boolean).join(' · ')}</Td>
+                    <Td className="text-sm text-fg-muted">{[h.data.plan, h.data.interval, h.data.price ? `${h.data.price} ${h.data.currency ?? ''}` : null, h.data.paymentReference ? `ref ${h.data.paymentReference}` : null, h.data.invoice ? String(h.data.invoice) : null, h.data.number ? String(h.data.number) : null, h.data.total ? `${h.data.total} ${h.data.currency ?? ''}` : null, h.data.coupon ? `coupon ${String(h.data.coupon)} −${String(h.data.discount)}` : null, h.data.gateway ? String(h.data.gateway).toLowerCase() : null, h.data.stage ? (h.data.emailed ? 'emailed' : `not emailed${h.data.error ? `: ${h.data.error}` : ''}`) : null, h.data.reason, h.data.days ? `${h.data.days} days` : null].filter(Boolean).join(' · ')}</Td>
                   </Tr>
                 ))}
               </tbody>

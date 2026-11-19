@@ -54,6 +54,7 @@ export * from './disputes';
 export * from './pro-forma';
 export * from './plans';
 export * from './subscription-billing';
+export * from './coupons';
 export * from './support';
 export * from './usage';
 export * from './feature-flags';

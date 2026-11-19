@@ -278,6 +278,7 @@ model Organization {
   alertScans               AlertScan[]
   copilotSettings          CopilotSettings?
   closeSettings            CloseSettings?
+  couponRedemptions        CouponRedemption[]
   aiModelPrices            AiModelPrice[]
   aiAgentSettings          AiAgentSetting[]
   fixedAssets              FixedAsset[]
@@ -3810,6 +3811,10 @@ model Subscription {
   requestedInterval  String?      @map("requested_interval") @db.VarChar(8)
   requestedAt        DateTime?    @map("requested_at") @db.Timestamptz(6)
   requestedBy        String?      @map("requested_by") @db.Uuid
+  /// The coupon taking money off its payments (SUBS-024), and how many payments it has taken money off.
+  couponId           String?      @map("coupon_id") @db.Uuid
+  coupon             Coupon?      @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  couponUses         Int          @default(0) @map("coupon_uses")
   createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -3905,6 +3910,11 @@ model SubscriptionInvoice {
   checkoutUrl       String?      @map("checkout_url") @db.VarChar(1000)
   checkoutExpiresAt DateTime?    @map("checkout_expires_at") @db.Timestamptz(6)
   paymentRef        String?      @map("payment_ref") @db.VarChar(200)
+  /// Taken off the list price (or upgrade charge) by a coupon, before tax; subtotal is after it.
+  discount          Decimal      @default(0) @db.Decimal(12, 2)
+  couponId          String?      @map("coupon_id") @db.Uuid
+  coupon            Coupon?      @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  couponCode        String?      @map("coupon_code") @db.VarChar(20)
   createdBy         String?      @map("created_by") @db.Uuid
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -3912,6 +3922,46 @@ model SubscriptionInvoice {
   @@unique([gateway, checkoutRef], map: "subscription_invoices_checkout_key")
   @@index([orgId, issuedAt])
   @@map("subscription_invoices")
+}
+
+/// A coupon on Talk2Tax subscriptions (SUBS-024), created by platform administrators.
+model Coupon {
+  id             String                @id @db.Uuid
+  code           String                @unique @db.VarChar(20)
+  description    String                @default("") @db.VarChar(200)
+  kind           String                @db.VarChar(8)
+  percentOff     Decimal?              @map("percent_off") @db.Decimal(5, 2)
+  amountOff      Decimal?              @map("amount_off") @db.Decimal(12, 2)
+  currency       String?               @db.Char(3)
+  planCodes      String[]              @default([]) @map("plan_codes")
+  intervals      String[]              @default([])
+  cycles         Int?
+  maxRedemptions Int?                  @map("max_redemptions")
+  redeemBy       DateTime?             @map("redeem_by") @db.Timestamptz(6)
+  isActive       Boolean               @default(true) @map("is_active")
+  createdBy      String                @map("created_by") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  redemptions    CouponRedemption[]
+  subscriptions  Subscription[]
+  invoices       SubscriptionInvoice[]
+
+  @@map("coupons")
+}
+
+/// An organisation starting to use a coupon: once per coupon, when the first discounted invoice is paid.
+model CouponRedemption {
+  id        String       @id @db.Uuid
+  couponId  String       @map("coupon_id") @db.Uuid
+  coupon    Coupon       @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  orgId     String       @map("org_id") @db.Uuid
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+  invoiceId String       @map("invoice_id") @db.Uuid
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([couponId, orgId])
+  @@index([couponId])
+  @@map("coupon_redemptions")
 }
 
 model SubscriptionInvoiceCounter {

@@ -1392,6 +1392,10 @@
    {
     "def": "CHECK (((((status)::text = 'VOID'::text) = (voided_at IS NOT NULL)) AND (((status)::text <> 'VOID'::text) OR (void_reason IS NOT NULL))))",
     "name": "subscription_invoices_void_check"
+   },
+   {
+    "def": "CHECK (((discount >= (0)::numeric) AND ((discount = (0)::numeric) OR (coupon_id IS NOT NULL)) AND ((coupon_id IS NULL) = (coupon_code IS NULL))))",
+    "name": "subscription_invoices_coupon_check"
    }
   ],
   "subscriptions": [
@@ -1418,6 +1422,10 @@
    {
     "def": "CHECK ((((status)::text <> 'TRIALING'::text) OR (trial_ends_at IS NOT NULL)))",
     "name": "subscriptions_trial_check"
+   },
+   {
+    "def": "CHECK ((coupon_uses >= 0))",
+    "name": "subscriptions_coupon_check"
    }
   ],
   "supplier_gstin_checks": [
@@ -1672,6 +1680,16 @@
    {
     "def": "CHECK (((number > 0) AND (accounts > 0) AND ((status = 'REVERSED'::\"YearEndCloseStatus\") = ((reversed_on IS NOT NULL) AND (reversal_journal_entry_id IS NOT NULL) AND (reversal_reason IS NOT NULL) AND (reversed_by_id IS NOT NULL))) AND ((reversed_on IS NULL) OR (reversed_on >= closing_date))))",
     "name": "year_end_closes_chk"
+   }
+  ],
+  "coupons": [
+   {
+    "def": "CHECK ((((kind)::text = 'PERCENT'::text) AND (percent_off >= 0.01) AND (percent_off < (100)::numeric) AND (amount_off IS NULL) AND (currency IS NULL)) OR (((kind)::text = 'AMOUNT'::text) AND (amount_off > (0)::numeric) AND (percent_off IS NULL) AND (currency = ANY (ARRAY['INR'::bpchar, 'USD'::bpchar]))))",
+    "name": "coupons_terms_check"
+   },
+   {
+    "def": "CHECK ((((cycles IS NULL) OR ((cycles >= 1) AND (cycles <= 36))) AND ((max_redemptions IS NULL) OR (max_redemptions >= 1)) AND ((code)::text ~ '^[A-Z0-9][A-Z0-9-]{2,19}$'::text)))",
+    "name": "coupons_limits_check"
    }
   ]
  },
@@ -9859,6 +9877,62 @@
    ],
    "references": "users",
    "table": "year_end_closes"
+  },
+  {
+   "columns": [
+    "coupon_id"
+   ],
+   "deferrable": false,
+   "name": "coupon_redemptions_coupon_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "coupons",
+   "table": "coupon_redemptions"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "coupon_redemptions_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "coupon_redemptions"
+  },
+  {
+   "columns": [
+    "coupon_id"
+   ],
+   "deferrable": false,
+   "name": "subscriptions_coupon_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "coupons",
+   "table": "subscriptions"
+  },
+  {
+   "columns": [
+    "coupon_id"
+   ],
+   "deferrable": false,
+   "name": "subscription_invoices_coupon_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "coupons",
+   "table": "subscription_invoices"
   }
  ],
  "uniques": [

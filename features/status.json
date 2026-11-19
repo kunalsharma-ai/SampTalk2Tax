@@ -5127,7 +5127,7 @@
         "apps/web/e2e/subscription-payments-flow.test.mjs",
         "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
-      "notes": "Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons, add-ons and usage metering are later slices."
+      "notes": "Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons are built (SUBS-024); add-ons and usage metering are later slices."
     },
     "SUBS-002": {
       "status": "Tested",
@@ -6784,6 +6784,22 @@
         "apps/web/e2e/command-palette-flow.test.mjs"
       ],
       "notes": "Ctrl+K or ⌘K (or Search in the header) opens a search of the pages this person can open and, with reports access, records: contacts, invoices and bills, payments, journals, accounts, projects, departments, loans, fixed assets and alerts. Arrow keys and Enter, or click. No actions (create, run) from the palette yet."
+    },
+    "SUBS-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/coupons.ts",
+        "packages/accounting-engine/test/coupons.test.ts",
+        "apps/api/src/billing/payments/coupons.service.ts",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/src/db/migrations/20270108100000_coupons.ts",
+        "apps/api/test/subscription-coupons.e2e.test.ts",
+        "apps/web/src/app/admin/coupons/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-coupons-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Percentage or fixed-amount coupons, limited by plan, billing, number of organisations and a use-by date, for the first 1-36 payments or every payment. Taken off before GST at checkout and on renewals while payments are left; shown on the tax invoice; usage and money taken off in Platform admin → Coupons. A coupon never takes a payment to nothing."
     }
   }
 }

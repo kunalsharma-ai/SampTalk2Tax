@@ -68,7 +68,7 @@ registerGuards({
     if (op === 'INSERT') return;
     if (op === 'DELETE') fail('Subscription invoices cannot be deleted');
     if (ne(o.status, 'OPEN')) fail(`A ${String(o.status).toLowerCase()} subscription invoice cannot be changed`);
-    if (changedNe(o, n, ['subtotal', 'total', 'currency', 'org_id', 'reference'])) fail('The amount of a subscription invoice cannot be changed');
+    if (changedNe(o, n, ['subtotal', 'total', 'currency', 'org_id', 'reference', 'discount']) || changed(o, n, ['coupon_id', 'coupon_code'])) fail('The amount of a subscription invoice cannot be changed');
   },
   // supplier_gstin_checks_guard
   supplier_gstin_checks: appendOnlyRule('GST portal checks are kept as recorded; record a new check instead'),

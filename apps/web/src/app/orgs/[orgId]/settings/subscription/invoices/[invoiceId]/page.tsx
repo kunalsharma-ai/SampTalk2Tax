@@ -24,6 +24,9 @@ interface Invoice {
   periodEnd: string;
   currency: string;
   subtotal: string;
+  amount: string;
+  discount: string;
+  couponCode: string | null;
   taxLines: { code: string; rate: string; amount: string }[];
   taxTotal: string;
   total: string;
@@ -49,6 +52,7 @@ export default function SubscriptionInvoicePage() {
   const pay = useMutation({ mutationFn: () => api<{ url: string }>(`/v1/orgs/${orgId}/subscription/invoices/${invoiceId}/pay`, { method: 'POST' }), onSuccess: (r) => window.location.assign(r.url) });
   if (!org) return null;
   const i = q.data;
+  const discounted = !!i && i.discount !== '0.00';
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
@@ -103,8 +107,14 @@ export default function SubscriptionInvoicePage() {
                   <span className="block text-xs text-fg-muted">{dateTime(i.periodStart)} to {dateTime(i.periodEnd)}</span>
                 </td>
                 <td className="py-3 num">{i.seller.sacCode}</td>
-                <td className="py-3 text-right num"><Money value={i.subtotal} currency={i.currency} /></td>
+                <td className="py-3 text-right num"><Money value={i.amount} currency={i.currency} /></td>
               </tr>
+              {discounted ? (
+                <>
+                  <tr><td className="py-1.5" colSpan={2}>Less: coupon {i.couponCode}</td><td className="py-1.5 text-right num">−<Money value={i.discount} currency={i.currency} /></td></tr>
+                  <tr className="border-b border-line"><td className="py-1.5 font-medium" colSpan={2}>Taxable value</td><td className="py-1.5 text-right num font-medium"><Money value={i.subtotal} currency={i.currency} /></td></tr>
+                </>
+              ) : null}
               {i.taxLines.map((l) => (
                 <tr key={l.code}><td className="py-1.5" colSpan={2}>{l.code} at {l.rate}%</td><td className="py-1.5 text-right num"><Money value={l.amount} currency={i.currency} /></td></tr>
               ))}
