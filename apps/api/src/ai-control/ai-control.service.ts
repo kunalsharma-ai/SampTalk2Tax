@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { AiAgent } from '@talk2tax/database';
+import { D } from '@talk2tax/accounting-engine';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
@@ -44,6 +45,30 @@ export type AgentBlock = { code: 'AI_NOT_CONFIGURED' | 'AI_OFF' | 'AGENT_OFF' | 
 export function monthStartIst(now: Date = new Date()): { month: string; since: Date } {
   const month = todayIst(now).slice(0, 7);
   return { month, since: new Date(`${month}-01T00:00:00+05:30`) };
+}
+
+/** The name used for calls whose model was not stored (failed before the provider answered). */
+export const UNKNOWN_MODEL = 'Model not recorded';
+type ModelTokens = { model: string; inputTokens: number; outputTokens: number };
+type ModelRow = { _sum: { inputTokens: number | null; outputTokens: number | null } } & Record<string, unknown>;
+
+/** Adds up rows grouped by model, naming each by the model that answered, else the one asked. */
+function byModel(rows: ModelRow[], served: string | null, requested: string | null): ModelTokens[] {
+  const out = new Map<string, ModelTokens>();
+  for (const r of rows) {
+    const name = ((served && (r[served] as string | null)) || (requested && (r[requested] as string | null)) || UNKNOWN_MODEL).trim();
+    const m = out.get(name) ?? { model: name, inputTokens: 0, outputTokens: 0 };
+    m.inputTokens += r._sum.inputTokens ?? 0;
+    m.outputTokens += r._sum.outputTokens ?? 0;
+    out.set(name, m);
+  }
+  return [...out.values()];
+}
+const merge = (...lists: ModelTokens[][]) => byModel(lists.flat().map((m) => ({ model: m.model, _sum: { inputTokens: m.inputTokens, outputTokens: m.outputTokens } })), null, 'model');
+
+/** What tokens cost at a price per million, in US dollars to 4 decimal places. */
+export function tokenCost(inputTokens: number, outputTokens: number, price: { inputPerMillion: string; outputPerMillion: string }): string {
+  return new D(inputTokens).times(price.inputPerMillion).plus(new D(outputTokens).times(price.outputPerMillion)).div(1_000_000).toDecimalPlaces(4, D.ROUND_HALF_UP).toFixed(4);
 }
 
 @Injectable()
@@ -136,11 +161,81 @@ export class AiControlService {
 
   // ------------------------------------------------------------------ the control center
 
+  /** Tokens each agent used since `since`, by model (for costs at the organisation's prices). */
+  async usageByModel(orgId: string, since = monthStartIst().since): Promise<Record<AiAgent, ModelTokens[]>> {
+    const where = { orgId, createdAt: { gte: since } };
+    const sum = { inputTokens: true, outputTokens: true } as const;
+    const [chat, policy, dashboard, report, collections, banking, close, cfo] = await Promise.all([
+      this.prisma.copilotMessage.groupBy({ by: ['servedModel'], where: { ...where, role: 'ASSISTANT' }, _sum: sum }),
+      this.prisma.policyAiDraft.groupBy({ by: ['model'], where, _sum: sum }),
+      this.prisma.dashboardAiDraft.groupBy({ by: ['model'], where, _sum: sum }),
+      this.prisma.reportAiCall.groupBy({ by: ['model'], where, _sum: sum }),
+      this.prisma.collectionDraft.groupBy({ by: ['model', 'servedModel'], where, _sum: sum }),
+      this.prisma.bankAiSuggestion.groupBy({ by: ['model', 'servedModel'], where, _sum: sum }),
+      this.prisma.closeAiReview.groupBy({ by: ['model', 'servedModel'], where, _sum: sum }),
+      this.prisma.cfoReport.groupBy({ by: ['aiModel', 'servedModel'], where: { orgId, aiStartedAt: { gte: since } }, _sum: sum }),
+    ]);
+    const rows = (x: unknown) => x as ModelRow[];
+    return {
+      COPILOT: merge(byModel(rows(chat), 'servedModel', null), byModel(rows(policy), null, 'model'), byModel(rows(dashboard), null, 'model'), byModel(rows(report), null, 'model')),
+      COLLECTIONS: byModel(rows(collections), 'servedModel', 'model'),
+      BANKING: byModel(rows(banking), 'servedModel', 'model'),
+      CLOSE: byModel(rows(close), 'servedModel', 'model'),
+      CFO: byModel(rows(cfo), 'servedModel', 'aiModel'),
+    };
+  }
+
+  /** Set what one model costs per million tokens, in US dollars. */
+  async setPrice(member: Member, actor: Actor, input: { model: string; inputPerMillion: string; outputPerMillion: string }) {
+    const { orgId } = member;
+    await this.prisma.$transaction(async (tx) => {
+      const key = { orgId_model: { orgId, model: input.model } };
+      const before = await tx.aiModelPrice.findUnique({ where: key });
+      const data = { inputPerMillion: input.inputPerMillion, outputPerMillion: input.outputPerMillion, updatedById: actor.id };
+      await tx.aiModelPrice.upsert({ where: key, create: { orgId, model: input.model, ...data }, update: data });
+      await this.audit.append(tx, {
+        orgId,
+        actorId: actor.id,
+        action: 'ai.model_price_set',
+        entityType: 'ai_model_price',
+        entityId: orgId,
+        data: { model: input.model, from: before ? { inputPerMillion: String(before.inputPerMillion), outputPerMillion: String(before.outputPerMillion) } : null, to: { inputPerMillion: input.inputPerMillion, outputPerMillion: input.outputPerMillion } },
+      });
+    });
+    return this.overview(member);
+  }
+
+  async removePrice(member: Member, actor: Actor, model: string) {
+    const { orgId } = member;
+    await this.prisma.$transaction(async (tx) => {
+      const key = { orgId_model: { orgId, model } };
+      const before = await tx.aiModelPrice.findUnique({ where: key });
+      if (!before) throw new DomainError('PRICE_NOT_FOUND', `No price is set for ${model}`, HttpStatus.NOT_FOUND);
+      await tx.aiModelPrice.delete({ where: key });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'ai.model_price_removed', entityType: 'ai_model_price', entityId: orgId, data: { model, was: { inputPerMillion: String(before.inputPerMillion), outputPerMillion: String(before.outputPerMillion) } } });
+    });
+    return this.overview(member);
+  }
+
   async overview(member: Member) {
     const ai = await this.integrations.ai(member.orgId);
     const { orgId } = member;
     const { month, since } = monthStartIst();
     const accuracySince = new Date(Date.now() - ACCURACY_DAYS * 86_400_000);
+    const [priceRows, models] = await Promise.all([this.prisma.aiModelPrice.findMany({ where: { orgId }, orderBy: { model: 'asc' } }), this.usageByModel(orgId, since)]);
+    const prices = new Map(priceRows.map((p) => [p.model, { inputPerMillion: new D(String(p.inputPerMillion)).toFixed(4), outputPerMillion: new D(String(p.outputPerMillion)).toFixed(4) }]));
+    const costOf = (list: ModelTokens[]) => {
+      let amount = new D(0);
+      let unpricedTokens = 0;
+      const rows = list.map((m) => {
+        const price = prices.get(m.model) ?? null;
+        const cost = price ? tokenCost(m.inputTokens, m.outputTokens, price) : null;
+        if (cost) amount = amount.plus(cost);
+        else unpricedTokens += m.inputTokens + m.outputTokens;
+        return { ...m, cost };
+      });
+      return { amount: amount.toFixed(4), currency: 'USD', unpricedTokens, models: rows };
+    };
     const [settings, agentRows, usage, drafts, bank, adjustments, failures, running, last] = await Promise.all([
       this.prisma.copilotSettings.findUnique({ where: { orgId } }),
       this.prisma.aiAgentSetting.findMany({ where: { orgId } }),
@@ -197,7 +292,7 @@ export class AiControlService {
       })(),
       CFO: null,
     };
-    const ids = [settings?.updatedById, ...agentRows.map((a) => a.updatedById)].filter((x): x is string => !!x);
+    const ids = [settings?.updatedById, ...agentRows.map((a) => a.updatedById), ...priceRows.map((p) => p.updatedById)].filter((x): x is string => !!x);
     const users = new Map((await this.prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })).map((u) => [u.id, u.name]));
     const agents = AGENT_KEYS.map((key, i) => {
       const row = agentRows.find((a) => a.agent === key);
@@ -211,6 +306,7 @@ export class AiControlService {
         monthlyTokenLimit: limit,
         usage: { ...u, failed: failures[i], percentOfBudget: limit ? Math.min(100, Math.round((u.tokens * 1000) / limit) / 10) : null },
         budgetReached: !!limit && u.tokens >= limit,
+        cost: costOf(models[key]),
         accuracy: accuracy[key],
         running: running[i],
         lastUsedAt: last[i]?.createdAt.toISOString() ?? null,
@@ -238,7 +334,12 @@ export class AiControlService {
         failed: agents.reduce((s, a) => s + a.usage.failed, 0),
         running: agents.reduce((s, a) => s + a.running, 0),
         waiting: agents.reduce((s, a) => s + (a.accuracy?.waiting ?? 0), 0),
+        cost: agents.reduce((s, a) => s.plus(a.cost.amount), new D(0)).toFixed(4),
+        unpricedTokens: agents.reduce((s, a) => s + a.cost.unpricedTokens, 0),
       },
+      currency: 'USD',
+      prices: priceRows.map((p) => ({ model: p.model, ...prices.get(p.model)!, changedBy: users.get(p.updatedById) ?? 'Former member', changedAt: p.updatedAt.toISOString() })),
+      modelsUsed: [...new Set(AGENT_KEYS.flatMap((k) => models[k].map((m) => m.model)))].sort(),
       agents,
     };
   }

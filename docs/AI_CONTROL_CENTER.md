@@ -31,6 +31,25 @@ For each agent:
 
   The copilot and the virtual CFO have no rate, because their output is not approved or rejected item by item.
 
+## Model costs
+
+What the agents cost is worked out from the tokens already stored on each AI call and the
+prices the organisation enters:
+
+* **Model prices**: owners and admins (org.manage) set what the provider charges per million input
+  tokens and per million output tokens for each model, in US dollars, up to 4 decimal places.
+  The table lists every priced model and every model used this month, with its tokens and cost.
+  Setting, changing and removing a price is audited (`ai.model_price_set` with what it was,
+  `ai.model_price_removed`).
+* Each call is counted against the model that answered it (else the one asked; calls where
+  neither was stored count as *Model not recorded*).
+* **Cost this month** per agent and in total: input tokens × input price + output tokens ×
+  output price, per million, in decimals, to 4 places. Tokens of a model with no price are not
+  given a cost; they are shown as *tokens not priced*.
+* Prices apply to the whole month when the page opens, so changing a price recosts the month.
+  Talk2Tax has no built-in price list: provider prices change, so they are entered from the
+  provider's own list.
+
 ## Controls
 
 These need `org.manage` (owners and admins). Accountants and approvers can look (`audit.read`); viewers and employees cannot.
@@ -71,18 +90,21 @@ So every control takes effect on work that is already running, not only on new w
 |---|---|---|
 | `GET /v1/orgs/:orgId/ai-control` | audit.read | The overview above |
 | `PUT …/ai-control/agents/:agent` `{ enabled, monthlyTokenLimit }` | org.manage | Switch and budget for `COPILOT`, `COLLECTIONS`, `BANKING`, `CLOSE` or `CFO` |
+| `PUT …/ai-control/prices` `{ model, inputPerMillion, outputPerMillion }` | org.manage | Set a model's price per million tokens (decimal strings, US dollars) |
+| `POST …/ai-control/prices/remove` `{ model }` | org.manage | Remove a price (`404 PRICE_NOT_FOUND`) |
 | `POST …/ai-control/stop` `{ reason }` | org.manage | Emergency stop (`409 AI_ALREADY_STOPPED`) |
 | `POST …/ai-control/resume` | org.manage | Turn AI back on (`409 AI_ALREADY_ON`) |
 
 ## Data
 
+* `ai_model_prices` (one row per organisation and model, decimal prices with a CHECK of 0 to 100,000).
 * `ai_agent_settings` (one row per organisation and agent; no row means on with no budget), with RLS.
 * `copilot_settings.off_reason`, which is set only while AI is off (CHECK constraint).
 * Usage is worked out from the token counts already stored on each AI call. There is no separate counter that could drift.
 
 ## Not built yet
 
-* Money cost. Tokens are tracked, but prices per model are not applied.
+* Costs in currencies other than US dollars, and budgets in money rather than tokens.
 * A platform-wide stop across all organisations. Removing the server's `ANTHROPIC_API_KEY` stops only organisations without a key of their own.
 * Accuracy against a labelled evaluation set.
 * An orchestrator that hands work between agents.

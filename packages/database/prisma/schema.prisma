@@ -278,6 +278,7 @@ model Organization {
   alertScans               AlertScan[]
   copilotSettings          CopilotSettings?
   closeSettings            CloseSettings?
+  aiModelPrices            AiModelPrice[]
   aiAgentSettings          AiAgentSetting[]
   fixedAssets              FixedAsset[]
   depreciationRuns         DepreciationRun[]
@@ -1917,6 +1918,20 @@ enum AiAgent {
 }
 
 /// Per-organisation switch and monthly token budget for one AI agent. No row means on, with no budget.
+/// What the organisation pays its AI provider per million tokens for one model (AGENT-053), in US dollars, as the provider bills it.
+model AiModelPrice {
+  orgId            String       @map("org_id") @db.Uuid
+  model            String       @db.VarChar(100)
+  inputPerMillion  Decimal      @map("input_per_million") @db.Decimal(12, 4)
+  outputPerMillion Decimal      @map("output_per_million") @db.Decimal(12, 4)
+  updatedById      String       @map("updated_by_id") @db.Uuid
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org              Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@id([orgId, model])
+  @@map("ai_model_prices")
+}
+
 model AiAgentSetting {
   orgId             String       @map("org_id") @db.Uuid
   agent             AiAgent

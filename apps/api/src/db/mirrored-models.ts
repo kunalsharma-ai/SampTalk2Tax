@@ -42,6 +42,7 @@ export const MIRRORED_MODEL_NAMES = [
   'AlertScan',
   'CopilotSettings',
   'AiAgentSetting',
+  'AiModelPrice',
   'CopilotConversation',
   'CopilotMessage',
   'CopilotAction',
