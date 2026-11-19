@@ -1,0 +1,107 @@
+name: Security scans
+
+# Vulnerability scanning (SEC-024): static analysis of the code with CodeQL, and the container
+# images Talk2Tax runs in scanned for known vulnerabilities and secrets. Runs on every pull request
+# and push to main, and weekly, so a vulnerability published after a release is found too.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - '**/node_modules'
+              - '**/dist'
+              - '**/.next'
+              - apps/web/e2e
+              - apps/api/test
+              - test-support
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
+
+  images:
+    name: Container image vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The scanner, pinned; Dependabot does not update this line, so raise it with the actions.
+      TRIVY_IMAGE: aquasec/trivy:0.75.0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build the API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: api
+          tags: talk2tax-api:scan
+          load: true
+          cache-from: type=gha,scope=api
+      - name: Build the web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          tags: talk2tax-web:scan
+          load: true
+          cache-from: type=gha,scope=web
+      - name: Build the migration image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migrate
+          tags: talk2tax-migrate:scan
+          load: true
+          cache-from: type=gha,scope=migrate
+      # Each image fails on a high or critical vulnerability that has a fix, and is also checked for
+      # secrets left in its files. Every scan runs, so one report shows all three images.
+      - name: Scan the API image
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-api:scan
+      - name: Scan the web image
+        if: success() || failure()
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-web:scan
+      - name: Scan the migration image
+        if: success() || failure()
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-migrate:scan
+
+  dependencies:
+    name: Dependency audit (all packages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # CI's audit covers what the running app uses (high and above). This one also reads build
+      # and test tools, and fails only on critical advisories in them.
+      - run: pnpm audit --audit-level=critical

@@ -28529,9 +28529,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        ".github/workflows/security.yml",
+        "docs/CI_CD.md",
+        "docs/SECURITY.md"
+      ],
+      "notes": "CodeQL (security-extended) over the TypeScript; Trivy 0.75.0 scans of the API, web and migration images (fail on fixable HIGH/CRITICAL; the migration image is distroless and the unused TypeScript compiler is left out), with secret scanning; pnpm audit --audit-level=critical over all packages. On pull requests, main, weekly and on demand. Vitest raised to 4.1.12 to clear critical tinypool advisories. Not a penetration test; no DAST against a running deployment."
     },
     {
       "id": "SEC-025",

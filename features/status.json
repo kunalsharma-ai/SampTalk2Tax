@@ -7048,6 +7048,15 @@
         "docs/SECURITY.md"
       ],
       "notes": "Reads the audit trail every SECURITY_MONITOR_INTERVAL_SECONDS (default 5 min). 23 audit actions are security events (HIGH or MEDIUM). Six rules raise alerts: many lockouts in an hour (SECURITY_LOCKOUT_ALERT_COUNT), failed two-step codes after a right password, platform role changes, a platform admin turning two-step off, infected uploads, 5+ SSO refusals in an hour for an organisation. One alert per rule and key (security_alerts; findings never change or get deleted), each new one emailed once to every super admin through the server's mail server. Platform admins review events and alerts; super admins acknowledge with a note (audited). No SIEM export, no pager or chat notifications, no anomaly detection beyond these rules."
+    },
+    "SEC-024": {
+      "status": "Implemented",
+      "evidence": [
+        ".github/workflows/security.yml",
+        "docs/CI_CD.md",
+        "docs/SECURITY.md"
+      ],
+      "notes": "CodeQL (security-extended) over the TypeScript; Trivy 0.75.0 scans of the API, web and migration images (fail on fixable HIGH/CRITICAL; the migration image is distroless and the unused TypeScript compiler is left out), with secret scanning; pnpm audit --audit-level=critical over all packages. On pull requests, main, weekly and on demand. Vitest raised to 4.1.12 to clear critical tinypool advisories. Not a penetration test; no DAST against a running deployment."
     }
   }
 }

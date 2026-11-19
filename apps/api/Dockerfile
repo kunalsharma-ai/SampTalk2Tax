@@ -19,18 +19,25 @@ RUN --mount=type=secret,id=extra_ca,required=false NODE_EXTRA_CA_CERTS=/run/secr
 # A production-only copy of the API and the workspace packages it uses. pnpm deploy installs the
 # packages afresh without the code Prisma generates from the schema (the model types, decimals and
 # the model description the data client reads), so the build's copy is put next to @prisma/client
-# in the copy, and loaded once to check it. No query engine or SQL database is used.
+# in the copy, and loaded once to check it. No query engine or SQL database is used. The TypeScript
+# compiler comes in only as an optional peer of @prisma/client; it is never run, so it is removed
+# (its native build carries Go library vulnerabilities the image scan would report).
 RUN --mount=type=secret,id=extra_ca,required=false NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca \
   pnpm deploy --filter @talk2tax/api --prod --legacy /out \
   && cp -r apps/api/dist /out/dist \
   && cp -r /repo/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma /out/node_modules/.pnpm/@prisma+client@*/node_modules/ \
+  && rm -rf /out/node_modules/.pnpm/typescript@* /out/node_modules/.pnpm/@typescript+typescript-* \
+  && find /out/node_modules -xtype l -delete \
   && cd /out && node -e "const { Prisma } = require(require.resolve('@prisma/client', { paths: [require.resolve('@talk2tax/database')] })); if (!Prisma.dmmf.datamodel.models.length) process.exit(1)"
 
 # Release step, run once before new API containers start: the MongoDB migrations against MONGODB_URL.
-FROM build AS migrate
-WORKDIR /repo/apps/api
-USER node
-CMD ["node", "dist/db/migrate.js"]
+# The same production-only copy as the API image, on the same distroless base: no compilers,
+# package managers or build tools in an image that holds the database credentials.
+FROM gcr.io/distroless/nodejs26-debian13:nonroot AS migrate
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /out ./
+CMD ["dist/db/migrate.js"]
 
 # The API server: distroless (no shell or package manager), as a non-root user.
 FROM gcr.io/distroless/nodejs26-debian13:nonroot AS api

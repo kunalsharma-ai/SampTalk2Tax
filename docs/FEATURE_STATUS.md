@@ -8,10 +8,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 762 |
+| Not started | 761 |
 | Designed | 0 |
 | Implementing | 38 |
-| Implemented | 34 |
+| Implemented | 35 |
 | Tested | 495 |
 | Integration pending | 14 |
 | External approval required | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 9 | 29 |
+| Security and enterprise governance | M1 | 38 | 8 | 30 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5874,6 +5874,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/security/page.tsx
   - apps/api/test/security-monitor.e2e.test.ts
   - apps/web/e2e/security-monitoring-flow.test.mjs
+  - docs/SECURITY.md
+
+### SEC-024 — Vulnerability scanning
+
+- Module: Security and enterprise governance
+- Status: **Implemented**
+- Notes: CodeQL (security-extended) over the TypeScript; Trivy 0.75.0 scans of the API, web and migration images (fail on fixable HIGH/CRITICAL; the migration image is distroless and the unused TypeScript compiler is left out), with secret scanning; pnpm audit --audit-level=critical over all packages. On pull requests, main, weekly and on demand. Vitest raised to 4.1.12 to clear critical tinypool advisories. Not a penetration test; no DAST against a running deployment.
+- Evidence:
+  - .github/workflows/security.yml
+  - docs/CI_CD.md
   - docs/SECURITY.md
 
 ### SEC-025 — Dependency scanning

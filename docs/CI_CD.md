@@ -51,6 +51,20 @@ Actions and the base images; each runs the checks above. Fixes for advisories in
 dependencies are pinned in `pnpm-workspace.yaml` under `overrides` until the packages that bring
 them in update.
 
+## Security scans (`.github/workflows/security.yml`)
+
+Vulnerability scanning (SEC-024). On every pull request and push to `main`, weekly (Monday 03:30
+UTC, so a vulnerability published after a release is found too) and on demand.
+
+| Job | What it checks |
+|---|---|
+| CodeQL static analysis | GitHub's CodeQL with the `security-extended` queries over the TypeScript and JavaScript (tests and stand-ins left out). Findings appear under the repository's Security → Code scanning |
+| Container image vulnerability scan | Builds the API, web and migration images and scans them with Trivy (pinned in the workflow). Each image fails on a high or critical vulnerability that has a fix (the migration image is distroless like the API, so it carries no build tools), and fails if a secret is found in its files |
+| Dependency audit (all packages) | `pnpm audit --audit-level=critical` over everything, build and test tools included (CI's audit covers what the running app uses at high and above) |
+
+GitHub's own secret scanning and push protection are free for public repositories; turn them on
+under Settings → Code security.
+
 ## Release and deployment (`.github/workflows/release.yml`)
 
 - **Images**: on every push to `main`, every `v*.*.*` tag, and by hand. The three images go to
@@ -84,6 +98,6 @@ to the API on the internal network.
 - One host only: no Kubernetes, autoscaling, blue-green or canary releases, and a short gap while
   containers are replaced. Request timings and runner heartbeats are per instance (see
   [`OPERATIONS.md`](OPERATIONS.md)).
-- No staging environment, image vulnerability scan, or database backup automation (that is the
+- No staging environment or database backup automation (that is the
   managed database's job). The API image is about 680 MB because the Prisma CLI's dependencies
   come with the client; trimming it is follow-up work.
