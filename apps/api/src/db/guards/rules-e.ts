@@ -78,6 +78,11 @@ registerGuards({
   sso_domains: (op, o, n) => {
     if (op === 'UPDATE' && changed(o, n, ['org_id', 'domain', 'token', 'created_by_id'])) fail('A sign-in domain keeps its name and verification value; remove it and add it again');
   },
+  // file_scans_guard (SEC-018/019): an upload's checks are kept as they happened.
+  file_scans: (op) => {
+    if (op === 'INSERT') return;
+    fail('A file check is recorded once and never changed');
+  },
   // retention_runs_guard (SEC-020): what a retention run deleted is kept as it happened.
   retention_runs: (op) => {
     if (op === 'INSERT') return;

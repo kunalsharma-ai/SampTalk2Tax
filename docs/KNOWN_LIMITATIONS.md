@@ -294,3 +294,8 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Single sign-on is OpenID Connect only (no SAML), with one provider per organisation, no SCIM provisioning and no single logout: someone who leaves keeps their Talk2Tax membership until removed under Team and roles. See [`SINGLE_SIGN_ON.md`](SINGLE_SIGN_ON.md).
 * It has been tested against a local stand-in provider, not yet against Microsoft Entra ID, Google Workspace or Okta themselves.
+
+## File uploads
+
+* Malware scanning needs a ClamAV daemon set in `CLAMAV_URL`; without it, uploads get the size, type and PDF active-content checks only. Files already stored are not scanned again when virus signatures update. See [`SECURITY.md`](SECURITY.md#file-uploads-and-malware-scanning-sec-018019).
+* The scanning code is tested against a local stand-in that speaks clamd's protocol, not against a real ClamAV installation.

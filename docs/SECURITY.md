@@ -160,6 +160,37 @@ Domains are proved by DNS TXT records, and SSO can optionally be required for me
 owners keep their password. Requests to the provider are guarded against reaching private
 networks. See [`SINGLE_SIGN_ON.md`](SINGLE_SIGN_ON.md).
 
+## File uploads and malware scanning (SEC-018/019)
+
+Files are uploaded as attachments to records, as tax notice files, and by vendors through the
+vendor portal. Each one is checked before it is kept:
+
+1. **Size and type.** The limit is 5 MB. The type is read from the file's first bytes, never the
+   browser's claim, and only PDF, PNG, JPEG and WebP are accepted. File names lose path
+   separators and control characters.
+2. **Active content.** A PDF that can run JavaScript, launch programs, carry embedded files, use
+   XFA or RichMedia, or submit or import form data is refused. Names written with `#xx` escapes,
+   and keys inside compressed object streams, are checked too. This applies with or without a
+   virus scanner.
+3. **Malware.** With `CLAMAV_URL=tcp://host:3310`, every file is streamed to ClamAV's daemon
+   (INSTREAM) before it is kept.
+   - A file with a signature is refused (`422 FILE_INFECTED`).
+   - While the scanner cannot answer, uploads are refused too (`503 FILE_SCAN_UNAVAILABLE`):
+     fail closed.
+   - `CLAMAV_TIMEOUT_SECONDS` limits each scan (default 15).
+
+Every check is recorded in `file_scans` (insert-only), and each refusal is written to the
+organisation's audit trail as `file.refused`. Refused files are not kept, only their name, size
+and SHA-256. Platform admin → **File scanning** shows the scanner's state and version, the last
+30 days of checks, and the latest refused files.
+
+Files are always served back as downloads, with `X-Content-Type-Options: nosniff` and a
+sandboxing Content-Security-Policy.
+
+Not built: re-scanning files already stored when signatures update. Bank statement files (parsed,
+not kept as files) and invoice template logos (images up to 500 KB, type checked from their bytes)
+do not go through the virus scanner.
+
 ## Data retention (SEC-020)
 
 Settings → Data retention (permission `audit.read` to view, `org.manage` to change) sets how long

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 769 |
+| Not started | 767 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 488 |
+| Tested | 490 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 16 | 22 |
+| Security and enterprise governance | M1 | 38 | 14 | 24 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5818,6 +5818,35 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries
   - zod schemas on every endpoint
+
+### SEC-018 — Secure file uploads
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Uploads (attachments, tax notice files, vendor portal) are limited to 5 MB, typed from their bytes (PDF/PNG/JPEG/WebP), renamed safely, refused when a PDF can run code or carries files (also escaped or in compressed object streams), recorded in file_scans and served back as downloads with nosniff and a sandbox CSP.
+- Evidence:
+  - apps/api/src/attachments/attachments.service.ts (size, type from bytes, file names)
+  - apps/api/src/files/inspect.ts
+  - apps/api/src/files/clamd.ts
+  - apps/api/src/files/file-scanner.service.ts
+  - apps/web/src/app/admin/file-scanning/page.tsx
+  - apps/api/test/file-scanning.e2e.test.ts
+  - apps/web/e2e/file-scanning-flow.test.mjs
+  - docs/SECURITY.md
+
+### SEC-019 — Malware scanning
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: ClamAV (clamd INSTREAM over TCP, CLAMAV_URL) scans every upload before it is kept; infected files are refused, and uploads fail closed while the scanner cannot answer. Refusals are audited (file.refused) and shown in Platform admin -> File scanning. Not built: re-scanning stored files.
+- Evidence:
+  - apps/api/src/files/inspect.ts
+  - apps/api/src/files/clamd.ts
+  - apps/api/src/files/file-scanner.service.ts
+  - apps/web/src/app/admin/file-scanning/page.tsx
+  - apps/api/test/file-scanning.e2e.test.ts
+  - apps/web/e2e/file-scanning-flow.test.mjs
+  - docs/SECURITY.md
 
 ### SEC-020 — Data retention policies
 

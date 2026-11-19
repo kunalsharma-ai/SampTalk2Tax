@@ -378,6 +378,7 @@ export const SECTION_HELP: Record<string, Help> = {
   'Stop AI for everyone': { what: 'Stops AI for every organisation at once. Work already running stops before its next call to the AI model.', how: 'Give the reason (at least 10 characters); organisations see it.' },
   'Turn AI back on': { what: 'Lifts the platform-wide AI stop. Each organisation\'s own switches, budgets and stop still apply.', how: 'Give the reason; it is kept in the history.' },
   'Shutdown history': { what: 'Every platform-wide AI stop and resume, with who did it and why.', how: 'It cannot be changed or deleted.' },
+  'Refused files': { what: 'Uploads that were not kept: malware the scanner found, PDFs that can run code or carry other files, and files sent while the scanner could not answer.', how: 'Only the name, size and SHA-256 are kept. Tell the organisation if a file looks like an attack; the same refusal is in its audit trail.' },
   'Encrypted secrets': { what: 'Each kind of secret stored in the app, counted by the key that encrypted it.', how: 'Secrets under a previous key still work; re-encrypt them, then remove the old key from the configuration.' },
   'Re-encrypt with the current key': { what: 'Encrypts every secret under a previous key again with the current key.', how: 'Run it after a key change; it is safe to repeat and is audited.' },
   'Start or schedule maintenance': { what: 'Put the platform into maintenance now or later.', how: 'Set the window; users see a banner beforehand.' },
