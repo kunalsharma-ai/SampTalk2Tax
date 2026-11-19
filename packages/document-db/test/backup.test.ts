@@ -36,9 +36,14 @@ describe('backups', () => {
     const file = join(dir, 'sealed.t2tbak');
     const m = await writeBackup(client.db(SOURCE), file, { key: KEY });
     expect(m).toMatchObject({ database: SOURCE, encrypted: true, consistent: true, documents: 2502, collections: [{ name: 'journals', documents: 2501, indexes: 1 }, { name: 'users', documents: 1, indexes: 1 }] });
-    expect((await fs.stat(file)).mode & 0o777).toBe(0o600);
-    // Nothing readable in the file: the account's email is not there in plain text.
-    expect((await fs.readFile(file)).includes(Buffer.from('a@example.test'))).toBe(false);
+    const handle = await fs.open(file, 'r');
+    try {
+      expect((await handle.stat()).mode & 0o777).toBe(0o600);
+      // Nothing readable in the file: the account's email is not there in plain text.
+      expect((await handle.readFile()).includes(Buffer.from('a@example.test'))).toBe(false);
+    } finally {
+      await handle.close();
+    }
     expect(await verifyBackup(file, { key: KEY })).toEqual(m);
 
     const restored = await restoreBackup(file, client.db(TARGET), { key: KEY });

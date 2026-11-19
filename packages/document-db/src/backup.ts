@@ -158,40 +158,53 @@ async function* splitLines(stream: Readable): AsyncGenerator<string> {
 }
 
 /** Reads a backup file line by line, checking its key, its counts and its checksum. */
-async function readLines(path: string, key: string | undefined, onLine: (line: Line) => Promise<void>): Promise<{ header: Extract<Line, { t: 'header' }>; end: Extract<Line, { t: 'end' }>; encrypted: boolean }> {
+async function readLines(path: string, key: string | undefined, onLine: (line: Line) => Promise<void>): Promise<{ header: Extract<Line, { t: 'header' }>; end: Extract<Line, { t: 'end' }>; encrypted: boolean; file: { bytes: number; sha256: string } }> {
+  // One open file for every read, so the checks and the restore see the same bytes.
   const handle = await fs.open(path, 'r');
-  let size: number;
-  let prefix: Buffer;
-  try {
-    size = (await handle.stat()).size;
-    prefix = Buffer.alloc(Math.min(36, size));
-    await handle.read(prefix, 0, prefix.length, 0);
-  } finally {
-    await handle.close();
-  }
-  const magic = prefix.subarray(0, 8);
   let source: Readable;
   let encrypted = false;
-  if (magic.equals(MAGIC_PLAIN)) {
-    source = createReadStream(path, { start: 8 });
-  } else if (magic.equals(MAGIC_SEALED)) {
-    encrypted = true;
-    if (!key) throw new BackupError('KEY_REQUIRED', 'This backup is encrypted: give the backup key');
-    if (size < 36 + 16) throw new BackupError('DAMAGED', 'The backup file is cut short');
-    const tagBuf = Buffer.alloc(16);
-    const h = await fs.open(path, 'r');
-    try {
-      await h.read(tagBuf, 0, 16, size - 16);
-    } finally {
-      await h.close();
+  const fileHash = createHash('sha256');
+  let fileBytes = 0;
+  try {
+    const size = (await handle.stat()).size;
+    const prefix = Buffer.alloc(Math.min(36, size));
+    await handle.read(prefix, 0, prefix.length, 0);
+    const magic = prefix.subarray(0, 8);
+    if (magic.equals(MAGIC_PLAIN)) {
+      fileHash.update(magic);
+      fileBytes = 8;
+      source = handle.createReadStream({ start: 8, autoClose: true });
+      source.on('data', (c: Buffer) => {
+        fileHash.update(c);
+        fileBytes += c.length;
+      });
+    } else if (magic.equals(MAGIC_SEALED)) {
+      fileHash.update(prefix);
+      fileBytes = prefix.length;
+      encrypted = true;
+      if (!key) throw new BackupError('KEY_REQUIRED', 'This backup is encrypted: give the backup key');
+      if (size < 36 + 16) throw new BackupError('DAMAGED', 'The backup file is cut short');
+      const tagBuf = Buffer.alloc(16);
+      await handle.read(tagBuf, 0, 16, size - 16);
+      const decipher = createDecipheriv('aes-256-gcm', deriveKey(key, prefix.subarray(8, 24)), prefix.subarray(24, 36));
+      decipher.setAuthTag(tagBuf);
+      const body = handle.createReadStream({ start: 36, end: size - 17, autoClose: true });
+      body.on('data', (c: Buffer) => {
+        fileHash.update(c);
+        fileBytes += c.length;
+      });
+      body.on('end', () => {
+        fileHash.update(tagBuf);
+        fileBytes += tagBuf.length;
+      });
+      source = body.pipe(decipher);
+      body.on('error', (e) => decipher.destroy(e));
+    } else {
+      throw new BackupError('NOT_A_BACKUP', 'This is not a Talk2Tax backup file');
     }
-    const decipher = createDecipheriv('aes-256-gcm', deriveKey(key, prefix.subarray(8, 24)), prefix.subarray(24, 36));
-    decipher.setAuthTag(tagBuf);
-    const body = createReadStream(path, { start: 36, end: size - 17 });
-    source = body.pipe(decipher);
-    body.on('error', (e) => decipher.destroy(e));
-  } else {
-    throw new BackupError('NOT_A_BACKUP', 'This is not a Talk2Tax backup file');
+  } catch (e) {
+    await handle.close();
+    throw e;
   }
 
   const gunzip = createGunzip();
@@ -241,16 +254,15 @@ async function readLines(path: string, key: string | undefined, onLine: (line: L
   if (!h || !e) throw new BackupError('DAMAGED', 'The backup file is cut short');
   if (hash.digest('hex') !== e.sha256) throw new BackupError('DAMAGED', 'The backup does not match its checksum');
   for (const [name, n] of Object.entries(e.counts)) if ((counts[name] ?? 0) !== n) throw new BackupError('DAMAGED', `The backup is missing documents of ${name}`);
-  return { header: h, end: e, encrypted };
+  return { header: h, end: e, encrypted, file: { bytes: fileBytes, sha256: fileHash.digest('hex') } };
 }
 
 /** Checks a backup file end to end without restoring it, and describes what it holds. */
 export async function verifyBackup(path: string, opts: { key?: string } = {}): Promise<BackupManifest> {
   const indexes: Record<string, number> = {};
-  const { header, end, encrypted } = await readLines(path, opts.key, async (line) => {
+  const { header, end, encrypted, file } = await readLines(path, opts.key, async (line) => {
     if (line.t === 'collection') indexes[line.name] = line.indexes.length;
   });
-  const file = await fileSha256(path);
   return {
     format: FORMAT,
     version: header.version,
