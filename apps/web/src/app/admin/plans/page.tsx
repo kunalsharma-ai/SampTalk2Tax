@@ -94,6 +94,7 @@ export default function AdminPlansPage() {
         </Table>
       </Card>
       <AddOns manage={manage} />
+      <CreditPacks manage={manage} />
     </>
   );
 }
@@ -134,5 +135,57 @@ function AddOnRow({ a, manage, onSaved }: { a: AddOn; manage: boolean; onSaved: 
       {save.isSuccess ? <span role="status" className="pb-2 text-sm text-positive">Saved</span> : null}
       <div className="basis-full"><ErrorAlert title="Not saved" error={save.error} /></div>
     </form>
+  );
+}
+
+interface CreditPack { id: string; name: string; requests: number; prices: { INR: string; USD: string }; isActive: boolean; sold: number }
+
+/** Extra AI requests (SUBS-018): packs bought on top of a plan's monthly AI requests, valid for a year. */
+function CreditPacks({ manage }: { manage: boolean }) {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['admin-credit-packs'], queryFn: () => api<CreditPack[]>('/v1/admin/ai-credit-packs') });
+  const [name, setName] = useState('');
+  const [requests, setRequests] = useState('');
+  const [inr, setInr] = useState('');
+  const [usd, setUsd] = useState('');
+  const refresh = () => qc.invalidateQueries({ queryKey: ['admin-credit-packs'] });
+  const create = useMutation({
+    mutationFn: () => api('/v1/admin/ai-credit-packs', { method: 'POST', body: { name, requests: Number.parseInt(requests, 10) || 0, prices: { INR: inr, USD: usd } } }),
+    onSuccess: async () => { setName(''); setRequests(''); setInr(''); setUsd(''); await refresh(); },
+  });
+  const toggle = useMutation({ mutationFn: (p: CreditPack) => api(`/v1/admin/ai-credit-packs/${p.id}/active`, { method: 'POST', body: { active: !p.isActive } }), onSuccess: refresh });
+  return (
+    <Card className="mt-6" aria-label="AI request packs">
+      <CardHeader title="AI request packs" description="Extra AI requests an organisation can buy once its plan's monthly requests run out. They are used after the plan's, from the pack that expires first, and last a year from payment. A pack's requests and prices are fixed once created; stop offering it and create another to change them." />
+      <ErrorAlert title="Could not load the packs" error={q.error ?? toggle.error} />
+      {q.data?.length ? (
+        <Table>
+          <thead><tr><Th>Pack</Th><Th numeric>Requests</Th><Th numeric>INR</Th><Th numeric>USD</Th><Th numeric>Bought</Th><Th>Status</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
+          <tbody>
+            {q.data.map((p) => (
+              <Tr key={p.id}>
+                <Td>{p.name}</Td>
+                <Td numeric>{p.requests.toLocaleString('en-IN')}</Td>
+                <Td numeric>{p.prices.INR}</Td>
+                <Td numeric>{p.prices.USD}</Td>
+                <Td numeric>{p.sold}</Td>
+                <Td><Badge tone={p.isActive ? 'positive' : 'neutral'}>{p.isActive ? 'Offered' : 'Not offered'}</Badge></Td>
+                <Td className="text-right">{manage ? <Button variant="ghost" size="sm" loading={toggle.isPending && toggle.variables?.id === p.id} onClick={() => toggle.mutate(p)}>{p.isActive ? 'Stop offering' : 'Offer again'}</Button> : null}</Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : q.data ? <p className="px-5 pb-4 text-sm text-fg-muted">No packs yet, so organisations cannot buy extra AI requests.</p> : null}
+      {manage ? (
+        <form className="flex flex-wrap items-end gap-3 border-t border-line px-5 py-4" aria-label="New AI request pack" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
+          <Field label="Pack name">{(p) => <Input {...p} className="w-44" value={name} onChange={(e) => setName(e.target.value)} placeholder="1,000 AI requests" />}</Field>
+          <Field label="Requests">{(p) => <Input {...p} className="w-28 num" inputMode="numeric" value={requests} onChange={(e) => setRequests(e.target.value)} />}</Field>
+          <Field label="INR price">{(p) => <Input {...p} className="w-28 num" inputMode="decimal" value={inr} onChange={(e) => setInr(e.target.value)} />}</Field>
+          <Field label="USD price">{(p) => <Input {...p} className="w-28 num" inputMode="decimal" value={usd} onChange={(e) => setUsd(e.target.value)} />}</Field>
+          <Button type="submit" size="sm" loading={create.isPending}>Add pack</Button>
+          <div className="basis-full"><ErrorAlert title="Pack not added" error={create.error} /></div>
+        </form>
+      ) : null}
+    </Card>
   );
 }

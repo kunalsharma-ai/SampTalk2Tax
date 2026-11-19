@@ -64,9 +64,10 @@ interface Quote {
 }
 interface SubscriptionInvoice {
   id: string;
+  creditPack?: { name: string; requests: number } | null;
   reference: string;
   number: string | null;
-  kind: 'NEW' | 'RENEWAL' | 'UPGRADE';
+  kind: 'NEW' | 'RENEWAL' | 'UPGRADE' | 'CREDITS';
   status: 'OPEN' | 'PAID' | 'VOID';
   plan: { code: string; name: string };
   billingInterval: 'MONTHLY' | 'ANNUAL';
@@ -113,7 +114,7 @@ const EVENT: Record<string, string> = {
   REMINDER_FINAL: 'Final reminder',
   REMINDER_LAPSED: 'Read-only notice',
 };
-const KIND: Record<string, string> = { NEW: 'New plan', RENEWAL: 'Renewal', UPGRADE: 'Upgrade' };
+const KIND: Record<string, string> = { NEW: 'New plan', RENEWAL: 'Renewal', UPGRADE: 'Upgrade', CREDITS: 'Extra AI requests' };
 const INVOICE_TONE = { OPEN: 'warning', PAID: 'positive', VOID: 'neutral' } as const;
 const limit = (n: number | null, unit: string) => (n === null ? `Unlimited ${unit}` : `${n.toLocaleString('en-IN')} ${unit}`);
 
@@ -245,7 +246,7 @@ function Subscription() {
           {invoices.data?.some((i) => i.status === 'OPEN') ? (
             <div className="mb-6">
               {invoices.data.filter((i) => i.status === 'OPEN').map((i) => (
-                <Alert key={i.id} tone="warning" title={`${KIND[i.kind]} to pay: ${i.plan.name}, ${dateTime(i.periodStart)} to ${dateTime(i.periodEnd)}`}>
+                <Alert key={i.id} tone="warning" title={i.kind === 'CREDITS' ? `${KIND.CREDITS} to pay: ${i.creditPack?.name ?? ''}` : `${KIND[i.kind]} to pay: ${i.plan.name}, ${dateTime(i.periodStart)} to ${dateTime(i.periodEnd)}`}>
                   Payment request {i.reference} for <Money value={i.total} currency={i.currency} /> including tax, due {dateTime(i.dueAt)}.{' '}
                   {manage ? <Button size="sm" loading={pay.isPending} onClick={() => pay.mutate(i.id)}>Pay now</Button> : null}
                 </Alert>
@@ -380,7 +381,7 @@ function Subscription() {
                   {invoices.data.map((i) => (
                     <Tr key={i.id}>
                       <Td className="num">{i.number ?? i.reference}</Td>
-                      <Td>{KIND[i.kind]}: {i.plan.name}, {i.billingInterval === 'ANNUAL' ? 'annual' : 'monthly'}</Td>
+                      <Td>{i.kind === 'CREDITS' ? `${KIND.CREDITS}: ${i.creditPack?.name ?? ''}` : `${KIND[i.kind]}: ${i.plan.name}, ${i.billingInterval === 'ANNUAL' ? 'annual' : 'monthly'}`}</Td>
                       <Td className="whitespace-nowrap text-sm">{dateTime(i.periodStart)} to {dateTime(i.periodEnd)}</Td>
                       <Td numeric><Money value={i.total} currency={i.currency} /></Td>
                       <Td><Badge tone={INVOICE_TONE[i.status]}>{i.status === 'OPEN' ? 'To pay' : i.status === 'PAID' ? `Paid ${dateTime(i.paidAt!)}` : 'Void'}</Badge></Td>

@@ -19,6 +19,7 @@ interface Invoice {
   kind: string;
   status: 'OPEN' | 'PAID' | 'VOID';
   plan: { name: string };
+  creditPack?: { name: string } | null;
   billingInterval: string;
   currency: string;
   total: string;
@@ -31,7 +32,7 @@ interface Invoice {
   voidReason: string | null;
 }
 interface Webhook { provider: string; type: string; signatureOk: boolean; outcome: string; receivedAt: string }
-const KIND: Record<string, string> = { NEW: 'New plan', RENEWAL: 'Renewal', UPGRADE: 'Upgrade' };
+const KIND: Record<string, string> = { NEW: 'New plan', RENEWAL: 'Renewal', UPGRADE: 'Upgrade', CREDITS: 'Extra AI requests' };
 
 /** Every subscription invoice, with payments recorded by hand and the gateways' recent notices. */
 export default function AdminInvoicesPage() {
@@ -80,7 +81,7 @@ export default function AdminInvoicesPage() {
                 <Tr key={i.id}>
                   <Td><Link className="font-medium hover:text-accent" href={`/admin/organisations/${i.orgId}`}>{i.organisation}</Link></Td>
                   <Td className="num">{i.number ?? i.reference}{i.number ? <span className="block text-xs text-fg-faint">{i.reference}</span> : null}</Td>
-                  <Td>{KIND[i.kind] ?? i.kind}: {i.plan.name}<span className="block text-xs text-fg-muted">{i.billingInterval === 'ANNUAL' ? 'Annual' : 'Monthly'} · issued {dateTime(i.issuedAt)}</span></Td>
+                  <Td>{KIND[i.kind] ?? i.kind}: {i.kind === 'CREDITS' ? i.creditPack?.name : i.plan.name}<span className="block text-xs text-fg-muted">{i.billingInterval === 'ANNUAL' ? 'Annual' : 'Monthly'} · issued {dateTime(i.issuedAt)}</span></Td>
                   <Td numeric><Money value={i.total} currency={i.currency} />{Number(i.taxTotal) ? <span className="block text-xs text-fg-faint">tax <Money value={i.taxTotal} currency={i.currency} /></span> : null}</Td>
                   <Td><Badge tone={i.status === 'PAID' ? 'positive' : i.status === 'OPEN' ? 'warning' : 'neutral'}>{i.status === 'OPEN' ? 'To pay' : i.status === 'PAID' ? 'Paid' : 'Void'}</Badge>{i.voidReason ? <span className="block text-xs text-fg-faint">{i.voidReason}</span> : null}</Td>
                   <Td className="text-sm">{i.paidAt ? <>{dateTime(i.paidAt)}<span className="block text-xs text-fg-muted">{i.gateway === 'MANUAL' ? 'By hand' : i.gateway?.toLowerCase()} · {i.paymentRef}</span></> : i.gateway ? <span className="text-xs text-fg-muted">via {i.gateway.toLowerCase()}</span> : '—'}</Td>

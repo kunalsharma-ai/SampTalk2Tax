@@ -3921,6 +3921,8 @@ model SubscriptionInvoice {
   /// Add-on modules the invoice pays for, each with its price for the period; listPrice includes them.
   addOns            String[]     @default([]) @map("add_ons")
   addOnLines        Json         @default("[]") @map("add_on_lines")
+  /// For an invoice of kind CREDITS (SUBS-018): the pack of extra AI requests bought ({ id, name, requests }).
+  creditPack        Json?        @map("credit_pack")
   createdBy         String?      @map("created_by") @db.Uuid
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -3939,6 +3941,36 @@ model AddOnPrice {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("add_on_prices")
+}
+
+/// A pack of extra AI requests (SUBS-018) offered by platform administrators. Only its offered flag changes.
+model AiCreditPack {
+  id        String   @id @db.Uuid
+  name      String   @db.VarChar(60)
+  requests  Int
+  /// The price per currency, before tax: { INR: "799.00", USD: "12.00" }.
+  prices    Json
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_credit_packs")
+}
+
+/// Extra AI requests an organisation bought (SUBS-018): one per paid CREDITS invoice, valid for a year.
+model AiCreditGrant {
+  id        String   @id @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  invoiceId String   @unique @map("invoice_id") @db.Uuid
+  packId    String   @map("pack_id") @db.Uuid
+  name      String   @db.VarChar(60)
+  requests  Int
+  grantedAt DateTime @map("granted_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+
+  @@index([orgId, expiresAt])
+  @@map("ai_credit_grants")
 }
 
 /// A coupon on Talk2Tax subscriptions (SUBS-024), created by platform administrators.
@@ -4086,6 +4118,8 @@ model UsageEvent {
   inputTokens  Int      @default(0) @map("input_tokens")
   outputTokens Int      @default(0) @map("output_tokens")
   bytes        Int      @default(0)
+  /// An AI request beyond the plan's monthly ones: the bought pack (ai_credit_grants) it came from.
+  creditGrantId String? @map("credit_grant_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([orgId, kind, createdAt])

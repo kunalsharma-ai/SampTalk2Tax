@@ -5,6 +5,8 @@ import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
 import type { CopilotModel, CopilotRequest, CopilotResponse } from '../copilot/copilot.model';
 import { planLimits } from '../billing/limits';
 import { lockName } from '../db/locks';
+import { AiCreditsService } from '../billing/ai-credits.service';
+import type { BillingCurrency } from '@talk2tax/accounting-engine';
 
 export const UPLOAD_LIMIT_REACHED = 'UPLOAD_LIMIT_REACHED';
 export const AI_CREDITS_USED_UP = 'AI_CREDITS_USED_UP';
@@ -17,7 +19,10 @@ export const AI_CREDITS_USED_UP = 'AI_CREDITS_USED_UP';
  */
 @Injectable()
 export class UsageService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly credits: AiCreditsService,
+  ) {}
 
   /** Wraps a model so that each answered call is recorded for the organisation. */
   metered(orgId: string, model: CopilotModel, source: 'ORGANISATION' | 'SERVER'): CopilotModel {
@@ -25,17 +30,27 @@ export class UsageService {
       provider: model.provider,
       send: async (request: CopilotRequest, options: { signal: AbortSignal }): Promise<CopilotResponse> => {
         const res = await model.send(request, options);
+        // Past the plan's requests for the month, the request comes from a bought pack (SUBS-018).
+        const creditGrantId = await this.creditFor(orgId);
         await this.prisma.usageEvent.create({
-          data: { orgId, kind: 'AI_CALL', source, inputTokens: res.usage?.input_tokens ?? 0, outputTokens: res.usage?.output_tokens ?? 0 },
+          data: { orgId, kind: 'AI_CALL', source, inputTokens: res.usage?.input_tokens ?? 0, outputTokens: res.usage?.output_tokens ?? 0, creditGrantId },
         });
         return res;
       },
     };
   }
 
+  /** A month's uploads, or its AI requests counted against the plan (not those from bought packs). */
   private async count(db: Pick<Tx, 'usageEvent'>, orgId: string, kind: 'AI_CALL' | 'UPLOAD', month = usageMonth(new Date())) {
     const { start, end } = usageMonthRange(month);
-    return db.usageEvent.count({ where: { orgId, kind, createdAt: { gte: start, lt: end } } });
+    return db.usageEvent.count({ where: { orgId, kind, createdAt: { gte: start, lt: end }, ...(kind === 'AI_CALL' ? { creditGrantId: null } : {}) } });
+  }
+
+  /** The bought pack an AI request answered now comes from: null while the plan's requests last, or when none is left. */
+  private async creditFor(orgId: string): Promise<string | null> {
+    const limit = (await this.limits(orgId))?.limits.aiCreditsPerMonth ?? null;
+    if (limit === null || (await this.count(this.prisma, orgId, 'AI_CALL')) < limit) return null;
+    return this.credits.next(this.prisma, orgId);
   }
 
   private async limits(orgId: string): Promise<{ plan: string; limits: PlanLimits } | null> {
@@ -49,9 +64,10 @@ export class UsageService {
     if (limit === null) return null;
     const used = await this.count(this.prisma, orgId, 'AI_CALL');
     if (allowsOneMore(used, limit)) return null;
+    if ((await this.credits.balance(this.prisma, orgId)) > 0) return null;
     return {
       code: AI_CREDITS_USED_UP,
-      message: `This organisation has used the ${limit.toLocaleString('en-IN')} AI requests in its ${p!.plan} plan for this month. They start again on the 1st, or choose a larger plan under Settings → Subscription.`,
+      message: `This organisation has used the ${limit.toLocaleString('en-IN')} AI requests in its ${p!.plan} plan for this month${limit > 0 ? ' and any extra requests it bought' : ''}. They start again on the 1st; until then, buy more AI requests under Governance → Usage, or choose a larger plan under Settings → Subscription.`,
       status: HttpStatus.TOO_MANY_REQUESTS,
     };
   }
@@ -77,18 +93,22 @@ export class UsageService {
     const since = usageMonthRange(months[months.length - 1]!).start;
     const [p, rows] = await Promise.all([
       this.limits(orgId),
-      this.prisma.usageEvent.findMany({ where: { orgId, createdAt: { gte: since } }, select: { kind: true, source: true, inputTokens: true, outputTokens: true, bytes: true, createdAt: true } }).then((events) => {
+      this.prisma.usageEvent.findMany({ where: { orgId, createdAt: { gte: since } }, select: { kind: true, source: true, inputTokens: true, outputTokens: true, bytes: true, createdAt: true, creditGrantId: true } }).then((events) => {
         // Grouped by India month and day, kind and source.
-        const out = new Map<string, { month: string; day: string; kind: string; source: string | null; n: number; input: number; output: number; bytes: number }>();
+        const out = new Map<string, { month: string; day: string; kind: string; source: string | null; extra: boolean; n: number; input: number; output: number; bytes: number }>();
         for (const e of events) {
           const day = new Date(e.createdAt.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
-          const k = `${day}|${e.kind}|${e.source ?? ''}`;
-          const r = out.get(k) ?? { month: day.slice(0, 7), day, kind: e.kind, source: e.source, n: 0, input: 0, output: 0, bytes: 0 };
+          const extra = !!e.creditGrantId;
+          const k = `${day}|${e.kind}|${e.source ?? ''}|${extra}`;
+          const r = out.get(k) ?? { month: day.slice(0, 7), day, kind: e.kind, source: e.source, extra, n: 0, input: 0, output: 0, bytes: 0 };
           out.set(k, { ...r, n: r.n + 1, input: r.input + e.inputTokens, output: r.output + e.outputTokens, bytes: r.bytes + e.bytes });
         }
         return [...out.values()];
       }),
     ]);
+    // Extra AI requests (SUBS-018): what is left of the packs bought, and the packs on offer.
+    const sub = await this.prisma.subscription.findUnique({ where: { orgId }, select: { currency: true } });
+    const credits = sub ? await this.credits.forOrg(orgId, sub.currency as BillingCurrency, now) : null;
     const sum = (f: (r: (typeof rows)[number]) => boolean, k: 'n' | 'input' | 'output' | 'bytes') => rows.filter(f).reduce((a, r) => a + Number(r[k]), 0);
     const ai = (m: string) => (r: (typeof rows)[number]) => r.kind === 'AI_CALL' && r.month === m;
     const up = (m: string) => (r: (typeof rows)[number]) => r.kind === 'UPLOAD' && r.month === m;
@@ -100,13 +120,16 @@ export class UsageService {
       resetsAt: end,
       plan: p?.plan ?? null,
       ai: {
-        ...usageLevel(sum(ai(month), 'n'), p?.limits.aiCreditsPerMonth ?? null),
+        // Against the plan: the requests that came from bought packs are counted apart, as extra.
+        ...usageLevel(sum((r) => ai(month)(r) && !r.extra, 'n'), p?.limits.aiCreditsPerMonth ?? null),
+        extra: sum((r) => ai(month)(r) && r.extra, 'n'),
         inputTokens: sum(ai(month), 'input'),
         outputTokens: sum(ai(month), 'output'),
         ownKey: sum((r) => ai(month)(r) && r.source === 'ORGANISATION', 'n'),
         talk2taxKey: sum((r) => ai(month)(r) && r.source === 'SERVER', 'n'),
       },
       uploads: { ...usageLevel(sum(up(month), 'n'), p?.limits.documentUploadsPerMonth ?? null), bytes: sum(up(month), 'bytes') },
+      credits,
       days: days.map((d) => ({ day: d, ai: sum((r) => r.kind === 'AI_CALL' && r.day === d, 'n'), uploads: sum((r) => r.kind === 'UPLOAD' && r.day === d, 'n') })),
       history: months.map((m) => ({ month: m, ai: sum(ai(m), 'n'), uploads: sum(up(m), 'n'), tokens: sum(ai(m), 'input') + sum(ai(m), 'output') })),
     };

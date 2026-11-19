@@ -56,6 +56,7 @@ export * from './plans';
 export * from './subscription-billing';
 export * from './coupons';
 export * from './add-ons';
+export * from './ai-credits';
 export * from './support';
 export * from './usage';
 export * from './feature-flags';
