@@ -113,6 +113,7 @@ export const MIRRORED_MODEL_NAMES = [
   'AddOnPrice',
   'AiCreditPack',
   'AiCreditGrant',
+  'EnterpriseContract',
   'PaymentWebhookEvent',
   'SupportTicket',
   'SupportMessage',

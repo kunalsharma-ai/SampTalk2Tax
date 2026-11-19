@@ -10,6 +10,7 @@ import { PrismaService, Tx } from '../common/prisma.service';
 import { accessOf } from './limits';
 import { couponSummary, CouponsService } from './payments/coupons.service';
 import { AddOnsService } from './add-ons.service';
+import { contractInForce, serializeContract } from './contract-terms';
 
 type PlanRow = { id: string; code: string; name: string; description: string; prices: unknown; limits: unknown; features: string[]; isActive: boolean; sortOrder: number };
 
@@ -49,6 +50,7 @@ export class BillingService {
     const s = await this.prisma.subscription.findUnique({ where: { orgId }, include: { plan: true, requestedPlan: true, coupon: true } });
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
     const currency = s.currency as BillingCurrency;
+    const contract = await contractInForce(this.prisma, s);
     const [members, openInvitations, plans, history, promotions, addOnOffers] = await Promise.all([
       runInOrg(orgId, () => this.store.collection(memberships).count({})),
       runInOrg(orgId, () => this.store.collection(invitations).count({ openFor: { $exists: true }, expiresAt: { $gt: now } })),
@@ -71,6 +73,8 @@ export class BillingService {
       currentPeriodStart: s.currentPeriodStart?.toISOString() ?? null,
       currentPeriodEnd: s.currentPeriodEnd?.toISOString() ?? null,
       // The coupon taking money off payments (SUBS-024), and how many payments it has left.
+      // The enterprise contract setting the price, term and limits (SUBS-023), while it runs.
+      contract: contract ? serializeContract(contract) : null,
       coupon: s.coupon ? { ...couponSummary(s.coupon), paymentsUsed: s.couponUses, paymentsLeft: s.coupon.cycles === null ? null : Math.max(s.coupon.cycles - s.couponUses, 0) } : null,
       request: s.requestedPlan ? { plan: serializePlan(s.requestedPlan, currency), interval: s.requestedInterval, addOns: s.requestedAddOns ?? [], at: s.requestedAt!.toISOString() } : null,
       usage: { members, openInvitations },
@@ -87,6 +91,7 @@ export class BillingService {
   async request(orgId: string, actorId: string, planCode: string, interval: BillingInterval, addOns: string[] = []) {
     await this.prisma.$transaction(async (tx) => {
       const s = await tx.subscription.findUniqueOrThrow({ where: { orgId }, include: { plan: true } });
+      await BillingService.refuseUnderContract(tx, s);
       const plan = await tx.plan.findUnique({ where: { code: planCode } });
       if (!plan || !plan.isActive) throw new DomainError('PLAN_NOT_FOUND', 'That plan is not offered', HttpStatus.UNPROCESSABLE_ENTITY);
       const offers = await this.addOns.offers(tx);
@@ -119,6 +124,14 @@ export class BillingService {
       await this.audit.append(tx, { orgId, actorId, action: 'subscription.request_withdrawn', entityType: 'subscription', entityId: orgId, data: { plan: s.requestedPlan.code } });
     });
     return this.forOrg(orgId);
+  }
+
+  /** While an enterprise contract is in force (SUBS-023), the plan is changed only with Talk2Tax. */
+  static async refuseUnderContract(tx: Pick<Tx, 'enterpriseContract'>, s: { contractId: string | null }) {
+    const c = await contractInForce(tx, s);
+    if (!c) return;
+    const { reference, lastDay } = serializeContract(c);
+    throw new DomainError('CONTRACT_IN_FORCE', `Your plan is set by enterprise contract ${reference} until ${lastDay}. Talk2Tax changes it with you; write to your account manager.`, HttpStatus.CONFLICT, { contract: reference });
   }
 
   /** A smaller plan is refused while the organisation has more members than it allows. */

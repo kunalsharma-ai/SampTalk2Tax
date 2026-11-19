@@ -6,7 +6,7 @@ import type { CopilotModel, CopilotRequest, CopilotResponse } from '../copilot/c
 import { planLimits } from '../billing/limits';
 import { lockName } from '../db/locks';
 import { AiCreditsService } from '../billing/ai-credits.service';
-import type { BillingCurrency } from '@talk2tax/accounting-engine';
+import { contractLimits, type BillingCurrency } from '@talk2tax/accounting-engine';
 
 export const UPLOAD_LIMIT_REACHED = 'UPLOAD_LIMIT_REACHED';
 export const AI_CREDITS_USED_UP = 'AI_CREDITS_USED_UP';
@@ -140,14 +140,18 @@ export class UsageService {
     const { start, end } = usageMonthRange(month);
     return this.prisma.$transaction(async (tx) =>
       withSystemAccess(tx, async () => {
-        const [rows, orgs] = await Promise.all([
+        const [rows, orgs, contracts] = await Promise.all([
           tx.usageEvent.groupBy({ by: ['orgId', 'kind'], where: { createdAt: { gte: start, lt: end } }, _count: { _all: true }, _sum: { inputTokens: true, outputTokens: true, bytes: true } }),
           tx.organization.findMany({ select: { id: true, name: true, countryCode: true, isDemo: true, subscription: { select: { status: true, plan: { select: { name: true, limits: true } } } } } }),
+          // Enterprise contracts in force (SUBS-023) set their own limits.
+          tx.enterpriseContract.findMany({ where: { status: 'ACTIVE' }, select: { orgId: true, limits: true } }),
         ]);
         const of = (orgId: string, kind: string) => rows.find((r) => r.orgId === orgId && r.kind === kind);
         const list = orgs
           .map((o) => {
-            const limits = (o.subscription?.plan.limits ?? null) as PlanLimits | null;
+            const planOnly = (o.subscription?.plan.limits ?? null) as PlanLimits | null;
+            const contract = contracts.find((c) => c.orgId === o.id);
+            const limits = planOnly && contract ? contractLimits(planOnly, contract.limits as Partial<Record<keyof PlanLimits, number>>) : planOnly;
             const a = of(o.id, 'AI_CALL');
             const u = of(o.id, 'UPLOAD');
             return {

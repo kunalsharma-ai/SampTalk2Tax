@@ -30622,7 +30622,7 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
@@ -30632,9 +30632,17 @@
         "apps/api/test/plans-subscriptions.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
         "apps/web/e2e/subscription-flow.test.mjs",
-        "docs/PLANS_AND_SUBSCRIPTIONS.md"
+        "docs/PLANS_AND_SUBSCRIPTIONS.md",
+        "packages/accounting-engine/src/enterprise-contracts.ts",
+        "packages/accounting-engine/test/enterprise-contracts.test.ts",
+        "apps/api/src/billing/enterprise-contracts.service.ts",
+        "apps/api/src/billing/contract-terms.ts",
+        "apps/api/src/db/migrations/20270112100000_enterprise_contracts.ts",
+        "apps/api/test/subscription-enterprise-contracts.e2e.test.ts",
+        "apps/web/src/app/admin/contracts/page.tsx",
+        "apps/web/e2e/subscription-enterprise-contracts-flow.test.mjs"
       ],
-      "notes": "Enterprise contracts activated by an administrator with the contract reference, or invoiced and paid by transfer (recorded under Invoices); no contract terms or custom prices yet."
+      "notes": "Enterprise contracts recorded by platform administrators: plan, monthly or annual price, term and limits that differ from the plan; the first period starts with the contract reference or at the next renewal; renewals are invoiced at the contract price while the term covers them, then at list price; the organisation cannot change plan itself while one runs; ended early with a reason."
     },
     {
       "id": "SUBS-024",

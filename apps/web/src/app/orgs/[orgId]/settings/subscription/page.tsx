@@ -8,7 +8,7 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
-import { dateTime } from '@/lib/format';
+import { date, dateTime } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can, SubscriptionAccess } from '@/lib/types';
 
@@ -35,6 +35,7 @@ interface Sub {
   currentPeriodEnd: string | null;
   request: { plan: Plan; interval: 'MONTHLY' | 'ANNUAL'; addOns: string[]; at: string } | null;
   coupon: { code: string; description: string; terms: string; paymentsUsed: number; paymentsLeft: number | null } | null;
+  contract: { reference: string; interval: 'MONTHLY' | 'ANNUAL'; currency: string; price: string; startsOn: string; lastDay: string; limits: Record<string, number> } | null;
   promotions: { code: string; description: string; terms: string; planCodes: string[]; intervals: string[]; redeemBy: string | null }[];
   usage: { members: number; openInvitations: number };
   plans: Plan[];
@@ -109,6 +110,9 @@ const EVENT: Record<string, string> = {
   PAYMENT_RECEIVED: 'Payment received',
   PAYMENT_MISMATCH: 'Payment not applied (amount differs)',
   PAYMENT_ON_VOID_INVOICE: 'Payment on a replaced invoice',
+  CONTRACT_STARTED: 'Enterprise contract started',
+  CONTRACT_ENDED: 'Enterprise contract ended',
+  AI_CREDITS_ADDED: 'Extra AI requests added',
   REMINDER_UPCOMING: 'Renewal reminder',
   REMINDER_DUE: 'Payment due reminder',
   REMINDER_FINAL: 'Final reminder',
@@ -255,6 +259,13 @@ function Subscription() {
             </div>
           ) : null}
 
+          {s.contract ? (
+            <div className="mb-6">
+              <Alert tone="accent" title={`Enterprise contract ${s.contract.reference}`}>
+                Your plan, price and limits are set by this contract from {date(s.contract.startsOn)} to {date(s.contract.lastDay)}: <Money value={s.contract.price} currency={s.contract.currency} /> {s.contract.interval === 'ANNUAL' ? 'a year' : 'a month'} plus tax, invoiced at each renewal. To change them, write to your Talk2Tax account manager.
+              </Alert>
+            </div>
+          ) : (
           <Card className="mb-6" aria-label="Plans">
             <CardHeader
               title="Plans"
@@ -371,6 +382,7 @@ function Subscription() {
             <div className="px-5 pb-5"><ErrorAlert title="Plan not changed" error={checkout.error ?? request.error ?? withdraw.error} /></div>
             {!manage ? <p className="px-5 pb-5 text-sm text-fg-muted">Owners and admins choose the plan.</p> : null}
           </Card>
+          )}
 
           <Card className="mb-6" aria-label="Invoices">
             <CardHeader title="Invoices" description="Payment requests and the tax invoices for what you paid. Prices exclude tax; GST is added for organisations in India." />
@@ -402,7 +414,7 @@ function Subscription() {
                   <Tr key={i}>
                     <Td className="whitespace-nowrap">{dateTime(h.at)}</Td>
                     <Td>{EVENT[h.kind] ?? h.kind}</Td>
-                    <Td className="text-sm text-fg-muted">{[h.data.plan, h.data.interval, h.data.price ? `${h.data.price} ${h.data.currency ?? ''}` : null, h.data.paymentReference ? `ref ${h.data.paymentReference}` : null, h.data.invoice ? String(h.data.invoice) : null, h.data.number ? String(h.data.number) : null, h.data.total ? `${h.data.total} ${h.data.currency ?? ''}` : null, h.data.coupon ? `coupon ${String(h.data.coupon)} −${String(h.data.discount)}` : null, h.data.gateway ? String(h.data.gateway).toLowerCase() : null, h.data.stage ? (h.data.emailed ? 'emailed' : `not emailed${h.data.error ? `: ${h.data.error}` : ''}`) : null, h.data.reason, h.data.days ? `${h.data.days} days` : null].filter(Boolean).join(' · ')}</Td>
+                    <Td className="text-sm text-fg-muted">{[h.data.contract ? `contract ${String(h.data.contract)}` : null, h.data.pack ? `${String(h.data.pack)}` : null, h.data.plan, h.data.interval, h.data.price ? `${h.data.price} ${h.data.currency ?? ''}` : null, h.data.paymentReference ? `ref ${h.data.paymentReference}` : null, h.data.invoice ? String(h.data.invoice) : null, h.data.number ? String(h.data.number) : null, h.data.total ? `${h.data.total} ${h.data.currency ?? ''}` : null, h.data.coupon ? `coupon ${String(h.data.coupon)} −${String(h.data.discount)}` : null, h.data.gateway ? String(h.data.gateway).toLowerCase() : null, h.data.stage ? (h.data.emailed ? 'emailed' : `not emailed${h.data.error ? `: ${h.data.error}` : ''}`) : null, h.data.reason, h.data.days ? `${h.data.days} days` : null].filter(Boolean).join(' · ')}</Td>
                   </Tr>
                 ))}
               </tbody>

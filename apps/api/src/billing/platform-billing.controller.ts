@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { PLAN_FEATURES } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { AuthUser, CurrentUser, RequirePlatform } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { PlatformBillingService } from './platform-billing.service';
+import { EnterpriseContractsService } from './enterprise-contracts.service';
 
 const Price = z.object({ monthly: z.string(), annual: z.string() }).strict();
 const Limit = z.number().int().nullable();
@@ -22,6 +23,19 @@ const PlanBody = z
 const Activate = z.object({ plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/).optional(), interval: z.enum(['MONTHLY', 'ANNUAL']).optional(), paymentReference: z.string().max(200) }).strict();
 const Extend = z.object({ days: z.number().int().min(1).max(90) }).strict();
 const Reason = z.object({ reason: z.string().max(500) }).strict();
+const ContractBody = z
+  .object({
+    reference: z.string().max(40),
+    plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/),
+    interval: z.enum(['MONTHLY', 'ANNUAL']),
+    price: z.string().max(14),
+    startsOn: z.string().max(10),
+    endsOn: z.string().max(10),
+    limits: z.object({ members: z.number().int(), aiCreditsPerMonth: z.number().int(), documentUploadsPerMonth: z.number().int() }).partial().strict().default({}),
+    notes: z.string().max(1000).default(''),
+    activate: z.boolean(),
+  })
+  .strict();
 const Filter = z.object({ filter: z.enum(['all', 'requested', 'trial', 'active', 'read_only']).default('all') });
 
 /** Plans and subscriptions in Platform administration. */
@@ -29,7 +43,32 @@ const Filter = z.object({ filter: z.enum(['all', 'requested', 'trial', 'active',
 @ApiBearerAuth()
 @Controller('v1/admin')
 export class PlatformBillingController {
-  constructor(private readonly billing: PlatformBillingService) {}
+  constructor(
+    private readonly billing: PlatformBillingService,
+    private readonly contracts: EnterpriseContractsService,
+  ) {}
+
+  @Get('contracts')
+  @RequirePlatform('platform.read')
+  listContracts() {
+    return this.contracts.list();
+  }
+
+  /** Records an enterprise contract (SUBS-023) for an organisation. */
+  @Post('subscriptions/:orgId/contract')
+  @RequirePlatform('platform.manage')
+  @ApiBody({ schema: openApi(ContractBody) })
+  createContract(@CurrentUser() user: AuthUser, @Param('orgId', new ParseUUIDPipe()) orgId: string, @Body(new ZodPipe(ContractBody)) body: z.infer<typeof ContractBody>) {
+    return this.contracts.create(user, orgId, body);
+  }
+
+  @Post('contracts/:id/end')
+  @RequirePlatform('platform.manage')
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(Reason) })
+  endContract(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Body(new ZodPipe(Reason)) body: z.infer<typeof Reason>) {
+    return this.contracts.end(user, id, body.reason);
+  }
 
   @Get('plans')
   @RequirePlatform('platform.read')

@@ -106,6 +106,38 @@ Platform administrators open **Platform administration → Subscriptions**, wher
 Every step is recorded in `subscription_events`, which cannot be changed, and in the audit
 trail.
 
+## Enterprise contracts (SUBS-023)
+
+An enterprise contract is a plan agreed with one organisation for a term, at its own price per billing period and with limits that may differ from the plan's. Platform administrators record contracts under **Platform administration → Contracts**:
+
+* **Recording.** A contract has:
+  * a reference, such as `ENT/2026/014`;
+  * a plan, which can be one that is not offered to others;
+  * monthly or annual billing;
+  * a price per period, before tax, in the organisation's currency;
+  * a start date and a last day, both India time;
+  * any limits that differ from the plan's (members, AI requests, uploads);
+  * notes.
+
+  With **Start the first period now**, the organisation goes onto the contract's plan and price for a period of one month or year. The contract reference is recorded as that period's payment, and add-ons and any plan request are cleared. Without it, the contract takes over at the next renewal, which is possible only for an organisation already paying. An organisation has at most one contract in force. A contract's terms never change (the `enterprise_contracts` guard refuses it): to change them, end it and record a new one. Recording and ending a contract are audited.
+* **While it runs:**
+  * Its limits are the ones enforced: members, and AI requests and uploads metered against it, including the Usage pages.
+  * Renewals are invoiced at the contract price, with no add-ons or coupons, while the term covers the new period. They are paid online or by bank transfer, like any renewal.
+  * The organisation cannot quote, check out or request another plan (409 `CONTRACT_IN_FORCE`). Its Subscription page shows the contract in place of the plans. Extra AI requests can still be bought.
+* **Ending.**
+  * A renewal whose period starts after the term ends the contract ("The term ended"), and is invoiced at the plan's list price.
+  * An administrator can end a contract early, with a reason. The period already paid for runs on.
+  * Once a contract ends, the organisation chooses its plan again.
+* **API:**
+  * `GET /v1/admin/contracts` (platform read).
+  * `POST /v1/admin/subscriptions/:orgId/contract { reference, plan, interval, price, startsOn, endsOn, limits, notes, activate }`. `endsOn` is the first day after the term.
+  * `POST /v1/admin/contracts/:id/end { reason }` (platform manage).
+  * The subscription returns `contract`.
+* **Tests:**
+  * Engine: `packages/accounting-engine/test/enterprise-contracts.test.ts`.
+  * API: `apps/api/test/subscription-enterprise-contracts.e2e.test.ts`.
+  * Browser: `apps/web/e2e/subscription-enterprise-contracts-flow.test.mjs`.
+
 ## API
 
 | Method | Path | Who |
