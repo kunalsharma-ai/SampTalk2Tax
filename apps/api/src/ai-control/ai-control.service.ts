@@ -41,7 +41,7 @@ export const AGENT_KEYS = Object.keys(AGENTS) as AiAgent[];
 /** How far back acceptance rates look. */
 export const ACCURACY_DAYS = 90;
 
-export type AgentBlock = { code: 'AI_SHUTDOWN' | 'AI_NOT_CONFIGURED' | 'MODEL_NOT_ALLOWED' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED' | 'AI_CREDITS_USED_UP'; message: string; status: HttpStatus };
+export type AgentBlock = { code: 'AI_SHUTDOWN' | 'AI_NOT_CONFIGURED' | 'MODEL_NOT_ALLOWED' | 'AI_TASK_LIMIT' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED' | 'AI_CREDITS_USED_UP'; message: string; status: HttpStatus };
 
 /** The start of the current calendar month in India time, as an instant. */
 export function monthStartIst(now: Date = new Date()): { month: string; since: Date } {
@@ -116,7 +116,7 @@ export class AiControlService {
    * this before starting and again before each model call, so the emergency stop, switching an
    * agent off or reaching the budget also stops work already running.
    */
-  async check(orgId: string, agent: AiAgent): Promise<AgentBlock | null> {
+  async check(orgId: string, agent: AiAgent, starting = false): Promise<AgentBlock | null> {
     // The platform-wide shutdown (SEC-038) comes first: it holds even where no key is set up.
     const shutdown = await this.platformShutdown();
     if (shutdown) return { code: 'AI_SHUTDOWN', message: `AI is stopped across Talk2Tax by the people who run it: ${shutdown.reason}. Nothing was sent to the AI model.`, status: HttpStatus.SERVICE_UNAVAILABLE };
@@ -142,6 +142,15 @@ export class AiControlService {
       };
     }
     if (a && !a.enabled) return { code: 'AGENT_OFF', message: `The ${AGENTS[agent].name.toLowerCase()} is turned off in the AI control center.`, status: HttpStatus.CONFLICT };
+    // Execution limits (SEC-037): tasks started in the last 60 minutes. A new task needs room for
+    // itself; work already running stops only once the count is over the limit.
+    const hourly = this.hourlyLimit(a?.hourlyTaskLimit ?? null);
+    if (hourly) {
+      const started = (await this.usage(orgId, new Date(Date.now() - 3_600_000)))[agent].calls;
+      if (starting ? started >= hourly : started > hourly) {
+        return { code: 'AI_TASK_LIMIT', message: `The ${AGENTS[agent].name.toLowerCase()} has started its ${hourly.toLocaleString('en-IN')} AI tasks for the last hour. Try again later; an owner or admin can change the limit in the AI control center. Nothing more was sent to the AI model.`, status: HttpStatus.TOO_MANY_REQUESTS };
+      }
+    }
     if (a?.monthlyTokenLimit) {
       const used = (await this.usage(orgId))[agent].tokens;
       if (used >= a.monthlyTokenLimit) {
@@ -152,15 +161,22 @@ export class AiControlService {
     return this.metering.aiBlock(orgId);
   }
 
+  /** Before an agent starts new work: every check, with room for one more task this hour. */
   async assert(orgId: string, agent: AiAgent) {
-    const b = await this.check(orgId, agent);
+    const b = await this.check(orgId, agent, true);
     if (b) throw new DomainError(b.code, b.message, b.status);
+  }
+
+  /** An agent's tasks-per-hour limit: its own, else the server's default (0 = none). */
+  private hourlyLimit(own: number | null): number | null {
+    return own ?? (this.config.AI_AGENT_TASKS_PER_HOUR || null);
   }
 
   /** The error stored on work that was waiting when a check started failing. */
   /** For an agent's own page: why it cannot run when that is the stop, its switch or its budget (not simply AI never turned on). */
   async notice(orgId: string, agent: AiAgent): Promise<{ code: AgentBlock['code']; message: string } | null> {
-    const b = await this.check(orgId, agent);
+    // As if starting new work, so a reached hourly limit shows before anyone tries.
+    const b = await this.check(orgId, agent, true);
     if (!b || b.code === 'AI_NOT_CONFIGURED') return null;
     if (b.code === 'AI_OFF' && !b.message.startsWith('AI was stopped')) return null;
     // AI_SHUTDOWN is always shown.
@@ -343,8 +359,10 @@ export class AiControlService {
     };
     const ids = [settings?.updatedById, ...agentRows.map((a) => a.updatedById), ...priceRows.map((p) => p.updatedById)].filter((x): x is string => !!x);
     const users = new Map((await this.prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })).map((u) => [u.id, u.name]));
+    const lastHour = await this.usage(orgId, new Date(Date.now() - 3_600_000));
     const agents = AGENT_KEYS.map((key, i) => {
       const row = agentRows.find((a) => a.agent === key);
+      const hourly = this.hourlyLimit(row?.hourlyTaskLimit ?? null);
       const u = usage[key];
       const limit = row?.monthlyTokenLimit ?? null;
       return {
@@ -353,6 +371,9 @@ export class AiControlService {
         levelLabel: ACTION_LEVELS[AGENTS[key].level],
         enabled: row?.enabled ?? true,
         monthlyTokenLimit: limit,
+        // Execution limits (SEC-037).
+        hourlyTaskLimit: row?.hourlyTaskLimit ?? null,
+        tasksPerHour: { limit: hourly, own: row?.hourlyTaskLimit != null, started: lastHour[key].calls, reached: !!hourly && lastHour[key].calls >= hourly },
         usage: { ...u, failed: failures[i], percentOfBudget: limit ? Math.min(100, Math.round((u.tokens * 1000) / limit) / 10) : null },
         budgetReached: !!limit && u.tokens >= limit,
         cost: costOf(models[key]),
@@ -395,11 +416,13 @@ export class AiControlService {
     };
   }
 
-  async updateAgent(member: Member, actor: Actor, agent: AiAgent, input: { enabled: boolean; monthlyTokenLimit: number | null }) {
+  async updateAgent(member: Member, actor: Actor, agent: AiAgent, input: { enabled: boolean; monthlyTokenLimit: number | null; hourlyTaskLimit?: number | null }) {
     const { orgId } = member;
     await this.prisma.$transaction(async (tx) => {
       const before = await tx.aiAgentSetting.findUnique({ where: { orgId_agent: { orgId, agent } } });
-      const data = { enabled: input.enabled, monthlyTokenLimit: input.monthlyTokenLimit, updatedById: actor.id };
+      // Left out, the tasks-per-hour limit stays as it was.
+      const hourlyTaskLimit = input.hourlyTaskLimit === undefined ? (before?.hourlyTaskLimit ?? null) : input.hourlyTaskLimit;
+      const data = { enabled: input.enabled, monthlyTokenLimit: input.monthlyTokenLimit, hourlyTaskLimit, updatedById: actor.id };
       await tx.aiAgentSetting.upsert({ where: { orgId_agent: { orgId, agent } }, create: { orgId, agent, ...data }, update: data });
       await this.audit.append(tx, {
         orgId,
@@ -407,7 +430,7 @@ export class AiControlService {
         action: 'ai.agent_updated',
         entityType: 'ai_agent_setting',
         entityId: orgId,
-        data: { agent, from: { enabled: before?.enabled ?? true, monthlyTokenLimit: before?.monthlyTokenLimit ?? null }, to: { enabled: input.enabled, monthlyTokenLimit: input.monthlyTokenLimit } },
+        data: { agent, from: { enabled: before?.enabled ?? true, monthlyTokenLimit: before?.monthlyTokenLimit ?? null, hourlyTaskLimit: before?.hourlyTaskLimit ?? null }, to: { enabled: input.enabled, monthlyTokenLimit: input.monthlyTokenLimit, hourlyTaskLimit } },
       });
     });
     return this.overview(member);

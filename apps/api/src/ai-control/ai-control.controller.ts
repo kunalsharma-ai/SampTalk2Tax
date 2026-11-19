@@ -10,6 +10,8 @@ const AgentBody = z
   .object({
     enabled: z.boolean(),
     monthlyTokenLimit: z.number().int('Use a whole number of tokens').min(1000, 'A budget is at least 1,000 tokens').max(1_000_000_000, 'A budget is at most 1,000,000,000 tokens').nullable(),
+    /** AI tasks per hour (SEC-037); null = the server's default; left out = unchanged. */
+    hourlyTaskLimit: z.number().int('Use a whole number of tasks').min(1, 'Allow at least 1 task an hour').max(100_000, 'At most 100,000 tasks an hour').nullable().optional(),
   })
   .strict();
 const money = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Use a price in US dollars per million tokens, up to 4 decimal places').refine((v) => Number(v) <= 100_000, 'A price is at most 100,000 per million tokens');

@@ -53,6 +53,8 @@ const schema = z.object({
   /** The Claude model the copilot uses. */
   COPILOT_MODEL: z.string().trim().min(1).default('claude-opus-5-5'),
   /** Most tool calls (rounds of looking at the books) the copilot may make for one question. */
+  /** Agent execution limits (SEC-037): AI tasks each agent may start per hour in one organisation, unless the organisation sets its own (0 = no default limit). */
+  AI_AGENT_TASKS_PER_HOUR: z.coerce.number().int().min(0).max(100_000).default(500),
   COPILOT_MAX_TOOL_ROUNDS: z.coerce.number().int().min(1).max(20).default(8),
   /** Longest the copilot may spend on one answer, in seconds, across all its calls to the model. */
   COPILOT_TURN_TIMEOUT_SECONDS: z.coerce.number().int().min(10).max(900).default(240),

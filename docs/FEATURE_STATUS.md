@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 764 |
+| Not started | 763 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 493 |
+| Tested | 494 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 11 | 27 |
+| Security and enterprise governance | M1 | 38 | 10 | 28 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5977,6 +5977,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/journals/journal-approval.tsx
   - apps/web/e2e/journal-approvals-flow.test.mjs
   - docs/JOURNAL_APPROVALS.md
+
+### SEC-037 — Agent execution limits
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Each agent may start a limited number of AI tasks in any 60 minutes per organisation: its own limit (owners and admins, 1 to 100,000, audited) or the server's AI_AGENT_TASKS_PER_HOUR (default 500, 0 = none). New work over the limit is refused with 429 AI_TASK_LIMIT before anything is sent; running work stops before its next model call only once over the limit. Alongside existing per-run limits (copilot tool rounds and turn timeout), monthly token budgets and the per-member hourly question limit.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts (check, assert, hourlyLimit, updateAgent)
+  - apps/api/src/config.ts (AI_AGENT_TASKS_PER_HOUR)
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (AgentCard limits)
+  - apps/api/test/agent-limits.e2e.test.ts
+  - apps/web/e2e/ai-control-flow.test.mjs
+  - docs/AI_CONTROL_CENTER.md
 
 ### SEC-038 — AI emergency shutdown
 

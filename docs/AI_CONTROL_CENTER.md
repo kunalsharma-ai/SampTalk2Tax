@@ -119,6 +119,24 @@ shutdown**. It is for an incident with the AI provider, or with how the agents b
   `POST /v1/admin/ai/stop` and `POST /v1/admin/ai/resume`, each with `{ reason }`
   (platform.manage), return `409` when there is nothing to do.
 
+## Execution limits (SEC-037)
+
+Each agent may start a limited number of AI tasks in any 60 minutes, per organisation. A task is
+one copilot answer or drafting call, one reminder, one bank line suggestion, one close review or
+one CFO summary.
+
+* The limit is the agent's own (**Set limits…** on its card, 1 to 100,000, owners and admins,
+  audited in `ai.agent_updated`) or else the server's `AI_AGENT_TASKS_PER_HOUR` (default 500;
+  0 = no default limit). Stored in `ai_agent_settings.hourlyTaskLimit`.
+* New work is refused with `429 AI_TASK_LIMIT` when the agent has already started that many tasks
+  in the last hour. Nothing is sent to the AI model. Work already running stops before its next
+  model call only once the count is over the limit, so a task is not cut off by its own count.
+* Each card shows the tasks started in the last hour against the limit, and the agent's own page
+  shows the notice when the limit is reached.
+* Per-run limits stay as before: the copilot's tool rounds (`COPILOT_MAX_TOOL_ROUNDS`) and answer
+  time (`COPILOT_TURN_TIMEOUT_SECONDS`), the per-member hourly question limit, and monthly token
+  budgets.
+
 ## Model access (SEC-034)
 
 Which AI models may be called, in two layers. Both are checked by the shared AI guard before every

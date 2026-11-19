@@ -71,13 +71,36 @@ test('an owner governs the AI agents and uses the emergency stop', async () => {
   await page.getByLabel('Finance copilot: On').getByText('Level 0: Read-only analysis').waitFor();
   await collections.getByText(/0 accepted, 0 rejected, 1 waiting for a person/).waitFor();
 
-  await collections.getByRole('button', { name: 'Set budget…' }).click();
+  await collections.getByRole('button', { name: 'Set limits…' }).click();
   await collections.getByLabel('Monthly token budget').fill('500');
   await collections.getByText('Use a whole number from 1,000 to 1,000,000,000').waitFor();
   await collections.getByLabel('Monthly token budget').fill('10000');
-  await collections.getByRole('button', { name: 'Save budget' }).click();
+  await collections.getByRole('button', { name: 'Save limits' }).click();
   await collections.getByText('2,100 of 10,000 tokens (21%)').waitFor();
   assert.equal(await collections.getByRole('meter').getAttribute('aria-valuenow'), '21');
+
+  // Execution limits (SEC-037): one AI task an hour, and the one reminder above used it.
+  await collections.getByText(/Tasks started in the last hour: 1 of 500 allowed \(this server's default\)/).waitFor();
+  await collections.getByRole('button', { name: 'Set limits…' }).click();
+  await collections.getByLabel('AI tasks per hour').fill('0');
+  await collections.getByText('Use a whole number from 1 to 100,000').waitFor();
+  await collections.getByLabel('AI tasks per hour').fill('1');
+  await collections.getByRole('button', { name: 'Save limits' }).click();
+  const limited = page.getByLabel('Collections agent: Hourly limit reached');
+  await limited.getByText(/Tasks started in the last hour: 1 of 1 allowed/).waitFor();
+  await limited.getByText('New work waits until older tasks are more than an hour old.').waitFor();
+  const overLimit = await call(`${base}/collections/runs`, {});
+  assert.equal(overLimit.body?.error, 'AI_TASK_LIMIT');
+  consoleErrors.splice(0); // the refused request above is expected
+  if (process.env.SHOTS_DIR) {
+    // Centred, so the sticky header does not cover the card.
+    await limited.evaluate((e) => e.scrollIntoView({ block: 'center' }));
+    await page.screenshot({ path: `${process.env.SHOTS_DIR}/agent-hourly-limit.png`, clip: await limited.boundingBox() });
+  }
+  await limited.getByRole('button', { name: 'Set limits…' }).click();
+  await limited.getByLabel('AI tasks per hour').fill('');
+  await limited.getByRole('button', { name: 'Save limits' }).click();
+  await collections.getByText(/1 of 500 allowed/).waitFor();
 
   await page.getByLabel('Bank reconciliation agent: On').getByRole('button', { name: 'Turn off bank reconciliation agent' }).click();
   const bankOff = page.getByLabel('Bank reconciliation agent: Off');
