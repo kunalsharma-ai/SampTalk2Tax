@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC = ['/login', '/register'];
+const PUBLIC = ['/login', '/login/sso', '/register'];
 /** Open to anyone, signed in or not: where a customer lands after paying a payment link. */
 const OPEN = ['/paid'];
 /** The customer and vendor portals: the secret in the link is the check (AR-030, AP-013). */

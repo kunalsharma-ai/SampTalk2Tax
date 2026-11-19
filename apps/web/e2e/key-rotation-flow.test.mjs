@@ -43,7 +43,7 @@ test('an administrator sees which key encrypts the stored secrets', async () => 
   const table = page.getByRole('table', { name: 'Encrypted secrets' });
   await table.waitFor();
   const rows = await table.locator('tbody tr').allInnerTexts();
-  assert.deepEqual(rows.map((r) => r.split('\t')[0].trim()), ['AI and email keys (Settings → Integrations)', "Organisations' payment gateways", 'Platform payment gateways', 'CRM webhook signing secrets', 'Two-step sign-in authenticators']);
+  assert.deepEqual(rows.map((r) => r.split('\t')[0].trim()), ['AI and email keys (Settings → Integrations)', "Organisations' payment gateways", 'Platform payment gateways', 'CRM webhook signing secrets', 'Single sign-on client secrets', 'Two-step sign-in authenticators']);
   await page.getByText('No previous key listed').waitFor();
   // Nothing is under a previous key on this server, so there is nothing to re-encrypt.
   assert.equal(await page.getByRole('button', { name: /^Re-encrypt/ }).isDisabled(), true);

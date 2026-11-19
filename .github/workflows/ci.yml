@@ -72,6 +72,10 @@ jobs:
           # (test-support/payments-stand-in.mjs); no money moves and nothing reaches them.
           PAYMENTS_STRIPE_API_URL: http://127.0.0.1:4557
           PAYMENTS_RAZORPAY_API_URL: http://127.0.0.1:4557
+          # The single sign-on browser test runs a local OpenID Connect provider and DNS server
+          # (test-support/oidc-stand-in.mjs); domains are checked against that DNS server only.
+          SSO_ALLOW_PRIVATE_NETWORKS: 'true'
+          SSO_DNS_SERVERS: 127.0.0.1:4559
         run: |
           (cd apps/api && node dist/main.js > /tmp/api.log 2>&1 &)
           (cd apps/web && npx next start -p 3000 > /tmp/web.log 2>&1 &)

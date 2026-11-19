@@ -1,10 +1,12 @@
-import { ConflictException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { isDuplicateKeyError } from '@talk2tax/document-db';
 import { hashPassword, passwordPolicyErrors, verifyPassword } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
-import { knownDevices, users } from '../db/collections/identity';
+import { knownDevices, users, type UserDoc } from '../db/collections/identity';
+import { memberships } from '../db/collections/tenancy';
+import { runAsSystem } from '../common/tenant-context';
 import { thenOrUndo } from '../common/undo';
 import { LoginThrottleService } from './login-throttle.service';
 import { DevicesService } from './devices.service';
@@ -92,6 +94,9 @@ export class AuthService {
       throw new UnauthorizedException({ error: 'INVALID_CREDENTIALS', message: 'Email or password is incorrect' });
     }
     await this.throttle.clear(email);
+    if (await this.ssoRequired(user)) {
+      throw new ForbiddenException({ error: 'SSO_REQUIRED', message: 'Your organisation signs in with single sign-on. Choose "Sign in with single sign-on" and enter your work email.' });
+    }
     // With two-step sign-in on, the password alone opens nothing: the client sends a code next.
     if ((await this.mfa.isActive(user.id)) && !(await this.devices.trusted(user.id, meta))) return this.mfa.challenge(user.id, meta);
     return this.startSession(user, meta, (await this.mfa.isActive(user.id)) ? 'TRUSTED_DEVICE' : undefined);
@@ -103,6 +108,30 @@ export class AuthService {
     const user = await this.store.collection(users).findById(userId);
     if (!user || !user.isActive) throw new UnauthorizedException({ error: 'MFA_CHALLENGE_EXPIRED', message: 'This sign-in took too long or had too many wrong codes. Sign in again.' });
     return this.startSession(user, meta, via, input.trustDevice === true);
+  }
+
+  /**
+   * Whether a password is refused for this person (SEC-006): their email is at a domain verified
+   * for an organisation that requires single sign-on, and they are a member there but not an owner.
+   * Owners keep their password so a broken identity provider never locks an organisation out.
+   */
+  private async ssoRequired(user: UserDoc): Promise<boolean> {
+    if (user.platformRole) return false;
+    const domain = user.email.slice(user.email.lastIndexOf('@') + 1);
+    return runAsSystem(async () => {
+      for (const d of await this.prisma.ssoDomain.findMany({ where: { domain, verifiedAt: { not: null } } })) {
+        const c = await this.prisma.ssoConnection.findUnique({ where: { orgId: d.orgId } });
+        if (!c?.enabled || !c.enforced) continue;
+        const m = await this.store.collection(memberships).findOne({ orgId: d.orgId, userId: user.id });
+        if (m && m.role !== 'OWNER') return true;
+      }
+      return false;
+    });
+  }
+
+  /** A session for someone their organisation's identity provider has signed in (SEC-006). */
+  async startSsoSession(user: { id: string; email: string; name: string }, meta: ClientMeta) {
+    return this.startSession(user, meta);
   }
 
   private async startSession(user: { id: string; email: string; name: string }, meta: ClientMeta, mfa?: 'APP' | 'RECOVERY_CODE' | 'TRUSTED_DEVICE', trustDevice = false) {

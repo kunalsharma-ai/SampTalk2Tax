@@ -161,6 +161,23 @@ const schema = z.object({
   RETENTION_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(604800).default(86400),
   /** How often recurring bills are checked for runs that have fallen due (0 turns the runner off). */
   RECURRING_BILL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
+  /**
+   * Single sign-on (SEC-006/007). Lets an organisation's OpenID Connect provider be an http://
+   * address or on a private, loopback or link-local network. Only for local development and
+   * tests: in production the provider must be a public https address.
+   */
+  SSO_ALLOW_PRIVATE_NETWORKS: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((v) => v === 'true'),
+  /**
+   * DNS servers used to check sign-in domains' TXT records, as host or host:port, comma-separated.
+   * Empty uses the system's resolvers.
+   */
+  SSO_DNS_SERVERS: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').split(',').map((x) => x.trim()).filter(Boolean)),
   /** The web app's address, used for links in emails to members. */
   APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
   /**

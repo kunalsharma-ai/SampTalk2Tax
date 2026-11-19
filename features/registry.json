@@ -28042,9 +28042,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/sso/oidc.ts",
+        "apps/api/src/sso/sso.service.ts",
+        "apps/api/src/sso/sso.controller.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/sso/page.tsx",
+        "apps/web/src/app/api/session/sso/callback/route.ts",
+        "apps/api/test/sso.e2e.test.ts",
+        "apps/web/e2e/sso-flow.test.mjs",
+        "docs/SINGLE_SIGN_ON.md"
+      ],
+      "notes": "Single sign-on with an organisation's OpenID Connect provider (Entra ID, Google Workspace, Okta, Keycloak, ...): code flow with PKCE and browser-bound state, ID token signature/iss/aud/exp/nonce checks, DNS-TXT-verified email domains, optional join with a role and optional enforcement (owners keep their password), audited. Not built: SAML, SCIM, single logout."
     },
     {
       "id": "SEC-007",
@@ -28064,9 +28073,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/sso/oidc.ts",
+        "apps/api/src/sso/sso.service.ts",
+        "apps/api/src/sso/sso.controller.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/sso/page.tsx",
+        "apps/web/src/app/api/session/sso/callback/route.ts",
+        "apps/api/test/sso.e2e.test.ts",
+        "apps/web/e2e/sso-flow.test.mjs",
+        "docs/SINGLE_SIGN_ON.md"
+      ],
+      "notes": "OIDC relying party architecture: per-organisation connection with sealed client secret (key rotation covers it), discovery with issuer check, SSRF-guarded provider requests (public https only, no redirects, size and time limits), JWKS verification of RS/PS/ES algorithms. SAML is not supported."
     },
     {
       "id": "SEC-008",

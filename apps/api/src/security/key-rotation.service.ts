@@ -22,7 +22,7 @@ interface Store {
 /**
  * Encryption key rotation (SEC-013) for the secrets stored in the app: organisations' AI and
  * email keys, payment gateway keys and webhook secrets (organisations' and the platform's), CRM
- * webhook signing secrets and two-step sign-in secrets. Each sealed value records the id of the key
+ * webhook signing secrets, single sign-on client secrets and two-step sign-in secrets. Each sealed value records the id of the key
  * that sealed it. After INTEGRATIONS_ENCRYPTION_KEY changes and the old key is listed in
  * INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS, the report shows what is still under an old key, and
  * re-encrypting seals every readable value again with the current key. Values no listed key can
@@ -79,6 +79,12 @@ export class KeyRotationService {
         name: 'CRM webhook signing secrets',
         rows: async () => (await runAsSystem(() => p.crmWebhook.findMany({ select: { id: true, orgId: true, secretCipher: true, secretKeyId: true } }))).map((r) => ({ id: r.id, orgId: r.orgId, values: { secret: { cipher: r.secretCipher, keyId: r.secretKeyId } } })),
         write: (r, _f, s) => inOrg(r.orgId, () => p.crmWebhook.update({ where: { id: r.id }, data: { secretCipher: s.cipher, secretKeyId: s.keyId } }).then(() => undefined)),
+      },
+      {
+        key: 'sso',
+        name: 'Single sign-on client secrets',
+        rows: async () => (await runAsSystem(() => p.ssoConnection.findMany({ select: { orgId: true, clientSecretCipher: true, clientSecretKeyId: true } }))).map((r) => ({ id: r.orgId, orgId: r.orgId, values: { secret: { cipher: r.clientSecretCipher, keyId: r.clientSecretKeyId } } })),
+        write: (r, _f, s) => inOrg(r.orgId, () => p.ssoConnection.update({ where: { orgId: r.id }, data: { clientSecretCipher: s.cipher, clientSecretKeyId: s.keyId } }).then(() => undefined)),
       },
       {
         key: 'two-step',

@@ -142,6 +142,7 @@ export const hi: Record<string, string> = {
   'Audit trail': 'ऑडिट ट्रेल',
   'AI control center': 'AI नियंत्रण केंद्र',
   'Data retention': 'डेटा प्रतिधारण',
+  'Single sign-on': 'सिंगल साइन-ऑन',
   'AI activity': 'AI गतिविधि',
   'Team and roles': 'टीम और भूमिकाएँ',
   Integrations: 'इंटीग्रेशन',
