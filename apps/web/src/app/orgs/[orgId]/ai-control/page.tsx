@@ -1,13 +1,13 @@
 'use client';
 import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, CardHeader, Field, Input, Stat, Textarea, cn } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, Field, Input, Stat, Table, Td, Textarea, Th, Tr, cn } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
-import { monthName, tokens, type AiAgentView, type AiControlView } from '@/lib/ai-control';
+import { monthName, tokens, usd, type AiAgentView, type AiControlView } from '@/lib/ai-control';
 import { dateTime } from '@/lib/collections';
 import { useOrg } from '@/lib/org';
 
@@ -84,9 +84,10 @@ export default function AiControlPage() {
             <ErrorAlert title="AI was not turned back on" error={resume.error} />
           </Card>
 
-          <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-5">
+          <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-6">
             <Stat label="AI calls" value={v.totals.calls} tone="accent" sub={monthName(v.month)} />
             <Stat label="Tokens used" value={tokens(v.totals.tokens)} sub="In and out, this month" />
+            <Stat label="Cost this month" value={usd(v.totals.cost)} sub={v.totals.unpricedTokens ? `${tokens(v.totals.unpricedTokens)} tokens not priced` : 'At your model prices'} tone={v.totals.unpricedTokens ? 'warning' : 'neutral'} />
             <Stat label="Failed" value={v.totals.failed} tone={v.totals.failed ? 'warning' : 'neutral'} sub="This month" />
             <Stat label="Running now" value={v.totals.running} />
             <Stat label="Waiting for a person" value={v.totals.waiting} tone={v.totals.waiting ? 'warning' : 'neutral'} sub={`Proposals, last ${v.accuracyDays} days`} />
@@ -97,6 +98,8 @@ export default function AiControlPage() {
               <AgentCard key={a.key} a={a} v={v} base={base} orgId={orgId} onDone={set} />
             ))}
           </ul>
+
+          <ModelPrices v={v} base={base} onDone={set} />
 
           <Card className="mt-4 p-4">
             <CardHeader title="Action levels" description="What an agent may do without a person. Every agent here is at level 2 or below: none posts, pays or sends on its own." />
@@ -147,7 +150,7 @@ function AgentCard({ a, v, base, orgId, onDone }: { a: AiAgentView; v: AiControl
         </div>
         <p className="text-xs text-fg-muted">{a.approval ?? 'Reads reports only; changes nothing.'}</p>
 
-        <dl className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-3 text-sm md:grid-cols-5">
           <div>
             <dt className="text-xs text-fg-muted">Calls this month</dt>
             <dd className="font-semibold tabular-nums">{a.usage.calls}{a.usage.failed ? <span className="ml-1 text-xs font-normal text-warning">({a.usage.failed} failed)</span> : null}</dd>
@@ -155,6 +158,13 @@ function AgentCard({ a, v, base, orgId, onDone }: { a: AiAgentView; v: AiControl
           <div>
             <dt className="text-xs text-fg-muted">Tokens this month</dt>
             <dd className="font-semibold tabular-nums">{tokens(a.usage.tokens)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-fg-muted">Cost this month</dt>
+            <dd className="font-semibold tabular-nums">
+              {usd(a.cost.amount)}
+              {a.cost.unpricedTokens ? <span className="block text-xs font-normal text-warning">{tokens(a.cost.unpricedTokens)} tokens not priced</span> : null}
+            </dd>
           </div>
           <div>
             <dt className="text-xs text-fg-muted">Accepted</dt>
@@ -208,4 +218,104 @@ function AgentCard({ a, v, base, orgId, onDone }: { a: AiAgentView; v: AiControl
       </Card>
     </li>
   );
+}
+
+/** What each model costs per million tokens, and what this month's tokens of it cost. */
+function ModelPrices({ v, base, onDone }: { v: AiControlView; base: string; onDone: (v: AiControlView) => void }) {
+  const [model, setModel] = useState('');
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const save = useMutation({
+    mutationFn: () => api<AiControlView>(`${base}/prices`, { method: 'PUT', body: { model: model.trim(), inputPerMillion: input.trim(), outputPerMillion: output.trim() } }),
+    onSuccess: (r) => {
+      setModel('');
+      setInput('');
+      setOutput('');
+      onDone(r);
+    },
+  });
+  const unset = useMutation({ mutationFn: (m: string) => api<AiControlView>(`${base}/prices/remove`, { method: 'POST', body: { model: m } }), onSuccess: onDone });
+  const usage = new Map<string, { tokens: number; cost: string | null }>();
+  for (const a of v.agents) {
+    for (const m of a.cost.models) {
+      const u = usage.get(m.model) ?? { tokens: 0, cost: null };
+      u.tokens += m.inputTokens + m.outputTokens;
+      if (m.cost !== null) u.cost = addAmounts(u.cost ?? '0.0000', m.cost);
+      usage.set(m.model, u);
+    }
+  }
+  const names = [...new Set([...v.prices.map((p) => p.model), ...v.modelsUsed])].sort();
+  const ok = /^\d{1,6}(\.\d{1,4})?$/;
+  const valid = model.trim() !== '' && ok.test(input.trim()) && ok.test(output.trim());
+  const edit = (m: string) => {
+    const p = v.prices.find((x) => x.model === m);
+    setModel(m);
+    setInput(p ? p.inputPerMillion.replace(/\.?0+$/, '') : '');
+    setOutput(p ? p.outputPerMillion.replace(/\.?0+$/, '') : '');
+  };
+  return (
+    <Card className="mt-4" role="region" aria-label="Model prices">
+      <CardHeader title="Model prices" description="What your AI provider charges per million input and output tokens for each model, in US dollars. Costs on this page are this month's tokens at these prices; a model without a price is counted in tokens only." />
+      {names.length ? (
+        <div className="overflow-x-auto">
+          <Table aria-label="Prices by model">
+            <thead>
+              <tr>
+                <Th>Model</Th>
+                <Th className="text-right">Input, per million</Th>
+                <Th className="text-right">Output, per million</Th>
+                <Th className="text-right">Tokens this month</Th>
+                <Th className="text-right">Cost this month</Th>
+                <Th>Price set by</Th>
+                {v.canManage ? <Th><span className="sr-only">Actions</span></Th> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {names.map((m) => {
+                const p = v.prices.find((x) => x.model === m);
+                const u = usage.get(m);
+                return (
+                  <Tr key={m}>
+                    <Td className="whitespace-nowrap font-mono text-xs">{m}</Td>
+                    <Td className="text-right tabular-nums">{p ? usd(p.inputPerMillion) : '—'}</Td>
+                    <Td className="text-right tabular-nums">{p ? usd(p.outputPerMillion) : '—'}</Td>
+                    <Td className="text-right tabular-nums">{tokens(u?.tokens ?? 0)}</Td>
+                    <Td className="text-right tabular-nums">{p ? usd(u?.cost ?? '0.0000') : <span className="text-warning">No price set</span>}</Td>
+                    <Td className="text-xs text-fg-muted">{p ? `${p.changedBy}, ${dateTime(p.changedAt)}` : '—'}</Td>
+                    {v.canManage ? (
+                      <Td className="whitespace-nowrap text-right">
+                        <Button size="sm" variant="ghost" onClick={() => edit(m)} aria-label={`${p ? 'Change' : 'Set'} the price of ${m}`}>{p ? 'Change' : 'Set price'}</Button>
+                        {p ? <Button size="sm" variant="ghost" loading={unset.isPending && unset.variables === m} onClick={() => unset.mutate(m)} aria-label={`Remove the price of ${m}`}>Remove</Button> : null}
+                      </Td>
+                    ) : null}
+                  </Tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        </div>
+      ) : (
+        <p className="px-5 py-4 text-sm text-fg-muted">No model has been used this month and no prices are set.</p>
+      )}
+      {v.canManage ? (
+        <form className="flex flex-wrap items-end gap-3 border-t border-line px-5 py-4" onSubmit={(e) => { e.preventDefault(); if (valid) save.mutate(); }}>
+          <Field label="Model" hint="As the provider names it">{(f) => <Input {...f} value={model} maxLength={100} onChange={(e) => setModel(e.target.value)} className="w-64" />}</Field>
+          <Field label="Input, US$ per million tokens">{(f) => <Input {...f} inputMode="decimal" value={input} onChange={(e) => setInput(e.target.value)} className="w-40" />}</Field>
+          <Field label="Output, US$ per million tokens">{(f) => <Input {...f} inputMode="decimal" value={output} onChange={(e) => setOutput(e.target.value)} className="w-40" />}</Field>
+          <Button type="submit" size="sm" loading={save.isPending} disabled={!valid}>Save price</Button>
+          <ErrorAlert title="Price not saved" error={save.error ?? unset.error} />
+        </form>
+      ) : null}
+    </Card>
+  );
+}
+
+/** Adds two 4-place decimal strings exactly (as ten-thousandths). */
+function addAmounts(a: string, b: string): string {
+  const units = (x: string) => {
+    const [w, f = ''] = x.split('.');
+    return BigInt(w) * 10000n + BigInt(f.padEnd(4, '0').slice(0, 4));
+  };
+  const t = units(a) + units(b);
+  return `${t / 10000n}.${String(t % 10000n).padStart(4, '0')}`;
 }

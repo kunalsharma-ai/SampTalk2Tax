@@ -14899,16 +14899,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/src/ai-control/ai-control.service.ts",
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
         "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
-        "docs/AI_CONTROL_CENTER.md"
+        "docs/AI_CONTROL_CENTER.md",
+        "apps/api/test/ai-costs.e2e.test.ts",
+        "apps/web/e2e/ai-costs-flow.test.mjs",
+        "apps/api/src/db/migrations/20270107100000_ai_model_prices.ts"
       ],
-      "notes": "Tokens in and out tracked per call and per agent per month, with an optional monthly token budget per agent that is enforced before each model call. Not built: converting tokens to money at provider prices."
+      "notes": "Tokens in and out tracked per call and per agent per month, with an optional monthly token budget per agent that is enforced before each model call. Costs: owners and admins set each model's price per million input and output tokens (US dollars, decimal, audited); the control center shows this month's cost per agent and in total by the model that answered, with tokens of unpriced models counted apart. No built-in provider price list; budgets stay in tokens."
     },
     {
       "id": "AGENT-054",

@@ -6,6 +6,12 @@
     "name": "accruals_chk"
    }
   ],
+  "ai_model_prices": [
+   {
+    "def": "CHECK (((input_per_million >= (0)::numeric) AND (output_per_million >= (0)::numeric) AND (input_per_million <= (100000)::numeric) AND (output_per_million <= (100000)::numeric)))",
+    "name": "ai_model_prices_chk"
+   }
+  ],
   "ai_agent_settings": [
    {
     "def": "CHECK (((monthly_token_limit IS NULL) OR ((monthly_token_limit >= 1000) AND (monthly_token_limit <= 1000000000))))",
@@ -3317,6 +3323,20 @@
    ],
    "references": "organizations",
    "table": "close_settings"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "ai_model_prices_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "ai_model_prices"
   },
   {
    "columns": [

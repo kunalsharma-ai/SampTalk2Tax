@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 780 |
 | Designed | 0 |
-| Implementing | 41 |
+| Implementing | 40 |
 | Implemented | 34 |
-| Tested | 474 |
+| Tested | 475 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3406,8 +3406,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### AGENT-053 — Tracks model costs
 
 - Module: Multi-agent AI finance workforce
-- Status: **Implementing**
-- Notes: Tokens in and out tracked per call and per agent per month, with an optional monthly token budget per agent that is enforced before each model call. Not built: converting tokens to money at provider prices.
+- Status: **Tested**
+- Notes: Tokens in and out tracked per call and per agent per month, with an optional monthly token budget per agent that is enforced before each model call. Costs: owners and admins set each model's price per million input and output tokens (US dollars, decimal, audited); the control center shows this month's cost per agent and in total by the model that answered, with tokens of unpriced models counted apart. No built-in provider price list; budgets stay in tokens.
 - Evidence:
   - apps/api/src/ai-control/ai-control.service.ts
   - apps/api/test/ai-control.e2e.test.ts
@@ -3415,6 +3415,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/ai-control-flow.test.mjs
   - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
   - docs/AI_CONTROL_CENTER.md
+  - apps/api/test/ai-costs.e2e.test.ts
+  - apps/web/e2e/ai-costs-flow.test.mjs
+  - apps/api/src/db/migrations/20270107100000_ai_model_prices.ts
 
 ### AGENT-054 — Level 0: Read-only analysis
 
