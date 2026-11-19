@@ -1725,6 +1725,12 @@
     "def": "CHECK ((((status)::text = ANY ((ARRAY['POSTED'::character varying, 'VOID'::character varying])::text[])) AND (total > (0)::numeric) AND (number > 0) AND ((((status)::text = 'VOID'::text) = (voided_at IS NOT NULL)) AND (((status)::text <> 'VOID'::text) OR (void_reason IS NOT NULL)))))",
     "name": "consolidation_adjustments_chk"
    }
+  ],
+  "journal_suggestion_decisions": [
+   {
+    "def": "CHECK ((((action)::text = ANY ((ARRAY['ACCEPTED'::character varying, 'DISMISSED'::character varying])::text[])) AND ((kind)::text = ANY ((ARRAY['REPEAT'::character varying, 'ACCRUAL'::character varying])::text[])) AND ((month)::text ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text) AND (total >= (0)::numeric) AND ((((action)::text = 'ACCEPTED'::text) = (journal_entry_id IS NOT NULL))) AND (((action)::text <> 'DISMISSED'::text) OR (reason IS NOT NULL))))",
+    "name": "journal_suggestion_decisions_chk"
+   }
   ]
  },
  "foreignKeys": [
@@ -10081,6 +10087,20 @@
    ],
    "references": "consolidation_groups",
    "table": "consolidation_adjustments"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "journal_suggestion_decisions_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "journal_suggestion_decisions"
   }
  ],
  "uniques": [

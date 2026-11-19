@@ -157,6 +157,8 @@ import { PaymentScheduleController } from './payment-batches/payment-schedule.co
 import { DisputesController } from './disputes/disputes.controller';
 import { DisputesService } from './disputes/disputes.service';
 import { PaymentScheduleService } from './payment-batches/payment-schedule.service';
+import { JournalSuggestionsController } from './journal-suggestions/journal-suggestions.controller';
+import { JournalSuggestionsService } from './journal-suggestions/journal-suggestions.service';
 import { JournalTemplatesController } from './journal-templates/journal-templates.controller';
 import { JournalTemplatesRunnerService } from './journal-templates/journal-templates-runner.service';
 import { JournalTemplatesService } from './journal-templates/journal-templates.service';
@@ -336,6 +338,7 @@ export class AppModule {
         VendorPortalController,
         SupplierTaxController,
         JournalTemplatesController,
+        JournalSuggestionsController,
         RecurringBillsController,
         BadDebtsController,
         YearEndController,
@@ -474,6 +477,7 @@ export class AppModule {
         SupplierTaxService,
         ContractsRunnerService,
         JournalTemplatesService,
+        JournalSuggestionsService,
         BadDebtsService,
         YearEndService,
         PaymentBatchesService,

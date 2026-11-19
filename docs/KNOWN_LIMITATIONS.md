@@ -11,6 +11,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 ## Accounting
 * Year-end close posts one closing journal to retained earnings per year (see [`YEAR_END_CLOSE.md`](YEAR_END_CLOSE.md)); years not closed show their profit as "unclosed earnings" on the balance sheet. Closing lines carry no departments or projects.
 * Journal templates and recurring journals exist (docs/JOURNAL_TEMPLATES.md); a schedule runs monthly, quarterly, half-yearly or yearly (no weekly or custom calendars), and a template cannot reverse itself on the next day (use Accruals for that). No revaluation, exchange-rate tables, intercompany, consolidation, subsidiary ledgers or cash-basis reporting.
+* Journal suggestions (docs/JOURNAL_SUGGESTIONS.md) detect monthly patterns over the last three months only, and an accepted accrual is not reversed automatically.
 * Dimensions are free-form key/values on lines; there are no dimension masters or dimension reports.
 * The chart template is a generic SMB chart, not a statutory chart (e.g. Schedule III presentation is not implemented).
 * Period CLOSED status exists but there is no close workflow; LOCKED/OPEN toggling is available to OWNER/ADMIN.

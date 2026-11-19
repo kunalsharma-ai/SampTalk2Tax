@@ -82,6 +82,7 @@ export const hi: Record<string, string> = {
   // Accounting
   Journals: 'जर्नल',
   'Journal templates': 'जर्नल टेम्पलेट',
+  'Journal suggestions': 'जर्नल सुझाव',
   'Chart of accounts': 'खातों की सूची',
   'Fixed assets': 'स्थायी संपत्तियाँ',
   'Prepaid and deferred': 'अग्रिम और आस्थगित',
