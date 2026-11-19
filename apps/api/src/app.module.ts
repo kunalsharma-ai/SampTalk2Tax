@@ -85,6 +85,7 @@ import { PaymentSettingsService } from './billing/payments/payment-settings.serv
 import { CouponsService } from './billing/payments/coupons.service';
 import { AddOnsService } from './billing/add-ons.service';
 import { AiCreditsService } from './billing/ai-credits.service';
+import { EnterpriseContractsService } from './billing/enterprise-contracts.service';
 import { RenewalsRunnerService } from './billing/payments/renewals-runner.service';
 import { PaymentWebhooksController, PlatformPaymentsController, SubscriptionPaymentsController } from './billing/payments/subscription-payments.controller';
 import { SubscriptionPaymentsService } from './billing/payments/subscription-payments.service';
@@ -391,6 +392,7 @@ export class AppModule {
         CouponsService,
         AddOnsService,
         AiCreditsService,
+        EnterpriseContractsService,
         SubscriptionPaymentsService,
         RenewalsRunnerService,
         { provide: CONFIG, useValue: config },

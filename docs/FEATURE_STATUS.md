@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 777 |
 | Designed | 0 |
-| Implementing | 39 |
+| Implementing | 38 |
 | Implemented | 34 |
-| Tested | 479 |
+| Tested | 480 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -6233,8 +6233,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SUBS-023 — Enterprise contracts
 
 - Module: Subscription and monetization engine
-- Status: **Implementing**
-- Notes: Enterprise contracts activated by an administrator with the contract reference, or invoiced and paid by transfer (recorded under Invoices); no contract terms or custom prices yet.
+- Status: **Tested**
+- Notes: Enterprise contracts recorded by platform administrators: plan, monthly or annual price, term and limits that differ from the plan; the first period starts with the contract reference or at the next renewal; renewals are invoiced at the contract price while the term covers them, then at list price; the organisation cannot change plan itself while one runs; ended early with a reason.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -6245,6 +6245,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
+  - packages/accounting-engine/src/enterprise-contracts.ts
+  - packages/accounting-engine/test/enterprise-contracts.test.ts
+  - apps/api/src/billing/enterprise-contracts.service.ts
+  - apps/api/src/billing/contract-terms.ts
+  - apps/api/src/db/migrations/20270112100000_enterprise_contracts.ts
+  - apps/api/test/subscription-enterprise-contracts.e2e.test.ts
+  - apps/web/src/app/admin/contracts/page.tsx
+  - apps/web/e2e/subscription-enterprise-contracts-flow.test.mjs
 
 ### SUBS-024 — Coupons
 

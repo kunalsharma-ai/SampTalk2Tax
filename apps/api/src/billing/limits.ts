@@ -2,14 +2,18 @@ import type { DocumentStoreService } from '../common/document-store.service';
 import { runInOrg } from '../common/tenant-context';
 import { invitations, memberships } from '../db/collections/tenancy';
 import { HttpStatus } from '@nestjs/common';
-import { PlanLimits, subscriptionAccess, SubscriptionStatus } from '@talk2tax/accounting-engine';
+import { contractLimits, PlanLimits, subscriptionAccess, SubscriptionStatus } from '@talk2tax/accounting-engine';
 import { DomainError } from '../common/errors';
 import type { Tx } from '../common/prisma.service';
 
 /** The organisation's plan limits, or null when it has no subscription row. */
 export async function planLimits(tx: Tx, orgId: string): Promise<{ plan: string; limits: PlanLimits } | null> {
-  const s = await tx.subscription.findUnique({ where: { orgId }, select: { plan: { select: { name: true, limits: true } } } });
-  return s ? { plan: s.plan.name, limits: s.plan.limits as unknown as PlanLimits } : null;
+  const s = await tx.subscription.findUnique({ where: { orgId }, select: { contractId: true, plan: { select: { name: true, limits: true } } } });
+  if (!s) return null;
+  // An enterprise contract in force (SUBS-023) sets its own limits in place of the plan's.
+  const c = s.contractId ? await tx.enterpriseContract.findUnique({ where: { id: s.contractId }, select: { status: true, limits: true } }) : null;
+  const limits = s.plan.limits as unknown as PlanLimits;
+  return { plan: s.plan.name, limits: c?.status === 'ACTIVE' ? contractLimits(limits, c.limits as Partial<Record<keyof PlanLimits, number>>) : limits };
 }
 
 /**

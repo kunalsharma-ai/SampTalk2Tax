@@ -1350,7 +1350,7 @@ Part 38 · M9 · priority P2 · depends on: SEC
 | SUBS-020 | Billing Capabilities | capability | User-based licensing | Tested |
 | SUBS-021 | Billing Capabilities | capability | Multi-entity add-ons | Not started |
 | SUBS-022 | Billing Capabilities | capability | API usage plans | Not started |
-| SUBS-023 | Billing Capabilities | capability | Enterprise contracts | Implementing |
+| SUBS-023 | Billing Capabilities | capability | Enterprise contracts | Tested |
 | SUBS-024 | Billing Capabilities | capability | Coupons | Tested |
 | SUBS-025 | Billing Capabilities | capability | Promotional pricing | Tested |
 | SUBS-026 | Billing Capabilities | capability | Regional pricing | Tested |

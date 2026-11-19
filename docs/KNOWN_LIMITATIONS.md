@@ -259,7 +259,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Plans and subscriptions
 
-* Online subscription payments (Razorpay, Stripe) are tested only against a local stand-in of their APIs, not yet with real test accounts. Renewals are paid by the customer: no saved-card, UPI AutoPay or e-mandate charging. No refunds or credit notes for subscriptions; no tax for suppliers outside India. Coupons, add-on modules and packs of extra AI requests are built; the AI assistant cannot be bought as an add-on, and bought AI requests expire after a year without refund. See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). AI and upload limits are shown but not yet counted. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
+* Online subscription payments (Razorpay, Stripe) are tested only against a local stand-in of their APIs, not yet with real test accounts. Renewals are paid by the customer: no saved-card, UPI AutoPay or e-mandate charging. No refunds or credit notes for subscriptions; no tax for suppliers outside India. Coupons, add-on modules and packs of extra AI requests are built; the AI assistant cannot be bought as an add-on, and bought AI requests expire after a year without refund. Enterprise contracts set a price, term and limits, but no custom per-module pricing, signed-document storage or multi-entity terms (SUBS-021). See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md). AI and upload limits are shown but not yet counted. See [`PLANS_AND_SUBSCRIPTIONS.md`](PLANS_AND_SUBSCRIPTIONS.md).
 
 ## Operations
 

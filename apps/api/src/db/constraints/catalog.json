@@ -1713,6 +1713,12 @@
     "def": "CHECK (((requests > 0) AND (expires_at > granted_at)))",
     "name": "ai_credit_grants_chk"
    }
+  ],
+  "enterprise_contracts": [
+   {
+    "def": "CHECK ((((billing_interval)::text = ANY ((ARRAY['MONTHLY'::character varying, 'ANNUAL'::character varying])::text[])) AND ((status)::text = ANY ((ARRAY['ACTIVE'::character varying, 'ENDED'::character varying])::text[])) AND (price > (0)::numeric) AND (ends_on > starts_on) AND (((status)::text = 'ENDED'::text) = (ended_at IS NOT NULL))))",
+    "name": "enterprise_contracts_chk"
+   }
   ]
  },
  "foreignKeys": [
@@ -10011,6 +10017,48 @@
    ],
    "references": "ai_credit_grants",
    "table": "usage_events"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "enterprise_contracts_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "enterprise_contracts"
+  },
+  {
+   "columns": [
+    "plan_id"
+   ],
+   "deferrable": false,
+   "name": "enterprise_contracts_plan_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "plans",
+   "table": "enterprise_contracts"
+  },
+  {
+   "columns": [
+    "contract_id"
+   ],
+   "deferrable": false,
+   "name": "subscriptions_contract_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "enterprise_contracts",
+   "table": "subscriptions"
   }
  ],
  "uniques": [
@@ -12135,6 +12183,14 @@
    "name": "subscription_invoices_one_open_credits",
    "table": "subscription_invoices",
    "where": "(((status)::text = 'OPEN'::text) AND ((kind)::text = 'CREDITS'::text))"
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "enterprise_contracts_one_active",
+   "table": "enterprise_contracts",
+   "where": "((status)::text = 'ACTIVE'::text)"
   },
   {
    "keys": [

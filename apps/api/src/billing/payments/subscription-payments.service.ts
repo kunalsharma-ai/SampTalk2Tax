@@ -13,7 +13,10 @@ import { PaymentSettingsService } from './payment-settings.service';
 import { AppliedCoupon, couponSummary, CouponsService } from './coupons.service';
 import { AddOnsService } from '../add-ons.service';
 import { AiCreditsService } from '../ai-credits.service';
-import { accessOf } from '../limits';
+import { accessOf, planLimits } from '../limits';
+import { contractCovers } from '@talk2tax/accounting-engine';
+import { EnterpriseContractsService } from '../enterprise-contracts.service';
+import { contractInForce } from '../contract-terms';
 import { lockRow } from '../../db/locks';
 
 const DAY = 86_400_000;
@@ -90,6 +93,7 @@ export class SubscriptionPaymentsService {
     private readonly coupons: CouponsService,
     private readonly addOns: AddOnsService,
     private readonly credits: AiCreditsService,
+    private readonly contracts: EnterpriseContractsService,
   ) {}
 
   private system<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -130,6 +134,7 @@ export class SubscriptionPaymentsService {
   private async work(tx: Tx, orgId: string, planCode: string, interval: BillingInterval, now: Date, opts: { forQuote?: boolean; couponCode?: string | null; addOns?: string[] } = {}) {
     const s = await tx.subscription.findUnique({ where: { orgId }, include: { plan: true } });
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
+    await BillingService.refuseUnderContract(tx, s);
     const target = await tx.plan.findUnique({ where: { code: planCode } });
     if (!target || !target.isActive) throw new DomainError('PLAN_NOT_FOUND', 'That plan is not offered', HttpStatus.UNPROCESSABLE_ENTITY);
     const currency = s.currency as BillingCurrency;
@@ -350,7 +355,8 @@ export class SubscriptionPaymentsService {
     const s = await tx.subscription.findUnique({ where: { orgId }, include: { plan: true } });
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
     if (!['ACTIVE', 'TRIALING'].includes(s.status) || accessOf(s, now).level !== 'FULL') throw new DomainError('CREDITS_NOT_AVAILABLE', 'Extra AI requests can be bought while the subscription is in its trial or paid for', HttpStatus.CONFLICT);
-    const limit = (s.plan.limits as { aiCreditsPerMonth?: number | null }).aiCreditsPerMonth ?? null;
+    // The plan's limit, or the enterprise contract's in its place.
+    const limit = (await planLimits(tx, orgId))?.limits.aiCreditsPerMonth ?? null;
     if (limit === null) throw new DomainError('CREDITS_NOT_NEEDED', `The ${s.plan.name} plan has no limit on AI requests`, HttpStatus.CONFLICT);
     if (s.status !== 'TRIALING' && !s.plan.features.includes('AI')) throw new DomainError('CREDITS_NOT_AVAILABLE', `The ${s.plan.name} plan does not include the AI assistant; choose a plan that does under Settings → Subscription`, HttpStatus.CONFLICT);
     const pack = await tx.aiCreditPack.findUnique({ where: { id: packId } });
@@ -597,7 +603,21 @@ export class SubscriptionPaymentsService {
     let plan = s.plan;
     let interval = s.billingInterval as BillingInterval;
     let wanted: string[] = s.addOns ?? [];
-    if (s.requestedPlan && s.requestedInterval) {
+    // An enterprise contract (SUBS-023) renews at its price while its term covers the new period;
+    // once the term is over it ends, and the renewal is at the plan's list price.
+    const contract = await contractInForce(tx, s);
+    if (contract && contractCovers(contract, s.currentPeriodEnd)) {
+      const cplan = await tx.plan.findUniqueOrThrow({ where: { id: contract.planId } });
+      const cinterval = contract.billingInterval as BillingInterval;
+      const parties = await this.taxFor(tx, orgId, contract.price.toFixed(2), currency);
+      return this.issue(tx, orgId, null, { kind: 'RENEWAL', planId: cplan.id, interval: cinterval, listPrice: contract.price.toFixed(2), addOns: [], addOnLines: [], periodStart: s.currentPeriodEnd, periodEnd: periodEnd(s.currentPeriodEnd, cinterval), currency, subtotal: contract.price.toFixed(2), discount: '0.00', coupon: null, parties, dueAt: s.currentPeriodEnd > now ? s.currentPeriodEnd : now });
+    }
+    if (contract) {
+      await this.contracts.end(null, contract.id, 'The term ended', tx, now);
+      // The plan in the contract carries on at its list price, with no add-ons.
+      plan = await tx.plan.findUniqueOrThrow({ where: { id: contract.planId } });
+      wanted = [];
+    } else if (s.requestedPlan && s.requestedInterval) {
       // A scheduled change takes effect at the renewal, if the organisation fits the plan.
       const fits = await this.billing.memberFit(tx, orgId, s.requestedPlan).then(() => true, () => false);
       if (fits) {
