@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
-import { checkDraft, CustomerFacts, customerFacts, D, draftPasses, factsForModel, RISK_LEVELS, RiskLevel } from '@talk2tax/accounting-engine';
+import { addDays, checkDraft, CustomerFacts, customerFacts, D, draftPasses, factsForModel, reminderResults, RISK_LEVELS, RiskLevel } from '@talk2tax/accounting-engine';
 import { CollectionDraftStatus, Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AiControlService } from '../ai-control/ai-control.service';
@@ -129,6 +129,36 @@ export class CollectionsService {
         ? { id: run.id, status: run.status, startedBy: names.get(run.startedById) ?? 'Former member', skipped: run.skipped, createdAt: run.createdAt.toISOString(), finishedAt: run.finishedAt?.toISOString() ?? null, drafts: await this.prisma.collectionDraft.count({ where: { orgId, runId: run.id } }) }
         : null,
     };
+  }
+
+  /**
+   * What the reminders sent in the last `days` achieved: for each, what the customer paid in the
+   * `windowDays` after it against what was overdue then (see reminderResults), with a summary per
+   * currency. Receipts are posted receipts from the books.
+   */
+  async results(orgId: string, days = 90, windowDays = 30, today = todayIst()) {
+    const from = addDays(today, -days);
+    const sent = await this.prisma.collectionDraft.findMany({
+      where: { orgId, status: 'SENT', sentAt: { gte: new Date(`${from}T00:00:00+05:30`) } },
+      orderBy: { sentAt: 'asc' },
+      take: 2000,
+      select: { id: true, contactId: true, facts: true, sentAt: true },
+    });
+    const reminders = sent.map((r) => {
+      const f = r.facts as unknown as CustomerFacts;
+      return { id: r.id, contactId: r.contactId, customer: f.customer, sentOn: istDate(r.sentAt!), sentAt: r.sentAt!.toISOString(), currency: f.currency, overdueThen: f.totalOverdue };
+    });
+    const contactIds = [...new Set(reminders.map((r) => r.contactId))];
+    const receipts = contactIds.length
+      ? await this.prisma.payment.findMany({ where: { orgId, kind: 'RECEIPT', status: 'POSTED', contactId: { in: contactIds }, date: { gte: toDbDate(reminders[0]!.sentOn) } }, select: { contactId: true, date: true, currency: true, amount: true, createdAt: true } })
+      : [];
+    const { results, byCurrency } = reminderResults(
+      reminders,
+      receipts.map((p) => ({ contactId: p.contactId!, date: fromDbDate(p.date), currency: p.currency, amount: p.amount.toString(), recordedAt: p.createdAt.toISOString() })),
+      today,
+      windowDays,
+    );
+    return { today, from, days, windowDays, byCurrency, reminders: results };
   }
 
   async list(orgId: string, status?: CollectionDraftStatus) {

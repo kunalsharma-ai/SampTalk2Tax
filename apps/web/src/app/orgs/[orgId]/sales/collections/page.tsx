@@ -1,7 +1,7 @@
 'use client';
 import { IntegrationsLink } from '@/components/integrations-link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, EmptyState, Stat, cn } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, EmptyState, Stat, Table, Td, Th, Tr, cn } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
@@ -11,6 +11,7 @@ import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { dateTime, RISK, STATUS, type CollectionsOverview, type Reminder, type ReminderStatus } from '@/lib/collections';
+import { date } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
@@ -132,6 +133,7 @@ function Collections() {
               </EmptyState>
             </Card>
           )}
+          {canManage ? <ReminderResults base={base} /> : null}
         </>
       ) : null}
     </>
@@ -193,5 +195,80 @@ function ReminderRow({ r, href }: { r: Reminder; href: string }) {
         </span>
       </Link>
     </li>
+  );
+}
+
+interface ResultsView {
+  today: string;
+  days: number;
+  windowDays: number;
+  byCurrency: { currency: string; reminders: number; overdueThen: string; collected: string; collectedShare: string | null; paid: number; partPaid: number; notPaid: number; waiting: number; averageDaysToPay: number | null }[];
+  reminders: { id: string; customer: string; sentOn: string; currency: string; overdueThen: string; collected: string; daysToFirstPayment: number | null; outcome: 'PAID' | 'PART_PAID' | 'WAITING' | 'NOT_PAID'; windowEnds: string }[];
+}
+const OUTCOME: Record<ResultsView['reminders'][number]['outcome'], { label: string; tone: 'positive' | 'warning' | 'neutral' | 'negative' }> = {
+  PAID: { label: 'Paid', tone: 'positive' },
+  PART_PAID: { label: 'Part paid', tone: 'warning' },
+  WAITING: { label: 'Waiting', tone: 'neutral' },
+  NOT_PAID: { label: 'Not paid', tone: 'negative' },
+};
+
+/** What the reminders sent in the last 90 days achieved, from receipts in the books. */
+function ReminderResults({ base }: { base: string }) {
+  // Receipts are recorded elsewhere, so read the results again each time the page opens.
+  const q = useQuery({ queryKey: ['collections-results', base], queryFn: () => api<ResultsView>(`${base}/results`), refetchOnMount: 'always' });
+  const v = q.data;
+  return (
+    <Card className="mt-6" role="region" aria-label="What reminders achieved">
+      <CardHeader
+        title="What reminders achieved"
+        description={v ? `Reminders sent in the last ${v.days} days, and what each customer paid in the ${v.windowDays} days after, against what was overdue when it went. A payment counts for the latest reminder before it, and only up to what was overdue then.` : 'What customers paid after each reminder.'}
+      />
+      <ErrorAlert title="Could not load the results" error={q.error} />
+      {v ? (
+        v.reminders.length ? (
+          <>
+            {v.byCurrency.map((c) => (
+              <div key={c.currency} className="grid grid-cols-2 gap-3 px-5 pt-4 xl:grid-cols-4">
+                <Stat label={`Collected after reminders${v.byCurrency.length > 1 ? `, ${c.currency}` : ''}`} value={<Money value={c.collected} currency={c.currency} />} tone="positive" sub={c.collectedShare === null ? 'Nothing was overdue' : `${c.collectedShare}% of the overdue reminded about`} />
+                <Stat label="Overdue when reminded" value={<Money value={c.overdueThen} currency={c.currency} />} sub={`${c.reminders} reminder${c.reminders === 1 ? '' : 's'}`} />
+                <Stat label="Paid in full" value={`${c.paid} of ${c.reminders}`} sub={`${c.partPaid} part paid, ${c.notPaid} not paid, ${c.waiting} waiting`} />
+                <Stat label="Days to first payment" value={c.averageDaysToPay ?? '—'} sub="On average, where something was paid" />
+              </div>
+            ))}
+            <div className="mt-4 overflow-x-auto">
+              <Table aria-label="Results by reminder">
+                <thead>
+                  <tr>
+                    <Th>Customer</Th>
+                    <Th>Sent</Th>
+                    <Th className="text-right">Overdue then</Th>
+                    <Th className="text-right">Collected after</Th>
+                    <Th className="text-right">First payment</Th>
+                    <Th>Result</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {v.reminders.map((r) => (
+                    <Tr key={r.id}>
+                      <Td className="font-medium">{r.customer}</Td>
+                      <Td className="whitespace-nowrap text-sm">{date(r.sentOn)}</Td>
+                      <Td className="text-right"><Money value={r.overdueThen} currency={r.currency} /></Td>
+                      <Td className="text-right"><Money value={r.collected} currency={r.currency} /></Td>
+                      <Td className="whitespace-nowrap text-right text-sm">{r.daysToFirstPayment === null ? '—' : r.daysToFirstPayment === 0 ? 'Same day' : `After ${r.daysToFirstPayment} day${r.daysToFirstPayment === 1 ? '' : 's'}`}</Td>
+                      <Td>
+                        <Badge tone={OUTCOME[r.outcome].tone}>{OUTCOME[r.outcome].label}</Badge>
+                        {r.outcome === 'WAITING' ? <span className="ml-2 text-xs text-fg-faint">until {date(r.windowEnds)}</span> : null}
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          </>
+        ) : (
+          <EmptyState title="No reminders sent yet">Once reminders are sent, what each customer paid afterwards shows here.</EmptyState>
+        )
+      ) : null}
+    </Card>
   );
 }

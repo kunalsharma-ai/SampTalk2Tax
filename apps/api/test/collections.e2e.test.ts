@@ -347,6 +347,24 @@ describe('when things go wrong', () => {
   });
 });
 
+describe('what reminders achieved', () => {
+  it('shows what each customer paid after a reminder against what was overdue then', async () => {
+    // Banyan pays 20,000 of the 57,345.67 overdue when reminded; Cedar's 5,000 came before its reminder.
+    await receipt('Banyan Retail', '20000.00', [{ documentId: inv.a.id, amount: '20000.00' }]);
+    const res = (await ctx.http().get(`${B}/results`).set(accountant.auth).expect(200)).body;
+    expect(res).toMatchObject({ today: T, days: 90, windowDays: 30 });
+    const by = Object.fromEntries(res.reminders.map((x: { customer: string }) => [x.customer, x]));
+    expect(by['Banyan Retail']).toMatchObject({ sentOn: T, currency: 'INR', overdueThen: '57345.67', collected: '20000.00', outcome: 'PART_PAID', daysToFirstPayment: 0, windowEnds: addDays(T, 30) });
+    expect(by['Cedar Mart']).toMatchObject({ overdueThen: '15000.00', collected: '0.00', outcome: 'WAITING', daysToFirstPayment: null });
+    expect(res.byCurrency).toEqual([{ currency: 'INR', reminders: 2, overdueThen: '72345.67', collected: '20000.00', collectedShare: '27.6', paid: 0, partPaid: 1, notPaid: 0, waiting: 1, averageDaysToPay: 0 }]);
+    // Only sent reminders count.
+    expect(res.reminders).toHaveLength(2);
+    expect((await ctx.http().get(`${B}/results?days=7&window=7`).set(owner.auth).expect(200)).body.windowDays).toBe(7);
+    await ctx.http().get(`${B}/results?days=3`).set(owner.auth).expect(400);
+    await ctx.http().get(`${B}/results`).set(viewer.auth).expect(403);
+  });
+});
+
 describe('AI activity', () => {
   it('lists every AI call with the model, tokens, outcome and what a person decided', async () => {
     const a = (await ctx.http().get(`${org.base}/ai-activity`).set(owner.auth).expect(200)).body;
