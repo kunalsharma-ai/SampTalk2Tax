@@ -1731,6 +1731,12 @@
     "def": "CHECK ((((action)::text = ANY ((ARRAY['ACCEPTED'::character varying, 'DISMISSED'::character varying])::text[])) AND ((kind)::text = ANY ((ARRAY['REPEAT'::character varying, 'ACCRUAL'::character varying])::text[])) AND ((month)::text ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text) AND (total >= (0)::numeric) AND ((((action)::text = 'ACCEPTED'::text) = (journal_entry_id IS NOT NULL))) AND (((action)::text <> 'DISMISSED'::text) OR (reason IS NOT NULL))))",
     "name": "journal_suggestion_decisions_chk"
    }
+  ],
+  "platform_ai_switches": [
+   {
+    "def": "CHECK ((((action)::text = ANY ((ARRAY['STOPPED'::character varying, 'RESUMED'::character varying])::text[])) AND (length(btrim((reason)::text)) >= 3)))",
+    "name": "platform_ai_switches_chk"
+   }
   ]
  },
  "foreignKeys": [
@@ -10101,6 +10107,20 @@
    ],
    "references": "organizations",
    "table": "journal_suggestion_decisions"
+  },
+  {
+   "columns": [
+    "actor_id"
+   ],
+   "deferrable": false,
+   "name": "platform_ai_switches_actor_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "users",
+   "table": "platform_ai_switches"
   }
  ],
  "uniques": [

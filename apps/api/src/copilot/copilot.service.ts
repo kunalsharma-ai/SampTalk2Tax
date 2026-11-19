@@ -93,6 +93,8 @@ export class CopilotService {
       canChange: hasPermission(member.role, 'org.manage'),
       questionsPerHour: QUESTIONS_PER_HOUR,
       tools: this.tools.names(),
+      disabledTools: toolList(s?.disabledTools),
+      toolCatalog: this.tools.catalog().map((t) => ({ ...t, enabled: !toolList(s?.disabledTools).includes(t.name), youCanUse: hasPermission(member.role, t.permission) })),
       notice: await this.guard.notice(member.orgId, 'COPILOT'),
     };
   }
@@ -102,6 +104,24 @@ export class CopilotService {
       const before = await tx.copilotSettings.findUnique({ where: { orgId: member.orgId } });
       await tx.copilotSettings.upsert({ where: { orgId: member.orgId }, create: { orgId: member.orgId, enabled, updatedById: actor.id }, update: { enabled, offReason: null, updatedById: actor.id } });
       await this.audit.append(tx, { orgId: member.orgId, actorId: actor.id, action: enabled ? 'copilot.turned_on' : 'copilot.turned_off', entityType: 'copilot_settings', entityId: member.orgId, data: { from: before?.enabled ?? false, to: enabled } });
+    });
+    return this.status(member);
+  }
+
+  private async disabledTools(orgId: string): Promise<string[]> {
+    return toolList((await this.prisma.copilotSettings.findUnique({ where: { orgId } }))?.disabledTools);
+  }
+
+  /** Turns copilot tools off or back on for the organisation (SEC-030). */
+  async saveTools(member: Member, actor: Actor, disabled: string[]) {
+    const known = new Set(this.tools.names());
+    const unknown = disabled.filter((n) => !known.has(n));
+    if (unknown.length) throw new DomainError('UNKNOWN_TOOL', `Not a copilot tool: ${unknown.join(', ')}`, HttpStatus.UNPROCESSABLE_ENTITY);
+    const next = [...new Set(disabled)].sort();
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.copilotSettings.findUnique({ where: { orgId: member.orgId } });
+      await tx.copilotSettings.upsert({ where: { orgId: member.orgId }, create: { orgId: member.orgId, enabled: false, disabledTools: next, updatedById: actor.id }, update: { disabledTools: next, updatedById: actor.id } });
+      await this.audit.append(tx, { orgId: member.orgId, actorId: actor.id, action: 'copilot.tools_changed', entityType: 'copilot_settings', entityId: member.orgId, data: { from: toolList(before?.disabledTools), to: next } });
     });
     return this.status(member);
   }
@@ -318,7 +338,8 @@ export class CopilotService {
     answerId: string,
   ): Promise<Outcome> {
     const turn: CopilotMessageParam[] = [];
-    const tools = this.tools.definitions();
+    ctx.disabledTools = await this.disabledTools(ctx.orgId);
+    const tools = this.tools.definitions(ctx);
     for (let round = 0; ; round++) {
       // Stopped, switched off or over budget since the question was asked: no more model calls.
       const blocked = round > 0 ? await this.guard.check(ctx.orgId, 'COPILOT') : null;
@@ -365,6 +386,8 @@ export class CopilotService {
       if (round + 1 >= this.config.COPILOT_MAX_TOOL_ROUNDS) return this.tooManySteps();
 
       turn.push(assistant);
+      // Tools turned off while the answer was running are refused from the next call on.
+      ctx.disabledTools = await this.disabledTools(ctx.orgId);
       const results = await Promise.all(calls.map((c) => this.tools.run(c.name, c.input, ctx)));
       sources.push(...results.map((r) => r.source));
       turn.push({
@@ -398,4 +421,9 @@ export class CopilotService {
     this.log.error('Copilot answer failed', e instanceof Error ? e.stack : String(e));
     return { errorCode: 'INTERNAL', errorMessage: 'Something went wrong while answering. Ask again.' };
   }
+}
+
+/** A stored list of tool names. */
+function toolList(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
 }

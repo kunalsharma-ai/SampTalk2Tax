@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { AiAgent } from '@talk2tax/database';
 import { D } from '@talk2tax/accounting-engine';
@@ -39,7 +40,7 @@ export const AGENT_KEYS = Object.keys(AGENTS) as AiAgent[];
 /** How far back acceptance rates look. */
 export const ACCURACY_DAYS = 90;
 
-export type AgentBlock = { code: 'AI_NOT_CONFIGURED' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED' | 'AI_CREDITS_USED_UP'; message: string; status: HttpStatus };
+export type AgentBlock = { code: 'AI_SHUTDOWN' | 'AI_NOT_CONFIGURED' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED' | 'AI_CREDITS_USED_UP'; message: string; status: HttpStatus };
 
 /** The start of the current calendar month in India time, as an instant. */
 export function monthStartIst(now: Date = new Date()): { month: string; since: Date } {
@@ -115,6 +116,9 @@ export class AiControlService {
    * agent off or reaching the budget also stops work already running.
    */
   async check(orgId: string, agent: AiAgent): Promise<AgentBlock | null> {
+    // The platform-wide shutdown (SEC-038) comes first: it holds even where no key is set up.
+    const shutdown = await this.platformShutdown();
+    if (shutdown) return { code: 'AI_SHUTDOWN', message: `AI is stopped across Talk2Tax by the people who run it: ${shutdown.reason}. Nothing was sent to the AI model.`, status: HttpStatus.SERVICE_UNAVAILABLE };
     if (!(await this.integrations.ai(orgId)).model) return { code: 'AI_NOT_CONFIGURED', message: 'AI is not set up: an owner or admin can add a Claude API key in Settings → Integrations. Nothing was sent anywhere.', status: HttpStatus.SERVICE_UNAVAILABLE };
     const [s, a] = await Promise.all([
       this.prisma.copilotSettings.findUnique({ where: { orgId } }),
@@ -151,11 +155,12 @@ export class AiControlService {
     const b = await this.check(orgId, agent);
     if (!b || b.code === 'AI_NOT_CONFIGURED') return null;
     if (b.code === 'AI_OFF' && !b.message.startsWith('AI was stopped')) return null;
+    // AI_SHUTDOWN is always shown.
     return { code: b.code, message: b.message };
   }
 
   static stoppedError(b: AgentBlock): { errorCode: string; errorMessage: string } {
-    const code = b.code === 'AI_OFF' ? 'AI_STOPPED' : b.code;
+    const code = b.code === 'AI_OFF' || b.code === 'AI_SHUTDOWN' ? 'AI_STOPPED' : b.code;
     return { errorCode: code, errorMessage: `Not done: ${b.message}` };
   }
 
@@ -324,6 +329,7 @@ export class AiControlService {
       enabled: settings?.enabled ?? false,
       stopped: !!settings?.offReason,
       offReason: settings?.offReason ?? null,
+      platformShutdown: await this.platformShutdown(),
       changedBy: settings ? (users.get(settings.updatedById) ?? 'Former member') : null,
       changedAt: settings?.updatedAt.toISOString() ?? null,
       canManage: hasPermission(member.role, 'org.manage'),
@@ -391,5 +397,51 @@ export class AiControlService {
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'ai.resumed', entityType: 'copilot_settings', entityId: orgId, data: { stoppedFor: before?.offReason ?? null } });
     });
     return this.overview(member);
+  }
+
+  // ------------------------------------------------------------------ platform-wide shutdown (SEC-038)
+
+  /** The platform-wide AI shutdown in force, if any: the latest switch is a stop. */
+  async platformShutdown(): Promise<{ reason: string; since: string } | null> {
+    const last = await this.prisma.platformAiSwitch.findFirst({ orderBy: { createdAt: 'desc' } });
+    return last?.action === 'STOPPED' ? { reason: last.reason, since: last.createdAt.toISOString() } : null;
+  }
+
+  /** For platform administrators: whether AI is stopped across Talk2Tax, and every stop and resume. */
+  async platformStatus() {
+    const rows = await this.prisma.platformAiSwitch.findMany({ orderBy: { createdAt: 'desc' }, take: 50 });
+    const people = rows.length ? await this.prisma.user.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.actorId))] } }, select: { id: true, name: true } }) : [];
+    const name = new Map(people.map((p) => [p.id, p.name]));
+    const last = rows[0];
+    return {
+      stopped: last?.action === 'STOPPED',
+      reason: last?.action === 'STOPPED' ? last.reason : null,
+      since: last ? last.createdAt.toISOString() : null,
+      history: rows.map((r) => ({ id: r.id, action: r.action as 'STOPPED' | 'RESUMED', reason: r.reason, by: name.get(r.actorId) ?? 'Former administrator', at: r.createdAt.toISOString() })),
+    };
+  }
+
+  /**
+   * Stops AI for every organisation at once. Every agent checks before each model call, so work
+   * already running stops too; what it had not reached is marked as not done.
+   */
+  async platformStop(actor: Actor, reason: string) {
+    if (await this.platformShutdown()) throw new DomainError('AI_ALREADY_STOPPED', 'AI is already stopped across Talk2Tax', HttpStatus.CONFLICT);
+    await this.platformSwitch(actor, 'STOPPED', reason);
+    return this.platformStatus();
+  }
+
+  async platformResume(actor: Actor, reason: string) {
+    if (!(await this.platformShutdown())) throw new DomainError('AI_NOT_STOPPED', 'AI is not stopped across Talk2Tax', HttpStatus.CONFLICT);
+    await this.platformSwitch(actor, 'RESUMED', reason);
+    return this.platformStatus();
+  }
+
+  private async platformSwitch(actor: Actor, action: 'STOPPED' | 'RESUMED', reason: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const id = randomUUID();
+      await tx.platformAiSwitch.create({ data: { id, action, reason, actorId: actor.id } });
+      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: action === 'STOPPED' ? 'platform.ai_stopped' : 'platform.ai_resumed', entityType: 'platform_ai_switch', entityId: id, data: { reason } });
+    });
   }
 }

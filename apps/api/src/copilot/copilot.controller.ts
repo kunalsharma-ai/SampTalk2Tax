@@ -10,6 +10,7 @@ const id = z.string().uuid('Not a conversation id');
 const AskBody = z.object({ question: z.string().trim().min(1, 'Ask a question').max(MAX_QUESTION_CHARS, `Keep a question under ${MAX_QUESTION_CHARS} characters`), channel: z.enum(['TEXT', 'VOICE']).default('TEXT') }).strict();
 const actionId = z.string().uuid('Not an action id');
 const SettingsBody = z.object({ enabled: z.boolean() }).strict();
+const ToolsBody = z.object({ disabled: z.array(z.string().max(60)).max(50) }).strict();
 
 @ApiTags('copilot')
 @ApiBearerAuth()
@@ -37,6 +38,14 @@ export class CopilotController {
   }
 
   /** The signed-in member's own conversations, newest first. */
+  /** Copilot tools turned off for the organisation (SEC-030). */
+  @Put('tools')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(ToolsBody) })
+  tools(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(ToolsBody)) body: z.infer<typeof ToolsBody>) {
+    return this.copilot.saveTools({ orgId: org.id, role: org.role }, user, body.disabled);
+  }
+
   @Get('conversations')
   @RequirePermission('copilot.use')
   list(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser) {

@@ -26,6 +26,7 @@ const NAV = [
   { href: '/admin/errors', label: 'Errors' },
   { href: '/admin/flags', label: 'Feature flags' },
   { href: '/admin/maintenance', label: 'Maintenance' },
+  { href: '/admin/ai', label: 'AI shutdown' },
 ];
 
 /** Platform administration: for the people who run Talk2Tax. Never an organisation's books. */

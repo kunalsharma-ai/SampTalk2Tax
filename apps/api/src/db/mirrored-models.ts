@@ -78,7 +78,7 @@ export const MIRRORED_MODEL_NAMES = [
   'ConsolidationRate',
   'EliminationRule',
   'IntercompanyTransaction',
-  'ConsolidationAdjustment', 'JournalSuggestionDecision',
+  'ConsolidationAdjustment', 'JournalSuggestionDecision', 'PlatformAiSwitch',
   'TwinScenario',
   'OrgIntegration',
   'TwinScenarioVersion',

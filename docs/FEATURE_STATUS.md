@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 775 |
+| Not started | 773 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 482 |
+| Tested | 484 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 22 | 16 |
+| Security and enterprise governance | M1 | 38 | 20 | 18 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5786,6 +5786,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - pnpm-workspace.yaml
   - docs/CI_CD.md
 
+### SEC-030 — Tool permission enforcement
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Every copilot tool needs a permission checked on every call; owners and admins can turn tools off per organisation. A tool that is off or outside the member's role is never offered to the model and is refused if the model calls it anyway; the list is re-read before each tool round. Copilot actions are re-checked when the member confirms.
+- Evidence:
+  - apps/api/src/copilot/copilot.tools.ts (definitions, refusal, catalog)
+  - apps/api/src/copilot/copilot.service.ts (saveTools, disabledTools)
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (Copilot tools)
+  - apps/api/test/ai-safety.e2e.test.ts
+  - apps/api/test/copilot.e2e.test.ts
+  - apps/web/e2e/ai-safety-flow.test.mjs
+  - docs/AI_CONTROL_CENTER.md
+
 ### SEC-032 — AI action logging
 
 - Module: Security and enterprise governance
@@ -5832,6 +5846,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/journals/journal-approval.tsx
   - apps/web/e2e/journal-approvals-flow.test.mjs
   - docs/JOURNAL_APPROVALS.md
+
+### SEC-038 — AI emergency shutdown
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Platform-wide AI emergency shutdown by a platform super admin with a reason: every agent's guard refuses (503 AI_SHUTDOWN) before any model call, also mid-run; organisations see the reason and cannot lift it; append-only history, audited. The organisation-level stop is AGENT-060.
+- Evidence:
+  - apps/api/src/ai-control/ai-control.service.ts (platformShutdown, platformStop, platformResume)
+  - apps/api/src/ai-control/platform-ai.controller.ts
+  - apps/api/src/db/migrations/20270115100000_platform_ai_switch.ts
+  - apps/web/src/app/admin/ai/page.tsx
+  - apps/api/test/ai-safety.e2e.test.ts
+  - apps/web/e2e/ai-safety-flow.test.mjs
+  - docs/AI_CONTROL_CENTER.md
 
 ### UX-002 — Create organization
 

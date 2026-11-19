@@ -820,6 +820,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   'admin/support': { what: 'Support tickets from organisations.', how: 'Pick up a ticket, reply, and close it when solved.', where: 'Platform administration.' },
   'admin/usage': { what: 'Usage across organisations.', how: 'See who is near their limits.', where: 'Platform administration.' },
   'admin/flags': { what: 'Feature flags.', how: 'Turn a feature on or off for everyone or for one organisation.', where: 'Platform administration.' },
+  'admin/ai': { what: 'The platform-wide AI emergency shutdown: stops every organisation\'s AI agents at once.', how: 'Give a reason and stop AI for everyone; turn it back on with a reason when the incident is over. Each change is kept in the history.', where: 'Platform administration. Organisations see the reason in their AI control center and in every refusal.' },
   'admin/maintenance': { what: 'Maintenance windows.', how: 'Schedule a window; a banner warns users beforehand.', where: 'Platform administration.' },
   'admin/announcements': { what: 'Announcements shown to users.', how: 'Write one, choose who sees it and for how long.', where: 'Platform administration.' },
   'admin/errors': { what: 'Errors the platform caught, grouped.', how: 'Open a group to see occurrences and mark it resolved.', where: 'Platform administration.' },

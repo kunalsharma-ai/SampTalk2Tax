@@ -68,6 +68,11 @@ registerGuards({
     if (op === 'DELETE') fail('An AI request pack cannot be deleted; stop offering it instead');
     if (op === 'UPDATE' && changed(o, n, ['name', 'requests', 'prices', 'created_by'])) fail('An AI request pack keeps its requests and prices; create a new pack instead');
   },
+  // platform_ai_switches_guard (SEC-038): the shutdown history is kept as it happened.
+  platform_ai_switches: (op) => {
+    if (op === 'INSERT') return;
+    fail('The AI shutdown history cannot be changed or deleted');
+  },
   // journal_suggestion_decisions_guard (GL-036): a decision is recorded once and never changed.
   journal_suggestion_decisions: (op) => {
     if (op === 'INSERT') return;

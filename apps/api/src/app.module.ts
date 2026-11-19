@@ -114,6 +114,7 @@ import { AlertsService } from './alerts/alerts.service';
 import { BankAiController } from './bank-ai/bank-ai.controller';
 import { BankAiService } from './bank-ai/bank-ai.service';
 import { AiControlController } from './ai-control/ai-control.controller';
+import { PlatformAiController } from './ai-control/platform-ai.controller';
 import { AiControlService } from './ai-control/ai-control.service';
 import { CloseController } from './close/close.controller';
 import { FixedAssetsController } from './fixed-assets/fixed-assets.controller';
@@ -318,6 +319,7 @@ export class AppModule {
         BankAiController,
         CloseController,
         AiControlController,
+        PlatformAiController,
         FixedAssetsController,
         DeferralsController,
         LoansController,

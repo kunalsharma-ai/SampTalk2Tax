@@ -109,7 +109,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## AI control center (M5, slice 6)
 
-* Budgets are in tokens, not money; one call can take usage past a budget because its size is known only when it returns. The stop applies to one organisation; a platform-wide stop is removing `ANTHROPIC_API_KEY`. Acceptance rates come from people's decisions, not a labelled evaluation set. No orchestrator hands work between agents, and no agent is above level 2. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
+* Budgets are in tokens, not money; one call can take usage past a budget because its size is known only when it returns. Organisations have their own stop, and platform administrators can stop AI for everyone (AI shutdown). Copilot tools can be turned off per organisation, not per member. Acceptance rates come from people's decisions, not a labelled evaluation set. No orchestrator hands work between agents, and no agent is above level 2. See [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md).
 
 ## Loans and treasury (M6, slice 4)
 

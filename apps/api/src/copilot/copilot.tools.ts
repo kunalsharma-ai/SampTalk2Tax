@@ -32,6 +32,8 @@ export interface ToolContext {
   /** Today in India time, YYYY-MM-DD. */
   today: string;
   fiscalYearStartMonth: number;
+  /** Tools an owner or admin turned off for the organisation (SEC-030). */
+  disabledTools?: readonly string[];
   /** Set while answering, so proposals can be tied to the member, conversation and answer. */
   userId?: string;
   conversationId?: string;
@@ -85,6 +87,25 @@ export function compact(value: unknown): unknown {
   }
   return value;
 }
+
+/** What each tool is called on screen, for the tool permissions in the AI control center (SEC-030). */
+export const TOOL_TITLES: Record<string, string> = {
+  get_dashboard: 'Dashboard figures',
+  get_income_statement: 'Profit and loss',
+  get_balance_sheet: 'Balance sheet',
+  get_trial_balance: 'Trial balance',
+  get_ageing: 'Receivables and payables ageing',
+  get_kpis: 'KPIs',
+  get_management_report: 'Management report',
+  get_cash_forecast: 'Cash forecast',
+  get_budget_variance: 'Budget against actual',
+  list_alerts: 'Alerts',
+  get_compliance_calendar: 'Compliance calendar',
+  get_cfo_assessment: 'Virtual CFO assessment',
+  get_cfo_answer: 'Virtual CFO answers',
+  propose_task: 'Propose a task',
+  propose_alert_update: 'Propose an alert update',
+};
 
 interface ToolDef<I extends z.ZodTypeAny> {
   name: string;
@@ -320,9 +341,23 @@ export class CopilotTools {
     return this.actions.propose({ orgId: c.orgId, role: c.role, userId: c.userId, conversationId: c.conversationId, answerId: c.answerId }, input);
   }
 
-  /** Tool definitions sent to the model. */
-  definitions(): CopilotTool[] {
-    return this.defs.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema, strict: true }));
+  /**
+   * Tool definitions sent to the model. With a context, only the tools this member may use: not
+   * turned off for the organisation, and within the member's own permissions (SEC-030).
+   */
+  definitions(ctx?: Pick<ToolContext, 'role' | 'disabledTools'>): CopilotTool[] {
+    return this.defs.filter((t) => !ctx || this.refusal(t, ctx) === null).map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema, strict: true }));
+  }
+
+  /** Every tool with its title and the permission it needs, for the AI control center. */
+  catalog(): { name: string; title: string; permission: Permission }[] {
+    return this.defs.map((t) => ({ name: t.name, title: TOOL_TITLES[t.name] ?? t.name, permission: t.permission }));
+  }
+
+  private refusal(t: ToolDef<z.ZodTypeAny>, ctx: Pick<ToolContext, 'role' | 'disabledTools'>): string | null {
+    if (ctx.disabledTools?.includes(t.name)) return 'This tool is turned off for this organisation in the AI control center';
+    if (!hasPermission(ctx.role, t.permission)) return 'This member does not have access to these figures';
+    return null;
   }
 
   names(): string[] {
@@ -334,13 +369,17 @@ export class CopilotTools {
     const t = this.defs.find((x) => x.name === name);
     const input = (rawInput && typeof rawInput === 'object' ? rawInput : {}) as Record<string, unknown>;
     if (!t) return this.fail({ tool: name, label: name, path: '', input, ok: false }, `Unknown tool "${name}"`);
+    // A tool turned off is refused whatever the input (SEC-030).
+    if (ctx.disabledTools?.includes(name)) return this.fail({ tool: name, label: TOOL_TITLES[name] ?? name, path: '', input, ok: false }, 'This tool is turned off for this organisation in the AI control center');
     const parsed = t.input.safeParse(rawInput);
     if (!parsed.success) {
       const why = parsed.error.issues.map((i) => `${i.path.join('.') || 'input'}: ${i.message}`).join('; ');
       return this.fail({ tool: name, label: name, path: '', input, ok: false }, `Invalid input: ${why}`);
     }
     const source: CopilotSource = { tool: name, label: t.label(parsed.data, ctx), path: t.path(parsed.data, ctx), input, ok: true };
-    if (!hasPermission(ctx.role, t.permission)) return this.fail(source, 'This member does not have access to these figures');
+    // Enforced on every call, whatever the model asks for (SEC-030).
+    const refused = this.refusal(t, ctx);
+    if (refused) return this.fail(source, refused);
     try {
       const data = await t.run(parsed.data, ctx);
       let content = JSON.stringify(data);
