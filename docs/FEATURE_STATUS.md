@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 757 |
+| Not started | 754 |
 | Designed | 0 |
 | Implementing | 37 |
-| Implemented | 35 |
-| Tested | 500 |
+| Implemented | 36 |
+| Tested | 502 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 4 | 34 |
+| Security and enterprise governance | M1 | 38 | 1 | 37 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5965,6 +5965,38 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - .github/dependabot.yml
   - pnpm-workspace.yaml
   - docs/CI_CD.md
+
+### SEC-026 — Penetration testing preparation
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Test-account command (two synthetic organisations, one person per role, passwords only in a mode-600 file; refused on production unless allowed for staging), scope and rules of engagement, before and after checklists, and security.txt (RFC 9116) from SECURITY_CONTACT. No external test has been carried out yet.
+- Evidence:
+  - docs/PENETRATION_TESTING.md
+  - apps/api/src/security/pentest-accounts.ts
+  - apps/api/test/pentest-readiness.e2e.test.ts
+  - apps/web/src/app/.well-known/security.txt/route.ts
+  - apps/web/test/security-txt.test.ts
+
+### SEC-027 — Build toward relevant security and privacy frameworks, including SOC 2, ISO 27001 and applicable data protection laws
+
+- Module: Security and enterprise governance
+- Status: **Implemented**
+- Notes: Product controls mapped to SOC 2 trust services criteria, ISO/IEC 27001:2022 Annex A technological controls, and India DPDP Act 2023 / GDPR duties, with the gaps listed (ISMS and policies, personal data export and erasure, privacy notice and consent, breach notice procedure, CSP). Not certified.
+- Evidence:
+  - docs/COMPLIANCE_READINESS.md
+  - docs/SECURITY.md
+
+### SEC-028 — Do not claim certification without a completed independent assessment
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: CI scans the web app, API messages, public files, docs and README for any sentence pairing a framework (SOC 2, ISO 27001, PCI DSS, HIPAA, GDPR, DPDP, ...) with a claim word (certified, compliant, attested, ...) unless it denies or defers it; positive and negative cases tested. A framework is allowed only once an assessment is recorded.
+- Evidence:
+  - scripts/check-claims.mjs
+  - scripts/check-claims.test.mjs
+  - .github/workflows/ci.yml
+  - docs/COMPLIANCE_READINESS.md
 
 ### SEC-029 — Prompt injection defenses
 
