@@ -40,7 +40,7 @@ const schema = z.object({
    * Encryption in transit (SEC-010). true: every request except /health must have reached
    * Talk2Tax over HTTPS (TLS ends at the proxy in front, which says so in X-Forwarded-Proto, so
    * TRUST_PROXY_HOPS must be 1 or more); others are refused with 403 HTTPS_REQUIRED. Browsers are
-   * told to use HTTPS only (Strict-Transport-Security). Unset: on when APP_URL is https.
+   * told to use HTTPS only (Strict-Transport-Security). Unset: on in production when APP_URL is https.
    */
   HTTPS_ONLY: z.enum(['true', 'false', '']).optional(),
   /**
@@ -241,7 +241,7 @@ const schema = z.object({
       return parsed.data;
     }),
 }).transform((c) => {
-  const httpsOnly = c.HTTPS_ONLY === 'true' || (!c.HTTPS_ONLY && c.APP_URL.startsWith('https://'));
+  const httpsOnly = c.HTTPS_ONLY === 'true' || (!c.HTTPS_ONLY && c.NODE_ENV === 'production' && c.APP_URL.startsWith('https://'));
   const mongoTls = c.MONGODB_REQUIRE_TLS === 'true' || (!c.MONGODB_REQUIRE_TLS && httpsOnly);
   return { ...c, HTTPS_ONLY: httpsOnly, MONGODB_REQUIRE_TLS: mongoTls };
 }).superRefine((c, ctx) => {

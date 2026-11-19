@@ -10,7 +10,7 @@ import { bootApp, Ctx } from './helpers';
  * told to use HTTPS only, a database connection without TLS is refused at startup unless that is
  * turned off on purpose, and System health shows how each connection is protected.
  */
-const base = { MONGODB_URL: 'mongodb://localhost:27017/x?replicaSet=rs0', JWT_SECRET: 'x'.repeat(32) };
+const base = { NODE_ENV: 'production', MONGODB_URL: 'mongodb://localhost:27017/x?replicaSet=rs0', JWT_SECRET: 'x'.repeat(32) };
 let ctx: Ctx;
 const HTTPS = { 'X-Forwarded-Proto': 'https' };
 
@@ -22,7 +22,8 @@ afterAll(async () => {
 });
 
 describe('settings', () => {
-  it('is on when the public address is https, and needs a trusted proxy', () => {
+  it('is on in production when the public address is https, and needs a trusted proxy', () => {
+    expect(loadConfig({ ...base, NODE_ENV: 'development', APP_URL: 'https://books.example.in' }).HTTPS_ONLY).toBe(false);
     expect(loadConfig({ ...base, APP_URL: 'http://localhost:3000' }).HTTPS_ONLY).toBe(false);
     expect(() => loadConfig({ ...base, APP_URL: 'https://books.example.in' })).toThrow(/HTTPS_ONLY needs TRUST_PROXY_HOPS/);
     expect(() => loadConfig({ ...base, APP_URL: 'https://books.example.in', TRUST_PROXY_HOPS: '1' })).toThrow(/database connection must be encrypted/);
