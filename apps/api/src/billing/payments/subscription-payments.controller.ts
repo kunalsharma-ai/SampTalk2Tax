@@ -10,8 +10,31 @@ import { Provider } from './gateways';
 import { PaymentSettingsService } from './payment-settings.service';
 import { RenewalsRunnerService } from './renewals-runner.service';
 import { SubscriptionPaymentsService } from './subscription-payments.service';
+import { CouponsService } from './coupons.service';
 
-const PlanChoice = z.object({ plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/), interval: z.enum(['MONTHLY', 'ANNUAL']) }).strict();
+const CouponCode = z
+  .string()
+  .max(40)
+  .transform((v) => v.trim().toUpperCase() || null)
+  .nullish()
+  .transform((v) => v ?? null);
+const PlanChoice = z.object({ plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/), interval: z.enum(['MONTHLY', 'ANNUAL']), coupon: CouponCode }).strict();
+const CouponBody = z
+  .object({
+    code: z.string().max(40),
+    description: z.string().max(200).default(''),
+    kind: z.enum(['PERCENT', 'AMOUNT']),
+    percentOff: z.string().max(12).nullish().transform((v) => v ?? null),
+    amountOff: z.string().max(16).nullish().transform((v) => v ?? null),
+    currency: z.enum(['INR', 'USD']).nullish().transform((v) => v ?? null),
+    planCodes: z.array(z.string().max(24)).max(20).default([]),
+    intervals: z.array(z.enum(['MONTHLY', 'ANNUAL'])).max(2).default([]),
+    cycles: z.number().int().nullish().transform((v) => v ?? null),
+    maxRedemptions: z.number().int().nullish().transform((v) => v ?? null),
+    redeemBy: z.string().max(10).nullish().transform((v) => v || null),
+  })
+  .strict();
+const Active = z.object({ active: z.boolean() }).strict();
 const GatewayBody = z
   .object({
     enabled: z.boolean(),
@@ -63,7 +86,7 @@ export class SubscriptionPaymentsController {
   @RequirePermission('org.read')
   @AllowWhenReadOnly()
   quote(@Param('orgId') orgId: string, @Query(new ZodPipe(PlanChoice)) q: z.infer<typeof PlanChoice>) {
-    return this.payments.quote(orgId, q.plan, q.interval);
+    return this.payments.quote(orgId, q.plan, q.interval, q.coupon);
   }
 
   @Post('checkout')
@@ -71,7 +94,7 @@ export class SubscriptionPaymentsController {
   @AllowWhenReadOnly()
   @ApiBody({ schema: openApi(PlanChoice) })
   checkout(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser, @Body(new ZodPipe(PlanChoice)) b: z.infer<typeof PlanChoice>) {
-    return this.payments.checkout(orgId, user, b.plan, b.interval, this.returnTo(orgId));
+    return this.payments.checkout(orgId, user, b.plan, b.interval, this.returnTo(orgId), b.coupon);
   }
 
   @Get('invoices')
@@ -112,7 +135,29 @@ export class PlatformPaymentsController {
     private readonly settings: PaymentSettingsService,
     private readonly payments: SubscriptionPaymentsService,
     private readonly renewals: RenewalsRunnerService,
+    private readonly coupons: CouponsService,
   ) {}
+
+  @Get('coupons')
+  @RequirePlatform('platform.read')
+  listCoupons() {
+    return this.coupons.list();
+  }
+
+  @Post('coupons')
+  @RequirePlatform('platform.manage')
+  @ApiBody({ schema: openApi(CouponBody) })
+  createCoupon(@CurrentUser() user: AuthUser, @Body(new ZodPipe(CouponBody)) b: z.infer<typeof CouponBody>) {
+    return this.coupons.create(user, b);
+  }
+
+  @Post('coupons/:id/active')
+  @RequirePlatform('platform.manage')
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(Active) })
+  couponActive(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Body(new ZodPipe(Active)) b: z.infer<typeof Active>) {
+    return this.coupons.setActive(user, id, b.active);
+  }
 
   @Get('payments')
   @RequirePlatform('platform.read')

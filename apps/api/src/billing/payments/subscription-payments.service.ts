@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import type { SubscriptionInvoice } from '@talk2tax/database';
-import { BillingCurrency, BillingInterval, checkoutPlan, GRACE_DAYS, indianFinancialYear, periodEnd, PlanError, priceFor, subscriptionTax, taxInvoiceNumber, toMinorUnits } from '@talk2tax/accounting-engine';
+import { BillingCurrency, BillingInterval, checkoutPlan, couponDiscount, GRACE_DAYS, indianFinancialYear, periodEnd, PlanError, priceFor, subscriptionTax, taxInvoiceNumber, toMinorUnits, dec, type Dec } from '@talk2tax/accounting-engine';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { AuditService } from '../../audit/audit.service';
 import type { AuthUser } from '../../auth/decorators';
@@ -10,6 +10,7 @@ import { BillingService, serializePlan } from '../billing.service';
 import { GatewayError, PaymentGateway, PaymentState, Provider, SignatureError } from './gateways';
 import { nextPlatformCounter } from '../../db/counters';
 import { PaymentSettingsService } from './payment-settings.service';
+import { AppliedCoupon, couponSummary, CouponsService } from './coupons.service';
 import { lockRow } from '../../db/locks';
 
 const DAY = 86_400_000;
@@ -34,6 +35,10 @@ export function serializeInvoice(i: InvoiceRow) {
     plan: { code: i.plan.code, name: i.plan.name },
     billingInterval: i.billingInterval as BillingInterval,
     listPrice: i.listPrice.toFixed(2),
+    // What was charged before the coupon; subtotal is after it (the taxable value).
+    amount: i.subtotal.plus(i.discount).toFixed(2),
+    discount: i.discount.toFixed(2),
+    couponCode: i.couponCode,
     periodStart: i.periodStart.toISOString(),
     periodEnd: i.periodEnd.toISOString(),
     currency: i.currency,
@@ -73,6 +78,7 @@ export class SubscriptionPaymentsService {
     private readonly audit: AuditService,
     private readonly billing: BillingService,
     private readonly settings: PaymentSettingsService,
+    private readonly coupons: CouponsService,
   ) {}
 
   private system<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -82,9 +88,9 @@ export class SubscriptionPaymentsService {
   // ---------------------------------------------------------------------------- what a plan costs
 
   /** What paying for this plan now would charge, for which period, with tax. Nothing is saved. */
-  async quote(orgId: string, planCode: string, interval: BillingInterval, now = new Date()) {
+  async quote(orgId: string, planCode: string, interval: BillingInterval, couponCode: string | null = null, now = new Date()) {
     return this.system(async (tx) => {
-      const q = await this.work(tx, orgId, planCode, interval, now, { forQuote: true });
+      const q = await this.work(tx, orgId, planCode, interval, now, { forQuote: true, couponCode });
       if (q.plan.kind === 'SCHEDULED') return { kind: 'SCHEDULED' as const, reason: q.plan.reason, plan: serializePlan(q.target, q.currency), interval };
       return {
         kind: q.plan.kind,
@@ -93,15 +99,20 @@ export class SubscriptionPaymentsService {
         currency: q.currency,
         periodStart: q.plan.periodStart.toISOString(),
         periodEnd: q.plan.periodEnd.toISOString(),
-        subtotal: q.plan.amount.toFixed(2),
-        ...(q.tax ?? { lines: [], taxTotal: '0.00', total: q.plan.amount.toFixed(2), note: 'Any tax is added on the invoice', placeOfSupply: null }),
+        // Before any coupon, what the coupon takes off, and the subtotal tax is charged on.
+        amount: q.plan.amount.toFixed(2),
+        discount: q.discount.toFixed(2),
+        coupon: q.coupon ? { ...couponSummary(q.coupon.coupon), continuing: q.coupon.continuing } : null,
+        couponNote: q.couponNote,
+        subtotal: q.charged.toFixed(2),
+        ...(q.tax ?? { lines: [], taxTotal: '0.00', total: q.charged.toFixed(2), note: 'Any tax is added on the invoice', placeOfSupply: null }),
         // Online payment needs a gateway for the currency and the seller details invoices carry.
         payOnline: !!q.tax && !!(await this.settings.forCurrency(q.currency)),
       };
     });
   }
 
-  private async work(tx: Tx, orgId: string, planCode: string, interval: BillingInterval, now: Date, opts: { forQuote?: boolean } = {}) {
+  private async work(tx: Tx, orgId: string, planCode: string, interval: BillingInterval, now: Date, opts: { forQuote?: boolean; couponCode?: string | null } = {}) {
     const s = await tx.subscription.findUnique({ where: { orgId }, include: { plan: true } });
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
     const target = await tx.plan.findUnique({ where: { code: planCode } });
@@ -126,9 +137,28 @@ export class SubscriptionPaymentsService {
       if (e instanceof PlanError) throw new DomainError('NOT_CHARGED', e.message, HttpStatus.CONFLICT);
       throw e;
     }
+    // A coupon takes money off a charge now; a change at the renewal is not charged now, so none applies.
+    const c = plan.kind === 'SCHEDULED' ? { applied: null, lapsed: null } : await this.coupons.resolve(tx, s, opts.couponCode ?? null, { planCode: target.code, interval, currency, now });
+    const off = plan.kind === 'SCHEDULED' ? null : this.discount(c.applied, plan.amount, currency, !!opts.couponCode);
+    const charged = plan.kind === 'SCHEDULED' ? null : off?.charged ?? plan.amount;
     const noProfile = opts.forQuote && !(await tx.platformBillingProfile.findUnique({ where: { id: 1 }, select: { id: true } }));
-    const tax = plan.kind === 'SCHEDULED' || noProfile ? null : await this.taxFor(tx, orgId, plan.amount.toFixed(2), currency);
-    return { s, target, currency, price, plan, tax: tax?.tax ?? null, parties: tax };
+    const tax = plan.kind === 'SCHEDULED' || noProfile ? null : await this.taxFor(tx, orgId, charged!.toFixed(2), currency);
+    return { s, target, currency, price, plan, tax: tax?.tax ?? null, parties: tax, coupon: off ? c.applied : null, discount: off?.discount ?? dec('0'), charged: charged ?? dec('0'), couponNote: off?.note ?? c.lapsed };
+  }
+
+  /**
+   * What a coupon takes off a charge. A code entered that would leave nothing to pay is refused;
+   * a coupon already on the subscription is left off that charge instead, with the reason.
+   */
+  private discount(applied: AppliedCoupon | null, amount: Dec, currency: BillingCurrency, entered: boolean): { discount: Dec; charged: Dec; note: string | null } | null {
+    if (!applied) return null;
+    try {
+      return { ...couponDiscount({ kind: applied.coupon.kind as 'PERCENT', percentOff: applied.coupon.percentOff?.toFixed(2) ?? null, amountOff: applied.coupon.amountOff?.toFixed(2) ?? null }, amount, currency), note: null };
+    } catch (e) {
+      if (!(e instanceof PlanError)) throw e;
+      if (entered) throw new DomainError('COUPON_TOO_LARGE', e.message, HttpStatus.UNPROCESSABLE_ENTITY);
+      return null;
+    }
   }
 
   private async taxFor(tx: Tx, orgId: string, subtotal: string, currency: BillingCurrency) {
@@ -155,9 +185,9 @@ export class SubscriptionPaymentsService {
    * recorded as the plan for the renewal. Otherwise an invoice is issued (replacing any unpaid
    * one) and the gateway's payment page is returned.
    */
-  async checkout(orgId: string, actor: AuthUser, planCode: string, interval: BillingInterval, returnTo: string, now = new Date()) {
+  async checkout(orgId: string, actor: AuthUser, planCode: string, interval: BillingInterval, returnTo: string, couponCode: string | null = null, now = new Date()) {
     const issued = await this.system(async (tx) => {
-      const q = await this.work(tx, orgId, planCode, interval, now);
+      const q = await this.work(tx, orgId, planCode, interval, now, { couponCode });
       if (q.plan.kind === 'SCHEDULED') return { scheduled: q.plan.reason } as const;
       await this.billing.memberFit(tx, orgId, q.target);
       const gateway = await this.settings.forCurrency(q.currency);
@@ -171,7 +201,9 @@ export class SubscriptionPaymentsService {
         periodStart: q.plan.periodStart,
         periodEnd: q.plan.periodEnd,
         currency: q.currency,
-        subtotal: q.plan.amount.toFixed(2),
+        subtotal: q.charged.toFixed(2),
+        discount: q.discount.toFixed(2),
+        coupon: q.coupon?.coupon ?? null,
         parties: q.parties!,
         dueAt: now,
       });
@@ -231,7 +263,7 @@ export class SubscriptionPaymentsService {
     tx: Tx,
     orgId: string,
     actorId: string | null,
-    d: { kind: string; planId: string; interval: BillingInterval; listPrice: string; periodStart: Date; periodEnd: Date; currency: BillingCurrency; subtotal: string; parties: NonNullable<Awaited<ReturnType<SubscriptionPaymentsService['taxFor']>>>; dueAt: Date },
+    d: { kind: string; planId: string; interval: BillingInterval; listPrice: string; periodStart: Date; periodEnd: Date; currency: BillingCurrency; subtotal: string; discount: string; coupon: { id: string; code: string } | null; parties: NonNullable<Awaited<ReturnType<SubscriptionPaymentsService['taxFor']>>>; dueAt: Date },
   ) {
     const t = d.parties.tax;
     const inv = await tx.subscriptionInvoice.create({
@@ -247,6 +279,9 @@ export class SubscriptionPaymentsService {
         periodEnd: d.periodEnd,
         currency: d.currency,
         subtotal: d.subtotal,
+        discount: d.discount,
+        couponId: d.coupon?.id ?? null,
+        couponCode: d.coupon?.code ?? null,
         taxLines: t.lines,
         taxTotal: t.taxTotal,
         total: t.total,
@@ -259,7 +294,7 @@ export class SubscriptionPaymentsService {
       },
       include: { plan: true },
     });
-    await this.billing.event(tx, orgId, actorId, 'INVOICE_ISSUED', { invoice: inv.reference, kind: d.kind, plan: inv.plan.code, interval: d.interval, total: t.total, currency: d.currency, periodStart: d.periodStart.toISOString(), periodEnd: d.periodEnd.toISOString() });
+    await this.billing.event(tx, orgId, actorId, 'INVOICE_ISSUED', { invoice: inv.reference, kind: d.kind, plan: inv.plan.code, interval: d.interval, total: t.total, currency: d.currency, ...(d.coupon ? { coupon: d.coupon.code, discount: d.discount } : {}), periodStart: d.periodStart.toISOString(), periodEnd: d.periodEnd.toISOString() });
     return inv;
   }
 
@@ -327,6 +362,7 @@ export class SubscriptionPaymentsService {
       const paymentRef = (p.reference ?? p.paymentId ?? inv.checkoutRef ?? inv.reference).slice(0, 200);
       const paid = await tx.subscriptionInvoice.update({ where: { id: inv.id }, data: { status: 'PAID', number, paidAt: now, paymentRef, ...(p.gateway === 'MANUAL' ? { gateway: 'MANUAL' } : {}) }, include: { plan: true } });
       await this.apply(tx, paid, now);
+      await this.coupons.recordUse(tx, paid);
       await this.billing.event(tx, inv.orgId, actorId, 'PAYMENT_RECEIVED', { invoice: inv.reference, number, total: inv.total.toFixed(2), currency: inv.currency, gateway: p.gateway, paymentId: p.paymentId, source: p.source });
       await this.audit.append(tx, { orgId: inv.orgId, actorId, action: 'subscription.payment_received', entityType: 'subscription_invoice', entityId: inv.id, data: { number, reference: inv.reference, total: inv.total.toFixed(2), currency: inv.currency, gateway: p.gateway, paymentId: p.paymentId, source: p.source } });
       return { invoice: serializeInvoice(paid), applied: true, problem: null };
@@ -464,7 +500,11 @@ export class SubscriptionPaymentsService {
       }
     }
     const price = priceFor(serializePlan(plan), currency, interval);
-    const parties = await this.taxFor(tx, orgId, price.toFixed(2), currency);
-    return this.issue(tx, orgId, null, { kind: 'RENEWAL', planId: plan.id, interval, listPrice: price.toFixed(2), periodStart: s.currentPeriodEnd, periodEnd: periodEnd(s.currentPeriodEnd, interval), currency, subtotal: price.toFixed(2), parties, dueAt: s.currentPeriodEnd > now ? s.currentPeriodEnd : now });
+    // The coupon on the subscription goes on taking money off while it has payments left and fits the plan.
+    const c = await this.coupons.resolve(tx, s, null, { planCode: plan.code, interval, currency, now });
+    const off = this.discount(c.applied, price, currency, false);
+    const charged = off?.charged ?? price;
+    const parties = await this.taxFor(tx, orgId, charged.toFixed(2), currency);
+    return this.issue(tx, orgId, null, { kind: 'RENEWAL', planId: plan.id, interval, listPrice: price.toFixed(2), periodStart: s.currentPeriodEnd, periodEnd: periodEnd(s.currentPeriodEnd, interval), currency, subtotal: charged.toFixed(2), discount: (off?.discount ?? dec('0')).toFixed(2), coupon: off ? c.applied!.coupon : null, parties, dueAt: s.currentPeriodEnd > now ? s.currentPeriodEnd : now });
   }
 }

@@ -8,6 +8,7 @@ import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { accessOf } from './limits';
+import { couponSummary } from './payments/coupons.service';
 
 type PlanRow = { id: string; code: string; name: string; description: string; prices: unknown; limits: unknown; features: string[]; isActive: boolean; sortOrder: number };
 
@@ -42,7 +43,7 @@ export class BillingService {
   ) {}
 
   async forOrg(orgId: string, now = new Date()) {
-    const s = await this.prisma.subscription.findUnique({ where: { orgId }, include: { plan: true, requestedPlan: true } });
+    const s = await this.prisma.subscription.findUnique({ where: { orgId }, include: { plan: true, requestedPlan: true, coupon: true } });
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
     const currency = s.currency as BillingCurrency;
     const [members, openInvitations, plans, history] = await Promise.all([
@@ -61,6 +62,8 @@ export class BillingService {
       trialEndsAt: s.trialEndsAt?.toISOString() ?? null,
       currentPeriodStart: s.currentPeriodStart?.toISOString() ?? null,
       currentPeriodEnd: s.currentPeriodEnd?.toISOString() ?? null,
+      // The coupon taking money off payments (SUBS-024), and how many payments it has left.
+      coupon: s.coupon ? { ...couponSummary(s.coupon), paymentsUsed: s.couponUses, paymentsLeft: s.coupon.cycles === null ? null : Math.max(s.coupon.cycles - s.couponUses, 0) } : null,
       request: s.requestedPlan ? { plan: serializePlan(s.requestedPlan, currency), interval: s.requestedInterval, at: s.requestedAt!.toISOString() } : null,
       usage: { members, openInvitations },
       plans: plans.map((p) => serializePlan(p, currency)),

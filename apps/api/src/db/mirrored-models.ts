@@ -108,6 +108,8 @@ export const MIRRORED_MODEL_NAMES = [
   'PlatformPaymentGateway',
   'PlatformBillingProfile',
   'SubscriptionInvoice',
+  'Coupon',
+  'CouponRedemption',
   'PaymentWebhookEvent',
   'SupportTicket',
   'SupportMessage',

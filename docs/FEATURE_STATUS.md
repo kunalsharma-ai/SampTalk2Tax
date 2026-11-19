@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 780 |
+| Not started | 779 |
 | Designed | 0 |
 | Implementing | 40 |
 | Implemented | 34 |
-| Tested | 475 |
+| Tested | 476 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -57,7 +57,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Security and enterprise governance | M1 | 38 | 22 | 16 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
-| Subscription and monetization engine | M9 | 32 | 5 | 27 |
+| Subscription and monetization engine | M9 | 32 | 4 | 28 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
@@ -5864,7 +5864,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Subscription and monetization engine
 - Status: **Implementing**
-- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons, add-ons and usage metering are later slices.
+- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons are built (SUBS-024); add-ons and usage metering are later slices.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -6218,6 +6218,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
   - apps/web/e2e/subscription-flow.test.mjs
   - docs/PLANS_AND_SUBSCRIPTIONS.md
+
+### SUBS-024 — Coupons
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Percentage or fixed-amount coupons, limited by plan, billing, number of organisations and a use-by date, for the first 1-36 payments or every payment. Taken off before GST at checkout and on renewals while payments are left; shown on the tax invoice; usage and money taken off in Platform admin → Coupons. A coupon never takes a payment to nothing.
+- Evidence:
+  - packages/accounting-engine/src/coupons.ts
+  - packages/accounting-engine/test/coupons.test.ts
+  - apps/api/src/billing/payments/coupons.service.ts
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/db/migrations/20270108100000_coupons.ts
+  - apps/api/test/subscription-coupons.e2e.test.ts
+  - apps/web/src/app/admin/coupons/page.tsx
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-coupons-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### SUBS-026 — Regional pricing
 

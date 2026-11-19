@@ -809,6 +809,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   'admin/plans': { what: 'The plans organisations can subscribe to.', how: 'Change prices, limits and included modules.', where: 'Platform administration. Used by Subscription.' },
   'admin/subscriptions': { what: 'Every organisation\'s subscription and its state.', how: 'Find a subscription and see its history.', where: 'Platform administration.' },
   'admin/invoices': { what: 'Invoices the platform issued for subscriptions.', how: 'Search and open one to see its payments.', where: 'Platform administration.' },
+  'admin/coupons': { what: 'Coupons that take money off subscription payments.', how: 'Create a coupon with its terms, see which organisations use it and what it has taken off, and switch it off when the offer ends.', where: 'Platform administration. Organisations enter the code under Settings → Subscription.' },
   'admin/payments': { what: 'Payment gateways and payments received.', how: 'Set up a gateway and check payments and webhook notices.', where: 'Platform administration.' },
   'admin/support': { what: 'Support tickets from organisations.', how: 'Pick up a ticket, reply, and close it when solved.', where: 'Platform administration.' },
   'admin/usage': { what: 'Usage across organisations.', how: 'See who is near their limits.', where: 'Platform administration.' },
