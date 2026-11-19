@@ -731,6 +731,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Register Talk2Tax in your provider with the redirect URI shown, then enter the issuer URL, client ID and secret. Add your email domain and publish the TXT record shown to prove it, then choose Verify. Optionally let new people join with a role, and require single sign-on for members.',
     where: 'Governance. Every change, sign-in and refused sign-in is in the audit trail. Owners can always sign in with their password, so a broken provider never locks you out.',
   },
+  'settings/access-rules': {
+    what: 'Access rules: on top of their role, limit where and when some roles or people can open the books, or change anything in them: from your office networks, on working days, within working hours.',
+    how: 'Owners and admins add a rule, choose the roles or people it binds, and give networks (IP addresses or ranges), days and hours in the organisation\'s time zone. A rule that would lock you out is refused; owners are never bound.',
+    where: 'Governance. A refused request says which rule refused it, and every change to a rule is in the audit trail.',
+  },
   'settings/retention': {
     what: 'How long your data is kept: records the law requires (never deleted on a schedule) and working data such as copilot conversations, kept until you choose a period.',
     how: 'Owners and admins choose Keep or Delete after a number of days for each kind of working data. Anything older is deleted each day; Apply now runs it straight away.',

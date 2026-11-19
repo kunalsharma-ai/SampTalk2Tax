@@ -36,7 +36,7 @@ Talk2Tax, which software alone cannot supply.
 
 | Criterion | What Talk2Tax does | Evidence |
 |---|---|---|
-| CC6.1 Logical access | Tenant isolation on every collection, role permissions on every route, platform roles for staff | `SECURITY.md` (Tenant isolation, Authorisation), `auth-tenancy.e2e.test.ts`, cross-tenant leakage tests (SEC-035) |
+| CC6.1 Logical access | Tenant isolation on every collection, role permissions on every route, access rules by network, day and hour (SEC-004), platform roles for staff | `SECURITY.md` (Tenant isolation, Authorisation), `auth-tenancy.e2e.test.ts`, cross-tenant leakage tests (SEC-035) |
 | CC6.1 Authentication | scrypt passwords, lockout, two-step sign-in (TOTP), single sign-on (OIDC), server-side sessions with revocation, known devices | `TWO_STEP_SIGN_IN.md`, `SINGLE_SIGN_ON.md`, SEC-005 to SEC-009 |
 | CC6.1 Encryption keys | Stored secrets and uploaded files are AES-256-GCM sealed; keys rotate without downtime; secrets can come from mounted files and weak ones are refused in production | `SECURITY.md` (Encryption at rest, Encryption key rotation, Secrets management) |
 | CC6.2/6.3 Access changes | Invitations single-use for the invited email; role changes and removals audited; admins cannot grant OWNER | `SECURITY.md` (Invitations and membership) |
@@ -56,7 +56,7 @@ Talk2Tax, which software alone cannot supply.
 
 | Control | Where |
 |---|---|
-| 5.15 Access control, 8.2 Privileged access, 8.3 Information access restriction | Roles and permissions, platform roles, tenant isolation |
+| 5.15 Access control, 8.2 Privileged access, 8.3 Information access restriction | Roles and permissions, access rules (network, days, hours), platform roles, tenant isolation |
 | 5.17 Authentication information, 8.5 Secure authentication | Password hashing, lockout, two-step sign-in, SSO, session revocation |
 | 5.33 Protection of records, 8.15 Logging | Append-only hash-chained audit trail, AI action log, backup run log |
 | 5.34 Privacy and protection of PII | Tenant isolation, encryption at rest, AI redaction, retention (see Data protection) |

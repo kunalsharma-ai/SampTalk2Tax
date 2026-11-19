@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 754 |
+| Not started | 753 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 502 |
+| Tested | 503 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 1 | 37 |
+| Security and enterprise governance | M1 | 38 | 0 | 38 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5688,6 +5688,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/security/test/security.test.ts
   - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
+
+### SEC-004 — Attribute-based access control where appropriate
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Access rules bind roles or named people to networks (IPv4/IPv6 CIDR), days and hours in the organisation's time zone, for all requests or changes only, checked in the auth guard after the role. Owners are never bound; a rule that would refuse its author is refused; changes audited; the organisation list explains a refusal.
+- Evidence:
+  - apps/api/src/security/access-rules.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/src/db/collections/security.ts
+  - apps/web/src/app/orgs/[orgId]/settings/access-rules/page.tsx
+  - apps/api/test/access-rules.e2e.test.ts
+  - apps/web/e2e/access-rules-flow.test.mjs
+  - docs/SECURITY.md
 
 ### SEC-005 — MFA
 

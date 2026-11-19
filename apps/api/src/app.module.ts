@@ -116,6 +116,7 @@ import { BankAiService } from './bank-ai/bank-ai.service';
 import { AiControlController } from './ai-control/ai-control.controller';
 import { PlatformAiController } from './ai-control/platform-ai.controller';
 import { KeyRotationController } from './security/key-rotation.controller';
+import { AccessRulesController } from './security/access-rules.controller';
 import { RetentionController } from './retention/retention.controller';
 import { SsoSettingsController, SsoSignInController } from './sso/sso.controller';
 import { SsoService } from './sso/sso.service';
@@ -130,6 +131,7 @@ import { SecurityMonitorRunnerService } from './security-monitor/security-monito
 import { SecurityMonitorService } from './security-monitor/security-monitor.service';
 import { RetentionService } from './retention/retention.service';
 import { KeyRotationService } from './security/key-rotation.service';
+import { AccessRulesService } from './security/access-rules.service';
 import { AiControlService } from './ai-control/ai-control.service';
 import { CloseController } from './close/close.controller';
 import { FixedAssetsController } from './fixed-assets/fixed-assets.controller';
@@ -336,6 +338,7 @@ export class AppModule {
         AiControlController,
         PlatformAiController,
         KeyRotationController,
+        AccessRulesController,
         RetentionController,
         SsoSettingsController,
         SsoSignInController,
@@ -503,6 +506,7 @@ export class AppModule {
         JournalTemplatesService,
         JournalSuggestionsService,
         KeyRotationService,
+        AccessRulesService,
         RetentionService,
         SsoService,
         FileScannerService,

@@ -1230,7 +1230,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-001 |  | capability | Multi-tenant isolation | Tested |
 | SEC-002 |  | capability | Organization-level access controls | Tested |
 | SEC-003 |  | capability | Role-based access control | Tested |
-| SEC-004 |  | capability | Attribute-based access control where appropriate | Not started |
+| SEC-004 |  | capability | Attribute-based access control where appropriate | Tested |
 | SEC-005 |  | capability | MFA | Tested |
 | SEC-006 |  | capability | SSO | Tested |
 | SEC-007 |  | capability | SAML/OIDC architecture | Tested |

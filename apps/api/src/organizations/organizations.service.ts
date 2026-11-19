@@ -1,4 +1,5 @@
 import { ConflictException, ForbiddenException, HttpStatus, Inject, Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
+import { AccessRulesService } from '../security/access-rules.service';
 import { randomUUID } from 'node:crypto';
 import { fiscalYearForDate, GENERIC_SMB_COA, isTimeZone, effectiveFeatures } from '@talk2tax/accounting-engine';
 import { Role } from '@talk2tax/database';
@@ -53,6 +54,7 @@ export class OrganizationsService implements OnApplicationBootstrap {
     private readonly store: DocumentStoreService,
     private readonly orgSecurity: OrgSecurityService,
     private readonly periods: PeriodsService,
+    private readonly accessRules: AccessRulesService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -156,7 +158,7 @@ export class OrganizationsService implements OnApplicationBootstrap {
   }
 
   /** The organisations a person belongs to, oldest membership first. */
-  async listForUser(userId: string) {
+  async listForUser(userId: string, ip: string | null = null) {
     const ms = await runAsSystem(() => this.store.collection(memberships).find({ userId }, { sort: { createdAt: 1 } }));
     const orgs = new Map((await this.store.collection(organizations).find({ id: { $in: ms.map((m) => m.orgId) } })).map((o) => [o.id, o]));
     const subs = new Map(
@@ -166,12 +168,14 @@ export class OrganizationsService implements OnApplicationBootstrap {
     );
     const requiring = await this.orgSecurity.requiring(ms.map((m) => m.orgId));
     const satisfied = requiring.size ? await this.orgSecurity.userHasTwoStep(userId) : true;
+    // Access rules (SEC-004) that would refuse this person from here, now.
+    const refused = await this.accessRules.refusalsFor(userId, ip, ms.filter((m) => orgs.has(m.orgId)).map((m) => ({ orgId: m.orgId, role: m.role, timeZone: orgs.get(m.orgId)!.timeZone ?? 'Asia/Kolkata' })));
     return ms
       .filter((m) => orgs.has(m.orgId))
       .map((m) => {
         const org = orgs.get(m.orgId)!;
         const required = requiring.has(m.orgId);
-        return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(subs.get(m.orgId) ?? null), role: m.role, twoStep: { required, satisfied: !required || satisfied } };
+        return { ...serializeOrg(org), dataRegion: this.regions.describe(org.dataRegion), subscription: subscriptionSummary(subs.get(m.orgId) ?? null), role: m.role, twoStep: { required, satisfied: !required || satisfied }, accessRefused: refused.get(m.orgId) ?? null };
       });
   }
 
