@@ -40,8 +40,14 @@ before(async () => {
   gateway = await startPaymentsStandIn(4557, { razorpayWebhook: { url: `${WEB}/api/webhooks/payments/razorpay`, secret: 'e2e-webhook-secret' } });
 });
 after(async () => {
-  // Leave no gateway taking payments for the other browser tests.
-  if (admin) await admin.evaluate(async () => { await fetch('/api/t2t/v1/admin/payments/gateways/razorpay', { method: 'DELETE', headers: { 'x-t2t-csrf': '1' } }); });
+  // Leave no gateway taking payments, and no promotion on offer, for the other browser tests.
+  if (admin) {
+    await admin.evaluate(async () => {
+      const coupons = await fetch('/api/t2t/v1/admin/coupons').then((r) => r.json());
+      for (const c of coupons.filter((x) => x.autoApply && x.isActive)) await fetch(`/api/t2t/v1/admin/coupons/${c.id}/active`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-t2t-csrf': '1' }, body: JSON.stringify({ active: false }) });
+      await fetch('/api/t2t/v1/admin/payments/gateways/razorpay', { method: 'DELETE', headers: { 'x-t2t-csrf': '1' } });
+    });
+  }
   await browser?.close();
   await gateway?.close();
 });
@@ -66,7 +72,7 @@ test('an administrator creates a coupon and an owner pays less with it', async (
   // The coupon: 20% off the first 3 payments, Growth only.
   await admin.goto(`${WEB}/admin/coupons`);
   const form = admin.locator('[aria-label="New coupon"]');
-  await form.getByLabel('Code').fill(code);
+  await form.getByLabel('Code', { exact: true }).fill(code);
   await form.getByLabel('Description (optional)').fill('Launch offer');
   await form.getByLabel('Percentage off').fill('20');
   await form.getByLabel('Payments it takes money off').selectOption('3');
@@ -77,7 +83,7 @@ test('an administrator creates a coupon and an owner pays less with it', async (
   await row.getByText('20% off the first 3 payments').waitFor();
   await row.getByText('On offer').waitFor();
   // The same code again is refused.
-  await form.getByLabel('Code').fill(code);
+  await form.getByLabel('Code', { exact: true }).fill(code);
   await form.getByLabel('Percentage off').fill('10');
   await form.getByRole('button', { name: 'Create coupon' }).click();
   await form.getByText(`A coupon with the code ${code} exists already`).waitFor();
@@ -129,6 +135,42 @@ test('an administrator creates a coupon and an owner pays less with it', async (
   await admin.reload();
   await row.getByText(`E2E Coupon Traders ${tag}: 1 payment, ₹299.80, 2 left`).waitFor();
   if (SHOTS) await admin.screenshot({ path: `${SHOTS}/admin-coupons.png`, fullPage: true });
+  await row.getByRole('button', { name: 'Switch off' }).click();
+  await row.getByText('Switched off').waitFor();
+  assert.deepEqual(consoleErrors.filter((e) => !/40[0-9]|Failed to load resource/.test(e)), []);
+});
+
+test('a promotion is shown beside the plans and taken off without a code', async () => {
+  const tag = randomUUID().slice(0, 8);
+  const code = `SALE-${tag.toUpperCase()}`;
+  await admin.goto(`${WEB}/admin/coupons`);
+  const form = admin.locator('[aria-label="New coupon"]');
+  await form.getByLabel('Code', { exact: true }).fill(code);
+  await form.getByLabel('Description (optional)').fill('Annual sale');
+  await form.getByLabel('Percentage off').fill('15');
+  await form.getByLabel('Billing').selectOption('ANNUAL');
+  await form.getByLabel(/Apply automatically at checkout/).check();
+  await form.getByRole('button', { name: 'Create coupon' }).click();
+  const row = admin.locator('[aria-label="Coupons"]').getByRole('row', { name: new RegExp(code) });
+  await row.getByText('Promotion').waitFor();
+
+  const owner = await register('Sale Owner', `e2e-sale-owner-${tag}@example.test`);
+  await owner.getByLabel('Organisation name').fill(`E2E Sale Traders ${tag}`);
+  await owner.getByRole('button', { name: 'Create organisation' }).click();
+  await owner.waitForURL(/\/orgs\/[0-9a-f-]{36}$/);
+  await owner.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Subscription', exact: true }).click();
+  const plans = owner.locator('[aria-label="Plans"]');
+  // Monthly prices carry no offer; annual ones do.
+  await plans.locator('section[aria-label="Growth plan"]').waitFor();
+  assert.equal(await plans.getByTestId('plan-offer').count(), 0);
+  await plans.getByRole('button', { name: 'Annual' }).click();
+  const growth = plans.locator('section[aria-label="Growth plan"]');
+  await growth.getByTestId('plan-offer').getByText('15% off the first payment (Annual sale). Taken off at checkout.', { exact: false }).waitFor();
+  await growth.getByRole('button', { name: 'Choose Growth' }).click();
+  const amount = owner.locator('[aria-label="Checkout"]').getByRole('table', { name: 'Amount' });
+  await amount.getByText(`Offer ${code}`).waitFor();
+  assert.match(await amount.innerText(), /Subscription\s+₹14,990\.00[\s\S]*−₹2,248\.50[\s\S]*Taxable value\s+₹12,741\.50/);
+  if (SHOTS) await plans.screenshot({ path: `${SHOTS}/promotion-plans.png` });
   await row.getByRole('button', { name: 'Switch off' }).click();
   await row.getByText('Switched off').waitFor();
   assert.deepEqual(consoleErrors.filter((e) => !/40[0-9]|Failed to load resource/.test(e)), []);

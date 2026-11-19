@@ -3939,6 +3939,8 @@ model Coupon {
   maxRedemptions Int?                  @map("max_redemptions")
   redeemBy       DateTime?             @map("redeem_by") @db.Timestamptz(6)
   isActive       Boolean               @default(true) @map("is_active")
+  /// A promotion (SUBS-025): applied at checkout without a code, to organisations that have not used it.
+  autoApply      Boolean               @default(false) @map("auto_apply")
   createdBy      String                @map("created_by") @db.Uuid
   createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)

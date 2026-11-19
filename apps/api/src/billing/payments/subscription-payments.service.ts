@@ -138,7 +138,7 @@ export class SubscriptionPaymentsService {
       throw e;
     }
     // A coupon takes money off a charge now; a change at the renewal is not charged now, so none applies.
-    const c = plan.kind === 'SCHEDULED' ? { applied: null, lapsed: null } : await this.coupons.resolve(tx, s, opts.couponCode ?? null, { planCode: target.code, interval, currency, now });
+    const c = plan.kind === 'SCHEDULED' ? { applied: null, lapsed: null } : await this.coupons.resolve(tx, s, opts.couponCode ?? null, { planCode: target.code, interval, currency, now }, plan.amount);
     const off = plan.kind === 'SCHEDULED' ? null : this.discount(c.applied, plan.amount, currency, !!opts.couponCode);
     const charged = plan.kind === 'SCHEDULED' ? null : off?.charged ?? plan.amount;
     const noProfile = opts.forQuote && !(await tx.platformBillingProfile.findUnique({ where: { id: 1 }, select: { id: true } }));

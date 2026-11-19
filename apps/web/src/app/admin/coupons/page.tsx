@@ -23,6 +23,7 @@ interface Coupon {
   maxRedemptions: number | null;
   redeemBy: string | null;
   isActive: boolean;
+  autoApply: boolean;
   terms: string;
   createdAt: string;
   organisations: { orgId: string; name: string; since: string; payments: number; discount: string; currency: string | null; stillUsing: boolean; paymentsLeft: number | null }[];
@@ -30,7 +31,7 @@ interface Coupon {
 }
 interface PlanRow { code: string; name: string }
 
-const blank = { code: '', description: '', kind: 'PERCENT' as 'PERCENT' | 'AMOUNT', percentOff: '', amountOff: '', currency: 'INR', planCodes: [] as string[], interval: '', cycles: '1', maxRedemptions: '', redeemBy: '' };
+const blank = { code: '', description: '', kind: 'PERCENT' as 'PERCENT' | 'AMOUNT', percentOff: '', amountOff: '', currency: 'INR', planCodes: [] as string[], interval: '', cycles: '1', maxRedemptions: '', redeemBy: '', autoApply: false };
 
 /** Platform administration → Coupons: money off subscription payments, entered by organisations at checkout. */
 export default function AdminCouponsPage() {
@@ -57,6 +58,7 @@ export default function AdminCouponsPage() {
           cycles: f.cycles === 'ALL' ? null : Number(f.cycles),
           maxRedemptions: f.maxRedemptions ? Number(f.maxRedemptions) : null,
           redeemBy: f.redeemBy || null,
+          autoApply: f.autoApply,
         },
       }),
     onSuccess: async () => { setF(blank); await refresh(); },
@@ -94,6 +96,7 @@ export default function AdminCouponsPage() {
                 <label key={p.code} className="mr-4 inline-flex items-center gap-2"><input type="checkbox" checked={f.planCodes.includes(p.code)} onChange={() => togglePlan(p.code)} /> {p.name}</label>
               ))}
             </fieldset>
+            <label className="inline-flex items-center gap-2 text-sm sm:col-span-2 xl:col-span-4"><input type="checkbox" checked={f.autoApply} onChange={(e) => setF({ ...f, autoApply: e.target.checked })} /> Apply automatically at checkout: a promotion, no code needed, shown beside the plans</label>
             <div className="sm:col-span-2 xl:col-span-4"><ErrorAlert title="Coupon not created" error={create.error} /></div>
             <div className="sm:col-span-2 xl:col-span-4"><Button type="submit" loading={create.isPending} disabled={!f.code}>Create coupon</Button></div>
           </form>
@@ -113,7 +116,7 @@ export default function AdminCouponsPage() {
                 {q.data.map((c) => (
                   <Tr key={c.id}>
                     <Td className="align-top">
-                      <span className="font-mono font-medium">{c.code}</span>
+                      <span className="font-mono font-medium">{c.code}</span>{c.autoApply ? <Badge className="ml-2" tone="violet">Promotion</Badge> : null}
                       {c.description ? <p className="text-xs text-fg-muted">{c.description}</p> : null}
                     </Td>
                     <Td className="align-top text-sm">{c.terms}</Td>
