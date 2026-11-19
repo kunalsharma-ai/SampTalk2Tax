@@ -28213,9 +28213,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/integrations/secret-box.ts (previous keys)",
+        "apps/api/src/security/key-rotation.service.ts",
+        "apps/api/src/security/key-rotation.controller.ts",
+        "apps/web/src/app/admin/encryption-keys/page.tsx",
+        "apps/api/test/key-rotation.e2e.test.ts",
+        "apps/web/e2e/key-rotation-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Rotation of the key that encrypts stored secrets (integrations, payment gateways, CRM webhooks, two-step sign-in): previous keys keep opening what they sealed, a platform admin re-encrypts everything readable with the current key (audited), unreadable secrets are counted and left for re-entry. Not built: KMS/Vault, JWT signing key rotation, per-organisation keys."
     },
     {
       "id": "SEC-014",

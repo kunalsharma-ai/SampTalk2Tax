@@ -12,7 +12,7 @@ import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrmService } from '../crm/crm.service';
-import { SecretBox, secretHint } from '../integrations/secret-box';
+import { SecretBox, secretBoxFor, secretHint } from '../integrations/secret-box';
 import { checkWebhookUrl, sendWebhook, signPayload, SIGNATURE_HEADER, WebhookAddressError, type WebhookResult } from '../workflows/webhook';
 
 type Actor = { id: string };
@@ -47,7 +47,7 @@ export class CrmWebhooksService {
     private readonly contacts: ContactsService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {
-    this.box = new SecretBox({ encryptionKey: config.INTEGRATIONS_ENCRYPTION_KEY, jwtSecret: config.JWT_SECRET });
+    this.box = secretBoxFor(config);
   }
 
   // ------------------------------------------------------------------ settings

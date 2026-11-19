@@ -1239,7 +1239,7 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-010 |  | capability | Encryption in transit | Not started |
 | SEC-011 |  | capability | Encryption at rest | Not started |
 | SEC-012 |  | capability | Secrets management | Implementing |
-| SEC-013 |  | capability | Key rotation | Not started |
+| SEC-013 |  | capability | Key rotation | Tested |
 | SEC-014 |  | capability | Audit logging | Tested |
 | SEC-015 |  | capability | API authentication | Tested |
 | SEC-016 |  | capability | Rate limiting | Tested |

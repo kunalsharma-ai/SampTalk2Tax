@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 773 |
+| Not started | 772 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 484 |
+| Tested | 485 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 20 | 18 |
+| Security and enterprise governance | M1 | 38 | 19 | 19 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5737,6 +5737,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - .env.example
   - apps/api/src/config.ts
   - apps/api/src/integrations/secret-box.ts
+
+### SEC-013 — Key rotation
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Rotation of the key that encrypts stored secrets (integrations, payment gateways, CRM webhooks, two-step sign-in): previous keys keep opening what they sealed, a platform admin re-encrypts everything readable with the current key (audited), unreadable secrets are counted and left for re-entry. Not built: KMS/Vault, JWT signing key rotation, per-organisation keys.
+- Evidence:
+  - apps/api/src/integrations/secret-box.ts (previous keys)
+  - apps/api/src/security/key-rotation.service.ts
+  - apps/api/src/security/key-rotation.controller.ts
+  - apps/web/src/app/admin/encryption-keys/page.tsx
+  - apps/api/test/key-rotation.e2e.test.ts
+  - apps/web/e2e/key-rotation-flow.test.mjs
+  - docs/SECURITY.md
 
 ### SEC-014 — Audit logging
 

@@ -123,6 +123,16 @@ const schema = z.object({
     .optional()
     .transform((v) => (v && v.trim() ? v.trim() : undefined))
     .pipe(z.string().min(32, 'INTEGRATIONS_ENCRYPTION_KEY must be at least 32 characters').optional()),
+  /**
+   * Keys used before INTEGRATIONS_ENCRYPTION_KEY (SEC-013), comma-separated: secrets sealed with
+   * them still open, until Platform admin → Encryption keys seals them again with the current key.
+   * When moving off the key derived from JWT_SECRET, list the old JWT_SECRET as `jwt:<secret>`.
+   */
+  INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').split(',').map((x) => x.trim()).filter(Boolean))
+    .pipe(z.array(z.string().refine((k) => (k.startsWith('jwt:') ? k.length > 4 : k.length >= 32), 'Each previous key is at least 32 characters, or jwt:<the old JWT_SECRET>'))),
   /** Days a new organisation's trial (of every module) lasts. */
   PLAN_TRIAL_DAYS: z.coerce.number().int().min(1).max(90).default(14),
   /**

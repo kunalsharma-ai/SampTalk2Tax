@@ -119,6 +119,39 @@ Until a security contact is published, report privately to the repository owner 
 
 API keys and SMTP passwords that owners and admins enter in Settings → Integrations are encrypted with AES-256-GCM before storage (key from `INTEGRATIONS_ENCRYPTION_KEY`, or derived from `JWT_SECRET` with HKDF-SHA256 under its own label), in a tenant table with forced row-level security. They are never returned to the browser or written to the audit trail (only whether they changed and their last four characters). Only `org.manage` can see or change integrations. On a public server, mail servers on private, loopback or link-local addresses and unencrypted SMTP are refused, and the connection goes to the address checked. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
 
+## Encryption key rotation (SEC-013)
+
+Every secret stored in the app is sealed with AES-256-GCM and records the short id of the key that
+sealed it. This covers organisations' AI and email keys, payment gateway keys and webhook secrets
+(organisations' and the platform's), CRM webhook signing secrets, and two-step sign-in
+authenticators.
+
+To rotate the key:
+
+1. Set a new `INTEGRATIONS_ENCRYPTION_KEY`.
+2. List the old one in `INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS`, comma-separated. When moving off
+   the key derived from `JWT_SECRET`, write it as `jwt:<old JWT_SECRET>`.
+3. Restart the server.
+
+Secrets under a previous key keep working. **Platform admin → Encryption keys** counts each kind of
+secret by key: current, previous, or one no listed key opens. **Re-encrypt** opens every secret
+under a previous key and seals it again with the current key.
+
+* Re-encrypting is safe to repeat.
+* It needs a platform `SUPER_ADMIN`.
+* It is audited as `platform.secrets_resealed`, with counts only and never the secrets.
+* Secrets nothing can open are never changed. Whoever set them up enters them again.
+
+Once nothing is left under the old key, remove it from the configuration. An active two-step
+sign-in can be re-sealed in place, because the cipher and key id change together. Its secret
+still cannot be swapped under the same key.
+
+API: `GET /v1/admin/encryption-keys` (platform.read) and `POST /v1/admin/encryption-keys/reseal`
+(platform.manage).
+
+Not built: an external key manager (KMS or Vault), rotating `JWT_SECRET` for sign-in tokens
+without signing everyone out, and per-organisation keys.
+
 ## Data residency
 
 Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
