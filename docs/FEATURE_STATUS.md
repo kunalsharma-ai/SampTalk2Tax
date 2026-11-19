@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 760 |
+| Not started | 758 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 35 |
-| Tested | 496 |
+| Tested | 498 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 7 | 31 |
+| Security and enterprise governance | M1 | 38 | 5 | 33 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5877,6 +5877,37 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/retention.e2e.test.ts
   - apps/web/e2e/data-retention-flow.test.mjs
   - docs/SECURITY.md
+
+### SEC-021 — Backup and recovery
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: node dist/db/backup.js create|verify|drill|restore: whole-database backups from one MongoDB snapshot as gzip canonical Extended JSON (decimals, dates, binary exact) with validators and indexes, AES-256-GCM encrypted (scrypt key from BACKUP_ENCRYPTION_KEY; refused without it unless --unencrypted), SHA-256 and per-collection counts checked before any restore, restore only into an empty database, --keep N rotation, 0600 files. Every run recorded in backup_runs (insert-only) and shown under Platform admin -> Backups. Not built: scheduling and off-site copies (operator's scheduler and storage), incremental backups, per-organisation restore.
+- Evidence:
+  - packages/document-db/src/backup.ts
+  - apps/api/src/db/backup.ts
+  - apps/api/src/backups/backups.service.ts
+  - apps/web/src/app/admin/backups/page.tsx
+  - packages/document-db/test/backup.test.ts
+  - apps/api/test/backups.e2e.test.ts
+  - apps/web/e2e/backups-flow.test.mjs
+  - docs/DISASTER_RECOVERY.md
+
+### SEC-022 — Disaster recovery procedures
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Restore drills restore a backup into a scratch database, count every collection against the backup, drop it and record the result. Overdue backups (BACKUP_MAX_AGE_HOURS, default 26) and drills (RESTORE_DRILL_MAX_AGE_DAYS, default 35) show on the Backups page and as System health problems in production. docs/DISASTER_RECOVERY.md: schedule, RPO/RTO targets, provider point-in-time recovery, off-site copies, and the step-by-step recovery runbook. Recovery itself is run by the operator; no automatic failover.
+- Evidence:
+  - packages/document-db/src/backup.ts
+  - apps/api/src/db/backup.ts
+  - apps/api/src/backups/backups.service.ts
+  - apps/web/src/app/admin/backups/page.tsx
+  - packages/document-db/test/backup.test.ts
+  - apps/api/test/backups.e2e.test.ts
+  - apps/web/e2e/backups-flow.test.mjs
+  - docs/DISASTER_RECOVERY.md
+  - apps/api/src/operations/system.service.ts
 
 ### SEC-023 — Security event monitoring
 

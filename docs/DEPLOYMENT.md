@@ -65,6 +65,9 @@ Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `ta
 | `APP_URL` | no | The web app's public address, for links in emails to members. Default `http://localhost:3000` |
 | `HTTPS_ONLY` | no | Encryption in transit (SEC-010). API: `true` refuses requests that did not reach Talk2Tax over HTTPS (`X-Forwarded-Proto` from a trusted proxy, so `TRUST_PROXY_HOPS` ≥ 1), except `/health`; unset follows `APP_URL` (on for `https://`). Web app: on by default in a production build (sends `http://` visitors to `https://` with a 308 and adds `Strict-Transport-Security` to HTTPS responses; `localhost` is left alone); `false` turns it off |
 | `MONGODB_REQUIRE_TLS` | no | The API refuses to start unless `MONGODB_URL` is `mongodb+srv://` or has `tls=true`. Default: the same as `HTTPS_ONLY`. Set `false` only for a database on a private network you trust |
+| `BACKUP_ENCRYPTION_KEY` | for backups | Passphrase (16+ characters) the backup command encrypts and reads backups with. Keep it in your secrets manager, apart from the backups. See [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md) |
+| `BACKUP_MAX_AGE_HOURS` | no | Hours after which the newest good backup counts as overdue (Platform admin → Backups, System health). Default 26; 0 turns the check off |
+| `RESTORE_DRILL_MAX_AGE_DAYS` | no | Days after which the last restore drill counts as overdue. Default 35; 0 turns the check off |
 | `DEPLOYMENT_REGION`, `DEPLOYMENT_REGION_NAME` | no | The region this deployment serves (default `local`, `Local server`). Organisations are tagged with it; see [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md) |
 | `PLAN_TRIAL_DAYS` | no | Days a new organisation's trial of every module lasts. Default 14 |
 | `BILLING_RUNNER_INTERVAL_SECONDS` | no | How often renewal invoices and reminders are checked. Default 3600; 0 turns it off |

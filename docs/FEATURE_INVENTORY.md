@@ -1247,8 +1247,8 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-018 |  | capability | Secure file uploads | Tested |
 | SEC-019 |  | capability | Malware scanning | Tested |
 | SEC-020 |  | capability | Data retention policies | Tested |
-| SEC-021 |  | capability | Backup and recovery | Not started |
-| SEC-022 |  | capability | Disaster recovery procedures | Not started |
+| SEC-021 |  | capability | Backup and recovery | Tested |
+| SEC-022 |  | capability | Disaster recovery procedures | Tested |
 | SEC-023 |  | capability | Security event monitoring | Tested |
 | SEC-024 |  | capability | Vulnerability scanning | Implemented |
 | SEC-025 |  | capability | Dependency scanning | Implemented |
