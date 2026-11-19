@@ -2995,10 +2995,35 @@ model ConsolidationGroup {
   rates        ConsolidationRate[]
   rules        EliminationRule[]
   intercompany IntercompanyTransaction[]
+  adjustments  ConsolidationAdjustment[]
 
   @@unique([id, orgId])
   @@unique([orgId, name])
   @@map("consolidation_groups")
+}
+
+/// A consolidation adjustment (GL-034): a balanced entry in the consolidation only, in the group's currency. Voided, never changed.
+model ConsolidationAdjustment {
+  id          String             @id @db.Uuid
+  orgId       String             @map("org_id") @db.Uuid
+  groupId     String             @map("group_id") @db.Uuid
+  number      Int
+  date        DateTime           @db.Date
+  description String             @db.VarChar(200)
+  /// [{ code, name, type, debit, credit }], amounts in the group's currency.
+  lines       Json
+  total       Decimal            @db.Decimal(20, 4)
+  status      String             @default("POSTED") @db.VarChar(8)
+  createdById String             @map("created_by_id") @db.Uuid
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  voidedAt    DateTime?          @map("voided_at") @db.Timestamptz(6)
+  voidedById  String?            @map("voided_by_id") @db.Uuid
+  voidReason  String?            @map("void_reason") @db.VarChar(300)
+  group       ConsolidationGroup @relation(fields: [groupId, orgId], references: [id, orgId], onDelete: Restrict)
+
+  @@unique([groupId, number])
+  @@index([orgId, groupId, date])
+  @@map("consolidation_adjustments")
 }
 
 model ConsolidationMember {

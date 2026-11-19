@@ -58,9 +58,26 @@ export interface ConsolidationReport {
   to: string;
   currency: string;
   entities: { id: string; name: string; currency: string; rates: { closing: string; average: string; historical: string } | null; translationReserve: string; netIncome: string; ownershipPercent: string; netAssets: string; nonControllingNetAssets: string; nonControllingProfit: string }[];
-  rows: { kind: RowKind; code: string; name: string; type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE'; amounts: string[]; elimination: string; consolidated: string }[];
+  rows: { kind: RowKind; code: string; name: string; type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE'; amounts: string[]; elimination: string; adjustment: string; consolidated: string }[];
+  adjustments: { id: string; name: string; lines: { code: string; name: string; netDebit: string; broughtForward: boolean }[] }[];
   eliminations: { ruleId: string; name: string; source: 'RULE' | 'LEDGER'; left: { entityId: string; code: string; name: string | null; amount: string }; right: { entityId: string; code: string; name: string | null; amount: string }; difference: string; matched: boolean; problem: string | null }[];
   balanced: boolean;
   incomeStatement: { revenue: Line[]; expenses: Line[]; totalRevenue: string; totalExpenses: string; netIncome: string; attributableToOwners: string; attributableToNonControlling: string };
   balanceSheet: { assets: Line[]; liabilities: Line[]; equity: Line[]; periodEarnings: string; totalAssets: string; totalLiabilities: string; totalEquity: string; nonControllingInterests: string; equityAttributableToOwners: string; balanced: boolean };
+}
+
+export type AccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+/** A consolidation adjustment (GL-034): an entry in the consolidation only. */
+export interface Adjustment {
+  id: string;
+  number: number;
+  reference: string;
+  date: string;
+  description: string;
+  lines: { code: string; name: string; type: AccountType; debit: string; credit: string }[];
+  total: string;
+  status: 'POSTED' | 'VOID';
+  createdAt: string;
+  voidedAt: string | null;
+  voidReason: string | null;
 }

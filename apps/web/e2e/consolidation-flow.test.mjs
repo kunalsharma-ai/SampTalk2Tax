@@ -2,7 +2,8 @@
  * Browser end-to-end test for group consolidation: an owner of two companies creates a group in
  * the parent, adds the subsidiary, adds an elimination rule by picking each company's account,
  * reads the worksheet and the consolidated statements, sees an intercompany difference, and
- * exports the worksheet, then marks the subsidiary as 60% owned and sees non-controlling interests.
+ * exports the worksheet, then marks the subsidiary as 60% owned and sees non-controlling interests,
+ * and records and voids a consolidation adjustment (goodwill) in the consolidation only.
  * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
@@ -14,6 +15,7 @@ import { after, before, test } from 'node:test';
 import { chromium } from 'playwright';
 
 const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
+const SHOTS = process.env.SHOTS_DIR;
 let browser, page;
 const consoleErrors = [];
 
@@ -91,7 +93,7 @@ test('an owner consolidates two companies with an elimination', async () => {
   await row1250.getByText('-₹40,000.00').waitFor();
   assert.match(await row1250.innerText(), /40,000\.00[\s\S]*-₹40,000\.00/);
   await page.getByRole('list', { name: 'Eliminations' }).getByText('Agrees').waitFor();
-  assert.match(await ws.locator('tfoot').innerText(), /^Total\s+0\.00\s+0\.00\s+0\.00\s+0\.00$/);
+  assert.match(await ws.locator('tfoot').innerText(), /^Total\s+0\.00\s+0\.00\s+0\.00\s+0\.00\s+0\.00$/);
 
   // Statements.
   await page.getByRole('tab', { name: 'Profit and loss' }).click();
@@ -118,8 +120,8 @@ test('an owner consolidates two companies with an elimination', async () => {
   await dl.saveAs(path);
   const csv = readFileSync(path, 'utf8');
   assert.match(dl.suggestedFilename(), /^e2e-group-consolidation-worksheet-/);
-  assert.match(csv, /Code,Account,E2E Holding,E2E Subsidiary,Eliminations,Consolidated/);
-  assert.match(csv, /1250,Due from group companies,40000\.00,0\.00,-40000\.00,0\.00/);
+  assert.match(csv, /Code,Account,E2E Holding,E2E Subsidiary,Eliminations,Adjustments,Consolidated/);
+  assert.match(csv, /1250,Due from group companies,40000\.00,0\.00,-40000\.00,0\.00,0\.00/);
 
   // A partly owned subsidiary: outside shareholders get their share within equity.
   await page.getByRole('tab', { name: 'Companies, rates and rules' }).click();
@@ -135,6 +137,38 @@ test('an owner consolidates two companies with an elimination', async () => {
   assert.match(await page.getByRole('table', { name: 'Consolidated profit and loss' }).innerText(), /Attributable to non-controlling interests\s+-₹16,200\.00/);
   await page.getByRole('tab', { name: 'Worksheet' }).click();
   await page.getByRole('list', { name: 'Non-controlling interests' }).getByText('E2E Subsidiary: 60% owned').waitFor();
+
+  // A consolidation adjustment: goodwill added in the consolidation only, then voided.
+  await page.getByRole('tab', { name: 'Adjustments' }).click();
+  await page.getByText('No adjustments yet').waitFor();
+  await page.getByLabel('Description').fill('Goodwill on acquisition');
+  await page.getByLabel('Line 1 code').fill('1900');
+  await page.getByLabel('Line 1 name').fill('Goodwill');
+  await page.getByLabel('Line 1 type').selectOption('ASSET');
+  await page.getByLabel('Line 1 debit').fill('5000');
+  await page.getByLabel('Line 2 code').fill('3100');
+  await page.getByLabel('Line 2 name').fill('Share capital');
+  await page.getByLabel('Line 2 type').selectOption('EQUITY');
+  await page.getByLabel('Line 2 credit').fill('4000');
+  await page.getByText('Debits and credits differ by 1000.00').waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Record adjustment' }).isDisabled(), true);
+  await page.getByLabel('Line 2 credit').fill('5000');
+  await page.getByRole('button', { name: 'Record adjustment' }).click();
+  const adjustments = page.getByRole('table', { name: 'Consolidation adjustments' });
+  await adjustments.getByText('CA-0001').waitFor();
+  assert.match(await adjustments.innerText(), /Goodwill on acquisition[\s\S]*1900 Goodwill: Dr ₹5,000\.00[\s\S]*Posted/);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/consolidation-adjustments.png`, fullPage: true });
+  await page.getByRole('tab', { name: 'Worksheet' }).click();
+  const goodwill = ws.getByRole('row').filter({ hasText: 'Goodwill' });
+  await goodwill.waitFor();
+  assert.match(await goodwill.innerText(), /₹5,000\.00\s+₹5,000\.00$/);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/consolidation-worksheet-adjustments.png`, fullPage: true });
+  await page.getByRole('tab', { name: 'Adjustments' }).click();
+  page.once('dialog', (d) => d.accept('Entered by mistake'));
+  await adjustments.getByRole('button', { name: 'Void CA-0001' }).click();
+  await adjustments.getByText('Voided: Entered by mistake').waitFor();
+  await page.getByRole('tab', { name: 'Worksheet' }).click();
+  await goodwill.waitFor({ state: 'detached' });
 
   assert.deepEqual(consoleErrors.filter((e) => !/favicon|Failed to load resource/.test(e)), []);
 });

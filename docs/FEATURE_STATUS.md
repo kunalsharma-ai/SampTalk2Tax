@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 777 |
+| Not started | 776 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 480 |
+| Tested | 481 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 2 | 42 |
+| General ledger and accounting engine | M1 | 44 | 1 | 43 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 11 | 25 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
@@ -472,6 +472,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/consolidation.test.ts
   - apps/api/test/intercompany.e2e.test.ts
   - apps/web/e2e/intercompany-flow.test.mjs
+  - docs/CONSOLIDATION.md
+
+### GL-034 — Consolidation adjustments
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Consolidation adjustments in the group's currency, in the consolidation only: goodwill, fair value or unrealised profit entered by hand, shown in the worksheet's Adjustments column, voided once with a reason.
+- Evidence:
+  - packages/accounting-engine/src/consolidation.ts (adjustmentProblems, adjustmentsForPeriod, consolidate adjustments)
+  - apps/api/src/db/migrations/20270113100000_consolidation_adjustments.ts
+  - apps/api/src/consolidation/consolidation.service.ts
+  - apps/web/src/components/consolidation/adjustments.tsx
+  - packages/accounting-engine/test/consolidation-adjustments.test.ts
+  - apps/api/test/consolidation-adjustments.e2e.test.ts
+  - apps/web/e2e/consolidation-flow.test.mjs
   - docs/CONSOLIDATION.md
 
 ### GL-035 — Foreign currency revaluation

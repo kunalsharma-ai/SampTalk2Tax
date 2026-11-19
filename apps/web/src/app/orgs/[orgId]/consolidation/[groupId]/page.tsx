@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
+import { AdjustmentsTab } from '@/components/consolidation/adjustments';
 import { IntercompanyAccountsCard, IntercompanyTab } from '@/components/consolidation/intercompany';
 import { Money } from '@/components/money';
 import { BalancedBadge, DateInput, fyStartFor } from '@/components/report-bits';
@@ -17,12 +18,13 @@ import { date, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
-type Tab = 'worksheet' | 'income-statement' | 'balance-sheet' | 'intercompany' | 'setup';
+type Tab = 'worksheet' | 'income-statement' | 'balance-sheet' | 'intercompany' | 'adjustments' | 'setup';
 const TABS: [Tab, string][] = [
   ['worksheet', 'Worksheet'],
   ['income-statement', 'Profit and loss'],
   ['balance-sheet', 'Balance sheet'],
   ['intercompany', 'Intercompany'],
+  ['adjustments', 'Adjustments'],
   ['setup', 'Companies, rates and rules'],
 ];
 const KIND_NOTE: Record<RowKind, string | null> = {
@@ -54,7 +56,7 @@ export default function ConsolidationGroupPage() {
             <DateInput label="From" value={from} onChange={setFrom} />
             <DateInput label="To" value={to} onChange={setTo} />
             {r.data ? <BalancedBadge balanced={r.data.balanced && r.data.balanceSheet.balanced}>Balanced</BalancedBadge> : null}
-            {tab !== 'setup' && tab !== 'intercompany' ? <ExportButtons orgId={orgId} path={`consolidation/groups/${groupId}/export/${tab}`} params={{ from, to }} disabled={!r.data} /> : null}
+            {tab !== 'setup' && tab !== 'intercompany' && tab !== 'adjustments' ? <ExportButtons orgId={orgId} path={`consolidation/groups/${groupId}/export/${tab}`} params={{ from, to }} disabled={!r.data} /> : null}
           </>
         }
       />
@@ -67,7 +69,7 @@ export default function ConsolidationGroupPage() {
         <Link href={`/orgs/${orgId}/consolidation`} className="ml-auto self-center text-sm text-accent hover:underline">All groups</Link>
       </div>
       <ErrorAlert title="Could not load the group" error={g.error} />
-      {tab !== 'setup' && tab !== 'intercompany' && r.error ? (
+      {tab !== 'setup' && tab !== 'intercompany' && tab !== 'adjustments' && r.error ? (
         <div className="mb-4">
           <ErrorAlert title="The group cannot be consolidated yet" error={r.error} />
           {manage ? <Button className="mt-2" size="sm" variant="secondary" onClick={() => setTab('setup')}>Open companies, rates and rules</Button> : null}
@@ -77,6 +79,7 @@ export default function ConsolidationGroupPage() {
       {r.data && tab === 'income-statement' ? <IncomeStatement r={r.data} /> : null}
       {r.data && tab === 'balance-sheet' ? <BalanceSheet r={r.data} /> : null}
       {g.data && tab === 'intercompany' ? <IntercompanyTab g={g.data} orgId={orgId} base={base} /> : null}
+      {g.data && tab === 'adjustments' ? <AdjustmentsTab orgId={orgId} groupId={groupId} base={base} manage={manage} currency={c} /> : null}
       {g.data && tab === 'setup' ? (
         <>
           <Setup g={g.data} orgId={orgId} base={base} manage={manage} periodEnd={to} currency={c} />
@@ -99,13 +102,14 @@ function Worksheet({ r }: { r: ConsolidationReport }) {
         <Stat label="Eliminations" value={`${r.eliminations.filter((e) => e.matched).length} of ${r.eliminations.length} agree`} tone={r.eliminations.every((e) => e.matched) ? 'positive' : 'warning'} />
       </div>
       <Card className="mb-4 overflow-x-auto">
-        <CardHeader title="Consolidation worksheet" description="Signed balances: debits positive, credits negative. Balance sheet accounts at the end date, revenue and expenses for the period. Each column adds up to zero." />
+        <CardHeader title="Consolidation worksheet" description="Signed balances: debits positive, credits negative. Balance sheet accounts at the end date, revenue and expenses for the period. Each column adds up to zero. Adjustments are entries in the consolidation only." />
         <Table aria-label="Consolidation worksheet">
           <thead>
             <tr>
               <Th>Account</Th>
               {r.entities.map((e) => <Th key={e.id} numeric>{e.name}{e.currency !== c ? <span className="block text-[10px] font-normal normal-case text-fg-faint">{e.currency} → {c}</span> : null}</Th>)}
               <Th numeric>Eliminations</Th>
+              <Th numeric>Adjustments</Th>
               <Th numeric>Consolidated</Th>
             </tr>
           </thead>
@@ -118,6 +122,7 @@ function Worksheet({ r }: { r: ConsolidationReport }) {
                 </Td>
                 {row.amounts.map((a, i) => <Td key={i} numeric className="whitespace-nowrap">{Number(a) === 0 ? <span className="text-fg-faint">—</span> : <Money value={a} currency={c} signed />}</Td>)}
                 <Td numeric className="whitespace-nowrap">{Number(row.elimination) === 0 ? <span className="text-fg-faint">—</span> : <Money value={row.elimination} currency={c} signed />}</Td>
+                <Td numeric className="whitespace-nowrap">{Number(row.adjustment) === 0 ? <span className="text-fg-faint">—</span> : <Money value={row.adjustment} currency={c} signed />}</Td>
                 <Td numeric className="whitespace-nowrap font-medium">{Number(row.consolidated) === 0 ? <span className="text-fg-faint">—</span> : <Money value={row.consolidated} currency={c} signed />}</Td>
               </Tr>
             ))}
@@ -127,6 +132,7 @@ function Worksheet({ r }: { r: ConsolidationReport }) {
               <Td className="font-semibold">Total</Td>
               {r.entities.map((e, i) => <Td key={e.id} numeric className="font-semibold">{total(r.rows.map((x) => x.amounts[i]!))}</Td>)}
               <Td numeric className="font-semibold">{total(r.rows.map((x) => x.elimination))}</Td>
+              <Td numeric className="font-semibold">{total(r.rows.map((x) => x.adjustment))}</Td>
               <Td numeric className="font-semibold">{total(r.rows.map((x) => x.consolidated))}</Td>
             </tr>
           </tfoot>

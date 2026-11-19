@@ -124,7 +124,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 ## Group consolidation (M6, slice 7)
 
-* Full consolidation; non-controlling interests are the outside share of each subsidiary's reported net assets and profit, with no goodwill, fair value adjustments, mid-period ownership changes, indirect holdings or equity accounting. Accounts combine by code, with no mapping between different charts. Intercompany charges and settlements post journals in both companies at once (no GST/VAT, stock or unrealised profit, and no revaluation of intercompany balances). Translation rates are entered per period end, with one historical rate per member. See [`CONSOLIDATION.md`](CONSOLIDATION.md).
+* Full consolidation; non-controlling interests are the outside share of each subsidiary's reported net assets and profit, with goodwill and fair value adjustments entered by hand as consolidation adjustments (not calculated), no mid-period ownership changes, indirect holdings or equity accounting. Accounts combine by code, with no mapping between different charts. Intercompany charges and settlements post journals in both companies at once (no GST/VAT, stock or unrealised profit, and no revaluation of intercompany balances). Translation rates are entered per period end, with one historical rate per member. See [`CONSOLIDATION.md`](CONSOLIDATION.md).
 
 ## Departments and projects (M6, slice 3)
 

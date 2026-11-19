@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ConsolidationError, D, checkOwnershipPercent, intercompanyEliminations, checkTranslationRates, consolidate, formatDate, minorUnits, type ConsolidationEntity, type ConsolidationResult, type ExportFormat, type ExportReport, type ExportRow } from '@talk2tax/accounting-engine';
+import { ConsolidationError, D, adjustmentProblems, adjustmentsForPeriod, checkOwnershipPercent, type RecordedAdjustment, intercompanyEliminations, checkTranslationRates, consolidate, formatDate, minorUnits, type ConsolidationEntity, type ConsolidationResult, type ExportFormat, type ExportReport, type ExportRow } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -10,6 +10,8 @@ import { PrismaService } from '../common/prisma.service';
 import { currentTenantContext, tenantStorage } from '../common/tenant-context';
 import { ReportsService } from '../reports/reports.service';
 import { renderExportFile, type ExportedFile } from '../report-exports/report-exports.service';
+import { nextCounter } from '../db/counters';
+import { randomUUID } from 'node:crypto';
 
 type Actor = { id: string };
 type Tx = Prisma.TransactionClient;
@@ -188,6 +190,9 @@ export class ConsolidationService {
     const g = await this.group(org, id);
     if (await this.prisma.intercompanyTransaction.count({ where: { groupId: id, orgId: org.id } })) {
       throw new DomainError('GROUP_IN_USE', 'This group has intercompany transactions and cannot be deleted', HttpStatus.CONFLICT);
+    }
+    if (await this.prisma.consolidationAdjustment.count({ where: { groupId: id, orgId: org.id } })) {
+      throw new DomainError('GROUP_IN_USE', 'This group has consolidation adjustments and cannot be deleted', HttpStatus.CONFLICT);
     }
     await this.prisma.$transaction(async (tx) => {
       await tx.eliminationRule.deleteMany({ where: { groupId: id, orgId: org.id } });
@@ -377,6 +382,53 @@ export class ConsolidationService {
     return this.detail(org, actor.id, id);
   }
 
+  // ------------------------------------------------------------------ consolidation adjustments
+
+  private adjustmentView(a: { id: string; number: number; date: Date; description: string; lines: unknown; total: { toFixed(): string }; status: string; createdAt: Date; voidedAt: Date | null; voidReason: string | null }) {
+    return { id: a.id, number: a.number, reference: adjRef(a.number), date: fromDbDate(a.date), description: a.description, lines: a.lines as RecordedAdjustment['lines'], total: a.total.toFixed(), status: a.status as 'POSTED' | 'VOID', createdAt: a.createdAt.toISOString(), voidedAt: a.voidedAt?.toISOString() ?? null, voidReason: a.voidReason };
+  }
+
+  async adjustments(org: OrgContext, id: string) {
+    await this.group(org, id);
+    const rows = await this.prisma.consolidationAdjustment.findMany({ where: { groupId: id, orgId: org.id }, orderBy: { number: 'desc' }, take: 500 });
+    return rows.map((a) => this.adjustmentView(a));
+  }
+
+  /**
+   * Records a consolidation adjustment (GL-034): a balanced entry in the group's currency that
+   * changes the consolidation only, never a company's books. An account the companies do not
+   * have (goodwill, say) is added to the consolidation by its code.
+   */
+  async addAdjustment(org: OrgContext, actor: Actor, id: string, input: { date: string; description: string; lines: RecordedAdjustment['lines'] }) {
+    const g = await this.group(org, id);
+    const problems = adjustmentProblems(input.lines, g.currency);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) problems.unshift('The date is written YYYY-MM-DD');
+    if (!input.description.trim()) problems.unshift('Describe the adjustment');
+    if (problems.length) throw new DomainError('ADJUSTMENT_INVALID', problems.join('; '), HttpStatus.UNPROCESSABLE_ENTITY, { issues: problems });
+    const lines = input.lines.map((l) => ({ code: l.code.trim(), name: l.name.trim(), type: l.type, debit: new D(l.debit?.trim() || '0').toFixed(minorUnits(g.currency)), credit: new D(l.credit?.trim() || '0').toFixed(minorUnits(g.currency)) }));
+    const total = lines.reduce((s, l) => s.plus(l.debit), new D(0)).toFixed();
+    const view = await this.prisma.$transaction(async (tx) => {
+      const number = await nextCounter(tx, org.id, `consolidation-adjustment:${id}`);
+      const a = await tx.consolidationAdjustment.create({ data: { id: randomUUID(), orgId: org.id, groupId: id, number: Number(number), date: toDbDate(input.date), description: input.description.trim(), lines, total, createdById: actor.id } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'consolidation_adjustment.posted', entityType: 'consolidation_adjustment', entityId: a.id, data: { group: g.name, reference: adjRef(a.number), date: input.date, description: a.description, lines, total } });
+      return this.adjustmentView(a);
+    });
+    return view;
+  }
+
+  async voidAdjustment(org: OrgContext, actor: Actor, id: string, adjustmentId: string, reason: string) {
+    if (reason.trim().length < 3) throw new DomainError('REASON_REQUIRED', 'Say why the adjustment is voided', HttpStatus.UNPROCESSABLE_ENTITY);
+    await this.group(org, id);
+    return this.prisma.$transaction(async (tx) => {
+      const a = await tx.consolidationAdjustment.findFirst({ where: { id: adjustmentId, groupId: id, orgId: org.id } });
+      if (!a) throw new DomainError('NOT_FOUND', 'Adjustment not found', HttpStatus.NOT_FOUND);
+      if (a.status === 'VOID') throw new DomainError('ADJUSTMENT_VOID', 'This adjustment is already void', HttpStatus.CONFLICT);
+      const v = await tx.consolidationAdjustment.update({ where: { id: a.id }, data: { status: 'VOID', voidedAt: new Date(), voidedById: actor.id, voidReason: reason.trim() } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'consolidation_adjustment.voided', entityType: 'consolidation_adjustment', entityId: a.id, data: { reference: adjRef(a.number), reason: reason.trim() } });
+      return this.adjustmentView(v);
+    });
+  }
+
   /**
    * The consolidation worksheet and statements for a period. Every member's balances are read
    * through the same report service as its own trial balance, in its own tenant context.
@@ -412,12 +464,15 @@ export class ConsolidationService {
         ownershipPercent: m.ownershipPercent.toFixed(),
       });
     }
+    // Consolidation adjustments (GL-034) dated on or before the end of the period.
+    const adjustments = await this.prisma.consolidationAdjustment.findMany({ where: { groupId: id, orgId: org.id, status: 'POSTED', date: { lte: toDbDate(q.to) } }, orderBy: { number: 'asc' } });
     const ic = await this.prisma.intercompanyTransaction.findMany({ where: { groupId: id, orgId: org.id, date: { lte: toDbDate(q.to) } }, orderBy: { number: 'asc' } });
     let result: ConsolidationResult;
     try {
       result = consolidate({
         currency: g.currency,
         entities,
+        adjustments: adjustmentsForPeriod(adjustments.map((a) => ({ id: a.id, name: `${adjRef(a.number)} ${a.description}`, date: fromDbDate(a.date), lines: a.lines as unknown as RecordedAdjustment['lines'] })), q.from, q.to),
         rules: g.rules.filter((r) => r.isActive).map((r) => ({ id: r.id, name: r.name, left: { entityId: r.leftOrgId, code: r.leftCode }, right: { entityId: r.rightOrgId, code: r.rightCode } })),
         ledger: intercompanyEliminations(
           ic.map((t) => ({
@@ -475,6 +530,7 @@ export class ConsolidationService {
       ...r.entities
         .filter((e) => e.ownershipPercent !== '100')
         .map((e) => `${e.name} is ${e.ownershipPercent}% owned: non-controlling interests are ${e.nonControllingNetAssets} of its net assets and ${e.nonControllingProfit} of its profit, before goodwill and fair value adjustments.`),
+      ...r.adjustments.map((a) => `Adjustment ${a.name}: ${a.lines.map((l) => `${l.code ? `${l.code} ` : ''}${l.name} ${l.netDebit}`).join(', ')} (in the consolidation only).`),
       ...r.eliminations.filter((e) => !e.matched).map((e) => `Elimination "${e.name}" ${e.problem ? `could not be applied: ${e.problem}` : `leaves a difference of ${e.difference}`}.`),
     ];
     const hasNci = r.entities.some((e) => e.ownershipPercent !== '100');
@@ -488,11 +544,12 @@ export class ConsolidationService {
           { label: 'Account', type: 'text', width: 26 },
           ...r.entities.map((e) => ({ label: e.name, type: 'money' as const, width: 13 })),
           { label: 'Eliminations', type: 'money', width: 13 },
+          { label: 'Adjustments', type: 'money', width: 13 },
           { label: 'Consolidated', type: 'money', width: 13 },
         ],
         rows: [
-          ...r.rows.map((x): ExportRow => ({ cells: [...label(x), ...x.amounts, x.elimination, x.consolidated] })),
-          { cells: ['', 'Total', ...r.entities.map((_, i) => sumCol(r.rows.map((x) => x.amounts[i]!), r.currency)), sumCol(r.rows.map((x) => x.elimination), r.currency), sumCol(r.rows.map((x) => x.consolidated), r.currency)], style: 'total' },
+          ...r.rows.map((x): ExportRow => ({ cells: [...label(x), ...x.amounts, x.elimination, x.adjustment, x.consolidated] })),
+          { cells: ['', 'Total', ...r.entities.map((_, i) => sumCol(r.rows.map((x) => x.amounts[i]!), r.currency)), sumCol(r.rows.map((x) => x.elimination), r.currency), sumCol(r.rows.map((x) => x.adjustment), r.currency), sumCol(r.rows.map((x) => x.consolidated), r.currency)], style: 'total' },
         ],
         notes: ['Signed net balances: debits positive, credits negative. Revenue and expenses are for the period; balance sheet accounts are at its end.', ...notes],
         fileName: `${slug}-consolidation-worksheet-${r.to}`,
@@ -566,4 +623,9 @@ function sumCol(xs: string[], currency: string): string {
 }
 function addMoney(a: string, b: string, currency: string): string {
   return new D(a).plus(b).toFixed(minorUnits(currency));
+}
+
+/** A consolidation adjustment's reference, such as CA-0003. */
+function adjRef(n: number) {
+  return `CA-${String(n).padStart(4, '0')}`;
 }

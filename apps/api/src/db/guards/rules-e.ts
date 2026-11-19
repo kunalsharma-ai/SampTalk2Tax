@@ -68,6 +68,13 @@ registerGuards({
     if (op === 'DELETE') fail('An AI request pack cannot be deleted; stop offering it instead');
     if (op === 'UPDATE' && changed(o, n, ['name', 'requests', 'prices', 'created_by'])) fail('An AI request pack keeps its requests and prices; create a new pack instead');
   },
+  // consolidation_adjustments_guard (GL-034): recorded once; only voided, once, with a reason.
+  consolidation_adjustments: (op, o, n) => {
+    if (op === 'INSERT') return;
+    if (op === 'DELETE') fail('A consolidation adjustment cannot be deleted; void it instead');
+    if (o.status === 'VOID') fail('A void consolidation adjustment does not change');
+    if (changed(o, n, ['org_id', 'group_id', 'number', 'date', 'description', 'lines', 'total', 'created_by_id'])) fail('A consolidation adjustment does not change; void it and record another');
+  },
   // enterprise_contracts_guard (SUBS-023): the agreed terms never change; a contract is only ended, once.
   enterprise_contracts: (op, o, n) => {
     if (op === 'INSERT') return;
