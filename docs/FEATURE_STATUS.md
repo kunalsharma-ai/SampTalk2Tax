@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 779 |
+| Not started | 778 |
 | Designed | 0 |
 | Implementing | 40 |
 | Implemented | 34 |
-| Tested | 476 |
+| Tested | 477 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -57,7 +57,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Security and enterprise governance | M1 | 38 | 22 | 16 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
-| Subscription and monetization engine | M9 | 32 | 4 | 28 |
+| Subscription and monetization engine | M9 | 32 | 3 | 29 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
@@ -6230,6 +6230,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/billing/payments/coupons.service.ts
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/db/migrations/20270108100000_coupons.ts
+  - apps/api/test/subscription-coupons.e2e.test.ts
+  - apps/web/src/app/admin/coupons/page.tsx
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-coupons-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-025 — Promotional pricing
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Promotions are coupons applied automatically: shown beside the plans they fit with their last day, and the one taking the most off is applied at checkout without a code for organisations that have not used it. Never stacked with a coupon; not applied to runner-issued renewals.
+- Evidence:
+  - apps/api/src/billing/payments/coupons.service.ts
+  - apps/api/src/db/migrations/20270109100000_promotions.ts
   - apps/api/test/subscription-coupons.e2e.test.ts
   - apps/web/src/app/admin/coupons/page.tsx
   - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx

@@ -32,6 +32,7 @@ const CouponBody = z
     cycles: z.number().int().nullish().transform((v) => v ?? null),
     maxRedemptions: z.number().int().nullish().transform((v) => v ?? null),
     redeemBy: z.string().max(10).nullish().transform((v) => v || null),
+    autoApply: z.boolean().default(false),
   })
   .strict();
 const Active = z.object({ active: z.boolean() }).strict();

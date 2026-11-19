@@ -18,6 +18,8 @@ const RZP = { keyId: 'rzp_test_standin12', secret: 'standin-razorpay-secret', we
 const run = Date.now().toString(36).toUpperCase().slice(-6);
 const LAUNCH = `LAUNCH-${run}`;
 const FLAT = `FLAT-${run}`;
+const PROMO = `PROMO-${run}`;
+const SMALL = `SMALL-${run}`;
 
 beforeAll(async () => {
   gw = await startPaymentsStandIn(0);
@@ -33,6 +35,8 @@ beforeAll(async () => {
   await ctx.http().put('/v1/admin/payments/gateways/razorpay').set(admin.auth).send({ enabled: true, mode: 'TEST', currencies: ['INR'], keyId: RZP.keyId, secret: RZP.secret, webhookSecret: RZP.webhook }).expect(200);
 });
 afterAll(async () => {
+  // Promotions apply to every organisation's checkout: none is left on offer for other suites.
+  await ctx.prisma.coupon.updateMany({ where: { autoApply: true, isActive: true }, data: { isActive: false } });
   await ctx.prisma.platformPaymentGateway.deleteMany({});
   await ctx.app.close();
   await gw.close();
@@ -116,5 +120,37 @@ describe('coupons on subscriptions', () => {
     expect((await ctx.http().get(`${third.base}/subscription/quote?plan=PROFESSIONAL&interval=ANNUAL&coupon=${FLAT}`).set(owner.auth).expect(422)).body.message).toBe('This coupon is no longer offered');
     expect(await ctx.prisma.auditEvent.findFirst({ where: { action: 'platform.coupon_switched_off', entityId: flat.id } })).not.toBeNull();
     expect(launchId).toBe(launch.id);
+  });
+});
+
+describe('promotions (coupons applied without a code)', () => {
+  it('are shown beside the plans and the best one is taken off at checkout', async () => {
+    await ctx.http().post('/v1/admin/coupons').set(admin.auth).send({ code: PROMO, description: 'Annual sale', kind: 'PERCENT', percentOff: '10', planCodes: ['PROFESSIONAL'], intervals: ['ANNUAL'], cycles: 1, autoApply: true }).expect(201);
+    const small = (await ctx.http().post('/v1/admin/coupons').set(admin.auth).send({ code: SMALL, kind: 'AMOUNT', amountOff: '1', currency: 'INR', cycles: 1, autoApply: true }).expect(201)).body;
+    expect(small).toMatchObject({ autoApply: true });
+    const o = await createOrg(ctx, owner, { name: 'Promotion Buying Pvt Ltd' });
+    const s = (await ctx.http().get(`${o.base}/subscription`).set(owner.auth).expect(200)).body;
+    expect(s.promotions.map((p: { code: string }) => p.code)).toEqual(expect.arrayContaining([PROMO, SMALL]));
+
+    // 10% off Professional annual beats 1.00 off; Growth monthly only has the 1.00.
+    const annual = (await ctx.http().get(`${o.base}/subscription/quote?plan=PROFESSIONAL&interval=ANNUAL`).set(owner.auth).expect(200)).body;
+    expect(annual.coupon).toMatchObject({ code: PROMO, promotion: true, terms: '10% off the first payment' });
+    expect(annual.discount).toBe((Math.round(Number(annual.amount) * 10) / 100).toFixed(2));
+    const monthly = (await ctx.http().get(`${o.base}/subscription/quote?plan=GROWTH&interval=MONTHLY`).set(owner.auth).expect(200)).body;
+    expect(monthly).toMatchObject({ amount: '1499.00', discount: '1.00', subtotal: '1498.00', coupon: { code: SMALL, promotion: true } });
+
+    // Paid with the promotion: it is used once, so the next payment is at the full price.
+    const c = (await ctx.http().post(`${o.base}/subscription/checkout`).set(owner.auth).send({ plan: 'GROWTH', interval: 'MONTHLY' }).expect(201)).body;
+    expect(c.invoice).toMatchObject({ couponCode: SMALL, discount: '1.00' });
+    await gw.pay([...gw.links.values()].at(-1)!.id);
+    const after = (await ctx.http().get(`${o.base}/subscription/quote?plan=GROWTH&interval=MONTHLY`).set(owner.auth).expect(200)).body;
+    expect(after).toMatchObject({ discount: '0.00', coupon: null, couponNote: 'This coupon has taken money off all 1 payment it was for' });
+
+    // Switched off, a promotion is neither shown nor taken off.
+    await ctx.http().post(`/v1/admin/coupons/${small.id}/active`).set(admin.auth).send({ active: false }).expect(200);
+    const o2 = await createOrg(ctx, owner, { name: 'After The Sale Pvt Ltd' });
+    const s2 = (await ctx.http().get(`${o2.base}/subscription`).set(owner.auth).expect(200)).body;
+    expect(s2.promotions.map((p: { code: string }) => p.code)).not.toContain(SMALL);
+    expect((await ctx.http().get(`${o2.base}/subscription/quote?plan=GROWTH&interval=MONTHLY`).set(owner.auth).expect(200)).body.coupon).toBeNull();
   });
 });

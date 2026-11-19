@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import type { Coupon } from '@talk2tax/database';
-import { BillingCurrency, BillingInterval, CouponKind, CouponTerms, couponProblem, dec, describeCoupon, PlanError, validateCoupon } from '@talk2tax/accounting-engine';
+import { BillingCurrency, BillingInterval, CouponKind, CouponTerms, couponDiscount, couponProblem, Dec, dec, describeCoupon, PlanError, validateCoupon } from '@talk2tax/accounting-engine';
 import { randomUUID } from 'node:crypto';
 import { AuditService } from '../../audit/audit.service';
 import type { AuthUser } from '../../auth/decorators';
@@ -19,6 +19,7 @@ export interface CouponInput {
   cycles: number | null;
   maxRedemptions: number | null;
   redeemBy: string | null;
+  autoApply: boolean;
 }
 
 export function termsOf(c: Coupon): CouponTerms {
@@ -39,7 +40,7 @@ export function termsOf(c: Coupon): CouponTerms {
 
 /** A coupon as an organisation sees it at checkout. */
 export function couponSummary(c: Coupon) {
-  return { code: c.code, description: c.description, terms: describeCoupon(termsOf(c)) };
+  return { code: c.code, description: c.description, terms: describeCoupon(termsOf(c)), promotion: c.autoApply };
 }
 
 /** The coupon a checkout or renewal uses, with what it takes off, or why a code entered does not apply. */
@@ -71,12 +72,17 @@ export class CouponsService {
    * (or as the one it is already using); with no code, the coupon on the subscription applies
    * while it still fits. A code that does not apply is refused with the reason; a coupon on the
    * subscription that no longer fits is left off quietly, and `lapsed` says why.
+   *
+   * With neither, and `promotionOn` given (a checkout's charge before any coupon), the best
+   * promotion on offer applies: a coupon marked to apply automatically, which the organisation
+   * has not used before and which fits. Promotions never stack with a coupon.
    */
   async resolve(
     tx: Tx,
     s: { orgId: string; couponId: string | null; couponUses: number },
     code: string | null,
     fit: { planCode: string; interval: BillingInterval; currency: BillingCurrency; now: Date },
+    promotionOn: Dec | null = null,
   ): Promise<{ applied: AppliedCoupon | null; lapsed: string | null }> {
     if (code) {
       const c = await tx.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
@@ -86,10 +92,41 @@ export class CouponsService {
       if (problem) throw new DomainError('COUPON_NOT_VALID', problem, HttpStatus.UNPROCESSABLE_ENTITY);
       return { applied: { coupon: c, continuing }, lapsed: null };
     }
-    if (!s.couponId) return { applied: null, lapsed: null };
-    const c = await tx.coupon.findUniqueOrThrow({ where: { id: s.couponId } });
-    const problem = await this.problem(tx, c, s, true, fit);
-    return problem ? { applied: null, lapsed: problem } : { applied: { coupon: c, continuing: true }, lapsed: null };
+    let lapsed: string | null = null;
+    if (s.couponId) {
+      const c = await tx.coupon.findUniqueOrThrow({ where: { id: s.couponId } });
+      lapsed = await this.problem(tx, c, s, true, fit);
+      if (!lapsed) return { applied: { coupon: c, continuing: true }, lapsed: null };
+    }
+    const promo = promotionOn ? await this.bestPromotion(tx, s, fit, promotionOn) : null;
+    return promo ? { applied: { coupon: promo, continuing: false }, lapsed: null } : { applied: null, lapsed };
+  }
+
+  /** The promotion taking the most off this charge, among those that apply and leave something to pay. */
+  private async bestPromotion(tx: Tx, s: { orgId: string; couponUses: number }, fit: { planCode: string; interval: BillingInterval; currency: BillingCurrency; now: Date }, amount: Dec) {
+    const offers = await tx.coupon.findMany({ where: { autoApply: true, isActive: true }, orderBy: { createdAt: 'asc' } });
+    let best: { coupon: Coupon; discount: Dec } | null = null;
+    for (const c of offers) {
+      if (await this.problem(tx, c, s, false, fit)) continue;
+      let discount: Dec;
+      try {
+        discount = couponDiscount(termsOf(c), amount, fit.currency).discount;
+      } catch (e) {
+        if (e instanceof PlanError) continue;
+        throw e;
+      }
+      if (!best || discount.gt(best.discount)) best = { coupon: c, discount };
+    }
+    return best?.coupon ?? null;
+  }
+
+  /** Promotions on offer in a currency, to show beside the plans. */
+  async promotions(currency: BillingCurrency, now = new Date()) {
+    const offers = await this.prisma.coupon.findMany({ where: { autoApply: true, isActive: true }, orderBy: { createdAt: 'asc' } });
+    const counts = await this.system((tx) => Promise.all(offers.map((c) => (c.maxRedemptions === null ? 0 : tx.couponRedemption.count({ where: { couponId: c.id } })))));
+    return offers
+      .filter((c, i) => (!c.redeemBy || c.redeemBy >= now) && (c.kind !== 'AMOUNT' || c.currency === currency) && (c.maxRedemptions === null || counts[i] < c.maxRedemptions))
+      .map((c) => ({ ...couponSummary(c), planCodes: c.planCodes, intervals: c.intervals, redeemBy: c.redeemBy?.toISOString() ?? null }));
   }
 
   private async problem(tx: Tx, c: Coupon, s: { orgId: string; couponUses: number }, continuing: boolean, fit: { planCode: string; interval: BillingInterval; currency: BillingCurrency; now: Date }) {
@@ -152,6 +189,7 @@ export class CouponsService {
       maxRedemptions: t.maxRedemptions,
       redeemBy: t.redeemBy?.toISOString() ?? null,
       isActive: c.isActive,
+      autoApply: c.autoApply,
       terms: describeCoupon(t),
       createdAt: c.createdAt.toISOString(),
     };
@@ -175,9 +213,9 @@ export class CouponsService {
         if (unknown.length) throw new DomainError('PLAN_NOT_FOUND', `No plan has the code ${unknown.join(', ')}`, HttpStatus.UNPROCESSABLE_ENTITY);
       }
       const c = await tx.coupon.create({
-        data: { id: randomUUID(), code: terms.code, description: input.description.trim(), kind: terms.kind, percentOff: terms.percentOff, amountOff: terms.amountOff, currency: terms.currency, planCodes: terms.planCodes, intervals: terms.intervals, cycles: terms.cycles, maxRedemptions: terms.maxRedemptions, redeemBy: terms.redeemBy, createdBy: actor.id },
+        data: { id: randomUUID(), code: terms.code, description: input.description.trim(), kind: terms.kind, percentOff: terms.percentOff, amountOff: terms.amountOff, currency: terms.currency, planCodes: terms.planCodes, intervals: terms.intervals, cycles: terms.cycles, maxRedemptions: terms.maxRedemptions, redeemBy: terms.redeemBy, autoApply: input.autoApply, createdBy: actor.id },
       });
-      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.coupon_created', entityType: 'coupon', entityId: c.id, data: { code: c.code, terms: describeCoupon(terms), planCodes: terms.planCodes, intervals: terms.intervals, maxRedemptions: terms.maxRedemptions, redeemBy: terms.redeemBy?.toISOString() ?? null } });
+      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.coupon_created', entityType: 'coupon', entityId: c.id, data: { code: c.code, terms: describeCoupon(terms), autoApply: input.autoApply, planCodes: terms.planCodes, intervals: terms.intervals, maxRedemptions: terms.maxRedemptions, redeemBy: terms.redeemBy?.toISOString() ?? null } });
       return this.serialize(c);
     });
   }

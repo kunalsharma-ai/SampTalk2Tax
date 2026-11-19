@@ -6800,6 +6800,19 @@
         "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
       "notes": "Percentage or fixed-amount coupons, limited by plan, billing, number of organisations and a use-by date, for the first 1-36 payments or every payment. Taken off before GST at checkout and on renewals while payments are left; shown on the tax invoice; usage and money taken off in Platform admin → Coupons. A coupon never takes a payment to nothing."
+    },
+    "SUBS-025": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/billing/payments/coupons.service.ts",
+        "apps/api/src/db/migrations/20270109100000_promotions.ts",
+        "apps/api/test/subscription-coupons.e2e.test.ts",
+        "apps/web/src/app/admin/coupons/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-coupons-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Promotions are coupons applied automatically: shown beside the plans they fit with their last day, and the one taking the most off is applied at checkout without a code for organisations that have not used it. Never stacked with a coupon; not applied to runner-issued renewals."
     }
   }
 }

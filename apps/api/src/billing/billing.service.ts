@@ -8,7 +8,7 @@ import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { accessOf } from './limits';
-import { couponSummary } from './payments/coupons.service';
+import { couponSummary, CouponsService } from './payments/coupons.service';
 
 type PlanRow = { id: string; code: string; name: string; description: string; prices: unknown; limits: unknown; features: string[]; isActive: boolean; sortOrder: number };
 
@@ -40,17 +40,19 @@ export class BillingService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly store: DocumentStoreService,
+    private readonly coupons: CouponsService,
   ) {}
 
   async forOrg(orgId: string, now = new Date()) {
     const s = await this.prisma.subscription.findUnique({ where: { orgId }, include: { plan: true, requestedPlan: true, coupon: true } });
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
     const currency = s.currency as BillingCurrency;
-    const [members, openInvitations, plans, history] = await Promise.all([
+    const [members, openInvitations, plans, history, promotions] = await Promise.all([
       runInOrg(orgId, () => this.store.collection(memberships).count({})),
       runInOrg(orgId, () => this.store.collection(invitations).count({ openFor: { $exists: true }, expiresAt: { $gt: now } })),
       this.prisma.plan.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] }),
       this.prisma.subscriptionEvent.findMany({ where: { orgId }, orderBy: { createdAt: 'desc' }, take: 30 }),
+      this.coupons.promotions(currency, now),
     ]);
     return {
       plan: serializePlan(s.plan, currency),
@@ -67,6 +69,8 @@ export class BillingService {
       request: s.requestedPlan ? { plan: serializePlan(s.requestedPlan, currency), interval: s.requestedInterval, at: s.requestedAt!.toISOString() } : null,
       usage: { members, openInvitations },
       plans: plans.map((p) => serializePlan(p, currency)),
+      // Promotions on offer (SUBS-025): taken off at checkout without a code.
+      promotions,
       featureLabels: PLAN_FEATURE_LABELS,
       history: history.map((h) => ({ kind: h.kind, at: h.createdAt.toISOString(), data: h.data })),
     };

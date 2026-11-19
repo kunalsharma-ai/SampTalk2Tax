@@ -32,6 +32,7 @@ interface Sub {
   currentPeriodEnd: string | null;
   request: { plan: Plan; interval: 'MONTHLY' | 'ANNUAL'; at: string } | null;
   coupon: { code: string; description: string; terms: string; paymentsUsed: number; paymentsLeft: number | null } | null;
+  promotions: { code: string; description: string; terms: string; planCodes: string[]; intervals: string[]; redeemBy: string | null }[];
   usage: { members: number; openInvitations: number };
   plans: Plan[];
   featureLabels: Record<string, string>;
@@ -47,7 +48,7 @@ interface Quote {
   periodEnd?: string;
   amount?: string;
   discount?: string;
-  coupon?: { code: string; description: string; terms: string; continuing: boolean } | null;
+  coupon?: { code: string; description: string; terms: string; continuing: boolean; promotion: boolean } | null;
   couponNote?: string | null;
   subtotal?: string;
   lines?: { code: string; rate: string; amount: string }[];
@@ -262,6 +263,9 @@ function Subscription() {
                     <p className="mt-1 text-sm text-fg-muted">{p.description}</p>
                     <p className="mt-3 text-2xl font-semibold"><Money value={interval === 'MONTHLY' ? p.price.monthly : p.price.annual} currency={s.currency} /></p>
                     <p className="text-xs text-fg-faint">{interval === 'MONTHLY' ? 'a month' : 'a year'}</p>
+                    {s.promotions.filter((o) => (!o.planCodes.length || o.planCodes.includes(p.code)) && (!o.intervals.length || o.intervals.includes(interval))).slice(0, 1).map((o) => (
+                      <p key={o.code} className="mt-2 rounded bg-accent/10 px-2 py-1 text-xs" data-testid="plan-offer"><span className="font-medium">Offer:</span> {o.terms}{o.description ? ` (${o.description})` : ''}{o.redeemBy ? `, until ${dateTime(o.redeemBy)}` : ''}. Taken off at checkout.</p>
+                    ))}
                     <ul className="mt-3 flex-1 space-y-1 text-sm">
                       <li>{limit(p.limits.members, 'members')}</li>
                       <li>{p.limits.aiCreditsPerMonth === null ? (p.features.includes('AI') ? 'Unlimited AI requests' : 'No AI requests') : `${p.limits.aiCreditsPerMonth.toLocaleString('en-IN')} AI requests a month`}</li>
@@ -307,7 +311,7 @@ function Subscription() {
                             <tr><td>Subscription</td><td className="text-right num"><Money value={quote.data.amount!} currency={quote.data.currency!} /></td></tr>
                             {quote.data.coupon ? (
                               <>
-                                <tr><td>Coupon {quote.data.coupon.code} <span className="text-xs text-fg-muted">({quote.data.coupon.terms})</span></td><td className="text-right num">−<Money value={quote.data.discount!} currency={quote.data.currency!} /></td></tr>
+                                <tr><td>{quote.data.coupon.promotion ? 'Offer' : 'Coupon'} {quote.data.coupon.code} <span className="text-xs text-fg-muted">({quote.data.coupon.terms})</span></td><td className="text-right num">−<Money value={quote.data.discount!} currency={quote.data.currency!} /></td></tr>
                                 <tr className="border-t border-line"><td>Taxable value</td><td className="text-right num"><Money value={quote.data.subtotal!} currency={quote.data.currency!} /></td></tr>
                               </>
                             ) : null}

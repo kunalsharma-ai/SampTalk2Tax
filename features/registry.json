@@ -30670,9 +30670,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/billing/payments/coupons.service.ts",
+        "apps/api/src/db/migrations/20270109100000_promotions.ts",
+        "apps/api/test/subscription-coupons.e2e.test.ts",
+        "apps/web/src/app/admin/coupons/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx",
+        "apps/web/e2e/subscription-coupons-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
+      ],
+      "notes": "Promotions are coupons applied automatically: shown beside the plans they fit with their last day, and the one taking the most off is applied at checkout without a code for organisations that have not used it. Never stacked with a coupon; not applied to runner-issued renewals."
     },
     {
       "id": "SUBS-026",

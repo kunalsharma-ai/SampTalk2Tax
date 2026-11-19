@@ -119,7 +119,8 @@ Platform administrators create coupons under Platform admin → Coupons. An orga
   - `GET /v1/admin/coupons` and `POST /v1/admin/coupons` need `platform.read` and `platform.manage`.
   - `POST /v1/admin/coupons/:id/active { active }` needs `platform.manage`.
   - Refusals: 422 `COUPON_NOT_FOUND`, `COUPON_NOT_VALID` (with the reason) or `COUPON_TOO_LARGE`.
-- **Tests.** Engine: `packages/accounting-engine/test/coupons.test.ts`. API: `apps/api/test/subscription-coupons.e2e.test.ts` (checkout, limits, renewals until the payments are used up, the admin list, switching off). Browser: `apps/web/e2e/subscription-coupons-flow.test.mjs`.
+- **Promotions (SUBS-025).** A coupon marked *apply automatically* is a promotion. It is shown beside the plans it fits, with its last day, and taken off at checkout without a code, for organisations that have not used it before. When several promotions fit, the one that takes the most off that charge applies. Promotions never stack: a code entered, or a coupon the subscription is already using, comes first. A promotion is not applied to renewal invoices the billing runner issues, only at checkout; once paid it stays with the subscription like any coupon, for the payments it covers. Switching it off removes it from the plans.
+- **Tests.** Engine: `packages/accounting-engine/test/coupons.test.ts`. API: `apps/api/test/subscription-coupons.e2e.test.ts` (checkout, limits, renewals until the payments are used up, the admin list, switching off, promotions). Browser: `apps/web/e2e/subscription-coupons-flow.test.mjs`.
 
 ## Not yet
 
