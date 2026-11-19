@@ -137,6 +137,25 @@ A module a plan does not include can be bought on top of it for its own price. T
   - Refusal: 422 `ADD_ON_INVALID`.
 - **Tests.** Engine: `packages/accounting-engine/test/add-ons.test.ts`. API: `apps/api/test/subscription-add-ons.e2e.test.ts`. Browser: `apps/web/e2e/subscription-add-ons-flow.test.mjs`.
 
+## Extra AI requests (SUBS-018)
+
+Once this month's AI requests in its plan run out, an organisation can buy a pack of extra requests instead of moving to a larger plan.
+
+- **Packs.** Platform administrators add packs under Platform admin → Plans → AI request packs. Each pack has a name, a number of requests (10 to 1,000,000) and a price in INR and USD before tax. A pack's requests and prices never change (the `ai_credit_packs` guard refuses it). To change them, stop offering the pack and add another. Creating and withdrawing a pack are audited (`platform.ai_credit_pack_created`, `…_offered`, `…_withdrawn`).
+- **Buying.** Owners and administrators (`org.manage`) choose a pack under Governance → Usage and see its total with GST. They then pay on the gateway's page and come back to Usage. Buying is open during the trial or a paid period, on a plan with a monthly AI limit (not one without a limit) that includes the AI assistant.
+  - The purchase is a subscription invoice of kind `CREDITS` with the pack (`creditPack`). The tax invoice is numbered in the same series and shows the pack as its line. Coupons do not apply to packs.
+  - An unpaid pack invoice and an unpaid plan invoice can both be open: buying a pack never voids the plan's renewal, and a plan checkout never voids a pack. Renewals ignore pack invoices.
+- **Granting.** When the payment is confirmed, a row in `ai_credit_grants` records the pack's requests, valid for 365 days from the payment. The row is append-only, one per invoice. The subscription itself does not change.
+- **Using.** An AI request answered while the plan's requests for the month last counts against the plan, as before. Past them, each answered request is recorded with the grant it came from (`usage_events.creditGrantId`): the unexpired pack with requests left that expires first. A pack's requests left are its requests minus those records. The AI check (`AI_CREDITS_USED_UP`) refuses only when the plan's requests and every pack are used up. As with the plan, requests already running finish, so a pack can be passed by a request or two. Its requests left never show below zero.
+- **Not refunded.** Requests left in a pack when it expires are not refunded.
+- **API.**
+  - `GET /v1/orgs/:orgId/subscription/credits/quote?pack=:id` returns the subtotal, tax lines, total, expiry and `payOnline`.
+  - `POST /v1/orgs/:orgId/subscription/credits/checkout { pack }` returns the payment page.
+  - `GET /v1/orgs/:orgId/usage` returns `ai.extra` (requests from packs this month) and `credits` (`balance`, `bought`, `packs` in the organisation's currency).
+  - `GET /v1/admin/ai-credit-packs`, `POST /v1/admin/ai-credit-packs { name, requests, prices }`, and `POST /v1/admin/ai-credit-packs/:id/active { active }`.
+  - Refusals: 422 `CREDIT_PACK_INVALID` and `CREDIT_PACK_NOT_FOUND`; 409 `CREDITS_NOT_AVAILABLE` and `CREDITS_NOT_NEEDED`.
+- **Tests.** Engine: `packages/accounting-engine/test/ai-credits.test.ts`. API: `apps/api/test/subscription-ai-credits.e2e.test.ts`. Browser: `apps/web/e2e/subscription-ai-credits-flow.test.mjs`.
+
 ## Not yet
 
 - Checked against real Razorpay and Stripe test accounts (INTG-007, INTG-009 are marked Integration pending).

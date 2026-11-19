@@ -12,6 +12,7 @@ import { RenewalsRunnerService } from './renewals-runner.service';
 import { SubscriptionPaymentsService } from './subscription-payments.service';
 import { CouponsService } from './coupons.service';
 import { AddOnsService } from '../add-ons.service';
+import { AiCreditsService } from '../ai-credits.service';
 
 const CouponCode = z
   .string()
@@ -40,6 +41,8 @@ const CouponBody = z
   })
   .strict();
 const Active = z.object({ active: z.boolean() }).strict();
+const PackChoice = z.object({ pack: z.string().uuid() }).strict();
+const PackBody = z.object({ name: z.string().max(60), requests: z.number().int(), prices: z.record(z.string().max(3), z.string().max(14)) }).strict();
 const GatewayBody = z
   .object({
     enabled: z.boolean(),
@@ -83,8 +86,23 @@ export class SubscriptionPaymentsController {
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
-  private returnTo(orgId: string) {
-    return `${this.config.APP_URL.replace(/\/$/, '')}/orgs/${orgId}/settings/subscription`;
+  private returnTo(orgId: string, page = 'subscription') {
+    return `${this.config.APP_URL.replace(/\/$/, '')}/orgs/${orgId}/settings/${page}`;
+  }
+
+  /** What a pack of extra AI requests (SUBS-018) would cost with tax. */
+  @Get('credits/quote')
+  @RequirePermission('org.read')
+  creditsQuote(@Param('orgId') orgId: string, @Query(new ZodPipe(PackChoice)) q: z.infer<typeof PackChoice>) {
+    return this.payments.creditsQuote(orgId, q.pack);
+  }
+
+  /** Buys a pack of extra AI requests: returns the payment page; the customer comes back to Usage. */
+  @Post('credits/checkout')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(PackChoice) })
+  buyCredits(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser, @Body(new ZodPipe(PackChoice)) b: z.infer<typeof PackChoice>) {
+    return this.payments.buyCredits(orgId, user, b.pack, this.returnTo(orgId, 'usage'));
   }
 
   @Get('quote')
@@ -142,7 +160,29 @@ export class PlatformPaymentsController {
     private readonly renewals: RenewalsRunnerService,
     private readonly coupons: CouponsService,
     private readonly addOns: AddOnsService,
+    private readonly credits: AiCreditsService,
   ) {}
+
+  @Get('ai-credit-packs')
+  @RequirePlatform('platform.read')
+  listCreditPacks() {
+    return this.credits.list();
+  }
+
+  @Post('ai-credit-packs')
+  @RequirePlatform('platform.manage')
+  @ApiBody({ schema: openApi(PackBody) })
+  createCreditPack(@CurrentUser() user: AuthUser, @Body(new ZodPipe(PackBody)) b: z.infer<typeof PackBody>) {
+    return this.credits.create(user, b);
+  }
+
+  @Post('ai-credit-packs/:id/active')
+  @RequirePlatform('platform.manage')
+  @HttpCode(200)
+  @ApiBody({ schema: openApi(Active) })
+  setCreditPackActive(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string, @Body(new ZodPipe(Active)) b: z.infer<typeof Active>) {
+    return this.credits.setActive(user, id, b.active);
+  }
 
   @Get('add-ons')
   @RequirePlatform('platform.read')

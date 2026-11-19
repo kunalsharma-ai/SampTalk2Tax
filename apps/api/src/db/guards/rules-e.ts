@@ -61,6 +61,13 @@ registerGuards({
     }
     if (o.status === 'SENT' && (changedNe(o, n, ['contact_id', 'total', 'subtotal', 'issue_date', 'valid_until']) || changed(o, n, ['terms']))) fail('A sent quotation does not change; revise it instead');
   },
+  // ai_credit_grants_append_only (SUBS-018)
+  ai_credit_grants: appendOnlyRule('Bought AI requests are kept as granted'),
+  // ai_credit_packs_guard: what a pack holds and costs is fixed; only whether it is offered changes.
+  ai_credit_packs: (op, o, n) => {
+    if (op === 'DELETE') fail('An AI request pack cannot be deleted; stop offering it instead');
+    if (op === 'UPDATE' && changed(o, n, ['name', 'requests', 'prices', 'created_by'])) fail('An AI request pack keeps its requests and prices; create a new pack instead');
+  },
   // subscription_events_immutable
   subscription_events: appendOnlyRule('Subscription history cannot be changed or deleted'),
   // subscription_invoices_final
@@ -68,7 +75,7 @@ registerGuards({
     if (op === 'INSERT') return;
     if (op === 'DELETE') fail('Subscription invoices cannot be deleted');
     if (ne(o.status, 'OPEN')) fail(`A ${String(o.status).toLowerCase()} subscription invoice cannot be changed`);
-    if (changedNe(o, n, ['subtotal', 'total', 'currency', 'org_id', 'reference', 'discount']) || changed(o, n, ['coupon_id', 'coupon_code', 'add_ons', 'add_on_lines'])) fail('The amount of a subscription invoice cannot be changed');
+    if (changedNe(o, n, ['subtotal', 'total', 'currency', 'org_id', 'reference', 'discount']) || changed(o, n, ['coupon_id', 'coupon_code', 'add_ons', 'add_on_lines', 'credit_pack', 'kind'])) fail('The amount of a subscription invoice cannot be changed');
   },
   // supplier_gstin_checks_guard
   supplier_gstin_checks: appendOnlyRule('GST portal checks are kept as recorded; record a new check instead'),

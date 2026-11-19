@@ -17,6 +17,8 @@ let owner: TestUser;
 const RZP = { keyId: 'rzp_test_standin12', secret: 'standin-razorpay-secret', webhook: 'standin-webhook-secret' };
 const PAYROLL = { INR: { monthly: '999', annual: '9990' }, USD: { monthly: '15', annual: '150' } };
 const FX = { INR: { monthly: '499', annual: '4990' }, USD: { monthly: '9', annual: '90' } };
+// Organisations other suites (the browser flow) left with Payroll in the shared test database.
+let payrollBefore = 0;
 
 beforeAll(async () => {
   gw = await startPaymentsStandIn(0);
@@ -46,11 +48,12 @@ describe('add-on modules', () => {
   it('are priced by platform administrators', async () => {
     const before = (await ctx.http().get('/v1/admin/add-ons').set(admin.auth).expect(200)).body;
     expect(before.map((a: { feature: string; prices: unknown }) => [a.feature, a.prices])).toEqual([['PAYROLL', null], ['MULTI_CURRENCY', null], ['CONSOLIDATION', null]]);
+    payrollBefore = before[0].subscriptions;
     await ctx.http().put('/v1/admin/add-ons/payroll').set(owner.auth).send({ prices: PAYROLL, isActive: true }).expect(403);
     expect((await ctx.http().put('/v1/admin/add-ons/ai').set(admin.auth).send({ prices: PAYROLL, isActive: true }).expect(422)).body.message).toBe('AI cannot be bought as an add-on');
     expect((await ctx.http().put('/v1/admin/add-ons/payroll').set(admin.auth).send({ prices: { INR: PAYROLL.INR }, isActive: true }).expect(422)).body.message).toBe('A USD price is needed');
     const saved = (await ctx.http().put('/v1/admin/add-ons/payroll').set(admin.auth).send({ prices: PAYROLL, isActive: true }).expect(200)).body;
-    expect(saved[0]).toMatchObject({ feature: 'PAYROLL', label: 'Payroll', prices: PAYROLL, isActive: true, subscriptions: 0 });
+    expect(saved[0]).toMatchObject({ feature: 'PAYROLL', label: 'Payroll', prices: PAYROLL, isActive: true, subscriptions: payrollBefore });
     await ctx.http().put('/v1/admin/add-ons/multi_currency').set(admin.auth).send({ prices: FX, isActive: true }).expect(200);
     expect(await ctx.prisma.auditEvent.findFirst({ where: { action: 'platform.add_on_saved', entityId: 'PAYROLL' } })).not.toBeNull();
   });
@@ -99,6 +102,6 @@ describe('add-on modules', () => {
     await ctx.http().post(`/v1/admin/invoices/${renewal.id}/mark-paid`).set(admin.auth).send({ reference: 'NEFT UTR 77120' }).expect(200);
     const s = (await ctx.http().get(`${org.base}/subscription`).set(owner.auth).expect(200)).body;
     expect(s).toMatchObject({ addOns: [], features: ['AI'], price: '1499.00', request: null });
-    expect((await ctx.http().get('/v1/admin/add-ons').set(admin.auth).expect(200)).body[0].subscriptions).toBe(0);
+    expect((await ctx.http().get('/v1/admin/add-ons').set(admin.auth).expect(200)).body[0].subscriptions).toBe(payrollBefore);
   });
 });

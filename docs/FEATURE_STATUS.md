@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 777 |
 | Designed | 0 |
-| Implementing | 40 |
+| Implementing | 39 |
 | Implemented | 34 |
-| Tested | 478 |
+| Tested | 479 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -5864,7 +5864,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Subscription and monetization engine
 - Status: **Implementing**
-- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons (SUBS-024), promotions (SUBS-025) and add-on modules (SUBS-017) are built.
+- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons (SUBS-024), promotions (SUBS-025) and add-on modules (SUBS-017) and extra AI request packs (SUBS-018) are built.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -6171,8 +6171,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SUBS-018 — Usage-based AI credits
 
 - Module: Subscription and monetization engine
-- Status: **Implementing**
-- Notes: Each plan's monthly AI requests are metered (one per answered model call, any agent, own key or Talk2Tax's) and enforced before every model call (429 AI_CREDITS_USED_UP). Buying extra credits beyond the plan is not built.
+- Status: **Tested**
+- Notes: Each plan's monthly AI requests are metered and enforced before every model call (429 AI_CREDITS_USED_UP). Platform administrators offer packs of extra requests (INR and USD); owners buy one under Usage through a CREDITS tax invoice paid online, and its requests are used after the plan's, from the pack expiring first, for a year from payment.
 - Evidence:
   - packages/accounting-engine/src/usage.ts
   - packages/accounting-engine/test/usage.test.ts
@@ -6186,6 +6186,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/USAGE_METERING.md
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/ai-control/ai-control.service.ts
+  - packages/accounting-engine/src/ai-credits.ts
+  - packages/accounting-engine/test/ai-credits.test.ts
+  - apps/api/src/billing/ai-credits.service.ts
+  - apps/api/src/db/migrations/20270111100000_ai_credit_packs.ts
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/test/subscription-ai-credits.e2e.test.ts
+  - apps/web/src/app/admin/plans/page.tsx
+  - apps/web/e2e/subscription-ai-credits-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### SUBS-019 — Document processing quotas
 

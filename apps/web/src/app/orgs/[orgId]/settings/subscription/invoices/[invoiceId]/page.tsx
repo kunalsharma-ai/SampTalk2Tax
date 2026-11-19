@@ -16,7 +16,7 @@ interface Invoice {
   id: string;
   reference: string;
   number: string | null;
-  kind: 'NEW' | 'RENEWAL' | 'UPGRADE';
+  kind: 'NEW' | 'RENEWAL' | 'UPGRADE' | 'CREDITS';
   status: 'OPEN' | 'PAID' | 'VOID';
   plan: { code: string; name: string };
   billingInterval: 'MONTHLY' | 'ANNUAL';
@@ -27,6 +27,7 @@ interface Invoice {
   amount: string;
   discount: string;
   addOnLines: { feature: string; label: string; price: string }[];
+  creditPack: { id: string; name: string; requests: number } | null;
   couponCode: string | null;
   taxLines: { code: string; rate: string; amount: string }[];
   taxTotal: string;
@@ -43,7 +44,7 @@ interface Invoice {
   gateway: string | null;
   paymentRef: string | null;
 }
-const KIND: Record<string, string> = { NEW: '', RENEWAL: ' (renewal)', UPGRADE: ' (upgrade for the rest of the period)' };
+const KIND: Record<string, string> = { NEW: '', RENEWAL: ' (renewal)', UPGRADE: ' (upgrade for the rest of the period)', CREDITS: '' };
 
 /** One subscription invoice, laid out to print or save as PDF. */
 export default function SubscriptionInvoicePage() {
@@ -104,8 +105,17 @@ export default function SubscriptionInvoicePage() {
             <tbody>
               <tr className="border-b border-line">
                 <td className="py-3">
-                  Talk2Tax {i.plan.name} subscription, billed {i.billingInterval === 'ANNUAL' ? 'annually' : 'monthly'}{KIND[i.kind]}
-                  <span className="block text-xs text-fg-muted">{dateTime(i.periodStart)} to {dateTime(i.periodEnd)}</span>
+                  {i.kind === 'CREDITS' && i.creditPack ? (
+                    <>
+                      Talk2Tax extra AI requests: {i.creditPack.name} ({i.creditPack.requests.toLocaleString('en-IN')} requests)
+                      <span className="block text-xs text-fg-muted">Used after the plan&apos;s monthly AI requests; valid for a year from payment</span>
+                    </>
+                  ) : (
+                    <>
+                      Talk2Tax {i.plan.name} subscription, billed {i.billingInterval === 'ANNUAL' ? 'annually' : 'monthly'}{KIND[i.kind]}
+                      <span className="block text-xs text-fg-muted">{dateTime(i.periodStart)} to {dateTime(i.periodEnd)}</span>
+                    </>
+                  )}
                   {i.addOnLines?.length ? <span className="block text-xs text-fg-muted">With add-on modules: {i.addOnLines.map((l) => `${l.label} (${l.price} ${i.currency} a ${i.billingInterval === 'ANNUAL' ? 'year' : 'month'})`).join(', ')}</span> : null}
                 </td>
                 <td className="py-3 num">{i.seller.sacCode}</td>

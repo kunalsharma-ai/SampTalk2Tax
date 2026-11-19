@@ -1374,7 +1374,7 @@
     "name": "subscription_invoices_interval_check"
    },
    {
-    "def": "CHECK (((kind)::text = ANY ((ARRAY['NEW'::character varying, 'RENEWAL'::character varying, 'UPGRADE'::character varying])::text[])))",
+    "def": "CHECK (((kind)::text = ANY ((ARRAY['NEW'::character varying, 'RENEWAL'::character varying, 'UPGRADE'::character varying, 'CREDITS'::character varying])::text[])))",
     "name": "subscription_invoices_kind_check"
    },
    {
@@ -1700,6 +1700,18 @@
    {
     "def": "CHECK ((((feature)::text = ANY ((ARRAY['PAYROLL'::character varying, 'MULTI_CURRENCY'::character varying, 'CONSOLIDATION'::character varying])::text[])) AND (jsonb_typeof(prices) = 'object'::text)))",
     "name": "add_on_prices_chk"
+   }
+  ],
+  "ai_credit_packs": [
+   {
+    "def": "CHECK ((((requests >= 10) AND (requests <= 1000000)) AND (jsonb_typeof(prices) = 'object'::text)))",
+    "name": "ai_credit_packs_chk"
+   }
+  ],
+  "ai_credit_grants": [
+   {
+    "def": "CHECK (((requests > 0) AND (expires_at > granted_at)))",
+    "name": "ai_credit_grants_chk"
    }
   ]
  },
@@ -9943,6 +9955,62 @@
    ],
    "references": "coupons",
    "table": "subscription_invoices"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "ai_credit_grants_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "ai_credit_grants"
+  },
+  {
+   "columns": [
+    "pack_id"
+   ],
+   "deferrable": false,
+   "name": "ai_credit_grants_pack_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "ai_credit_packs",
+   "table": "ai_credit_grants"
+  },
+  {
+   "columns": [
+    "invoice_id"
+   ],
+   "deferrable": false,
+   "name": "ai_credit_grants_invoice_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "subscription_invoices",
+   "table": "ai_credit_grants"
+  },
+  {
+   "columns": [
+    "credit_grant_id"
+   ],
+   "deferrable": false,
+   "name": "usage_events_credit_grant_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "ai_credit_grants",
+   "table": "usage_events"
   }
  ],
  "uniques": [
@@ -12058,7 +12126,15 @@
    ],
    "name": "subscription_invoices_one_open",
    "table": "subscription_invoices",
-   "where": "status::text = 'OPEN'::text"
+   "where": "(((status)::text = 'OPEN'::text) AND ((kind)::text <> 'CREDITS'::text))"
+  },
+  {
+   "keys": [
+    "org_id"
+   ],
+   "name": "subscription_invoices_one_open_credits",
+   "table": "subscription_invoices",
+   "where": "(((status)::text = 'OPEN'::text) AND ((kind)::text = 'CREDITS'::text))"
   },
   {
    "keys": [

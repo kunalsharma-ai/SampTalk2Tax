@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import type { SubscriptionInvoice } from '@talk2tax/database';
-import { addOnLines, BillingCurrency, BillingInterval, checkoutPlan, chooseAddOns, couponDiscount, isAddOnFeature, priceWithAddOns, GRACE_DAYS, indianFinancialYear, periodEnd, PlanError, priceFor, subscriptionTax, taxInvoiceNumber, toMinorUnits, dec, type Dec, sameAddOns } from '@talk2tax/accounting-engine';
+import { addOnLines, BillingCurrency, creditExpiry, BillingInterval, checkoutPlan, chooseAddOns, couponDiscount, isAddOnFeature, priceWithAddOns, GRACE_DAYS, indianFinancialYear, periodEnd, PlanError, priceFor, subscriptionTax, taxInvoiceNumber, toMinorUnits, dec, type Dec, sameAddOns } from '@talk2tax/accounting-engine';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { AuditService } from '../../audit/audit.service';
 import type { AuthUser } from '../../auth/decorators';
@@ -12,9 +12,13 @@ import { nextPlatformCounter } from '../../db/counters';
 import { PaymentSettingsService } from './payment-settings.service';
 import { AppliedCoupon, couponSummary, CouponsService } from './coupons.service';
 import { AddOnsService } from '../add-ons.service';
+import { AiCreditsService } from '../ai-credits.service';
+import { accessOf } from '../limits';
 import { lockRow } from '../../db/locks';
 
 const DAY = 86_400_000;
+/** Invoices for the plan itself; CREDITS invoices (extra AI requests) are bought beside them. */
+const PLAN_KINDS = ['NEW', 'RENEWAL', 'UPGRADE'];
 const REF_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 /** A payment request reference such as PR-7K3QX9MD (no 0/O or 1/I to misread). */
@@ -42,6 +46,8 @@ export function serializeInvoice(i: InvoiceRow) {
     couponCode: i.couponCode,
     addOns: i.addOns ?? [],
     addOnLines: (i.addOnLines ?? []) as { feature: string; label: string; price: string }[],
+    // For extra AI requests (kind CREDITS): the pack bought.
+    creditPack: (i.creditPack ?? null) as { id: string; name: string; requests: number } | null,
     periodStart: i.periodStart.toISOString(),
     periodEnd: i.periodEnd.toISOString(),
     currency: i.currency,
@@ -83,6 +89,7 @@ export class SubscriptionPaymentsService {
     private readonly settings: PaymentSettingsService,
     private readonly coupons: CouponsService,
     private readonly addOns: AddOnsService,
+    private readonly credits: AiCreditsService,
   ) {}
 
   private system<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -210,7 +217,7 @@ export class SubscriptionPaymentsService {
       await this.billing.memberFit(tx, orgId, q.target);
       const gateway = await this.settings.forCurrency(q.currency);
       if (!gateway) throw new DomainError('PAYMENTS_NOT_SET_UP', `Online payment in ${q.currency} is not set up yet. Request the plan and Talk2Tax will send payment details, or try again later.`, HttpStatus.CONFLICT);
-      const replaced = await this.voidOpen(tx, orgId, actor.id, 'Replaced by a new checkout');
+      const replaced = await this.voidOpen(tx, orgId, actor.id, 'Replaced by a new checkout', PLAN_KINDS);
       const inv = await this.issue(tx, orgId, actor.id, {
         kind: q.plan.kind,
         planId: q.target.id,
@@ -261,7 +268,7 @@ export class SubscriptionPaymentsService {
         orgId: inv.orgId,
         amountMinor: toMinorUnits(inv.total.toFixed(2), inv.currency as BillingCurrency),
         currency: inv.currency as BillingCurrency,
-        description: `Talk2Tax ${inv.plan.name}, ${inv.billingInterval === 'ANNUAL' ? 'annual' : 'monthly'} (${inv.reference})`,
+        description: inv.kind === 'CREDITS' ? `Talk2Tax extra AI requests: ${(inv.creditPack as { name: string }).name} (${inv.reference})` : `Talk2Tax ${inv.plan.name}, ${inv.billingInterval === 'ANNUAL' ? 'annual' : 'monthly'} (${inv.reference})`,
         customerName: (inv.buyer as { name?: string }).name ?? 'Customer',
         customerEmail: actor.email,
         returnUrl: back,
@@ -283,7 +290,7 @@ export class SubscriptionPaymentsService {
     tx: Tx,
     orgId: string,
     actorId: string | null,
-    d: { kind: string; planId: string; interval: BillingInterval; listPrice: string; addOns: string[]; addOnLines: { feature: string; label: string; price: string }[]; periodStart: Date; periodEnd: Date; currency: BillingCurrency; subtotal: string; discount: string; coupon: { id: string; code: string } | null; parties: NonNullable<Awaited<ReturnType<SubscriptionPaymentsService['taxFor']>>>; dueAt: Date },
+    d: { kind: string; planId: string; interval: BillingInterval; listPrice: string; addOns: string[]; addOnLines: { feature: string; label: string; price: string }[]; periodStart: Date; periodEnd: Date; currency: BillingCurrency; subtotal: string; discount: string; coupon: { id: string; code: string } | null; parties: NonNullable<Awaited<ReturnType<SubscriptionPaymentsService['taxFor']>>>; dueAt: Date; creditPack?: { id: string; name: string; requests: number } },
   ) {
     const t = d.parties.tax;
     const inv = await tx.subscriptionInvoice.create({
@@ -297,6 +304,7 @@ export class SubscriptionPaymentsService {
         listPrice: d.listPrice,
         addOns: d.addOns,
         addOnLines: d.addOnLines,
+        ...(d.creditPack ? { creditPack: d.creditPack } : {}),
         periodStart: d.periodStart,
         periodEnd: d.periodEnd,
         currency: d.currency,
@@ -316,12 +324,12 @@ export class SubscriptionPaymentsService {
       },
       include: { plan: true },
     });
-    await this.billing.event(tx, orgId, actorId, 'INVOICE_ISSUED', { invoice: inv.reference, kind: d.kind, plan: inv.plan.code, interval: d.interval, ...(d.addOns.length ? { addOns: d.addOns } : {}), total: t.total, currency: d.currency, ...(d.coupon ? { coupon: d.coupon.code, discount: d.discount } : {}), periodStart: d.periodStart.toISOString(), periodEnd: d.periodEnd.toISOString() });
+    await this.billing.event(tx, orgId, actorId, 'INVOICE_ISSUED', { invoice: inv.reference, kind: d.kind, plan: inv.plan.code, interval: d.interval, ...(d.addOns.length ? { addOns: d.addOns } : {}), ...(d.creditPack ? { pack: d.creditPack.name, requests: d.creditPack.requests } : {}), total: t.total, currency: d.currency, ...(d.coupon ? { coupon: d.coupon.code, discount: d.discount } : {}), periodStart: d.periodStart.toISOString(), periodEnd: d.periodEnd.toISOString() });
     return inv;
   }
 
-  private async voidOpen(tx: Tx, orgId: string, actorId: string | null, reason: string) {
-    const open = await tx.subscriptionInvoice.findMany({ where: { orgId, status: 'OPEN' } });
+  private async voidOpen(tx: Tx, orgId: string, actorId: string | null, reason: string, kinds: string[]) {
+    const open = await tx.subscriptionInvoice.findMany({ where: { orgId, status: 'OPEN', kind: { in: kinds } } });
     for (const o of open) {
       await tx.subscriptionInvoice.update({ where: { id: o.id }, data: { status: 'VOID', voidedAt: new Date(), voidReason: reason } });
       await this.billing.event(tx, orgId, actorId, 'INVOICE_VOIDED', { invoice: o.reference, reason });
@@ -333,6 +341,75 @@ export class SubscriptionPaymentsService {
     if (!inv.gateway || inv.gateway === 'MANUAL' || !inv.checkoutRef) return;
     const g = await this.settings.byProvider(inv.gateway as Provider);
     await g?.cancel(inv.checkoutRef).catch(() => undefined);
+  }
+
+  // --------------------------------------------------------------------------- extra AI requests
+
+  /** What buying a pack of extra AI requests involves: who may, its price, and the tax on it. */
+  private async creditsWork(tx: Tx, orgId: string, packId: string, now: Date, opts: { forQuote?: boolean } = {}) {
+    const s = await tx.subscription.findUnique({ where: { orgId }, include: { plan: true } });
+    if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
+    if (!['ACTIVE', 'TRIALING'].includes(s.status) || accessOf(s, now).level !== 'FULL') throw new DomainError('CREDITS_NOT_AVAILABLE', 'Extra AI requests can be bought while the subscription is in its trial or paid for', HttpStatus.CONFLICT);
+    const limit = (s.plan.limits as { aiCreditsPerMonth?: number | null }).aiCreditsPerMonth ?? null;
+    if (limit === null) throw new DomainError('CREDITS_NOT_NEEDED', `The ${s.plan.name} plan has no limit on AI requests`, HttpStatus.CONFLICT);
+    if (s.status !== 'TRIALING' && !s.plan.features.includes('AI')) throw new DomainError('CREDITS_NOT_AVAILABLE', `The ${s.plan.name} plan does not include the AI assistant; choose a plan that does under Settings → Subscription`, HttpStatus.CONFLICT);
+    const pack = await tx.aiCreditPack.findUnique({ where: { id: packId } });
+    if (!pack || !pack.isActive) throw new DomainError('CREDIT_PACK_NOT_FOUND', 'That pack of AI requests is not offered', HttpStatus.UNPROCESSABLE_ENTITY);
+    const currency = s.currency as BillingCurrency;
+    const price = dec((pack.prices as Record<BillingCurrency, string>)[currency]).toFixed(2);
+    const noProfile = opts.forQuote && !(await tx.platformBillingProfile.findUnique({ where: { id: 1 }, select: { id: true } }));
+    const parties = noProfile ? null : await this.taxFor(tx, orgId, price, currency);
+    return { s, pack, price, currency, parties };
+  }
+
+  /** What a pack of extra AI requests would cost with tax. Nothing is saved. */
+  async creditsQuote(orgId: string, packId: string, now = new Date()) {
+    return this.system(async (tx) => {
+      const w = await this.creditsWork(tx, orgId, packId, now, { forQuote: true });
+      return {
+        pack: { id: w.pack.id, name: w.pack.name, requests: w.pack.requests },
+        currency: w.currency,
+        subtotal: w.price,
+        ...(w.parties?.tax ?? { lines: [], taxTotal: '0.00', total: w.price, note: 'Any tax is added on the invoice', placeOfSupply: null }),
+        expiresAt: creditExpiry(now).toISOString(),
+        payOnline: !!w.parties && !!(await this.settings.forCurrency(w.currency)),
+      };
+    });
+  }
+
+  /**
+   * Buys a pack of extra AI requests: issues a CREDITS invoice (replacing an unpaid one for
+   * another pack, never the plan's) and returns the gateway's payment page. The requests are
+   * added when the payment is confirmed.
+   */
+  async buyCredits(orgId: string, actor: AuthUser, packId: string, returnTo: string, now = new Date()) {
+    const issued = await this.system(async (tx) => {
+      const w = await this.creditsWork(tx, orgId, packId, now);
+      const gateway = await this.settings.forCurrency(w.currency);
+      if (!gateway) throw new DomainError('PAYMENTS_NOT_SET_UP', `Online payment in ${w.currency} is not set up yet, so extra AI requests cannot be bought. Try again later.`, HttpStatus.CONFLICT);
+      const replaced = await this.voidOpen(tx, orgId, actor.id, 'Replaced by another purchase of AI requests', ['CREDITS']);
+      const inv = await this.issue(tx, orgId, actor.id, {
+        kind: 'CREDITS',
+        planId: w.s.planId,
+        interval: (w.s.billingInterval ?? 'MONTHLY') as BillingInterval,
+        listPrice: w.price,
+        addOns: [],
+        addOnLines: [],
+        creditPack: { id: w.pack.id, name: w.pack.name, requests: w.pack.requests },
+        periodStart: now,
+        periodEnd: creditExpiry(now),
+        currency: w.currency,
+        subtotal: w.price,
+        discount: '0.00',
+        coupon: null,
+        parties: w.parties!,
+        dueAt: now,
+      });
+      return { inv, gateway, replaced };
+    });
+    for (const r of issued.replaced) await this.cancelCheckout(r);
+    const inv = await this.startCheckout(issued.inv, issued.gateway, actor, returnTo);
+    return { invoice: inv, url: inv.checkout!.url };
   }
 
   // --------------------------------------------------------------------------- confirming payment
@@ -393,6 +470,12 @@ export class SubscriptionPaymentsService {
 
   /** Moves the subscription on for a paid invoice. */
   private async apply(tx: Tx, inv: InvoiceRow, now: Date) {
+    if (inv.kind === 'CREDITS') {
+      // Extra AI requests leave the plan as it is; they are usable for a year from the payment.
+      const g = await this.credits.grant(tx, inv, now, creditExpiry(now));
+      if (g) await this.billing.event(tx, inv.orgId, null, 'AI_CREDITS_ADDED', { invoice: inv.reference, pack: g.name, requests: g.requests, expiresAt: g.expiresAt.toISOString() });
+      return;
+    }
     const s = await tx.subscription.findUniqueOrThrow({ where: { orgId: inv.orgId } });
     const clearRequest = s.requestedPlanId === inv.planId && s.requestedInterval === inv.billingInterval && sameAddOns(s.requestedAddOns, inv.addOns) ? { requestedPlanId: null, requestedInterval: null, requestedAt: null, requestedBy: null, requestedAddOns: [] } : {};
     const common = { planId: inv.planId, status: 'ACTIVE', billingInterval: inv.billingInterval, price: inv.listPrice, addOns: inv.addOns ?? [], paymentReference: inv.number, ...clearRequest };
@@ -507,9 +590,9 @@ export class SubscriptionPaymentsService {
   async issueRenewal(tx: Tx, orgId: string, now: Date) {
     const s = await tx.subscription.findUniqueOrThrow({ where: { orgId }, include: { plan: true, requestedPlan: true } });
     if (s.status !== 'ACTIVE' || !s.currentPeriodEnd || !s.billingInterval) return null;
-    const exists = await tx.subscriptionInvoice.findFirst({ where: { orgId, status: { in: ['OPEN', 'PAID'] }, periodStart: { gte: s.currentPeriodEnd } } });
+    const exists = await tx.subscriptionInvoice.findFirst({ where: { orgId, kind: { in: PLAN_KINDS }, status: { in: ['OPEN', 'PAID'] }, periodStart: { gte: s.currentPeriodEnd } } });
     if (exists) return exists.status === 'OPEN' ? exists : null;
-    if (await tx.subscriptionInvoice.findFirst({ where: { orgId, status: 'OPEN' } })) return null;
+    if (await tx.subscriptionInvoice.findFirst({ where: { orgId, status: 'OPEN', kind: { in: PLAN_KINDS } } })) return null;
     const currency = s.currency as BillingCurrency;
     let plan = s.plan;
     let interval = s.billingInterval as BillingInterval;

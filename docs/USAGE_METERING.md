@@ -27,6 +27,10 @@ Some things are not counted:
 
 AI requests count whether the organisation uses its own Claude key or the server's key. The summary shows how many used each.
 
+## Extra AI requests
+
+Packs of extra AI requests (SUBS-018) are used once the plan's requests for the month run out. Each such request is recorded with the pack it came from (`creditGrantId`). The AI meter counts only the plan's requests, and `ai.extra` counts the rest. The Usage page has an **Extra AI requests** card that shows the requests left and each pack bought, and lets owners buy another. See [`SUBSCRIPTION_PAYMENTS.md`](SUBSCRIPTION_PAYMENTS.md#extra-ai-requests-subs-018).
+
 ## Months
 
 Usage counts by calendar month in India time, like every business date. The counts start again at 00:00 IST on the 1st. They are kept in `usage_events`, one row per unit. The table is append-only (a trigger enforces this) and has forced RLS.
@@ -74,7 +78,7 @@ The AI control center's own per-agent token budgets still apply on top of these 
 
 ## Not yet
 
-- Buying extra AI requests or uploads beyond the plan (SUBS-018 stays Implementing).
+- Buying extra uploads beyond the plan. Extra AI requests can be bought (SUBS-018, see [Extra AI requests](SUBSCRIPTION_PAYMENTS.md#extra-ai-requests-subs-018)).
 - Usage-based billing.
 - API usage plans and metering of API calls.
 - Bank statement imports and e-invoice and e-way bill files are not counted as uploads.

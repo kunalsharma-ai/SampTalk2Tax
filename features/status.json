@@ -5127,7 +5127,7 @@
         "apps/web/e2e/subscription-payments-flow.test.mjs",
         "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
-      "notes": "Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons (SUBS-024), promotions (SUBS-025) and add-on modules (SUBS-017) are built."
+      "notes": "Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons (SUBS-024), promotions (SUBS-025) and add-on modules (SUBS-017) and extra AI request packs (SUBS-018) are built."
     },
     "SUBS-002": {
       "status": "Tested",
@@ -5664,7 +5664,7 @@
       "notes": "Help and support in the Governance group (and for staff who only claim expenses)."
     },
     "SUBS-018": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/usage.ts",
         "packages/accounting-engine/test/usage.test.ts",
@@ -5677,9 +5677,18 @@
         "apps/web/e2e/usage-flow.test.mjs",
         "docs/USAGE_METERING.md",
         "apps/api/src/integrations/integrations.service.ts",
-        "apps/api/src/ai-control/ai-control.service.ts"
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "packages/accounting-engine/src/ai-credits.ts",
+        "packages/accounting-engine/test/ai-credits.test.ts",
+        "apps/api/src/billing/ai-credits.service.ts",
+        "apps/api/src/db/migrations/20270111100000_ai_credit_packs.ts",
+        "apps/api/src/billing/payments/subscription-payments.service.ts",
+        "apps/api/test/subscription-ai-credits.e2e.test.ts",
+        "apps/web/src/app/admin/plans/page.tsx",
+        "apps/web/e2e/subscription-ai-credits-flow.test.mjs",
+        "docs/SUBSCRIPTION_PAYMENTS.md"
       ],
-      "notes": "Each plan's monthly AI requests are metered (one per answered model call, any agent, own key or Talk2Tax's) and enforced before every model call (429 AI_CREDITS_USED_UP). Buying extra credits beyond the plan is not built."
+      "notes": "Each plan's monthly AI requests are metered and enforced before every model call (429 AI_CREDITS_USED_UP). Platform administrators offer packs of extra requests (INR and USD); owners buy one under Usage through a CREDITS tax invoice paid online, and its requests are used after the plan's, from the pack expiring first, for a year from payment."
     },
     "SUBS-019": {
       "status": "Tested",

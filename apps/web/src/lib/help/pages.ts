@@ -743,7 +743,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'settings/usage': {
     what: 'How much of your plan\'s limits you have used this month.',
-    how: 'Check each meter; near a limit, consider upgrading.',
+    how: 'Check each meter; near a limit, consider upgrading, or buy extra AI requests that are used once the plan\'s run out.',
     where: 'Governance. Limits come from your plan.',
   },
   'settings/integrations': {
@@ -806,7 +806,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'admin/organisations': { what: 'Every organisation on the platform.', how: 'Search, open one to see its plan, usage and status, and suspend it if needed.', where: 'Platform administration.' },
   'admin/people': { what: 'Every user on the platform.', how: 'Search for a person and see their organisations and platform role.', where: 'Platform administration.' },
-  'admin/plans': { what: 'The plans organisations can subscribe to.', how: 'Change prices, limits and included modules.', where: 'Platform administration. Used by Subscription.' },
+  'admin/plans': { what: 'The plans organisations can subscribe to.', how: 'Change prices, limits and included modules, price add-on modules, and offer packs of extra AI requests.', where: 'Platform administration. Used by Subscription and Usage.' },
   'admin/subscriptions': { what: 'Every organisation\'s subscription and its state.', how: 'Find a subscription and see its history.', where: 'Platform administration.' },
   'admin/invoices': { what: 'Invoices the platform issued for subscriptions.', how: 'Search and open one to see its payments.', where: 'Platform administration.' },
   'admin/coupons': { what: 'Coupons that take money off subscription payments.', how: 'Create a coupon with its terms, see which organisations use it and what it has taken off, and switch it off when the offer ends.', where: 'Platform administration. Organisations enter the code under Settings → Subscription.' },
