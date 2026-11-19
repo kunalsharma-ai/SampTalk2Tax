@@ -445,6 +445,8 @@ export class VendorPortalService {
   /** Adds the invoice's file (PDF or image, at most 5 MB) to a just-sent invoice, once. */
   async addFile(token: string, id: string, fileName: string, content: Buffer) {
     const { link, org, contact } = await this.open(token);
+    // The controller validates it; checked again so a repeated ?fileName= can never arrive as a list.
+    if (typeof fileName !== 'string') throw new DomainError('INVALID_FILE_NAME', 'Give the file one name');
     if (!content.length) throw new DomainError('EMPTY_FILE', 'The file is empty');
     if (content.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
     const contentType = sniffContentType(content);
