@@ -214,6 +214,13 @@ records 6 years from the end of the assessment year (Income-tax Rules, 1962, rul
 
 Not built: periods for uploaded files and email logs, legal hold, and an export before deletion.
 
+## Vulnerability scanning (SEC-024)
+
+CodeQL static analysis, Trivy scans of the container images (vulnerabilities and secrets), and
+dependency audits run on every pull request, on `main` and weekly. See
+[`CI_CD.md`](CI_CD.md#security-scans-githubworkflowssecurityyml). Vitest was raised to 4.1.12 so the
+full audit has no critical advisory (tinypool, a test-only dependency).
+
 ## Security event monitoring (SEC-023)
 
 The audit trail already records sign-ins, lockouts, two-step failures, role changes and refused

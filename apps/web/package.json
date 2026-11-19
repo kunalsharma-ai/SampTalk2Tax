@@ -35,6 +35,6 @@
     "playwright": "1.63.0",
     "tailwindcss": "4.3.5",
     "typescript": "7.0.2",
-    "vitest": "3.2.7"
+    "vitest": "4.1.12"
   }
 }
