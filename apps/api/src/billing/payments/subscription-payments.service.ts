@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import type { SubscriptionInvoice } from '@talk2tax/database';
-import { BillingCurrency, BillingInterval, checkoutPlan, couponDiscount, GRACE_DAYS, indianFinancialYear, periodEnd, PlanError, priceFor, subscriptionTax, taxInvoiceNumber, toMinorUnits, dec, type Dec } from '@talk2tax/accounting-engine';
+import { addOnLines, BillingCurrency, BillingInterval, checkoutPlan, chooseAddOns, couponDiscount, isAddOnFeature, priceWithAddOns, GRACE_DAYS, indianFinancialYear, periodEnd, PlanError, priceFor, subscriptionTax, taxInvoiceNumber, toMinorUnits, dec, type Dec, sameAddOns } from '@talk2tax/accounting-engine';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { AuditService } from '../../audit/audit.service';
 import type { AuthUser } from '../../auth/decorators';
@@ -11,6 +11,7 @@ import { GatewayError, PaymentGateway, PaymentState, Provider, SignatureError } 
 import { nextPlatformCounter } from '../../db/counters';
 import { PaymentSettingsService } from './payment-settings.service';
 import { AppliedCoupon, couponSummary, CouponsService } from './coupons.service';
+import { AddOnsService } from '../add-ons.service';
 import { lockRow } from '../../db/locks';
 
 const DAY = 86_400_000;
@@ -39,6 +40,8 @@ export function serializeInvoice(i: InvoiceRow) {
     amount: i.subtotal.plus(i.discount).toFixed(2),
     discount: i.discount.toFixed(2),
     couponCode: i.couponCode,
+    addOns: i.addOns ?? [],
+    addOnLines: (i.addOnLines ?? []) as { feature: string; label: string; price: string }[],
     periodStart: i.periodStart.toISOString(),
     periodEnd: i.periodEnd.toISOString(),
     currency: i.currency,
@@ -79,6 +82,7 @@ export class SubscriptionPaymentsService {
     private readonly billing: BillingService,
     private readonly settings: PaymentSettingsService,
     private readonly coupons: CouponsService,
+    private readonly addOns: AddOnsService,
   ) {}
 
   private system<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
@@ -88,14 +92,18 @@ export class SubscriptionPaymentsService {
   // ---------------------------------------------------------------------------- what a plan costs
 
   /** What paying for this plan now would charge, for which period, with tax. Nothing is saved. */
-  async quote(orgId: string, planCode: string, interval: BillingInterval, couponCode: string | null = null, now = new Date()) {
+  async quote(orgId: string, planCode: string, interval: BillingInterval, couponCode: string | null = null, addOns: string[] = [], now = new Date()) {
     return this.system(async (tx) => {
-      const q = await this.work(tx, orgId, planCode, interval, now, { forQuote: true, couponCode });
-      if (q.plan.kind === 'SCHEDULED') return { kind: 'SCHEDULED' as const, reason: q.plan.reason, plan: serializePlan(q.target, q.currency), interval };
+      const q = await this.work(tx, orgId, planCode, interval, now, { forQuote: true, couponCode, addOns });
+      if (q.plan.kind === 'SCHEDULED') return { kind: 'SCHEDULED' as const, reason: q.plan.reason, plan: serializePlan(q.target, q.currency), interval, addOns: q.addOns, addOnLines: q.lines };
       return {
         kind: q.plan.kind,
         plan: serializePlan(q.target, q.currency),
         interval,
+        // The add-on modules and what each costs a period; the plan's price with them is listPrice.
+        addOns: q.addOns,
+        addOnLines: q.lines,
+        listPrice: q.price.toFixed(2),
         currency: q.currency,
         periodStart: q.plan.periodStart.toISOString(),
         periodEnd: q.plan.periodEnd.toISOString(),
@@ -112,13 +120,22 @@ export class SubscriptionPaymentsService {
     });
   }
 
-  private async work(tx: Tx, orgId: string, planCode: string, interval: BillingInterval, now: Date, opts: { forQuote?: boolean; couponCode?: string | null } = {}) {
+  private async work(tx: Tx, orgId: string, planCode: string, interval: BillingInterval, now: Date, opts: { forQuote?: boolean; couponCode?: string | null; addOns?: string[] } = {}) {
     const s = await tx.subscription.findUnique({ where: { orgId }, include: { plan: true } });
     if (!s) throw new DomainError('NO_SUBSCRIPTION', 'This organisation has no subscription', HttpStatus.NOT_FOUND);
     const target = await tx.plan.findUnique({ where: { code: planCode } });
     if (!target || !target.isActive) throw new DomainError('PLAN_NOT_FOUND', 'That plan is not offered', HttpStatus.UNPROCESSABLE_ENTITY);
     const currency = s.currency as BillingCurrency;
-    const price = priceFor(serializePlan(target), currency, interval);
+    const offers = await this.addOns.offers(tx);
+    let chosen: ReturnType<typeof chooseAddOns>;
+    try {
+      chosen = chooseAddOns(target.features, opts.addOns ?? [], offers);
+    } catch (e) {
+      if (e instanceof PlanError) throw new DomainError('ADD_ON_INVALID', e.message, HttpStatus.UNPROCESSABLE_ENTITY);
+      throw e;
+    }
+    const lines = addOnLines(chosen, offers, currency, interval);
+    const price = priceWithAddOns(priceFor(serializePlan(target), currency, interval), lines);
     let plan: ReturnType<typeof checkoutPlan>;
     try {
       plan = checkoutPlan({
@@ -126,10 +143,11 @@ export class SubscriptionPaymentsService {
         planCode: s.plan.code,
         interval: s.billingInterval as BillingInterval | null,
         price: s.price?.toFixed(2) ?? null,
+        addOns: s.addOns ?? [],
         trialEndsAt: s.trialEndsAt,
         currentPeriodStart: s.currentPeriodStart,
         currentPeriodEnd: s.currentPeriodEnd,
-        target: { planCode: target.code, interval, price },
+        target: { planCode: target.code, interval, price, addOns: chosen },
         currency,
         now,
       });
@@ -143,7 +161,7 @@ export class SubscriptionPaymentsService {
     const charged = plan.kind === 'SCHEDULED' ? null : off?.charged ?? plan.amount;
     const noProfile = opts.forQuote && !(await tx.platformBillingProfile.findUnique({ where: { id: 1 }, select: { id: true } }));
     const tax = plan.kind === 'SCHEDULED' || noProfile ? null : await this.taxFor(tx, orgId, charged!.toFixed(2), currency);
-    return { s, target, currency, price, plan, tax: tax?.tax ?? null, parties: tax, coupon: off ? c.applied : null, discount: off?.discount ?? dec('0'), charged: charged ?? dec('0'), couponNote: off?.note ?? c.lapsed };
+    return { s, target, currency, price, plan, addOns: chosen as string[], lines, tax: tax?.tax ?? null, parties: tax, coupon: off ? c.applied : null, discount: off?.discount ?? dec('0'), charged: charged ?? dec('0'), couponNote: off?.note ?? c.lapsed };
   }
 
   /**
@@ -185,9 +203,9 @@ export class SubscriptionPaymentsService {
    * recorded as the plan for the renewal. Otherwise an invoice is issued (replacing any unpaid
    * one) and the gateway's payment page is returned.
    */
-  async checkout(orgId: string, actor: AuthUser, planCode: string, interval: BillingInterval, returnTo: string, couponCode: string | null = null, now = new Date()) {
+  async checkout(orgId: string, actor: AuthUser, planCode: string, interval: BillingInterval, returnTo: string, couponCode: string | null = null, addOns: string[] = [], now = new Date()) {
     const issued = await this.system(async (tx) => {
-      const q = await this.work(tx, orgId, planCode, interval, now, { couponCode });
+      const q = await this.work(tx, orgId, planCode, interval, now, { couponCode, addOns });
       if (q.plan.kind === 'SCHEDULED') return { scheduled: q.plan.reason } as const;
       await this.billing.memberFit(tx, orgId, q.target);
       const gateway = await this.settings.forCurrency(q.currency);
@@ -198,6 +216,8 @@ export class SubscriptionPaymentsService {
         planId: q.target.id,
         interval,
         listPrice: q.price.toFixed(2),
+        addOns: q.addOns,
+        addOnLines: q.lines,
         periodStart: q.plan.periodStart,
         periodEnd: q.plan.periodEnd,
         currency: q.currency,
@@ -210,7 +230,7 @@ export class SubscriptionPaymentsService {
       return { inv, gateway, replaced };
     });
     if ('scheduled' in issued) {
-      const sub = await this.billing.request(orgId, actor.id, planCode, interval);
+      const sub = await this.billing.request(orgId, actor.id, planCode, interval, addOns);
       return { scheduled: true as const, reason: issued.scheduled, subscription: sub, invoice: null, url: null };
     }
     for (const r of issued.replaced) await this.cancelCheckout(r);
@@ -263,7 +283,7 @@ export class SubscriptionPaymentsService {
     tx: Tx,
     orgId: string,
     actorId: string | null,
-    d: { kind: string; planId: string; interval: BillingInterval; listPrice: string; periodStart: Date; periodEnd: Date; currency: BillingCurrency; subtotal: string; discount: string; coupon: { id: string; code: string } | null; parties: NonNullable<Awaited<ReturnType<SubscriptionPaymentsService['taxFor']>>>; dueAt: Date },
+    d: { kind: string; planId: string; interval: BillingInterval; listPrice: string; addOns: string[]; addOnLines: { feature: string; label: string; price: string }[]; periodStart: Date; periodEnd: Date; currency: BillingCurrency; subtotal: string; discount: string; coupon: { id: string; code: string } | null; parties: NonNullable<Awaited<ReturnType<SubscriptionPaymentsService['taxFor']>>>; dueAt: Date },
   ) {
     const t = d.parties.tax;
     const inv = await tx.subscriptionInvoice.create({
@@ -275,6 +295,8 @@ export class SubscriptionPaymentsService {
         planId: d.planId,
         billingInterval: d.interval,
         listPrice: d.listPrice,
+        addOns: d.addOns,
+        addOnLines: d.addOnLines,
         periodStart: d.periodStart,
         periodEnd: d.periodEnd,
         currency: d.currency,
@@ -294,7 +316,7 @@ export class SubscriptionPaymentsService {
       },
       include: { plan: true },
     });
-    await this.billing.event(tx, orgId, actorId, 'INVOICE_ISSUED', { invoice: inv.reference, kind: d.kind, plan: inv.plan.code, interval: d.interval, total: t.total, currency: d.currency, ...(d.coupon ? { coupon: d.coupon.code, discount: d.discount } : {}), periodStart: d.periodStart.toISOString(), periodEnd: d.periodEnd.toISOString() });
+    await this.billing.event(tx, orgId, actorId, 'INVOICE_ISSUED', { invoice: inv.reference, kind: d.kind, plan: inv.plan.code, interval: d.interval, ...(d.addOns.length ? { addOns: d.addOns } : {}), total: t.total, currency: d.currency, ...(d.coupon ? { coupon: d.coupon.code, discount: d.discount } : {}), periodStart: d.periodStart.toISOString(), periodEnd: d.periodEnd.toISOString() });
     return inv;
   }
 
@@ -372,8 +394,8 @@ export class SubscriptionPaymentsService {
   /** Moves the subscription on for a paid invoice. */
   private async apply(tx: Tx, inv: InvoiceRow, now: Date) {
     const s = await tx.subscription.findUniqueOrThrow({ where: { orgId: inv.orgId } });
-    const clearRequest = s.requestedPlanId === inv.planId && s.requestedInterval === inv.billingInterval ? { requestedPlanId: null, requestedInterval: null, requestedAt: null, requestedBy: null } : {};
-    const common = { planId: inv.planId, status: 'ACTIVE', billingInterval: inv.billingInterval, price: inv.listPrice, paymentReference: inv.number, ...clearRequest };
+    const clearRequest = s.requestedPlanId === inv.planId && s.requestedInterval === inv.billingInterval && sameAddOns(s.requestedAddOns, inv.addOns) ? { requestedPlanId: null, requestedInterval: null, requestedAt: null, requestedBy: null, requestedAddOns: [] } : {};
+    const common = { planId: inv.planId, status: 'ACTIVE', billingInterval: inv.billingInterval, price: inv.listPrice, addOns: inv.addOns ?? [], paymentReference: inv.number, ...clearRequest };
     if (inv.kind === 'UPGRADE') {
       // The period already paid for continues; only the plan (and its price) changes.
       await tx.subscription.update({ where: { orgId: inv.orgId }, data: { ...common, currentPeriodEnd: s.currentPeriodEnd && s.currentPeriodEnd > inv.periodEnd ? s.currentPeriodEnd : inv.periodEnd } });
@@ -491,20 +513,26 @@ export class SubscriptionPaymentsService {
     const currency = s.currency as BillingCurrency;
     let plan = s.plan;
     let interval = s.billingInterval as BillingInterval;
+    let wanted: string[] = s.addOns ?? [];
     if (s.requestedPlan && s.requestedInterval) {
       // A scheduled change takes effect at the renewal, if the organisation fits the plan.
       const fits = await this.billing.memberFit(tx, orgId, s.requestedPlan).then(() => true, () => false);
       if (fits) {
         plan = s.requestedPlan;
         interval = s.requestedInterval as BillingInterval;
+        wanted = s.requestedAddOns ?? [];
       }
     }
-    const price = priceFor(serializePlan(plan), currency, interval);
+    // Add-ons renew at their price, even one no longer offered to others; one the plan now includes is dropped.
+    const offers = await this.addOns.offers(tx);
+    const keep = wanted.filter((f) => isAddOnFeature(f) && !plan.features.includes(f) && offers.some((o) => o.feature === f)) as ReturnType<typeof chooseAddOns>;
+    const lines = addOnLines(keep, offers, currency, interval);
+    const price = priceWithAddOns(priceFor(serializePlan(plan), currency, interval), lines);
     // The coupon on the subscription goes on taking money off while it has payments left and fits the plan.
     const c = await this.coupons.resolve(tx, s, null, { planCode: plan.code, interval, currency, now });
     const off = this.discount(c.applied, price, currency, false);
     const charged = off?.charged ?? price;
     const parties = await this.taxFor(tx, orgId, charged.toFixed(2), currency);
-    return this.issue(tx, orgId, null, { kind: 'RENEWAL', planId: plan.id, interval, listPrice: price.toFixed(2), periodStart: s.currentPeriodEnd, periodEnd: periodEnd(s.currentPeriodEnd, interval), currency, subtotal: charged.toFixed(2), discount: (off?.discount ?? dec('0')).toFixed(2), coupon: off ? c.applied!.coupon : null, parties, dueAt: s.currentPeriodEnd > now ? s.currentPeriodEnd : now });
+    return this.issue(tx, orgId, null, { kind: 'RENEWAL', planId: plan.id, interval, listPrice: price.toFixed(2), addOns: keep, addOnLines: lines, periodStart: s.currentPeriodEnd, periodEnd: periodEnd(s.currentPeriodEnd, interval), currency, subtotal: charged.toFixed(2), discount: (off?.discount ?? dec('0')).toFixed(2), coupon: off ? c.applied!.coupon : null, parties, dueAt: s.currentPeriodEnd > now ? s.currentPeriodEnd : now });
   }
 }

@@ -3815,6 +3815,9 @@ model Subscription {
   couponId           String?      @map("coupon_id") @db.Uuid
   coupon             Coupon?      @relation(fields: [couponId], references: [id], onDelete: Restrict)
   couponUses         Int          @default(0) @map("coupon_uses")
+  /// Add-on modules paid for on top of the plan (SUBS-017), and those chosen for the renewal with a requested change.
+  addOns             String[]     @default([]) @map("add_ons")
+  requestedAddOns    String[]     @default([]) @map("requested_add_ons")
   createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -3915,6 +3918,9 @@ model SubscriptionInvoice {
   couponId          String?      @map("coupon_id") @db.Uuid
   coupon            Coupon?      @relation(fields: [couponId], references: [id], onDelete: Restrict)
   couponCode        String?      @map("coupon_code") @db.VarChar(20)
+  /// Add-on modules the invoice pays for, each with its price for the period; listPrice includes them.
+  addOns            String[]     @default([]) @map("add_ons")
+  addOnLines        Json         @default("[]") @map("add_on_lines")
   createdBy         String?      @map("created_by") @db.Uuid
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -3922,6 +3928,17 @@ model SubscriptionInvoice {
   @@unique([gateway, checkoutRef], map: "subscription_invoices_checkout_key")
   @@index([orgId, issuedAt])
   @@map("subscription_invoices")
+}
+
+/// The price of an add-on module (SUBS-017), set by platform administrators.
+model AddOnPrice {
+  feature   String   @id @db.VarChar(16)
+  prices    Json
+  isActive  Boolean  @default(true) @map("is_active")
+  updatedBy String   @map("updated_by") @db.Uuid
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("add_on_prices")
 }
 
 /// A coupon on Talk2Tax subscriptions (SUBS-024), created by platform administrators.

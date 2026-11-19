@@ -27,10 +27,13 @@ interface Sub {
   billingInterval: 'MONTHLY' | 'ANNUAL' | null;
   currency: string;
   price: string | null;
+  addOns: string[];
+  features: string[];
+  addOnOffers: { feature: string; label: string; monthly: string; annual: string }[];
   trialEndsAt: string | null;
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
-  request: { plan: Plan; interval: 'MONTHLY' | 'ANNUAL'; at: string } | null;
+  request: { plan: Plan; interval: 'MONTHLY' | 'ANNUAL'; addOns: string[]; at: string } | null;
   coupon: { code: string; description: string; terms: string; paymentsUsed: number; paymentsLeft: number | null } | null;
   promotions: { code: string; description: string; terms: string; planCodes: string[]; intervals: string[]; redeemBy: string | null }[];
   usage: { members: number; openInvitations: number };
@@ -46,6 +49,9 @@ interface Quote {
   currency?: string;
   periodStart?: string;
   periodEnd?: string;
+  addOns?: string[];
+  addOnLines?: { feature: string; label: string; price: string }[];
+  listPrice?: string;
   amount?: string;
   discount?: string;
   coupon?: { code: string; description: string; terms: string; continuing: boolean; promotion: boolean } | null;
@@ -125,17 +131,19 @@ function Subscription() {
   const [interval, setInterval] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
   const q = useQuery({ queryKey: ['subscription', orgId], queryFn: () => api<Sub>(`/v1/orgs/${orgId}/subscription`) });
   const done = async () => { await qc.invalidateQueries({ queryKey: ['subscription', orgId] }); await qc.invalidateQueries({ queryKey: ['orgs'] }); };
-  const request = useMutation({ mutationFn: (plan: string) => api(`/v1/orgs/${orgId}/subscription/request`, { method: 'POST', body: { plan, interval } }), onSuccess: done });
+  const request = useMutation({ mutationFn: (plan: string) => api(`/v1/orgs/${orgId}/subscription/request`, { method: 'POST', body: { plan, interval, addOns: extras } }), onSuccess: done });
   const withdraw = useMutation({ mutationFn: () => api(`/v1/orgs/${orgId}/subscription/request`, { method: 'DELETE' }), onSuccess: done });
   const invoices = useQuery({ queryKey: ['subscription-invoices', orgId], queryFn: () => api<SubscriptionInvoice[]>(`/v1/orgs/${orgId}/subscription/invoices`) });
   const [choice, setChoice] = useState<string | null>(null);
+  // Add-on modules chosen with the plan (SUBS-017).
+  const [extras, setExtras] = useState<string[]>([]);
   // The coupon code being typed, and the one the price is worked out with.
   const [code, setCode] = useState('');
   const [coupon, setCoupon] = useState('');
-  const quote = useQuery({ queryKey: ['subscription-quote', orgId, choice, interval, coupon], queryFn: () => api<Quote>(`/v1/orgs/${orgId}/subscription/quote?plan=${choice}&interval=${interval}${coupon ? `&coupon=${encodeURIComponent(coupon)}` : ''}`), enabled: !!choice, retry: false });
+  const quote = useQuery({ queryKey: ['subscription-quote', orgId, choice, interval, coupon, extras.join()], queryFn: () => api<Quote>(`/v1/orgs/${orgId}/subscription/quote?plan=${choice}&interval=${interval}${coupon ? `&coupon=${encodeURIComponent(coupon)}` : ''}${extras.length ? `&addOns=${extras.join(',')}` : ''}`), enabled: !!choice, retry: false });
   const all = async () => { await done(); await qc.invalidateQueries({ queryKey: ['subscription-invoices', orgId] }); };
   const checkout = useMutation({
-    mutationFn: (plan: string) => api<Checkout>(`/v1/orgs/${orgId}/subscription/checkout`, { method: 'POST', body: { plan, interval, coupon: coupon || null } }),
+    mutationFn: (plan: string) => api<Checkout>(`/v1/orgs/${orgId}/subscription/checkout`, { method: 'POST', body: { plan, interval, coupon: coupon || null, addOns: extras } }),
     onSuccess: async (r) => {
       if (r.url) window.location.assign(r.url);
       else { setChoice(null); await all(); }
@@ -189,6 +197,11 @@ function Subscription() {
                 </p>
               </div>
             </div>
+            {s.addOns.length ? (
+              <p className="border-t border-line px-5 py-3 text-sm" data-testid="subscription-add-ons">
+                <span className="font-medium">Add-ons:</span> {s.addOns.map((f) => s.featureLabels[f] ?? f).join(', ')}
+              </p>
+            ) : null}
             {s.coupon ? (
               <p className="border-t border-line px-5 py-3 text-sm" data-testid="subscription-coupon">
                 <Badge tone="violet">Coupon {s.coupon.code}</Badge> <span className="ml-1">{s.coupon.terms}{s.coupon.description ? ` (${s.coupon.description})` : ''}: used on {s.coupon.paymentsUsed} payment{s.coupon.paymentsUsed === 1 ? '' : 's'}{s.coupon.paymentsLeft === null ? ', and on every renewal' : s.coupon.paymentsLeft ? `, ${s.coupon.paymentsLeft} more to come` : ', none left'}.</span>
@@ -275,8 +288,8 @@ function Subscription() {
                       ))}
                     </ul>
                     {manage && s.status !== 'COMPLIMENTARY' ? (
-                      <Button className="mt-4" variant={choice === p.code ? 'secondary' : requested ? 'secondary' : 'primary'} disabled={requested || (current && s.billingInterval === interval && s.access.state === 'ACTIVE' && !invoices.data?.length)} onClick={() => setChoice(p.code)}>
-                        {requested ? (s.status === 'ACTIVE' ? 'Chosen for the renewal' : 'Requested') : current && s.billingInterval === interval ? (s.access.state === 'ACTIVE' ? 'Renew early' : 'Renew') : `Choose ${p.name}`}
+                      <Button className="mt-4" variant={choice === p.code ? 'secondary' : requested ? 'secondary' : 'primary'} disabled={requested || (current && s.billingInterval === interval && s.access.state === 'ACTIVE' && !invoices.data?.length && !s.addOnOffers.length)} onClick={() => { setChoice(p.code); setExtras(s.addOns.filter((f) => !p.features.includes(f))); }}>
+                        {requested ? (s.status === 'ACTIVE' ? 'Chosen for the renewal' : 'Requested') : current && s.billingInterval === interval ? (s.access.state === 'ACTIVE' ? (s.addOnOffers.length ? 'Renew or change add-ons' : 'Renew early') : 'Renew') : `Choose ${p.name}`}
                       </Button>
                     ) : null}
                   </section>
@@ -293,6 +306,21 @@ function Subscription() {
                   <Button type="submit" variant="secondary" size="sm" disabled={!code.trim() || code.trim().toUpperCase() === coupon}>Apply</Button>
                   {coupon ? <Button type="button" variant="ghost" size="sm" onClick={() => { setCoupon(''); setCode(''); }}>Remove coupon</Button> : null}
                 </form>
+                {(() => {
+                  const chosen = s.plans.find((p) => p.code === choice);
+                  const offers = s.addOnOffers.filter((o) => !chosen?.features.includes(o.feature));
+                  return offers.length ? (
+                    <fieldset className="mb-3 text-sm" aria-label="Add-on modules">
+                      <legend className="mb-1 text-xs font-medium uppercase tracking-wide text-fg-muted">Add modules {chosen?.name} does not include</legend>
+                      {offers.map((o) => (
+                        <label key={o.feature} className="mr-5 inline-flex items-center gap-2">
+                          <input type="checkbox" checked={extras.includes(o.feature)} onChange={(e) => setExtras(e.target.checked ? [...extras, o.feature] : extras.filter((f) => f !== o.feature))} />
+                          {o.label} <span className="text-fg-muted">(+<Money value={interval === 'ANNUAL' ? o.annual : o.monthly} currency={s.currency} /> {interval === 'ANNUAL' ? 'a year' : 'a month'})</span>
+                        </label>
+                      ))}
+                    </fieldset>
+                  ) : null;
+                })()}
                 <ErrorAlert title={coupon ? 'Coupon not applied' : 'Could not price the plan'} error={quote.error} />
                 {quote.data ? (
                   quote.data.kind === 'SCHEDULED' ? (
@@ -308,7 +336,7 @@ function Subscription() {
                         <p className="text-fg-muted">{dateTime(quote.data.periodStart!)} to {dateTime(quote.data.periodEnd!)}</p>
                         <table className="mt-2 w-full max-w-sm text-sm" aria-label="Amount">
                           <tbody>
-                            <tr><td>Subscription</td><td className="text-right num"><Money value={quote.data.amount!} currency={quote.data.currency!} /></td></tr>
+                            <tr><td>Subscription{quote.data.addOnLines?.length ? <span className="block text-xs text-fg-muted">{quote.data.kind === 'UPGRADE' ? 'The difference for the days left, with ' : `${quote.data.plan.name} with `}{quote.data.addOnLines.map((l) => `${l.label} (+${l.price})`).join(', ')}</span> : null}</td><td className="text-right num align-top"><Money value={quote.data.amount!} currency={quote.data.currency!} /></td></tr>
                             {quote.data.coupon ? (
                               <>
                                 <tr><td>{quote.data.coupon.promotion ? 'Offer' : 'Coupon'} {quote.data.coupon.code} <span className="text-xs text-fg-muted">({quote.data.coupon.terms})</span></td><td className="text-right num">−<Money value={quote.data.discount!} currency={quote.data.currency!} /></td></tr>

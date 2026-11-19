@@ -83,6 +83,7 @@ import { PlatformBillingController } from './billing/platform-billing.controller
 import { PlatformBillingService } from './billing/platform-billing.service';
 import { PaymentSettingsService } from './billing/payments/payment-settings.service';
 import { CouponsService } from './billing/payments/coupons.service';
+import { AddOnsService } from './billing/add-ons.service';
 import { RenewalsRunnerService } from './billing/payments/renewals-runner.service';
 import { PaymentWebhooksController, PlatformPaymentsController, SubscriptionPaymentsController } from './billing/payments/subscription-payments.controller';
 import { SubscriptionPaymentsService } from './billing/payments/subscription-payments.service';
@@ -387,6 +388,7 @@ export class AppModule {
         PlatformBillingService,
         PaymentSettingsService,
         CouponsService,
+        AddOnsService,
         SubscriptionPaymentsService,
         RenewalsRunnerService,
         { provide: CONFIG, useValue: config },

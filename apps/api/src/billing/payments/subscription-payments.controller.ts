@@ -11,6 +11,7 @@ import { PaymentSettingsService } from './payment-settings.service';
 import { RenewalsRunnerService } from './renewals-runner.service';
 import { SubscriptionPaymentsService } from './subscription-payments.service';
 import { CouponsService } from './coupons.service';
+import { AddOnsService } from '../add-ons.service';
 
 const CouponCode = z
   .string()
@@ -18,7 +19,10 @@ const CouponCode = z
   .transform((v) => v.trim().toUpperCase() || null)
   .nullish()
   .transform((v) => v ?? null);
-const PlanChoice = z.object({ plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/), interval: z.enum(['MONTHLY', 'ANNUAL']), coupon: CouponCode }).strict();
+const PlanChoice = z.object({ plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/), interval: z.enum(['MONTHLY', 'ANNUAL']), coupon: CouponCode, addOns: z.array(z.string().max(16)).max(5).default([]) }).strict();
+// In a query string the add-ons are one comma-separated value.
+const QuoteQuery = PlanChoice.extend({ addOns: z.string().max(100).default('').transform((v) => v.split(',').map((x) => x.trim()).filter(Boolean)) });
+const AddOnBody = z.object({ prices: z.record(z.string().max(3), z.object({ monthly: z.string().max(14), annual: z.string().max(14) }).strict()), isActive: z.boolean() }).strict();
 const CouponBody = z
   .object({
     code: z.string().max(40),
@@ -86,8 +90,8 @@ export class SubscriptionPaymentsController {
   @Get('quote')
   @RequirePermission('org.read')
   @AllowWhenReadOnly()
-  quote(@Param('orgId') orgId: string, @Query(new ZodPipe(PlanChoice)) q: z.infer<typeof PlanChoice>) {
-    return this.payments.quote(orgId, q.plan, q.interval, q.coupon);
+  quote(@Param('orgId') orgId: string, @Query(new ZodPipe(QuoteQuery)) q: z.infer<typeof QuoteQuery>) {
+    return this.payments.quote(orgId, q.plan, q.interval, q.coupon, q.addOns);
   }
 
   @Post('checkout')
@@ -95,7 +99,7 @@ export class SubscriptionPaymentsController {
   @AllowWhenReadOnly()
   @ApiBody({ schema: openApi(PlanChoice) })
   checkout(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser, @Body(new ZodPipe(PlanChoice)) b: z.infer<typeof PlanChoice>) {
-    return this.payments.checkout(orgId, user, b.plan, b.interval, this.returnTo(orgId), b.coupon);
+    return this.payments.checkout(orgId, user, b.plan, b.interval, this.returnTo(orgId), b.coupon, b.addOns);
   }
 
   @Get('invoices')
@@ -137,7 +141,21 @@ export class PlatformPaymentsController {
     private readonly payments: SubscriptionPaymentsService,
     private readonly renewals: RenewalsRunnerService,
     private readonly coupons: CouponsService,
+    private readonly addOns: AddOnsService,
   ) {}
+
+  @Get('add-ons')
+  @RequirePlatform('platform.read')
+  listAddOns() {
+    return this.addOns.list();
+  }
+
+  @Put('add-ons/:feature')
+  @RequirePlatform('platform.manage')
+  @ApiBody({ schema: openApi(AddOnBody) })
+  saveAddOn(@CurrentUser() user: AuthUser, @Param('feature') feature: string, @Body(new ZodPipe(AddOnBody)) b: z.infer<typeof AddOnBody>) {
+    return this.addOns.save(user, feature.toUpperCase(), b as never);
+  }
 
   @Get('coupons')
   @RequirePlatform('platform.read')

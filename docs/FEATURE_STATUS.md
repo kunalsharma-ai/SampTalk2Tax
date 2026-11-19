@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 778 |
+| Not started | 777 |
 | Designed | 0 |
 | Implementing | 40 |
 | Implemented | 34 |
-| Tested | 477 |
+| Tested | 478 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -57,7 +57,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Security and enterprise governance | M1 | 38 | 22 | 16 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
-| Subscription and monetization engine | M9 | 32 | 3 | 29 |
+| Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
@@ -5864,7 +5864,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Subscription and monetization engine
 - Status: **Implementing**
-- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons are built (SUBS-024); add-ons and usage metering are later slices.
+- Notes: Plans, subscriptions, trials, enforcement, online checkout (Stripe, Razorpay), tax invoices, renewals and dunning are built and tested; coupons (SUBS-024), promotions (SUBS-025) and add-on modules (SUBS-017) are built.
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
@@ -6148,6 +6148,24 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/payments/page.tsx
   - apps/web/src/app/admin/invoices/page.tsx
   - apps/web/e2e/subscription-payments-flow.test.mjs
+  - docs/SUBSCRIPTION_PAYMENTS.md
+
+### SUBS-017 — Add-on modules
+
+- Module: Subscription and monetization engine
+- Status: **Tested**
+- Notes: Payroll, foreign currencies and group consolidation can be added to a plan that lacks them, priced per currency and billing by platform administrators. Added at checkout (an upgrade for the days left mid-period), removed at the renewal, carried on renewal invoices, listed on the tax invoice, and counted for module access. The AI assistant is not an add-on (its use is set by a plan's AI requests).
+- Evidence:
+  - packages/accounting-engine/src/add-ons.ts
+  - packages/accounting-engine/test/add-ons.test.ts
+  - apps/api/src/billing/add-ons.service.ts
+  - apps/api/src/billing/payments/subscription-payments.service.ts
+  - apps/api/src/auth/guards.ts
+  - apps/api/src/db/migrations/20270110100000_add_ons.ts
+  - apps/api/test/subscription-add-ons.e2e.test.ts
+  - apps/web/src/app/admin/plans/page.tsx
+  - apps/web/src/app/orgs/[orgId]/settings/subscription/page.tsx
+  - apps/web/e2e/subscription-add-ons-flow.test.mjs
   - docs/SUBSCRIPTION_PAYMENTS.md
 
 ### SUBS-018 — Usage-based AI credits

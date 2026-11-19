@@ -5,7 +5,7 @@ import { AllowWhenReadOnly, AuthUser, CurrentUser, RequirePermission } from '../
 import { openApi, ZodPipe } from '../common/zod';
 import { BillingService } from './billing.service';
 
-const RequestBody = z.object({ plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/), interval: z.enum(['MONTHLY', 'ANNUAL']) }).strict();
+const RequestBody = z.object({ plan: z.string().regex(/^[A-Z][A-Z0-9_]{1,23}$/), interval: z.enum(['MONTHLY', 'ANNUAL']), addOns: z.array(z.string().max(16)).max(5).default([]) }).strict();
 
 /** The organisation's Talk2Tax subscription. Works while the books are read-only, so a plan can always be chosen. */
 @ApiTags('subscription')
@@ -25,7 +25,7 @@ export class BillingController {
   @AllowWhenReadOnly()
   @ApiBody({ schema: openApi(RequestBody) })
   request(@Param('orgId') orgId: string, @CurrentUser() user: AuthUser, @Body(new ZodPipe(RequestBody)) body: z.infer<typeof RequestBody>) {
-    return this.billing.request(orgId, user.id, body.plan, body.interval);
+    return this.billing.request(orgId, user.id, body.plan, body.interval, body.addOns);
   }
 
   @Delete('request')
