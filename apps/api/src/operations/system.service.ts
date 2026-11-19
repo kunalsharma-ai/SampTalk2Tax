@@ -6,6 +6,7 @@ import { databaseStatus } from '../db/database-status';
 import { AppConfig, CONFIG, mongoUsesTls } from '../config';
 import { serverMail } from '../integrations/integrations.service';
 import { RegionsService } from '../regions/regions.service';
+import { BackupsService } from '../backups/backups.service';
 import { ErrorsService } from './errors.service';
 import { HeartbeatsService } from './heartbeats.service';
 import { MaintenanceService } from './maintenance.service';
@@ -34,6 +35,7 @@ export class SystemService {
     private readonly maintenance: MaintenanceService,
     private readonly regions: RegionsService,
     private readonly errors: ErrorsService,
+    private readonly backups: BackupsService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -78,10 +80,12 @@ export class SystemService {
 
   async health(requestSecure = false) {
     const mem = process.memoryUsage();
-    const [database, maintenance, errors] = await Promise.all([
+    const [database, maintenance, errors, backups] = await Promise.all([
       this.database(),
       this.maintenance.current(),
       this.errors.counts().catch(() => ({ open: null, lastHour: null })),
+      // Backups are expected of a production server only (SEC-021).
+      this.config.NODE_ENV === 'production' ? this.backups.status().catch(() => null) : Promise.resolve(null),
     ]);
     const runners = this.heartbeats.list();
     const requests = this.metrics.summary();
@@ -92,6 +96,7 @@ export class SystemService {
       ...runners.filter((r) => r.state === 'FAILING' || r.state === 'LATE').map((r) => `${r.name} is ${r.state === 'FAILING' ? 'failing' : 'late'}`),
       this.config.NODE_ENV === 'production' && !this.config.HTTPS_ONLY ? 'Requests are accepted without HTTPS (set HTTPS_ONLY=true)' : null,
       this.config.NODE_ENV === 'production' && !mongoUsesTls(this.config.MONGODB_URL) ? 'The database connection is not encrypted' : null,
+      ...(backups?.problems ?? []),
       requests.totals.serverErrors > 0 ? `${requests.totals.serverErrors} server error${requests.totals.serverErrors === 1 ? '' : 's'} in the last ${requests.windowMinutes} minutes` : null,
     ].filter((p): p is string => p !== null);
     return {

@@ -6134,3 +6134,31 @@ model FileScan {
   @@index([createdAt])
   @@map("file_scans")
 }
+
+/// A database backup, check or restore drill (SEC-021/022), recorded by the backup command. Kept as it happened.
+model BackupRun {
+  id              String    @id @db.Uuid
+  /// BACKUP, VERIFY or RESTORE_DRILL.
+  kind            String    @db.VarChar(16)
+  /// OK or FAILED.
+  status          String    @db.VarChar(8)
+  /// The backup file's name (no directory).
+  fileName        String    @map("file_name") @db.VarChar(255)
+  bytes           BigInt?
+  fileSha256      String?   @map("file_sha256") @db.VarChar(64)
+  encrypted       Boolean?
+  /// Read from one snapshot of the database.
+  consistent      Boolean?
+  collections     Int?
+  documents       Int?
+  /// When the backup itself was taken (for checks and drills, the backup that was checked).
+  backupTakenAt   DateTime? @map("backup_taken_at") @db.Timestamptz(6)
+  durationMs      Int       @map("duration_ms")
+  /// The machine the command ran on.
+  host            String    @db.VarChar(255)
+  error           String?   @db.VarChar(1000)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([kind, createdAt])
+  @@map("backup_runs")
+}

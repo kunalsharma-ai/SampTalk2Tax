@@ -176,6 +176,13 @@ const schema = z.object({
   /** Security event monitoring (SEC-023): how often the audit trail is checked (seconds; 0 = off), and how many locked sign-ins in an hour raise an alert. */
   SECURITY_MONITOR_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(300),
   SECURITY_LOCKOUT_ALERT_COUNT: z.coerce.number().int().min(1).max(10000).default(5),
+  /**
+   * Backups (SEC-021/022). The backup command runs outside the API; these say how old the newest
+   * good backup (hours) and restore drill (days) may be before Platform admin → Backups and System
+   * health say so. 0 turns the check off.
+   */
+  BACKUP_MAX_AGE_HOURS: z.coerce.number().int().min(0).max(8760).default(26),
+  RESTORE_DRILL_MAX_AGE_DAYS: z.coerce.number().int().min(0).max(3650).default(35),
   RETENTION_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(604800).default(86400),
   /** How often recurring bills are checked for runs that have fallen due (0 turns the runner off). */
   RECURRING_BILL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),

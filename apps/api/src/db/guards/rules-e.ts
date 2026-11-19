@@ -100,6 +100,11 @@ registerGuards({
     if (changed(o, n, ['rule', 'key', 'severity', 'org_id', 'user_id', 'first_seen_at', 'created_at'])) fail('What a security alert found cannot be changed');
     if (o.status === 'ACKNOWLEDGED' && changed(o, n, ['status', 'acknowledged_by_id', 'acknowledged_at', 'note'])) fail('An acknowledged security alert stays acknowledged');
   },
+  // backup_runs_guard (SEC-021/022): the record of backups and drills is kept as it happened.
+  backup_runs: (op) => {
+    if (op === 'INSERT') return;
+    fail('The record of backups and restore drills cannot be changed or deleted');
+  },
   // platform_model_policies_guard (SEC-034): the history of allowed models is kept as it happened.
   platform_model_policies: (op) => {
     if (op === 'INSERT') return;

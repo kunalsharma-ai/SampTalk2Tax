@@ -7072,6 +7072,35 @@
         "docs/SECURITY.md"
       ],
       "notes": "HTTPS_ONLY (API: on in production when APP_URL is https; web: on in production builds): the web app redirects http:// visitors to https:// (308, localhost exempt) and sends HSTS on HTTPS responses; the API refuses non-HTTPS requests (X-Forwarded-Proto across trusted hops) with 403 HTTPS_REQUIRED except /health, and refuses to start with HTTPS_ONLY and TRUST_PROXY_HOPS=0. MONGODB_REQUIRE_TLS refuses an unencrypted MONGODB_URL at startup. System health shows how visitors, the database, email, the AI model, payment gateways and webhooks are protected, and lists HTTP or an unencrypted database as problems in production. TLS ends at the customer's load balancer; no mTLS, no TLS between web and API inside the private network unless T2T_API_URL is https."
+    },
+    "SEC-021": {
+      "status": "Tested",
+      "evidence": [
+        "packages/document-db/src/backup.ts",
+        "apps/api/src/db/backup.ts",
+        "apps/api/src/backups/backups.service.ts",
+        "apps/web/src/app/admin/backups/page.tsx",
+        "packages/document-db/test/backup.test.ts",
+        "apps/api/test/backups.e2e.test.ts",
+        "apps/web/e2e/backups-flow.test.mjs",
+        "docs/DISASTER_RECOVERY.md"
+      ],
+      "notes": "node dist/db/backup.js create|verify|drill|restore: whole-database backups from one MongoDB snapshot as gzip canonical Extended JSON (decimals, dates, binary exact) with validators and indexes, AES-256-GCM encrypted (scrypt key from BACKUP_ENCRYPTION_KEY; refused without it unless --unencrypted), SHA-256 and per-collection counts checked before any restore, restore only into an empty database, --keep N rotation, 0600 files. Every run recorded in backup_runs (insert-only) and shown under Platform admin -> Backups. Not built: scheduling and off-site copies (operator's scheduler and storage), incremental backups, per-organisation restore."
+    },
+    "SEC-022": {
+      "status": "Tested",
+      "evidence": [
+        "packages/document-db/src/backup.ts",
+        "apps/api/src/db/backup.ts",
+        "apps/api/src/backups/backups.service.ts",
+        "apps/web/src/app/admin/backups/page.tsx",
+        "packages/document-db/test/backup.test.ts",
+        "apps/api/test/backups.e2e.test.ts",
+        "apps/web/e2e/backups-flow.test.mjs",
+        "docs/DISASTER_RECOVERY.md",
+        "apps/api/src/operations/system.service.ts"
+      ],
+      "notes": "Restore drills restore a backup into a scratch database, count every collection against the backup, drop it and record the result. Overdue backups (BACKUP_MAX_AGE_HOURS, default 26) and drills (RESTORE_DRILL_MAX_AGE_DAYS, default 35) show on the Backups page and as System health problems in production. docs/DISASTER_RECOVERY.md: schedule, RPO/RTO targets, provider point-in-time recovery, off-site copies, and the step-by-step recovery runbook. Recovery itself is run by the operator; no automatic failover."
     }
   }
 }

@@ -265,6 +265,15 @@ like instructions to an AI is marked as untrusted, and proposals stop for that a
 [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md#what-the-copilot-sends-to-the-model-sec-029-sec-031).
 Other AI agents (collections, bank reconciliation, close review, virtual CFO) do not do this yet.
 
+## Backups and disaster recovery (SEC-021, SEC-022)
+
+The backup command (`node dist/db/backup.js create | verify | drill | restore`) writes encrypted
+(AES-256-GCM, key from `BACKUP_ENCRYPTION_KEY`), checksummed backups of the whole database from one
+snapshot, checks them, runs restore drills into a scratch database, and restores into an empty
+database only after the whole file has been checked. Every run is recorded (unchangeable) and
+shown under Platform admin → Backups; overdue backups and drills show there and in System health.
+The recovery runbook, schedule and RPO/RTO are in [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md).
+
 ## Encryption in transit (SEC-010)
 
 * **Visitors and apps.** TLS ends at the load balancer in front of the web app (or the API, if it

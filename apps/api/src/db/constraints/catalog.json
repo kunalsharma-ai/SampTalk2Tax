@@ -1777,6 +1777,12 @@
     "def": "CHECK ((((source)::text = ANY ((ARRAY['ATTACHMENT'::character varying, 'TAX_NOTICE'::character varying, 'VENDOR_PORTAL'::character varying])::text[])) AND ((result)::text = ANY ((ARRAY['CLEAN'::character varying, 'NOT_SCANNED'::character varying, 'INFECTED'::character varying, 'ACTIVE_CONTENT'::character varying, 'SCAN_FAILED'::character varying])::text[])) AND (size_bytes >= 0)))",
     "name": "file_scans_chk"
    }
+  ],
+  "backup_runs": [
+   {
+    "def": "CHECK ((((kind)::text = ANY ((ARRAY['BACKUP'::character varying, 'VERIFY'::character varying, 'RESTORE_DRILL'::character varying])::text[])) AND ((status)::text = ANY ((ARRAY['OK'::character varying, 'FAILED'::character varying])::text[])) AND (duration_ms >= 0) AND ((bytes IS NULL) OR (bytes >= 0)) AND ((documents IS NULL) OR (documents >= 0)) AND (((status)::text = 'OK'::text) OR (error IS NOT NULL))))",
+    "name": "backup_runs_chk"
+   }
   ]
  },
  "foreignKeys": [

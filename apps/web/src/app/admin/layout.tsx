@@ -30,6 +30,7 @@ const NAV = [
   { href: '/admin/encryption-keys', label: 'Encryption keys' },
   { href: '/admin/file-scanning', label: 'File scanning' },
   { href: '/admin/security', label: 'Security monitoring' },
+  { href: '/admin/backups', label: 'Backups' },
 ];
 
 /** Platform administration: for the people who run Talk2Tax. Never an organisation's books. */
