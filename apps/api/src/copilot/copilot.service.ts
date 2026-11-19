@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { INJECTION_NOTICE, injectionSignals, redactionPolicy, redactText, redactToolContent, type RedactionCounts, type RedactionPolicy } from './safety';
 import { zoneLabel } from '../common/dates';
 import { IntegrationsService } from '../integrations/integrations.service';
 import { HttpStatus, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
@@ -52,6 +53,12 @@ const STATUS_MESSAGES = {
   COPILOT_OFF: 'The AI copilot is turned off for this organisation. An owner or admin can turn it on.',
 } as const;
 
+/** What was hidden from the model, and tool results that read like instructions to it (SEC-029/031). */
+export interface AnswerSafety {
+  redacted: RedactionCounts;
+  injection: { tool: string; reasons: string[] }[];
+}
+
 interface Outcome {
   status: Exclude<CopilotMessageStatus, 'PENDING'>;
   text: string | null;
@@ -95,6 +102,7 @@ export class CopilotService {
       tools: this.tools.names(),
       disabledTools: toolList(s?.disabledTools),
       toolCatalog: this.tools.catalog().map((t) => ({ ...t, enabled: !toolList(s?.disabledTools).includes(t.name), youCanUse: hasPermission(member.role, t.permission) })),
+      redaction: redactionPolicy(s?.redaction),
       notice: await this.guard.notice(member.orgId, 'COPILOT'),
     };
   }
@@ -122,6 +130,17 @@ export class CopilotService {
       const before = await tx.copilotSettings.findUnique({ where: { orgId: member.orgId } });
       await tx.copilotSettings.upsert({ where: { orgId: member.orgId }, create: { orgId: member.orgId, enabled: false, disabledTools: next, updatedById: actor.id }, update: { disabledTools: next, updatedById: actor.id } });
       await this.audit.append(tx, { orgId: member.orgId, actorId: actor.id, action: 'copilot.tools_changed', entityType: 'copilot_settings', entityId: member.orgId, data: { from: toolList(before?.disabledTools), to: next } });
+    });
+    return this.status(member);
+  }
+
+  /** What is hidden from the AI model besides cards, Aadhaar numbers and secrets (SEC-031). */
+  async saveRedaction(member: Member, actor: Actor, policy: RedactionPolicy) {
+    const next = redactionPolicy(policy);
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.copilotSettings.findUnique({ where: { orgId: member.orgId } });
+      await tx.copilotSettings.upsert({ where: { orgId: member.orgId }, create: { orgId: member.orgId, enabled: false, redaction: next as unknown as Prisma.InputJsonValue, updatedById: actor.id }, update: { redaction: next as unknown as Prisma.InputJsonValue, updatedById: actor.id } });
+      await this.audit.append(tx, { orgId: member.orgId, actorId: actor.id, action: 'copilot.redaction_changed', entityType: 'copilot_settings', entityId: member.orgId, data: { from: redactionPolicy(before?.redaction), to: next } });
     });
     return this.status(member);
   }
@@ -173,6 +192,7 @@ export class CopilotService {
         errorCode: m.errorCode,
         errorMessage: m.errorMessage,
         servedModel: m.servedModel,
+        safety: (m.safety as unknown as AnswerSafety | null) ?? null,
         usage: m.inputTokens === null ? null : { inputTokens: m.inputTokens, outputTokens: m.outputTokens, cacheReadTokens: m.cacheReadTokens },
         createdAt: m.createdAt.toISOString(),
         completedAt: m.completedAt?.toISOString() ?? null,
@@ -211,6 +231,9 @@ export class CopilotService {
     const { orgId } = member;
     const org = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { name: true, functionalCurrency: true, fiscalYearStartMonth: true } });
     const today = todayIst();
+    // Hidden from the model, not from the member (SEC-031).
+    const policy = redactionPolicy(settings.redaction);
+    const questionRedactions: RedactionCounts = {};
 
     const started = await this.prisma.$transaction(async (tx) => {
       const asked = await tx.copilotMessage.count({ where: { orgId, role: 'USER', createdAt: { gt: new Date(Date.now() - 3_600_000) }, conversation: { userId: actor.id } } });
@@ -244,20 +267,20 @@ export class CopilotService {
         content: [
           { type: 'text', text: `Today is ${today} (${zoneLabel()}).` },
           ...(outcomes.length ? [{ type: 'text' as const, text: `Your proposals in this conversation so far (PROPOSED means still waiting for the member):\n${outcomes.join('\n')}` }] : []),
-          { type: 'text', text: channel === 'VOICE' ? `(Asked by voice.) ${q}` : q },
+          { type: 'text', text: redactText(channel === 'VOICE' ? `(Asked by voice.) ${q}` : q, policy, questionRedactions) },
         ],
       };
       const userRow = await tx.copilotMessage.create({ data: { orgId, conversationId: conv.id, seq, role: 'USER', status: 'COMPLETE', text: q, channel, apiMessages: [userParam] as unknown as Prisma.InputJsonValue } });
       const answer = await tx.copilotMessage.create({ data: { orgId, conversationId: conv.id, seq: seq + 1, role: 'ASSISTANT', status: 'PENDING' } });
       await tx.copilotConversation.update({ where: { id: conv.id }, data: { updatedAt: new Date() } });
       await this.audit.append(tx, { orgId, actorId: actor.id, action: 'copilot.question_asked', entityType: 'copilot_message', entityId: userRow.id, data: { conversationId: conv.id, characters: q.length, newConversation: !conversationId, channel } });
-      return { conv, answerId: answer.id, userParam };
+      return { conv, answerId: answer.id, userParam, questionRedactions };
     });
 
     const history = await this.history(orgId, started.conv.id, started.userParam);
     const ctx: ToolContext & { userId: string } = { orgId, userId: actor.id, role: member.role, today, fiscalYearStartMonth: org.fiscalYearStartMonth, conversationId: started.conv.id, answerId: started.answerId };
     // The answer outlives the HTTP request, so it runs in its own tenant context.
-    const work = tenantStorage.run({ orgId, userId: actor.id }, () => this.answer(model, started.conv, started.answerId, history, ctx, actor));
+    const work = tenantStorage.run({ orgId, userId: actor.id }, () => this.answer(model, started.conv, started.answerId, history, ctx, actor, policy, started.questionRedactions));
     this.inflight.set(started.answerId, work);
     void work.finally(() => this.inflight.delete(started.answerId));
     return this.get(orgId, actor, started.conv.id);
@@ -281,14 +304,15 @@ export class CopilotService {
     return [...out, question];
   }
 
-  private async answer(model: CopilotModel, conv: { id: string; model: string; systemPrompt: string }, answerId: string, history: CopilotMessageParam[], ctx: ToolContext & { userId: string }, actor: Actor): Promise<void> {
+  private async answer(model: CopilotModel, conv: { id: string; model: string; systemPrompt: string }, answerId: string, history: CopilotMessageParam[], ctx: ToolContext & { userId: string }, actor: Actor, policy: RedactionPolicy, questionRedactions: RedactionCounts): Promise<void> {
     const sources: CopilotSource[] = [];
+    const safety: AnswerSafety = { redacted: { ...questionRedactions }, injection: [] };
     const usage = { input: 0, output: 0, cacheRead: 0 };
     let servedModel: string | null = null;
     const signal = AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000);
     let outcome: Outcome;
     try {
-      outcome = await this.loop(model, conv, history, ctx, signal, sources, usage, (m) => (servedModel = m), answerId);
+      outcome = await this.loop(model, conv, history, ctx, signal, sources, usage, (m) => (servedModel = m), answerId, policy, safety);
     } catch (e) {
       outcome = { status: 'FAILED', text: null, apiMessages: [], ...this.providerError(e, signal) };
     }
@@ -304,6 +328,7 @@ export class CopilotService {
             errorCode: outcome.errorCode ?? null,
             errorMessage: outcome.errorMessage ?? null,
             servedModel,
+            safety: safety as unknown as Prisma.InputJsonValue,
             inputTokens: usage.input,
             outputTokens: usage.output,
             cacheReadTokens: usage.cacheRead,
@@ -317,7 +342,7 @@ export class CopilotService {
           action: 'copilot.answered',
           entityType: 'copilot_message',
           entityId: answerId,
-          data: { conversationId: conv.id, status: outcome.status, errorCode: outcome.errorCode ?? null, tools: sources.map((s) => s.tool), model: conv.model, servedModel, inputTokens: usage.input, outputTokens: usage.output },
+          data: { conversationId: conv.id, status: outcome.status, errorCode: outcome.errorCode ?? null, tools: sources.map((s) => s.tool), model: conv.model, servedModel, inputTokens: usage.input, outputTokens: usage.output, redacted: safety.redacted, injectionSuspected: safety.injection.length > 0 },
         });
       });
     } catch (e) {
@@ -336,6 +361,8 @@ export class CopilotService {
     usage: { input: number; output: number; cacheRead: number },
     served: (m: string) => void,
     answerId: string,
+    policy: RedactionPolicy,
+    safety: AnswerSafety,
   ): Promise<Outcome> {
     const turn: CopilotMessageParam[] = [];
     ctx.disabledTools = await this.disabledTools(ctx.orgId);
@@ -390,9 +417,19 @@ export class CopilotService {
       ctx.disabledTools = await this.disabledTools(ctx.orgId);
       const results = await Promise.all(calls.map((c) => this.tools.run(c.name, c.input, ctx)));
       sources.push(...results.map((r) => r.source));
+      // What the model reads: redacted (SEC-031), and marked when it tries to instruct the model (SEC-029).
+      const contents = results.map((r, i) => {
+        const content = redactToolContent(r.content, policy, safety.redacted);
+        // Only data from the books is checked: Talk2Tax's own refusals name tools on purpose.
+        const reasons = r.ok ? injectionSignals(content) : [];
+        if (!reasons.length) return content;
+        safety.injection.push({ tool: calls[i]!.name, reasons });
+        ctx.proposalsPaused = true;
+        return `${INJECTION_NOTICE}\n<untrusted_data>\n${content}\n</untrusted_data>`;
+      });
       turn.push({
         role: 'user',
-        content: calls.map((c, i) => ({ type: 'tool_result' as const, tool_use_id: c.id, content: results[i].content, ...(results[i].ok ? {} : { is_error: true }) })),
+        content: calls.map((c, i) => ({ type: 'tool_result' as const, tool_use_id: c.id, content: contents[i]!, ...(results[i].ok ? {} : { is_error: true }) })),
       });
       // Show what has been looked at so far while the answer is still being written.
       await this.prisma.copilotMessage.update({ where: { id: answerId }, data: { sources: sources as unknown as Prisma.InputJsonValue } });

@@ -1255,9 +1255,9 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-026 |  | capability | Penetration testing preparation | Not started |
 | SEC-027 |  | rule | Build toward relevant security and privacy frameworks, including SOC 2, ISO 27001 and applicable data protection laws | Not started |
 | SEC-028 |  | rule | Do not claim certification without a completed independent assessment | Not started |
-| SEC-029 | AI Security | capability | Prompt injection defenses | Not started |
+| SEC-029 | AI Security | capability | Prompt injection defenses | Tested |
 | SEC-030 | AI Security | capability | Tool permission enforcement | Tested |
-| SEC-031 | AI Security | capability | Sensitive data redaction | Not started |
+| SEC-031 | AI Security | capability | Sensitive data redaction | Tested |
 | SEC-032 | AI Security | capability | AI action logging | Tested |
 | SEC-033 | AI Security | capability | AI usage controls | Tested |
 | SEC-034 | AI Security | capability | Model access policies | Not started |

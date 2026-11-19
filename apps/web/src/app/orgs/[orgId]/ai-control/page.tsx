@@ -110,6 +110,8 @@ export default function AiControlPage() {
 
           <CopilotTools orgId={orgId} canManage={v.canManage} />
 
+          <AiDataSafety orgId={orgId} canManage={v.canManage} />
+
           <Card className="mt-4 p-4">
             <CardHeader title="Action levels" description="What an agent may do without a person. Every agent here is at level 2 or below: none posts, pays or sends on its own." />
             <ol className="mt-2 grid grid-cols-1 gap-2 text-sm md:grid-cols-5">
@@ -370,6 +372,51 @@ function CopilotTools({ orgId, canManage }: { orgId: string; canManage: boolean 
           </tbody>
         </Table>
       ) : null}
+    </Card>
+  );
+}
+
+type Redaction = { panNumbers: boolean; bankAccounts: boolean; emails: boolean; phones: boolean };
+const REDACTION_CHOICES: { key: keyof Redaction; label: string; example: string }[] = [
+  { key: 'bankAccounts', label: 'Bank account numbers', example: 'Sent as [account ending 7890]' },
+  { key: 'panNumbers', label: 'PAN numbers', example: 'Sent as [PAN removed]' },
+  { key: 'emails', label: 'Email addresses', example: 'Sent as [email removed]' },
+  { key: 'phones', label: 'Phone numbers', example: 'Sent as [phone removed]' },
+];
+
+/** What is hidden from the AI model (SEC-031), and how text that tries to instruct it is handled (SEC-029). */
+function AiDataSafety({ orgId, canManage }: { orgId: string; canManage: boolean }) {
+  const qc = useQueryClient();
+  const status = useQuery({ queryKey: ['copilot-status', orgId], queryFn: () => api<{ redaction: Redaction }>(`/v1/orgs/${orgId}/copilot/status`) });
+  const save = useMutation({
+    mutationFn: (r: Redaction) => api<{ redaction: Redaction }>(`/v1/orgs/${orgId}/copilot/redaction`, { method: 'PUT', body: r }),
+    onSuccess: (s) => qc.setQueryData(['copilot-status', orgId], s),
+  });
+  const r = status.data?.redaction;
+  return (
+    <Card className="mt-4 p-4" role="region" aria-label="Data sent to the AI">
+      <CardHeader title="Data sent to the AI" description="What the copilot leaves out of questions and data before they go to the AI model. Members still see the real values in Talk2Tax; only the model gets a placeholder." />
+      <ErrorAlert title="Could not load what is sent to the AI" error={status.error} />
+      <ErrorAlert title="The setting was not changed" error={save.error} />
+      <p className="mt-2 text-sm">Always hidden: card numbers, Aadhaar numbers, and secrets such as API keys.</p>
+      {r ? (
+        <ul className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+          {REDACTION_CHOICES.map((c) => (
+            <li key={c.key}>
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" className="mt-1" aria-label={`Hide ${c.label.toLowerCase()}`} checked={r[c.key]} disabled={!canManage || save.isPending} onChange={(e) => save.mutate({ ...r, [c.key]: e.target.checked })} />
+                <span>
+                  Hide {c.label.toLowerCase()}
+                  <span className="block text-xs text-fg-faint">{c.example}</span>
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className="mt-3 text-xs text-fg-muted">
+        Text in your books that reads like instructions to an AI (for example a memo saying &ldquo;ignore your instructions&rdquo;) is passed to the model marked as data to ignore. The answer shows a warning, and the copilot cannot propose anything in that answer. Changes here are recorded in the audit trail.
+      </p>
     </Card>
   );
 }

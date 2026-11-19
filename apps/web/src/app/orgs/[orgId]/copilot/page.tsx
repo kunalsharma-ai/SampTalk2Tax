@@ -11,7 +11,7 @@ import { Markdown } from '@/components/copilot/markdown';
 import { canSpeak, speak, stopSpeaking, useSpeechInput } from '@/components/copilot/speech';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
-import { CopilotAction, CopilotConversation, CopilotConversationSummary, CopilotMessage, CopilotStatus, STARTERS, when } from '@/lib/copilot';
+import { CopilotAction, CopilotConversation, CopilotConversationSummary, CopilotMessage, CopilotStatus, redactedSummary, STARTERS, when } from '@/lib/copilot';
 import { useOrg } from '@/lib/org';
 
 const MAX_CHARS = 4000;
@@ -347,6 +347,14 @@ function Answer({ m, orgId, onRetry, canRetry }: { m: CopilotMessage; orgId: str
           </Alert>
         </div>
       ) : null}
+      {m.safety?.injection.length ? (
+        <div className="mt-3">
+          <Alert tone="warning" title="Unusual text in your records">
+            Some data read for this answer looked like instructions to an AI ({[...new Set(m.safety.injection.flatMap((x) => x.reasons))].join('; ')}). It was passed to the model as data to ignore, and nothing could be proposed in this answer. Check the records behind {[...new Set(m.safety.injection.map((x) => m.sources.find((s) => s.tool === x.tool)?.label ?? x.tool))].join(', ')}.
+          </Alert>
+        </div>
+      ) : null}
+      {m.safety && redactedSummary(m.safety.redacted) ? <p className="mt-2 text-xs text-fg-muted">Hidden from the AI model: {redactedSummary(m.safety.redacted)}.</p> : null}
       {m.sources.length ? (
         <div className="mt-3" role="region" aria-label="Looked at">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-muted">Looked at</h3>

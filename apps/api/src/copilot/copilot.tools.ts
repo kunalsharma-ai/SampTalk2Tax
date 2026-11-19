@@ -34,6 +34,8 @@ export interface ToolContext {
   fiscalYearStartMonth: number;
   /** Tools an owner or admin turned off for the organisation (SEC-030). */
   disabledTools?: readonly string[];
+  /** Set once a tool result in this answer read like instructions to an AI (SEC-029): proposals are refused from then on. */
+  proposalsPaused?: boolean;
   /** Set while answering, so proposals can be tied to the member, conversation and answer. */
   userId?: string;
   conversationId?: string;
@@ -380,6 +382,8 @@ export class CopilotTools {
     // Enforced on every call, whatever the model asks for (SEC-030).
     const refused = this.refusal(t, ctx);
     if (refused) return this.fail(source, refused);
+    // After reading text that tried to instruct the AI, nothing is proposed in the same answer (SEC-029).
+    if (ctx.proposalsPaused && name.startsWith('propose_')) return this.fail(source, 'Proposals are paused for this answer: data read while answering contained text that looked like instructions to an AI. The member can ask again in a new question if they still want this.');
     try {
       const data = await t.run(parsed.data, ctx);
       let content = JSON.stringify(data);

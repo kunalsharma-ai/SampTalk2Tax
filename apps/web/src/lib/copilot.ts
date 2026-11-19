@@ -18,6 +18,26 @@ export interface CopilotSource {
   ok: boolean;
   error?: string;
 }
+export type RedactionKind = 'card' | 'aadhaar' | 'secret' | 'pan' | 'bankAccount' | 'email' | 'phone';
+export interface CopilotAnswerSafety {
+  redacted: Partial<Record<RedactionKind, number>>;
+  injection: { tool: string; reasons: string[] }[];
+}
+const REDACTION_NAMES: Record<RedactionKind, [string, string]> = {
+  card: ['card number', 'card numbers'],
+  aadhaar: ['Aadhaar number', 'Aadhaar numbers'],
+  secret: ['secret', 'secrets'],
+  pan: ['PAN', 'PANs'],
+  bankAccount: ['bank account number', 'bank account numbers'],
+  email: ['email address', 'email addresses'],
+  phone: ['phone number', 'phone numbers'],
+};
+/** "2 PANs and 1 card number", or null when nothing was hidden. */
+export function redactedSummary(r: CopilotAnswerSafety['redacted']): string | null {
+  const parts = (Object.entries(r) as [RedactionKind, number][]).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${REDACTION_NAMES[k]?.[n === 1 ? 0 : 1] ?? k}`);
+  if (!parts.length) return null;
+  return parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
+}
 export type CopilotMessageStatus = 'PENDING' | 'COMPLETE' | 'REFUSED' | 'INCOMPLETE' | 'FAILED';
 export interface CopilotMessage {
   id: string;
@@ -31,6 +51,8 @@ export interface CopilotMessage {
   errorCode: string | null;
   errorMessage: string | null;
   servedModel: string | null;
+  /** What was hidden from the AI model, and data that read like instructions to it (SEC-029/031). */
+  safety: CopilotAnswerSafety | null;
   usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number } | null;
   createdAt: string;
   completedAt: string | null;

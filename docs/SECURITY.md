@@ -214,6 +214,14 @@ records 6 years from the end of the assessment year (Income-tax Rules, 1962, rul
 
 Not built: periods for uploaded files and email logs, legal hold, and an export before deletion.
 
+## AI data safety (SEC-029, SEC-031)
+
+The copilot replaces card numbers, Aadhaar numbers and secrets in everything it sends to the AI
+model, and bank accounts, PAN, emails and phones as each organisation chooses. Tool data that reads
+like instructions to an AI is marked as untrusted, and proposals stop for that answer. Details in
+[`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md#what-the-copilot-sends-to-the-model-sec-029-sec-031).
+Other AI agents (collections, bank reconciliation, close review, virtual CFO) do not do this yet.
+
 ## Data residency
 
 Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
