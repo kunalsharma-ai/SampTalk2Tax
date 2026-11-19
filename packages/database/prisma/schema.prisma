@@ -6056,3 +6056,27 @@ model SsoLoginState {
   @@index([expiresAt])
   @@map("sso_login_states")
 }
+
+/// One uploaded file's checks (SEC-018/019): its structure, and the virus scanner's verdict. Kept as it happened, including refused files (whose bytes are not kept).
+model FileScan {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  /// ATTACHMENT, TAX_NOTICE or VENDOR_PORTAL.
+  source      String   @db.VarChar(20)
+  fileName    String   @map("file_name") @db.VarChar(255)
+  contentType String   @map("content_type") @db.VarChar(64)
+  sizeBytes   Int      @map("size_bytes")
+  sha256      String   @db.VarChar(64)
+  /// CLEAN, NOT_SCANNED (no scanner configured), INFECTED, ACTIVE_CONTENT or SCAN_FAILED.
+  result      String   @db.VarChar(16)
+  /// The signature found, the active content, or why the scan failed.
+  detail      String?  @db.VarChar(255)
+  engine      String?  @db.VarChar(200)
+  /// Null for a vendor sending through the vendor portal.
+  actorId     String?  @map("actor_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orgId, createdAt])
+  @@index([createdAt])
+  @@map("file_scans")
+}

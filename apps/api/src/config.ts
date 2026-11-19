@@ -178,6 +178,17 @@ const schema = z.object({
     .string()
     .optional()
     .transform((v) => (v ?? '').split(',').map((x) => x.trim()).filter(Boolean)),
+  /**
+   * Malware scanning of uploads (SEC-019): a ClamAV daemon as tcp://host:3310. When set, every
+   * uploaded file is scanned before it is kept, and if the scanner cannot answer the upload is
+   * refused. When empty, files get the structural checks only.
+   */
+  CLAMAV_URL: z
+    .string()
+    .optional()
+    .transform((v) => v?.trim() || undefined)
+    .refine((v) => !v || /^tcp:\/\/[^/\s]+(:\d+)?\/?$/.test(v), 'CLAMAV_URL is written tcp://host:3310'),
+  CLAMAV_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(120).default(15),
   /** The web app's address, used for links in emails to members. */
   APP_URL: z.string().url('APP_URL must be a URL').default('http://localhost:3000'),
   /**

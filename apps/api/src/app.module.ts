@@ -119,6 +119,8 @@ import { KeyRotationController } from './security/key-rotation.controller';
 import { RetentionController } from './retention/retention.controller';
 import { SsoSettingsController, SsoSignInController } from './sso/sso.controller';
 import { SsoService } from './sso/sso.service';
+import { FileScanningController } from './files/file-scanning.controller';
+import { FileScannerService } from './files/file-scanner.service';
 import { RetentionRunnerService } from './retention/retention-runner.service';
 import { RetentionService } from './retention/retention.service';
 import { KeyRotationService } from './security/key-rotation.service';
@@ -331,6 +333,7 @@ export class AppModule {
         RetentionController,
         SsoSettingsController,
         SsoSignInController,
+        FileScanningController,
         FixedAssetsController,
         DeferralsController,
         LoansController,
@@ -494,6 +497,7 @@ export class AppModule {
         KeyRotationService,
         RetentionService,
         SsoService,
+        FileScannerService,
         BadDebtsService,
         YearEndService,
         PaymentBatchesService,

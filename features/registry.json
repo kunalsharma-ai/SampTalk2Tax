@@ -28364,9 +28364,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/attachments/attachments.service.ts (size, type from bytes, file names)",
+        "apps/api/src/files/inspect.ts",
+        "apps/api/src/files/clamd.ts",
+        "apps/api/src/files/file-scanner.service.ts",
+        "apps/web/src/app/admin/file-scanning/page.tsx",
+        "apps/api/test/file-scanning.e2e.test.ts",
+        "apps/web/e2e/file-scanning-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Uploads (attachments, tax notice files, vendor portal) are limited to 5 MB, typed from their bytes (PDF/PNG/JPEG/WebP), renamed safely, refused when a PDF can run code or carries files (also escaped or in compressed object streams), recorded in file_scans and served back as downloads with nosniff and a sandbox CSP."
     },
     {
       "id": "SEC-019",
@@ -28386,9 +28395,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/files/inspect.ts",
+        "apps/api/src/files/clamd.ts",
+        "apps/api/src/files/file-scanner.service.ts",
+        "apps/web/src/app/admin/file-scanning/page.tsx",
+        "apps/api/test/file-scanning.e2e.test.ts",
+        "apps/web/e2e/file-scanning-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "ClamAV (clamd INSTREAM over TCP, CLAMAV_URL) scans every upload before it is kept; infected files are refused, and uploads fail closed while the scanner cannot answer. Refusals are audited (file.refused) and shown in Platform admin -> File scanning. Not built: re-scanning stored files."
     },
     {
       "id": "SEC-020",

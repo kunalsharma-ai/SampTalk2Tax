@@ -1755,6 +1755,12 @@
     "def": "CHECK ((((protocol)::text = 'OIDC'::text) AND ((auto_join_role IS NULL) OR ((auto_join_role)::text = ANY ((ARRAY['ACCOUNTANT'::character varying, 'APPROVER'::character varying, 'VIEWER'::character varying, 'EMPLOYEE'::character varying])::text[])))))",
     "name": "sso_connections_chk"
    }
+  ],
+  "file_scans": [
+   {
+    "def": "CHECK ((((source)::text = ANY ((ARRAY['ATTACHMENT'::character varying, 'TAX_NOTICE'::character varying, 'VENDOR_PORTAL'::character varying])::text[])) AND ((result)::text = ANY ((ARRAY['CLEAN'::character varying, 'NOT_SCANNED'::character varying, 'INFECTED'::character varying, 'ACTIVE_CONTENT'::character varying, 'SCAN_FAILED'::character varying])::text[])) AND (size_bytes >= 0)))",
+    "name": "file_scans_chk"
+   }
   ]
  },
  "foreignKeys": [
@@ -10209,6 +10215,20 @@
    ],
    "references": "organizations",
    "table": "sso_login_states"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "file_scans_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "file_scans"
   }
  ],
  "uniques": [

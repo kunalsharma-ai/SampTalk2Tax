@@ -3,6 +3,7 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { minorUnits, TAX_AUTHORITY_LABEL, taxNoticeIssues, taxNoticeUrgency, D } from '@talk2tax/accounting-engine';
 import { isDuplicateKeyError } from '@talk2tax/document-db';
 import { cleanFileName, MAX_ATTACHMENT_BYTES, sniffContentType } from '../attachments/attachments.service';
+import { FileScannerService } from '../files/file-scanner.service';
 import { AuditService } from '../audit/audit.service';
 import { OrgContext } from '../auth/decorators';
 import { fromDbDate, toDbDate, todayIso } from '../common/dates';
@@ -38,6 +39,7 @@ export class TaxNoticesService {
     private readonly store: DocumentStoreService,
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly scanner: FileScannerService,
   ) {}
 
   private invalid(issues: string[]) {
@@ -197,6 +199,7 @@ export class TaxNoticesService {
     if (!contentType) throw this.invalid(['Upload a PDF, PNG, JPEG or WebP file']);
     if ((await this.store.collection(taxNoticeFiles).count({ noticeId: id })) >= MAX_FILES) throw this.invalid([`A notice can have at most ${MAX_FILES} files`]);
     const name = cleanFileName(fileName);
+    await this.scanner.check({ orgId: org.id, source: 'TAX_NOTICE', fileName: name, contentType, content, actorId });
     const sha256 = createHash('sha256').update(content).digest('hex');
     const f = await this.store.collection(taxNoticeFiles).insertOne({ orgId: org.id, noticeId: id, fileName: name, contentType, sizeBytes: content.length, sha256, content, uploadedById: actorId, createdAt: new Date() });
     await this.push(id, this.event('FILE', actorId, name));

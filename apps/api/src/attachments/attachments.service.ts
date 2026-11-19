@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { FileScannerService } from '../files/file-scanner.service';
 import { createHash } from 'node:crypto';
 import { compareDuplicates, duplicateFileRisk, type FileUse } from '@talk2tax/accounting-engine';
 import { AttachmentEntity } from '@talk2tax/database';
@@ -52,6 +53,7 @@ export class AttachmentsService {
     private readonly usage: UsageService,
     private readonly moved: MovedTables,
     private readonly store: DocumentStoreService,
+    private readonly scanner: FileScannerService,
   ) {}
 
   async list(org: Org, actor: { id: string }, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
@@ -78,6 +80,7 @@ export class AttachmentsService {
     if (input.content.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
     const contentType = sniffContentType(input.content);
     if (!contentType) throw new DomainError('UNSUPPORTED_FILE', 'Only PDF, PNG, JPEG and WebP files can be attached', HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    await this.scanner.check({ orgId: org.id, source: 'ATTACHMENT', fileName: cleanFileName(input.fileName), contentType, content: input.content, actorId: actor.id });
     const sha256 = createHash('sha256').update(input.content).digest('hex');
     const saved = await this.prisma.$transaction(async (tx) => {
       const count = await tx.attachment.count({ where: { orgId: org.id, entityType: input.entityType, entityId: input.entityId, removedAt: null } });

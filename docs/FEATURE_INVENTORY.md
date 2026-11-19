@@ -1244,8 +1244,8 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-015 |  | capability | API authentication | Tested |
 | SEC-016 |  | capability | Rate limiting | Tested |
 | SEC-017 |  | capability | Input validation | Tested |
-| SEC-018 |  | capability | Secure file uploads | Not started |
-| SEC-019 |  | capability | Malware scanning | Not started |
+| SEC-018 |  | capability | Secure file uploads | Tested |
+| SEC-019 |  | capability | Malware scanning | Tested |
 | SEC-020 |  | capability | Data retention policies | Tested |
 | SEC-021 |  | capability | Backup and recovery | Not started |
 | SEC-022 |  | capability | Disaster recovery procedures | Not started |

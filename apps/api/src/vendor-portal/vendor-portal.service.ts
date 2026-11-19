@@ -17,6 +17,7 @@ import {
 import type { RoleName } from '@talk2tax/security';
 import { createHash, randomBytes } from 'node:crypto';
 import { cleanFileName, MAX_ATTACHMENT_BYTES, sniffContentType } from '../attachments/attachments.service';
+import { FileScannerService } from '../files/file-scanner.service';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
@@ -67,6 +68,7 @@ export class VendorPortalService {
     private readonly regions: RegionsService,
     private readonly usage: UsageService,
     private readonly moved: MovedTables,
+    private readonly scanner: FileScannerService,
   ) {}
 
   // ------------------------------------------------------------------ staff: links
@@ -443,6 +445,7 @@ export class VendorPortalService {
     if (content.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
     const contentType = sniffContentType(content);
     if (!contentType) throw new DomainError('UNSUPPORTED_FILE', 'Send a PDF, PNG, JPEG or WebP file', HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    await this.scanner.check({ orgId: org.id, source: 'VENDOR_PORTAL', fileName: cleanFileName(fileName), contentType, content, actorId: null });
     await this.prisma.$transaction(async (tx) => {
       const s = await tx.vendorPortalSubmission.findFirst({ where: { id, orgId: org.id, contactId: contact.id }, select: { id: true, status: true, sha256: true, createdAt: true, invoiceNumber: true } });
       if (!s) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Invoice not found' });
