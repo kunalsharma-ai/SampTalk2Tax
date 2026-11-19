@@ -68,6 +68,11 @@ registerGuards({
     if (op === 'DELETE') fail('An AI request pack cannot be deleted; stop offering it instead');
     if (op === 'UPDATE' && changed(o, n, ['name', 'requests', 'prices', 'created_by'])) fail('An AI request pack keeps its requests and prices; create a new pack instead');
   },
+  // retention_runs_guard (SEC-020): what a retention run deleted is kept as it happened.
+  retention_runs: (op) => {
+    if (op === 'INSERT') return;
+    fail('A retention run is recorded once and never changed');
+  },
   // platform_ai_switches_guard (SEC-038): the shutdown history is kept as it happened.
   platform_ai_switches: (op) => {
     if (op === 'INSERT') return;

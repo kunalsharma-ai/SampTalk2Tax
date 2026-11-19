@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 772 |
+| Not started | 771 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 485 |
+| Tested | 486 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 19 | 19 |
+| Security and enterprise governance | M1 | 38 | 18 | 20 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5788,6 +5788,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › rejects unbalanced, malformed and header-account entries
   - zod schemas on every endpoint
+
+### SEC-020 — Data retention policies
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Per-organisation retention periods for working data (copilot conversations, CRM webhook delivery log) with minimums, a daily runner and Apply now, audited; statutory records (books, GST, income tax, payroll, audit trail) are never deleted on a schedule and the page lists India's minimum periods. Not built: retention for uploaded files and email logs, legal hold, export before deletion.
+- Evidence:
+  - packages/accounting-engine/src/retention.ts
+  - apps/api/src/retention/retention.service.ts
+  - apps/api/src/retention/retention-runner.service.ts
+  - apps/web/src/app/orgs/[orgId]/settings/retention/page.tsx
+  - apps/api/test/retention.e2e.test.ts
+  - apps/web/e2e/data-retention-flow.test.mjs
+  - docs/SECURITY.md
 
 ### SEC-025 — Dependency scanning
 

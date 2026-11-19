@@ -39,6 +39,7 @@ export async function bootApp(overrides: Record<string, string> = {}, opts: { co
     CLOSE_RUNNER_INTERVAL_SECONDS: '0',
     RECURRING_BILL_RUNNER_INTERVAL_SECONDS: '0',
     CRM_WEBHOOK_RUNNER_INTERVAL_SECONDS: '0',
+    RETENTION_RUNNER_INTERVAL_SECONDS: '0',
     WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true',
     NODE_ENV: 'test',
     MONGODB_URL: process.env.TEST_MONGODB_URL ?? process.env.MONGODB_URL,

@@ -726,6 +726,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Filter by person, action or date. Entries can never be changed or deleted.',
     where: 'Governance. Used for audits and to answer "who changed this?".',
   },
+  'settings/retention': {
+    what: 'How long your data is kept: records the law requires (never deleted on a schedule) and working data such as copilot conversations, kept until you choose a period.',
+    how: 'Owners and admins choose Keep or Delete after a number of days for each kind of working data. Anything older is deleted each day; Apply now runs it straight away.',
+    where: 'Governance. Each run that deleted something is listed, and every change is in the audit trail.',
+  },
   'ai-control': {
     what: 'Controls for every AI feature: which agents run, their limits, and a stop switch.',
     how: 'Turn agents on or off, set their limits, and stop all AI at once if needed.',

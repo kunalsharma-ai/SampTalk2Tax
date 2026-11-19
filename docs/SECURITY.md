@@ -152,6 +152,29 @@ API: `GET /v1/admin/encryption-keys` (platform.read) and `POST /v1/admin/encrypt
 Not built: an external key manager (KMS or Vault), rotating `JWT_SECRET` for sign-in tokens
 without signing everyone out, and per-organisation keys.
 
+## Data retention (SEC-020)
+
+Settings → Data retention (permission `audit.read` to view, `org.manage` to change) sets how long
+each kind of working data is kept. Every kind is kept until an owner chooses a period.
+
+| Data | Shortest period | What is deleted |
+| --- | --- | --- |
+| Copilot conversations | 90 days | Conversations with no new question for the period, with their messages. A conversation waiting for an approval is kept. Token usage records for budgets and invoices are separate and kept. |
+| CRM webhook delivery log | 30 days | Deliveries that finished (succeeded or failed) more than the period ago. Deliveries still being retried are kept. |
+
+The longest period that can be set is 3,650 days; for longer, choose Keep. A runner
+(`RETENTION_RUNNER_INTERVAL_SECONDS`, default daily, `0` to switch it off) applies the periods
+for every organisation, and **Apply now** applies them at once. Each run that deleted something,
+and each Apply now, is listed on the page and audited as `retention.purged` with counts only;
+period changes are audited as `retention.policy_changed`.
+
+Accounting, tax and payroll records and the audit trail are never deleted on a schedule. The page
+lists the minimum periods for India: books of account 8 years (Companies Act, 2013, s.128(5)),
+GST records 72 months from the annual return's due date (CGST Act, 2017, s.36), and income-tax
+records 6 years from the end of the assessment year (Income-tax Rules, 1962, rule 6F(5)).
+
+Not built: periods for uploaded files and email logs, legal hold, and an export before deletion.
+
 ## Data residency
 
 Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).

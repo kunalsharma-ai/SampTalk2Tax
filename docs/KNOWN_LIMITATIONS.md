@@ -284,3 +284,8 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Help texts are in English only; the Hindi catalogue translates the panel's headings and the feature guide's labels, and a help text shows in English until its translation is added. See [`IN_APP_HELP.md`](IN_APP_HELP.md).
 * Detail and form pages without their own entry show the help of the page above them (a contract's page shows the contracts help); sections titled with a record's name rather than fixed text have no (i).
 * The help texts have not been reviewed by an accountant or a tax professional.
+
+## Data retention
+
+* Retention periods cover copilot conversations and the CRM webhook delivery log only; uploaded files, email logs and other working data are kept until deleted by hand. There is no legal hold and no automatic export before deletion. See [`SECURITY.md`](SECURITY.md#data-retention-sec-020).
+* The statutory periods shown are India's and have not been reviewed by a lawyer; other countries show a general reminder only.
