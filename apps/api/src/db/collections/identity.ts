@@ -191,7 +191,8 @@ export const userMfa = defineCollection<UserMfaDoc>({
     },
     afterUpdate(before, after) {
       if ((after.status === 'ACTIVE') !== (after.enabledAt !== null)) throw new GuardViolation('Active two-step sign-in records when it was turned on, and only then');
-      if (before.status === 'ACTIVE' && (after.secretCipher !== before.secretCipher || after.status !== 'ACTIVE')) {
+      // Re-sealing the same secret under a new encryption key (SEC-013) changes the cipher and the key id together.
+      if (before.status === 'ACTIVE' && ((after.secretCipher !== before.secretCipher && after.keyId === before.keyId) || after.status !== 'ACTIVE')) {
         throw new GuardViolation('An active authenticator cannot be swapped in place; turn two-step sign-in off first');
       }
       if (before.lastStep !== null && (after.lastStep === null || after.lastStep < before.lastStep)) throw new GuardViolation('A used code cannot be made usable again');

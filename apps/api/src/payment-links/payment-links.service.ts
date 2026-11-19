@@ -9,7 +9,7 @@ import { todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx, useOrgInTx, withSystemAccess } from '../common/prisma.service';
 import { AppConfig, CONFIG } from '../config';
-import { SecretBox, secretHint } from '../integrations/secret-box';
+import { SecretBox, secretBoxFor, secretHint } from '../integrations/secret-box';
 import { DocumentsService } from '../ledgers/documents.service';
 import { nextCounter } from '../db/counters';
 import { lockRow } from '../db/locks';
@@ -52,7 +52,7 @@ export class PaymentLinksService {
     private readonly audit: AuditService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {
-    this.box = new SecretBox({ encryptionKey: config.INTEGRATIONS_ENCRYPTION_KEY, jwtSecret: config.JWT_SECRET });
+    this.box = secretBoxFor(config);
   }
 
   private invalid(message: string, code = 'PAYMENT_LINK_INVALID', status = HttpStatus.UNPROCESSABLE_ENTITY, details?: unknown): never {

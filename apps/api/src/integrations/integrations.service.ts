@@ -11,7 +11,7 @@ import { PrismaService } from '../common/prisma.service';
 import { AppConfig, CONFIG } from '../config';
 import { AnthropicCopilotModel, COPILOT_MODEL, type CopilotModel } from '../copilot/copilot.model';
 import { isPublicAddress } from '../workflows/webhook';
-import { SecretBox, secretHint } from './secret-box';
+import { SecretBox, secretBoxFor, secretHint } from './secret-box';
 import { brandedEmailAttachments, brandedEmailHtml } from '../workflows/branded-email';
 import { UsageService } from '../usage/usage.service';
 
@@ -91,7 +91,7 @@ export class IntegrationsService {
     @Optional() @Inject(COPILOT_MODEL) private readonly serverModel: CopilotModel | null,
     private readonly usage: UsageService,
   ) {
-    this.box = new SecretBox({ encryptionKey: config.INTEGRATIONS_ENCRYPTION_KEY, jwtSecret: config.JWT_SECRET });
+    this.box = secretBoxFor(config);
   }
 
   private row(orgId: string, kind: IntegrationKind) {

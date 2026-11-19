@@ -5,7 +5,7 @@ import type { AuthUser } from '../../auth/decorators';
 import { DomainError } from '../../common/errors';
 import { PrismaService } from '../../common/prisma.service';
 import { AppConfig, CONFIG } from '../../config';
-import { SecretBox, secretHint } from '../../integrations/secret-box';
+import { SecretBox, secretBoxFor, secretHint } from '../../integrations/secret-box';
 import { GatewayCreds, GatewayError, PaymentGateway, Provider, RazorpayGateway, StripeGateway } from './gateways';
 
 export interface GatewayInput {
@@ -46,7 +46,7 @@ export class PaymentSettingsService {
     private readonly audit: AuditService,
     @Inject(CONFIG) private readonly config: AppConfig,
   ) {
-    this.box = new SecretBox({ encryptionKey: config.INTEGRATIONS_ENCRYPTION_KEY, jwtSecret: config.JWT_SECRET });
+    this.box = secretBoxFor(config);
   }
 
   webhookUrl(p: Provider) {

@@ -6,7 +6,7 @@ import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { AppConfig, CONFIG } from '../config';
 import { MFA_CHALLENGE_MAX_ATTEMPTS, mfaChallenges, UserMfaDoc, userMfa, users } from '../db/collections/identity';
-import { SecretBox } from '../integrations/secret-box';
+import { SecretBox, secretBoxFor } from '../integrations/secret-box';
 import { ClientMeta } from './sessions.service';
 import { hashSecret, parseRefreshToken, sameHash, TokensService } from './tokens.service';
 
@@ -41,7 +41,7 @@ export class MfaService {
     private readonly tokens: TokensService,
     @Inject(CONFIG) config: AppConfig,
   ) {
-    this.box = new SecretBox({ encryptionKey: config.INTEGRATIONS_ENCRYPTION_KEY, jwtSecret: config.JWT_SECRET });
+    this.box = secretBoxFor(config);
   }
 
   private record(actorId: string, action: string, data?: Record<string, unknown>) {
