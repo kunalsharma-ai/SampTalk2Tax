@@ -7057,6 +7057,21 @@
         "docs/SECURITY.md"
       ],
       "notes": "CodeQL (security-extended) over the TypeScript; Trivy 0.75.0 scans of the API, web and migration images (fail on fixable HIGH/CRITICAL; the migration image is distroless and the unused TypeScript compiler is left out), with secret scanning; pnpm audit --audit-level=critical over all packages. On pull requests, main, weekly and on demand. Vitest raised to 4.1.12 to clear critical tinypool advisories. Not a penetration test; no DAST against a running deployment."
+    },
+    "SEC-010": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/common/https-only.ts",
+        "apps/api/src/config.ts",
+        "apps/api/src/operations/system.service.ts",
+        "apps/web/src/lib/transport.ts",
+        "apps/web/src/proxy.ts",
+        "apps/web/src/app/admin/system/page.tsx",
+        "apps/api/test/encryption-in-transit.e2e.test.ts",
+        "apps/web/e2e/encryption-in-transit-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "HTTPS_ONLY (API: on in production when APP_URL is https; web: on in production builds): the web app redirects http:// visitors to https:// (308, localhost exempt) and sends HSTS on HTTPS responses; the API refuses non-HTTPS requests (X-Forwarded-Proto across trusted hops) with 403 HTTPS_REQUIRED except /health, and refuses to start with HTTPS_ONLY and TRUST_PROXY_HOPS=0. MONGODB_REQUIRE_TLS refuses an unencrypted MONGODB_URL at startup. System health shows how visitors, the database, email, the AI model, payment gateways and webhooks are protected, and lists HTTP or an unencrypted database as problems in production. TLS ends at the customer's load balancer; no mTLS, no TLS between web and API inside the private network unless T2T_API_URL is https."
     }
   }
 }

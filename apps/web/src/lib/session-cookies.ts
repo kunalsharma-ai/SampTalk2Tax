@@ -1,6 +1,7 @@
 import 'server-only';
 import type { NextRequest, NextResponse } from 'next/server';
 import { apiBaseUrl, REFRESH_COOKIE, SESSION_COOKIE } from './server-config';
+import { requestProto } from './transport';
 
 export interface IssuedSession {
   accessToken: string;
@@ -47,6 +48,8 @@ export function clientHeaders(req: NextRequest): Record<string, string> {
   if (ip) h['x-forwarded-for'] = ip;
   const ua = req.headers.get('user-agent');
   if (ua) h['user-agent'] = ua.slice(0, 300);
+  // Whether the visitor used HTTPS, for the API's HTTPS_ONLY check (SEC-010).
+  h['x-forwarded-proto'] = requestProto(req);
   return h;
 }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { httpsOnly, httpsRedirect, requestProto, STRICT_TRANSPORT_SECURITY } from './lib/transport';
 
 const PUBLIC = ['/login', '/login/sso', '/register'];
 /** Open to anyone, signed in or not: where a customer lands after paying a payment link. */
@@ -6,8 +7,20 @@ const OPEN = ['/paid'];
 /** The customer and vendor portals: the secret in the link is the check (AR-030, AP-013). */
 const OPEN_PREFIXES = ['/portal/', '/vendor-portal/'];
 
-/** Redirects signed-out visitors to /login (the API still enforces auth on every call). */
+/**
+ * Sends http:// visitors to https:// when HTTPS_ONLY is on (SEC-010), then redirects signed-out
+ * visitors to /login (the API still enforces auth on every call).
+ */
 export function proxy(req: NextRequest) {
+  const secure = httpsRedirect(req);
+  if (secure) return NextResponse.redirect(secure, 308);
+  const res = route(req);
+  // Browsers ignore the header over plain HTTP, so it is sent on HTTPS responses only.
+  if (httpsOnly() && requestProto(req) === 'https') res.headers.set('Strict-Transport-Security', STRICT_TRANSPORT_SECURITY);
+  return res;
+}
+
+function route(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (OPEN.includes(pathname) || OPEN_PREFIXES.some((p) => pathname.startsWith(p))) {
     const res = NextResponse.next();

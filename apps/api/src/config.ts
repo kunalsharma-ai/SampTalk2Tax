@@ -37,6 +37,19 @@ const schema = z.object({
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   CORS_ORIGINS: z.string().default('http://localhost:3000'),
   /**
+   * Encryption in transit (SEC-010). true: every request except /health must have reached
+   * Talk2Tax over HTTPS (TLS ends at the proxy in front, which says so in X-Forwarded-Proto, so
+   * TRUST_PROXY_HOPS must be 1 or more); others are refused with 403 HTTPS_REQUIRED. Browsers are
+   * told to use HTTPS only (Strict-Transport-Security). Unset: on in production when APP_URL is https.
+   */
+  HTTPS_ONLY: z.enum(['true', 'false', '']).optional(),
+  /**
+   * The database connection must be encrypted: MONGODB_URL is mongodb+srv:// or has tls=true.
+   * Unset: the same as HTTPS_ONLY. Set false only where the database is reached over a private
+   * network you trust; System health then shows the connection as not encrypted.
+   */
+  MONGODB_REQUIRE_TLS: z.enum(['true', 'false', '']).optional(),
+  /**
    * AI copilot. The copilot calls Anthropic's Claude API with this key. Without it the
    * copilot says it is not set up and sends nothing anywhere. An empty value counts as unset.
    */
@@ -227,11 +240,25 @@ const schema = z.object({
       }
       return parsed.data;
     }),
+}).transform((c) => {
+  const httpsOnly = c.HTTPS_ONLY === 'true' || (!c.HTTPS_ONLY && c.NODE_ENV === 'production' && c.APP_URL.startsWith('https://'));
+  const mongoTls = c.MONGODB_REQUIRE_TLS === 'true' || (!c.MONGODB_REQUIRE_TLS && httpsOnly);
+  return { ...c, HTTPS_ONLY: httpsOnly, MONGODB_REQUIRE_TLS: mongoTls };
 }).superRefine((c, ctx) => {
+  if (c.HTTPS_ONLY && c.TRUST_PROXY_HOPS === 0) ctx.addIssue({ code: 'custom', path: ['TRUST_PROXY_HOPS'], message: 'HTTPS_ONLY needs TRUST_PROXY_HOPS of 1 or more: TLS ends at the proxy in front of the API, which reports it in X-Forwarded-Proto' });
+  if (c.MONGODB_REQUIRE_TLS && !mongoUsesTls(c.MONGODB_URL)) ctx.addIssue({ code: 'custom', path: ['MONGODB_URL'], message: 'The database connection must be encrypted: use mongodb+srv:// or add tls=true to MONGODB_URL (or set MONGODB_REQUIRE_TLS=false for a private network you trust)' });
   if (c.SMTP_URL && !c.EMAIL_FROM) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM is required when SMTP_URL is set' });
   if (!c.SMTP_URL && c.SMTP_HOST && !c.EMAIL_FROM && !c.SMTP_USER) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM (or SMTP_USER) is required when SMTP_HOST is set' });
   if (c.SMTP_USER && !c.SMTP_PASS) ctx.addIssue({ code: 'custom', path: ['SMTP_PASS'], message: 'SMTP_PASS is required with SMTP_USER' });
 });
+
+/** Whether a MongoDB connection string encrypts the connection (mongodb+srv:// does unless tls=false). */
+export function mongoUsesTls(url: string): boolean {
+  const q = new URLSearchParams(url.split('?')[1] ?? '');
+  const flag = (q.get('tls') ?? q.get('ssl'))?.toLowerCase();
+  if (flag) return flag === 'true';
+  return url.startsWith('mongodb+srv://');
+}
 
 export type AppConfig = z.infer<typeof schema>;
 

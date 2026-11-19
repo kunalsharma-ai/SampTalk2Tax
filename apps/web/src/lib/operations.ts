@@ -35,6 +35,19 @@ export interface SystemHealth {
   requests: { windowMinutes: number; since: string; totals: RouteStat; minutes: { at: string; requests: number; serverErrors: number; p95Ms: number | null }[]; routes: (RouteStat & { route: string })[] };
   errors: { open: number | null; lastHour: number | null };
   maintenance: (MaintenanceStatus & { id: string }) | null;
+  transport: Transport;
+}
+/** Encryption in transit (SEC-010), from the API server's settings. */
+export interface Transport {
+  httpsOnly: boolean;
+  strictTransportSecurity: boolean;
+  requestSecure: boolean;
+  trustProxyHops: number;
+  database: { encrypted: boolean; required: boolean };
+  email: 'NOT_SET_UP' | 'TLS' | 'STARTTLS_REQUIRED' | 'STARTTLS_WHEN_OFFERED' | 'PLAIN';
+  ai: 'HTTPS' | 'PLAIN';
+  payments: 'HTTPS' | 'PLAIN';
+  webhooks: 'HTTPS_ONLY' | 'PLAIN_ALLOWED';
 }
 export interface ErrorGroupRow { id: string; name: string; message: string; method: string; route: string; frame: string | null; occurrences: number; last24h: number; firstSeenAt: string; lastSeenAt: string; resolvedAt: string | null }
 export interface ErrorGroupDetail extends Omit<ErrorGroupRow, 'last24h'> { resolvedBy: string | null; events: { id: string; requestId: string; status: number; method: string; path: string; orgId: string | null; userId: string | null; message: string; stack: string | null; at: string }[] }

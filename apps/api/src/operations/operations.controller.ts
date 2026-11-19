@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, Public, RequirePermission, RequirePlatform } from '../auth/decorators';
@@ -59,8 +60,8 @@ export class OperationsController {
 
   @Get('system')
   @RequirePlatform('platform.read')
-  health() {
-    return this.system.health();
+  health(@Req() req: Request) {
+    return this.system.health(req.secure);
   }
 
   @Get('errors')

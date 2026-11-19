@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DocumentStoreService } from '../common/document-store.service';
 import { databaseStatus } from '../db/database-status';
-import { AppConfig, CONFIG } from '../config';
+import { AppConfig, CONFIG, mongoUsesTls } from '../config';
+import { serverMail } from '../integrations/integrations.service';
 import { RegionsService } from '../regions/regions.service';
 import { ErrorsService } from './errors.service';
 import { HeartbeatsService } from './heartbeats.service';
@@ -40,7 +41,42 @@ export class SystemService {
     return databaseStatus(this.documents);
   }
 
-  async health() {
+  /**
+   * Encryption in transit (SEC-010): how each connection Talk2Tax makes or takes is protected,
+   * from this server's settings. requestSecure is whether the request asking arrived over HTTPS.
+   */
+  transport(requestSecure: boolean) {
+    const c = this.config;
+    const mail = serverMail(c);
+    const url = mail?.options.url ?? null;
+    const email = !mail
+      ? 'NOT_SET_UP'
+      : url
+        ? url.startsWith('smtps://')
+          ? 'TLS'
+          : /[?&]requireTLS=true/i.test(url)
+            ? 'STARTTLS_REQUIRED'
+            : /[?&]ignoreTLS=true/i.test(url)
+              ? 'PLAIN'
+              : 'STARTTLS_WHEN_OFFERED'
+        : c.SMTP_SECURE
+          ? 'TLS'
+          : 'STARTTLS_WHEN_OFFERED';
+    const https = (u: string | undefined) => !u || u.startsWith('https://');
+    return {
+      httpsOnly: c.HTTPS_ONLY,
+      strictTransportSecurity: true,
+      requestSecure,
+      trustProxyHops: c.TRUST_PROXY_HOPS,
+      database: { encrypted: mongoUsesTls(c.MONGODB_URL), required: c.MONGODB_REQUIRE_TLS },
+      email,
+      ai: https(c.ANTHROPIC_BASE_URL) ? 'HTTPS' : 'PLAIN',
+      payments: https(c.PAYMENTS_STRIPE_API_URL) && https(c.PAYMENTS_RAZORPAY_API_URL) ? 'HTTPS' : 'PLAIN',
+      webhooks: c.WEBHOOK_ALLOW_PRIVATE_NETWORKS ? 'PLAIN_ALLOWED' : 'HTTPS_ONLY',
+    };
+  }
+
+  async health(requestSecure = false) {
     const mem = process.memoryUsage();
     const [database, maintenance, errors] = await Promise.all([
       this.database(),
@@ -54,6 +90,8 @@ export class SystemService {
       database.status === 'SLOW' ? 'The database is slow to answer' : null,
       database.unfinishedMigrations ? `${database.unfinishedMigrations} database migration${database.unfinishedMigrations === 1 ? ' has' : 's have'} not finished` : null,
       ...runners.filter((r) => r.state === 'FAILING' || r.state === 'LATE').map((r) => `${r.name} is ${r.state === 'FAILING' ? 'failing' : 'late'}`),
+      this.config.NODE_ENV === 'production' && !this.config.HTTPS_ONLY ? 'Requests are accepted without HTTPS (set HTTPS_ONLY=true)' : null,
+      this.config.NODE_ENV === 'production' && !mongoUsesTls(this.config.MONGODB_URL) ? 'The database connection is not encrypted' : null,
       requests.totals.serverErrors > 0 ? `${requests.totals.serverErrors} server error${requests.totals.serverErrors === 1 ? '' : 's'} in the last ${requests.windowMinutes} minutes` : null,
     ].filter((p): p is string => p !== null);
     return {
@@ -76,6 +114,7 @@ export class SystemService {
       requests,
       errors,
       maintenance,
+      transport: this.transport(requestSecure),
     };
   }
 }

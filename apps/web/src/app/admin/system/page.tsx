@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shell';
 import { bytes } from '@/components/usage-meter';
 import { api } from '@/lib/api';
 import { dateTime } from '@/lib/format';
-import { duration, Runner, SystemHealth } from '@/lib/operations';
+import { duration, Runner, SystemHealth, Transport } from '@/lib/operations';
 
 const STATUS = { OK: { label: 'Healthy', tone: 'positive' }, DEGRADED: { label: 'Needs attention', tone: 'warning' }, DOWN: { label: 'Down', tone: 'negative' } } as const;
 const RUNNER: Record<Runner['state'], { label: string; tone: 'positive' | 'neutral' | 'warning' | 'negative' }> = {
@@ -80,6 +80,8 @@ export default function SystemHealthPage() {
             </Card>
           </div>
 
+          <EncryptionInTransit t={d.transport} />
+
           <Card className="mb-6" aria-label="Background runners">
             <CardHeader title="Background runners" description="Passes are skipped while maintenance is in progress." />
             <Table>
@@ -121,5 +123,40 @@ export default function SystemHealthPage() {
         </>
       ) : q.isError ? <Alert title="System health could not be read">{(q.error as Error).message}</Alert> : <p className="text-sm text-fg-muted">Measuring…</p>}
     </>
+  );
+}
+
+type Tone = 'positive' | 'neutral' | 'warning' | 'negative';
+const EMAIL: Record<Transport['email'], [string, Tone]> = {
+  TLS: ['Encrypted (TLS)', 'positive'],
+  STARTTLS_REQUIRED: ['Encrypted (STARTTLS required)', 'positive'],
+  STARTTLS_WHEN_OFFERED: ['Encrypted when the mail server offers STARTTLS', 'warning'],
+  PLAIN: ['Not encrypted', 'negative'],
+  NOT_SET_UP: ['No server mail set up', 'neutral'],
+};
+
+/** How each connection Talk2Tax takes or makes is protected (SEC-010). */
+function EncryptionInTransit({ t }: { t: Transport }) {
+  const rows: [string, string, Tone][] = [
+    ['Browsers and apps to Talk2Tax', t.httpsOnly ? 'HTTPS only; browsers told to use HTTPS (HSTS)' : 'HTTP accepted (HTTPS_ONLY is off)', t.httpsOnly ? 'positive' : 'warning'],
+    ['This page was read over', t.requestSecure ? 'HTTPS' : 'HTTP', t.requestSecure ? 'positive' : 'warning'],
+    ['API server to the database', t.database.encrypted ? `Encrypted (TLS)${t.database.required ? ', required' : ''}` : 'Not encrypted', t.database.encrypted ? 'positive' : 'warning'],
+    ['Email sent by Talk2Tax', ...EMAIL[t.email]],
+    ['AI model (Claude)', t.ai === 'HTTPS' ? 'HTTPS' : 'Not encrypted (a local address is set)', t.ai === 'HTTPS' ? 'positive' : 'warning'],
+    ['Payment gateways', t.payments === 'HTTPS' ? 'HTTPS' : 'Not encrypted (a local address is set)', t.payments === 'HTTPS' ? 'positive' : 'warning'],
+    ['Webhooks and automations', t.webhooks === 'HTTPS_ONLY' ? 'Public https:// addresses only' : 'http:// and private addresses allowed (testing only)', t.webhooks === 'HTTPS_ONLY' ? 'positive' : 'warning'],
+  ];
+  return (
+    <Card className="mb-6" role="region" aria-label="Encryption in transit">
+      <CardHeader title="Encryption in transit" description="How each connection Talk2Tax takes or makes is protected, from this server's settings." />
+      <Table aria-label="Connections">
+        <thead><Tr><Th>Connection</Th><Th>Protection</Th></Tr></thead>
+        <tbody>
+          {rows.map(([name, text, tone]) => (
+            <Tr key={name}><Td>{name}</Td><Td><Badge tone={tone}>{text}</Badge></Td></Tr>
+          ))}
+        </tbody>
+      </Table>
+    </Card>
   );
 }

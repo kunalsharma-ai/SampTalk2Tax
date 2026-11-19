@@ -265,6 +265,26 @@ like instructions to an AI is marked as untrusted, and proposals stop for that a
 [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md#what-the-copilot-sends-to-the-model-sec-029-sec-031).
 Other AI agents (collections, bank reconciliation, close review, virtual CFO) do not do this yet.
 
+## Encryption in transit (SEC-010)
+
+* **Visitors and apps.** TLS ends at the load balancer in front of the web app (or the API, if it
+  is exposed). With `HTTPS_ONLY` on, the web app sends anyone who arrived over `http://` to the
+  same address on `https://` (308) and adds `Strict-Transport-Security: max-age=31536000;
+  includeSubDomains` to HTTPS responses; the API refuses any request that did not arrive over HTTPS
+  with 403 `HTTPS_REQUIRED` (the health check excepted) and always sends the same header through
+  helmet. The web app passes the visitor's protocol to the API in `X-Forwarded-Proto`.
+* **The database.** `MONGODB_REQUIRE_TLS` (on with `HTTPS_ONLY`) stops the API and migrations from
+  starting unless `MONGODB_URL` encrypts the connection (`mongodb+srv://` or `tls=true`).
+* **Outbound.** Webhooks and SSO providers must be public `https://` addresses outside test
+  settings; the AI model and payment gateways are reached over HTTPS; server email uses TLS
+  (`smtps://`) or STARTTLS (`?requireTLS=true` to insist).
+* **What is checked.** Platform admin → System health → Encryption in transit lists each
+  connection and whether it is protected, from the server's settings; in production, HTTP being
+  accepted or a database connection without TLS is listed as a problem.
+* Not covered: TLS between the web app and the API inside your private network (use an `https://`
+  `T2T_API_URL` if that network is not trusted), certificate management (your load balancer's),
+  and mutual TLS.
+
 ## Data residency
 
 Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
