@@ -69,6 +69,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Make an order from an accepted quotation or enter it directly with the customer\'s PO number. Use Bill this order to make a draft invoice for some or all of it.',
     where: 'Sales, after Quotations. Invoices made from an order show its reference; what is left to bill feeds the Revenue forecast.',
   },
+  'journal-suggestions': {
+    what: 'Journals the books suggest for a month: a journal typed in each of the last three months but missing this month, and costs that came every month but not this one, to accrue at the month end.',
+    how: 'Pick the month. Save a suggestion as a draft journal, check it and post it, or dismiss it with a reason. Accruals are suggested once the month has ended and need an accrued liabilities account.',
+    where: 'Accounting, next to Journal templates. Worked out from posted journals each time; nothing is posted without you.',
+  },
   'journal-templates': {
     what: 'Journals you enter again and again, such as rent, accruals or management charges, kept as templates. A template with a schedule is a recurring journal: it makes the journal every month, quarter, half-year or year by itself.',
     how: 'Create a template with its lines, or open a journal and choose Save as template. Use it to make one journal on a date you pick, or give it a schedule that makes drafts for review or posts straight away. Run due now makes any run that has fallen due without waiting for the hourly check.',

@@ -252,6 +252,10 @@ export const SECTION_HELP: Record<string, Help> = {
   'Produce a report': { what: 'Create a copy of the report for a period, with the figures filled in.', how: 'Pick the period and produce it. The copy keeps its figures even if the books change later.' },
   Reports: { what: 'Reports produced from this design.', how: 'Open one to read, print or export it.' },
 
+  // ---------------------------------------------------------------- journal suggestions
+  'Suggested journals': { what: 'Missed repeat journals and accruals for the month, worked out from the month and the three before it.', how: 'Check the lines and amounts, then save it as a draft journal or dismiss it with a reason.' },
+  'Decisions this month': { what: 'The suggestions accepted or dismissed for this month, with the draft journal or the reason.', how: 'Open an accepted one\'s journal to check and post it.' },
+
   // ---------------------------------------------------------------- consolidation
   Groups: { what: 'Groups of organisations you consolidate.', how: 'Open a group to run its consolidation.' },
   'New group': { what: 'Create a group with a parent and its subsidiaries.', how: 'Name it, pick the parent, then add the other companies from the group page.' },

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 776 |
+| Not started | 775 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 481 |
+| Tested | 482 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -24,7 +24,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 49 | 0 |
-| General ledger and accounting engine | M1 | 44 | 1 | 43 |
+| General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 11 | 25 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
@@ -503,6 +503,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/fx/page.tsx
   - apps/web/e2e/fx-revaluation-flow.test.mjs
   - docs/MULTI_CURRENCY.md
+
+### GL-036 — Automated journal suggestions
+
+- Module: General ledger and accounting engine
+- Status: **Tested**
+- Notes: Rule-based suggestions for a month: manual journals repeated in each of the last three months but missing, and expense accruals at the three-month average. Accepted as draft journals or dismissed with a reason; decisions recorded once and audited.
+- Evidence:
+  - packages/accounting-engine/src/journal-suggestions.ts
+  - apps/api/src/journal-suggestions/journal-suggestions.service.ts
+  - apps/api/src/db/migrations/20270114100000_journal_suggestions.ts
+  - apps/web/src/app/orgs/[orgId]/journal-suggestions/page.tsx
+  - packages/accounting-engine/test/journal-suggestions.test.ts
+  - apps/api/test/journal-suggestions.e2e.test.ts
+  - apps/web/e2e/journal-suggestions-flow.test.mjs
+  - docs/JOURNAL_SUGGESTIONS.md
 
 ### GL-037 — Every posted journal must balance
 

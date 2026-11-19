@@ -6861,6 +6861,20 @@
         "docs/CONSOLIDATION.md"
       ],
       "notes": "Consolidation adjustments in the group's currency, in the consolidation only: goodwill, fair value or unrealised profit entered by hand, shown in the worksheet's Adjustments column, voided once with a reason."
+    },
+    "GL-036": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/journal-suggestions.ts",
+        "apps/api/src/journal-suggestions/journal-suggestions.service.ts",
+        "apps/api/src/db/migrations/20270114100000_journal_suggestions.ts",
+        "apps/web/src/app/orgs/[orgId]/journal-suggestions/page.tsx",
+        "packages/accounting-engine/test/journal-suggestions.test.ts",
+        "apps/api/test/journal-suggestions.e2e.test.ts",
+        "apps/web/e2e/journal-suggestions-flow.test.mjs",
+        "docs/JOURNAL_SUGGESTIONS.md"
+      ],
+      "notes": "Rule-based suggestions for a month: manual journals repeated in each of the last three months but missing, and expense accruals at the three-month average. Accepted as draft journals or dismissed with a reason; decisions recorded once and audited."
     }
   }
 }
