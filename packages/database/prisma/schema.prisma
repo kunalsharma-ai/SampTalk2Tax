@@ -1904,6 +1904,8 @@ model CopilotSettings {
   offReason   String?      @map("off_reason") @db.VarChar(500)
   /// Copilot tools an owner or admin turned off for the organisation (SEC-030): names, never offered to the model or run.
   disabledTools Json       @default("[]") @map("disabled_tools")
+  /// What is hidden from the AI model besides cards, Aadhaar numbers and secrets (SEC-031): { panNumbers, bankAccounts, emails, phones }; {} = the defaults.
+  redaction   Json         @default("{}")
   updatedById String       @map("updated_by_id") @db.Uuid
   updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
@@ -1989,6 +1991,8 @@ model CopilotMessage {
   errorMessage    String?              @map("error_message") @db.VarChar(1000)
   /// The model that answered (can differ from the conversation's when the provider fell back to another model).
   servedModel     String?              @map("served_model") @db.VarChar(100)
+  /// What was hidden from the model and tool results that read like instructions to it (SEC-029/031).
+  safety          Json?
   inputTokens     Int?                 @map("input_tokens")
   outputTokens    Int?                 @map("output_tokens")
   cacheReadTokens Int?                 @map("cache_read_tokens")

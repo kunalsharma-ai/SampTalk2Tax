@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 767 |
+| Not started | 765 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 490 |
+| Tested | 492 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 14 | 24 |
+| Security and enterprise governance | M1 | 38 | 12 | 26 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5873,6 +5873,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - pnpm-workspace.yaml
   - docs/CI_CD.md
 
+### SEC-029 — Prompt injection defenses
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Copilot only. Successful tool results are checked against five patterns (ignore instructions, new role, imitated chat messages, tool requests, requests for hidden prompts or secrets). A match is sent to the model wrapped in a safety notice and <untrusted_data>, recorded on the answer and in the audit, and propose_* tools are refused for the rest of that answer. Pattern-based: rephrased instructions can get through, which is why proposals still need a member's confirmation.
+- Evidence:
+  - apps/api/src/copilot/safety.ts
+  - apps/api/src/copilot/copilot.service.ts (loop, ask)
+  - apps/api/src/copilot/copilot.tools.ts (proposalsPaused)
+  - apps/web/src/app/orgs/[orgId]/copilot/page.tsx (Unusual text warning)
+  - apps/api/test/ai-data-safety.e2e.test.ts
+  - apps/web/e2e/ai-data-safety-flow.test.mjs
+  - docs/AI_CONTROL_CENTER.md
+
 ### SEC-030 — Tool permission enforcement
 
 - Module: Security and enterprise governance
@@ -5885,6 +5899,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-safety.e2e.test.ts
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/ai-safety-flow.test.mjs
+  - docs/AI_CONTROL_CENTER.md
+
+### SEC-031 — Sensitive data redaction
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Copilot only. Before a question or tool result goes to the model: Luhn-valid card numbers, Verhoeff-valid Aadhaar numbers and API keys are always replaced; bank account fields (on by default), PAN, emails and phones as owners and admins choose. Members keep the real text; each answer records and shows counts of what was hidden. Other AI agents (collections, bank, close, CFO) do not redact yet.
+- Evidence:
+  - apps/api/src/copilot/safety.ts
+  - apps/api/src/copilot/copilot.service.ts (loop, ask)
+  - apps/api/src/copilot/copilot.controller.ts (PUT copilot/redaction)
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (Data sent to the AI)
+  - apps/api/test/ai-data-safety.e2e.test.ts
+  - apps/web/e2e/ai-data-safety-flow.test.mjs
   - docs/AI_CONTROL_CENTER.md
 
 ### SEC-032 — AI action logging

@@ -6982,6 +6982,32 @@
         "docs/SECURITY.md"
       ],
       "notes": "ClamAV (clamd INSTREAM over TCP, CLAMAV_URL) scans every upload before it is kept; infected files are refused, and uploads fail closed while the scanner cannot answer. Refusals are audited (file.refused) and shown in Platform admin -> File scanning. Not built: re-scanning stored files."
+    },
+    "SEC-029": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot/safety.ts",
+        "apps/api/src/copilot/copilot.service.ts (loop, ask)",
+        "apps/api/src/copilot/copilot.tools.ts (proposalsPaused)",
+        "apps/web/src/app/orgs/[orgId]/copilot/page.tsx (Unusual text warning)",
+        "apps/api/test/ai-data-safety.e2e.test.ts",
+        "apps/web/e2e/ai-data-safety-flow.test.mjs",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Copilot only. Successful tool results are checked against five patterns (ignore instructions, new role, imitated chat messages, tool requests, requests for hidden prompts or secrets). A match is sent to the model wrapped in a safety notice and <untrusted_data>, recorded on the answer and in the audit, and propose_* tools are refused for the rest of that answer. Pattern-based: rephrased instructions can get through, which is why proposals still need a member's confirmation."
+    },
+    "SEC-031": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot/safety.ts",
+        "apps/api/src/copilot/copilot.service.ts (loop, ask)",
+        "apps/api/src/copilot/copilot.controller.ts (PUT copilot/redaction)",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (Data sent to the AI)",
+        "apps/api/test/ai-data-safety.e2e.test.ts",
+        "apps/web/e2e/ai-data-safety-flow.test.mjs",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Copilot only. Before a question or tool result goes to the model: Luhn-valid card numbers, Verhoeff-valid Aadhaar numbers and API keys are always replaced; bank account fields (on by default), PAN, emails and phones as owners and admins choose. Members keep the real text; each answer records and shows counts of what was hidden. Other AI agents (collections, bank, close, CFO) do not redact yet."
     }
   }
 }
