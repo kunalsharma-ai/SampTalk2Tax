@@ -1232,8 +1232,8 @@ Part 35 · M1 · priority P0 · depends on: none
 | SEC-003 |  | capability | Role-based access control | Tested |
 | SEC-004 |  | capability | Attribute-based access control where appropriate | Not started |
 | SEC-005 |  | capability | MFA | Tested |
-| SEC-006 |  | capability | SSO | Not started |
-| SEC-007 |  | capability | SAML/OIDC architecture | Not started |
+| SEC-006 |  | capability | SSO | Tested |
+| SEC-007 |  | capability | SAML/OIDC architecture | Tested |
 | SEC-008 |  | capability | Session management | Tested |
 | SEC-009 |  | capability | Device management | Tested |
 | SEC-010 |  | capability | Encryption in transit | Not started |

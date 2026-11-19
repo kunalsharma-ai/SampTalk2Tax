@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 771 |
+| Not started | 769 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 486 |
+| Tested | 488 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 18 | 20 |
+| Security and enterprise governance | M1 | 38 | 16 | 22 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5702,6 +5702,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/two-step-sign-in.tsx (Account and preferences), sign-in code step in auth-form.tsx
   - apps/web/e2e/two-step-sign-in-flow.test.mjs
   - Organisation rule: GET/PUT /v1/orgs/:orgId/security (org_security_settings); AuthGuard refuses MFA_REQUIRED; apps/web/e2e/two-step-required-flow.test.mjs
+
+### SEC-006 — SSO
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Single sign-on with an organisation's OpenID Connect provider (Entra ID, Google Workspace, Okta, Keycloak, ...): code flow with PKCE and browser-bound state, ID token signature/iss/aud/exp/nonce checks, DNS-TXT-verified email domains, optional join with a role and optional enforcement (owners keep their password), audited. Not built: SAML, SCIM, single logout.
+- Evidence:
+  - apps/api/src/sso/oidc.ts
+  - apps/api/src/sso/sso.service.ts
+  - apps/api/src/sso/sso.controller.ts
+  - apps/web/src/app/orgs/[orgId]/settings/sso/page.tsx
+  - apps/web/src/app/api/session/sso/callback/route.ts
+  - apps/api/test/sso.e2e.test.ts
+  - apps/web/e2e/sso-flow.test.mjs
+  - docs/SINGLE_SIGN_ON.md
+
+### SEC-007 — SAML/OIDC architecture
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: OIDC relying party architecture: per-organisation connection with sealed client secret (key rotation covers it), discovery with issuer check, SSRF-guarded provider requests (public https only, no redirects, size and time limits), JWKS verification of RS/PS/ES algorithms. SAML is not supported.
+- Evidence:
+  - apps/api/src/sso/oidc.ts
+  - apps/api/src/sso/sso.service.ts
+  - apps/api/src/sso/sso.controller.ts
+  - apps/web/src/app/orgs/[orgId]/settings/sso/page.tsx
+  - apps/web/src/app/api/session/sso/callback/route.ts
+  - apps/api/test/sso.e2e.test.ts
+  - apps/web/e2e/sso-flow.test.mjs
+  - docs/SINGLE_SIGN_ON.md
 
 ### SEC-008 — Session management
 

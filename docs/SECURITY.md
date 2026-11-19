@@ -152,6 +152,14 @@ API: `GET /v1/admin/encryption-keys` (platform.read) and `POST /v1/admin/encrypt
 Not built: an external key manager (KMS or Vault), rotating `JWT_SECRET` for sign-in tokens
 without signing everyone out, and per-organisation keys.
 
+## Single sign-on (SEC-006/007)
+
+Organisations can sign in with their own OpenID Connect provider. The setup uses the code flow
+with PKCE and browser-bound state, and signed ID tokens are checked against the provider's keys.
+Domains are proved by DNS TXT records, and SSO can optionally be required for members, though
+owners keep their password. Requests to the provider are guarded against reaching private
+networks. See [`SINGLE_SIGN_ON.md`](SINGLE_SIGN_ON.md).
+
 ## Data retention (SEC-020)
 
 Settings → Data retention (permission `audit.read` to view, `org.manage` to change) sets how long

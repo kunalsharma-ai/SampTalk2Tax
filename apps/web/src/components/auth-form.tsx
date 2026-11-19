@@ -124,6 +124,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         <Button type="submit" loading={isSubmitting} className="mt-2">
           {mode === 'login' ? 'Sign in' : 'Create account'}
         </Button>
+        {mode === 'login' ? (
+          <Link className="text-center text-sm text-accent hover:underline" href={`/login/sso${form.watch('email') ? `?email=${encodeURIComponent(form.watch('email'))}` : ''}`} prefetch={false}>
+            Sign in with single sign-on
+          </Link>
+        ) : null}
       </form>
       {/* Not prefetched: once the form signs you in, the proxy sends /login and /register to "/", and a
           prefetch that ends up there answers 404 (Next.js 16 prefetches each segment separately). */}

@@ -6001,3 +6001,58 @@ model RetentionRun {
   @@index([orgId, createdAt])
   @@map("retention_runs")
 }
+
+/// An organisation's single sign-on connection (SEC-006/007): an OpenID Connect provider. One per organisation.
+model SsoConnection {
+  orgId              String   @id @map("org_id") @db.Uuid
+  protocol           String   @default("OIDC") @db.VarChar(8)
+  issuer             String   @db.VarChar(500)
+  clientId           String   @map("client_id") @db.VarChar(255)
+  /// The client secret, sealed with the integrations key (AES-256-GCM).
+  clientSecretCipher String   @map("client_secret_cipher")
+  clientSecretKeyId  String   @map("client_secret_key_id") @db.VarChar(16)
+  clientSecretHint   String   @map("client_secret_hint") @db.VarChar(16)
+  enabled            Boolean  @default(true)
+  /// Members with an email at a verified domain must sign in with SSO (owners may still use a password).
+  enforced           Boolean  @default(false)
+  /// The role given to someone at a verified domain who is not yet a member; null = members only.
+  autoJoinRole       String?  @map("auto_join_role") @db.VarChar(16)
+  updatedById        String   @map("updated_by_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("sso_connections")
+}
+
+/// An email domain an organisation signs in with (SEC-006). Proved with a DNS TXT record; a domain is verified for one organisation at most.
+model SsoDomain {
+  id          String    @id @default(uuid()) @db.Uuid
+  orgId       String    @map("org_id") @db.Uuid
+  domain      String    @db.VarChar(253)
+  /// The value of the TXT record at _talk2tax-verification.<domain>.
+  token       String    @db.VarChar(64)
+  verifiedAt  DateTime? @map("verified_at") @db.Timestamptz(6)
+  createdById String    @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([orgId, domain])
+  @@index([domain])
+  @@map("sso_domains")
+}
+
+/// One single sign-on attempt (SEC-006): the state, nonce and PKCE verifier sent to the provider, bound to the browser that started it. Used once, within ten minutes.
+model SsoLoginState {
+  id           String    @id @db.VarChar(64)
+  orgId        String    @map("org_id") @db.Uuid
+  nonce        String    @db.VarChar(64)
+  codeVerifier String    @map("code_verifier") @db.VarChar(128)
+  /// SHA-256 of the random value kept in the browser's cookie.
+  bindingHash  String    @map("binding_hash") @db.VarChar(64)
+  redirectUri  String    @map("redirect_uri") @db.VarChar(500)
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt       DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("sso_login_states")
+}

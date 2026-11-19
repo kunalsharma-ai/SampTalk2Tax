@@ -69,6 +69,8 @@ Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `ta
 | `CLOSE_RUNNER_INTERVAL_SECONDS` | no | How often months that have ended are checked for a close to start automatically (where an organisation turned that on). Default 3600; 0 turns it off |
 | `RECURRING_BILL_RUNNER_INTERVAL_SECONDS` | no | How often recurring vendor bills are made as their runs fall due. Default 3600; 0 turns it off |
 | `RETENTION_RUNNER_INTERVAL_SECONDS` | no | How often each organisation's data retention periods are applied (SEC-020). Default 86400; 0 turns it off |
+| `SSO_ALLOW_PRIVATE_NETWORKS` | no | `true` lets organisations' single sign-on providers be http:// or on private networks. Local development and tests only |
+| `SSO_DNS_SERVERS` | no | DNS servers for checking sign-in domains' TXT records, comma-separated host[:port]. Default: the system's |
 | `PAYMENTS_TIMEOUT_SECONDS` | no | Seconds to wait for a payment gateway. Default 20 |
 | `PAYMENTS_STRIPE_API_URL`, `PAYMENTS_RAZORPAY_API_URL` | no | Tests and previews only: point the gateway clients at the local stand-in. Gateways themselves are set up in Platform admin → Payments |
 | `REGION_DIRECTORY` | no | JSON of the other regions and their web addresses, used to point people to an organisation's home region |

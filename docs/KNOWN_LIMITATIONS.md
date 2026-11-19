@@ -289,3 +289,8 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Retention periods cover copilot conversations and the CRM webhook delivery log only; uploaded files, email logs and other working data are kept until deleted by hand. There is no legal hold and no automatic export before deletion. See [`SECURITY.md`](SECURITY.md#data-retention-sec-020).
 * The statutory periods shown are India's and have not been reviewed by a lawyer; other countries show a general reminder only.
+
+## Single sign-on
+
+* Single sign-on is OpenID Connect only (no SAML), with one provider per organisation, no SCIM provisioning and no single logout: someone who leaves keeps their Talk2Tax membership until removed under Team and roles. See [`SINGLE_SIGN_ON.md`](SINGLE_SIGN_ON.md).
+* It has been tested against a local stand-in provider, not yet against Microsoft Entra ID, Google Workspace or Okta themselves.

@@ -726,6 +726,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Filter by person, action or date. Entries can never be changed or deleted.',
     where: 'Governance. Used for audits and to answer "who changed this?".',
   },
+  'settings/sso': {
+    what: 'Single sign-on: your team signs in with your organisation\'s identity provider (OpenID Connect) instead of a Talk2Tax password.',
+    how: 'Register Talk2Tax in your provider with the redirect URI shown, then enter the issuer URL, client ID and secret. Add your email domain and publish the TXT record shown to prove it, then choose Verify. Optionally let new people join with a role, and require single sign-on for members.',
+    where: 'Governance. Every change, sign-in and refused sign-in is in the audit trail. Owners can always sign in with their password, so a broken provider never locks you out.',
+  },
   'settings/retention': {
     what: 'How long your data is kept: records the law requires (never deleted on a schedule) and working data such as copilot conversations, kept until you choose a period.',
     how: 'Owners and admins choose Keep or Delete after a number of days for each kind of working data. Anything older is deleted each day; Apply now runs it straight away.',
@@ -801,6 +806,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     what: 'Sign in to Talk2Tax.',
     how: 'Enter your email and password. If you turned on two-step sign-in, type the 6-digit code from your authenticator app next, or one of your recovery codes if you do not have your phone.',
     where: 'The start of every session. Two-step sign-in is turned on under Account and preferences.',
+  },
+  'login/sso': {
+    what: 'Sign in with your organisation\'s identity provider (Microsoft, Google, Okta or another OpenID Connect provider) instead of a Talk2Tax password.',
+    how: 'Enter your work email and choose Continue. You sign in on your provider\'s page and come back signed in to your organisation.',
+    where: 'Works once an owner or admin of your organisation has connected the provider and verified your email\'s domain under Single sign-on.',
   },
   register: { what: 'Create your Talk2Tax account.', how: 'Enter your name, email and a long password.', where: 'After this you create or join an organisation.' },
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },

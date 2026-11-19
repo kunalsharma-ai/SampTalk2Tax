@@ -1749,6 +1749,12 @@
     "def": "CHECK ((((trigger)::text = ANY ((ARRAY['SCHEDULE'::character varying, 'MANUAL'::character varying])::text[])) AND (jsonb_typeof(deleted) = 'object'::text) AND (((trigger)::text = 'SCHEDULE'::text) OR (actor_id IS NOT NULL))))",
     "name": "retention_runs_chk"
    }
+  ],
+  "sso_connections": [
+   {
+    "def": "CHECK ((((protocol)::text = 'OIDC'::text) AND ((auto_join_role IS NULL) OR ((auto_join_role)::text = ANY ((ARRAY['ACCOUNTANT'::character varying, 'APPROVER'::character varying, 'VIEWER'::character varying, 'EMPLOYEE'::character varying])::text[])))))",
+    "name": "sso_connections_chk"
+   }
   ]
  },
  "foreignKeys": [
@@ -10161,6 +10167,48 @@
    ],
    "references": "organizations",
    "table": "retention_runs"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "sso_connections_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "sso_connections"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "sso_domains_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "sso_domains"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
+   "name": "sso_login_states_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "sso_login_states"
   }
  ],
  "uniques": [

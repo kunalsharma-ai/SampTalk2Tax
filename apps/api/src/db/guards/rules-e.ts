@@ -68,6 +68,16 @@ registerGuards({
     if (op === 'DELETE') fail('An AI request pack cannot be deleted; stop offering it instead');
     if (op === 'UPDATE' && changed(o, n, ['name', 'requests', 'prices', 'created_by'])) fail('An AI request pack keeps its requests and prices; create a new pack instead');
   },
+  // sso_login_states_guard (SEC-006): a sign-in attempt is used once, and nothing else about it changes.
+  sso_login_states: (op, o, n) => {
+    if (op !== 'UPDATE') return;
+    if (changed(o, n, ['org_id', 'nonce', 'code_verifier', 'binding_hash', 'redirect_uri', 'expires_at'])) fail('A single sign-on attempt does not change');
+    if (o.used_at != null) fail('A single sign-on attempt is used once');
+  },
+  // sso_domains_guard (SEC-006): a domain keeps its organisation and verification value; only its verification changes.
+  sso_domains: (op, o, n) => {
+    if (op === 'UPDATE' && changed(o, n, ['org_id', 'domain', 'token', 'created_by_id'])) fail('A sign-in domain keeps its name and verification value; remove it and add it again');
+  },
   // retention_runs_guard (SEC-020): what a retention run deleted is kept as it happened.
   retention_runs: (op) => {
     if (op === 'INSERT') return;

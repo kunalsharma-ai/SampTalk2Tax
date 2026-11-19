@@ -56,7 +56,7 @@ describe('encryption key rotation', () => {
     expect(r.previousKeyIds).toEqual([oldBox.keyId]);
     expect(store(r, 'integrations').previous).toBeGreaterThanOrEqual(1);
     expect(store(r, 'two-step').previous).toBeGreaterThanOrEqual(1);
-    expect(r.stores.map((s) => s.key)).toEqual(['integrations', 'org-gateways', 'platform-gateways', 'crm-webhooks', 'two-step']);
+    expect(r.stores.map((s) => s.key)).toEqual(['integrations', 'org-gateways', 'platform-gateways', 'crm-webhooks', 'sso', 'two-step']);
   });
 
   it('keeps secrets sealed with a listed previous key working, and not the others', async () => {
