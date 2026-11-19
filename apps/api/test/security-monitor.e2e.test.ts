@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startSmtpStandIn, type SmtpStandIn } from '../../../test-support/smtp-stand-in.mjs';
 import { AdminService } from '../src/admin/admin.service';
@@ -18,6 +19,8 @@ let admin: TestUser;
 let support: TestUser;
 let owner: TestUser;
 let org: Awaited<ReturnType<typeof createOrg>>;
+/** Unique per run: alerts from earlier runs stay in the shared test database. */
+const ORG = `Watched Closely ${randomUUID().slice(0, 8)} Ltd`;
 type Alert = { id: string; rule: string; severity: string; title: string; detail: string; organisation: string | null; person: string | null; count: number; status: string; acknowledgedBy: string | null; note: string | null; emailed: string | null };
 type Report = { openAlerts: number; last24Hours: { HIGH: number; MEDIUM: number }; alerts: Alert[]; events: { action: string; severity: string; title: string; person: string | null; ip: string | null; organisation: string | null }[]; monitor: { lastRun: { alertsOpened: number } | null } };
 const scan = async () => (await ctx.http().post('/v1/admin/security/scan').set(admin.auth).expect(200)).body as Report;
@@ -31,7 +34,7 @@ beforeAll(async () => {
   owner = await registerUser(ctx, 'Security Owner');
   await ctx.app.get(AdminService).grant(admin.email, 'SUPER_ADMIN');
   await ctx.app.get(AdminService).grant(support.email, 'SUPPORT');
-  org = await createOrg(ctx, owner, { name: 'Watched Closely Ltd' });
+  org = await createOrg(ctx, owner, { name: ORG });
 });
 afterAll(async () => {
   await ctx?.app.close();
@@ -52,7 +55,7 @@ describe('security event monitoring', () => {
     expect(mine).toHaveLength(3);
     for (const e of mine) expect(row.eventIds).toContain(String(e.id));
     // The events are in the feed, with who and from where.
-    expect(r.events.find((e) => e.action === 'user.sign_in_locked' && e.person?.startsWith('Locked One'))).toMatchObject({ severity: 'HIGH', title: 'Sign-in locked after failed passwords' });
+    expect(r.events.find((e) => e.action === 'user.sign_in_locked' && e.person?.includes(people[0]!.email))).toMatchObject({ severity: 'HIGH', title: 'Sign-in locked after failed passwords' });
   });
 
   it('alerts on a platform role change, emails each super admin once, and keeps one alert per finding', async () => {
@@ -60,7 +63,7 @@ describe('security event monitoring', () => {
     const helper = await registerUser(ctx, 'New Support Person');
     await ctx.app.get(AdminService).grant(helper.email, 'SUPPORT');
     const r = await scan();
-    const alert = r.alerts.find((a) => a.rule === 'PLATFORM_ROLE_CHANGED' && a.person?.startsWith('New Support Person'))!;
+    const alert = r.alerts.find((a) => a.rule === 'PLATFORM_ROLE_CHANGED' && a.person?.includes(helper.email))!;
     expect(alert).toMatchObject({ severity: 'HIGH', status: 'OPEN', detail: expect.stringMatching(/from none to SUPPORT/), emailed: expect.any(String) });
     const mail = smtp.messages.slice(before).filter((m) => m.subject === '[Talk2Tax security] High: Platform administrator role changed' && m.to.includes(admin.email.toLowerCase()));
     expect(mail.length).toBeGreaterThanOrEqual(1);
@@ -82,13 +85,13 @@ describe('security event monitoring', () => {
     await record({ orgId: null, actorId: admin.id, action: 'user.mfa_disabled', entityType: 'user', entityId: admin.id, data: {} });
     await record({ orgId: null, actorId: owner.id, action: 'user.mfa_disabled', entityType: 'user', entityId: owner.id, data: {} });
     const r = await scan();
-    expect(r.alerts.find((a) => a.rule === 'MFA_CODE_FAILURES' && a.person?.startsWith('Code Victim'))).toMatchObject({ severity: 'HIGH', count: 1 });
-    expect(r.alerts.find((a) => a.rule === 'INFECTED_UPLOAD' && a.organisation === 'Watched Closely Ltd')).toMatchObject({ detail: 'invoice.pdf was refused: Eicar-Test-Signature. It was not kept.' });
+    expect(r.alerts.find((a) => a.rule === 'MFA_CODE_FAILURES' && a.person?.includes(victim.email))).toMatchObject({ severity: 'HIGH', count: 1 });
+    expect(r.alerts.find((a) => a.rule === 'INFECTED_UPLOAD' && a.organisation === ORG)).toMatchObject({ detail: 'invoice.pdf was refused: Eicar-Test-Signature. It was not kept.' });
     // A refused macro is an event, not an alert; turning two-step off is an alert only for platform admins.
-    expect(r.alerts.filter((a) => a.organisation === 'Watched Closely Ltd')).toHaveLength(1);
-    expect(r.alerts.filter((a) => a.rule === 'ADMIN_MFA_OFF' && a.person?.startsWith('Security Admin'))).toHaveLength(1);
-    expect(r.alerts.filter((a) => a.rule === 'ADMIN_MFA_OFF' && a.person?.startsWith('Security Owner'))).toHaveLength(0);
-    expect(r.events.find((e) => e.action === 'user.mfa_challenge_failed' && e.person?.startsWith('Code Victim'))?.ip).toBe('198.51.100.7');
+    expect(r.alerts.filter((a) => a.organisation === ORG)).toHaveLength(1);
+    expect(r.alerts.filter((a) => a.rule === 'ADMIN_MFA_OFF' && a.person?.includes(admin.email))).toHaveLength(1);
+    expect(r.alerts.filter((a) => a.rule === 'ADMIN_MFA_OFF' && a.person?.includes(owner.email))).toHaveLength(0);
+    expect(r.events.find((e) => e.action === 'user.mfa_challenge_failed' && e.person?.includes(victim.email))?.ip).toBe('198.51.100.7');
     expect(r.last24Hours.HIGH).toBeGreaterThanOrEqual(6);
   });
 
@@ -96,11 +99,11 @@ describe('security event monitoring', () => {
     const r = (await ctx.http().get('/v1/admin/security?severity=HIGH').set(support.auth).expect(200)).body as Report;
     expect(r.events.every((e) => e.severity === 'HIGH')).toBe(true);
     await ctx.http().get('/v1/admin/security').set(owner.auth).expect(403);
-    const alert = r.alerts.find((a) => a.rule === 'INFECTED_UPLOAD' && a.organisation === 'Watched Closely Ltd')!;
+    const alert = r.alerts.find((a) => a.rule === 'INFECTED_UPLOAD' && a.organisation === ORG)!;
     await ctx.http().post(`/v1/admin/security/alerts/${alert.id}/acknowledge`).set(support.auth).send({ note: 'Looked at it' }).expect(403);
     await ctx.http().post(`/v1/admin/security/alerts/${alert.id}/acknowledge`).set(admin.auth).send({ note: 'ok' }).expect(400);
     const after = (await ctx.http().post(`/v1/admin/security/alerts/${alert.id}/acknowledge`).set(admin.auth).send({ note: 'Test file from the customer; nothing was kept.' }).expect(200)).body as Report;
-    expect(after.alerts.find((a) => a.id === alert.id)).toMatchObject({ status: 'ACKNOWLEDGED', acknowledgedBy: expect.stringMatching(/^Security Admin/), note: 'Test file from the customer; nothing was kept.' });
+    expect(after.alerts.find((a) => a.id === alert.id)).toMatchObject({ status: 'ACKNOWLEDGED', acknowledgedBy: expect.stringContaining(admin.email), note: 'Test file from the customer; nothing was kept.' });
     expect((await ctx.http().post(`/v1/admin/security/alerts/${alert.id}/acknowledge`).set(admin.auth).send({ note: 'Again, twice' }).expect(409)).body.error).toBe('ALERT_ALREADY_ACKNOWLEDGED');
     expect(await ctx.prisma.auditEvent.findFirst({ where: { action: 'security.alert_acknowledged', entityId: alert.id } })).toBeTruthy();
     // What was found is kept as found.
