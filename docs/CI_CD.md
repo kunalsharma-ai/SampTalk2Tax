@@ -59,7 +59,7 @@ UTC, so a vulnerability published after a release is found too) and on demand.
 | Job | What it checks |
 |---|---|
 | CodeQL static analysis | GitHub's CodeQL with the `security-extended` queries over the TypeScript and JavaScript (tests and stand-ins left out). Findings appear under the repository's Security → Code scanning |
-| Container image vulnerability scan | Builds the API, web and migration images and scans them with Trivy (pinned in the workflow). The API and web images fail on a high or critical vulnerability that has a fix, the migration image on a critical one, and every image fails if a secret is found in its files |
+| Container image vulnerability scan | Builds the API, web and migration images and scans them with Trivy (pinned in the workflow). Each image fails on a high or critical vulnerability that has a fix (the migration image is distroless like the API, so it carries no build tools), and fails if a secret is found in its files |
 | Dependency audit (all packages) | `pnpm audit --audit-level=critical` over everything, build and test tools included (CI's audit covers what the running app uses at high and above) |
 
 GitHub's own secret scanning and push protection are free for public repositories; turn them on

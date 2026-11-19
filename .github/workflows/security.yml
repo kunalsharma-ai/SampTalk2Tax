@@ -81,9 +81,8 @@ jobs:
           tags: talk2tax-migrate:scan
           load: true
           cache-from: type=gha,scope=migrate
-      # The images that serve traffic fail on a high or critical vulnerability that has a fix; the
-      # migration image (a full Node.js image run once per release) on a critical one. Every image
-      # is also checked for secrets left in its files.
+      # Each image fails on a high or critical vulnerability that has a fix, and is also checked for
+      # secrets left in its files. Every scan runs, so one report shows all three images.
       - name: Scan the API image
         run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-api:scan
       - name: Scan the web image
@@ -91,7 +90,7 @@ jobs:
         run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-web:scan
       - name: Scan the migration image
         if: success() || failure()
-        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-migrate:scan
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-migrate:scan
 
   dependencies:
     name: Dependency audit (all packages)

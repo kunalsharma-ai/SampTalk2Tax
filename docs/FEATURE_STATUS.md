@@ -5880,7 +5880,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Implemented**
-- Notes: CodeQL (security-extended) over the TypeScript; Trivy 0.75.0 scans of the API and web images (fail on fixable HIGH/CRITICAL) and the migration image (fixable CRITICAL), with secret scanning; pnpm audit --audit-level=critical over all packages. On pull requests, main, weekly and on demand. Vitest raised to 4.1.12 to clear critical tinypool advisories. Not a penetration test; no DAST against a running deployment.
+- Notes: CodeQL (security-extended) over the TypeScript; Trivy 0.75.0 scans of the API, web and migration images (fail on fixable HIGH/CRITICAL; the migration image is distroless and the unused TypeScript compiler is left out), with secret scanning; pnpm audit --audit-level=critical over all packages. On pull requests, main, weekly and on demand. Vitest raised to 4.1.12 to clear critical tinypool advisories. Not a penetration test; no DAST against a running deployment.
 - Evidence:
   - .github/workflows/security.yml
   - docs/CI_CD.md
