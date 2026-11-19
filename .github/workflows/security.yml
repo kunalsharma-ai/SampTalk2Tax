@@ -87,8 +87,10 @@ jobs:
       - name: Scan the API image
         run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-api:scan
       - name: Scan the web image
+        if: success() || failure()
         run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-web:scan
       - name: Scan the migration image
+        if: success() || failure()
         run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" image --scanners vuln,secret --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress talk2tax-migrate:scan
 
   dependencies:
