@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shell';
 import { bytes } from '@/components/usage-meter';
 import { api } from '@/lib/api';
 import { dateTime } from '@/lib/format';
-import { duration, Runner, SystemHealth, Transport } from '@/lib/operations';
+import { duration, Runner, Secrets, SystemHealth, Transport } from '@/lib/operations';
 
 const STATUS = { OK: { label: 'Healthy', tone: 'positive' }, DEGRADED: { label: 'Needs attention', tone: 'warning' }, DOWN: { label: 'Down', tone: 'negative' } } as const;
 const RUNNER: Record<Runner['state'], { label: string; tone: 'positive' | 'neutral' | 'warning' | 'negative' }> = {
@@ -81,6 +81,7 @@ export default function SystemHealthPage() {
           </div>
 
           <EncryptionInTransit t={d.transport} />
+          {d.secrets ? <ServerSecrets s={d.secrets} /> : null}
 
           <Card className="mb-6" aria-label="Background runners">
             <CardHeader title="Background runners" description="Passes are skipped while maintenance is in progress." />
@@ -155,6 +156,30 @@ function EncryptionInTransit({ t }: { t: Transport }) {
           {rows.map(([name, text, tone]) => (
             <Tr key={name}><Td>{name}</Td><Td><Badge tone={tone}>{text}</Badge></Td></Tr>
           ))}
+        </tbody>
+      </Table>
+    </Card>
+  );
+}
+
+const SOURCE: Record<string, [string, Tone]> = {
+  FILE: ['From a secret file', 'positive'],
+  ENVIRONMENT: ['From the environment', 'neutral'],
+  DERIVED: ['Derived from JWT_SECRET', 'warning'],
+};
+
+/** Secrets management (SEC-012): where each server secret came from. Values are never shown. */
+function ServerSecrets({ s }: { s: Secrets }) {
+  return (
+    <Card className="mb-6" role="region" aria-label="Server secrets">
+      <CardHeader title="Server secrets" description="Where each secret the API reads came from. Values are never shown or sent to the browser." />
+      <Table aria-label="Secrets">
+        <thead><Tr><Th>Setting</Th><Th>Source</Th></Tr></thead>
+        <tbody>
+          {s.items.map((i) => {
+            const [text, tone]: [string, Tone] = i.source ? SOURCE[i.source] : ['Not set', 'neutral'];
+            return <Tr key={i.name}><Td><code>{i.name}</code></Td><Td><Badge tone={tone}>{text}</Badge></Td></Tr>;
+          })}
         </tbody>
       </Table>
     </Card>

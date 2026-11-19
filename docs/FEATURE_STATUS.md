@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 757 |
 | Designed | 0 |
-| Implementing | 38 |
+| Implementing | 37 |
 | Implemented | 35 |
-| Tested | 499 |
+| Tested | 500 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -5793,12 +5793,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### SEC-012 — Secrets management
 
 - Module: Security and enterprise governance
-- Status: **Implementing**
-- Notes: Server secrets come from environment variables, validated at startup. Integration secrets an organisation enters in the app are encrypted with AES-256-GCM (key from INTEGRATIONS_ENCRYPTION_KEY or derived from JWT_SECRET), never returned and never audited. No external secrets manager (Vault, KMS) yet.
+- Status: **Tested**
+- Notes: Every server secret can come from a file (NAME_FILE: Docker, Kubernetes or a secrets manager's agent mounts it), never from both places at once. A production server refuses example, low-entropy or reused secrets at startup. System health shows where each secret came from (file, environment, derived) and never a value, and flags an encryption key derived from JWT_SECRET. Integration secrets entered in the app stay AES-256-GCM sealed. No direct Vault or cloud KMS client: secrets managers are reached through mounted files.
 - Evidence:
-  - .env.example
   - apps/api/src/config.ts
   - apps/api/src/integrations/secret-box.ts
+  - apps/api/src/operations/system.service.ts
+  - apps/api/src/db/backup.ts
+  - apps/web/src/app/admin/system/page.tsx
+  - apps/api/test/secrets-management.e2e.test.ts
+  - apps/web/e2e/encryption-in-transit-flow.test.mjs
+  - .github/workflows/ci.yml
+  - docs/SECURITY.md
 
 ### SEC-013 — Key rotation
 

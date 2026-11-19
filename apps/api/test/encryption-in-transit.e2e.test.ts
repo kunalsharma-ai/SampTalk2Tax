@@ -10,7 +10,7 @@ import { bootApp, Ctx } from './helpers';
  * told to use HTTPS only, a database connection without TLS is refused at startup unless that is
  * turned off on purpose, and System health shows how each connection is protected.
  */
-const base = { NODE_ENV: 'production', MONGODB_URL: 'mongodb://localhost:27017/x?replicaSet=rs0', JWT_SECRET: 'x'.repeat(32) };
+const base = { NODE_ENV: 'production', MONGODB_URL: 'mongodb://localhost:27017/x?replicaSet=rs0', JWT_SECRET: randomUUID() + randomUUID() };
 let ctx: Ctx;
 const HTTPS = { 'X-Forwarded-Proto': 'https' };
 

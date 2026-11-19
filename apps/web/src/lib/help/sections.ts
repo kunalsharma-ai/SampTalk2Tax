@@ -394,6 +394,7 @@ export const SECTION_HELP: Record<string, Help> = {
   'Latest occurrences': { what: 'The most recent times this error happened.', how: 'Look for a pattern.' },
   'API server': { what: 'The API server\'s health and version.', how: 'Check it is up.' },
   Database: { what: 'The database\'s health and size.', how: 'Watch connections and size.' },
+  'Server secrets': { what: 'Where each secret the API reads came from: a secret file (NAME_FILE, such as a Docker or Kubernetes secret), the environment, or derived from JWT_SECRET. Values are never shown.', how: 'Prefer secret files in production. Set INTEGRATIONS_ENCRYPTION_KEY of its own instead of deriving it. See docs/SECURITY.md (Secrets).' },
   'Encryption in transit': { what: 'How each connection to and from Talk2Tax is encrypted: visitors, the database, email, the AI model, payment gateways and webhooks.', how: 'Anything not green is a setting to change on the server: HTTPS_ONLY, tls=true in MONGODB_URL, or an smtps:// mail server. See docs/SECURITY.md.' },
   'Background runners': { what: 'Jobs that run on a schedule and when they last ran.', how: 'Late runners need attention.' },
   'Requests per minute': { what: 'Traffic over the last hour.', how: 'Look for spikes.' },

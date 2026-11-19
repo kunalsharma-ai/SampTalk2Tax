@@ -4,6 +4,7 @@ import { hostname } from 'node:os';
 import { basename, join } from 'node:path';
 import { BackupError, type BackupManifest, type Db, DocumentStore, restoreBackup, verifyBackup, writeBackup } from '@talk2tax/document-db';
 import { COLLECTIONS } from './collections';
+import { resolveSecretFiles } from '../config';
 
 /**
  * Backups and restore drills (SEC-021/022), run outside the API by the operator's scheduler:
@@ -164,8 +165,12 @@ function args(argv: string[]): { cmd: string | undefined; flags: Record<string, 
 const describe = (m: BackupManifest) =>
   `${m.documents.toLocaleString('en-IN')} documents in ${m.collections.length} collections, ${(m.bytes / 1024 / 1024).toFixed(1)} MB, ${m.encrypted ? 'encrypted' : 'NOT encrypted'}, taken ${m.createdAt}, sha256 ${m.fileSha256}`;
 
-export async function main(argv: string[], env: NodeJS.ProcessEnv, log: (s: string) => void = console.log): Promise<void> {
+export async function main(argv: string[], given: NodeJS.ProcessEnv, log: (s: string) => void = console.log): Promise<void> {
   const { cmd, flags } = args(argv);
+  // BACKUP_ENCRYPTION_KEY_FILE and MONGODB_URL_FILE work as for the API (SEC-012).
+  const files = resolveSecretFiles(given);
+  if (files.errors.length) throw new Error(files.errors.join('; '));
+  const env = files.env;
   const url = env.MONGODB_URL;
   if (!url) throw new Error('MONGODB_URL is required');
   const key = env.BACKUP_ENCRYPTION_KEY?.trim() || undefined;

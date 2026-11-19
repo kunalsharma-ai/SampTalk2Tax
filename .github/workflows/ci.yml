@@ -115,10 +115,15 @@ jobs:
     timeout-minutes: 30
     env:
       IMAGE_TAG: ci
-      JWT_SECRET: ci-only-secret-that-is-at-least-32-characters-long
       GIT_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v7
+      # The images run as production, which refuses an example secret (SEC-012): make a random one.
+      - name: Generate a signing secret for this run
+        run: |
+          secret=$(openssl rand -hex 32)
+          echo "::add-mask::$secret"
+          echo "JWT_SECRET=$secret" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
