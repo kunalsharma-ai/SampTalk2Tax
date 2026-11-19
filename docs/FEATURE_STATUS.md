@@ -5762,7 +5762,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Tested**
-- Notes: HTTPS_ONLY (API: follows APP_URL; web: on in production builds): the web app redirects http:// visitors to https:// (308, localhost exempt) and sends HSTS on HTTPS responses; the API refuses non-HTTPS requests (X-Forwarded-Proto across trusted hops) with 403 HTTPS_REQUIRED except /health, and refuses to start with HTTPS_ONLY and TRUST_PROXY_HOPS=0. MONGODB_REQUIRE_TLS refuses an unencrypted MONGODB_URL at startup. System health shows how visitors, the database, email, the AI model, payment gateways and webhooks are protected, and lists HTTP or an unencrypted database as problems in production. TLS ends at the customer's load balancer; no mTLS, no TLS between web and API inside the private network unless T2T_API_URL is https.
+- Notes: HTTPS_ONLY (API: on in production when APP_URL is https; web: on in production builds): the web app redirects http:// visitors to https:// (308, localhost exempt) and sends HSTS on HTTPS responses; the API refuses non-HTTPS requests (X-Forwarded-Proto across trusted hops) with 403 HTTPS_REQUIRED except /health, and refuses to start with HTTPS_ONLY and TRUST_PROXY_HOPS=0. MONGODB_REQUIRE_TLS refuses an unencrypted MONGODB_URL at startup. System health shows how visitors, the database, email, the AI model, payment gateways and webhooks are protected, and lists HTTP or an unencrypted database as problems in production. TLS ends at the customer's load balancer; no mTLS, no TLS between web and API inside the private network unless T2T_API_URL is https.
 - Evidence:
   - apps/api/src/common/https-only.ts
   - apps/api/src/config.ts
