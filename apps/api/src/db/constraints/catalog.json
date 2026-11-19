@@ -16,6 +16,10 @@
    {
     "def": "CHECK (((monthly_token_limit IS NULL) OR ((monthly_token_limit >= 1000) AND (monthly_token_limit <= 1000000000))))",
     "name": "ai_agent_settings_limit_chk"
+   },
+   {
+    "def": "CHECK (((hourly_task_limit IS NULL) OR ((hourly_task_limit >= 1) AND (hourly_task_limit <= 100000))))",
+    "name": "ai_agent_settings_hourly_chk"
    }
   ],
   "alert_notification_settings": [

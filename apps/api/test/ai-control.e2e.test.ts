@@ -142,8 +142,8 @@ describe('AI control center', () => {
     expect(model.requests).toHaveLength(0);
     await setAgent('COLLECTIONS', { enabled: true, monthlyTokenLimit: null }).expect(200);
     expect(await audits()).toEqual([
-      { action: 'ai.agent_updated', data: { agent: 'COLLECTIONS', from: { enabled: true, monthlyTokenLimit: null }, to: { enabled: false, monthlyTokenLimit: null } } },
-      { action: 'ai.agent_updated', data: { agent: 'COLLECTIONS', from: { enabled: false, monthlyTokenLimit: null }, to: { enabled: true, monthlyTokenLimit: null } } },
+      { action: 'ai.agent_updated', data: { agent: 'COLLECTIONS', from: { enabled: true, monthlyTokenLimit: null, hourlyTaskLimit: null }, to: { enabled: false, monthlyTokenLimit: null, hourlyTaskLimit: null } } },
+      { action: 'ai.agent_updated', data: { agent: 'COLLECTIONS', from: { enabled: false, monthlyTokenLimit: null, hourlyTaskLimit: null }, to: { enabled: true, monthlyTokenLimit: null, hourlyTaskLimit: null } } },
     ]);
   });
 

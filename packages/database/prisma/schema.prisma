@@ -1945,6 +1945,8 @@ model AiAgentSetting {
   enabled           Boolean      @default(true)
   /// Input plus output tokens the agent may use in a calendar month (India time). Null means no budget.
   monthlyTokenLimit Int?         @map("monthly_token_limit")
+  /// AI tasks the agent may start in any 60 minutes (SEC-037). Null means the server's default.
+  hourlyTaskLimit   Int?         @map("hourly_task_limit")
   updatedById       String       @map("updated_by_id") @db.Uuid
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
   org               Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)

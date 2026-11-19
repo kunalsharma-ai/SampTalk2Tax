@@ -138,13 +138,17 @@ export default function AiControlPage() {
 function AgentCard({ a, v, base, orgId, onDone }: { a: AiAgentView; v: AiControlView; base: string; orgId: string; onDone: (v: AiControlView) => void }) {
   const [editing, setEditing] = useState(false);
   const [limit, setLimit] = useState(a.monthlyTokenLimit ? String(a.monthlyTokenLimit) : '');
+  const [hourly, setHourly] = useState(a.hourlyTaskLimit ? String(a.hourlyTaskLimit) : '');
   const save = useMutation({
-    mutationFn: (body: { enabled: boolean; monthlyTokenLimit: number | null }) => api<AiControlView>(`${base}/agents/${a.key}`, { method: 'PUT', body }),
+    mutationFn: (body: { enabled: boolean; monthlyTokenLimit: number | null; hourlyTaskLimit?: number | null }) => api<AiControlView>(`${base}/agents/${a.key}`, { method: 'PUT', body }),
     onSuccess: (r) => { setEditing(false); onDone(r); },
   });
   const parsed = limit.trim() === '' ? null : Number(limit.replace(/,/g, ''));
   const limitOk = parsed === null || (Number.isInteger(parsed) && parsed >= 1000 && parsed <= 1_000_000_000);
-  const state = !a.enabled ? { tone: 'neutral' as const, label: 'Off' } : !v.enabled ? { tone: 'warning' as const, label: v.stopped ? 'Paused by the stop' : 'Paused: AI is off' } : a.budgetReached ? { tone: 'negative' as const, label: 'Budget reached' } : a.running ? { tone: 'accent' as const, label: 'Working' } : { tone: 'positive' as const, label: 'On' };
+  const parsedHourly = hourly.trim() === '' ? null : Number(hourly.replace(/,/g, ''));
+  const hourlyOk = parsedHourly === null || (Number.isInteger(parsedHourly) && parsedHourly >= 1 && parsedHourly <= 100_000);
+  const t = a.tasksPerHour;
+  const state = !a.enabled ? { tone: 'neutral' as const, label: 'Off' } : !v.enabled ? { tone: 'warning' as const, label: v.stopped ? 'Paused by the stop' : 'Paused: AI is off' } : a.budgetReached ? { tone: 'negative' as const, label: 'Budget reached' } : t.reached ? { tone: 'warning' as const, label: 'Hourly limit reached' } : a.running ? { tone: 'accent' as const, label: 'Working' } : { tone: 'positive' as const, label: 'On' };
   const acc = a.accuracy;
   return (
     <li>
@@ -206,6 +210,11 @@ function AgentCard({ a, v, base, orgId, onDone }: { a: AiAgentView; v: AiControl
           ) : null}
         </div>
 
+        <p className="text-xs text-fg-muted" aria-label={`${a.name} tasks per hour`}>
+          Tasks started in the last hour: <span className="font-semibold tabular-nums">{t.started}</span>
+          {t.limit ? ` of ${t.limit.toLocaleString('en-IN')} allowed${t.own ? '' : " (this server's default)"}` : ' (no hourly limit)'}
+          {t.reached ? <span className="ml-1 text-warning">New work waits until older tasks are more than an hour old.</span> : null}
+        </p>
         {a.changedBy ? <p className="text-xs text-fg-faint">Changed by {a.changedBy} on {dateTime(a.changedAt!)}</p> : null}
         <ErrorAlert title="Not saved" error={save.error} />
         {v.canManage ? (
@@ -214,8 +223,11 @@ function AgentCard({ a, v, base, orgId, onDone }: { a: AiAgentView; v: AiControl
               <Field label="Monthly token budget" hint="Input and output tokens per calendar month, India time. Leave empty for no budget." error={limitOk ? undefined : 'Use a whole number from 1,000 to 1,000,000,000'}>
                 {(p) => <Input {...p} inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="No budget" className="w-56" />}
               </Field>
+              <Field label="AI tasks per hour" hint={`Most the agent may start in any 60 minutes. Leave empty for this server's default${t.own || !t.limit ? '' : ` (${t.limit.toLocaleString('en-IN')})`}.`} error={hourlyOk ? undefined : 'Use a whole number from 1 to 100,000'}>
+                {(p) => <Input {...p} inputMode="numeric" value={hourly} onChange={(e) => setHourly(e.target.value)} placeholder="Server default" className="w-56" />}
+              </Field>
               <div className="flex gap-2">
-                <Button size="sm" disabled={!limitOk} loading={save.isPending} onClick={() => save.mutate({ enabled: a.enabled, monthlyTokenLimit: parsed })}>Save budget</Button>
+                <Button size="sm" disabled={!limitOk || !hourlyOk} loading={save.isPending} onClick={() => save.mutate({ enabled: a.enabled, monthlyTokenLimit: parsed, hourlyTaskLimit: parsedHourly })}>Save limits</Button>
                 <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
               </div>
             </div>
@@ -224,7 +236,7 @@ function AgentCard({ a, v, base, orgId, onDone }: { a: AiAgentView; v: AiControl
               <Button size="sm" variant={a.enabled ? 'secondary' : 'primary'} loading={save.isPending} onClick={() => save.mutate({ enabled: !a.enabled, monthlyTokenLimit: a.monthlyTokenLimit })}>
                 {a.enabled ? `Turn off ${a.name.toLowerCase()}` : `Turn on ${a.name.toLowerCase()}`}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setLimit(a.monthlyTokenLimit ? String(a.monthlyTokenLimit) : ''); setEditing(true); }}>Set budget…</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setLimit(a.monthlyTokenLimit ? String(a.monthlyTokenLimit) : ''); setHourly(a.hourlyTaskLimit ? String(a.hourlyTaskLimit) : ''); setEditing(true); }}>Set limits…</Button>
             </div>
           )
         ) : null}

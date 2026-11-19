@@ -10,6 +10,9 @@ export interface AiAgentView {
   link: string;
   enabled: boolean;
   monthlyTokenLimit: number | null;
+  /** The agent's own AI tasks per hour (SEC-037); null = the server's default. */
+  hourlyTaskLimit: number | null;
+  tasksPerHour: { limit: number | null; own: boolean; started: number; reached: boolean };
   usage: { calls: number; inputTokens: number; outputTokens: number; tokens: number; failed: number; percentOfBudget: number | null };
   budgetReached: boolean;
   /** This month's cost at the organisation's prices, by model; tokens of unpriced models are counted apart. */

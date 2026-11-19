@@ -28869,9 +28869,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ai-control/ai-control.service.ts (check, assert, hourlyLimit, updateAgent)",
+        "apps/api/src/config.ts (AI_AGENT_TASKS_PER_HOUR)",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (AgentCard limits)",
+        "apps/api/test/agent-limits.e2e.test.ts",
+        "apps/web/e2e/ai-control-flow.test.mjs",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Each agent may start a limited number of AI tasks in any 60 minutes per organisation: its own limit (owners and admins, 1 to 100,000, audited) or the server's AI_AGENT_TASKS_PER_HOUR (default 500, 0 = none). New work over the limit is refused with 429 AI_TASK_LIMIT before anything is sent; running work stops before its next model call only once over the limit. Alongside existing per-run limits (copilot tool rounds and turn timeout), monthly token budgets and the per-member hourly question limit."
     },
     {
       "id": "SEC-038",
