@@ -3309,6 +3309,20 @@
     "org_id"
    ],
    "deferrable": false,
+   "name": "close_settings_org_id_fkey",
+   "onDelete": "RESTRICT",
+   "onUpdate": "CASCADE",
+   "referencedColumns": [
+    "id"
+   ],
+   "references": "organizations",
+   "table": "close_settings"
+  },
+  {
+   "columns": [
+    "org_id"
+   ],
+   "deferrable": false,
    "name": "copilot_settings_org_id_fkey",
    "onDelete": "RESTRICT",
    "onUpdate": "CASCADE",

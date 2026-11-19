@@ -61,6 +61,8 @@ jobs:
           # runner, so the runner looks every second and may reach private addresses here only.
           WORKFLOW_RUNNER_INTERVAL_SECONDS: 1
           CRM_WEBHOOK_RUNNER_INTERVAL_SECONDS: 1
+          # The close browser test turns automatic starting on and waits for the close runner.
+          CLOSE_RUNNER_INTERVAL_SECONDS: 1
           WEBHOOK_ALLOW_PRIVATE_NETWORKS: 'true'
           # The schedules browser test runs a local SMTP server (test-support/smtp-stand-in.mjs)
           # on this port; nothing is sent beyond it.

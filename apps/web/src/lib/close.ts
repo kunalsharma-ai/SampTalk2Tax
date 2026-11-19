@@ -58,7 +58,7 @@ export interface CloseTotals {
 export interface CloseView {
   period: { id: string; name: string; startDate: string; endDate: string; status: 'OPEN' | 'LOCKED' | 'CLOSED' };
   nextPeriod: { id: string; name: string } | null;
-  close: { id: string; status: 'IN_PROGRESS' | 'CLOSED'; startedBy: string; startedAt: string } | null;
+  close: { id: string; status: 'IN_PROGRESS' | 'CLOSED'; startedBy: string; startedAt: string; automatic: boolean } | null;
   checks: CloseCheckView[];
   readiness: { blocking: number; warnings: number; noteRequired: boolean };
   ai: { configured: boolean; enabled: boolean; model: string; canChangeAi: boolean; notice: import('@/components/ai/ai-notice').AiNotice };

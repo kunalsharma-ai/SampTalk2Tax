@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { z } from 'zod';
@@ -11,6 +11,7 @@ const periodId = z.string().uuid('Not a period id');
 const id = z.string().uuid('Not an adjusting entry id');
 const CloseBody = z.object({ note: z.string().trim().max(2000, 'Keep the note under 2,000 characters').nullish() }).strict();
 const ReopenBody = z.object({ reason: z.string().trim().min(10, 'Say why the month is reopened (at least 10 characters)').max(2000, 'Keep the reason under 2,000 characters') }).strict();
+const SettingsBody = z.object({ autoStart: z.boolean(), createTasks: z.boolean() }).strict();
 const RejectBody = z.object({ note: z.string().trim().max(1000, 'Keep the note under 1,000 characters').nullish() }).strict();
 
 @ApiTags('close')
@@ -27,6 +28,20 @@ export class CloseController {
   @RequirePermission('periods.read')
   list(@CurrentOrg() org: OrgContext) {
     return this.close.list(org);
+  }
+
+  /** Whether the close starts on its own as each month ends. Declared before :periodId. */
+  @Get('settings')
+  @RequirePermission('periods.read')
+  settings(@CurrentOrg() org: OrgContext) {
+    return this.close.settings(org);
+  }
+
+  @Put('settings')
+  @RequirePermission('close.manage')
+  @ApiBody({ schema: openApi(SettingsBody) })
+  updateSettings(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(SettingsBody)) b: z.infer<typeof SettingsBody>) {
+    return this.close.updateSettings(org, user, b);
   }
 
   /** One month's close: the checklist, the AI review and its proposed entries, and certifications. */

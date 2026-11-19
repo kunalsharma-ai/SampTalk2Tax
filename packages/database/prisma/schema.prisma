@@ -277,6 +277,7 @@ model Organization {
   alertEvents              AlertEvent[]
   alertScans               AlertScan[]
   copilotSettings          CopilotSettings?
+  closeSettings            CloseSettings?
   aiAgentSettings          AiAgentSetting[]
   fixedAssets              FixedAsset[]
   depreciationRuns         DepreciationRun[]
@@ -2375,6 +2376,8 @@ model PeriodClose {
   periodId       String               @unique @map("period_id") @db.Uuid
   status         PeriodCloseStatus    @default(IN_PROGRESS)
   startedById    String               @map("started_by_id") @db.Uuid
+  /// Started by the close runner as the month ended (WFLOW-021); startedById is then who turned that on.
+  startedAutomatically Boolean       @default(false) @map("started_automatically")
   /// Task made for each open check, by check key: { "DRAFT_JOURNALS": "<task id>" }.
   tasks          Json                 @default("{}")
   createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -2389,6 +2392,19 @@ model PeriodClose {
   @@unique([id, orgId])
   @@index([orgId, status])
   @@map("period_closes")
+}
+
+/// How an organisation's month-end close starts (WFLOW-021): on its own the day after each month ends, with or without tasks for open checks.
+model CloseSettings {
+  orgId       String       @id @map("org_id") @db.Uuid
+  autoStart   Boolean      @default(false) @map("auto_start")
+  createTasks Boolean      @default(true) @map("create_tasks")
+  /// Who last changed these; closes started automatically are started in their name.
+  updatedById String       @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
+
+  @@map("close_settings")
 }
 
 /// What was true when a month was closed, and who certified it. Never changed except once when reopened.

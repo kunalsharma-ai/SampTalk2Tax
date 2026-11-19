@@ -145,6 +145,7 @@ type Period = { id: string; name: string; startDate: Date; endDate: Date; status
 
 @Injectable()
 export class CloseService {
+  private readonly logger = new Logger('MonthEndClose');
   private readonly log = new Logger('Close');
   /** Reviews being worked on in this process, by review id (tests wait on these). */
   readonly inflight = new Map<string, Promise<void>>();
@@ -207,7 +208,7 @@ export class CloseService {
     return {
       period: { id: period.id, name: period.name, startDate: fromDbDate(period.startDate), endDate: fromDbDate(period.endDate), status: period.status },
       nextPeriod: next ? { id: next.id, name: next.name } : null,
-      close: close ? { id: close.id, status: close.status, startedBy: names.get(close.startedById) ?? 'Former member', startedAt: close.createdAt.toISOString() } : null,
+      close: close ? { id: close.id, status: close.status, startedBy: names.get(close.startedById) ?? 'Former member', startedAt: close.createdAt.toISOString(), automatic: close.startedAutomatically ?? false } : null,
       checks: checks.map((c) => {
         const taskId = ((close?.tasks ?? {}) as Record<string, string>)[c.key] ?? null;
         return { ...c, link: c.key === 'AI_WAITING' ? null : CHECK_LINK[c.key], task: taskId ? { id: taskId, status: taskBy.get(taskId) ?? 'OPEN' } : null };
@@ -387,6 +388,66 @@ export class CloseService {
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'close.started', entityType: 'period_close', entityId: c.id, data: { periodId, period: p.name } });
     });
     return this.get(org, periodId);
+  }
+
+  // ------------------------------------------------------------------ starting automatically
+
+  /** Whether the close starts on its own as each month ends, and whether tasks are made then. */
+  async settings(org: CloseOrg) {
+    const s = await this.prisma.closeSettings.findUnique({ where: { orgId: org.id } });
+    const by = s ? ((await this.names([s.updatedById])).get(s.updatedById) ?? 'Former member') : null;
+    return { autoStart: s?.autoStart ?? false, createTasks: s?.createTasks ?? true, updatedBy: by, updatedAt: s?.updatedAt.toISOString() ?? null, canChange: hasPermission(org.role, 'close.manage') };
+  }
+
+  async updateSettings(org: CloseOrg, actor: Actor, input: { autoStart: boolean; createTasks: boolean }) {
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.closeSettings.findUnique({ where: { orgId: org.id } });
+      await tx.closeSettings.upsert({ where: { orgId: org.id }, create: { orgId: org.id, ...input, updatedById: actor.id }, update: { ...input, updatedById: actor.id } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'close.settings_changed', entityType: 'close_settings', entityId: org.id, data: { ...input, before: before ? { autoStart: before.autoStart, createTasks: before.createTasks } : null } });
+    });
+    return this.settings(org);
+  }
+
+  /**
+   * Starts the close of the month that ended most recently, if the organisation asked for that and
+   * it has not started: in the name of whoever turned automatic starting on (who must still be
+   * able to manage the close), with tasks for open checks if asked. Earlier months are left alone.
+   */
+  async autoStart(orgId: string, today = todayIso()): Promise<{ periodId: string; period: string; tasks: number } | { skipped: string } | null> {
+    const s = await this.prisma.closeSettings.findUnique({ where: { orgId } });
+    if (!s?.autoStart) return null;
+    const member = await this.prisma.membership.findFirst({ where: { orgId, userId: s.updatedById }, select: { role: true } });
+    if (!member || !hasPermission(member.role as RoleName, 'close.manage')) return { skipped: 'SET_UP_BY_SOMEONE_WHO_CANNOT_MANAGE_THE_CLOSE' };
+    const p = await this.prisma.fiscalPeriod.findFirst({ where: { orgId, endDate: { lt: toDbDate(today) } }, orderBy: { endDate: 'desc' } });
+    if (!p || p.status !== 'OPEN') return null;
+    const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: orgId }, select: { functionalCurrency: true } });
+    const started = await this.prisma.$transaction(async (tx) => {
+      await holdLock(`period_closes:period:${p.id}`);
+      if (await tx.periodClose.findUnique({ where: { periodId: p.id } })) return false;
+      const c = await tx.periodClose.create({ data: { orgId, periodId: p.id, startedById: s.updatedById, startedAutomatically: true } });
+      await this.audit.append(tx, { orgId, actorId: s.updatedById, action: 'close.started', entityType: 'period_close', entityId: c.id, data: { periodId: p.id, period: p.name, automatic: true } });
+      return true;
+    });
+    if (!started) return null;
+    const tasks = s.createTasks ? (await this.createTasks({ id: orgId, role: member.role as RoleName, functionalCurrency: o.functionalCurrency }, { id: s.updatedById }, p.id)).created : 0;
+    return { periodId: p.id, period: p.name, tasks };
+  }
+
+  /** Runs automatic starting for every organisation that turned it on (the close runner). */
+  async autoStartAll(today = todayIso()) {
+    const orgs = await tenantStorage.run({ bypass: true }, async () => await this.prisma.closeSettings.findMany({ where: { autoStart: true }, select: { orgId: true }, take: 10_000 }));
+    let started = 0;
+    let failed = 0;
+    for (const { orgId } of orgs) {
+      try {
+        const r = await tenantStorage.run({ bypass: true }, async () => await this.autoStart(orgId, today));
+        if (r && 'periodId' in r) started++;
+      } catch (e) {
+        failed++;
+        this.logger.warn(`Could not start the close for ${orgId}: ${(e as Error).message}`);
+      }
+    }
+    return { organisations: orgs.length, started, failed };
   }
 
   private async openClose(tx: Tx, orgId: string, periodId: string) {

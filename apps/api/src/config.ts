@@ -143,6 +143,8 @@ const schema = z.object({
    */
   CRM_WEBHOOK_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(10),
   CONTRACT_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
+  /** How often months that have ended are checked for a close to start automatically (0 turns the runner off). */
+  CLOSE_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
   /** How often recurring journals are checked for runs that have fallen due (0 turns the runner off). */
   RECURRING_JOURNAL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
   /** How often recurring bills are checked for runs that have fallen due (0 turns the runner off). */

@@ -54,7 +54,7 @@ export default function ClosePage() {
       {v ? (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Stat label="Close" value={<Badge tone={CLOSE_STATUS[status!].tone}>{CLOSE_STATUS[status!].label}</Badge>} sub={v.close ? `Started by ${v.close.startedBy}` : 'Not started yet'} />
+            <Stat label="Close" value={<Badge tone={CLOSE_STATUS[status!].tone}>{CLOSE_STATUS[status!].label}</Badge>} sub={v.close ? (v.close.automatic ? `Started automatically for ${v.close.startedBy}` : `Started by ${v.close.startedBy}`) : 'Not started yet'} />
             <Stat label="Blocking checks open" value={v.readiness.blocking} tone={v.readiness.blocking ? 'negative' : 'positive'} sub="Must pass to close" />
             <Stat label="Warnings open" value={v.readiness.warnings} tone={v.readiness.warnings ? 'warning' : 'neutral'} sub="Need a note to close" />
             <Stat label="Entries to review" value={waiting} tone={waiting ? 'warning' : 'neutral'} sub="Proposed by the AI" />
