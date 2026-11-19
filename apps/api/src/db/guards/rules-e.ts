@@ -93,6 +93,13 @@ registerGuards({
     if (op === 'INSERT') return;
     fail('The AI shutdown history cannot be changed or deleted');
   },
+  // security_alerts_guard (SEC-023): what was found stays as found; only repeats, acknowledgement and notification change, and alerts are never deleted.
+  security_alerts: (op, o, n) => {
+    if (op === 'INSERT') return;
+    if (op === 'DELETE') fail('A security alert cannot be deleted');
+    if (changed(o, n, ['rule', 'key', 'severity', 'org_id', 'user_id', 'first_seen_at', 'created_at'])) fail('What a security alert found cannot be changed');
+    if (o.status === 'ACKNOWLEDGED' && changed(o, n, ['status', 'acknowledged_by_id', 'acknowledged_at', 'note'])) fail('An acknowledged security alert stays acknowledged');
+  },
   // platform_model_policies_guard (SEC-034): the history of allowed models is kept as it happened.
   platform_model_policies: (op) => {
     if (op === 'INSERT') return;

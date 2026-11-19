@@ -299,3 +299,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 
 * Malware scanning needs a ClamAV daemon set in `CLAMAV_URL`; without it, uploads get the size, type and PDF active-content checks only. Files already stored are not scanned again when virus signatures update. See [`SECURITY.md`](SECURITY.md#file-uploads-and-malware-scanning-sec-018019).
 * The scanning code is tested against a local stand-in that speaks clamd's protocol, not against a real ClamAV installation.
+
+## Security event monitoring (SEC-023)
+
+* Fixed rules over the audit trail; no learned anomaly detection. Alerts go by email to super admins only: no pager, chat or SIEM export, and no per-organisation security alerts for owners. Application logs and infrastructure events (database, network, hosting) are not read; those belong in the hosting provider's monitoring.

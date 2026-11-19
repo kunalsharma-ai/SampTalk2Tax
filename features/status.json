@@ -7035,6 +7035,19 @@
         "docs/AI_CONTROL_CENTER.md"
       ],
       "notes": "Each agent may start a limited number of AI tasks in any 60 minutes per organisation: its own limit (owners and admins, 1 to 100,000, audited) or the server's AI_AGENT_TASKS_PER_HOUR (default 500, 0 = none). New work over the limit is refused with 429 AI_TASK_LIMIT before anything is sent; running work stops before its next model call only once over the limit. Alongside existing per-run limits (copilot tool rounds and turn timeout), monthly token budgets and the per-member hourly question limit."
+    },
+    "SEC-023": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/security-monitor/security-monitor.service.ts",
+        "apps/api/src/security-monitor/security-monitor-runner.service.ts",
+        "apps/api/src/security-monitor/security-monitor.controller.ts",
+        "apps/web/src/app/admin/security/page.tsx",
+        "apps/api/test/security-monitor.e2e.test.ts",
+        "apps/web/e2e/security-monitoring-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Reads the audit trail every SECURITY_MONITOR_INTERVAL_SECONDS (default 5 min). 23 audit actions are security events (HIGH or MEDIUM). Six rules raise alerts: many lockouts in an hour (SECURITY_LOCKOUT_ALERT_COUNT), failed two-step codes after a right password, platform role changes, a platform admin turning two-step off, infected uploads, 5+ SSO refusals in an hour for an organisation. One alert per rule and key (security_alerts; findings never change or get deleted), each new one emailed once to every super admin through the server's mail server. Platform admins review events and alerts; super admins acknowledge with a note (audited). No SIEM export, no pager or chat notifications, no anomaly detection beyond these rules."
     }
   }
 }

@@ -28499,9 +28499,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/security-monitor/security-monitor.service.ts",
+        "apps/api/src/security-monitor/security-monitor-runner.service.ts",
+        "apps/api/src/security-monitor/security-monitor.controller.ts",
+        "apps/web/src/app/admin/security/page.tsx",
+        "apps/api/test/security-monitor.e2e.test.ts",
+        "apps/web/e2e/security-monitoring-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Reads the audit trail every SECURITY_MONITOR_INTERVAL_SECONDS (default 5 min). 23 audit actions are security events (HIGH or MEDIUM). Six rules raise alerts: many lockouts in an hour (SECURITY_LOCKOUT_ALERT_COUNT), failed two-step codes after a right password, platform role changes, a platform admin turning two-step off, infected uploads, 5+ SSO refusals in an hour for an organisation. One alert per rule and key (security_alerts; findings never change or get deleted), each new one emailed once to every super admin through the server's mail server. Platform admins review events and alerts; super admins acknowledge with a note (audited). No SIEM export, no pager or chat notifications, no anomaly detection beyond these rules."
     },
     {
       "id": "SEC-024",

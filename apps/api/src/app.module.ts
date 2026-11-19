@@ -122,6 +122,9 @@ import { SsoService } from './sso/sso.service';
 import { FileScanningController } from './files/file-scanning.controller';
 import { FileScannerService } from './files/file-scanner.service';
 import { RetentionRunnerService } from './retention/retention-runner.service';
+import { SecurityMonitorController } from './security-monitor/security-monitor.controller';
+import { SecurityMonitorRunnerService } from './security-monitor/security-monitor-runner.service';
+import { SecurityMonitorService } from './security-monitor/security-monitor.service';
 import { RetentionService } from './retention/retention.service';
 import { KeyRotationService } from './security/key-rotation.service';
 import { AiControlService } from './ai-control/ai-control.service';
@@ -334,6 +337,7 @@ export class AppModule {
         SsoSettingsController,
         SsoSignInController,
         FileScanningController,
+        SecurityMonitorController,
         FixedAssetsController,
         DeferralsController,
         LoansController,
@@ -498,6 +502,8 @@ export class AppModule {
         RetentionService,
         SsoService,
         FileScannerService,
+        SecurityMonitorService,
+        SecurityMonitorRunnerService,
         BadDebtsService,
         YearEndService,
         PaymentBatchesService,

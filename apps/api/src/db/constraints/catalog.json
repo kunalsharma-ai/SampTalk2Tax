@@ -1736,6 +1736,12 @@
     "name": "journal_suggestion_decisions_chk"
    }
   ],
+  "security_alerts": [
+   {
+    "def": "CHECK ((((severity)::text = ANY ((ARRAY['HIGH'::character varying, 'MEDIUM'::character varying])::text[])) AND ((status)::text = ANY ((ARRAY['OPEN'::character varying, 'ACKNOWLEDGED'::character varying])::text[])) AND (count >= 1) AND (last_seen_at >= first_seen_at) AND (jsonb_typeof(event_ids) = 'array'::text) AND (((status)::text = 'OPEN'::text) OR ((acknowledged_by_id IS NOT NULL) AND (acknowledged_at IS NOT NULL)))))",
+    "name": "security_alerts_chk"
+   }
+  ],
   "platform_model_policies": [
    {
     "def": "CHECK ((((allowed_models IS NULL) OR ((jsonb_typeof(allowed_models) = 'array'::text) AND (jsonb_array_length(allowed_models) >= 1))) AND (length(btrim((reason)::text)) >= 3)))",

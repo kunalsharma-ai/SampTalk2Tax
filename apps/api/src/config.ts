@@ -160,6 +160,9 @@ const schema = z.object({
   /** How often recurring journals are checked for runs that have fallen due (0 turns the runner off). */
   RECURRING_JOURNAL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
   /** How often each organisation's data retention periods are applied (SEC-020; 0 turns the runner off). */
+  /** Security event monitoring (SEC-023): how often the audit trail is checked (seconds; 0 = off), and how many locked sign-ins in an hour raise an alert. */
+  SECURITY_MONITOR_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(300),
+  SECURITY_LOCKOUT_ALERT_COUNT: z.coerce.number().int().min(1).max(10000).default(5),
   RETENTION_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(604800).default(86400),
   /** How often recurring bills are checked for runs that have fallen due (0 turns the runner off). */
   RECURRING_BILL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
