@@ -119,6 +119,27 @@ shutdown**. It is for an incident with the AI provider, or with how the agents b
   `POST /v1/admin/ai/stop` and `POST /v1/admin/ai/resume`, each with `{ reason }`
   (platform.manage), return `409` when there is nothing to do.
 
+## Model access (SEC-034)
+
+Which AI models may be called, in two layers. Both are checked by the shared AI guard before every
+model call by every agent, so a change also stops work already running.
+
+* **Across Talk2Tax**: under **Platform admin → AI shutdown → Models allowed on Talk2Tax**, a
+  platform `SUPER_ADMIN` ticks the allowed models and gives a reason (at least 10 characters).
+  Every change is a row in `platform_model_policies`, which can only be inserted into; the latest
+  row decides, and no row (or a row with `null`) allows every model. Audited as
+  `platform.ai_models_changed`. API: `POST /v1/admin/ai/models` `{ allowed: string[] | null, reason }`
+  (platform.manage); `GET /v1/admin/ai` returns `models`.
+* **For an organisation**: the **Model access** card. Owners and admins can narrow the platform's
+  list, never widen it (`422 MODEL_NOT_ALLOWED`). An empty list allows every model the platform
+  allows. Stored in `copilot_settings.allowedModels`, audited as `ai.models_allowed_changed`. API:
+  `PUT /v1/orgs/:orgId/ai-control/models` `{ allowed }` (org.manage); the overview returns
+  `modelAccess`.
+* A model that is not allowed is never called. Agents stop with `409 MODEL_NOT_ALLOWED` and a
+  message saying which layer refused it. The model cannot be saved in **Settings → Integrations**
+  (shown as "not allowed" in the list), and the connection test refuses it without sending
+  anything. This holds for the server's default model too.
+
 ## What the copilot sends to the model (SEC-029, SEC-031)
 
 The card **Data sent to the AI** decides what the copilot leaves out of questions and report data

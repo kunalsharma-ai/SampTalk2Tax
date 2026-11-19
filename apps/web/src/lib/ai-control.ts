@@ -24,6 +24,8 @@ export interface AiAgentView {
 export interface AiControlView {
   /** Set while the people who run Talk2Tax have stopped AI for everyone (SEC-038). */
   platformShutdown: { reason: string; since: string } | null;
+  /** Which AI models may be used (SEC-034). */
+  modelAccess: ModelAccessView;
   month: string;
   accuracyDays: number;
   configured: boolean;
@@ -41,6 +43,15 @@ export interface AiControlView {
   prices: AiModelPrice[];
   modelsUsed: string[];
   agents: AiAgentView[];
+}
+
+export interface ModelAccessView {
+  /** The organisation's own list; empty = every model Talk2Tax allows. */
+  organisation: string[];
+  platformLimited: boolean;
+  inUse: string;
+  inUseAllowed: boolean;
+  models: { id: string; name: string; platformAllowed: boolean; allowed: boolean }[];
 }
 
 export interface AiModelPrice {

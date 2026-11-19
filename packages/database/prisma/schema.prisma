@@ -1906,6 +1906,8 @@ model CopilotSettings {
   disabledTools Json       @default("[]") @map("disabled_tools")
   /// What is hidden from the AI model besides cards, Aadhaar numbers and secrets (SEC-031): { panNumbers, bankAccounts, emails, phones }; {} = the defaults.
   redaction   Json         @default("{}")
+  /// The AI models the organisation allows (SEC-034): ids; [] = every model Talk2Tax allows.
+  allowedModels Json       @default("[]") @map("allowed_models")
   updatedById String       @map("updated_by_id") @db.Uuid
   updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Restrict)
@@ -5977,6 +5979,18 @@ model PlatformAiSwitch {
 
   @@index([createdAt])
   @@map("platform_ai_switches")
+}
+
+/// The AI models allowed across Talk2Tax (SEC-034): each change by a platform administrator, in order. The latest decides; no row, or null, allows every model. Never changed.
+model PlatformModelPolicy {
+  id            String   @id @db.Uuid
+  allowedModels Json?    @map("allowed_models")
+  reason        String   @db.VarChar(500)
+  actorId       String   @map("actor_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt])
+  @@map("platform_model_policies")
 }
 
 /// An organisation's retention period for a kind of working data (SEC-020); no row keeps it.

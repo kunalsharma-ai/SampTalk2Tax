@@ -14,6 +14,7 @@ const AgentBody = z
   .strict();
 const money = z.string().trim().regex(/^\d{1,6}(\.\d{1,4})?$/, 'Use a price in US dollars per million tokens, up to 4 decimal places').refine((v) => Number(v) <= 100_000, 'A price is at most 100,000 per million tokens');
 const PriceBody = z.object({ model: z.string().trim().min(1, 'Name the model').max(100, 'Keep the model name under 100 characters'), inputPerMillion: money, outputPerMillion: money }).strict();
+const ModelsBody = z.object({ allowed: z.array(z.string().trim().min(1).max(100)).max(20) }).strict();
 const RemovePriceBody = z.object({ model: z.string().trim().min(1, 'Name the model').max(100) }).strict();
 const StopBody = z.object({ reason: z.string().trim().min(10, 'Say why AI is being stopped (at least 10 characters)').max(500, 'Keep the reason under 500 characters') }).strict();
 
@@ -44,6 +45,14 @@ export class AiControlController {
   @ApiBody({ schema: openApi(PriceBody) })
   setPrice(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(PriceBody)) b: z.infer<typeof PriceBody>) {
     return this.control.setPrice({ orgId: org.id, role: org.role }, user, b);
+  }
+
+  /** The models this organisation allows (SEC-034); [] = every model Talk2Tax allows. */
+  @Put('models')
+  @RequirePermission('org.manage')
+  @ApiBody({ schema: openApi(ModelsBody) })
+  saveModels(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(ModelsBody)) b: z.infer<typeof ModelsBody>) {
+    return this.control.saveModels({ orgId: org.id, role: org.role }, user, b.allowed);
   }
 
   @Post('prices/remove')

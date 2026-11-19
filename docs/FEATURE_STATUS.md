@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 765 |
+| Not started | 764 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 34 |
-| Tested | 492 |
+| Tested | 493 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -54,7 +54,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Privacy-preserving financial benchmarking | M7 | 21 | 0 | 21 |
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
-| Security and enterprise governance | M1 | 38 | 12 | 26 |
+| Security and enterprise governance | M1 | 38 | 11 | 27 |
 | User experience and onboarding | M1 | 22 | 16 | 6 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
@@ -5938,6 +5938,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
   - packages/database/prisma/migrations/20261102090000_ai_copilot
+
+### SEC-034 — Model access policies
+
+- Module: Security and enterprise governance
+- Status: **Tested**
+- Notes: Two layers checked before every model call by every agent (the shared AI guard): models allowed across Talk2Tax (super admins, with a reason, insert-only history, audited) and an organisation's narrower list (owners and admins, audited). A model not allowed is refused with 409 MODEL_NOT_ALLOWED before anything is sent; it cannot be saved in Settings → Integrations or used by the connection test. Not per agent or per member.
+- Evidence:
+  - apps/api/src/ai-control/model-access.ts
+  - apps/api/src/ai-control/ai-control.service.ts (check, saveModels, platformSetModels)
+  - apps/api/src/ai-control/platform-ai.controller.ts (POST models)
+  - apps/api/src/integrations/integrations.service.ts (saveAi, testAi, allowed flags)
+  - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (Model access)
+  - apps/web/src/app/admin/ai/page.tsx (Models allowed on Talk2Tax)
+  - apps/api/test/model-access.e2e.test.ts
+  - apps/web/e2e/model-access-flow.test.mjs
+  - docs/AI_CONTROL_CENTER.md
 
 ### SEC-035 — Cross-tenant data leakage tests
 

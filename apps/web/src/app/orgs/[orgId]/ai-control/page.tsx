@@ -106,6 +106,8 @@ export default function AiControlPage() {
             ))}
           </ul>
 
+          <ModelAccess v={v} base={base} orgId={orgId} onDone={set} />
+
           <ModelPrices v={v} base={base} onDone={set} />
 
           <CopilotTools orgId={orgId} canManage={v.canManage} />
@@ -417,6 +419,52 @@ function AiDataSafety({ orgId, canManage }: { orgId: string; canManage: boolean 
       <p className="mt-3 text-xs text-fg-muted">
         Text in your books that reads like instructions to an AI (for example a memo saying &ldquo;ignore your instructions&rdquo;) is passed to the model marked as data to ignore. The answer shows a warning, and the copilot cannot propose anything in that answer. Changes here are recorded in the audit trail.
       </p>
+    </Card>
+  );
+}
+
+/** Which AI models this organisation allows (SEC-034), within what Talk2Tax allows. */
+function ModelAccess({ v, base, orgId, onDone }: { v: AiControlView; base: string; orgId: string; onDone: (v: AiControlView) => void }) {
+  const a = v.modelAccess;
+  const save = useMutation({ mutationFn: (allowed: string[]) => api<AiControlView>(`${base}/models`, { method: 'PUT', body: { allowed } }), onSuccess: onDone });
+  const all = a.organisation.length === 0;
+  const toggle = (id: string, on: boolean) => {
+    // Unticking from "every model" starts a list of the others the platform allows.
+    const current = all ? a.models.filter((m) => m.platformAllowed).map((m) => m.id) : a.organisation;
+    const next = on ? [...current, id] : current.filter((x) => x !== id);
+    if (!next.length) return;
+    save.mutate(next.length === a.models.filter((m) => m.platformAllowed).length ? [] : next);
+  };
+  return (
+    <Card className="mt-4 p-4" role="region" aria-label="Model access">
+      <CardHeader title="Model access" description="Which AI models your AI features may use. A model that is not allowed is never called: agents stop with a clear message until an allowed model is chosen in Settings → Integrations." />
+      <ErrorAlert title="The allowed models were not changed" error={save.error} />
+      {!a.inUseAllowed ? (
+        <div className="mt-2">
+          <Alert tone="warning" title="The model in use is not allowed">
+            {a.inUse} is not allowed, so AI features do not run. Choose an allowed model in <Link className="text-accent hover:underline" href={`/orgs/${orgId}/settings/integrations`}>Settings → Integrations</Link>{a.models.find((m) => m.id === a.inUse)?.platformAllowed !== false ? ', or allow it here' : ''}.
+          </Alert>
+        </div>
+      ) : null}
+      <p className="mt-2 text-sm">{all ? 'Every model Talk2Tax allows can be used.' : `Only the ticked models can be used.`} In use now: <span className="font-medium">{a.inUse}</span>.</p>
+      <ul className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+        {a.models.map((m) => (
+          <li key={m.id}>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" aria-label={`Allow ${m.id}`} checked={m.allowed} disabled={!v.canManage || !m.platformAllowed || save.isPending} onChange={(e) => toggle(m.id, e.target.checked)} />
+              <span>
+                {m.name}
+                <span className="block text-xs text-fg-faint">{m.platformAllowed ? m.id : `${m.id} · not allowed on Talk2Tax by the people who run it`}</span>
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      {v.canManage && !all ? (
+        <Button className="mt-3" size="sm" variant="secondary" loading={save.isPending} onClick={() => save.mutate([])}>
+          Allow every model
+        </Button>
+      ) : null}
     </Card>
   );
 }

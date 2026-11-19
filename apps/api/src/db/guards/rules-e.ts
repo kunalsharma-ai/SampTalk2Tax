@@ -93,6 +93,11 @@ registerGuards({
     if (op === 'INSERT') return;
     fail('The AI shutdown history cannot be changed or deleted');
   },
+  // platform_model_policies_guard (SEC-034): the history of allowed models is kept as it happened.
+  platform_model_policies: (op) => {
+    if (op === 'INSERT') return;
+    fail('The history of allowed AI models cannot be changed or deleted');
+  },
   // journal_suggestion_decisions_guard (GL-036): a decision is recorded once and never changed.
   journal_suggestion_decisions: (op) => {
     if (op === 'INSERT') return;

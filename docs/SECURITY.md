@@ -214,6 +214,12 @@ records 6 years from the end of the assessment year (Income-tax Rules, 1962, rul
 
 Not built: periods for uploaded files and email logs, legal hold, and an export before deletion.
 
+## AI model access (SEC-034)
+
+Platform administrators choose the AI models allowed across Talk2Tax, and each organisation can
+narrow that list. A model that is not allowed is refused before any call. See
+[`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md#model-access-sec-034).
+
 ## AI data safety (SEC-029, SEC-031)
 
 The copilot replaces card numbers, Aadhaar numbers and secrets in everything it sends to the AI

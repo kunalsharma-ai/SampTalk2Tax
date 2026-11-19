@@ -1,7 +1,7 @@
 import { HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { IntegrationsService } from '../integrations/integrations.service';
-import { AiAgent } from '@talk2tax/database';
+import { AiAgent, Prisma } from '@talk2tax/database';
 import { D } from '@talk2tax/accounting-engine';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -11,6 +11,7 @@ import { AppConfig, CONFIG } from '../config';
 import { CopilotModel } from '../copilot/copilot.model';
 import { todayIst } from '../tasks/tasks.service';
 import { UsageService } from '../usage/usage.service';
+import { knownModels, modelAccess, modelList, modelRefusal, platformAllowedModels } from './model-access';
 
 type Member = { orgId: string; role: RoleName };
 type Actor = { id: string };
@@ -40,7 +41,7 @@ export const AGENT_KEYS = Object.keys(AGENTS) as AiAgent[];
 /** How far back acceptance rates look. */
 export const ACCURACY_DAYS = 90;
 
-export type AgentBlock = { code: 'AI_SHUTDOWN' | 'AI_NOT_CONFIGURED' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED' | 'AI_CREDITS_USED_UP'; message: string; status: HttpStatus };
+export type AgentBlock = { code: 'AI_SHUTDOWN' | 'AI_NOT_CONFIGURED' | 'MODEL_NOT_ALLOWED' | 'AI_OFF' | 'AGENT_OFF' | 'AI_BUDGET_REACHED' | 'AI_CREDITS_USED_UP'; message: string; status: HttpStatus };
 
 /** The start of the current calendar month in India time, as an instant. */
 export function monthStartIst(now: Date = new Date()): { month: string; since: Date } {
@@ -119,7 +120,14 @@ export class AiControlService {
     // The platform-wide shutdown (SEC-038) comes first: it holds even where no key is set up.
     const shutdown = await this.platformShutdown();
     if (shutdown) return { code: 'AI_SHUTDOWN', message: `AI is stopped across Talk2Tax by the people who run it: ${shutdown.reason}. Nothing was sent to the AI model.`, status: HttpStatus.SERVICE_UNAVAILABLE };
-    if (!(await this.integrations.ai(orgId)).model) return { code: 'AI_NOT_CONFIGURED', message: 'AI is not set up: an owner or admin can add a Claude API key in Settings → Integrations. Nothing was sent anywhere.', status: HttpStatus.SERVICE_UNAVAILABLE };
+    const ai = await this.integrations.ai(orgId);
+    if (!ai.model) return { code: 'AI_NOT_CONFIGURED', message: 'AI is not set up: an owner or admin can add a Claude API key in Settings → Integrations. Nothing was sent anywhere.', status: HttpStatus.SERVICE_UNAVAILABLE };
+    // Model access policies (SEC-034): the model about to be called must be allowed by the platform and the organisation.
+    const refused = modelRefusal(ai.modelName, await modelAccess(this.prisma, orgId));
+    if (refused) {
+      const fix = refused.layer === 'PLATFORM' ? 'An owner or admin can choose an allowed model in Settings → Integrations.' : 'An owner or admin can choose an allowed model in Settings → Integrations, or allow this one in the AI control center.';
+      return { code: 'MODEL_NOT_ALLOWED', message: `${refused.message} ${fix} Nothing was sent to the AI model.`, status: HttpStatus.CONFLICT };
+    }
     const [s, a] = await Promise.all([
       this.prisma.copilotSettings.findUnique({ where: { orgId } }),
       this.prisma.aiAgentSetting.findUnique({ where: { orgId_agent: { orgId, agent } } }),
@@ -206,6 +214,42 @@ export class AiControlService {
         entityId: orgId,
         data: { model: input.model, from: before ? { inputPerMillion: String(before.inputPerMillion), outputPerMillion: String(before.outputPerMillion) } : null, to: { inputPerMillion: input.inputPerMillion, outputPerMillion: input.outputPerMillion } },
       });
+    });
+    return this.overview(member);
+  }
+
+  // ------------------------------------------------------------------ model access (SEC-034)
+
+  /** Each known model, whether the platform and the organisation allow it, and whether the model in use is allowed. */
+  private async modelAccessView(orgId: string, inUse: string) {
+    const access = await modelAccess(this.prisma, orgId);
+    return {
+      organisation: access.organisation,
+      platformLimited: access.platform !== null,
+      inUse,
+      inUseAllowed: !modelRefusal(inUse, access),
+      models: knownModels(this.config.COPILOT_MODEL).map((m) => ({
+        ...m,
+        platformAllowed: !access.platform || access.platform.includes(m.id),
+        allowed: !modelRefusal(m.id, access),
+      })),
+    };
+  }
+
+  /** The models this organisation allows; an empty list allows every model Talk2Tax allows. */
+  async saveModels(member: Member, actor: Actor, allowed: string[]) {
+    const { orgId } = member;
+    const known = knownModels(this.config.COPILOT_MODEL).map((m) => m.id);
+    const unknown = allowed.filter((m) => !known.includes(m));
+    if (unknown.length) throw new DomainError('UNKNOWN_MODEL', `Not a model Talk2Tax offers: ${unknown.join(', ')}`, HttpStatus.UNPROCESSABLE_ENTITY);
+    const platform = await platformAllowedModels(this.prisma);
+    const blocked = platform ? allowed.filter((m) => !platform.includes(m)) : [];
+    if (blocked.length) throw new DomainError('MODEL_NOT_ALLOWED', `Not allowed on Talk2Tax by the people who run it: ${blocked.join(', ')}`, HttpStatus.UNPROCESSABLE_ENTITY);
+    const next = [...new Set(allowed)].sort();
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.copilotSettings.findUnique({ where: { orgId } });
+      await tx.copilotSettings.upsert({ where: { orgId }, create: { orgId, enabled: false, allowedModels: next, updatedById: actor.id }, update: { allowedModels: next, updatedById: actor.id } });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'ai.models_allowed_changed', entityType: 'copilot_settings', entityId: orgId, data: { from: modelList(before?.allowedModels), to: next } });
     });
     return this.overview(member);
   }
@@ -330,6 +374,7 @@ export class AiControlService {
       stopped: !!settings?.offReason,
       offReason: settings?.offReason ?? null,
       platformShutdown: await this.platformShutdown(),
+      modelAccess: await this.modelAccessView(orgId, ai.modelName),
       changedBy: settings ? (users.get(settings.updatedById) ?? 'Former member') : null,
       changedAt: settings?.updatedAt.toISOString() ?? null,
       canManage: hasPermission(member.role, 'org.manage'),
@@ -418,7 +463,36 @@ export class AiControlService {
       reason: last?.action === 'STOPPED' ? last.reason : null,
       since: last ? last.createdAt.toISOString() : null,
       history: rows.map((r) => ({ id: r.id, action: r.action as 'STOPPED' | 'RESUMED', reason: r.reason, by: name.get(r.actorId) ?? 'Former administrator', at: r.createdAt.toISOString() })),
+      models: await this.platformModels(),
     };
+  }
+
+  /** The models allowed across Talk2Tax (SEC-034), and every change. */
+  private async platformModels() {
+    const rows = await this.prisma.platformModelPolicy.findMany({ orderBy: { createdAt: 'desc' }, take: 50 });
+    const people = rows.length ? await this.prisma.user.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.actorId))] } }, select: { id: true, name: true } }) : [];
+    const name = new Map(people.map((p) => [p.id, p.name]));
+    const allowed = rows[0] && rows[0].allowedModels !== null ? modelList(rows[0].allowedModels) : null;
+    return {
+      limited: allowed !== null,
+      available: knownModels(this.config.COPILOT_MODEL).map((m) => ({ ...m, allowed: !allowed || allowed.includes(m.id) })),
+      history: rows.map((r) => ({ id: r.id, allowed: r.allowedModels === null ? null : modelList(r.allowedModels), reason: r.reason, by: name.get(r.actorId) ?? 'Former administrator', at: r.createdAt.toISOString() })),
+    };
+  }
+
+  /** Limit the models allowed across Talk2Tax, or with null allow every model again. */
+  async platformSetModels(actor: Actor, allowed: string[] | null, reason: string) {
+    const known = knownModels(this.config.COPILOT_MODEL).map((m) => m.id);
+    const unknown = (allowed ?? []).filter((m) => !known.includes(m));
+    if (unknown.length) throw new DomainError('UNKNOWN_MODEL', `Not a model Talk2Tax offers: ${unknown.join(', ')}`, HttpStatus.UNPROCESSABLE_ENTITY);
+    const next = allowed ? [...new Set(allowed)].sort() : null;
+    await this.prisma.$transaction(async (tx) => {
+      const id = randomUUID();
+      const before = await tx.platformModelPolicy.findFirst({ orderBy: { createdAt: 'desc' } });
+      await tx.platformModelPolicy.create({ data: { id, allowedModels: next ?? Prisma.DbNull, reason, actorId: actor.id } });
+      await this.audit.append(tx, { orgId: null, actorId: actor.id, action: 'platform.ai_models_changed', entityType: 'platform_model_policy', entityId: id, data: { from: before && before.allowedModels !== null ? modelList(before.allowedModels) : null, to: next, reason } });
+    });
+    return this.platformStatus();
   }
 
   /**
