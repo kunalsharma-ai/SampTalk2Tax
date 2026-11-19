@@ -8,7 +8,8 @@ import { api } from '@/lib/api';
 import { useMeWithRole } from '@/lib/admin';
 import { dateTime } from '@/lib/format';
 
-type Status = { stopped: boolean; reason: string | null; since: string | null; history: { id: string; action: 'STOPPED' | 'RESUMED'; reason: string; by: string; at: string }[] };
+type Models = { limited: boolean; available: { id: string; name: string; allowed: boolean }[]; history: { id: string; allowed: string[] | null; reason: string; by: string; at: string }[] };
+type Status = { stopped: boolean; reason: string | null; since: string | null; history: { id: string; action: 'STOPPED' | 'RESUMED'; reason: string; by: string; at: string }[]; models: Models };
 
 /** The platform-wide AI emergency shutdown (SEC-038). */
 export default function AdminAiPage() {
@@ -45,6 +46,7 @@ export default function AdminAiPage() {
               </form>
             </Card>
           ) : null}
+          <AllowedModels m={s.models} manage={manage} onDone={(x) => qc.setQueryData(['admin-ai'], x)} />
           <Card>
             <CardHeader title="Shutdown history" description="Every stop and resume, newest first. It cannot be changed." />
             {!s.history.length ? <EmptyState title="Never stopped">AI has not been stopped for everyone.</EmptyState> : (
@@ -66,5 +68,56 @@ export default function AdminAiPage() {
         </>
       ) : null}
     </>
+  );
+}
+
+/** The AI models allowed across Talk2Tax (SEC-034). */
+function AllowedModels({ m, manage, onDone }: { m: Models; manage: boolean; onDone: (s: Status) => void }) {
+  const [picked, setPicked] = useState<string[]>(() => m.available.filter((x) => x.allowed).map((x) => x.id));
+  const [reason, setReason] = useState('');
+  const save = useMutation({
+    mutationFn: (allowed: string[] | null) => api<Status>('/v1/admin/ai/models', { method: 'POST', body: { allowed, reason: reason.trim() } }),
+    onSuccess: (s) => { setReason(''); setPicked(s.models.available.filter((x) => x.allowed).map((x) => x.id)); onDone(s); },
+  });
+  const everything = picked.length === m.available.length;
+  return (
+    <Card className="mb-6" role="region" aria-label="Models allowed on Talk2Tax">
+      <CardHeader title="Models allowed on Talk2Tax" description="The AI models any organisation may use. Agents check before each call, so an organisation whose chosen model is no longer allowed stops until an owner picks an allowed one. Organisations can narrow this list, never widen it." />
+      <ErrorAlert title="The allowed models were not changed" error={save.error} />
+      <div className="px-5 pb-5 pt-3">
+        <p className="text-sm">{m.limited ? 'Limited to the ticked models.' : 'Every model is allowed.'}</p>
+        <ul className="mt-2 flex flex-wrap gap-4">
+          {m.available.map((x) => (
+            <li key={x.id}>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" aria-label={`Allow ${x.id} on Talk2Tax`} checked={picked.includes(x.id)} disabled={!manage} onChange={(e) => setPicked(e.target.checked ? [...picked, x.id] : picked.filter((y) => y !== x.id))} />
+                {x.name}
+              </label>
+            </li>
+          ))}
+        </ul>
+        {manage ? (
+          <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); save.mutate(everything ? null : picked); }}>
+            <Field label="Reason for the change">{(p) => <Input {...p} className="w-[30rem]" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Cost review: the largest model needs approval." />}</Field>
+            <Button type="submit" disabled={reason.trim().length < 10 || !picked.length} loading={save.isPending}>Save allowed models</Button>
+          </form>
+        ) : null}
+        {m.history.length ? (
+          <Table aria-label="Allowed model changes" className="mt-4">
+            <thead><tr><Th>When</Th><Th>Allowed</Th><Th>Reason</Th><Th>By</Th></tr></thead>
+            <tbody>
+              {m.history.map((h) => (
+                <Tr key={h.id}>
+                  <Td className="whitespace-nowrap">{dateTime(h.at)}</Td>
+                  <Td>{h.allowed ? h.allowed.join(', ') : 'Every model'}</Td>
+                  <Td>{h.reason}</Td>
+                  <Td>{h.by}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        ) : null}
+      </div>
+    </Card>
   );
 }

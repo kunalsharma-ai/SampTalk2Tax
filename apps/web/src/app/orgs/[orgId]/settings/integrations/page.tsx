@@ -36,7 +36,7 @@ interface EmailSettings {
   replyTo: string | null;
 }
 interface Integrations {
-  ai: CardState & { settings: { model: string } | null; modelInUse: string; models: { id: string; name: string }[]; defaultModel: string };
+  ai: CardState & { settings: { model: string } | null; modelInUse: string; models: { id: string; name: string; allowed: boolean }[]; modelInUseAllowed: boolean; defaultModel: string };
   email: CardState & { settings: EmailSettings | null; fromInUse: string | null; allowPlain: boolean };
 }
 
@@ -92,6 +92,11 @@ function AiCard({ orgId, d }: { orgId: string; d: Integrations['ai'] }) {
         actions={<InUse source={d.inUse} what="key" />}
       />
       {d.inUse === 'SERVER' && !d.configured ? <p className="mb-3 text-sm text-fg-muted">The server has a key set up, so AI works now. Add your own key to use your own Anthropic account and model.</p> : null}
+      {!d.modelInUseAllowed ? (
+        <div className="mb-3">
+          <Alert tone="warning" title="This model is not allowed">AI features will not run with {d.modelInUse}: it is not allowed for this organisation or on Talk2Tax. Choose an allowed model below, or change the allowed models in the AI control center.</Alert>
+        </div>
+      ) : null}
       {d.secretUnreadable ? (
         <div className="mb-3">
           <Alert tone="warning" title="Enter the key again">The stored key was sealed with an encryption key this server no longer has, so it cannot be used. Paste the key again and save.</Alert>
@@ -114,7 +119,7 @@ function AiCard({ orgId, d }: { orgId: string; d: Integrations['ai'] }) {
               <Input {...p} value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-…" />
             ) : (
               <Select {...p} value={model} onChange={(e) => (e.target.value === '__custom' ? setCustom(true) : setModel(e.target.value))}>
-                {d.models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {d.models.map((m) => <option key={m.id} value={m.id} disabled={!m.allowed}>{m.allowed ? m.name : `${m.name}: not allowed`}</option>)}
                 <option value="__custom">Another model…</option>
               </Select>
             )

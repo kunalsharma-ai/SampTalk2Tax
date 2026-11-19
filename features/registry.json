@@ -28782,9 +28782,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/ai-control/model-access.ts",
+        "apps/api/src/ai-control/ai-control.service.ts (check, saveModels, platformSetModels)",
+        "apps/api/src/ai-control/platform-ai.controller.ts (POST models)",
+        "apps/api/src/integrations/integrations.service.ts (saveAi, testAi, allowed flags)",
+        "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx (Model access)",
+        "apps/web/src/app/admin/ai/page.tsx (Models allowed on Talk2Tax)",
+        "apps/api/test/model-access.e2e.test.ts",
+        "apps/web/e2e/model-access-flow.test.mjs",
+        "docs/AI_CONTROL_CENTER.md"
+      ],
+      "notes": "Two layers checked before every model call by every agent (the shared AI guard): models allowed across Talk2Tax (super admins, with a reason, insert-only history, audited) and an organisation's narrower list (owners and admins, audited). A model not allowed is refused with 409 MODEL_NOT_ALLOWED before anything is sent; it cannot be saved in Settings → Integrations or used by the connection test. Not per agent or per member."
     },
     {
       "id": "SEC-035",

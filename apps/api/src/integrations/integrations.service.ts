@@ -14,6 +14,7 @@ import { isPublicAddress } from '../workflows/webhook';
 import { SecretBox, secretBoxFor, secretHint } from './secret-box';
 import { brandedEmailAttachments, brandedEmailHtml } from '../workflows/branded-email';
 import { UsageService } from '../usage/usage.service';
+import { modelAccess, modelRefusal } from '../ai-control/model-access';
 
 type Actor = { id: string; email: string };
 export type Source = 'ORGANISATION' | 'SERVER' | 'NONE';
@@ -181,7 +182,7 @@ export class IntegrationsService {
   async view(orgId: string) {
     const rows = await this.prisma.orgIntegration.findMany({ where: { orgId } });
     const names = await this.userNames(rows.flatMap((r) => [r.updatedById, r.testedById]));
-    const [ai, mail] = await Promise.all([this.ai(orgId), this.mail(orgId)]);
+    const [ai, mail, access] = await Promise.all([this.ai(orgId), this.mail(orgId), modelAccess(this.prisma, orgId)]);
     const card = (kind: IntegrationKind, source: Source, server: boolean) => {
       const r = rows.find((x) => x.kind === kind);
       const unreadable = !!r?.secretCipher && this.secretOf(r) === null;
@@ -203,12 +204,21 @@ export class IntegrationsService {
       };
     };
     return {
-      ai: { ...card('AI_ANTHROPIC', ai.source, !!this.serverModel), modelInUse: ai.modelName, models: AI_MODELS, defaultModel: this.config.COPILOT_MODEL },
+      ai: {
+        ...card('AI_ANTHROPIC', ai.source, !!this.serverModel),
+        modelInUse: ai.modelName,
+        // Models the platform or the organisation does not allow are shown, but cannot be chosen (SEC-034).
+        models: AI_MODELS.map((m) => ({ ...m, allowed: !modelRefusal(m.id, access) })),
+        modelInUseAllowed: !modelRefusal(ai.modelName, access),
+        defaultModel: this.config.COPILOT_MODEL,
+      },
       email: { ...card('EMAIL_SMTP', mail.source, !!serverMail(this.config)), fromInUse: mail.from, allowPlain: this.config.WEBHOOK_ALLOW_PRIVATE_NETWORKS },
     };
   }
 
   async saveAi(orgId: string, actor: Actor, input: { apiKey?: string | null; model: string; enabled: boolean }) {
+    const refused = modelRefusal(input.model, await modelAccess(this.prisma, orgId));
+    if (refused) throw new DomainError('MODEL_NOT_ALLOWED', `${refused.message} Choose another model.`, HttpStatus.UNPROCESSABLE_ENTITY);
     return this.save(orgId, actor, 'AI_ANTHROPIC', { model: input.model } satisfies AiSettings, input.apiKey ?? null, input.enabled, true);
   }
 
@@ -282,6 +292,8 @@ export class IntegrationsService {
     const key = this.secretOf(r);
     if (!key) return { ok: false, message: 'The stored key can no longer be read; enter it again.' };
     const model = (r.settings as unknown as AiSettings).model || this.config.COPILOT_MODEL;
+    const refused = modelRefusal(model, await modelAccess(this.prisma, r.orgId));
+    if (refused) return { ok: false, message: `${refused.message} Choose an allowed model, then test again. Nothing was sent.` };
     try {
       const res = await new AnthropicCopilotModel(key, this.config.ANTHROPIC_BASE_URL).send(
         { model, max_tokens: 16, messages: [{ role: 'user', content: 'Reply with the single word OK.' }] },
