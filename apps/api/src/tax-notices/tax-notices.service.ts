@@ -195,6 +195,8 @@ export class TaxNoticesService {
 
   async addFile(org: OrgContext, actorId: string, id: string, fileName: string, content: Buffer) {
     await this.find(id);
+    // The controller validates it; checked again so a repeated ?fileName= can never arrive as a list.
+    if (typeof fileName !== 'string') throw this.invalid(['Give the file one name']);
     if (!content.length) throw this.invalid(['The file is empty']);
     if (content.length > MAX_ATTACHMENT_BYTES) throw this.invalid(['A file can be at most 5 MB']);
     const contentType = sniffContentType(content);
