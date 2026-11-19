@@ -60,6 +60,15 @@ async function signIn() {
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
 
+/**
+ * Leaves the app before clearing cookies: a page of the app still loading would see its
+ * session go, redirect to the login page itself and abort the test's own navigation there.
+ */
+async function signedOut() {
+  await page.goto('about:blank');
+  await ctx.clearCookies();
+}
+
 /** Cookies the sign-in endpoint receives (the challenge cookie is limited to that path). */
 const cookieNames = async () => (await ctx.cookies(`${WEB}/api/session`)).map((c) => c.name);
 
@@ -112,7 +121,7 @@ test('a new account turns on two-step sign-in', async () => {
 });
 
 test('signing in asks for the code after the password', async () => {
-  await ctx.clearCookies();
+  await signedOut();
   await signIn();
   await page.getByRole('heading', { name: 'Two-step sign-in' }).waitFor();
   // The challenge is in an httpOnly cookie only the sign-in endpoint receives; no session yet.
@@ -133,7 +142,7 @@ test('signing in asks for the code after the password', async () => {
 });
 
 test('a recovery code signs in once when the phone is lost', async () => {
-  await ctx.clearCookies();
+  await signedOut();
   await signIn();
   await page.getByLabel('Code').fill(recoveryCodes[0].toLowerCase());
   await page.getByRole('button', { name: 'Verify and sign in' }).click();
@@ -141,7 +150,7 @@ test('a recovery code signs in once when the phone is lost', async () => {
   await page.goto(`${WEB}/orgs/${orgId}/account`);
   await page.getByText('9 of 10 recovery codes left.').waitFor();
 
-  await ctx.clearCookies();
+  await signedOut();
   await signIn();
   await page.getByLabel('Code').fill(recoveryCodes[0]);
   await page.getByRole('button', { name: 'Verify and sign in' }).click();
@@ -159,7 +168,7 @@ test('turning it off needs the password and a code', async () => {
   await cardShot(page, '07-turn-off');
   await page.getByRole('button', { name: 'Turn off two-step sign-in' }).click();
   await page.getByText('Your password alone signs you in now.').waitFor();
-  await ctx.clearCookies();
+  await signedOut();
   await signIn();
   await page.waitForURL(/\/orgs\/[0-9a-f-]{36}/);
   const unexpected = consoleErrors.filter((e) => !/status of (401|422)/.test(e));
