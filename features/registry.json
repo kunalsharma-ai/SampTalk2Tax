@@ -33204,9 +33204,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/accessibility.test.mjs",
+        "packages/ui/src/table.tsx",
+        "apps/web/src/app/globals.css",
+        "packages/design-system/test",
+        "docs/TEST_STRATEGY.md"
+      ],
+      "notes": "axe-core 4.14.0 runs WCAG 2.1 A/AA rules on sign-in, registration and 23 signed-in screens in light and dark, desktop and phone width; serious or critical violations fail CI. Fixed: links in running text are underlined (1.4.1) and wide tables can be scrolled by keyboard (2.1.1). Sign-in by keyboard alone with visible focus. Automated checks find part of WCAG issues only."
     },
     {
       "id": "QA-019",

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 747 |
+| Not started | 746 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 509 |
+| Tested | 510 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 5 | 26 |
+| Testing and quality assurance | M1 | 31 | 4 | 27 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7242,6 +7242,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/workflows.e2e.test.ts
   - apps/api/test/workflow-schedules.e2e.test.ts
   - apps/api/src/workflows/workflow-runner.service.ts
+
+### QA-018 — Accessibility tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: axe-core 4.14.0 runs WCAG 2.1 A/AA rules on sign-in, registration and 23 signed-in screens in light and dark, desktop and phone width; serious or critical violations fail CI. Fixed: links in running text are underlined (1.4.1) and wide tables can be scrolled by keyboard (2.1.1). Sign-in by keyboard alone with visible focus. Automated checks find part of WCAG issues only.
+- Evidence:
+  - apps/web/e2e/accessibility.test.mjs
+  - packages/ui/src/table.tsx
+  - apps/web/src/app/globals.css
+  - packages/design-system/test
+  - docs/TEST_STRATEGY.md
 
 ### QA-021 — Every journal balances
 

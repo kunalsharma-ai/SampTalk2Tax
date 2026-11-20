@@ -10,6 +10,7 @@
 | Web unit | vitest | `apps/web/test` | Money formatting |
 | Design tokens | node:test | `packages/design-system/test` | WCAG AA contrast of every text/background pair |
 | End-to-end UI | Playwright + node:test | `apps/web/e2e` | Real browser → web app → API → MongoDB |
+| Accessibility | axe-core in Playwright | `apps/web/e2e/accessibility.test.mjs` | WCAG 2.1 A/AA on the main screens |
 | Load | k6 | planned (PERF targets) | |
 
 Integration tests never drop or reset data. Each test registers its own users and creates its own organisations, so runs are isolated by tenant and can repeat against the same database. Global setup only applies the MongoDB migrations, and refuses a database whose name does not contain "test".
@@ -148,7 +149,18 @@ Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) build
 
 `apps/web/e2e/close-flow.test.mjs` runs the whole flow in the browser through the real SDK against the stand-in. Engine tests cover every check and the text the model reads.
 
-Not yet covered (no feature yet): tax, payroll, reconciliation, AI agent evaluation, prompt injection, automated accessibility audits (axe), visual regression, load.
+## Tax, payroll, AI authority, workflow recovery and accessibility (QA-007, QA-010, QA-015, QA-016, QA-018, QA-029, QA-030)
+
+| Area | Test |
+|---|---|
+| Tax golden values | `packages/tax-engine/test/tax-golden.test.ts`: income tax for each tax year built (rebate, marginal relief, surcharge bands), GST at every standard rate, TDS sections and thresholds, corporate tax; sweeps check tax never falls as income rises and CGST + SGST stays within a paisa of IGST |
+| Effective-dated rules | same file: each payslip uses the rules of its month's tax year; a later year says the latest rates were used, an earlier one is refused |
+| Payroll over a year | `packages/tax-engine/test/payroll-golden.test.ts`: employees run month by month with history carried forward; TDS adds up to the year's tax; PF ceiling change; ESI period coverage; professional tax; payslip identities |
+| AI authority and prompt injection | `apps/api/test/ai-authority.e2e.test.ts`: agent levels fixed in code, the copilot has no tool that writes to the books, invented tools refused, injected bank text and customer names cannot lead to one-click payments or planted payment links |
+| Workflow recovery | `apps/api/test/workflow-recovery.e2e.test.ts`: two API processes, downtime, a failed pass, dead leases and claims, missed schedules |
+| Accessibility | `apps/web/e2e/accessibility.test.mjs`: axe-core (WCAG 2.1 A and AA) on the sign-in screens and 23 signed-in screens, light and dark and at phone width; any serious or critical violation fails. Also sign-in by keyboard alone with visible focus. axe finds about half of WCAG problems; screen reader and manual review are still needed |
+
+Not yet covered: visual regression, load.
 
 ## Running
 
