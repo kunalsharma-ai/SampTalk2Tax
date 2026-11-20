@@ -7164,6 +7164,27 @@
         "docs/SECURITY.md"
       ],
       "notes": "Access rules bind roles or named people to networks (IPv4/IPv6 CIDR), days and hours in the organisation's time zone, for all requests or changes only, checked in the auth guard after the role. Owners are never bound; a rule that would refuse its author is refused; changes audited; the organisation list explains a refusal."
+    },
+    "QA-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/tax-golden.test.ts",
+        "packages/tax-engine/test/gst.test.ts",
+        "packages/tax-engine/test/withholding.test.ts",
+        "packages/tax-engine/test/advance-tax.test.ts",
+        "packages/tax-engine/test/payroll.test.ts"
+      ],
+      "notes": "Hand-worked golden values for income tax (each tax year built, rebate, marginal relief, surcharge bands), GST at every standard rate intra- and inter-state, TDS sections and thresholds, and corporate tax; invariant sweeps check tax never falls as income rises and marginal relief caps every threshold, and CGST+SGST stays within a paisa of IGST."
+    },
+    "QA-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/payroll.ts",
+        "packages/tax-engine/test/tax-golden.test.ts",
+        "apps/api/src/withholding/withholding.service.ts",
+        "apps/api/src/ledgers/documents.service.ts"
+      ],
+      "notes": "Income tax on salary uses the rules of the tax year the pay month falls in (2024-25, 2025-26, 2026-27 built); a later year uses the latest rules and says so on the payslip, an earlier one is refused. PF wage ceilings split by date, TDS sections apply from their validFrom, GST from the registration effective date."
     }
   }
 }

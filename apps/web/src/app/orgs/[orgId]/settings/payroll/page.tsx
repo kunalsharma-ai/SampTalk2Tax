@@ -24,8 +24,12 @@ interface Rules {
   pfWageCeilings: { from: string; value: string; source: string }[];
   pfRates: Record<string, string>;
   esi: { ceiling: string; employee: string; employer: string; source: string };
-  incomeTax: { taxYear: string; slabs: { upTo: string | null; rate: string }[]; standardDeduction: string; rebateIncomeLimit: string; rebateMax: string; cess: string; source: string };
+  incomeTax: IncomeTaxRules;
+  /** Every tax year built, oldest first; each payslip uses the year its month falls in. */
+  incomeTaxYears?: IncomeTaxRules[];
 }
+
+interface IncomeTaxRules { taxYear: string; slabs: { upTo: string | null; rate: string }[]; standardDeduction: string; rebateIncomeLimit: string; rebateMax: string; cess: string; source: string }
 
 export default function PayrollSettingsPage() {
   const { org, orgId } = useOrg();
@@ -130,7 +134,7 @@ export default function PayrollSettingsPage() {
 
       {rules.data ? (
         <Card className="mt-6">
-          <CardHeader title="Statutory rules in use" description="The figures every payslip is worked out with, and where they come from. They change by notification; Talk2Tax adds new ones with the date they apply from." />
+          <CardHeader title="Statutory rules in use" description="The figures every payslip is worked out with, and where they come from. They change by notification; Talk2Tax adds new ones with the date they apply from, and each payslip uses the income tax rules of the tax year its month falls in." />
           <div className="overflow-x-auto">
             <Table className="min-w-[720px]">
               <thead><tr><Th>Rule</Th><Th>Value</Th><Th>Source</Th></tr></thead>
@@ -141,11 +145,13 @@ export default function PayrollSettingsPage() {
                 <tr><Td>PF contributions</Td><Td className="num text-sm">Employee {rules.data.pfRates.employee}%, employer {rules.data.pfRates.employer}% (EPS {rules.data.pfRates.eps}% of capped wages), EDLI {rules.data.pfRates.edli}%, admin {rules.data.pfRates.admin}%</Td><Td className="text-xs text-fg-muted">{rules.data.pfRates.source}</Td></tr>
                 <tr><Td>ESI</Td><Td className="num text-sm">Covers wages up to {fmt(rules.data.esi.ceiling)}; employee {rules.data.esi.employee}%, employer {rules.data.esi.employer}%</Td><Td className="text-xs text-fg-muted">{rules.data.esi.source}</Td></tr>
                 <tr><Td>Professional tax</Td><Td className="text-sm">Maharashtra: {fmt('175')} above {fmt('7500')}; {fmt('200')} above {fmt('10000')} ({fmt('300')} in February); women nil up to {fmt('25000')}</Td><Td className="text-xs text-fg-muted">Maharashtra State Tax on Professions Act 1975, Schedule I. Other states are not built yet.</Td></tr>
-                <tr>
-                  <Td>TDS on salary, {rules.data.incomeTax.taxYear}</Td>
-                  <Td className="num text-sm">New regime: {rules.data.incomeTax.slabs.map((x) => `${x.rate}%${x.upTo ? ` to ${fmt(x.upTo)}` : ' above'}`).join(', ')}. Standard deduction {fmt(rules.data.incomeTax.standardDeduction)}; rebate up to {fmt(rules.data.incomeTax.rebateMax)} on income to {fmt(rules.data.incomeTax.rebateIncomeLimit)}; cess {rules.data.incomeTax.cess}%</Td>
-                  <Td className="text-xs text-fg-muted">{rules.data.incomeTax.source}</Td>
-                </tr>
+                {[...(rules.data.incomeTaxYears ?? [rules.data.incomeTax])].reverse().map((it) => (
+                  <tr key={it.taxYear}>
+                    <Td>TDS on salary, {it.taxYear}</Td>
+                    <Td className="num text-sm">New regime: {it.slabs.map((x) => `${x.rate}%${x.upTo ? ` to ${fmt(x.upTo)}` : ' above'}`).join(', ')}. Standard deduction {fmt(it.standardDeduction)}; rebate up to {fmt(it.rebateMax)} on income to {fmt(it.rebateIncomeLimit)}; cess {it.cess}%</Td>
+                    <Td className="text-xs text-fg-muted">{it.source}</Td>
+                  </tr>
+                ))}
               </tbody>
             </Table>
           </div>

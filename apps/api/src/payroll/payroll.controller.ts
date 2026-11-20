@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
-import { NEW_REGIME_2026_27, PF_RATES, PF_WAGE_CEILINGS, ESI_RULES, PT_MAHARASHTRA } from '@talk2tax/tax-engine';
+import { NEW_REGIME_2026_27, NEW_REGIME_RULES, PF_RATES, PF_WAGE_CEILINGS, ESI_RULES, PT_MAHARASHTRA } from '@talk2tax/tax-engine';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission, RequireFeature } from '../auth/decorators';
 import { todayIso } from '../common/dates';
@@ -157,7 +157,7 @@ export class PayrollController {
   @Get('rules')
   @RequirePermission('payroll.read')
   rules() {
-    return { pfWageCeilings: PF_WAGE_CEILINGS, pfRates: PF_RATES, esi: ESI_RULES, professionalTax: { '27': PT_MAHARASHTRA }, incomeTax: NEW_REGIME_2026_27 };
+    return { pfWageCeilings: PF_WAGE_CEILINGS, pfRates: PF_RATES, esi: ESI_RULES, professionalTax: { '27': PT_MAHARASHTRA }, incomeTax: NEW_REGIME_2026_27, incomeTaxYears: NEW_REGIME_RULES };
   }
 
   @Get('employees')
