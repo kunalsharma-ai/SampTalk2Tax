@@ -7221,6 +7221,16 @@
         "apps/api/src/copilot/safety.ts"
       ],
       "notes": "Injected statement text, customer names and tool data: the model is warned first; a bank suggestion relying on such text is low confidence and cannot be accepted with one click; a reminder holding links or payment details the AI wrote cannot be sent; copilot proposals stop for that answer (SEC-029)."
+    },
+    "QA-016": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/workflow-recovery.e2e.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/api/test/workflow-schedules.e2e.test.ts",
+        "apps/api/src/workflows/workflow-runner.service.ts"
+      ],
+      "notes": "Two API processes on one database: events from downtime acted on once; concurrent runners never double-act; a pass that fails part-way rolls back runs and cursor together and is redone in full; a dead process lease runs out; a delivery claimed by a dead process is resent as the same delivery id and bytes, not while the claim holds; a schedule missed for days acts once for the latest time."
     }
   }
 }

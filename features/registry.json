@@ -33155,9 +33155,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/workflow-recovery.e2e.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/api/test/workflow-schedules.e2e.test.ts",
+        "apps/api/src/workflows/workflow-runner.service.ts"
+      ],
+      "notes": "Two API processes on one database: events from downtime acted on once; concurrent runners never double-act; a pass that fails part-way rolls back runs and cursor together and is redone in full; a dead process lease runs out; a delivery claimed by a dead process is resent as the same delivery id and bytes, not while the claim holds; a schedule missed for days acts once for the latest time."
     },
     {
       "id": "QA-017",
