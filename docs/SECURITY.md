@@ -27,7 +27,7 @@ What is built today, and what is planned. Nothing here is a compliance claim.
 | Audit trail | Append-only, SHA-256 hash-chained per org; verify endpoint; triggers block edits | `ledger.e2e.test.ts › audit trail` |
 | Evidence references | An audit event about a bill, invoice, payment, journal, bank line, expense claim or customer onboarding stores `data.evidence`: each file attached to that record at that moment (attachment id, file name, SHA-256), up to 20, hashed into the chain. Removed files drop out of later events; the audit trail page links each file | `audit-evidence.e2e.test.ts` |
 | HTTP hardening | `helmet` headers; CORS allow-list from config | `bootstrap.ts` |
-| Secrets | Environment only; `.env` git-ignored; `.env.example` has placeholders | |
+| Secrets | Environment or mounted files (`<NAME>_FILE`); weak and example secrets refused in production; `.env` git-ignored; `.env.example` has placeholders | Secrets management (SEC-012) below |
 | Errors | Stable error codes; no stack traces or SQL in responses | `common/errors.ts` |
 | Web session | Access and refresh tokens kept in httpOnly, SameSite=Lax cookies (`Secure` in production); browser JavaScript cannot read them. The proxy renews an expired access token once per request (one refresh call per token at a time), and signing out ends the session in the API | `apps/web/src/app/api/session/route.ts`, `apps/web/src/lib/session-cookies.ts`, `security-flow.test.mjs` |
 | CSRF | Non-GET calls through the web proxy must carry `x-t2t-csrf: 1`, which a cross-site form cannot set; SameSite=Lax as a second layer | `apps/web/src/app/api/t2t/[...path]/route.ts`, browser test |
@@ -113,7 +113,11 @@ MFA (TOTP/WebAuthn), SSO (OIDC/SAML), a shared rate-limit store, segregation-of-
 
 ## Reporting a vulnerability
 
-Until a security contact is published, report privately to the repository owner rather than opening a public issue.
+Report privately, never in a public issue. A server that sets `SECURITY_CONTACT` publishes it at `/.well-known/security.txt` (RFC 9116); until then, report to the repository owner. Preparing for an external test: [`PENETRATION_TESTING.md`](PENETRATION_TESTING.md).
+
+## Certifications
+
+Talk2Tax holds no certification or attestation (SOC 2, ISO 27001 or any other); no independent assessment has been done. How the controls map to those frameworks, and what is missing, is in [`COMPLIANCE_READINESS.md`](COMPLIANCE_READINESS.md). CI fails on any text a customer can read that claims otherwise (`scripts/check-claims.mjs`, SEC-028).
 
 ## Integration secrets
 

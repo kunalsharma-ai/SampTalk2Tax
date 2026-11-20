@@ -45,6 +45,7 @@ Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `ta
 | `MONGODB_URL` | yes | MongoDB connection string; must reach a replica set (`?replicaSet=rs0`) |
 | `JWT_SECRET` | yes | ≥ 32 chars; rotate by redeploying (invalidates tokens) |
 | `<NAME>_FILE` | no | Read a secret from a file instead of the environment (Docker/Kubernetes secrets), for `JWT_SECRET`, `MONGODB_URL`, `INTEGRATIONS_ENCRYPTION_KEY`, `INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS`, `ANTHROPIC_API_KEY`, `SMTP_URL`, `SMTP_PASS` and `BACKUP_ENCRYPTION_KEY`. Not with `<NAME>` as well. In production, example or low-entropy secrets are refused at startup |
+| `SECURITY_CONTACT` | no | Web app. `mailto:` or `https:` addresses (comma-separated) for reporting vulnerabilities; served as `/.well-known/security.txt` with `SECURITY_POLICY_URL` and `SECURITY_TXT_EXPIRES_DAYS` (default 180, at most 365). Unset: 404 |
 | `JWT_TTL_SECONDS` | no | Default 3600 |
 | `PORT` | no | Default 4000 |
 | `CORS_ORIGINS` | no | Comma-separated allow-list |

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { httpsOnly, httpsRedirect, requestProto, STRICT_TRANSPORT_SECURITY } from './lib/transport';
 
 const PUBLIC = ['/login', '/login/sso', '/register'];
-/** Open to anyone, signed in or not: where a customer lands after paying a payment link. */
-const OPEN = ['/paid'];
+/** Open to anyone, signed in or not: where a customer lands after paying a payment link, and security.txt (SEC-026). */
+const OPEN = ['/paid', '/.well-known/security.txt'];
 /** The customer and vendor portals: the secret in the link is the check (AR-030, AP-013). */
 const OPEN_PREFIXES = ['/portal/', '/vendor-portal/'];
 

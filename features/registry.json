@@ -28627,9 +28627,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/PENETRATION_TESTING.md",
+        "apps/api/src/security/pentest-accounts.ts",
+        "apps/api/test/pentest-readiness.e2e.test.ts",
+        "apps/web/src/app/.well-known/security.txt/route.ts",
+        "apps/web/test/security-txt.test.ts"
+      ],
+      "notes": "Test-account command (two synthetic organisations, one person per role, passwords only in a mode-600 file; refused on production unless allowed for staging), scope and rules of engagement, before and after checklists, and security.txt (RFC 9116) from SECURITY_CONTACT. No external test has been carried out yet."
     },
     {
       "id": "SEC-027",
@@ -28649,9 +28655,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implemented",
+      "evidence": [
+        "docs/COMPLIANCE_READINESS.md",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Product controls mapped to SOC 2 trust services criteria, ISO/IEC 27001:2022 Annex A technological controls, and India DPDP Act 2023 / GDPR duties, with the gaps listed (ISMS and policies, personal data export and erasure, privacy notice and consent, breach notice procedure, CSP). Not certified."
     },
     {
       "id": "SEC-028",
@@ -28671,9 +28680,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs",
+        ".github/workflows/ci.yml",
+        "docs/COMPLIANCE_READINESS.md"
+      ],
+      "notes": "CI scans the web app, API messages, public files, docs and README for any sentence pairing a framework (SOC 2, ISO 27001, PCI DSS, HIPAA, GDPR, DPDP, ...) with a claim word (certified, compliant, attested, ...) unless it denies or defers it; positive and negative cases tested. A framework is allowed only once an assessment is recorded."
     },
     {
       "id": "SEC-029",
