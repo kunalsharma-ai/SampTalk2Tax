@@ -120,6 +120,9 @@ export async function restoreDrill(url: string, file: string, opts: { key?: stri
   try {
     const manifest = await restoreBackup(file, scratch, opts);
     for (const c of manifest.collections) {
+      // restoreBackup counted every collection before building its indexes. Collections with a
+      // TTL index lose expired documents from then on, so they are not counted again here.
+      if ((await scratch.collection(c.name).indexes()).some((i) => i.expireAfterSeconds !== undefined)) continue;
       const n = await scratch.collection(c.name).countDocuments();
       if (n !== c.documents) throw new BackupError('DAMAGED', `${c.name} has ${n} documents after the restore, not ${c.documents}`);
     }

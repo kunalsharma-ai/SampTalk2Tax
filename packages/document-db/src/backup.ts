@@ -280,7 +280,8 @@ export async function verifyBackup(path: string, opts: { key?: string } = {}): P
 
 /**
  * Restores a backup into `db`, which must hold no collections. The file is checked in full
- * first (key, checksum, counts), so a damaged or altered backup writes nothing.
+ * first (key, checksum, counts), so a damaged or altered backup writes nothing. Each collection's
+ * count is checked once its documents are in, before its indexes (TTL ones included) are built.
  */
 export async function restoreBackup(path: string, db: Db, opts: { key?: string } = {}): Promise<BackupManifest> {
   const existing = (await db.listCollections({}, { nameOnly: true }).toArray()).filter((c) => !c.name.startsWith('system.'));
@@ -294,7 +295,13 @@ export async function restoreBackup(path: string, db: Db, opts: { key?: string }
   };
   const finish = async () => {
     await flush();
-    if (current?.indexes.length) await db.collection(current.name).createIndexes(current.indexes as never);
+    if (!current) return;
+    // Counted before the indexes are built: a TTL index would start deleting expired documents
+    // (sign-in challenges, for one) straight away, and the backup holds them as they were.
+    const expected = manifest.collections.find((c) => c.name === current!.name)?.documents ?? 0;
+    const n = await db.collection(current.name).countDocuments();
+    if (n !== expected) throw new BackupError('DAMAGED', `${current.name} has ${n} documents after the restore, not ${expected}`);
+    if (current.indexes.length) await db.collection(current.name).createIndexes(current.indexes as never);
   };
   await readLines(path, opts.key, async (line) => {
     if (line.t === 'collection') {
