@@ -7231,6 +7231,14 @@
         "apps/api/src/workflows/workflow-runner.service.ts"
       ],
       "notes": "Two API processes on one database: events from downtime acted on once; concurrent runners never double-act; a pass that fails part-way rolls back runs and cursor together and is redone in full; a dead process lease runs out; a delivery claimed by a dead process is resent as the same delivery id and bytes, not while the claim holds; a schedule missed for days acts once for the latest time."
+    },
+    "QA-019": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/visual-regression.test.mjs",
+        "apps/web/e2e/visual/*.png"
+      ],
+      "notes": "Seven screens that do not depend on the date, pinned fonts, 0.5% pixel tolerance. Update references with UPDATE_VISUAL=1."
     }
   }
 }
