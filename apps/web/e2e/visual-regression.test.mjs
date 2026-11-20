@@ -31,7 +31,9 @@ let browser;
 
 before(async () => {
   for (const f of FONTS) assert.ok(existsSync(f), `${f} is needed for visual tests (apt-get install fonts-dejavu-core)`);
-  browser = await chromium.launch();
+  // Text and colour drawn the same way on any Linux machine: no hinting or sub-pixel tricks that
+  // follow the machine's font settings, one colour profile, software raster.
+  browser = await chromium.launch({ args: ['--font-render-hinting=none', '--disable-lcd-text', '--disable-font-subpixel-positioning', '--force-color-profile=srgb', '--disable-gpu'] });
   mkdirSync(DIR, { recursive: true });
 });
 after(async () => {
@@ -57,6 +59,24 @@ code, pre, kbd, .font-mono, .font-mono * { font-family: 'T2T Visual Mono', monos
 body { background-attachment: scroll !important; }
 `;
 
+function close(a, b, i, j) {
+  return Math.abs(a.data[i] - b.data[j]) + Math.abs(a.data[i + 1] - b.data[j + 1]) + Math.abs(a.data[i + 2] - b.data[j + 2]) <= COLOUR_DISTANCE;
+}
+
+/** Whether the pixel at (x, y) of `img` has a match within one pixel in `other`. */
+function near(img, other, x, y) {
+  const i = (y * img.width + x) * 4;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= img.width || ny >= img.height) continue;
+      if (close(img, { data: other }, i, (ny * img.width + nx) * 4)) return true;
+    }
+  }
+  return false;
+}
+
 /** Compares the page with its reference image; returns a problem, or null. */
 async function compare(page, name, mask = []) {
   await page.addStyleTag({ content: STYLE });
@@ -72,15 +92,20 @@ async function compare(page, name, mask = []) {
   const b = PNG.sync.read(shot);
   if (a.width !== b.width || a.height !== b.height) return `${name}: size ${b.width}×${b.height}, reference ${a.width}×${a.height}`;
   const diff = new PNG({ width: a.width, height: a.height });
+  const { width, height } = a;
   let changed = 0;
-  for (let i = 0; i < a.data.length; i += 4) {
-    const d = Math.abs(a.data[i] - b.data[i]) + Math.abs(a.data[i + 1] - b.data[i + 1]) + Math.abs(a.data[i + 2] - b.data[i + 2]);
-    const same = d <= COLOUR_DISTANCE;
-    if (!same) changed++;
-    diff.data[i] = same ? b.data[i] * 0.3 : 255;
-    diff.data[i + 1] = same ? b.data[i + 1] * 0.3 : 0;
-    diff.data[i + 2] = same ? b.data[i + 2] * 0.3 : 0;
-    diff.data[i + 3] = 255;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      // A pixel counts as changed when its colour has no match within one pixel in the other
+      // picture (checked both ways), so a glyph edge drawn a fraction of a pixel aside is not.
+      const same = close(a, b, i, i) || (near(a, b.data, x, y) && near(b, a.data, x, y));
+      if (!same) changed++;
+      diff.data[i] = same ? b.data[i] * 0.3 : 255;
+      diff.data[i + 1] = same ? b.data[i + 1] * 0.3 : 0;
+      diff.data[i + 2] = same ? b.data[i + 2] * 0.3 : 0;
+      diff.data[i + 3] = 255;
+    }
   }
   const share = changed / (a.width * a.height);
   if (share <= TOLERANCE) return null;
