@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 753 |
+| Not started | 751 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 503 |
+| Tested | 505 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 11 | 20 |
+| Testing and quality assurance | M1 | 31 | 9 | 22 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7154,6 +7154,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/reports.test.ts
   - apps/api/test/ledger.e2e.test.ts
 
+### QA-007 — Tax calculation tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Hand-worked golden values for income tax (each tax year built, rebate, marginal relief, surcharge bands), GST at every standard rate intra- and inter-state, TDS sections and thresholds, and corporate tax; invariant sweeps check tax never falls as income rises and marginal relief caps every threshold, and CGST+SGST stays within a paisa of IGST.
+- Evidence:
+  - packages/tax-engine/test/tax-golden.test.ts
+  - packages/tax-engine/test/gst.test.ts
+  - packages/tax-engine/test/withholding.test.ts
+  - packages/tax-engine/test/advance-tax.test.ts
+  - packages/tax-engine/test/payroll.test.ts
+
 ### QA-008 — Multi-currency tests
 
 - Module: Testing and quality assurance
@@ -7252,6 +7264,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › assigns gap-free unique numbers under concurrent posting; allows only one of many concurrent reversals
+
+### QA-029 — Tax calculations use the correct effective-dated rules
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Income tax on salary uses the rules of the tax year the pay month falls in (2024-25, 2025-26, 2026-27 built); a later year uses the latest rules and says so on the payslip, an earlier one is refused. PF wage ceilings split by date, TDS sections apply from their validFrom, GST from the registration effective date.
+- Evidence:
+  - packages/tax-engine/src/india/payroll.ts
+  - packages/tax-engine/test/tax-golden.test.ts
+  - apps/api/src/withholding/withholding.service.ts
+  - apps/api/src/ledgers/documents.service.ts
 
 ### QA-031 — Use deterministic test fixtures
 

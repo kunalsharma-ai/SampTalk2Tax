@@ -1453,7 +1453,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-004 | Required Tests | capability | API tests | Tested |
 | QA-005 | Required Tests | capability | End-to-end tests | Tested |
 | QA-006 | Required Tests | capability | Accounting invariant tests | Tested |
-| QA-007 | Required Tests | capability | Tax calculation tests | Not started |
+| QA-007 | Required Tests | capability | Tax calculation tests | Tested |
 | QA-008 | Required Tests | capability | Multi-currency tests | Tested |
 | QA-009 | Required Tests | capability | Reconciliation tests | Tested |
 | QA-010 | Required Tests | capability | Payroll calculation tests | Not started |
@@ -1475,7 +1475,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-026 | Financial Test Scenarios | capability | Financial statements reconcile to the ledger | Tested |
 | QA-027 | Financial Test Scenarios | capability | Duplicate requests do not duplicate postings | Tested |
 | QA-028 | Financial Test Scenarios | capability | Concurrent operations preserve accounting consistency | Tested |
-| QA-029 | Financial Test Scenarios | capability | Tax calculations use the correct effective-dated rules | Not started |
+| QA-029 | Financial Test Scenarios | capability | Tax calculations use the correct effective-dated rules | Tested |
 | QA-030 | Financial Test Scenarios | capability | Unauthorized AI agents cannot post entries or initiate payments | Not started |
 | QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Implementing |
 

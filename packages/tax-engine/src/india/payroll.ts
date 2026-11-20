@@ -84,6 +84,64 @@ export const PT_MAHARASHTRA: Record<Exclude<PtCategory, 'EXEMPT'>, PtSlab[]> = {
 
 export const PT_STATES_SUPPORTED = ['27'] as const;
 
+export interface NewRegimeRules {
+  taxYear: string;
+  slabs: readonly { upTo: string | null; rate: string }[];
+  standardDeduction: string;
+  rebateIncomeLimit: string;
+  rebateMax: string;
+  surcharge: readonly { above: string; rate: string }[];
+  cess: string;
+  source: string;
+}
+
+/** New tax regime, tax year 2024-25 (Income-tax Act 1961 s.115BAC as amended by the Finance (No. 2) Act 2024). */
+export const NEW_REGIME_2024_25: NewRegimeRules = {
+  taxYear: '2024-25',
+  slabs: [
+    { upTo: '300000', rate: '0' },
+    { upTo: '700000', rate: '5' },
+    { upTo: '1000000', rate: '10' },
+    { upTo: '1200000', rate: '15' },
+    { upTo: '1500000', rate: '20' },
+    { upTo: null, rate: '30' },
+  ],
+  standardDeduction: '75000',
+  rebateIncomeLimit: '700000',
+  rebateMax: '25000',
+  surcharge: [
+    { above: '5000000', rate: '10' },
+    { above: '10000000', rate: '15' },
+    { above: '20000000', rate: '25' },
+  ],
+  cess: '4',
+  source: 'Income-tax Act 1961 s.115BAC(1A) slabs and s.16(ia) Rs 75,000 standard deduction (Finance (No. 2) Act 2024); s.87A rebate up to Rs 25,000 on income to Rs 7 lakh; s.192 (TDS on salary)',
+};
+
+/** New tax regime, tax year 2025-26 (Income-tax Act 1961 s.115BAC as amended by the Finance Act 2025). */
+export const NEW_REGIME_2025_26: NewRegimeRules = {
+  taxYear: '2025-26',
+  slabs: [
+    { upTo: '400000', rate: '0' },
+    { upTo: '800000', rate: '5' },
+    { upTo: '1200000', rate: '10' },
+    { upTo: '1600000', rate: '15' },
+    { upTo: '2000000', rate: '20' },
+    { upTo: '2400000', rate: '25' },
+    { upTo: null, rate: '30' },
+  ],
+  standardDeduction: '75000',
+  rebateIncomeLimit: '1200000',
+  rebateMax: '60000',
+  surcharge: [
+    { above: '5000000', rate: '10' },
+    { above: '10000000', rate: '15' },
+    { above: '20000000', rate: '25' },
+  ],
+  cess: '4',
+  source: 'Income-tax Act 1961 s.115BAC(1A) slabs and s.87A rebate up to Rs 60,000 on income to Rs 12 lakh (Finance Act 2025); s.16(ia) Rs 75,000 standard deduction; s.192 (TDS on salary)',
+};
+
 /** New tax regime (Income-tax Act 2025 s.202; rates in the Finance Act for the tax year). */
 export const NEW_REGIME_2026_27 = {
   taxYear: '2026-27',
@@ -108,6 +166,23 @@ export const NEW_REGIME_2026_27 = {
   cess: '4',
   source: 'Income-tax Act 2025 s.202 (new regime default), s.392 (TDS on salary); slabs, Rs 75,000 standard deduction and Rs 60,000 rebate up to Rs 12 lakh as in the Finance Act 2025, unchanged by the Finance Act 2026',
 } as const;
+
+/** Every tax year built, oldest first. A tax year must be added here when its Finance Act changes the rates. */
+export const NEW_REGIME_RULES: readonly NewRegimeRules[] = Object.freeze([NEW_REGIME_2024_25, NEW_REGIME_2025_26, NEW_REGIME_2026_27]);
+
+/**
+ * The new-regime rules for a tax year (for example 2025-26). A year after the last one built
+ * uses the latest rules and says so (`exact: false`), because the Finance Act for it may not be
+ * in yet; a year before the first one built is refused rather than taxed at the wrong rates.
+ */
+export function newRegimeRulesFor(taxYear: string): { rules: NewRegimeRules; exact: boolean } {
+  if (!/^\d{4}-\d{2}$/.test(taxYear)) throw new RangeError(`Not a tax year: ${taxYear}`);
+  const exact = NEW_REGIME_RULES.find((r) => r.taxYear === taxYear);
+  if (exact) return { rules: exact, exact: true };
+  const first = NEW_REGIME_RULES[0];
+  if (taxYear < first.taxYear) throw new RangeError(`Income tax rules for ${taxYear} are not built (the earliest is ${first.taxYear})`);
+  return { rules: NEW_REGIME_RULES[NEW_REGIME_RULES.length - 1], exact: false };
+}
 
 /** Rate when an employee with taxable income has not given a PAN (applied if higher than the normal monthly TDS). */
 export const NO_PAN_SALARY_RATE = '20';
@@ -301,7 +376,7 @@ export function professionalTax(period: string, gross: Dec, stateCode: string | 
 }
 
 /** Tax on total income under the new regime, after rebate, surcharge (with marginal relief) and cess, rounded to the nearest Rs 10. */
-export function newRegimeTax(totalIncome: Dec, rules = NEW_REGIME_2026_27): Dec {
+export function newRegimeTax(totalIncome: Dec, rules: NewRegimeRules = NEW_REGIME_2026_27): Dec {
   const income = totalIncome.lt(0) ? new D(0) : totalIncome;
   const slabTax = (x: Dec) => {
     let tax = new D(0);
@@ -358,22 +433,25 @@ export function computePayslip(input: PayslipInput): PayslipResult {
   const pt = professionalTax(input.period, gross, input.pt.stateCode, input.pt.category);
 
   // Income tax: project the year's salary, tax it, and spread what is still due over the months left.
+  // The rules are those of the tax year the month falls in (effective-dated, not today's).
+  const { rules, exact } = newRegimeRulesFor(taxYearLabel(input.period));
   const fullMonthGross = input.components.reduce((s, c) => s.plus(c.monthly), new D(0));
   const projected = dec(input.tax.incomeBefore).plus(gross).plus(fullMonthGross.times(input.tax.futureMonths));
-  const taxable = D.max(new D(0), projected.minus(NEW_REGIME_2026_27.standardDeduction));
-  const annualTax = newRegimeTax(taxable);
+  const taxable = D.max(new D(0), projected.minus(rules.standardDeduction));
+  const annualTax = newRegimeTax(taxable, rules);
   const due = D.max(new D(0), annualTax.minus(input.tax.tdsBefore));
   let tds = rupee(due.div(input.tax.futureMonths + 1));
   const noPan = input.tax.hasPan === false && annualTax.gt(0);
   if (noPan) {
-    const monthTaxable = D.max(new D(0), gross.minus(dec(NEW_REGIME_2026_27.standardDeduction).div(12)));
+    const monthTaxable = D.max(new D(0), gross.minus(dec(rules.standardDeduction).div(12)));
     tds = D.max(tds, rupee(pct(monthTaxable, NO_PAN_SALARY_RATE)));
   }
-  const tdsNote = noPan
+  const baseNote = noPan
     ? `No PAN: the higher of the projected tax spread over the year and ${NO_PAN_SALARY_RATE}% of the month's taxable salary`
     : annualTax.isZero()
     ? `No tax: projected taxable income ${taxable.toFixed(0)} is within the rebate`
-    : `Projected tax ${annualTax.toFixed(0)} for ${NEW_REGIME_2026_27.taxYear}, less ${dec(input.tax.tdsBefore).toFixed(0)} already deducted, over ${input.tax.futureMonths + 1} month${input.tax.futureMonths ? 's' : ''}`;
+    : `Projected tax ${annualTax.toFixed(0)} for ${rules.taxYear}, less ${dec(input.tax.tdsBefore).toFixed(0)} already deducted, over ${input.tax.futureMonths + 1} month${input.tax.futureMonths ? 's' : ''}`;
+  const tdsNote = exact ? baseNote : `${baseNote}. The rates for ${taxYearLabel(input.period)} are not built yet, so the ${rules.taxYear} rates were used`;
 
   const deductions = pf.employee.plus(esi.employee).plus(pt.amount).plus(tds);
   const net = gross.minus(deductions);
