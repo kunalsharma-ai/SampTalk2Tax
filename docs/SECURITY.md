@@ -267,7 +267,24 @@ The copilot replaces card numbers, Aadhaar numbers and secrets in everything it 
 model, and bank accounts, PAN, emails and phones as each organisation chooses. Tool data that reads
 like instructions to an AI is marked as untrusted, and proposals stop for that answer. Details in
 [`AI_CONTROL_CENTER.md`](AI_CONTROL_CENTER.md#what-the-copilot-sends-to-the-model-sec-029-sec-031).
-Other AI agents (collections, bank reconciliation, close review, virtual CFO) do not do this yet.
+The bank reconciliation and collections agents also look for such text (QA-015): the model is
+told first that some of what follows reads like instructions and is data. A bank suggestion whose
+statement line, or a record it uses, carries such text is shown at low confidence and cannot be
+accepted with one click; the line is dealt with by hand. A reminder cannot be sent while it holds a
+link, account number, IFSC code or UPI handle the AI wrote (the books it is shown hold none, so
+these can only be made up or planted); ones a person types in are theirs to send. Redaction and
+the marking of untrusted data do not yet cover the close review and the virtual CFO, which see
+account names and figures only.
+
+## What AI agents may do on their own (QA-030)
+
+No AI agent posts a journal, records or sends a payment, or sends a message by itself. Each
+agent's level is fixed in code (`AGENTS` in `ai-control.service.ts`): the copilot reads and
+proposes tasks and alert updates, which the member who asked confirms on screen; the bank, close
+and collections agents prepare suggestions, adjusting entries and reminders that a person with
+the matching permission (`banking.manage`, `journals.post`, `collections.manage`) accepts, posts or
+sends through the same code as by hand. A tool the model invents is refused. Tested in
+`apps/api/test/ai-authority.e2e.test.ts`.
 
 ## Backups and disaster recovery (SEC-021, SEC-022)
 

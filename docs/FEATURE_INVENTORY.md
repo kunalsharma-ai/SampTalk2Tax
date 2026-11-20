@@ -1461,7 +1461,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-012 | Required Tests | capability | Permission tests | Tested |
 | QA-013 | Required Tests | capability | Tenant isolation tests | Tested |
 | QA-014 | Required Tests | capability | AI agent evaluation tests | Not started |
-| QA-015 | Required Tests | capability | Prompt injection tests | Not started |
+| QA-015 | Required Tests | capability | Prompt injection tests | Tested |
 | QA-016 | Required Tests | capability | Workflow recovery tests | Not started |
 | QA-017 | Required Tests | capability | Load tests | Not started |
 | QA-018 | Required Tests | capability | Accessibility tests | Not started |
@@ -1476,7 +1476,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-027 | Financial Test Scenarios | capability | Duplicate requests do not duplicate postings | Tested |
 | QA-028 | Financial Test Scenarios | capability | Concurrent operations preserve accounting consistency | Tested |
 | QA-029 | Financial Test Scenarios | capability | Tax calculations use the correct effective-dated rules | Tested |
-| QA-030 | Financial Test Scenarios | capability | Unauthorized AI agents cannot post entries or initiate payments | Not started |
+| QA-030 | Financial Test Scenarios | capability | Unauthorized AI agents cannot post entries or initiate payments | Tested |
 | QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Implementing |
 
 ## Demonstration data
