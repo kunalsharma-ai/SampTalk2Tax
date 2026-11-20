@@ -1,7 +1,7 @@
 import type { AnyCollectionDef } from '@talk2tax/document-db';
 import { MIRRORED } from './mirrored-models';
 import { authSessions, knownDevices, loginThrottles, mfaChallenges, userMfa, users } from './collections/identity';
-import { orgSecuritySettings } from './collections/security';
+import { accessRules, orgSecuritySettings } from './collections/security';
 import { allowanceRates, claimAllowances } from './collections/allowances';
 import { expensePolicyRules } from './collections/expense-policy';
 import { taxNoticeFiles, taxNotices } from './collections/tax-notices';
@@ -26,4 +26,4 @@ import { invitations, memberships, organizations } from './collections/tenancy';
  * can reach it, and before a $lookup or $unionWith may read it. Modules add their
  * definitions as they move from PostgreSQL (see docs/MONGODB.md › Order of the move).
  */
-export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, knownDevices, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, billCheckReviews, accountReconciliations, costAllocationRules, costAllocationRuns, journalApprovalPolicies, journalApprovals, advanceTaxPlans, gstPayments, leaveTypes, leaveEntries, deposits, depositEvents, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, ...MIRRORED.map((m) => m.def)];
+export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, knownDevices, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, accessRules, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, billCheckReviews, accountReconciliations, costAllocationRules, costAllocationRuns, journalApprovalPolicies, journalApprovals, advanceTaxPlans, gstPayments, leaveTypes, leaveEntries, deposits, depositEvents, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, ...MIRRORED.map((m) => m.def)];

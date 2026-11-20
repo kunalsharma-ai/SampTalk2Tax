@@ -20,6 +20,8 @@ export interface Org {
   suspended: { at: string; reason: string } | null;
   /** The organisation requires two-step sign-in; satisfied when the signed-in person has it on. Listed organisations only. */
   twoStep?: { required: boolean; satisfied: boolean };
+  /** Why the organisation's access rules (SEC-004) refuse the signed-in person from here, now. Listed organisations only. */
+  accessRefused?: string | null;
   /** The organisation's Talk2Tax plan and whether its books can change. */
   subscription: OrgSubscription | null;
   role: Role;

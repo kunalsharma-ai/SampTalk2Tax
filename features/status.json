@@ -7151,6 +7151,19 @@
         "docs/COMPLIANCE_READINESS.md"
       ],
       "notes": "CI scans the web app, API messages, public files, docs and README for any sentence pairing a framework (SOC 2, ISO 27001, PCI DSS, HIPAA, GDPR, DPDP, ...) with a claim word (certified, compliant, attested, ...) unless it denies or defers it; positive and negative cases tested. A framework is allowed only once an assessment is recorded."
+    },
+    "SEC-004": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/security/access-rules.service.ts",
+        "apps/api/src/auth/guards.ts",
+        "apps/api/src/db/collections/security.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/access-rules/page.tsx",
+        "apps/api/test/access-rules.e2e.test.ts",
+        "apps/web/e2e/access-rules-flow.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Access rules bind roles or named people to networks (IPv4/IPv6 CIDR), days and hours in the organisation's time zone, for all requests or changes only, checked in the auth guard after the role. Owners are never bound; a rule that would refuse its author is refused; changes audited; the organisation list explains a refusal."
     }
   }
 }

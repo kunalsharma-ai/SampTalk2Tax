@@ -329,6 +329,17 @@ The recovery runbook, schedule and RPO/RTO are in [DISASTER_RECOVERY.md](DISASTE
 - CI generates a random `JWT_SECRET` for each run of the production images; no secret is kept in the repository.
 - Secrets organisations enter in the app stay encrypted with AES-256-GCM (see Integration secrets) and are never returned or audited.
 
+## Access rules: attribute-based access control (SEC-004)
+
+Roles decide what a person may do. Access rules (Settings → Access rules, owners and admins with `members.manage`) add where and when, from attributes of the request:
+
+- **Who**: the roles (admin, accountant, approver, viewer, employee) and/or the people a rule names. Owners are never bound, so an organisation cannot lock itself out.
+- **Network**: IPv4/IPv6 addresses or CIDR ranges (the client address the API sees through `TRUST_PROXY_HOPS`; an IPv4-mapped IPv6 address counts as IPv4).
+- **Days and hours**: in the organisation's time zone; a window past midnight (22:00 to 06:00) wraps.
+- **Scope**: everything, or changes only (reading stays open).
+
+Every active rule that names a person must be met; otherwise the request is refused with 403 `ACCESS_RULE` naming the rule, checked in the auth guard on every organisation route after the role. The list of organisations carries `accessRefused`, so the web app explains the refusal instead of showing empty pages. A rule that would refuse the person saving it is refused (409 `ACCESS_RULE_LOCKS_YOU_OUT`), and creating, changing and deleting rules is audited (`access_rule.*`). Tests: `apps/api/test/access-rules.e2e.test.ts`, `apps/web/e2e/access-rules-flow.test.mjs`.
+
 ## Data residency
 
 Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).

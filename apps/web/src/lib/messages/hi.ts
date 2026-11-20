@@ -143,6 +143,7 @@ export const hi: Record<string, string> = {
   'AI control center': 'AI नियंत्रण केंद्र',
   'Data retention': 'डेटा प्रतिधारण',
   'Single sign-on': 'सिंगल साइन-ऑन',
+  'Access rules': 'पहुँच नियम',
   'AI activity': 'AI गतिविधि',
   'Team and roles': 'टीम और भूमिकाएँ',
   Integrations: 'इंटीग्रेशन',
@@ -218,6 +219,8 @@ export const hi: Record<string, string> = {
   'This server': 'यह सर्वर',
   'Kept in another region': 'दूसरे क्षेत्र में रखा गया',
   'Two-step sign-in required': 'दो-चरण साइन-इन ज़रूरी है',
+  'Not available from here': 'यहाँ से उपलब्ध नहीं',
+  'Open it again from an allowed network or time, or ask an owner or admin to change the rule.': 'किसी अनुमत नेटवर्क या समय से फिर खोलें, या किसी मालिक या एडमिन से नियम बदलने को कहें।',
   '{name} asks everyone who opens its books to use two-step sign-in. Turn it on below; the organisation opens as soon as it is on.':
     '{name} अपनी बहियाँ खोलने वाले हर व्यक्ति से दो-चरण साइन-इन माँगता है। इसे नीचे चालू करें; चालू होते ही संगठन खुल जाएगा।',
   'This organisation’s data is kept in {region}, so it is opened there and not on this server. Nothing about it is read or changed here.': 'इस संगठन का डेटा {region} में रखा गया है, इसलिए यह वहीं खुलता है, इस सर्वर पर नहीं। यहाँ इसका कुछ भी पढ़ा या बदला नहीं जाता।',

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { isSupportedCurrency } from '@talk2tax/accounting-engine';
 import { ROLES } from '@talk2tax/security';
@@ -41,8 +42,8 @@ export class OrganizationsController {
   }
 
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.orgs.listForUser(user.id);
+  list(@CurrentUser() user: AuthUser, @Req() req: Request) {
+    return this.orgs.listForUser(user.id, req.ip ?? null);
   }
 
   @Get(':orgId')
