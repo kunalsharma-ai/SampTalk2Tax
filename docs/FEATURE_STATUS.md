@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 750 |
+| Not started | 748 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 506 |
+| Tested | 508 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,8 +60,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 8 | 23 |
+| Performance and scalability | M9 | 21 | 17 | 4 |
+| Testing and quality assurance | M1 | 31 | 7 | 24 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7087,13 +7087,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/regional-deployment-flow.test.mjs
   - docs/REGIONAL_DEPLOYMENT.md
 
+### PERF-016 — Common API reads under 300 milliseconds at the 95th percentile under defined load
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Measured on the CI runner and one dev machine only.
+- Evidence:
+  - scripts/load-test.mjs › common reads p95 under 300 ms (CI step Load test)
+
 ### PERF-017 — Financial posting with transactional consistency
 
 - Module: Performance and scalability
 - Status: **Tested**
-- Notes: Correctness under concurrency is tested; throughput has not been benchmarked.
+- Notes: Correctness under concurrency is tested; posting p95 under load is checked by the load test (budget 1,000 ms).
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › idempotency and concurrency
+  - scripts/load-test.mjs › posting under load, books checked afterwards
 
 ### PERF-018 — No cross-tenant data exposure
 
@@ -7218,6 +7227,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
+
+### QA-017 — Load tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Many organisations at once; reads p95 109 ms, posting p95 576 ms, 155 req/s on one machine. Soak runs and PERF-002 volumes not covered.
+- Evidence:
+  - scripts/load-test.mjs
+  - docs/LOAD_TESTING.md
+  - .github/workflows/ci.yml › Load test
 
 ### QA-021 — Every journal balances
 
