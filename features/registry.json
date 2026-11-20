@@ -33003,9 +33003,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/payroll-golden.test.ts",
+        "packages/tax-engine/test/payroll.test.ts",
+        "packages/tax-engine/test/bonus.test.ts",
+        "apps/api/test/payroll.e2e.test.ts",
+        "apps/api/test/payroll-leave.e2e.test.ts"
+      ],
+      "notes": "Whole tax years run month by month with history carried forward: TDS sums exactly to the year tax after a mid-year raise, a leaver and a pay cut (never negative); PF ceiling change split by days in September 2026; ESI coverage held for the contribution period; Maharashtra PT for men and women with loss of pay; rules switch across tax years. Every payslip checked against net, deduction, employer-cost and PF-split identities."
     },
     {
       "id": "QA-011",

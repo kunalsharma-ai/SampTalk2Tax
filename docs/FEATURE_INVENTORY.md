@@ -1456,7 +1456,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-007 | Required Tests | capability | Tax calculation tests | Tested |
 | QA-008 | Required Tests | capability | Multi-currency tests | Tested |
 | QA-009 | Required Tests | capability | Reconciliation tests | Tested |
-| QA-010 | Required Tests | capability | Payroll calculation tests | Not started |
+| QA-010 | Required Tests | capability | Payroll calculation tests | Tested |
 | QA-011 | Required Tests | capability | Financial reporting tests | Tested |
 | QA-012 | Required Tests | capability | Permission tests | Tested |
 | QA-013 | Required Tests | capability | Tenant isolation tests | Tested |

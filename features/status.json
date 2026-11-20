@@ -7185,6 +7185,17 @@
         "apps/api/src/ledgers/documents.service.ts"
       ],
       "notes": "Income tax on salary uses the rules of the tax year the pay month falls in (2024-25, 2025-26, 2026-27 built); a later year uses the latest rules and says so on the payslip, an earlier one is refused. PF wage ceilings split by date, TDS sections apply from their validFrom, GST from the registration effective date."
+    },
+    "QA-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/test/payroll-golden.test.ts",
+        "packages/tax-engine/test/payroll.test.ts",
+        "packages/tax-engine/test/bonus.test.ts",
+        "apps/api/test/payroll.e2e.test.ts",
+        "apps/api/test/payroll-leave.e2e.test.ts"
+      ],
+      "notes": "Whole tax years run month by month with history carried forward: TDS sums exactly to the year tax after a mid-year raise, a leaver and a pay cut (never negative); PF ceiling change split by days in September 2026; ESI coverage held for the contribution period; Maharashtra PT for men and women with loss of pay; rules switch across tax years. Every payslip checked against net, deduction, employer-cost and PF-split identities."
     }
   }
 }

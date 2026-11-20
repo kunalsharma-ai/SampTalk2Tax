@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 751 |
+| Not started | 750 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 505 |
+| Tested | 506 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 9 | 22 |
+| Testing and quality assurance | M1 | 31 | 8 | 23 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7184,6 +7184,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/banking.e2e.test.ts
   - packages/accounting-engine/test/bank.test.ts
+
+### QA-010 — Payroll calculation tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Whole tax years run month by month with history carried forward: TDS sums exactly to the year tax after a mid-year raise, a leaver and a pay cut (never negative); PF ceiling change split by days in September 2026; ESI coverage held for the contribution period; Maharashtra PT for men and women with loss of pay; rules switch across tax years. Every payslip checked against net, deduction, employer-cost and PF-split identities.
+- Evidence:
+  - packages/tax-engine/test/payroll-golden.test.ts
+  - packages/tax-engine/test/payroll.test.ts
+  - packages/tax-engine/test/bonus.test.ts
+  - apps/api/test/payroll.e2e.test.ts
+  - apps/api/test/payroll-leave.e2e.test.ts
 
 ### QA-011 — Financial reporting tests
 
