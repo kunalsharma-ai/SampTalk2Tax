@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 746 |
+| Not started | 745 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 510 |
+| Tested | 511 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 4 | 27 |
+| Testing and quality assurance | M1 | 31 | 3 | 28 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7253,6 +7253,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/ui/src/table.tsx
   - apps/web/src/app/globals.css
   - packages/design-system/test
+  - docs/TEST_STRATEGY.md
+
+### QA-020 — Security tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Route sweep over all ~940 API routes read from controller metadata: 401 without or with a bad token, 403/404 for non-members on every organisation route and method, an exact list of 33 public routes, secret-link and API-key routes refuse without the secret. Forged/alg-none/re-signed/expired/truncated JWTs, NoSQL operator injection, malformed and 4 MB bodies, mass-assignment fields, and no internals in errors.
+- Evidence:
+  - apps/api/test/security-suite.e2e.test.ts
+  - apps/api/test/tenant-isolation.e2e.test.ts
+  - apps/api/test/auth-tenancy.e2e.test.ts
+  - apps/api/test/sessions-security.e2e.test.ts
+  - apps/api/test/security-monitor.e2e.test.ts
   - docs/TEST_STRATEGY.md
 
 ### QA-021 — Every journal balances
