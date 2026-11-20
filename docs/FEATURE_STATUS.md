@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 750 |
+| Not started | 748 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 506 |
+| Tested | 508 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 8 | 23 |
+| Testing and quality assurance | M1 | 31 | 6 | 25 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7219,6 +7219,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
 
+### QA-015 — Prompt injection tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Injected statement text, customer names and tool data: the model is warned first; a bank suggestion relying on such text is low confidence and cannot be accepted with one click; a reminder holding links or payment details the AI wrote cannot be sent; copilot proposals stop for that answer (SEC-029).
+- Evidence:
+  - apps/api/test/ai-authority.e2e.test.ts
+  - apps/api/test/ai-data-safety.e2e.test.ts
+  - apps/api/src/bank-ai/bank-ai.service.ts
+  - apps/api/src/collections/collections.service.ts
+  - packages/accounting-engine/src/collections.ts
+  - apps/api/src/copilot/safety.ts
+
 ### QA-021 — Every journal balances
 
 - Module: Testing and quality assurance
@@ -7287,6 +7300,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/tax-engine/test/tax-golden.test.ts
   - apps/api/src/withholding/withholding.service.ts
   - apps/api/src/ledgers/documents.service.ts
+
+### QA-030 — Unauthorized AI agents cannot post entries or initiate payments
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Agent action levels fixed in code at 2 or below; the copilot only has get_/list_ tools and proposals for tasks and alerts; invented post_journal/record_payment tools are refused with the books unchanged; bank, close and collections work is applied only by a person with banking.manage, journals.post or collections.manage.
+- Evidence:
+  - apps/api/test/ai-authority.e2e.test.ts
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/src/copilot/copilot.actions.ts
+  - apps/api/test/bank-ai.e2e.test.ts
+  - apps/api/test/close.e2e.test.ts
+  - apps/api/test/collections.e2e.test.ts
+  - docs/SECURITY.md
 
 ### QA-031 — Use deterministic test fixtures
 

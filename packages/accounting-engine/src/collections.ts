@@ -106,13 +106,25 @@ export interface DraftCheck {
 const MONEY_IN_TEXT = /(?:₹|rs\.?|inr)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)|([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]{1,2})?|[0-9]{4,}\.[0-9]{2})/gi;
 const INVOICE_NUMBER = /\bINV-\d{3,}\b/g;
 
+/** Links, bank account numbers, IFSC codes and UPI handles: where to pay, which the books given to the AI never contain. */
+const PAYMENT_DETAILS: RegExp[] = [/\bhttps?:\/\/[^\s)>\]]+/gi, /\bwww\.[^\s)>\]]+/gi, /\b\d{11,18}\b/g, /\b[A-Z]{4}0[A-Z0-9]{6}\b/g, /\b[\w.-]{2,}@[a-z]{2,}\b(?!\.)/gi];
+
+/** Payment details and links in a text. */
+export function paymentDetails(text: string): string[] {
+  return [...new Set(PAYMENT_DETAILS.flatMap((re) => text.match(re) ?? []))];
+}
+
 /**
  * Checks a drafted (or edited) reminder against the facts: every amount and every invoice
  * number in it must be one of the customer's, each overdue invoice must be mentioned, and
  * nothing may be empty. A reminder that fails a check cannot be sent until it is fixed.
  */
-export function checkDraft(f: CustomerFacts, subject: string, body: string): DraftCheck[] {
+export function checkDraft(f: CustomerFacts, subject: string, body: string, aiText: string = `${subject}\n${body}`): DraftCheck[] {
   const text = `${subject}\n${body}`;
+  // The AI is shown no links or bank details, so any it wrote came from nowhere or from text trying
+  // to redirect the payment (prompt injection, QA-015). Ones a person typed in are theirs to send.
+  const written = new Set(paymentDetails(aiText));
+  const aiPayment = paymentDetails(text).filter((x) => written.has(x));
   const allowedAmounts = new Set<string>();
   const add = (v: string) => allowedAmounts.add(new D(v).toFixed(2));
   for (const i of [...f.overdue, ...f.notYetDue]) {
@@ -133,6 +145,7 @@ export function checkDraft(f: CustomerFacts, subject: string, body: string): Dra
     { ok: strange.length === 0, label: strange.length ? `Amounts not in the books: ${strange.map((a) => formatAmountText(new D(a).toFixed(2), f.currency)).join(', ')}` : 'Every amount matches the books' },
     { ok: unknownNumbers.length === 0, label: unknownNumbers.length ? `Invoice numbers that are not this customer's: ${unknownNumbers.join(', ')}` : "Every invoice number is this customer's" },
     { ok: missing.length === 0, label: missing.length ? `Overdue invoices not mentioned: ${missing.join(', ')}` : 'Every overdue invoice is mentioned' },
+    { ok: aiPayment.length === 0, label: aiPayment.length ? `Links or payment details the AI wrote, which are not in the books: ${aiPayment.join(', ')}. Remove them, or type the right ones yourself` : 'No links or payment details from the AI' },
   ];
 }
 
