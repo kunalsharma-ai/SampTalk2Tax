@@ -1466,7 +1466,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-017 | Required Tests | capability | Load tests | Not started |
 | QA-018 | Required Tests | capability | Accessibility tests | Tested |
 | QA-019 | Required Tests | capability | Visual regression tests | Not started |
-| QA-020 | Required Tests | capability | Security tests | Not started |
+| QA-020 | Required Tests | capability | Security tests | Tested |
 | QA-021 | Financial Test Scenarios | capability | Every journal balances | Tested |
 | QA-022 | Financial Test Scenarios | capability | Reversals preserve history | Tested |
 | QA-023 | Financial Test Scenarios | capability | Closed periods reject unauthorized postings | Tested |
