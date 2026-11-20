@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 748 |
+| Not started | 747 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 508 |
+| Tested | 509 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 6 | 25 |
+| Testing and quality assurance | M1 | 31 | 5 | 26 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7231,6 +7231,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/collections/collections.service.ts
   - packages/accounting-engine/src/collections.ts
   - apps/api/src/copilot/safety.ts
+
+### QA-016 — Workflow recovery tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Two API processes on one database: events from downtime acted on once; concurrent runners never double-act; a pass that fails part-way rolls back runs and cursor together and is redone in full; a dead process lease runs out; a delivery claimed by a dead process is resent as the same delivery id and bytes, not while the claim holds; a schedule missed for days acts once for the latest time.
+- Evidence:
+  - apps/api/test/workflow-recovery.e2e.test.ts
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/api/test/workflow-schedules.e2e.test.ts
+  - apps/api/src/workflows/workflow-runner.service.ts
 
 ### QA-021 — Every journal balances
 
