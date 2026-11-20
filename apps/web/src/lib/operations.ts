@@ -36,6 +36,13 @@ export interface SystemHealth {
   errors: { open: number | null; lastHour: number | null };
   maintenance: (MaintenanceStatus & { id: string }) | null;
   transport: Transport;
+  secrets?: Secrets;
+}
+/** Secrets management (SEC-012): which secrets are set and where each came from, never a value. */
+export interface Secrets {
+  items: { name: string; set: boolean; source: 'ENVIRONMENT' | 'FILE' | 'DERIVED' | null }[];
+  fromFiles: number;
+  encryptionKeyDerived: boolean;
 }
 /** Encryption in transit (SEC-010), from the API server's settings. */
 export interface Transport {

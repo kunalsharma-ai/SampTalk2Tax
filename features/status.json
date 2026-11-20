@@ -692,13 +692,19 @@
       "notes": "Server-side sessions: 15-minute access token naming the session, rotating refresh token (hash stored), reuse detection with a 30 s grace window, 30-day hard and 7-day idle expiry, revoke one / all others, password change signs out other devices. Both tokens are httpOnly cookies in the web app."
     },
     "SEC-012": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        ".env.example",
         "apps/api/src/config.ts",
-        "apps/api/src/integrations/secret-box.ts"
+        "apps/api/src/integrations/secret-box.ts",
+        "apps/api/src/operations/system.service.ts",
+        "apps/api/src/db/backup.ts",
+        "apps/web/src/app/admin/system/page.tsx",
+        "apps/api/test/secrets-management.e2e.test.ts",
+        "apps/web/e2e/encryption-in-transit-flow.test.mjs",
+        ".github/workflows/ci.yml",
+        "docs/SECURITY.md"
       ],
-      "notes": "Server secrets come from environment variables, validated at startup. Integration secrets an organisation enters in the app are encrypted with AES-256-GCM (key from INTEGRATIONS_ENCRYPTION_KEY or derived from JWT_SECRET), never returned and never audited. No external secrets manager (Vault, KMS) yet."
+      "notes": "Every server secret can come from a file (NAME_FILE: Docker, Kubernetes or a secrets manager's agent mounts it), never from both places at once. A production server refuses example, low-entropy or reused secrets at startup. System health shows where each secret came from (file, environment, derived) and never a value, and flags an encryption key derived from JWT_SECRET. Integration secrets entered in the app stay AES-256-GCM sealed. No direct Vault or cloud KMS client: secrets managers are reached through mounted files."
     },
     "SEC-014": {
       "status": "Tested",

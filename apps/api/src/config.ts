@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 const RegionDirectory = z.record(
@@ -269,17 +270,72 @@ export function mongoUsesTls(url: string): boolean {
 
 export type AppConfig = z.infer<typeof schema>;
 
-let cached: AppConfig | undefined;
+let cached: LoadedConfig | undefined;
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  if (cached && env === process.env) return cached;
-  const parsed = schema.safeParse(env);
-  if (!parsed.success) {
-    const details = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
-    throw new Error(`Invalid configuration: ${details}`);
+/**
+ * Secrets management (SEC-012): the settings that are secrets. Each can be given directly, or as
+ * <NAME>_FILE, the path of a file holding it (Docker and Kubernetes secrets, or a file a secrets
+ * manager's agent writes), so the value never has to sit in the environment or a compose file.
+ */
+export const SECRET_SETTINGS = ['JWT_SECRET', 'MONGODB_URL', 'INTEGRATIONS_ENCRYPTION_KEY', 'INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS', 'ANTHROPIC_API_KEY', 'SMTP_URL', 'SMTP_PASS', 'BACKUP_ENCRYPTION_KEY'] as const;
+export type SecretSetting = (typeof SECRET_SETTINGS)[number];
+export type SecretSource = 'ENVIRONMENT' | 'FILE';
+
+/** The environment with every <NAME>_FILE read into <NAME>, and where each secret came from. */
+export function resolveSecretFiles(env: NodeJS.ProcessEnv): { env: NodeJS.ProcessEnv; sources: Partial<Record<SecretSetting, SecretSource>>; errors: string[] } {
+  const out: NodeJS.ProcessEnv = { ...env };
+  const sources: Partial<Record<SecretSetting, SecretSource>> = {};
+  const errors: string[] = [];
+  for (const name of SECRET_SETTINGS) {
+    const path = env[`${name}_FILE`]?.trim();
+    const direct = env[name];
+    if (path) {
+      if (direct !== undefined && direct !== '') {
+        errors.push(`${name}: set ${name} or ${name}_FILE, not both`);
+        continue;
+      }
+      try {
+        out[name] = readFileSync(path, 'utf8').replace(/\r?\n$/, '');
+        sources[name] = 'FILE';
+      } catch (e) {
+        errors.push(`${name}_FILE: cannot read ${path} (${(e as NodeJS.ErrnoException).code ?? 'error'})`);
+      }
+    } else if (direct !== undefined && direct !== '') sources[name] = 'ENVIRONMENT';
   }
-  if (env === process.env) cached = parsed.data;
-  return parsed.data;
+  return { env: out, sources, errors };
+}
+
+/** Values from the examples and tests that must never protect a production server. */
+const EXAMPLE_SECRET = /replace-me|ci-only|test-secret|changeme|change-me|example|password|secret{2,}/i;
+
+/** Why a production secret is unsafe, or null. */
+export function weakSecret(value: string): string | null {
+  if (EXAMPLE_SECRET.test(value)) return 'is an example value';
+  if (new Set(value).size < 10) return 'repeats too few characters to be random';
+  return null;
+}
+
+export type LoadedConfig = AppConfig & { SECRET_SOURCES: Partial<Record<SecretSetting, SecretSource>> };
+
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): LoadedConfig {
+  if (cached && env === process.env) return cached;
+  const files = resolveSecretFiles(env);
+  const parsed = schema.safeParse(files.env);
+  const issues = [...files.errors, ...(parsed.success ? [] : parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`))];
+  if (parsed.success && parsed.data.NODE_ENV === 'production') {
+    const c = parsed.data;
+    const jwt = weakSecret(c.JWT_SECRET);
+    if (jwt) issues.push(`JWT_SECRET ${jwt}: generate one with openssl rand -hex 32`);
+    if (c.INTEGRATIONS_ENCRYPTION_KEY) {
+      const k = weakSecret(c.INTEGRATIONS_ENCRYPTION_KEY);
+      if (k) issues.push(`INTEGRATIONS_ENCRYPTION_KEY ${k}: generate one with openssl rand -hex 32`);
+      if (c.INTEGRATIONS_ENCRYPTION_KEY === c.JWT_SECRET) issues.push('INTEGRATIONS_ENCRYPTION_KEY must differ from JWT_SECRET');
+    }
+  }
+  if (issues.length || !parsed.success) throw new Error(`Invalid configuration: ${issues.join('; ')}`);
+  const loaded: LoadedConfig = { ...parsed.data, SECRET_SOURCES: files.sources };
+  if (env === process.env) cached = loaded;
+  return loaded;
 }
 
 export const CONFIG = Symbol('CONFIG');

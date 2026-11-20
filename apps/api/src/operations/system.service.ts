@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DocumentStoreService } from '../common/document-store.service';
 import { databaseStatus } from '../db/database-status';
-import { AppConfig, CONFIG, mongoUsesTls } from '../config';
+import { AppConfig, CONFIG, LoadedConfig, mongoUsesTls, SECRET_SETTINGS } from '../config';
 import { serverMail } from '../integrations/integrations.service';
 import { RegionsService } from '../regions/regions.service';
 import { BackupsService } from '../backups/backups.service';
@@ -78,6 +78,24 @@ export class SystemService {
     };
   }
 
+  /**
+   * Secrets management (SEC-012): for each secret the API reads, whether it is set and where it
+   * came from (the environment, a <NAME>_FILE such as a mounted secret, or derived). Never a value.
+   */
+  secrets() {
+    const c = this.config as AppConfig & Partial<Pick<LoadedConfig, 'SECRET_SOURCES'>>;
+    const sources = c.SECRET_SOURCES ?? {};
+    const value = (name: string) => (c as unknown as Record<string, unknown>)[name];
+    const items = SECRET_SETTINGS.filter((n) => n !== 'BACKUP_ENCRYPTION_KEY').map((name) => {
+      const v = value(name);
+      const set = Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== '';
+      const source = sources[name] ?? (set ? 'ENVIRONMENT' : name === 'INTEGRATIONS_ENCRYPTION_KEY' ? 'DERIVED' : null);
+      return { name, set: set || source === 'DERIVED', source };
+    });
+    const fromFiles = items.filter((i) => i.source === 'FILE').length;
+    return { items, fromFiles, encryptionKeyDerived: !c.INTEGRATIONS_ENCRYPTION_KEY };
+  }
+
   async health(requestSecure = false) {
     const mem = process.memoryUsage();
     const [database, maintenance, errors, backups] = await Promise.all([
@@ -96,6 +114,7 @@ export class SystemService {
       ...runners.filter((r) => r.state === 'FAILING' || r.state === 'LATE').map((r) => `${r.name} is ${r.state === 'FAILING' ? 'failing' : 'late'}`),
       this.config.NODE_ENV === 'production' && !this.config.HTTPS_ONLY ? 'Requests are accepted without HTTPS (set HTTPS_ONLY=true)' : null,
       this.config.NODE_ENV === 'production' && !mongoUsesTls(this.config.MONGODB_URL) ? 'The database connection is not encrypted' : null,
+      this.config.NODE_ENV === 'production' && !this.config.INTEGRATIONS_ENCRYPTION_KEY ? 'Stored secrets and files are encrypted with a key derived from JWT_SECRET (set INTEGRATIONS_ENCRYPTION_KEY)' : null,
       ...(backups?.problems ?? []),
       requests.totals.serverErrors > 0 ? `${requests.totals.serverErrors} server error${requests.totals.serverErrors === 1 ? '' : 's'} in the last ${requests.windowMinutes} minutes` : null,
     ].filter((p): p is string => p !== null);
@@ -120,6 +139,7 @@ export class SystemService {
       errors,
       maintenance,
       transport: this.transport(requestSecure),
+      secrets: this.secrets(),
     };
   }
 }

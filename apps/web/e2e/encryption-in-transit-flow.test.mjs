@@ -64,10 +64,18 @@ test('a platform administrator sees how each connection is protected', async () 
   assert.match(text, /API server to the database\s+Not encrypted/);
   assert.match(text, /Email sent by Talk2Tax\s+Encrypted when the mail server offers STARTTLS/);
   assert.match(text, /Webhooks and automations\s+http:\/\/ and private addresses allowed \(testing only\)/);
+  // Secrets management (SEC-012): where each server secret came from, never a value.
+  const secrets = page.getByRole('region', { name: 'Server secrets' });
+  const secretsText = await secrets.getByRole('table', { name: 'Secrets' }).innerText();
+  assert.match(secretsText, /JWT_SECRET\s+From (the environment|a secret file)/);
+  assert.match(secretsText, /INTEGRATIONS_ENCRYPTION_KEY\s+(Derived from JWT_SECRET|From the environment|From a secret file)/);
+  assert.equal(secretsText.includes(process.env.JWT_SECRET ?? 'no-secret-given'), false);
   if (SHOTS) {
     mkdirSync(SHOTS, { recursive: true });
     await card.scrollIntoViewIfNeeded();
     await card.screenshot({ path: `${SHOTS}/encryption-in-transit.png` });
+    await secrets.scrollIntoViewIfNeeded();
+    await secrets.screenshot({ path: `${SHOTS}/server-secrets.png` });
   }
   assert.deepEqual(consoleErrors.filter((e) => !/favicon|Failed to load resource/.test(e)), []);
 });

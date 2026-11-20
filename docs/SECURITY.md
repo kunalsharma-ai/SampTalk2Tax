@@ -316,6 +316,15 @@ The recovery runbook, schedule and RPO/RTO are in [DISASTER_RECOVERY.md](DISASTE
   `T2T_API_URL` if that network is not trusted), certificate management (your load balancer's),
   and mutual TLS.
 
+## Secrets management (SEC-012)
+
+- Every secret the API and the backup command read (`JWT_SECRET`, `MONGODB_URL`, `INTEGRATIONS_ENCRYPTION_KEY`, `INTEGRATIONS_PREVIOUS_ENCRYPTION_KEYS`, `ANTHROPIC_API_KEY`, `SMTP_URL`, `SMTP_PASS`, `BACKUP_ENCRYPTION_KEY`) can be given as a file instead: set `<NAME>_FILE` to its path. This is how Docker and Kubernetes secrets, and the agents of Vault or a cloud secrets manager, hand secrets over without putting them in the environment. One trailing newline is removed.
+- Setting both `<NAME>` and `<NAME>_FILE` stops the server at startup, as does a file it cannot read, so it is always clear which value is in use.
+- In production the server refuses to start with an example value (anything from `.env.example` or the tests), a secret with fewer than 10 different characters, or an `INTEGRATIONS_ENCRYPTION_KEY` equal to `JWT_SECRET`. Generate secrets with `openssl rand -hex 32`.
+- Platform admin → System health → Server secrets lists where each secret came from (a secret file, the environment, or derived from `JWT_SECRET`), never a value. A production server without its own `INTEGRATIONS_ENCRYPTION_KEY` shows a problem.
+- CI generates a random `JWT_SECRET` for each run of the production images; no secret is kept in the repository.
+- Secrets organisations enter in the app stay encrypted with AES-256-GCM (see Integration secrets) and are never returned or audited.
+
 ## Data residency
 
 Each organisation is tagged with the region its data lives in, and the auth guard refuses any organisation route for an organisation from another region (`421 WRONG_REGION`) after the membership check, so a restored or copied database cannot serve or change an organisation outside its home region. Moves are audited (`organization.region_moved`). See [`REGIONAL_DEPLOYMENT.md`](REGIONAL_DEPLOYMENT.md).
