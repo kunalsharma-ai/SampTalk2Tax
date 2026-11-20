@@ -22,6 +22,9 @@ beforeAll(async () => {
   await db.collection('journals').createIndex({ orgId: 1, postedAt: -1 }, { name: 'org_posted' });
   await db.collection('journals').insertMany([journal, ...Array.from({ length: 2500 }, (_, i) => ({ _id: `je-${i + 2}`, orgId: 'org-1', total: Decimal128.fromString(`${i}.01`) }))] as never);
   await db.collection('users').createIndex({ email: 1 }, { name: 'email_unique', unique: true });
+  // Short-lived records kept under a TTL index, like sign-in challenges.
+  await db.collection('challenges').createIndex({ expiresAt: 1 }, { name: 'expiry', expireAfterSeconds: 0 });
+  await db.collection('challenges').insertMany([{ _id: 'c-1', expiresAt: new Date(Date.now() + 3_600_000) }, { _id: 'c-2', expiresAt: new Date(Date.now() + 3_600_000) }] as never);
   await db.collection('users').insertOne({ _id: 'u-1', email: 'a@example.test', name: 'Ānanya Śarmā ₹ 名前'.repeat(3000) } as never);
 });
 afterAll(async () => {
@@ -35,7 +38,7 @@ describe('backups', () => {
   it('writes an encrypted backup and restores every document, rule and index exactly', async () => {
     const file = join(dir, 'sealed.t2tbak');
     const m = await writeBackup(client.db(SOURCE), file, { key: KEY });
-    expect(m).toMatchObject({ database: SOURCE, encrypted: true, consistent: true, documents: 2502, collections: [{ name: 'journals', documents: 2501, indexes: 1 }, { name: 'users', documents: 1, indexes: 1 }] });
+    expect(m).toMatchObject({ database: SOURCE, encrypted: true, consistent: true, documents: 2504, collections: [{ name: 'challenges', documents: 2, indexes: 1 }, { name: 'journals', documents: 2501, indexes: 1 }, { name: 'users', documents: 1, indexes: 1 }] });
     const handle = await fs.open(file, 'r');
     try {
       expect((await handle.stat()).mode & 0o777).toBe(0o600);
@@ -47,7 +50,10 @@ describe('backups', () => {
     expect(await verifyBackup(file, { key: KEY })).toEqual(m);
 
     const restored = await restoreBackup(file, client.db(TARGET), { key: KEY });
-    expect(restored.documents).toBe(2502);
+    expect(restored.documents).toBe(2504);
+    // The TTL index comes back, built after the documents were counted.
+    expect((await client.db(TARGET).collection('challenges').indexes()).find((i) => i.name === 'expiry')?.expireAfterSeconds).toBe(0);
+    expect(await client.db(TARGET).collection('challenges').countDocuments()).toBe(2);
     const back = await client.db(TARGET).collection('journals').findOne({ _id: 'je-1' as never });
     expect(back).toEqual(journal);
     expect(back!.total).toBeInstanceOf(Decimal128);
