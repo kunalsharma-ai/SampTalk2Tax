@@ -901,9 +901,9 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-012 |  | capability | Budget-versus-actual | Not started |
 | RPT-013 |  | capability | Project profitability | Tested |
 | RPT-014 |  | capability | Department profitability | Tested |
-| RPT-015 |  | capability | Customer profitability | Not started |
-| RPT-016 |  | capability | Vendor spending | Not started |
-| RPT-017 |  | capability | Cash forecasts | Not started |
+| RPT-015 |  | capability | Customer profitability | Tested |
+| RPT-016 |  | capability | Vendor spending | Tested |
+| RPT-017 |  | capability | Cash forecasts | Tested |
 | RPT-018 |  | capability | Working capital | Tested |
 | RPT-019 |  | capability | Financial ratios | Tested |
 | RPT-020 |  | capability | Consolidated statements | Not started |
