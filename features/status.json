@@ -7254,6 +7254,44 @@
         "docs/TEST_STRATEGY.md"
       ],
       "notes": "Route sweep over all ~940 API routes read from controller metadata: 401 without or with a bad token, 403/404 for non-members on every organisation route and method, an exact list of 33 public routes, secret-link and API-key routes refuse without the secret. Forged/alg-none/re-signed/expired/truncated JWTs, NoSQL operator injection, malformed and 4 MB bodies, mass-assignment fields, and no internals in errors."
+    },
+    "RULE-004": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/seed-guard.test.ts",
+        "packages/accounting-engine/test/cfo.test.ts",
+        "packages/accounting-engine/test/collections.test.ts",
+        "packages/accounting-engine/test/bank-ai.test.ts"
+      ],
+      "notes": "Synthetic data is refused in production and in any deployed region. Figures shown or sent come from the books: AI summaries and reminders quoting an amount not in the books are rejected, and AI bank suggestions can only use records they were shown."
+    },
+    "RULE-006": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on any customer-readable text that claims a live, real-time or direct bank feed or connection."
+    },
+    "RULE-007": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on claims of certification, regulator or tax-authority approval, or guaranteed compliance."
+    },
+    "RULE-008": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-shortcuts.mjs",
+        "scripts/check-shortcuts.test.mjs",
+        "apps/api/test/security-suite.e2e.test.ts",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on code that turns a protection off (eval, TLS checks off, unescaped HTML, weak hashes and ciphers, shell commands, unsafe JWT and CORS settings, predictable or hard-coded secrets)."
     }
   }
 }

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 745 |
+| Not started | 741 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 511 |
+| Tested | 515 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -66,7 +66,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
 | Design system | M1 | 36 | 33 | 3 |
-| Absolute quality rules | All | 20 | 8 | 12 |
+| Absolute quality rules | All | 20 | 4 | 16 |
 
 ## Features with progress and evidence
 
@@ -7846,6 +7846,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src
 
+### RULE-004 — Do not invent financial data in production
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: Synthetic data is refused in production and in any deployed region. Figures shown or sent come from the books: AI summaries and reminders quoting an amount not in the books are rejected, and AI bank suggestions can only use records they were shown.
+- Evidence:
+  - apps/api/test/seed-guard.test.ts
+  - packages/accounting-engine/test/cfo.test.ts
+  - packages/accounting-engine/test/collections.test.ts
+  - packages/accounting-engine/test/bank-ai.test.ts
+
 ### RULE-005 — Do not claim AI functionality when only a static response exists
 
 - Module: Absolute quality rules
@@ -7857,6 +7868,37 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
   - packages/database/prisma/migrations/20261102090000_ai_copilot
+
+### RULE-006 — Do not claim live banking integration without credentials and provider validation
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: CI fails on any customer-readable text that claims a live, real-time or direct bank feed or connection.
+- Evidence:
+  - scripts/check-claims.mjs
+  - scripts/check-claims.test.mjs
+  - .github/workflows/ci.yml
+
+### RULE-007 — Do not claim regulatory compliance without verification
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: CI fails on claims of certification, regulator or tax-authority approval, or guaranteed compliance.
+- Evidence:
+  - scripts/check-claims.mjs
+  - scripts/check-claims.test.mjs
+  - .github/workflows/ci.yml
+
+### RULE-008 — Do not use insecure shortcuts
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: CI fails on code that turns a protection off (eval, TLS checks off, unescaped HTML, weak hashes and ciphers, shell commands, unsafe JWT and CORS settings, predictable or hard-coded secrets).
+- Evidence:
+  - scripts/check-shortcuts.mjs
+  - scripts/check-shortcuts.test.mjs
+  - apps/api/test/security-suite.e2e.test.ts
+  - .github/workflows/ci.yml
 
 ### RULE-009 — Do not store secrets in source code
 

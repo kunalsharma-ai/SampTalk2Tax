@@ -36712,9 +36712,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/seed-guard.test.ts",
+        "packages/accounting-engine/test/cfo.test.ts",
+        "packages/accounting-engine/test/collections.test.ts",
+        "packages/accounting-engine/test/bank-ai.test.ts"
+      ],
+      "notes": "Synthetic data is refused in production and in any deployed region. Figures shown or sent come from the books: AI summaries and reminders quoting an amount not in the books are rejected, and AI bank suggestions can only use records they were shown."
     },
     {
       "id": "RULE-005",
@@ -36762,9 +36767,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on any customer-readable text that claims a live, real-time or direct bank feed or connection."
     },
     {
       "id": "RULE-007",
@@ -36784,9 +36793,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on claims of certification, regulator or tax-authority approval, or guaranteed compliance."
     },
     {
       "id": "RULE-008",
@@ -36806,9 +36819,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-shortcuts.mjs",
+        "scripts/check-shortcuts.test.mjs",
+        "apps/api/test/security-suite.e2e.test.ts",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on code that turns a protection off (eval, TLS checks off, unescaped HTML, weak hashes and ciphers, shell commands, unsafe JWT and CORS settings, predictable or hard-coded secrets)."
     },
     {
       "id": "RULE-009",

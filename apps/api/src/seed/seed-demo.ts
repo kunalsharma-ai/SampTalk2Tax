@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { syntheticDataRefusal } from './guard';
 import { NestFactory } from '@nestjs/core';
 import { createHash, randomBytes } from 'node:crypto';
 import { AppModule } from '../app.module';
@@ -55,7 +56,8 @@ async function addMember(app: INestApplicationContext, orgId: string, userId: st
 
 async function main() {
   const config = loadConfig();
-  if (config.NODE_ENV === 'production') throw new Error('Refusing to seed demo data in production');
+  const refusal = syntheticDataRefusal(config, 'demo data');
+  if (refusal) throw new Error(refusal);
   // The seed is not an HTTP request; it writes several tenants' data as the system.
   allowSystemAccessOutsideRequests();
   const app = await NestFactory.createApplicationContext(AppModule.forRoot(config), { logger: ['error', 'warn'] });
