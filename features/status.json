@@ -8607,6 +8607,19 @@
         "docs/AUDIT_SAMPLING.md"
       ],
       "notes": "Random, monetary unit (systematic, items above the interval always picked) and high-value samples of posted journals, bills, invoices or supplier payments for a date range; seeded so the same sample can be drawn again and checked; population fingerprint shows later changes; each item result recorded once; completed samples immutable; audited."
+    },
+    "AUDIT-007": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/attachments/attachments.service.ts",
+        "apps/api/src/attachments/attachments.controller.ts",
+        "apps/api/src/db/collections/sales.ts",
+        "apps/api/test/document-versions.e2e.test.ts",
+        "apps/web/src/components/attachments.tsx",
+        "apps/web/e2e/document-versions-flow.test.mjs",
+        "docs/DOCUMENT_VERSIONING.md"
+      ],
+      "notes": "New versions of attached files on any record: the new file takes the earlier one's place with the next version number and a note; earlier versions kept unchanged and openable from the history; a file is replaced once (unique index, races give NOT_LATEST); guards keep versions fixed; audited (attachment.new_version)."
     }
   }
 }

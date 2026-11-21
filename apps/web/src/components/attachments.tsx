@@ -7,7 +7,7 @@ import { api, uploadFile } from '@/lib/api';
 import { date } from '@/lib/format';
 import { shrinkPhoto } from '@/lib/photo';
 import { useOrg } from '@/lib/org';
-import type { Attachment, AttachmentEntity } from '@/lib/types';
+import type { Attachment, AttachmentEntity, AttachmentVersion } from '@/lib/types';
 
 const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp';
 
@@ -19,7 +19,8 @@ function size(bytes: number) {
 
 /**
  * Receipts, invoices and other evidence for one record. Files are kept as they were
- * uploaded; removing one keeps a record of it with the reason.
+ * uploaded; removing one keeps a record of it with the reason, and a new version of a file
+ * keeps the earlier ones in its history (AUDIT-007).
  */
 /** `onChanged` runs after files are added or removed, for records whose own checks depend on them. */
 export function AttachmentsPanel({ entityType, entityId, canManage, description, onChanged }: { entityType: AttachmentEntity; entityId: string; canManage: boolean; description?: string; onChanged?: () => unknown }) {
@@ -30,6 +31,10 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
   const [showRemoved, setShowRemoved] = useState(false);
   const [removing, setRemoving] = useState<Attachment | null>(null);
   const [reason, setReason] = useState('');
+  const [versioning, setVersioning] = useState<Attachment | null>(null);
+  const [versionFile, setVersionFile] = useState<File | null>(null);
+  const [versionNote, setVersionNote] = useState('');
+  const [historyOf, setHistoryOf] = useState<string | null>(null);
   const base = `/v1/orgs/${orgId}/attachments`;
   const key = ['attachments', orgId, entityType, entityId, showRemoved];
   const files = useQuery({ queryKey: key, queryFn: () => api<Attachment[]>(`${base}?entityType=${entityType}&entityId=${entityId}&includeRemoved=${showRemoved}`) });
@@ -54,6 +59,20 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
       await refresh();
     },
   });
+  // Document versioning (AUDIT-007): a new version replaces the file here; earlier ones stay in its history.
+  const addVersion = useMutation({
+    mutationFn: async () => {
+      if (!versioning || !versionFile) return;
+      const f = await shrinkPhoto(versionFile);
+      await uploadFile<Attachment>(`${base}/${versioning.id}/versions?fileName=${encodeURIComponent(f.name)}&note=${encodeURIComponent(versionNote.trim())}`, f);
+    },
+    onSuccess: async () => {
+      setVersioning(null);
+      setHistoryOf(null);
+      await refresh();
+    },
+  });
+  const history = useQuery({ queryKey: ['attachment-versions', orgId, historyOf], queryFn: () => api<AttachmentVersion[]>(`${base}/${historyOf}/versions`), enabled: !!historyOf });
   const rows = files.data ?? [];
   return (
     <Card className="mt-6">
@@ -117,7 +136,20 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
                 <p className="text-xs text-fg-muted">
                   {a.contentType.replace('application/', '').replace('image/', '').toUpperCase()} · {size(a.sizeBytes)} · added {date(a.createdAt.slice(0, 10))}{a.uploadedBy ? ` by ${a.uploadedBy}` : ''}
                   {a.removedAt ? ` · removed: ${a.removedReason}` : ''}
+                  {(a.version ?? 1) > 1 ? ` · version ${a.version}: ${a.versionNote ?? ''}` : ''}
                 </p>
+                {historyOf === a.id ? (
+                  <ol className="mt-2 space-y-1 border-l-2 border-border pl-3 text-xs" aria-label={`Versions of ${a.fileName}`}>
+                    {history.error ? <li className="text-negative">{(history.error as Error).message}</li> : null}
+                    {(history.data ?? []).map((v) => (
+                      <li key={v.id}>
+                        <span className="font-medium">Version {v.version}</span>{v.current ? ' (in use)' : ''}:{' '}
+                        {v.removedAt ? <span className="line-through">{v.fileName}</span> : <a className="text-accent hover:underline" href={`/api/t2t${base}/${v.id}/content?inline=1`} target="_blank" rel="noopener noreferrer">{v.fileName}</a>}
+                        <span className="text-fg-muted"> · {size(v.sizeBytes)} · added {date(v.createdAt.slice(0, 10))}{v.uploadedBy ? ` by ${v.uploadedBy}` : ''}{v.note ? ` · ${v.note}` : ''}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
                 {a.alsoOn?.length ? (
                   <p className="mt-1 text-xs text-warning">
                     The same file is also on{' '}
@@ -134,6 +166,8 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
               {!a.removedAt ? (
                 <div className="flex gap-1">
                   <a href={`/api/t2t${base}/${a.id}/content`} className="rounded px-2 py-1 text-xs text-fg-muted hover:text-fg" download>Download</a>
+                  {(a.version ?? 1) > 1 ? <Button size="sm" variant="ghost" aria-expanded={historyOf === a.id} onClick={() => setHistoryOf(historyOf === a.id ? null : a.id)}>Versions</Button> : null}
+                  {canManage ? <Button size="sm" variant="ghost" onClick={() => { addVersion.reset(); setVersionFile(null); setVersionNote(''); setVersioning(a); }}>New version…</Button> : null}
                   {canManage ? <Button size="sm" variant="ghost" onClick={() => { remove.reset(); setReason(''); setRemoving(a); }}>Remove…</Button> : null}
                 </div>
               ) : null}
@@ -148,6 +182,17 @@ export function AttachmentsPanel({ entityType, entityId, canManage, description,
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setRemoving(null)}>Cancel</Button>
             <Button type="submit" variant="danger" loading={remove.isPending}>Remove file</Button>
+          </div>
+        </form>
+      </Dialog>
+      <Dialog open={!!versioning} onOpenChange={(o) => !o && setVersioning(null)} title={`New version of ${versioning?.fileName ?? 'file'}`} description="The new file takes this one's place. The earlier version is kept as it was and stays in the file's history.">
+        <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); addVersion.mutate(); }}>
+          {addVersion.error ? <Alert title="Could not upload the new version">{addVersion.error.message}</Alert> : null}
+          <Field label="New file">{(p) => <input {...p} type="file" accept={ACCEPT} className="text-sm" onChange={(e) => setVersionFile(e.target.files?.[0] ?? null)} />}</Field>
+          <Field label="What changed">{(p) => <Input {...p} required minLength={3} maxLength={500} value={versionNote} onChange={(e) => setVersionNote(e.target.value)} placeholder="Such as: signed copy" />}</Field>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setVersioning(null)}>Cancel</Button>
+            <Button type="submit" disabled={!versionFile || versionNote.trim().length < 3} loading={addVersion.isPending}>Upload version</Button>
           </div>
         </form>
       </Dialog>

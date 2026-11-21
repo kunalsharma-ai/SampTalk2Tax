@@ -822,7 +822,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-004 |  | capability | Audit trails | Tested |
 | AUDIT-005 |  | capability | Transaction history | Implemented |
 | AUDIT-006 |  | capability | Approval history | Tested |
-| AUDIT-007 |  | capability | Document versioning | Not started |
+| AUDIT-007 |  | capability | Document versioning | Tested |
 | AUDIT-008 |  | capability | Financial control testing | Tested |
 | AUDIT-009 |  | capability | Audit sampling | Tested |
 | AUDIT-010 |  | capability | Exception tracking | Tested |

@@ -13,6 +13,7 @@ const ListQuery = z.object({
   includeRemoved: z.enum(['true', 'false']).optional().transform((v) => v === 'true'),
 });
 const UploadQuery = z.object({ entityType: z.enum(ENTITIES), entityId: z.uuid(), fileName: z.string().min(1).max(255) });
+const VersionQuery = z.object({ fileName: z.string().min(1).max(255), note: z.string().trim().min(3, 'Say why the file changed, in at least 3 characters').max(500, 'Keep the note under 500 characters') });
 const RemoveBody = z.object({ reason: z.string().trim().min(3).max(500) });
 
 /**
@@ -59,6 +60,21 @@ export class AttachmentsController {
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Checksum-SHA256', a.sha256);
     res.end(Buffer.from(a.content));
+  }
+
+  /** Document versioning (AUDIT-007): uploads a new version of a file in use; the earlier one is kept. Send the bytes as the body. */
+  @Post(':attachmentId/versions')
+  @RequirePermission('org.read')
+  @ApiConsumes('application/octet-stream')
+  newVersion(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('attachmentId', ParseUUIDPipe) id: string, @Query(new ZodPipe(VersionQuery)) q: z.infer<typeof VersionQuery>, @Body() body: unknown) {
+    return this.attachments.newVersion(org, user, id, { fileName: q.fileName, note: q.note, content: Buffer.isBuffer(body) ? body : Buffer.alloc(0) });
+  }
+
+  /** Every version of a file, newest first. */
+  @Get(':attachmentId/versions')
+  @RequirePermission('org.read')
+  versions(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('attachmentId', ParseUUIDPipe) id: string) {
+    return this.attachments.versions(org, user, id);
   }
 
   @Post(':attachmentId/remove')
