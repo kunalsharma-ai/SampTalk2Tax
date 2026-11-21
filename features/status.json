@@ -8717,6 +8717,20 @@
         "docs/LEDGER_REPLAY.md"
       ],
       "notes": "Replays the posted ledger as it stood at a past moment (posting time) for entries dated up to a cut-off, beside the ledger now, with each entry posted since that explains the difference; read-only, audited (ledger.replayed), needs audit.read."
+    },
+    "AUDIT-001": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/audit-engagements.ts",
+        "packages/accounting-engine/test/audit-engagements.test.ts",
+        "apps/api/src/db/collections/audit-engagements.ts",
+        "apps/api/src/audit-engagements/audit-engagements.service.ts",
+        "apps/api/test/audit-engagements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/audit-engagements/[engagementId]/page.tsx",
+        "apps/web/e2e/audit-engagements-flow.test.mjs",
+        "docs/INTERNAL_AUDIT.md"
+      ],
+      "notes": "Internal audit engagements (IA-001…) with scope, a lead and a different reviewer who can approve; planning, fieldwork, review, closed; work programme steps done by assignee or lead and signed off only by the reviewer (never their own work) or sent back; linked samples must be tested before review; linked findings shown live; closed with a conclusion and kept as closed (guards); every change in history and audited."
     }
   }
 }

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 631 |
+| Not started | 630 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 629 |
+| Tested | 630 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 3 | 27 |
+| Continuous audit and governance | M6 | 30 | 2 | 28 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4772,6 +4772,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/alerts.e2e.test.ts
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
+
+### AUDIT-001 — Internal audit workspace
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Internal audit engagements (IA-001…) with scope, a lead and a different reviewer who can approve; planning, fieldwork, review, closed; work programme steps done by assignee or lead and signed off only by the reviewer (never their own work) or sent back; linked samples must be tested before review; linked findings shown live; closed with a conclusion and kept as closed (guards); every change in history and audited.
+- Evidence:
+  - packages/accounting-engine/src/audit-engagements.ts
+  - packages/accounting-engine/test/audit-engagements.test.ts
+  - apps/api/src/db/collections/audit-engagements.ts
+  - apps/api/src/audit-engagements/audit-engagements.service.ts
+  - apps/api/test/audit-engagements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/audit-engagements/[engagementId]/page.tsx
+  - apps/web/e2e/audit-engagements-flow.test.mjs
+  - docs/INTERNAL_AUDIT.md
 
 ### AUDIT-004 — Audit trails
 

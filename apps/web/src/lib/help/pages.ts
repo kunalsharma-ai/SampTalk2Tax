@@ -781,6 +781,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Open each item, check it against its documents, then record no exception or an exception with what you found. Each result is kept as recorded; the sample completes when every item is tested. If the books in the range change later, the page says so.',
     where: 'Audit samples. Every draw and result is in the audit trail.',
   },
+  'audit-engagements': {
+    what: 'Internal audits: each engagement has a scope, a lead who runs the work with the team, a reviewer who signs it off, and a work programme of steps.',
+    how: 'Name the engagement, say what it sets out to check, give the dates it covers, and pick the lead and a reviewer who can approve (not the lead). Then open it to plan the steps.',
+    where: 'Governance. Needs the audit trail permission. Nothing here changes the books.',
+  },
+  'audit-engagements/[id]': {
+    what: 'One internal audit: its work programme, the samples and findings it uses, its sign-off and every change in order.',
+    how: 'The lead adds steps and assigns them, links samples and findings, and starts fieldwork. Each person records the work done on their steps. Once every step is done and linked samples are tested, the lead sends it for review. The reviewer signs off each step or sends it back, and closes the audit with the conclusion. A closed engagement is kept as it was closed.',
+    where: 'Internal audit. Every change is in the audit trail.',
+  },
   'ledger-replay': {
     what: 'The books exactly as they were recorded at a past moment, beside the books now for the same dates, with every entry posted since that explains the difference.',
     how: 'Pick the moment (your local time) and the last date to include, then replay. Posted entries are never changed, so the replay shows what anyone could have seen then; back-dated entries, reversals and corrections posted later show as the difference.',
