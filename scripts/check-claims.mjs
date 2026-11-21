@@ -11,6 +11,8 @@
  *     regulator, or "fully compliant" / "guaranteed compliance", which nothing has verified;
  *   - live banking: a live, real-time or direct bank feed or connection, which needs a provider,
  *     credentials and validation that Talk2Tax does not have.
+ *   - competitors (COMP-046): that a competitor lacks something, or that Talk2Tax is better than
+ *     one, unless the sentence cites a verified source or says the point is not confirmed.
  *
  *   node scripts/check-claims.mjs          exits 1 and lists each claim found
  *
@@ -34,10 +36,18 @@ const REGULATORY = new RegExp(
   'i',
 );
 const LIVE_BANKING = /\b(?:live|real[- ]time|automatic|automated|direct|instant)\s+bank(?:ing)?\s+(?:feeds?|sync(?:ing|hroni[sz]ation)?|connections?|integrations?)\b|\b(?:live|real[- ]time)\s+feeds?\s+from\s+(?:your\s+)?banks?\b|\bconnects?\s+(?:directly\s+)?to\s+(?:your|all|every|any)\s+banks?\b/i;
+const COMPETITOR_NAMES = String.raw`(?:QuickBooks|Intuit|Xero|Zoho(?:\s+Books)?|NetSuite|Oracle|SAP|Dynamics\s*365|Business\s+Central|Sage(?:\s+Intacct)?|FreshBooks|Odoo|Wave|Acumatica|Workday|Ramp|BILL|Tally(?:Prime)?|[Cc]ompetitors?|[Oo]ther\s+(?:tools|software|products|apps))`;
+/** COMP-046: a competitor is not said to lack something, or to be worse, without a verified source. */
+const COMPETITOR = new RegExp(
+  String.raw`\b(?:[Uu]nlike|[Bb]etter\s+than|[Bb]eats|[Oo]utperforms|[Ss]uperior\s+to|[Rr]eplaces)\s+(?:the\s+)?${COMPETITOR_NAMES}\b|\b${COMPETITOR_NAMES}\b[^.!?\n]{0,40}?\b(?:lacks?|lacking|doesn't|does\s+not|don't|do\s+not|can't|cannot|has\s+no|have\s+no|offers?\s+no|is\s+missing|are\s+missing|fails?\s+to)\b`,
+);
+/** What lets a competitor sentence through: it cites a check, or is the rule itself. */
+const COMPETITOR_OK = /\b(?:not\s+confirmed|verified|source|claim|claims|claiming|incorrectly)\b/i;
 const KINDS = [
   ['certification', PAIR],
   ['regulatory', REGULATORY],
   ['live-banking', LIVE_BANKING],
+  ['competitor', COMPETITOR],
 ];
 /** A sentence that denies, defers or only describes a condition for the claim is fine. */
 const NEGATED = /\b(?:not|no|never|nor|without|toward|towards|readiness|until|unless|before|cannot|can't|isn't|aren't|don't|doesn't|won't|claim|claims|claiming|pending|planned|only|needs|requires|must)\b/i;
@@ -53,7 +63,8 @@ export function findClaims(text) {
     for (const sentence of line.split(/(?<=[.!?])\s+/)) {
       for (const [kind, re] of KINDS) {
         const m = sentence.match(re);
-        if (!m || NEGATED.test(sentence)) continue;
+        if (!m) continue;
+        if (kind === 'competitor' ? COMPETITOR_OK.test(sentence) : NEGATED.test(sentence)) continue;
         if (kind === 'certification' && ASSESSED.some((a) => m[0].toLowerCase().includes(a.toLowerCase()))) continue;
         found.push({ line: i + 1, kind, text: sentence.trim().slice(0, 200) });
         break;
@@ -97,5 +108,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     for (const c of claims) console.error(`  ${c.file}:${c.line}  [${c.kind}] ${c.text}`);
     process.exit(1);
   }
-  console.log('No certification, regulatory or live-banking claims.');
+  console.log('No certification, regulatory, live-banking or competitor claims.');
 }
