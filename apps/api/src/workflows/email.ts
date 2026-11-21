@@ -15,6 +15,8 @@ export interface EmailMessage {
    * under the Talk2Tax logo. Leave it off for anything an organisation sends in its own name.
    */
   branded?: boolean;
+  /** Files sent with the message, such as a scheduled report. Not used with branded messages. */
+  files?: { fileName: string; contentType: string; content: Buffer }[];
 }
 
 export interface EmailResult {
@@ -70,6 +72,7 @@ export class MailerService {
         subject: m.subject,
         text: m.text,
         ...(m.branded ? { html: brandedEmailHtml(m.text, m.subject), attachments: brandedEmailAttachments() } : {}),
+        ...(!m.branded && m.files?.length ? { attachments: m.files.map((f) => ({ filename: f.fileName, contentType: f.contentType, content: f.content })) } : {}),
         messageId: m.messageId,
         headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'All', ...m.headers },
       });

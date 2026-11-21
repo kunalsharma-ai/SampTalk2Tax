@@ -114,6 +114,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/reports/kpis', label: 'KPIs' },
       { href: '/reports/management', label: 'Management reports' },
       { href: '/reports/designer', label: 'Report designer' },
+      { href: '/reports/schedules', label: 'Scheduled reports' },
       { href: '/consolidation', label: 'Group consolidation', plan: 'CONSOLIDATION' },
     ],
   },

@@ -917,8 +917,8 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-028 | Reporting Features | capability | Filters | Not started |
 | RPT-029 | Reporting Features | capability | Saved views | Not started |
 | RPT-030 | Reporting Features | capability | Report templates | Not started |
-| RPT-031 | Reporting Features | capability | Scheduled reports | Not started |
-| RPT-032 | Reporting Features | capability | Email delivery | Not started |
+| RPT-031 | Reporting Features | capability | Scheduled reports | Tested |
+| RPT-032 | Reporting Features | capability | Email delivery | Tested |
 | RPT-033 | Reporting Features | capability | PDF exports | Tested |
 | RPT-034 | Reporting Features | capability | Excel exports | Tested |
 | RPT-035 | Reporting Features | capability | CSV exports | Tested |
