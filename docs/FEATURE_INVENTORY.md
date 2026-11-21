@@ -152,7 +152,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-031 |  | capability | Multi-currency invoices | Tested |
 | AR-032 |  | capability | Revenue leakage detection | Tested |
 | AR-033 | Advanced AR AI | capability | Predictive payment-delay scoring | Tested |
-| AR-034 | Advanced AR AI | capability | Intelligent collection prioritization | Not started |
+| AR-034 | Advanced AR AI | capability | Intelligent collection prioritization | Tested |
 | AR-035 | Advanced AR AI | capability | Automated reminder drafting | Integration pending |
 | AR-036 | Advanced AR AI | capability | Customer risk analysis | Not started |
 | AR-037 | Advanced AR AI | capability | Invoice dispute classification | Not started |

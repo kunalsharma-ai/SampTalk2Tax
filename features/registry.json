@@ -3819,9 +3819,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/collection-priorities.ts",
+        "packages/accounting-engine/test/collection-priorities.test.ts",
+        "apps/api/src/payment-predictions/collection-priorities.service.ts",
+        "apps/api/test/collection-priorities.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/collection-priorities/page.tsx",
+        "apps/web/e2e/collection-priorities-flow.test.mjs",
+        "docs/COLLECTION_PRIORITIES.md"
+      ],
+      "notes": "Customers ranked by a 0-100 score with its points: money overdue and not disputed (40), age of the oldest overdue invoice (25), chance of paying late from the payment predictions (20), an invoice due this week likely late (5) and no recent reminder (10); with a suggested action (settle the dispute, wait after a recent reminder, call and consider a credit hold, call, remind, friendly note). Deterministic, no AI model."
     },
     {
       "id": "AR-035",

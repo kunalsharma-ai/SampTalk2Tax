@@ -102,7 +102,8 @@ import { AuditFindingsService } from './audit-findings/audit-findings.service';
 import { AuditSamplingController } from './audit-sampling/audit-sampling.controller';
 import { AiDecisionsController } from './ai-decisions/ai-decisions.controller';
 import { LedgerReplayController } from './ledger-replay/ledger-replay.controller';
-import { PaymentPredictionsController } from './payment-predictions/payment-predictions.controller';
+import { CollectionPrioritiesController, PaymentPredictionsController } from './payment-predictions/payment-predictions.controller';
+import { CollectionPrioritiesService } from './payment-predictions/collection-priorities.service';
 import { PaymentPredictionsService } from './payment-predictions/payment-predictions.service';
 import { LedgerReplayService } from './ledger-replay/ledger-replay.service';
 import { AuditEngagementsController } from './audit-engagements/audit-engagements.controller';
@@ -339,6 +340,7 @@ export class AppModule {
         AiDecisionsController,
         LedgerReplayController,
         PaymentPredictionsController,
+        CollectionPrioritiesController,
         AuditEngagementsController,
         AuditEvidenceController,
         AuditorLinksController,
@@ -499,6 +501,7 @@ export class AppModule {
         AiDecisionsService,
         LedgerReplayService,
         PaymentPredictionsService,
+        CollectionPrioritiesService,
         AuditEngagementsService,
         AuditEvidenceService,
         AuditorPortalService,
