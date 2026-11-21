@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AdminService } from '../src/admin/admin.service';
 import { bootApp, createOrg, Ctx, registerUser, TestUser } from './helpers';
@@ -129,7 +130,7 @@ describe('plans in platform administration', () => {
     const growth = plans.find((p: { code: string }) => p.code === 'GROWTH');
     const bad = await ctx.http().put('/v1/admin/plans/GROWTH').set(admin.auth).set(plain).send({ ...pick(growth), prices: { ...growth.prices, INR: { monthly: '-1', annual: '14990' } } }).expect(422);
     expect(bad.body.issues ?? bad.body.details?.issues).toContain('INR monthly price must be more than zero, with at most 2 decimals');
-    const code = `TEST_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const code = `TEST_${randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()}`;
     const created = (await ctx.http().put(`/v1/admin/plans/${code}`).set(admin.auth).send({ ...pick(growth), name: 'Test plan', isActive: false, sortOrder: 99 }).expect(200)).body;
     expect(created).toMatchObject({ code, name: 'Test plan', isActive: false });
     // An inactive plan is not offered to organisations.

@@ -108,6 +108,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/reports/income-statement', label: 'Profit and loss' },
       { href: '/reports/profit-by-dimension', label: 'Profit by department' },
       { href: '/reports/balance-sheet', label: 'Balance sheet' },
+      { href: '/reports/cash-flow-statement', label: 'Cash flow statement' },
       { href: '/reports/statutory', label: 'Statutory statements' },
       { href: '/reports/general-ledger', label: 'General ledger' },
       { href: '/graph', label: 'Relationship explorer' },

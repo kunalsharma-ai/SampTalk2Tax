@@ -104,6 +104,7 @@ export const hi: Record<string, string> = {
   'Profit by department': 'विभाग के अनुसार लाभ',
   'Balance sheet': 'तुलन पत्र',
   'Scheduled reports': 'निर्धारित रिपोर्ट',
+  'Cash flow statement': 'नकदी प्रवाह विवरण',
   'General ledger': 'सामान्य खाता बही',
   'Relationship explorer': 'संबंध खोजक',
   KPIs: 'KPI',

@@ -48,6 +48,13 @@ export class ReportsController {
   }
 
   /** Formats for local financial statements, and the one the organisation's country uses. */
+  @Get('cash-flow-statement')
+  @RequirePermission('reports.read')
+  cashFlowStatement(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(RangeQuery)) q: z.infer<typeof RangeQuery>) {
+    checkRange(q.from, q.to);
+    return this.reports.cashFlowStatement(org.id, q);
+  }
+
   @Get('statutory/formats')
   @RequirePermission('reports.read')
   statutoryFormats(@CurrentOrg() org: OrgContext) {

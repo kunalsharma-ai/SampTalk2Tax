@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { addDays, applyReverseCharge, computeDocument, DocumentValidationError, type TaxRateInfo } from '@talk2tax/accounting-engine';
+import { addDays, applyReverseCharge, computeDocument, DocumentValidationError, type TaxRateInfo, addAmounts, amountOrZero } from '@talk2tax/accounting-engine';
 import { gstHeads, gstSplitter, hsnIssue, placeOfSupplyName, supplyNature, type GstCategory } from '@talk2tax/tax-engine';
 import { Alert, Button, Card, CardHeader, Input, Select, Table, Td, Th } from '@talk2tax/ui';
 import { useRouter } from 'next/navigation';
@@ -151,7 +151,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
   }, [payloadLines, currency, foreign, taxMap, contact, l.contact, l.ledger, gstMode, pos, supplierState, selectedContact, gstCategories, splitter, reverseCharge]);
 
   // The tax to withhold depends on the contact's posted documents, so the server works it out.
-  const wAmount = calc.subtotal === null ? null : wKind === 'TDS' ? calc.subtotal : (Number(calc.subtotal) + Number(calc.tax)).toFixed(2);
+  const wAmount = calc.subtotal === null ? null : wKind === 'TDS' ? calc.subtotal : addAmounts([calc.subtotal, calc.tax]).toFixed(2);
   const preview = useQuery({
     queryKey: ['withholding-preview', orgId, contact, section, issueDate, wAmount, existing?.id],
     enabled: !!section && !!contact && !!issueDate && wAmount !== null && !!wKind && !foreign,
@@ -159,7 +159,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
     retry: false,
   });
   const wTax = section && preview.data && !foreign ? preview.data.amount : '0.00';
-  const settle = calc.total === null ? null : (Number(calc.total) + (wKind === 'TCS' ? 1 : -1) * Number(wTax)).toFixed(2);
+  const settle = calc.total === null ? null : (wKind === 'TCS' ? amountOrZero(calc.total).plus(amountOrZero(wTax)) : amountOrZero(calc.total).minus(amountOrZero(wTax))).toFixed(2);
 
   const save = useMutation({
     mutationFn: (post: boolean) => {

@@ -1,4 +1,5 @@
 'use client';
+import { addAmounts, amountOrZero, D } from '@talk2tax/accounting-engine';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Field, Input, SectionHelpSlot, Select, Stat, Table, Td, Textarea, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -68,8 +69,8 @@ function Reconciliation() {
     setDirty(true);
     setItems((rs) => rs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   };
-  const explained = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-  const left = r ? Number(r.ledgerBalance) - explained : 0;
+  const explained = addAmounts(items.map((i) => i.amount));
+  const left = r ? amountOrZero(r.ledgerBalance).minus(explained) : new D(0);
   return (
     <>
       <PageHeader
@@ -91,7 +92,7 @@ function Reconciliation() {
           <div className="mb-6 grid gap-4 sm:grid-cols-4">
             <Stat label="Ledger balance" value={<Money value={r.ledgerBalance} currency={r.currency} />} sub={r.type === 'ASSET' ? 'Debit balance' : 'Credit balance'} />
             {r.subledgerBalance !== null ? <Stat label="Subsidiary ledger" value={<Money value={r.subledgerBalance} currency={r.currency} />} sub="Open items at the date" /> : <Stat label="Explained" value={<Money value={explained.toFixed(2)} currency={r.currency} />} />}
-            <Stat label="Unexplained" value={<Money value={left.toFixed(2)} currency={r.currency} />} tone={Math.abs(left) < 0.005 ? 'positive' : 'negative'} />
+            <Stat label="Unexplained" value={<Money value={left.toFixed(2)} currency={r.currency} />} tone={left.toDecimalPlaces(2).isZero() ? 'positive' : 'negative'} />
             <Stat label="Status" value={<Badge tone={STATE_TONE[r.state]}>{STATE_LABEL[r.state]}</Badge>} sub={[r.preparedBy && `Prepared by ${r.preparedBy}`, r.reviewedBy && `reviewed by ${r.reviewedBy}`].filter(Boolean).join(', ') || undefined} />
           </div>
           <Card className="mb-4">
