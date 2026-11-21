@@ -124,6 +124,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Work down from the top. Open a score to see why it is high: money overdue and not disputed, the age of the oldest overdue invoice, the chance of paying late and when the customer was last reminded. Draft reminders from Collections.',
     where: 'Sales. Needs the reports permission. Built from posted invoices, receipts, open disputes, sent reminders and the payment predictions; nothing here changes the books, and no AI model is used.',
   },
+  'sales/payment-plans': {
+    what: 'Instalment plans for customers behind on paying. Each customer with an overdue balance not in dispute gets a suggested plan: monthly instalments close to what they have paid a month over the last 6 months (3 when nothing was received), between 2 and 12, and at most 6 when an invoice is over 90 days overdue. Agreed plans show how they are going from the money received since.',
+    how: 'Talk the plan through with the customer, then Set up plan: keep the suggested instalments or choose another number and the first due date, and agree it. Record receipts against the invoices as usual; they pay the instalments in order. Cancel a broken plan with the reason and agree a new one if needed.',
+    where: 'Sales. Anyone who can see sales sees plans; agreeing and cancelling need the collections permission. Plans do not change the invoices or the books; they are kept as a record and every change is audited. No AI model is used.',
+  },
   'sales/payment-predictions': {
     what: 'Every open invoice with the day it is likely to be paid, the chance it is paid late and the reasons, worked out from how each customer has paid before; and how accurate the same method has been on invoices already paid.',
     how: 'Start at the top: the riskiest invoices come first. Filter by band to see only very late ones, open the invoice or customer to chase it, and read the reasons to see what drives each prediction. Customers with little history lean on your organisation\'s average.',

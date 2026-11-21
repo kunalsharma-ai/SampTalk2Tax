@@ -4009,9 +4009,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-plans.ts",
+        "packages/accounting-engine/test/payment-plans.test.ts",
+        "apps/api/src/db/collections/payment-plans.ts",
+        "apps/api/src/payment-plans/payment-plans.service.ts",
+        "apps/api/test/payment-plans.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/payment-plans/page.tsx",
+        "apps/web/e2e/payment-plans-flow.test.mjs",
+        "docs/PAYMENT_PLANS.md"
+      ],
+      "notes": "Suggested instalment plans for overdue, undisputed invoices: count = overdue amount over the customer's average monthly receipts in the last 6 months, 2-12 (3 with no receipts, at most 6 with debt over 90 days), monthly from a first date within 60 days, equal decimal instalments with the rounding last, with reasons. Plans agreed from the server-side suggestion, one running per customer, tracked from receipts since (on track, behind, broken after 7 days, completed), cancel with reason; append-only record and audit events."
     },
     {
       "id": "AR-041",
