@@ -8524,6 +8524,19 @@
         "docs/REPORT_DESIGNER.md"
       ],
       "notes": "Every save keeps an immutable version (who, when, how); view any version; restore as a new version with a concurrency check; audited."
+    },
+    "AUDIT-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/segregation-of-duties.ts",
+        "packages/accounting-engine/test/segregation-of-duties.test.ts",
+        "apps/api/src/segregation-of-duties/segregation-of-duties.service.ts",
+        "apps/api/test/segregation-of-duties.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/segregation-of-duties/page.tsx",
+        "apps/web/e2e/segregation-of-duties-flow.test.mjs",
+        "docs/SEGREGATION_OF_DUTIES.md"
+      ],
+      "notes": "Detective checks over a period: manual journals and bills posted by their author, self-approved payment batches, a vendor paid by whoever changed their bank details, a bank reconciled by whoever recorded its payments; conflicting duties per member's role; findings cleared by an uninvolved approver with a reason, immutable and audited. Preventive rules stay in approvals and payment batches."
     }
   }
 }
