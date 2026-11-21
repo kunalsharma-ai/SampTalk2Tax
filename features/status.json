@@ -7807,6 +7807,32 @@
         "apps/api/test/dashboards.e2e.test.ts"
       ],
       "notes": "Reports need reports.read; members without it and other organisations are refused."
+    },
+    "RPT-031": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-schedules.ts",
+        "packages/accounting-engine/test/report-schedules.test.ts",
+        "apps/api/src/report-schedules",
+        "apps/api/test/report-schedules.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/schedules/page.tsx",
+        "apps/web/e2e/report-schedules-flow.test.mjs",
+        "docs/SCHEDULED_REPORTS.md"
+      ],
+      "notes": "Weekly or monthly schedules for five reports as PDF, Excel or CSV, run by a background runner; each run claimed once, kept with the file hash and audited."
+    },
+    "RPT-032": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-schedules.ts",
+        "packages/accounting-engine/test/report-schedules.test.ts",
+        "apps/api/src/report-schedules",
+        "apps/api/test/report-schedules.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/schedules/page.tsx",
+        "apps/web/e2e/report-schedules-flow.test.mjs",
+        "docs/SCHEDULED_REPORTS.md"
+      ],
+      "notes": "Emailed as an attachment to members who can read reports, through the organisation's mail server or the server SMTP; failures keep the mail server's reason."
     }
   }
 }

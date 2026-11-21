@@ -563,6 +563,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the date and compare it with an earlier one. Open a line to see its entries.',
     where: 'Reports. Assets always equal liabilities plus equity.',
   },
+  'reports/schedules': {
+    what: 'Reports emailed to members on a weekly or monthly day, such as the profit and loss on the 3rd of each month.',
+    how: 'Choose the report, the dates it covers, when it goes and who gets it. Send now to try it.',
+    where: 'Reports. Email must be set up in Settings › Integrations; each run is kept with the file it sent.',
+  },
   'reports/cash-flow-statement': {
     what: 'Where the cash came from and went in a period: operating, investing and financing activities.',
     how: 'Pick the dates. Start from profit, see what working capital used, then open a line to see its entries.',

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 715 |
+| Not started | 713 |
 | Designed | 0 |
 | Implementing | 36 |
 | Implemented | 31 |
-| Tested | 547 |
+| Tested | 549 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 17 | 24 |
+| Advanced financial reporting | M6 | 41 | 15 | 26 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -4702,6 +4702,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
   - docs/FINANCIAL_DIMENSIONS.md
+
+### RPT-031 — Scheduled reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Weekly or monthly schedules for five reports as PDF, Excel or CSV, run by a background runner; each run claimed once, kept with the file hash and audited.
+- Evidence:
+  - packages/accounting-engine/src/report-schedules.ts
+  - packages/accounting-engine/test/report-schedules.test.ts
+  - apps/api/src/report-schedules
+  - apps/api/test/report-schedules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/schedules/page.tsx
+  - apps/web/e2e/report-schedules-flow.test.mjs
+  - docs/SCHEDULED_REPORTS.md
+
+### RPT-032 — Email delivery
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Emailed as an attachment to members who can read reports, through the organisation's mail server or the server SMTP; failures keep the mail server's reason.
+- Evidence:
+  - packages/accounting-engine/src/report-schedules.ts
+  - packages/accounting-engine/test/report-schedules.test.ts
+  - apps/api/src/report-schedules
+  - apps/api/test/report-schedules.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/schedules/page.tsx
+  - apps/web/e2e/report-schedules-flow.test.mjs
+  - docs/SCHEDULED_REPORTS.md
 
 ### RPT-033 — PDF exports
 
