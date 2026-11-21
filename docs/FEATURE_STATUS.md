@@ -4362,7 +4362,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Customer 360 and Customer insights: revenue less direct costs posted to the customer's projects, margin, ranked across customers.
 - Evidence:
   - apps/api/test/customer-insights.e2e.test.ts › works out profit, payment behaviour, lifetime value and risk for a good customer
-  - apps/web/e2e/customer-insights-flow.test.mjs
+  - apps/web/e2e/customer-360-flow.test.mjs
   - docs/CUSTOMER_360.md
 
 ### RPT-016 — Vendor spending
