@@ -95,6 +95,8 @@ import { JournalsService } from './journals/journals.service';
 import { InvitationLinksController, OrganizationsController } from './organizations/organizations.controller';
 import { InvitationsService } from './organizations/invitations.service';
 import { OrganizationsService } from './organizations/organizations.service';
+import { OpeningBalancesController } from './opening-balances/opening-balances.controller';
+import { OpeningBalancesService } from './opening-balances/opening-balances.service';
 import { PeriodsController } from './periods/periods.controller';
 import { PeriodsService } from './periods/periods.service';
 import { ReportsController } from './reports/reports.controller';
@@ -298,6 +300,7 @@ export class AppModule {
         InvitationLinksController,
         AccountsController,
         PeriodsController,
+        OpeningBalancesController,
         JournalsController,
         ReportsController,
         AuditController,
@@ -442,6 +445,7 @@ export class AppModule {
         AccountsService,
         ChartService,
         PeriodsService,
+        OpeningBalancesService,
         JournalsService,
         ReportsService,
         SubledgerService,

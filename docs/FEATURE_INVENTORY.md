@@ -77,7 +77,7 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-007 | 5.1 General Ledger | capability | Recurring journals | Tested |
 | GL-008 | 5.1 General Ledger | capability | Adjusting journals | Implemented |
 | GL-009 | 5.1 General Ledger | capability | Reversing journals | Tested |
-| GL-010 | 5.1 General Ledger | capability | Opening balances | Implemented |
+| GL-010 | 5.1 General Ledger | capability | Opening balances | Tested |
 | GL-011 | 5.1 General Ledger | capability | Closing balances | Tested |
 | GL-012 | 5.1 General Ledger | capability | Journal templates | Tested |
 | GL-013 | 5.1 General Ledger | capability | Accrual accounting | Tested |

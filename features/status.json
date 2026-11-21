@@ -182,12 +182,13 @@
       ]
     },
     "GL-010": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts",
-        "apps/web/src"
+        "packages/accounting-engine/test/opening-balances.test.ts",
+        "apps/api/test/opening-balances.e2e.test.ts",
+        "apps/web/e2e/opening-balances-flow.test.mjs"
       ],
-      "notes": "Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet."
+      "notes": "Accounting → Opening balances: balances posted as one OPENING journal, difference to 3250 Opening Balance Equity, replacing reverses the previous journal in the same transaction. Receivables and payables are brought in as unpaid invoices and bills, not here. No spreadsheet import yet."
     },
     "GL-013": {
       "status": "Tested",
