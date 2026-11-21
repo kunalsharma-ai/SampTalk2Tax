@@ -19715,9 +19715,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ledger-replay.ts",
+        "packages/accounting-engine/test/ledger-replay.test.ts",
+        "apps/api/src/ledger-replay/ledger-replay.service.ts",
+        "apps/api/test/ledger-replay.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/ledger-replay/page.tsx",
+        "apps/web/e2e/ledger-replay-flow.test.mjs",
+        "docs/LEDGER_REPLAY.md"
+      ],
+      "notes": "Replays the posted ledger as it stood at a past moment (posting time) for entries dated up to a cut-off, beside the ledger now, with each entry posted since that explains the difference; read-only, audited (ledger.replayed), needs audit.read."
     },
     {
       "id": "AUDIT-018",
