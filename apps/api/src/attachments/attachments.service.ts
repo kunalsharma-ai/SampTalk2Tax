@@ -65,10 +65,15 @@ export class AttachmentsService {
       select: { id: true, fileName: true, contentType: true, sizeBytes: true, sha256: true, uploadedById: true, createdAt: true, removedAt: true, removedReason: true },
       orderBy: { createdAt: 'asc' },
     });
-    const users = await this.prisma.user.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.uploadedById))] } }, select: { id: true, name: true } });
-    const elsewhere = await this.elsewhere(org, actor, rows.filter((r) => !r.removedAt).map((r) => r.sha256), { entityType, entityId });
-    return rows.map((r) => ({
+    // Earlier versions (AUDIT-007) are kept but shown in the file's history, not in the list.
+    const meta = new Map((await this.store.collection(attachments).find({ entityType, entityId }, { projection: { content: 0 } })).map((d) => [d.id, d]));
+    const current = rows.filter((r) => !meta.get(r.id)?.replacedById);
+    const users = await this.prisma.user.findMany({ where: { id: { in: [...new Set(current.map((r) => r.uploadedById))] } }, select: { id: true, name: true } });
+    const elsewhere = await this.elsewhere(org, actor, current.filter((r) => !r.removedAt).map((r) => r.sha256), { entityType, entityId });
+    return current.map((r) => ({
       ...r,
+      version: meta.get(r.id)?.version ?? 1,
+      versionNote: meta.get(r.id)?.versionNote ?? null,
       alsoOn: r.removedAt ? [] : (elsewhere.get(r.sha256) ?? []),
       uploadedBy: users.find((u) => u.id === r.uploadedById)?.name ?? null,
       createdAt: r.createdAt.toISOString(),
@@ -78,28 +83,24 @@ export class AttachmentsService {
 
   async upload(org: Org, actor: { id: string }, input: { entityType: AttachmentEntity; entityId: string; fileName: string; content: Buffer }) {
     await this.entity(org, actor, input.entityType, input.entityId, 'manage');
-    if (!Buffer.isBuffer(input.content) || input.content.length === 0) throw new DomainError('EMPTY_FILE', 'The file is empty');
-    if (input.content.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
-    const contentType = sniffContentType(input.content);
-    if (!contentType) throw new DomainError('UNSUPPORTED_FILE', 'Only PDF, PNG, JPEG and WebP files can be attached', HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-    await this.scanner.check({ orgId: org.id, source: 'ATTACHMENT', fileName: cleanFileName(input.fileName), contentType, content: input.content, actorId: actor.id });
-    const sha256 = createHash('sha256').update(input.content).digest('hex');
+    const { bytes, contentType, sha256 } = await this.checkFile(org, actor, input.fileName, input.content);
     const saved = await this.prisma.$transaction(async (tx) => {
-      const count = await tx.attachment.count({ where: { orgId: org.id, entityType: input.entityType, entityId: input.entityId, removedAt: null } });
+      // Earlier versions of a file (AUDIT-007) do not count: only the files in use.
+      const count = await this.store.collection(attachments).count({ entityType: input.entityType, entityId: input.entityId, removedAt: null, replacedById: null });
       if (count >= MAX_PER_RECORD) throw new DomainError('TOO_MANY_FILES', `A record can have at most ${MAX_PER_RECORD} files`, HttpStatus.CONFLICT);
-      const same = await tx.attachment.findFirst({ where: { orgId: org.id, entityType: input.entityType, entityId: input.entityId, sha256, removedAt: null }, select: { id: true } });
+      const same = await this.store.collection(attachments).findOne({ entityType: input.entityType, entityId: input.entityId, sha256, removedAt: null, replacedById: null }, { projection: { id: 1 } });
       if (same) throw new DomainError('DUPLICATE_FILE', 'This file is already attached to this record', HttpStatus.CONFLICT, { attachmentId: same.id });
       // Counted against the plan's uploads for the month (refused past it).
-      await this.usage.takeUpload(tx, org.id, input.content.length);
+      await this.usage.takeUpload(tx, org.id, bytes.length);
       const row = await this.moved.create<{ id: string; fileName: string; contentType: string; sizeBytes: number; sha256: string; createdAt: Date }>(tx, ATTACHMENTS, org.id, {
         entityType: input.entityType,
         entityId: input.entityId,
         fileName: cleanFileName(input.fileName),
         contentType,
-        sizeBytes: input.content.length,
+        sizeBytes: bytes.length,
         sha256,
         // Encryption at rest (SEC-011).
-        ...this.vault.seal(input.content),
+        ...this.vault.seal(bytes),
         uploadedById: actor.id,
         createdAt: new Date(),
         removedAt: null,
@@ -119,6 +120,108 @@ export class AttachmentsService {
     });
     const elsewhere = await this.elsewhere(org, actor, [saved.sha256], { entityType: input.entityType, entityId: input.entityId });
     return { ...saved, alsoOn: elsewhere.get(saved.sha256) ?? [] };
+  }
+
+  /** The checks every uploaded file passes: not empty, at most 5 MB, a known type by its bytes, and scanned. */
+  private async checkFile(org: Org, actor: { id: string }, fileName: string, content: unknown) {
+    // Only a Buffer is accepted, so a tampered body (an array or a string) never reaches the checks below.
+    if (typeof content === 'string' || Array.isArray(content) || !Buffer.isBuffer(content)) throw new DomainError('EMPTY_FILE', 'The file is empty');
+    const bytes: Buffer = content;
+    if (bytes.length === 0) throw new DomainError('EMPTY_FILE', 'The file is empty');
+    if (bytes.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
+    const contentType = sniffContentType(bytes);
+    if (!contentType) throw new DomainError('UNSUPPORTED_FILE', 'Only PDF, PNG, JPEG and WebP files can be attached', HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    await this.scanner.check({ orgId: org.id, source: 'ATTACHMENT', fileName: cleanFileName(fileName), contentType, content: bytes, actorId: actor.id });
+    return { bytes, contentType, sha256: createHash('sha256').update(bytes).digest('hex') };
+  }
+
+  /**
+   * Document versioning (AUDIT-007): uploads a corrected or updated file in place of one in use.
+   * The earlier file is kept unchanged and can still be opened from the history; the new one
+   * takes the next version number. A file is replaced once, so the history is a single line.
+   */
+  async newVersion(org: Org, actor: { id: string }, id: string, input: { fileName: string; content: Buffer; note: string }) {
+    const prev = await this.store.collection(attachments).findOne({ id }, { projection: { content: 0 } });
+    if (!prev) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Attachment not found' });
+    const entityType = prev.entityType as AttachmentEntity;
+    await this.entity(org, actor, entityType, prev.entityId, 'manage');
+    if (prev.removedAt) throw new DomainError('REMOVED', 'This file was removed', HttpStatus.GONE);
+    if (prev.replacedById) throw new DomainError('NOT_LATEST', 'A later version of this file was already uploaded; open the latest one', HttpStatus.CONFLICT, { attachmentId: prev.replacedById });
+    const note = input.note.trim();
+    const { bytes, contentType, sha256 } = await this.checkFile(org, actor, input.fileName, input.content);
+    if (sha256 === prev.sha256) throw new DomainError('SAME_FILE', 'This is the same file as the current version', HttpStatus.CONFLICT);
+    const version = (prev.version ?? 1) + 1;
+    const saved = await this.prisma.$transaction(async (tx) => {
+      await this.usage.takeUpload(tx, org.id, bytes.length);
+      const now = new Date();
+      const row = await this.moved
+        .create<{ id: string; fileName: string; contentType: string; sizeBytes: number; sha256: string; createdAt: Date }>(tx, ATTACHMENTS, org.id, {
+          entityType,
+          entityId: prev.entityId,
+          fileName: cleanFileName(input.fileName),
+          contentType,
+          sizeBytes: bytes.length,
+          sha256,
+          ...this.vault.seal(bytes),
+          uploadedById: actor.id,
+          createdAt: now,
+          removedAt: null,
+          removedById: null,
+          removedReason: null,
+          version,
+          replacesId: prev.id,
+          replacedById: null,
+          replacedAt: null,
+          versionNote: note,
+        })
+        .catch((e: { code?: number }) => {
+          if (e?.code === 11000) throw new DomainError('NOT_LATEST', 'Someone else uploaded a new version of this file just now; open the latest one', HttpStatus.CONFLICT);
+          throw e;
+        });
+      // Only a file not yet replaced is marked, so two uploads at once cannot both replace it.
+      const r = await this.store.collection(attachments).updateOne({ id: prev.id, replacedById: null, removedAt: null }, { $set: { replacedById: row.id, replacedAt: now } });
+      if (!r.matched) throw new DomainError('NOT_LATEST', 'This file changed while uploading; open the latest one', HttpStatus.CONFLICT);
+      await this.audit.append(tx, {
+        orgId: org.id,
+        actorId: actor.id,
+        action: 'attachment.new_version',
+        entityType: 'attachment',
+        entityId: row.id,
+        data: { on: entityType, entityId: prev.entityId, replaces: prev.id, version, fileName: row.fileName, sha256, previousSha256: prev.sha256, note },
+      });
+      return { id: row.id, fileName: row.fileName, contentType: row.contentType, sizeBytes: row.sizeBytes, sha256: row.sha256, version, versionNote: note, createdAt: row.createdAt.toISOString() };
+    });
+    return saved;
+  }
+
+  /** Every version of a file, newest first, with who uploaded each and why. */
+  async versions(org: Org, actor: { id: string }, id: string) {
+    const start = await this.store.collection(attachments).findOne({ id }, { projection: { content: 0 } });
+    if (!start) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Attachment not found' });
+    await this.entity(org, actor, start.entityType as AttachmentEntity, start.entityId, 'read');
+    const all = await this.store.collection(attachments).find({ entityType: start.entityType, entityId: start.entityId }, { projection: { content: 0 } });
+    const byId = new Map(all.map((a) => [a.id, a]));
+    let first = start;
+    for (let k = 0; first.replacesId && byId.has(first.replacesId) && k < 1000; k++) first = byId.get(first.replacesId)!;
+    const chain = [first];
+    for (let k = 0; chain[chain.length - 1]!.replacedById && byId.has(chain[chain.length - 1]!.replacedById!) && k < 1000; k++) chain.push(byId.get(chain[chain.length - 1]!.replacedById!)!);
+    const users = await this.prisma.user.findMany({ where: { id: { in: [...new Set(chain.map((a) => a.uploadedById))] } }, select: { id: true, name: true } });
+    const name = new Map(users.map((u) => [u.id, u.name]));
+    return chain.reverse().map((a) => ({
+      id: a.id,
+      version: a.version ?? 1,
+      fileName: a.fileName,
+      contentType: a.contentType,
+      sizeBytes: a.sizeBytes,
+      sha256: a.sha256,
+      note: a.versionNote ?? null,
+      uploadedBy: name.get(a.uploadedById) ?? null,
+      createdAt: a.createdAt.toISOString(),
+      current: !a.replacedById,
+      replacedAt: a.replacedAt?.toISOString() ?? null,
+      removedAt: a.removedAt?.toISOString() ?? null,
+      removedReason: a.removedReason,
+    }));
   }
 
   /**

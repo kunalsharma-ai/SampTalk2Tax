@@ -756,6 +756,15 @@ export interface AttachmentDoc {
   removedAt: Date | null;
   removedById: string | null;
   removedReason: string | null;
+  /** Document versioning (AUDIT-007): 1 for a first upload (absent on files stored before). */
+  version?: number;
+  /** The earlier version this file replaced, if it is a later version. */
+  replacesId?: string | null;
+  /** Set once, when a later version replaced this file; the file is kept and can still be opened. */
+  replacedById?: string | null;
+  replacedAt?: Date | null;
+  /** Why the new version was uploaded. */
+  versionNote?: string | null;
 }
 
 // A Uint8Array (as Prisma returns Bytes) can be a view on a larger buffer, so it is read by its own offset and length.
@@ -781,11 +790,17 @@ export const attachments = defineCollection<AttachmentDoc>({
       sizeBytes: { bsonType: ['int', 'long'] },
       content: { bsonType: 'binData' },
       contentKeyId: { bsonType: ['string', 'null'] },
+      version: { bsonType: 'int', minimum: 1 },
+      replacesId: { bsonType: ['string', 'null'] },
+      replacedById: { bsonType: ['string', 'null'] },
+      versionNote: { bsonType: ['string', 'null'], maxLength: 500 },
     },
   },
   indexes: [
     { key: { orgId: 1, entityType: 1, entityId: 1 }, name: 'org_entity' },
     { key: { orgId: 1, sha256: 1 }, name: 'org_sha256' },
+    // A version is replaced at most once, so the history is a single line (AUDIT-007).
+    { key: { orgId: 1, replacesId: 1 }, name: 'one_later_version', unique: true, partialFilterExpression: { replacesId: { $type: 'string' } } },
   ],
   // Was t2t_guard_attachment: the bytes never change, and removal happens once.
   guards: {
@@ -799,6 +814,10 @@ export const attachments = defineCollection<AttachmentDoc>({
       const resealed = !!after.contentKeyId && after.contentKeyId !== (before.contentKeyId ?? null);
       const bytesChanged = !bytesOf(after.content).equals(bytesOf(before.content)) || (after.contentKeyId ?? null) !== (before.contentKeyId ?? null);
       if (fixed || (bytesChanged && !resealed) || removedAgain) throw new GuardViolation('An attachment cannot be changed');
+      // Versions (AUDIT-007): a file's place in its history never changes, and it is replaced once.
+      if ((after.version ?? 1) !== (before.version ?? 1) || (after.replacesId ?? null) !== (before.replacesId ?? null) || (after.versionNote ?? null) !== (before.versionNote ?? null)) throw new GuardViolation('A file keeps its version');
+      if (before.replacedById && (after.replacedById !== before.replacedById || +(after.replacedAt ?? 0) !== +(before.replacedAt ?? 0))) throw new GuardViolation('A file is replaced by a later version once');
+      if (!!after.replacedById !== !!after.replacedAt) throw new GuardViolation('A replaced file says when');
       checkAttachment(after);
     },
     beforeDelete() {

@@ -19382,9 +19382,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/attachments/attachments.service.ts",
+        "apps/api/src/attachments/attachments.controller.ts",
+        "apps/api/src/db/collections/sales.ts",
+        "apps/api/test/document-versions.e2e.test.ts",
+        "apps/web/src/components/attachments.tsx",
+        "apps/web/e2e/document-versions-flow.test.mjs",
+        "docs/DOCUMENT_VERSIONING.md"
+      ],
+      "notes": "New versions of attached files on any record: the new file takes the earlier one's place with the next version number and a note; earlier versions kept unchanged and openable from the history; a file is replaced once (unique index, races give NOT_LATEST); guards keep versions fixed; audited (attachment.new_version)."
     },
     {
       "id": "AUDIT-008",

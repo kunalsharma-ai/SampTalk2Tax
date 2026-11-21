@@ -550,8 +550,28 @@ export interface Attachment {
   createdAt: string;
   removedAt: string | null;
   removedReason: string | null;
+  /** Document versioning (AUDIT-007): 1 for a first upload. */
+  version?: number;
+  versionNote?: string | null;
   /** Other records (that you may see) holding the same file (DOC-018). */
   alsoOn?: { entityType: AttachmentEntity; entityId: string; label: string; path: string | null; fileName: string }[];
+}
+
+/** One version of an attached file (AUDIT-007). */
+export interface AttachmentVersion {
+  id: string;
+  version: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  note: string | null;
+  uploadedBy: string | null;
+  createdAt: string;
+  current: boolean;
+  replacedAt: string | null;
+  removedAt: string | null;
+  removedReason: string | null;
 }
 
 export type DocumentKindName = 'INVOICE' | 'CREDIT_NOTE' | 'BILL' | 'VENDOR_CREDIT';

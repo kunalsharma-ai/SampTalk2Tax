@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 639 |
+| Not started | 638 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 621 |
+| Tested | 622 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 11 | 19 |
+| Continuous audit and governance | M6 | 30 | 10 | 20 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4799,6 +4799,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/attachments-approvals.e2e.test.ts
   - apps/web/src/components/approvals/approval-card.tsx
+
+### AUDIT-007 — Document versioning
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: New versions of attached files on any record: the new file takes the earlier one's place with the next version number and a note; earlier versions kept unchanged and openable from the history; a file is replaced once (unique index, races give NOT_LATEST); guards keep versions fixed; audited (attachment.new_version).
+- Evidence:
+  - apps/api/src/attachments/attachments.service.ts
+  - apps/api/src/attachments/attachments.controller.ts
+  - apps/api/src/db/collections/sales.ts
+  - apps/api/test/document-versions.e2e.test.ts
+  - apps/web/src/components/attachments.tsx
+  - apps/web/e2e/document-versions-flow.test.mjs
+  - docs/DOCUMENT_VERSIONING.md
 
 ### AUDIT-008 — Financial control testing
 
