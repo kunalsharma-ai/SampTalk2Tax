@@ -34,6 +34,13 @@ body {
 }
 ::selection { background: rgba(94, 234, 212, 0.32); }
 
+/* Links inside running text are underlined, so they are not told apart by colour alone (WCAG 1.4.1). */
+:where(p, li, dd) > a:not([class*="rounded"]) {
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 50%, transparent);
+  text-underline-offset: 2px;
+}
+
 /* Sign-in backdrop: the logo's three colours drifting slowly. Still under reduced motion (tokens.css). */
 .t2t-aurora {
   background:

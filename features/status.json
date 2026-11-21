@@ -7198,6 +7198,64 @@
       ],
       "notes": "Whole tax years run month by month with history carried forward: TDS sums exactly to the year tax after a mid-year raise, a leaver and a pay cut (never negative); PF ceiling change split by days in September 2026; ESI coverage held for the contribution period; Maharashtra PT for men and women with loss of pay; rules switch across tax years. Every payslip checked against net, deduction, employer-cost and PF-split identities."
     },
+    "QA-030": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ai-authority.e2e.test.ts",
+        "apps/api/src/ai-control/ai-control.service.ts",
+        "apps/api/src/copilot/copilot.actions.ts",
+        "apps/api/test/bank-ai.e2e.test.ts",
+        "apps/api/test/close.e2e.test.ts",
+        "apps/api/test/collections.e2e.test.ts",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Agent action levels fixed in code at 2 or below; the copilot only has get_/list_ tools and proposals for tasks and alerts; invented post_journal/record_payment tools are refused with the books unchanged; bank, close and collections work is applied only by a person with banking.manage, journals.post or collections.manage."
+    },
+    "QA-015": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ai-authority.e2e.test.ts",
+        "apps/api/test/ai-data-safety.e2e.test.ts",
+        "apps/api/src/bank-ai/bank-ai.service.ts",
+        "apps/api/src/collections/collections.service.ts",
+        "packages/accounting-engine/src/collections.ts",
+        "apps/api/src/copilot/safety.ts"
+      ],
+      "notes": "Injected statement text, customer names and tool data: the model is warned first; a bank suggestion relying on such text is low confidence and cannot be accepted with one click; a reminder holding links or payment details the AI wrote cannot be sent; copilot proposals stop for that answer (SEC-029)."
+    },
+    "QA-016": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/workflow-recovery.e2e.test.ts",
+        "apps/api/test/workflows.e2e.test.ts",
+        "apps/api/test/workflow-schedules.e2e.test.ts",
+        "apps/api/src/workflows/workflow-runner.service.ts"
+      ],
+      "notes": "Two API processes on one database: events from downtime acted on once; concurrent runners never double-act; a pass that fails part-way rolls back runs and cursor together and is redone in full; a dead process lease runs out; a delivery claimed by a dead process is resent as the same delivery id and bytes, not while the claim holds; a schedule missed for days acts once for the latest time."
+    },
+    "QA-018": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/accessibility.test.mjs",
+        "packages/ui/src/table.tsx",
+        "apps/web/src/app/globals.css",
+        "packages/design-system/test",
+        "docs/TEST_STRATEGY.md"
+      ],
+      "notes": "axe-core 4.14.0 runs WCAG 2.1 A/AA rules on sign-in, registration and 23 signed-in screens in light and dark, desktop and phone width; serious or critical violations fail CI. Fixed: links in running text are underlined (1.4.1) and wide tables can be scrolled by keyboard (2.1.1). Sign-in by keyboard alone with visible focus. Automated checks find part of WCAG issues only."
+    },
+    "QA-020": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/security-suite.e2e.test.ts",
+        "apps/api/test/tenant-isolation.e2e.test.ts",
+        "apps/api/test/auth-tenancy.e2e.test.ts",
+        "apps/api/test/sessions-security.e2e.test.ts",
+        "apps/api/test/security-monitor.e2e.test.ts",
+        "docs/TEST_STRATEGY.md"
+      ],
+      "notes": "Route sweep over all ~940 API routes read from controller metadata: 401 without or with a bad token, 403/404 for non-members on every organisation route and method, an exact list of 33 public routes, secret-link and API-key routes refuse without the secret. Forged/alg-none/re-signed/expired/truncated JWTs, NoSQL operator injection, malformed and 4 MB bodies, mass-assignment fields, and no internals in errors."
+    },
     "QA-017": {
       "status": "Tested",
       "evidence": [

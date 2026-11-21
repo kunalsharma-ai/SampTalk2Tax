@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 748 |
+| Not started | 743 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 508 |
+| Tested | 513 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 17 | 4 |
-| Testing and quality assurance | M1 | 31 | 7 | 24 |
+| Testing and quality assurance | M1 | 31 | 2 | 29 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7228,6 +7228,30 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
 
+### QA-015 — Prompt injection tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Injected statement text, customer names and tool data: the model is warned first; a bank suggestion relying on such text is low confidence and cannot be accepted with one click; a reminder holding links or payment details the AI wrote cannot be sent; copilot proposals stop for that answer (SEC-029).
+- Evidence:
+  - apps/api/test/ai-authority.e2e.test.ts
+  - apps/api/test/ai-data-safety.e2e.test.ts
+  - apps/api/src/bank-ai/bank-ai.service.ts
+  - apps/api/src/collections/collections.service.ts
+  - packages/accounting-engine/src/collections.ts
+  - apps/api/src/copilot/safety.ts
+
+### QA-016 — Workflow recovery tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Two API processes on one database: events from downtime acted on once; concurrent runners never double-act; a pass that fails part-way rolls back runs and cursor together and is redone in full; a dead process lease runs out; a delivery claimed by a dead process is resent as the same delivery id and bytes, not while the claim holds; a schedule missed for days acts once for the latest time.
+- Evidence:
+  - apps/api/test/workflow-recovery.e2e.test.ts
+  - apps/api/test/workflows.e2e.test.ts
+  - apps/api/test/workflow-schedules.e2e.test.ts
+  - apps/api/src/workflows/workflow-runner.service.ts
+
 ### QA-017 — Load tests
 
 - Module: Testing and quality assurance
@@ -7237,6 +7261,31 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - scripts/load-test.mjs
   - docs/LOAD_TESTING.md
   - .github/workflows/ci.yml › Load test
+
+### QA-018 — Accessibility tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: axe-core 4.14.0 runs WCAG 2.1 A/AA rules on sign-in, registration and 23 signed-in screens in light and dark, desktop and phone width; serious or critical violations fail CI. Fixed: links in running text are underlined (1.4.1) and wide tables can be scrolled by keyboard (2.1.1). Sign-in by keyboard alone with visible focus. Automated checks find part of WCAG issues only.
+- Evidence:
+  - apps/web/e2e/accessibility.test.mjs
+  - packages/ui/src/table.tsx
+  - apps/web/src/app/globals.css
+  - packages/design-system/test
+  - docs/TEST_STRATEGY.md
+
+### QA-020 — Security tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Route sweep over all ~940 API routes read from controller metadata: 401 without or with a bad token, 403/404 for non-members on every organisation route and method, an exact list of 33 public routes, secret-link and API-key routes refuse without the secret. Forged/alg-none/re-signed/expired/truncated JWTs, NoSQL operator injection, malformed and 4 MB bodies, mass-assignment fields, and no internals in errors.
+- Evidence:
+  - apps/api/test/security-suite.e2e.test.ts
+  - apps/api/test/tenant-isolation.e2e.test.ts
+  - apps/api/test/auth-tenancy.e2e.test.ts
+  - apps/api/test/sessions-security.e2e.test.ts
+  - apps/api/test/security-monitor.e2e.test.ts
+  - docs/TEST_STRATEGY.md
 
 ### QA-021 — Every journal balances
 
@@ -7306,6 +7355,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/tax-engine/test/tax-golden.test.ts
   - apps/api/src/withholding/withholding.service.ts
   - apps/api/src/ledgers/documents.service.ts
+
+### QA-030 — Unauthorized AI agents cannot post entries or initiate payments
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Agent action levels fixed in code at 2 or below; the copilot only has get_/list_ tools and proposals for tasks and alerts; invented post_journal/record_payment tools are refused with the books unchanged; bank, close and collections work is applied only by a person with banking.manage, journals.post or collections.manage.
+- Evidence:
+  - apps/api/test/ai-authority.e2e.test.ts
+  - apps/api/src/ai-control/ai-control.service.ts
+  - apps/api/src/copilot/copilot.actions.ts
+  - apps/api/test/bank-ai.e2e.test.ts
+  - apps/api/test/close.e2e.test.ts
+  - apps/api/test/collections.e2e.test.ts
+  - docs/SECURITY.md
 
 ### QA-031 — Use deterministic test fixtures
 
