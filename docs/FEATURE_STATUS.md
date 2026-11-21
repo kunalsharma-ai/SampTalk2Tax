@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 647 |
+| Not started | 645 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 613 |
+| Tested | 615 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 9 | 32 |
+| Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -5225,6 +5225,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/report-views-flow.test.mjs
   - docs/REPORT_VIEWS.md
 
+### RPT-030 — Report templates
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Four ready-made designs (management pack, board report, investor update, cash and collections), each checked by the layout rules; Use template creates an ordinary design.
+- Evidence:
+  - packages/accounting-engine/src/report-templates.ts
+  - packages/accounting-engine/test/report-templates.test.ts
+  - apps/api/src/report-designer/report-designer.service.ts
+  - apps/api/test/report-design-versions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/designer/page.tsx
+  - apps/web/e2e/report-templates-flow.test.mjs
+  - docs/REPORT_DESIGNER.md
+
 ### RPT-031 — Scheduled reports
 
 - Module: Advanced financial reporting
@@ -5333,6 +5347,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/report-exports.e2e.test.ts › needs reports.read and keeps organisations apart
   - apps/api/test/dashboards.e2e.test.ts
+
+### RPT-039 — Report version history
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Every save keeps an immutable version (who, when, how); view any version; restore as a new version with a concurrency check; audited.
+- Evidence:
+  - apps/api/src/db/collections/report-design-versions.ts
+  - apps/api/src/report-designer/report-designer.service.ts
+  - apps/api/test/report-design-versions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/designer/[designId]/page.tsx
+  - apps/web/e2e/report-templates-flow.test.mjs
+  - docs/REPORT_DESIGNER.md
 
 ### RPT-040 — AI narrative generation
 

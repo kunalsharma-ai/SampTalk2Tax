@@ -83,3 +83,17 @@ All three have forced row-level security on `org_id`.
 * Live AI drafting and commentary wait on a Claude key; tests use a scripted model.
 * Organisation-wide monthly figures only, as for dashboards. Departments, projects, budgets and forecasts are not yet available as sections.
 * There is no PDF export of a designed report yet; use **Print** (the browser can save as PDF).
+
+## Templates (RPT-030)
+
+The Report designer page lists ready-made templates: **Monthly management pack**, **Board report**, **Investor update** and **Cash and collections**. **Use template** creates a design with the template's name, description and layout; the design is then the organisation's own and is changed like any other. Every template is checked by the same layout rules as a design (`packages/accounting-engine/src/report-templates.ts`, tested in `test/report-templates.test.ts`), and every figure still comes from the books.
+
+API: the catalogue (`GET /v1/orgs/:orgId/report-designer/catalogue`) lists `templates`; `POST /v1/orgs/:orgId/report-designer/designs/from-template` `{ templateId, name? }` (reports.design).
+
+## Version history (RPT-039)
+
+Every save of a design keeps a version: its name, description and layout as saved, who saved it and when, and how it came about (created, from a template, edited, restored). The **Design versions** card lists them; **View** shows a version's sections and **Restore** makes an earlier version current again as a new version, so nothing in between is lost. Restoring checks that nobody else changed the design meanwhile (409 `DESIGN_CHANGED`).
+
+Versions are never changed or deleted (a collection guard refuses it), and stay in the database after a design is deleted. Designs saved before history was kept start their history with their current version. Reports already produced keep the layout they were produced with.
+
+API: `GET .../designs/:id/versions`, `GET .../designs/:id/versions/:version` (reports.read), `POST .../designs/:id/versions/:version/restore` `{ baseVersion }` (reports.design), audited as `report_design.restored`. Tests: `apps/api/test/report-design-versions.e2e.test.ts`, `apps/web/e2e/report-templates-flow.test.mjs`.

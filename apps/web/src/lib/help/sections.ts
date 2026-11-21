@@ -274,6 +274,8 @@ export const SECTION_HELP: Record<string, Help> = {
   'Not included': { what: 'What these statements do not cover yet, such as notes that need your judgement.', how: 'Prepare these separately before filing.' },
   'Latest 200 events': { what: 'The most recent recorded actions: who did what, to which record, and when. Evidence lists the files attached to the record at that moment, with the start of each file\'s SHA-256 checksum.', how: 'Filter by person or record type. The trail cannot be edited. Open a file to see what was relied on; hover the checksum for the full value.' },
   Widgets: { what: 'The charts and figures on the dashboard.', how: 'Add, resize or remove widgets. Each one uses an approved figure from your books.' },
+  'Report templates': { what: 'Ready-made report designs: a monthly management pack, a board report, an investor update and a cash and collections report.', how: 'Use template creates a design you can then change like any other. Every figure still comes from your books.' },
+  'Design versions': { what: 'Every saved version of this report design, with who saved it and when.', how: 'View a version to see its sections. Restore makes an earlier version current again as a new version; nothing in between is lost.' },
   'Produce a report': { what: 'Create a copy of the report for a period, with the figures filled in.', how: 'Pick the period and produce it. The copy keeps its figures even if the books change later.' },
   Reports: { what: 'Reports produced from this design.', how: 'Open one to read, print or export it.' },
 

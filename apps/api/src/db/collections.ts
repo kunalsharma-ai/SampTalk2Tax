@@ -8,6 +8,7 @@ import { taxNoticeFiles, taxNotices } from './collections/tax-notices';
 import { financialTags } from './collections/financial-tags';
 import { reportScheduleRuns, reportSchedules } from './collections/report-schedules';
 import { reportViews } from './collections/report-views';
+import { reportDesignVersions } from './collections/report-design-versions';
 import { orgSetup } from './collections/org-setup';
 import { billCheckReviews } from './collections/bill-checks';
 import { accountReconciliations } from './collections/account-reconciliations';
@@ -29,4 +30,4 @@ import { invitations, memberships, organizations } from './collections/tenancy';
  * can reach it, and before a $lookup or $unionWith may read it. Modules add their
  * definitions as they move from PostgreSQL (see docs/MONGODB.md › Order of the move).
  */
-export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, knownDevices, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, accessRules, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, billCheckReviews, accountReconciliations, costAllocationRules, costAllocationRuns, journalApprovalPolicies, journalApprovals, advanceTaxPlans, gstPayments, leaveTypes, leaveEntries, deposits, depositEvents, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, reportSchedules, reportScheduleRuns, orgSetup, reportViews, ...MIRRORED.map((m) => m.def)];
+export const COLLECTIONS: readonly AnyCollectionDef[] = [users, authSessions, knownDevices, loginThrottles, userMfa, mfaChallenges, organizations, orgSecuritySettings, accessRules, memberships, invitations, accounts, fiscalPeriods, journalEntries, contacts, documents, payments, allocations, approvalPolicies, approvalRequests, attachments, expenseClaims, allowanceRates, claimAllowances, expensePolicyRules, taxNotices, taxNoticeFiles, financialTags, billCheckReviews, accountReconciliations, costAllocationRules, costAllocationRuns, journalApprovalPolicies, journalApprovals, advanceTaxPlans, gstPayments, leaveTypes, leaveEntries, deposits, depositEvents, bankStatementImports, bankStatementLines, bankMatches, bankReconciliations, reportSchedules, reportScheduleRuns, orgSetup, reportViews, reportDesignVersions, ...MIRRORED.map((m) => m.def)];

@@ -14,6 +14,9 @@ import type { AiStatus, DesignDetail, ReportDetail } from '@/lib/report-designer
 import { monthLabel } from '@/lib/twin';
 import { can } from '@/lib/types';
 
+type VersionItem = { version: number; name: string; change: 'CREATED' | 'EDITED' | 'RESTORED' | 'FROM_TEMPLATE'; restoredFrom: number | null; sections: number; savedBy: string; savedAt: string; current: boolean };
+const CHANGE: Record<VersionItem['change'], string> = { CREATED: 'Created', EDITED: 'Edited', RESTORED: 'Restored', FROM_TEMPLATE: 'From a template' };
+
 /** A report design: its sections, the reports produced from it, and producing the next one. */
 export default function ReportDesignPage() {
   const { org, orgId } = useOrg();
@@ -33,6 +36,18 @@ export default function ReportDesignPage() {
       void qc.invalidateQueries({ queryKey: ['report-design', orgId, designId] });
       qc.setQueryData(['report', orgId, r.id], r);
       router.push(`/orgs/${orgId}/reports/designer/reports/${r.id}`);
+    },
+  });
+  const hist = useQuery({ queryKey: ['report-design-versions', orgId, designId, q.data?.version], queryFn: () => api<{ current: number; items: VersionItem[] }>(`/v1/orgs/${orgId}/report-designer/designs/${designId}/versions`), enabled: !!org });
+  const [shown, setShown] = useState<number | null>(null);
+  const shownVersion = useQuery({ queryKey: ['report-design-version', orgId, designId, shown], queryFn: () => api<{ version: number; name: string; descriptions: string[] }>(`/v1/orgs/${orgId}/report-designer/designs/${designId}/versions/${shown}`), enabled: !!org && shown != null });
+  const restore = useMutation({
+    mutationFn: (version: number) => api<DesignDetail>(`/v1/orgs/${orgId}/report-designer/designs/${designId}/versions/${version}/restore`, { method: 'POST', body: { baseVersion: q.data!.version } }),
+    onSuccess: (d) => {
+      qc.setQueryData(['report-design', orgId, designId], d);
+      void qc.invalidateQueries({ queryKey: ['report-design-versions', orgId, designId] });
+      void qc.invalidateQueries({ queryKey: ['report-designs', orgId] });
+      setShown(null);
     },
   });
   const del = useMutation({
@@ -124,6 +139,44 @@ export default function ReportDesignPage() {
               ) : (
                 <p className="px-5 pb-5 text-sm text-fg-muted">No reports produced yet.</p>
               )}
+            </Card>
+            <Card>
+              <CardHeader title="Design versions" description="Every saved version of this design. Reports already produced keep the layout they were produced with." />
+              <ErrorAlert title="The version was not restored" error={restore.error} />
+              <Table aria-label="Design versions">
+                <thead>
+                  <tr>
+                    <Th>Version</Th>
+                    <Th>Change</Th>
+                    <Th>Saved</Th>
+                    <Th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {(hist.data?.items ?? []).map((v) => (
+                    <Tr key={v.version}>
+                      <Td>
+                        <span className="font-medium">v{v.version}</span> {v.current ? <Badge tone="positive">Current</Badge> : null}
+                        <span className="block text-xs text-fg-muted">{v.name} · {v.sections} sections</span>
+                      </Td>
+                      <Td className="text-sm">{CHANGE[v.change]}{v.restoredFrom ? ` from v${v.restoredFrom}` : ''}</Td>
+                      <Td className="text-xs text-fg-muted">{v.savedBy}, {dateTime(v.savedAt)}</Td>
+                      <Td className="whitespace-nowrap">
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="ghost" aria-label={`View version ${v.version}`} onClick={() => setShown(shown === v.version ? null : v.version)}>{shown === v.version ? 'Hide' : 'View'}</Button>
+                          {design && !v.current ? <Button size="sm" variant="secondary" aria-label={`Restore version ${v.version}`} loading={restore.isPending && restore.variables === v.version} onClick={() => restore.mutate(v.version)}>Restore</Button> : null}
+                        </div>
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+              {shown != null && shownVersion.data ? (
+                <div className="border-t border-line px-5 py-4">
+                  <p className="text-sm font-medium">Version {shownVersion.data.version}: {shownVersion.data.name}</p>
+                  <ol aria-label={`Sections of version ${shownVersion.data.version}`} className="mt-1 list-inside list-decimal text-sm leading-7 text-fg-muted">{shownVersion.data.descriptions.map((x, i) => <li key={i}>{x}</li>)}</ol>
+                </div>
+              ) : null}
             </Card>
           </div>
         </div>

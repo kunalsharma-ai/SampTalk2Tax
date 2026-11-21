@@ -45,6 +45,10 @@ const CommentaryBody = z.object({ section: z.number().int().min(0), text: z.stri
  * commentary (by hand or with the AI) and finalising need reports.design. Customer figures also
  * need sales.read when a report is produced.
  */
+const TemplateBody = z.object({ templateId: z.string().max(40), name: z.string().trim().max(120).optional() }).strict();
+const RestoreBody = z.object({ baseVersion: z.number().int().min(1) }).strict();
+const VersionParam = z.coerce.number().int().min(1).max(100000);
+
 @ApiTags('report-designer')
 @ApiBearerAuth()
 @Controller('v1/orgs/:orgId/report-designer')
@@ -104,6 +108,36 @@ export class ReportDesignerController {
   @ApiBody({ schema: openApi(UpdateBody) })
   updateDesign(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body(new ZodPipe(UpdateBody)) b: z.infer<typeof UpdateBody>) {
     return this.svc.updateDesign(org.id, user, id, b);
+  }
+
+  /** A new design from one of the ready-made templates (RPT-030). */
+  @Post('designs/from-template')
+  @RequirePermission('reports.design')
+  @ApiBody({ schema: openApi(TemplateBody) })
+  fromTemplate(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(TemplateBody)) b: z.infer<typeof TemplateBody>) {
+    return this.svc.createFromTemplate(org.id, user, b.templateId, b.name);
+  }
+
+  /** Every saved version of a design (RPT-039). */
+  @Get('designs/:id/versions')
+  @RequirePermission('reports.read')
+  versions(@CurrentOrg() org: OrgContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.listVersions(org.id, id);
+  }
+
+  @Get('designs/:id/versions/:version')
+  @RequirePermission('reports.read')
+  version(@CurrentOrg() org: OrgContext, @Param('id', ParseUUIDPipe) id: string, @Param('version', new ZodPipe(VersionParam)) version: number) {
+    return this.svc.getVersion(org.id, id, version);
+  }
+
+  /** Makes an earlier version current again, as a new version. */
+  @Post('designs/:id/versions/:version/restore')
+  @HttpCode(200)
+  @RequirePermission('reports.design')
+  @ApiBody({ schema: openApi(RestoreBody) })
+  restore(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Param('version', new ZodPipe(VersionParam)) version: number, @Body(new ZodPipe(RestoreBody)) b: z.infer<typeof RestoreBody>) {
+    return this.svc.restoreVersion(org.id, user, id, version, b.baseVersion);
   }
 
   @Delete('designs/:id')
