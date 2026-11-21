@@ -158,7 +158,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-037 | Advanced AR AI | capability | Invoice dispute classification | Not started |
 | AR-038 | Advanced AR AI | capability | Customer financial behavior analysis | Not started |
 | AR-039 | Advanced AR AI | capability | Cash collection forecasting | Tested |
-| AR-040 | Advanced AR AI | capability | Suggested payment plans | Not started |
+| AR-040 | Advanced AR AI | capability | Suggested payment plans | Tested |
 | AR-041 | Advanced AR AI | capability | AI-assisted contract-to-invoice matching | Not started |
 | AR-042 | Advanced AR AI | capability | Automated detection of unbilled revenue | Tested |
 | AR-043 | Advanced AR AI | rule | All external communication must respect tenant-configured approval and consent policies | Not started |

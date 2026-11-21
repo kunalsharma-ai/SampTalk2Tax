@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 621 |
+| Not started | 620 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 639 |
+| Tested | 640 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 5 | 38 |
+| Accounts receivable | M2 | 43 | 4 | 39 |
 | Accounts payable | M2 | 36 | 8 | 28 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1603,6 +1603,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/collection-forecast/page.tsx
   - apps/web/e2e/collection-forecast-flow.test.mjs
   - docs/COLLECTION_FORECAST.md
+
+### AR-040 — Suggested payment plans
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Suggested instalment plans for overdue, undisputed invoices: count = overdue amount over the customer's average monthly receipts in the last 6 months, 2-12 (3 with no receipts, at most 6 with debt over 90 days), monthly from a first date within 60 days, equal decimal instalments with the rounding last, with reasons. Plans agreed from the server-side suggestion, one running per customer, tracked from receipts since (on track, behind, broken after 7 days, completed), cancel with reason; append-only record and audit events.
+- Evidence:
+  - packages/accounting-engine/src/payment-plans.ts
+  - packages/accounting-engine/test/payment-plans.test.ts
+  - apps/api/src/db/collections/payment-plans.ts
+  - apps/api/src/payment-plans/payment-plans.service.ts
+  - apps/api/test/payment-plans.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/payment-plans/page.tsx
+  - apps/web/e2e/payment-plans-flow.test.mjs
+  - docs/PAYMENT_PLANS.md
 
 ### AR-042 — Automated detection of unbilled revenue
 
