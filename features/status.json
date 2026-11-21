@@ -7232,6 +7232,29 @@
       ],
       "notes": "Two API processes on one database: events from downtime acted on once; concurrent runners never double-act; a pass that fails part-way rolls back runs and cursor together and is redone in full; a dead process lease runs out; a delivery claimed by a dead process is resent as the same delivery id and bytes, not while the claim holds; a schedule missed for days acts once for the latest time."
     },
+    "QA-018": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/accessibility.test.mjs",
+        "packages/ui/src/table.tsx",
+        "apps/web/src/app/globals.css",
+        "packages/design-system/test",
+        "docs/TEST_STRATEGY.md"
+      ],
+      "notes": "axe-core 4.14.0 runs WCAG 2.1 A/AA rules on sign-in, registration and 23 signed-in screens in light and dark, desktop and phone width; serious or critical violations fail CI. Fixed: links in running text are underlined (1.4.1) and wide tables can be scrolled by keyboard (2.1.1). Sign-in by keyboard alone with visible focus. Automated checks find part of WCAG issues only."
+    },
+    "QA-020": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/security-suite.e2e.test.ts",
+        "apps/api/test/tenant-isolation.e2e.test.ts",
+        "apps/api/test/auth-tenancy.e2e.test.ts",
+        "apps/api/test/sessions-security.e2e.test.ts",
+        "apps/api/test/security-monitor.e2e.test.ts",
+        "docs/TEST_STRATEGY.md"
+      ],
+      "notes": "Route sweep over all ~940 API routes read from controller metadata: 401 without or with a bad token, 403/404 for non-members on every organisation route and method, an exact list of 33 public routes, secret-link and API-key routes refuse without the secret. Forged/alg-none/re-signed/expired/truncated JWTs, NoSQL operator injection, malformed and 4 MB bodies, mass-assignment fields, and no internals in errors."
+    },
     "QA-019": {
       "status": "Tested",
       "evidence": [

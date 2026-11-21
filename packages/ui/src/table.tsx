@@ -4,7 +4,8 @@ import { tx } from './text';
 
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="relative w-full overflow-x-auto">
+    // Focusable so a table wider than the screen can be scrolled with the keyboard (WCAG 2.1.1).
+    <div tabIndex={0} className="relative w-full overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
       <table className={cn('w-full border-collapse text-sm', className)} {...props} />
     </div>
   );
