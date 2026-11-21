@@ -15,7 +15,8 @@ const RULES = [
   { id: 'math-random', pattern: /\bMath\.random\s*\(/, fix: 'use seededRandom(seed) for numbers or randomUUID() for unique values' },
   { id: 'faker-unseeded', pattern: /\bfaker\.(?!seed\b)\w+\.\w+\(/, fix: 'call faker.seed(n) first, or use seededRandom' },
 ];
-const ALLOWED = new Set(['scripts/check-test-determinism.test.mjs']);
+/** Tests of the checks themselves hold the forbidden code as sample text. */
+const ALLOWED = new Set(['scripts/check-test-determinism.test.mjs', 'scripts/check-shortcuts.test.mjs']);
 
 /** Lines of `text` that break a determinism rule. */
 export function findNondeterminism(text) {
