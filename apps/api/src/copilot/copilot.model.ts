@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { AiAgentId } from '@talk2tax/accounting-engine';
 import type { AppConfig } from '../config';
 
 /** The request the copilot sends for one step of an answer. */
@@ -14,7 +15,20 @@ export type CopilotTool = Anthropic.Beta.Messages.BetaTool;
  */
 export interface CopilotModel {
   readonly provider: string;
-  send(request: CopilotRequest, options: { signal: AbortSignal }): Promise<CopilotResponse>;
+  send(request: CopilotRequest, options: AiCallOptions): Promise<CopilotResponse>;
+}
+
+/** How a call is described in the explainable AI ledger (AUDIT-018, AUDIT-021): what the caller knows that the request does not say. */
+export interface AiCallRecord {
+  agent?: AiAgentId;
+  /** The record the call was about, such as a bank line or a draft. */
+  subject?: { type: string; id: string };
+  /** The data the model was given, in words, such as "Bank statement line: NEFT ACME". */
+  sources?: string[];
+}
+export interface AiCallOptions {
+  signal: AbortSignal;
+  record?: AiCallRecord;
 }
 
 export const COPILOT_MODEL = Symbol('COPILOT_MODEL');

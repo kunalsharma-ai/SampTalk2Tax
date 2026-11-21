@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Badge, Card, EmptyState, Select, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
+import { DecisionRecords } from '@/components/ai/decision-records';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -102,6 +103,7 @@ export default function AiActivityPage() {
           )}
         </>
       ) : null}
+      <DecisionRecords orgId={orgId} />
     </>
   );
 }

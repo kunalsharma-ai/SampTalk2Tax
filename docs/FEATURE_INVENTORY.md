@@ -833,19 +833,19 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-015 |  | capability | Period-close certification | Tested |
 | AUDIT-016 |  | capability | AI action history | Tested |
 | AUDIT-017 |  | capability | Financial transaction replay | Not started |
-| AUDIT-018 | Explainable AI Ledger | capability | Agent identity | Not started |
+| AUDIT-018 | Explainable AI Ledger | capability | Agent identity | Tested |
 | AUDIT-019 | Explainable AI Ledger | capability | Model version | Tested |
-| AUDIT-020 | Explainable AI Ledger | capability | Prompt or policy version | Not started |
-| AUDIT-021 | Explainable AI Ledger | capability | Data sources | Not started |
+| AUDIT-020 | Explainable AI Ledger | capability | Prompt or policy version | Tested |
+| AUDIT-021 | Explainable AI Ledger | capability | Data sources | Tested |
 | AUDIT-022 | Explainable AI Ledger | capability | Proposed action | Tested |
 | AUDIT-023 | Explainable AI Ledger | capability | Reasoning summary | Tested |
 | AUDIT-024 | Explainable AI Ledger | capability | Approval status | Tested |
 | AUDIT-025 | Explainable AI Ledger | capability | Approving user | Tested |
 | AUDIT-026 | Explainable AI Ledger | capability | Execution result | Tested |
-| AUDIT-027 | Explainable AI Ledger | capability | Timestamp | Not started |
+| AUDIT-027 | Explainable AI Ledger | capability | Timestamp | Tested |
 | AUDIT-028 | Explainable AI Ledger | capability | Relevant evidence references | Tested |
-| AUDIT-029 | Explainable AI Ledger | rule | Do not expose hidden model chain-of-thought | Not started |
-| AUDIT-030 | Explainable AI Ledger | rule | Store concise, auditable decision explanations instead | Not started |
+| AUDIT-029 | Explainable AI Ledger | rule | Do not expose hidden model chain-of-thought | Tested |
+| AUDIT-030 | Explainable AI Ledger | rule | Store concise, auditable decision explanations instead | Tested |
 
 ## Document intelligence
 

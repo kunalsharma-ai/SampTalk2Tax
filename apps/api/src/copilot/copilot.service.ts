@@ -384,7 +384,7 @@ export class CopilotService {
         // An opaque id (a uuid) so the provider can tell members apart for abuse detection; no name or email.
         metadata: { user_id: ctx.userId },
       };
-      const res: CopilotResponse = await model.send(request, { signal });
+      const res: CopilotResponse = await model.send(request, { signal, record: { agent: 'COPILOT', subject: { type: 'COPILOT_ANSWER', id: answerId }, sources: ["The member's question and the earlier answers in the conversation"] } });
       served(res.model);
       usage.input += res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0);
       usage.output += res.usage.output_tokens;

@@ -403,7 +403,7 @@ export class BankAiService {
     const blocked = await this.guard.check(orgId, 'BANKING');
     if (blocked) data = { status: 'FAILED', ...AiControlService.stoppedError(blocked) };
     else try {
-      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000) });
+      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000), record: { agent: 'BANK_MATCHING', subject: { type: 'BANK_AI_SUGGESTION', id }, sources: [`Bank line ${context.line.date}: ${context.line.description}`, `${context.ledger.length} unmatched ledger lines`, `${context.documents.length} open invoices or bills`, `${context.accounts.length} accounts`, `${context.history.length} earlier booked bank lines`] } });
       const usage = { servedModel: res.model, inputTokens: res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0), outputTokens: res.usage.output_tokens };
       const call = res.content.find((b): b is Anthropic.Beta.Messages.BetaToolUseBlock => b.type === 'tool_use' && b.name === SUBMIT_TOOL.name);
       const p = res.stop_reason === 'max_tokens' ? null : parse(call?.input);
