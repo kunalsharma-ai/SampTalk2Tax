@@ -47,6 +47,9 @@ jobs:
       # without the assessment, approval or provider connection behind them.
       - name: No claims we cannot back
         run: node --test scripts/check-claims.test.mjs && node scripts/check-claims.mjs
+      # COMP-044, COMP-047: every competitive finding is on the scale, sourced from the vendor and dated.
+      - name: Competitive matrix is sourced
+        run: node --test scripts/check-competitive-matrix.test.mjs && node scripts/check-competitive-matrix.mjs
       # RULE-017: only original code and packages under licences that allow a commercial product.
       - name: Licences and original code
         run: node --test scripts/check-licences.test.mjs && node scripts/check-licences.mjs

@@ -32,9 +32,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-002",
@@ -54,9 +58,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-003",
@@ -76,9 +84,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-004",
@@ -98,9 +110,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-005",
@@ -120,9 +136,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Only SAP AI release notes could be read on 2026-11-21 (SAP finance pages refused automated reading); most cells NC. Next pass reads SAP finance pages."
     },
     {
       "id": "COMP-006",
@@ -142,9 +162,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-007",
@@ -164,9 +188,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-008",
@@ -186,9 +214,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-009",
@@ -208,9 +240,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-010",
@@ -230,9 +266,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-011",
@@ -252,9 +292,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-012",
@@ -274,9 +318,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-013",
@@ -296,9 +344,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-014",
@@ -318,9 +370,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-015",
@@ -340,9 +396,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-016",
@@ -362,9 +422,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-017",
@@ -384,9 +448,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-018",
@@ -406,9 +474,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-019",
@@ -428,9 +500,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-020",
@@ -450,9 +526,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-021",
@@ -472,9 +552,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-022",
@@ -494,9 +578,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-023",
@@ -516,9 +604,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Covered only through the accounting vendors' own payroll; named global payroll vendors not yet researched."
     },
     {
       "id": "COMP-024",
@@ -538,9 +630,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
     },
     {
       "id": "COMP-025",
@@ -560,9 +656,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-026",
@@ -582,9 +682,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-027",
@@ -604,9 +708,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-028",
@@ -626,9 +734,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-029",
@@ -648,9 +760,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-030",
@@ -670,9 +786,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-031",
@@ -692,9 +812,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-032",
@@ -714,9 +838,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-033",
@@ -736,9 +864,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-034",
@@ -758,9 +890,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-035",
@@ -780,9 +916,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-036",
@@ -802,9 +942,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-037",
@@ -824,9 +968,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-038",
@@ -846,9 +994,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-039",
@@ -868,9 +1020,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
     },
     {
       "id": "COMP-040",
@@ -890,9 +1046,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
     },
     {
       "id": "COMP-041",
@@ -912,9 +1072,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
     },
     {
       "id": "COMP-042",
@@ -934,9 +1098,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
     },
     {
       "id": "COMP-043",
@@ -956,9 +1124,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
     },
     {
       "id": "COMP-044",
@@ -978,9 +1150,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
     },
     {
       "id": "COMP-045",
@@ -1000,9 +1176,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
     },
     {
       "id": "COMP-046",
@@ -1047,9 +1227,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Every confirmed finding names an official https source and every vendor table its verification date; review and comparison sites are refused by the check."
     },
     {
       "id": "COMP-048",

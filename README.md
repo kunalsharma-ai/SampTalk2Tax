@@ -60,7 +60,7 @@ docs/                       PRD, architecture, schema, engine, security, API, te
 
 ## Documentation
 
-[Product requirements](docs/PRODUCT_REQUIREMENTS.md) · [Architecture & ADRs](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_SCHEMA.md) · [MongoDB move](docs/MONGODB.md) · [Accounting engine](docs/ACCOUNTING_ENGINE.md) · [API](docs/API_DOCUMENTATION.md) · [Security](docs/SECURITY.md) · [Tests](docs/TEST_STRATEGY.md) · [Roadmap](docs/IMPLEMENTATION_ROADMAP.md) · [Feature inventory](docs/FEATURE_INVENTORY.md) · [Competitive matrix (framework)](docs/COMPETITIVE_FEATURE_MATRIX.md) · [Master directive](docs/MASTER_DIRECTIVE.md)
+[Product requirements](docs/PRODUCT_REQUIREMENTS.md) · [Architecture & ADRs](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_SCHEMA.md) · [MongoDB move](docs/MONGODB.md) · [Accounting engine](docs/ACCOUNTING_ENGINE.md) · [API](docs/API_DOCUMENTATION.md) · [Security](docs/SECURITY.md) · [Tests](docs/TEST_STRATEGY.md) · [Roadmap](docs/IMPLEMENTATION_ROADMAP.md) · [Feature inventory](docs/FEATURE_INVENTORY.md) · [Competitive matrix](docs/COMPETITIVE_FEATURE_MATRIX.md) · [Master directive](docs/MASTER_DIRECTIVE.md)
 
 ## Updating feature status
 
