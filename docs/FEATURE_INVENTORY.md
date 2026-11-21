@@ -196,7 +196,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-025 | Advanced AP AI | capability | Invoice document extraction | Not started |
 | AP-026 | Advanced AP AI | capability | AI invoice coding | Not started |
 | AP-027 | Advanced AP AI | capability | Supplier bank-detail change detection | Tested |
-| AP-028 | Advanced AP AI | capability | Payment fraud indicators | Not started |
+| AP-028 | Advanced AP AI | capability | Payment fraud indicators | Tested |
 | AP-029 | Advanced AP AI | capability | Dynamic discount recommendations | Not started |
 | AP-030 | Advanced AP AI | capability | Intelligent payment prioritization | Not started |
 | AP-031 | Advanced AP AI | capability | Invoice anomaly detection | Tested |
