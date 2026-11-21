@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 623 |
+| Not started | 621 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 637 |
+| Tested | 639 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 5 | 38 |
-| Accounts payable | M2 | 36 | 10 | 26 |
+| Accounts payable | M2 | 36 | 8 | 28 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1951,6 +1951,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/purchases/payment-fraud/page.tsx
   - apps/web/e2e/payment-fraud-flow.test.mjs
   - docs/PAYMENT_FRAUD.md
+
+### AP-029 — Dynamic discount recommendations
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Dynamic early-payment discount suggestions: when the cash covers every bill, each bill due 10 or more days away gets a discount to ask for, worth the organisation's target annual return (default 12%, changeable) over the days paid early, rounded down; listed largest first with the amount to pay now. The vendor's agreement and the discount itself are recorded outside this page (vendor credit).
+- Evidence:
+  - packages/accounting-engine/src/payment-priorities.ts
+  - packages/accounting-engine/test/payment-priorities.test.ts
+  - apps/api/src/payment-priorities/payment-priorities.service.ts
+  - apps/api/test/payment-priorities.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-priorities/page.tsx
+  - apps/web/e2e/payment-priorities-flow.test.mjs
+  - docs/PAYMENT_PRIORITIES.md
+
+### AP-030 — Intelligent payment prioritization
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Open bills ranked against bank balances less a chosen buffer and less bills in open batches: score from urgency (50), vendor share of purchases (30) and bill age (20); past due or due within 7 days paid now by score while cash lasts, later bills set aside for their due date, the rest marked short; bills of vendors without verified bank details blocked; batched bills left alone. Deterministic; nothing paid or planned.
+- Evidence:
+  - packages/accounting-engine/src/payment-priorities.ts
+  - packages/accounting-engine/test/payment-priorities.test.ts
+  - apps/api/src/payment-priorities/payment-priorities.service.ts
+  - apps/api/test/payment-priorities.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-priorities/page.tsx
+  - apps/web/e2e/payment-priorities-flow.test.mjs
+  - docs/PAYMENT_PRIORITIES.md
 
 ### AP-031 — Invoice anomaly detection
 

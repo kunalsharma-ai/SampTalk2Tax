@@ -8827,6 +8827,32 @@
         "docs/CUSTOMER_360.md"
       ],
       "notes": "Customer risk analysis is the credit risk in Customer 360 (CRM-012): a 0-100 score from five explained factors (overdue share, oldest overdue, days late, credit limit use, slowing down), a rating, a suggested credit limit and credit hold, with every customer filterable by rating on Customer insights; plus each open invoice's chance of being paid late with reasons (AR-033). Deterministic; an AI-written narrative is not built."
+    },
+    "AP-030": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-priorities.ts",
+        "packages/accounting-engine/test/payment-priorities.test.ts",
+        "apps/api/src/payment-priorities/payment-priorities.service.ts",
+        "apps/api/test/payment-priorities.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/payment-priorities/page.tsx",
+        "apps/web/e2e/payment-priorities-flow.test.mjs",
+        "docs/PAYMENT_PRIORITIES.md"
+      ],
+      "notes": "Open bills ranked against bank balances less a chosen buffer and less bills in open batches: score from urgency (50), vendor share of purchases (30) and bill age (20); past due or due within 7 days paid now by score while cash lasts, later bills set aside for their due date, the rest marked short; bills of vendors without verified bank details blocked; batched bills left alone. Deterministic; nothing paid or planned."
+    },
+    "AP-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-priorities.ts",
+        "packages/accounting-engine/test/payment-priorities.test.ts",
+        "apps/api/src/payment-priorities/payment-priorities.service.ts",
+        "apps/api/test/payment-priorities.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/payment-priorities/page.tsx",
+        "apps/web/e2e/payment-priorities-flow.test.mjs",
+        "docs/PAYMENT_PRIORITIES.md"
+      ],
+      "notes": "Dynamic early-payment discount suggestions: when the cash covers every bill, each bill due 10 or more days away gets a discount to ask for, worth the organisation's target annual return (default 12%, changeable) over the days paid early, rounded down; listed largest first with the amount to pay now. The vendor's agreement and the discount itself are recorded outside this page (vendor credit)."
     }
   }
 }
