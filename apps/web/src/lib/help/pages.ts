@@ -467,6 +467,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the opening date, enter each account\'s balance as a debit or a credit, and post. Any difference goes to Opening Balance Equity; clear it once the figures are agreed. Saving again replaces the balances. Enter unpaid customer invoices and vendor bills as invoices and bills instead.',
     where: 'Accounting. The trial balance, ledgers and statements start from these balances.',
   },
+  import: {
+    what: 'Bring a chart of accounts, customers, vendors and opening balances in from another system or a spreadsheet saved as CSV.',
+    how: 'Choose what to import, download the template or use your own headings, then preview. Fix every row marked Fix and preview again; Import creates the rows marked Create. Codes and names already in your books are skipped, never changed.',
+    where: 'Accounting. Each import is recorded in the audit trail; opening balances are posted as one opening journal and replace the ones before.',
+  },
   'fixed-assets': {
     what: 'Things you own and use for years, such as machines and vehicles, with their depreciation.',
     how: 'Add an asset with its cost, date and method. Run depreciation each month. Record a sale, scrap or write-off when it goes.',
@@ -562,6 +567,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     what: 'What the organisation owns and owes on a date, and its equity.',
     how: 'Pick the date and compare it with an earlier one. Open a line to see its entries.',
     where: 'Reports. Assets always equal liabilities plus equity.',
+  },
+  'reports/vendor-spend': {
+    what: 'What you bought, from whom and on what, compared with the period before.',
+    how: 'Pick the dates. Start with the largest vendors and the biggest changes; open an account to see its entries.',
+    where: 'Reports. Posted bills before tax, less vendor credits, in your currency.',
   },
   'reports/schedules': {
     what: 'Reports emailed to members on a weekly or monthly day, such as the profit and loss on the 3rd of each month.',

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 667 |
+| Not started | 660 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 593 |
+| Tested | 600 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 15 | 26 |
+| Advanced financial reporting | M6 | 41 | 12 | 29 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -55,7 +55,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
 | Security and enterprise governance | M1 | 38 | 0 | 38 |
-| User experience and onboarding | M1 | 22 | 16 | 6 |
+| User experience and onboarding | M1 | 22 | 12 | 10 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
@@ -5091,6 +5091,40 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/dimensions-flow.test.mjs
   - docs/FINANCIAL_DIMENSIONS.md
 
+### RPT-015 — Customer profitability
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Customer 360 and Customer insights: revenue less direct costs posted to the customer's projects, margin, ranked across customers.
+- Evidence:
+  - apps/api/test/customer-insights.e2e.test.ts › works out profit, payment behaviour, lifetime value and risk for a good customer
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - docs/CUSTOMER_360.md
+
+### RPT-016 — Vendor spending
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Posted bills before tax less vendor credits, by vendor (share, period before, change), account and month, at each bill's own rate; concentration as vendors making up 80%.
+- Evidence:
+  - packages/accounting-engine/src/vendor-spend.ts
+  - packages/accounting-engine/test/vendor-spend.test.ts
+  - apps/api/src/reports/reports.service.ts
+  - apps/api/test/vendor-spend.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/vendor-spend/page.tsx
+  - apps/web/e2e/vendor-spend-flow.test.mjs
+  - docs/VENDOR_SPEND.md
+
+### RPT-017 — Cash forecasts
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Cash-flow forecast from open invoices and bills at each contact's usual delay plus planned items, with a range and backtests.
+- Evidence:
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - docs/CASH_FLOW_FORECAST.md
+
 ### RPT-018 — Working capital
 
 - Module: Advanced financial reporting
@@ -7056,6 +7090,62 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding
   - apps/web/src/app/onboarding
   - apps/web/e2e/ledger-flow.test.mjs
+
+### UX-009 — Import chart of accounts
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: CSV with headings matched by name; type, subtype, parent (same type, a header, no loops) checked; parents created first; codes already in the chart skipped, never changed.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
+
+### UX-010 — Import customers
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: CSV with email, GSTIN (tax-engine check), PAN, state, PIN code, terms and credit limit checked; names already in contacts skipped.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
+
+### UX-011 — Import vendors
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Same as customers, created as vendors.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
+
+### UX-012 — Import opening balances
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: CSV by account code, debit or credit per line, decimal amounts; replaces the opening journal; the difference goes to Opening Balance Equity and is shown in the preview.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
 
 ### UX-015 — Configure team roles
 

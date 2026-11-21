@@ -901,9 +901,9 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-012 |  | capability | Budget-versus-actual | Tested |
 | RPT-013 |  | capability | Project profitability | Tested |
 | RPT-014 |  | capability | Department profitability | Tested |
-| RPT-015 |  | capability | Customer profitability | Not started |
-| RPT-016 |  | capability | Vendor spending | Not started |
-| RPT-017 |  | capability | Cash forecasts | Not started |
+| RPT-015 |  | capability | Customer profitability | Tested |
+| RPT-016 |  | capability | Vendor spending | Tested |
+| RPT-017 |  | capability | Cash forecasts | Tested |
 | RPT-018 |  | capability | Working capital | Tested |
 | RPT-019 |  | capability | Financial ratios | Tested |
 | RPT-020 |  | capability | Consolidated statements | Tested |
@@ -1280,10 +1280,10 @@ Part 36 · M1 · priority P1 · depends on: DS
 | UX-006 | Onboarding Wizard | capability | Select accounting framework | Not started |
 | UX-007 | Onboarding Wizard | capability | Configure fiscal year | Tested |
 | UX-008 | Onboarding Wizard | capability | Configure currency | Tested |
-| UX-009 | Onboarding Wizard | capability | Import chart of accounts | Not started |
-| UX-010 | Onboarding Wizard | capability | Import customers | Not started |
-| UX-011 | Onboarding Wizard | capability | Import vendors | Not started |
-| UX-012 | Onboarding Wizard | capability | Import opening balances | Not started |
+| UX-009 | Onboarding Wizard | capability | Import chart of accounts | Tested |
+| UX-010 | Onboarding Wizard | capability | Import customers | Tested |
+| UX-011 | Onboarding Wizard | capability | Import vendors | Tested |
+| UX-012 | Onboarding Wizard | capability | Import opening balances | Tested |
 | UX-013 | Onboarding Wizard | capability | Connect banking providers | Not started |
 | UX-014 | Onboarding Wizard | capability | Configure tax settings | Not started |
 | UX-015 | Onboarding Wizard | capability | Configure team roles | Tested |
