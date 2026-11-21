@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ROOTS = /^(apps|packages|scripts|docs|features|infra|\.github|deploy|e2e)\//;
 const CHECKED = new Set(['Tested', 'Implemented']);
-const TEST = /(^|\/)(test|e2e)\/|\.test\.(ts|tsx|mjs|js)$|^scripts\/check-[\w-]+\.mjs$/;
+/** Test files, CI checks, and the load test (run with --check in CI, where it fails on a missed budget). */
+const TEST = /(^|\/)(test|e2e)\/|\.test\.(ts|tsx|mjs|js)$|^scripts\/(?:check-[\w-]+|load-test)\.mjs$/;
 
 /** The repository path an evidence entry names, or null when it names none. */
 export function evidencePath(entry) {
