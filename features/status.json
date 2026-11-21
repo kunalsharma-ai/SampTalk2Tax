@@ -8746,6 +8746,21 @@
         "docs/AUDIT_EVIDENCE.md"
       ],
       "notes": "Evidence requests (ER-001…) asked by the engagement lead of a member (not the reviewer) with a due date; files attached only by that member or the lead while requested; submitted with each file's SHA-256; returned with what is missing or accepted by the lead or reviewer, never the submitter; overdue tracking and Waiting for me; engagement held from review until all evidence is accepted; accepted evidence immutable (guards and attachment access); audited with file references."
+    },
+    "AUDIT-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/auditor-portal.ts",
+        "packages/accounting-engine/test/auditor-portal.test.ts",
+        "apps/api/src/db/collections/auditor-portal.ts",
+        "apps/api/src/auditor-portal/auditor-portal.service.ts",
+        "apps/api/test/auditor-portal.e2e.test.ts",
+        "apps/web/src/app/auditor-portal/[token]/page.tsx",
+        "apps/web/src/components/auditor-portal/auditor-links-card.tsx",
+        "apps/web/e2e/auditor-portal-flow.test.mjs",
+        "docs/AUDITOR_PORTAL.md"
+      ],
+      "notes": "Owners/admins give a named external auditor a private read-only link (7/30/90 days, secret shown once, SHA-256 stored) to one engagement: scope, work and sign-offs, conclusion, accepted evidence only (files downloadable, each opening audited), findings, samples and the trial balance at scope end; views and downloads counted; withdraw at any time; links immutable and kept; public routes rate-limited, no-store, region and suspension checked."
     }
   }
 }

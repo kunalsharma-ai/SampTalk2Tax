@@ -7,10 +7,12 @@ import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { ENGAGEMENT_STATUS, STEP_STATUS, type Engagement, type EngagementStatus } from '@/components/controls/engagements';
 import { EVIDENCE_STATUS } from '@/components/controls/evidence';
+import { AuditorLinksCard } from '@/components/auditor-portal/auditor-links-card';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date, dateTime } from '@/lib/format';
 import { useOrg } from '@/lib/org';
+import { can } from '@/lib/types';
 
 interface Linkable {
   samples: { id: string; label: string }[];
@@ -220,6 +222,7 @@ export default function EngagementPage() {
           <ErrorAlert title="The engagement did not move" error={move.error} />
         </div>
       </Card>
+      <AuditorLinksCard orgId={orgId} engagementId={e.id} canManage={can(org.role, 'org.manage')} />
       <Card>
         <CardHeader title="Engagement history" description="Every change, oldest first. Kept as recorded." />
         <Table aria-label="Engagement history">

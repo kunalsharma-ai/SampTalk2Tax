@@ -107,6 +107,8 @@ import { AuditEngagementsController } from './audit-engagements/audit-engagement
 import { AuditEngagementsService } from './audit-engagements/audit-engagements.service';
 import { AuditEvidenceController } from './audit-evidence/audit-evidence.controller';
 import { AuditEvidenceService } from './audit-evidence/audit-evidence.service';
+import { AuditorLinksController, AuditorPortalController } from './auditor-portal/auditor-portal.controller';
+import { AuditorPortalService } from './auditor-portal/auditor-portal.service';
 import { AiDecisionsService } from './ai-decisions/ai-decisions.service';
 import { AuditSamplingService } from './audit-sampling/audit-sampling.service';
 import { InternalControlsController } from './internal-controls/internal-controls.controller';
@@ -336,6 +338,8 @@ export class AppModule {
         LedgerReplayController,
         AuditEngagementsController,
         AuditEvidenceController,
+        AuditorLinksController,
+        AuditorPortalController,
         DataImportController,
         JournalsController,
         ReportsController,
@@ -493,6 +497,7 @@ export class AppModule {
         LedgerReplayService,
         AuditEngagementsService,
         AuditEvidenceService,
+        AuditorPortalService,
         DataImportService,
         JournalsService,
         ReportsService,

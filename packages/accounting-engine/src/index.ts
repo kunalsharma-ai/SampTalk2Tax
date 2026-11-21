@@ -112,6 +112,7 @@ export * from './ai-decision-records';
 export * from './ledger-replay';
 export * from './audit-engagements';
 export * from './audit-evidence';
+export * from './auditor-portal';
 export * from './setup';
 export * from './onboarding-assistant';
 export * from './data-import';

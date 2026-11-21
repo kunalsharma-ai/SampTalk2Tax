@@ -4,8 +4,8 @@ import { httpsOnly, httpsRedirect, requestProto, STRICT_TRANSPORT_SECURITY } fro
 const PUBLIC = ['/login', '/login/sso', '/register'];
 /** Open to anyone, signed in or not: where a customer lands after paying a payment link, and security.txt (SEC-026). */
 const OPEN = ['/paid', '/.well-known/security.txt'];
-/** The customer and vendor portals: the secret in the link is the check (AR-030, AP-013). */
-const OPEN_PREFIXES = ['/portal/', '/vendor-portal/'];
+/** The customer, vendor and auditor portals: the secret in the link is the check (AR-030, AP-013, AUDIT-002). */
+const OPEN_PREFIXES = ['/portal/', '/vendor-portal/', '/auditor-portal/'];
 
 /**
  * Sends http:// visitors to https:// when HTTPS_ONLY is on (SEC-010), then redirects signed-out
