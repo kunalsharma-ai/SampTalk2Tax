@@ -29,6 +29,7 @@ const CreateBody = JournalBody.extend({ post: z.boolean().default(false) });
 const ReverseBody = z.object({ date: isoDate, memo: z.string().max(1000).optional() });
 const ListQuery = z.object({
   status: z.enum(['DRAFT', 'POSTED']).optional(),
+  type: z.enum(['STANDARD', 'ADJUSTING', 'OPENING', 'CLOSING', 'RECURRING', 'REVERSING']).optional(),
   from: isoDate.optional(),
   to: isoDate.optional(),
   accountId: z.uuid().optional(),
