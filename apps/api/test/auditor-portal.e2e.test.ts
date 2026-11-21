@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { addDays, AUDITOR_PORTAL_TOKEN_PATTERN } from '@talk2tax/accounting-engine';
+import { addDays, AUDITOR_PORTAL_TOKEN_PATTERN, makeAuditorPortalToken } from '@talk2tax/accounting-engine';
 import { runInOrg } from '../src/common/tenant-context';
 import { auditorPortalLinks } from '../src/db/collections/auditor-portal';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
@@ -112,7 +112,7 @@ describe('external auditor portal', () => {
     await expect(runInOrg(org.orgId, () => ctx.store.collection(auditorPortalLinks).updateOne({ id: linkId }, { $set: { revokedAt: null } }))).rejects.toThrow(/stays withdrawn/);
     await expect(runInOrg(org.orgId, () => ctx.store.collection(auditorPortalLinks).deleteOne({ id: linkId }))).rejects.toThrow(/kept as a record/);
 
-    const old = `t2ta_${'E'.repeat(40)}`;
+    const old = makeAuditorPortalToken((n) => randomBytes(n));
     await runInOrg(org.orgId, () => ctx.store.collection(auditorPortalLinks).insertOne({ engagementId, auditorName: 'Old Auditor', firm: null, prefix: old.slice(5, 13), tokenHash: sha(Buffer.from(old)), expiresAt: new Date(Date.now() - 60_000), createdById: owner.id, createdAt: new Date(Date.now() - 86_400_000), revokedAt: null, revokedById: null, lastSeenAt: null, viewCount: 0, filesOpened: 0 }));
     expect((await ctx.http().get(P(old)).expect(404)).body.message).toMatch(/has expired/);
   });
