@@ -487,8 +487,8 @@ type Serial = ReturnType<typeof oneAtATime>;
 const raisedSerials = new Set<string>();
 export async function nextSerial(store: Store, model: string, field: string): Promise<number> {
   const info = modelInfo(model)!;
-  const own = store as Partial<Pick<DocumentStore, 'nextSequence' | 'raiseSequence'>>;
-  const seq = own.nextSequence && own.raiseSequence ? (own as Pick<DocumentStore, 'nextSequence' | 'raiseSequence'>) : coordinationStore();
+  const own = store as Partial<Pick<DocumentStore, 'nextSerial' | 'raiseSequence'>>;
+  const seq = own.nextSerial && own.raiseSequence ? (own as Pick<DocumentStore, 'nextSerial' | 'raiseSequence'>) : coordinationStore();
   if (!seq) throw new Error(`${model}.${field} needs MongoDB's sequences`);
   const name = `serial:${info.def.name}.${field}`;
   if (!raisedSerials.has(name)) {
@@ -497,7 +497,11 @@ export async function nextSerial(store: Store, model: string, field: string): Pr
     if (top?.top) await seq.raiseSequence(name, Number(top.top));
     raisedSerials.add(name);
   }
-  return seq.nextSequence(name);
+  // Taken outside the transaction: serial ids (audit events and the like) are shared by every
+  // organisation, so taking them inside would make all writing transactions conflict on one
+  // document (QA-017 found this). Order within an organisation still holds, because audit
+  // appends take the organisation's chain lock first and keep it until they commit.
+  return seq.nextSerial(name);
 }
 
 type Row = Record<string, unknown>;

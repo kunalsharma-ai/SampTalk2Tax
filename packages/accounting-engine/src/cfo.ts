@@ -1075,7 +1075,14 @@ export function factsForSummary(a: CfoAssessment, scale: number, extra: string[]
 
 const NUMBER = /(?<![\w.])[-−]?(?:\d{1,3}(?:,\d{2,3})+|\d+)(?:\.\d+)?(?![\w])/g;
 const norm = (s: string) => s.replace(/[−]/g, '-').replace(/,/g, '').replace(/^-/, '');
-const trimZeros = (n: string) => (n.includes('.') ? n.replace(/0+$/, '').replace(/\.$/, '') : n);
+/** Drops trailing zeros after the decimal point (and the point itself when nothing is left), in one pass. */
+function trimZeros(n: string): string {
+  if (!n.includes('.')) return n;
+  let end = n.length;
+  while (end > 0 && n[end - 1] === '0') end--;
+  if (n[end - 1] === '.') end--;
+  return n.slice(0, end);
+}
 function numbers(text: string): string[] {
   return (text.match(NUMBER) ?? []).map(norm);
 }

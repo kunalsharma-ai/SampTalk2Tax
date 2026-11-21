@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
@@ -15,7 +16,7 @@ let org: Awaited<ReturnType<typeof createOrg>>;
 
 const P = () => `${org.base}/purchases`;
 const upload = async (onboardingId: string, name: string, by = owner) =>
-  (await ctx.http().post(`${org.base}/attachments?entityType=CUSTOMER_ONBOARDING&entityId=${onboardingId}&fileName=${encodeURIComponent(name)}`).set(by.auth).set('content-type', 'application/pdf').send(Buffer.from(`%PDF-1.4\n% ${name} ${Math.random()}\n`)).expect(201)).body;
+  (await ctx.http().post(`${org.base}/attachments?entityType=CUSTOMER_ONBOARDING&entityId=${onboardingId}&fileName=${encodeURIComponent(name)}`).set(by.auth).set('content-type', 'application/pdf').send(Buffer.from(`%PDF-1.4\n% ${name} ${randomUUID()}\n`)).expect(201)).body;
 
 beforeAll(async () => {
   ctx = await bootApp();

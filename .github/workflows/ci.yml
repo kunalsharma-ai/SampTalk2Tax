@@ -50,6 +50,9 @@ jobs:
       # RULE-008: no protection turned off to make something work.
       - name: No insecure shortcuts
         run: node --test scripts/check-shortcuts.test.mjs && node scripts/check-shortcuts.mjs
+      # QA-031: tests use seeded data, never Math.random, so a run gives the same result every time.
+      - name: Deterministic test data
+        run: node --test scripts/check-test-determinism.test.mjs && node scripts/check-test-determinism.mjs
       - name: Install Chromium for browser tests
         working-directory: apps/web
         run: npx playwright install --with-deps chromium
@@ -92,6 +95,11 @@ jobs:
           done
       - name: Browser end-to-end tests
         run: pnpm e2e
+      # QA-017: organisations read and post at once against the running API; fails when a
+      # performance budget (reads p95 < 300 ms, posting p95 < 1 s) is missed, any request fails,
+      # or the books disagree afterwards. Sized for a shared CI runner.
+      - name: Load test
+        run: node scripts/load-test.mjs --orgs 10 --users 2 --rate 3 --seconds 20 --seed 10 --check --out /tmp/load-test.json
       - name: Server logs on failure
         if: failure()
         run: tail -n 100 /tmp/api.log /tmp/web.log || true
