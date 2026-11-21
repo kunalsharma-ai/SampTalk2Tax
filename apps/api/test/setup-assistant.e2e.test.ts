@@ -110,7 +110,9 @@ describe('onboarding assistant', () => {
 
   it('holds activation until every recommendation is decided, then closes the assistant', async () => {
     const o0 = (await ctx.http().get(`${org.base}/setup`).set(owner.auth).expect(200)).body as Overview;
-    for (const r of o0.assistant.reading!.recommendations) await decide(r.id, r.kind === 'PROFILE' ? 'ACCEPTED' : 'DISMISSED');
+    // All at once, as quick clicks send them: none of the decisions may be lost.
+    await Promise.all(o0.assistant.reading!.recommendations.map((r) => decide(r.id, r.kind === 'PROFILE' ? 'ACCEPTED' : 'DISMISSED')));
+    expect(((await ctx.http().get(`${org.base}/setup`).set(owner.auth).expect(200)).body as Overview).assistant.reading!.recommendations.filter((r) => r.status === 'PENDING')).toEqual([]);
     const fy = (await ctx.http().get(`${org.base}/periods`).set(owner.auth).expect(200)).body.map((p: { startDate: string }) => p.startDate).sort()[0];
     const base = '27ZZZSA0001Z1Z';
     await ctx.http().put(`${org.base}/gst/registration`).set(owner.auth).send({ gstin: `${base}${gstinCheckCharacter(base)}`, effectiveFrom: fy }).expect(200);
