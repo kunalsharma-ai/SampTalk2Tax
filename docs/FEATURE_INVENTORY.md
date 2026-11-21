@@ -1275,9 +1275,9 @@ Part 36 · M1 · priority P1 · depends on: DS
 | UX-001 |  | rule | Create an exceptionally smooth onboarding experience | Not started |
 | UX-002 | Onboarding Wizard | capability | Create organization | Tested |
 | UX-003 | Onboarding Wizard | capability | Select country | Tested |
-| UX-004 | Onboarding Wizard | capability | Select industry | Not started |
-| UX-005 | Onboarding Wizard | capability | Select business size | Not started |
-| UX-006 | Onboarding Wizard | capability | Select accounting framework | Not started |
+| UX-004 | Onboarding Wizard | capability | Select industry | Tested |
+| UX-005 | Onboarding Wizard | capability | Select business size | Tested |
+| UX-006 | Onboarding Wizard | capability | Select accounting framework | Tested |
 | UX-007 | Onboarding Wizard | capability | Configure fiscal year | Tested |
 | UX-008 | Onboarding Wizard | capability | Configure currency | Tested |
 | UX-009 | Onboarding Wizard | capability | Import chart of accounts | Tested |
@@ -1285,12 +1285,12 @@ Part 36 · M1 · priority P1 · depends on: DS
 | UX-011 | Onboarding Wizard | capability | Import vendors | Tested |
 | UX-012 | Onboarding Wizard | capability | Import opening balances | Tested |
 | UX-013 | Onboarding Wizard | capability | Connect banking providers | Not started |
-| UX-014 | Onboarding Wizard | capability | Configure tax settings | Not started |
+| UX-014 | Onboarding Wizard | capability | Configure tax settings | Tested |
 | UX-015 | Onboarding Wizard | capability | Configure team roles | Tested |
 | UX-016 | Onboarding Wizard | capability | Configure approval policies | Tested |
-| UX-017 | Onboarding Wizard | capability | Select AI automation preferences | Not started |
-| UX-018 | Onboarding Wizard | capability | Review setup validation | Not started |
-| UX-019 | Onboarding Wizard | capability | Activate organization | Not started |
+| UX-017 | Onboarding Wizard | capability | Select AI automation preferences | Tested |
+| UX-018 | Onboarding Wizard | capability | Review setup validation | Tested |
+| UX-019 | Onboarding Wizard | capability | Activate organization | Tested |
 | UX-020 | AI Onboarding Assistant | rule | Allow the user to describe the business conversationally | Not started |
 | UX-021 | AI Onboarding Assistant | rule | The assistant should recommend relevant configuration options | Not started |
 | UX-022 | AI Onboarding Assistant | rule | All recommendations must be reviewed before activation | Not started |

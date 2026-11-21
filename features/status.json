@@ -8300,6 +8300,97 @@
       ],
       "notes": "CSV by account code, debit or credit per line, decimal amounts; replaces the opening journal; the difference goes to Opening Balance Equity and is shown in the preview."
     },
+    "UX-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/setup.ts",
+        "packages/accounting-engine/test/setup.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Industry chosen on the setup page from the benchmarking list; saved with the organisation and used for suggestions."
+    },
+    "UX-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/setup.ts",
+        "packages/accounting-engine/test/setup.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Business size (micro to large) chosen on the setup page; drives the framework and AI suggestions."
+    },
+    "UX-006": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/setup.ts",
+        "packages/accounting-engine/test/setup.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Framework list filtered by country (Ind AS, AS, IFRS, IFRS for SMEs, US GAAP, FRS 102/105, other); API refuses frameworks not used in the country; suggestion for the accountant to confirm."
+    },
+    "UX-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/setup.ts",
+        "packages/accounting-engine/test/setup.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Setup checklist requires the GST registration for Indian organisations (tax rates elsewhere, optional) and links to the tax settings page."
+    },
+    "UX-017": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/setup.ts",
+        "packages/accounting-engine/test/setup.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "AI preference Off / Answers and drafts / Prepare work for approval turns agents on or off by action level in the AI control center, keeping budgets."
+    },
+    "UX-018": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/setup.ts",
+        "packages/accounting-engine/test/setup.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Checklist of required and optional steps worked out from the books on every load, each with a link to fix it."
+    },
+    "UX-019": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/setup.ts",
+        "packages/accounting-engine/test/setup.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Activation only once every required step is done; records who and when, audited, immutable, once only (409)."
+    },
     "RPT-016": {
       "status": "Tested",
       "evidence": [

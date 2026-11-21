@@ -34,6 +34,11 @@ export default function DashboardPage() {
   const asOf = today();
   const dash = useQuery({ enabled: !!org && !employee, queryKey: ['dashboard', orgId, asOf], queryFn: () => api<Dashboard>(`/v1/orgs/${orgId}/reports/dashboard?asOf=${asOf}`) });
   const recent = useQuery({ enabled: !!org && !employee, queryKey: ['journals', orgId, 'recent'], queryFn: () => api<{ items: Journal[] }>(`/v1/orgs/${orgId}/journals?limit=6`) });
+  const setup = useQuery({
+    enabled: !!org && !employee && can(org.role, 'accounts.read'),
+    queryKey: ['setup', orgId],
+    queryFn: () => api<{ checks: { status: string }[]; activation: { activatedAt: string | null } }>(`/v1/orgs/${orgId}/setup`),
+  });
   if (!org || employee) return null;
   const d = dash.data;
   const c = org.functionalCurrency;
@@ -52,6 +57,14 @@ export default function DashboardPage() {
           ) : null
         }
       />
+      {setup.data && !setup.data.activation.activatedAt ? (
+        <div className="mb-4">
+          <Alert tone="accent" title="Finish setting up">
+            {setup.data.checks.filter((x) => x.status === 'DONE').length} of {setup.data.checks.length} setup steps done.{' '}
+            <Link className="text-accent hover:underline" href={`/orgs/${orgId}/setup`}>Open the setup checklist</Link>
+          </Alert>
+        </div>
+      ) : null}
       {dash.error ? <Alert title="Could not load the dashboard">{(dash.error as Error).message}</Alert> : null}
       {d ? (
         <>

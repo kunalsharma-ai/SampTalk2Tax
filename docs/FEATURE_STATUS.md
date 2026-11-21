@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 660 |
+| Not started | 653 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 600 |
+| Tested | 607 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -55,7 +55,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
 | Security and enterprise governance | M1 | 38 | 0 | 38 |
-| User experience and onboarding | M1 | 22 | 12 | 10 |
+| User experience and onboarding | M1 | 22 | 5 | 17 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
@@ -7073,6 +7073,48 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/onboarding/page.tsx
   - apps/web/e2e/country-modules-flow.test.mjs
 
+### UX-004 — Select industry
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Industry chosen on the setup page from the benchmarking list; saved with the organisation and used for suggestions.
+- Evidence:
+  - packages/accounting-engine/src/setup.ts
+  - packages/accounting-engine/test/setup.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
+
+### UX-005 — Select business size
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Business size (micro to large) chosen on the setup page; drives the framework and AI suggestions.
+- Evidence:
+  - packages/accounting-engine/src/setup.ts
+  - packages/accounting-engine/test/setup.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
+
+### UX-006 — Select accounting framework
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Framework list filtered by country (Ind AS, AS, IFRS, IFRS for SMEs, US GAAP, FRS 102/105, other); API refuses frameworks not used in the country; suggestion for the accountant to confirm.
+- Evidence:
+  - packages/accounting-engine/src/setup.ts
+  - packages/accounting-engine/test/setup.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
+
 ### UX-007 — Configure fiscal year
 
 - Module: User experience and onboarding
@@ -7147,6 +7189,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/data-import-flow.test.mjs
   - docs/DATA_IMPORT.md
 
+### UX-014 — Configure tax settings
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Setup checklist requires the GST registration for Indian organisations (tax rates elsewhere, optional) and links to the tax settings page.
+- Evidence:
+  - packages/accounting-engine/src/setup.ts
+  - packages/accounting-engine/test/setup.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
+
 ### UX-015 — Configure team roles
 
 - Module: User experience and onboarding
@@ -7167,6 +7223,48 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src/app/orgs/[orgId]/settings/approvals
   - apps/web/e2e/approvals-flow.test.mjs › an owner sets an approval rule
+
+### UX-017 — Select AI automation preferences
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: AI preference Off / Answers and drafts / Prepare work for approval turns agents on or off by action level in the AI control center, keeping budgets.
+- Evidence:
+  - packages/accounting-engine/src/setup.ts
+  - packages/accounting-engine/test/setup.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
+
+### UX-018 — Review setup validation
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Checklist of required and optional steps worked out from the books on every load, each with a link to fix it.
+- Evidence:
+  - packages/accounting-engine/src/setup.ts
+  - packages/accounting-engine/test/setup.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
+
+### UX-019 — Activate organization
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Activation only once every required step is done; records who and when, audited, immutable, once only (409).
+- Evidence:
+  - packages/accounting-engine/src/setup.ts
+  - packages/accounting-engine/test/setup.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
 
 ### SUBS-001 — Create a flexible SaaS billing platform
 
