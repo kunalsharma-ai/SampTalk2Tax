@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { gstinCheckCharacter } from '@talk2tax/tax-engine';
 import { CompactSign, exportSPKI, generateKeyPair } from 'jose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -37,7 +37,7 @@ function qrData(doc: Doc, irn: string, over: Record<string, unknown> = {}) {
   return { SellerGstin: OWN, BuyerGstin: BUYER, DocNo: doc.number, DocTyp: 'INV', DocDt: ddmmyyyy(doc.issueDate), TotInvVal: Number(doc.total), ItemCnt: 1, MainHsnCode: '73269099', Irn: irn, IrnDt: ist(new Date()), ...over };
 }
 function response(doc: Doc, opts: { irn?: string; ack?: Date; qr?: Record<string, unknown>; signedQr?: string } = {}) {
-  const irn = opts.irn ?? irnFor(`${doc.id}-${Math.random()}`);
+  const irn = opts.irn ?? irnFor(`${doc.id}-${randomUUID()}`);
   return {
     Irn: irn,
     AckNo: '112610000012345',

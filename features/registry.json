@@ -1335,12 +1335,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts",
-        "apps/web/src"
+        "apps/api/test/gl-foundation.e2e.test.ts › adjusting journals",
+        "apps/api/test/opening-balances.e2e.test.ts",
+        "apps/web/src/components/journal-form.tsx"
       ],
-      "notes": "Adjusting journals are ordinary posted journals with a memo; there is no separate adjusting-entry type or period-end workflow yet."
+      "notes": "Adjusting is its own journal type, listed with ?type=ADJUSTING and included in every report; the month-end close agent proposes adjusting entries for a person to post. No separate adjusted-versus-unadjusted trial balance yet."
     },
     {
       "id": "GL-009",
@@ -1393,12 +1394,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts",
-        "apps/web/src"
+        "packages/accounting-engine/test/opening-balances.test.ts",
+        "apps/api/test/opening-balances.e2e.test.ts",
+        "apps/web/e2e/opening-balances-flow.test.mjs"
       ],
-      "notes": "Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet."
+      "notes": "Accounting → Opening balances: balances posted as one OPENING journal, difference to 3250 Opening Balance Equity, replacing reverses the previous journal in the same transaction. Receivables and payables are brought in as unpaid invoices and bills, not here. No spreadsheet import yet."
     },
     {
       "id": "GL-011",
@@ -1553,11 +1555,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › creates further fiscal years",
-        "packages/accounting-engine/test/periods.test.ts",
-        "apps/web/src"
+        "apps/api/test/gl-foundation.e2e.test.ts › multi-period posting",
+        "apps/api/test/ledger.e2e.test.ts › period locks",
+        "packages/accounting-engine/test/periods.test.ts"
       ],
       "notes": null
     },
@@ -1612,12 +1614,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year",
-        "apps/web/src"
+        "apps/api/test/gl-foundation.e2e.test.ts › fiscal calendars",
+        "packages/accounting-engine/test/periods.test.ts"
       ],
-      "notes": null
+      "notes": "Monthly periods for a year starting in any month. 4-4-5 and 13-period calendars are not supported."
     },
     {
       "id": "GL-018",
@@ -1671,13 +1673,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
         "apps/api/test/ledger.e2e.test.ts › journal posting",
-        "apps/web/src"
+        "apps/api/test/ledger.e2e.test.ts › immutability and reversal",
+        "apps/api/test/ledger.e2e.test.ts › period locks",
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
+        "apps/api/test/journal-approvals.e2e.test.ts",
+        "apps/api/test/gl-foundation.e2e.test.ts › adjusting journals"
       ],
-      "notes": null
+      "notes": "Balance, postable and active accounts, control accounts, open periods, role permissions, approval policy for large manual journals, and immutable posted entries."
     },
     {
       "id": "GL-020",
@@ -1759,10 +1764,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
+        "apps/api/test/gl-foundation.e2e.test.ts › general ledger report",
         "apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances",
-        "apps/web/src"
+        "apps/web/src/app/orgs/[orgId]/reports/general-ledger/page.tsx"
       ],
       "notes": null
     },
@@ -32892,9 +32898,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/load-test.mjs › common reads p95 under 300 ms (CI step Load test)"
+      ],
+      "notes": "Measured on the CI runner and one dev machine only."
     },
     {
       "id": "PERF-017",
@@ -32916,9 +32924,10 @@
       },
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › idempotency and concurrency"
+        "apps/api/test/ledger.e2e.test.ts › idempotency and concurrency",
+        "scripts/load-test.mjs › posting under load, books checked afterwards"
       ],
-      "notes": "Correctness under concurrency is tested; throughput has not been benchmarked."
+      "notes": "Correctness under concurrency is tested; posting p95 under load is checked by the load test (budget 1,000 ms)."
     },
     {
       "id": "PERF-018",
@@ -33364,9 +33373,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/agent-evals.test.ts",
+        "apps/api/test/agent-evals.test.ts",
+        "apps/api/src/ai-control/agent-evals.cli.ts"
+      ],
+      "notes": "14 labelled cases for the bank, close, collections and CFO agents. The live run against Claude needs an API key and has not been run yet; CI runs the graders and the runner with stand-in models."
     },
     {
       "id": "QA-015",
@@ -33442,9 +33455,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/load-test.mjs",
+        "docs/LOAD_TESTING.md",
+        ".github/workflows/ci.yml › Load test"
+      ],
+      "notes": "Many organisations at once; reads p95 109 ms, posting p95 576 ms, 155 req/s on one machine. Soak runs and PERF-002 volumes not covered."
     },
     {
       "id": "QA-018",
@@ -33797,11 +33814,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "packages/accounting-engine/src/fixtures.ts",
+        "packages/accounting-engine/test/fixtures.test.ts",
+        "scripts/check-test-determinism.mjs",
+        "scripts/check-test-determinism.test.mjs"
       ],
-      "notes": "The demo seed and test fixtures are deterministic; a shared fixture library for all scenarios is not done."
+      "notes": "seededRandom and fixtureAmount give the same numbers and decimal amounts each run; CI refuses Math.random or unseeded faker in any test file. Unique-only values use randomUUID."
     },
     {
       "id": "DEMO-001",
@@ -37382,9 +37402,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-money-math.mjs",
+        "scripts/check-money-math.test.mjs",
+        "packages/accounting-engine/src/money.ts",
+        "packages/accounting-engine/test/money.test.ts",
+        "docs/ACCOUNTING_ENGINE.md"
+      ],
+      "notes": "Screen previews (withholding, foreign-currency conversion, reconciliations, retainers, salary, GST and TDS totals, usage, unbilled revenue, progress billing) use Decimal helpers; CI refuses float arithmetic on amounts."
     },
     {
       "id": "RULE-020",

@@ -96,9 +96,9 @@ export class JournalsService {
 
   // ---------- reads ----------
 
-  async list(orgId: string, q: { status?: 'DRAFT' | 'POSTED'; from?: string; to?: string; accountId?: string; limit: number; offset: number }) {
+  async list(orgId: string, q: { status?: 'DRAFT' | 'POSTED'; type?: JournalEntryDoc['type']; from?: string; to?: string; accountId?: string; limit: number; offset: number }) {
     const date = { ...(q.from ? { $gte: toDbDate(q.from) } : {}), ...(q.to ? { $lte: toDbDate(q.to) } : {}) };
-    const filter = { ...(q.status ? { status: q.status } : {}), ...(q.from || q.to ? { date } : {}), ...(q.accountId ? { 'lines.accountId': q.accountId } : {}) };
+    const filter = { ...(q.status ? { status: q.status } : {}), ...(q.type ? { type: q.type } : {}), ...(q.from || q.to ? { date } : {}), ...(q.accountId ? { 'lines.accountId': q.accountId } : {}) };
     const total = await this.entries(orgId, (c) => c.count(filter));
     const rows = await this.entries(orgId, (c) => c.find(filter, { sort: { date: -1, entryNumber: -1, createdAt: -1 }, limit: q.limit, skip: q.offset }));
     return { total, items: (await this.withDetails(orgId, rows)).map(serialize) };
@@ -106,6 +106,16 @@ export class JournalsService {
 
   async get(orgId: string, id: string) {
     return serialize(await this.detailed(orgId, id));
+  }
+
+  /** The posted, not reversed, journal with this type and reference, newest first; null when there is none. */
+  async currentByReference(orgId: string, type: JournalEntryDoc['type'], reference: string) {
+    const rows = await this.entries(orgId, (c) => c.find({ type, reference, status: 'POSTED', reversesEntryId: null }, { sort: { date: -1, entryNumber: -1 } }));
+    for (const r of rows) {
+      const reversed = await this.entries(orgId, (c) => c.findOne({ reversesEntryId: r.id }));
+      if (!reversed) return serialize(await this.detailed(orgId, r.id));
+    }
+    return null;
   }
 
   // ---------- writes ----------
@@ -257,73 +267,76 @@ export class JournalsService {
   /** Post a reversing entry that exactly offsets a posted entry. The original is never modified. */
   async reverse(org: OrgInfo, actor: Actor, id: string, input: { date: string; memo?: string }) {
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        const original = await this.lockEntry(tx, org.id, id);
-        // Month-end adjustments are journals a person approved with nothing else attached: reversed like manual ones.
-        if (original.source !== 'CLOSE') assertManual(original);
-        if (original.status !== 'POSTED') throw new DomainError('NOT_POSTED', 'Only posted entries can be reversed; delete the draft instead', HttpStatus.CONFLICT);
-        if (original.type === 'REVERSING' || original.reversesEntryId) throw new DomainError('IS_REVERSAL', 'A reversing entry cannot itself be reversed; post a new entry instead', HttpStatus.CONFLICT);
-        const already = await this.entries(org.id, (c) => c.findOne({ reversesEntryId: id }));
-        if (already) throw new DomainError('ALREADY_REVERSED', 'Entry has already been reversed', HttpStatus.CONFLICT, { reversalId: already.id });
-        if (input.date < fromDbDate(original.date)) throw new DomainError('INVALID_DATE', 'Reversal date cannot be before the original entry date');
-        await this.assertNotBankMatched(tx, id);
-        const period = await this.lockPeriodForDate(tx, org.id, input.date);
-        if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
-
-        const lines = buildReversalLines(
-          [...original.lines]
-            .sort((a, b) => a.lineNo - b.lineNo)
-            .map((l) => ({
-              accountId: l.accountId,
-              currency: l.currency,
-              exchangeRate: l.exchangeRate,
-              debit: l.debit,
-              credit: l.credit,
-              description: l.description,
-              dimensions: l.dimensions ?? null,
-              departmentId: l.departmentId,
-              projectId: l.projectId,
-            })),
-        );
-        const normalized = await this.validate(tx, org, lines, { allowInactive: true });
-        const posted = await this.posting(tx, org.id, actor.id);
-        const created = await this.insertEntry(tx, {
-          orgId: org.id,
-          date: toDbDate(input.date),
-          periodId: period.id,
-          // A reversed closing entry stays a closing entry: neither ever counts in profit and loss.
-          type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
-          source: 'MANUAL',
-          status: 'POSTED',
-          memo: input.memo ?? `Reversal of JE-${original.entryNumber}`,
-          reference: original.reference,
-          functionalCurrency: org.functionalCurrency,
-          totalDebit: normalized.totalFunctionalDebit.toFixed(),
-          totalCredit: normalized.totalFunctionalCredit.toFixed(),
-          idempotencyKey: null,
-          idempotencyHash: null,
-          reversesEntryId: id,
-          createdById: actor.id,
-          ...posted,
-          lines: lineRows(normalized),
-        });
-        const entryNumber = posted.entryNumber;
-        await this.audit.append(tx, {
-          orgId: org.id,
-          actorId: actor.id,
-          action: 'journal.reversed',
-          entityType: 'journal_entry',
-          entityId: id,
-          data: { reversalId: created.id, reversalNumber: entryNumber, date: input.date },
-        });
-        return created.id;
-      }).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
+      return await this.prisma.$transaction((tx) => this.reverseInTx(tx, org, actor, id, input)).then(async (entryId) => serialize(await this.detailed(org.id, entryId)));
     } catch (e) {
       if (isDuplicateKeyError(e) || (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) {
         throw new DomainError('ALREADY_REVERSED', 'Entry has already been reversed', HttpStatus.CONFLICT);
       }
       throw e;
     }
+  }
+
+  /** Reverses a posted manual (or approved month-end) entry inside the caller's transaction; returns the reversal's id. */
+  async reverseInTx(tx: Tx, org: OrgInfo, actor: Actor, id: string, input: { date: string; memo?: string }): Promise<string> {
+    const original = await this.lockEntry(tx, org.id, id);
+    // Month-end adjustments are journals a person approved with nothing else attached: reversed like manual ones.
+    if (original.source !== 'CLOSE') assertManual(original);
+    if (original.status !== 'POSTED') throw new DomainError('NOT_POSTED', 'Only posted entries can be reversed; delete the draft instead', HttpStatus.CONFLICT);
+    if (original.type === 'REVERSING' || original.reversesEntryId) throw new DomainError('IS_REVERSAL', 'A reversing entry cannot itself be reversed; post a new entry instead', HttpStatus.CONFLICT);
+    const already = await this.entries(org.id, (c) => c.findOne({ reversesEntryId: id }));
+    if (already) throw new DomainError('ALREADY_REVERSED', 'Entry has already been reversed', HttpStatus.CONFLICT, { reversalId: already.id });
+    if (input.date < fromDbDate(original.date)) throw new DomainError('INVALID_DATE', 'Reversal date cannot be before the original entry date');
+    await this.assertNotBankMatched(tx, id);
+    const period = await this.lockPeriodForDate(tx, org.id, input.date);
+    if (period.status !== 'OPEN') throw new DomainError('PERIOD_NOT_OPEN', `Period ${period.name} is ${period.status}`, HttpStatus.CONFLICT);
+
+    const lines = buildReversalLines(
+      [...original.lines]
+        .sort((a, b) => a.lineNo - b.lineNo)
+        .map((l) => ({
+          accountId: l.accountId,
+          currency: l.currency,
+          exchangeRate: l.exchangeRate,
+          debit: l.debit,
+          credit: l.credit,
+          description: l.description,
+          dimensions: l.dimensions ?? null,
+          departmentId: l.departmentId,
+          projectId: l.projectId,
+        })),
+    );
+    const normalized = await this.validate(tx, org, lines, { allowInactive: true });
+    const posted = await this.posting(tx, org.id, actor.id);
+    const created = await this.insertEntry(tx, {
+      orgId: org.id,
+      date: toDbDate(input.date),
+      periodId: period.id,
+      // A reversed closing entry stays a closing entry: neither ever counts in profit and loss.
+      type: original.type === 'CLOSING' ? 'CLOSING' : 'REVERSING',
+      source: 'MANUAL',
+      status: 'POSTED',
+      memo: input.memo ?? `Reversal of JE-${original.entryNumber}`,
+      reference: original.reference,
+      functionalCurrency: org.functionalCurrency,
+      totalDebit: normalized.totalFunctionalDebit.toFixed(),
+      totalCredit: normalized.totalFunctionalCredit.toFixed(),
+      idempotencyKey: null,
+      idempotencyHash: null,
+      reversesEntryId: id,
+      createdById: actor.id,
+      ...posted,
+      lines: lineRows(normalized),
+    });
+    const entryNumber = posted.entryNumber;
+    await this.audit.append(tx, {
+      orgId: org.id,
+      actorId: actor.id,
+      action: 'journal.reversed',
+      entityType: 'journal_entry',
+      entityId: id,
+      data: { reversalId: created.id, reversalNumber: entryNumber, date: input.date },
+    });
+    return created.id;
   }
 
   // ---------- system entries (sales, purchases, payments) ----------

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { D, MoneyError, assertCurrencyPrecision, dec, roundToCurrency, sum } from '../src';
+import { D, MoneyError, addAmounts, amountOrZero, assertCurrencyPrecision, dec, roundToCurrency, sum } from '../src';
 
 describe('money', () => {
   it('refuses JS numbers so floats never enter the ledger', () => {
@@ -33,5 +33,20 @@ describe('money', () => {
     const big = dec('999999999999999999.99');
     expect(big.plus(dec('0.01')).toFixed(2)).toBe('1000000000000000000.00');
     expect(new D('0').isZero()).toBe(true);
+  });
+});
+
+describe('typed-in amounts (RULE-019)', () => {
+  it('reads blank or half-typed input as zero, and exact decimals as themselves', () => {
+    expect(amountOrZero('').toFixed()).toBe('0');
+    expect(amountOrZero(undefined).toFixed()).toBe('0');
+    expect(amountOrZero('12.').toFixed()).toBe('0');
+    expect(amountOrZero(' 0.1 ').toFixed()).toBe('0.1');
+  });
+
+  it('adds amounts exactly where floats would drift', () => {
+    expect(addAmounts(['0.1', '0.2']).toFixed()).toBe('0.3');
+    expect(addAmounts(['99999999999999.99', '0.01', null, '']).toFixed(2)).toBe('100000000000000.00');
+    expect(addAmounts(Array.from({ length: 10 }, () => '0.07')).toFixed()).toBe('0.7');
   });
 });

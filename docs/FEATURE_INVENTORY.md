@@ -75,21 +75,21 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-005 | 5.1 General Ledger | capability | Account types and subtypes | Tested |
 | GL-006 | 5.1 General Ledger | capability | Journal entries | Tested |
 | GL-007 | 5.1 General Ledger | capability | Recurring journals | Tested |
-| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Implemented |
+| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Tested |
 | GL-009 | 5.1 General Ledger | capability | Reversing journals | Tested |
-| GL-010 | 5.1 General Ledger | capability | Opening balances | Implemented |
+| GL-010 | 5.1 General Ledger | capability | Opening balances | Tested |
 | GL-011 | 5.1 General Ledger | capability | Closing balances | Tested |
 | GL-012 | 5.1 General Ledger | capability | Journal templates | Tested |
 | GL-013 | 5.1 General Ledger | capability | Accrual accounting | Tested |
 | GL-014 | 5.1 General Ledger | capability | Cash accounting | Tested |
-| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implemented |
+| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Tested |
 | GL-016 | 5.1 General Ledger | capability | Financial periods | Tested |
-| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Implemented |
+| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Tested |
 | GL-018 | 5.1 General Ledger | capability | Period locks | Tested |
-| GL-019 | 5.1 General Ledger | capability | Posting controls | Implemented |
+| GL-019 | 5.1 General Ledger | capability | Posting controls | Tested |
 | GL-020 | 5.1 General Ledger | capability | Audit history | Tested |
 | GL-021 | 5.1 General Ledger | capability | Trial balance | Tested |
-| GL-022 | 5.1 General Ledger | capability | General ledger reports | Implemented |
+| GL-022 | 5.1 General Ledger | capability | General ledger reports | Tested |
 | GL-023 | 5.1 General Ledger | capability | Subsidiary ledgers | Tested |
 | GL-024 | 5.1 General Ledger | capability | Cost centers | Tested |
 | GL-025 | 5.1 General Ledger | capability | Profit centers | Tested |
@@ -1434,7 +1434,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-013 |  | capability | Asynchronous document processing | Not started |
 | PERF-014 |  | rule | Establish measurable performance budgets | Not started |
 | PERF-015 |  | capability | Typical dashboard interaction under two seconds under defined test conditions | Not started |
-| PERF-016 |  | capability | Common API reads under 300 milliseconds at the 95th percentile under defined load | Not started |
+| PERF-016 |  | capability | Common API reads under 300 milliseconds at the 95th percentile under defined load | Tested |
 | PERF-017 |  | capability | Financial posting with transactional consistency | Tested |
 | PERF-018 |  | capability | No cross-tenant data exposure | Tested |
 | PERF-019 |  | capability | Recoverable background jobs | Not started |
@@ -1460,10 +1460,10 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-011 | Required Tests | capability | Financial reporting tests | Tested |
 | QA-012 | Required Tests | capability | Permission tests | Tested |
 | QA-013 | Required Tests | capability | Tenant isolation tests | Tested |
-| QA-014 | Required Tests | capability | AI agent evaluation tests | Not started |
+| QA-014 | Required Tests | capability | AI agent evaluation tests | Tested |
 | QA-015 | Required Tests | capability | Prompt injection tests | Tested |
 | QA-016 | Required Tests | capability | Workflow recovery tests | Tested |
-| QA-017 | Required Tests | capability | Load tests | Not started |
+| QA-017 | Required Tests | capability | Load tests | Tested |
 | QA-018 | Required Tests | capability | Accessibility tests | Tested |
 | QA-019 | Required Tests | capability | Visual regression tests | Tested |
 | QA-020 | Required Tests | capability | Security tests | Tested |
@@ -1477,7 +1477,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-028 | Financial Test Scenarios | capability | Concurrent operations preserve accounting consistency | Tested |
 | QA-029 | Financial Test Scenarios | capability | Tax calculations use the correct effective-dated rules | Tested |
 | QA-030 | Financial Test Scenarios | capability | Unauthorized AI agents cannot post entries or initiate payments | Tested |
-| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Implementing |
+| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Tested |
 
 ## Demonstration data
 
@@ -1654,6 +1654,6 @@ Part 50 · All · priority P0 · depends on: none
 | RULE-016 |  | rule | Do not conceal incomplete features | Tested |
 | RULE-017 |  | rule | Do not implement proprietary competitor code | Tested |
 | RULE-018 |  | rule | Do not over-engineer infrastructure unnecessarily | Implemented |
-| RULE-019 |  | rule | Do not sacrifice financial accuracy for visual effects | Not started |
+| RULE-019 |  | rule | Do not sacrifice financial accuracy for visual effects | Tested |
 | RULE-020 |  | rule | Do not prioritize cosmetic completeness over working accounting functionality | Tested |
 

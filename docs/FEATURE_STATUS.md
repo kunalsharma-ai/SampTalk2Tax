@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 734 |
+| Not started | 730 |
 | Designed | 0 |
-| Implementing | 37 |
-| Implemented | 37 |
-| Tested | 521 |
+| Implementing | 36 |
+| Implemented | 31 |
+| Tested | 532 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,13 +60,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 2 | 29 |
+| Performance and scalability | M9 | 21 | 17 | 4 |
+| Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
 | Design system | M1 | 36 | 33 | 3 |
-| Absolute quality rules | All | 20 | 1 | 19 |
+| Absolute quality rules | All | 20 | 0 | 20 |
 
 ## Features with progress and evidence
 
@@ -175,11 +175,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-008 — Adjusting journals
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
-- Notes: Adjusting journals are ordinary posted journals with a memo; there is no separate adjusting-entry type or period-end workflow yet.
+- Status: **Tested**
+- Notes: Adjusting is its own journal type, listed with ?type=ADJUSTING and included in every report; the month-end close agent proposes adjusting entries for a person to post. No separate adjusted-versus-unadjusted trial balance yet.
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts
-  - apps/web/src
+  - apps/api/test/gl-foundation.e2e.test.ts › adjusting journals
+  - apps/api/test/opening-balances.e2e.test.ts
+  - apps/web/src/components/journal-form.tsx
 
 ### GL-009 — Reversing journals
 
@@ -194,11 +195,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-010 — Opening balances
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
-- Notes: Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet.
+- Status: **Tested**
+- Notes: Accounting → Opening balances: balances posted as one OPENING journal, difference to 3250 Opening Balance Equity, replacing reverses the previous journal in the same transaction. Receivables and payables are brought in as unpaid invoices and bills, not here. No spreadsheet import yet.
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts
-  - apps/web/src
+  - packages/accounting-engine/test/opening-balances.test.ts
+  - apps/api/test/opening-balances.e2e.test.ts
+  - apps/web/e2e/opening-balances-flow.test.mjs
 
 ### GL-011 — Closing balances
 
@@ -259,11 +261,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-015 — Multi-period accounting
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts › creates further fiscal years
+  - apps/api/test/gl-foundation.e2e.test.ts › multi-period posting
+  - apps/api/test/ledger.e2e.test.ts › period locks
   - packages/accounting-engine/test/periods.test.ts
-  - apps/web/src
 
 ### GL-016 — Financial periods
 
@@ -278,10 +280,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-017 — Fiscal calendars
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
+- Notes: Monthly periods for a year starting in any month. 4-4-5 and 13-period calendars are not supported.
 - Evidence:
-  - packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year
-  - apps/web/src
+  - apps/api/test/gl-foundation.e2e.test.ts › fiscal calendars
+  - packages/accounting-engine/test/periods.test.ts
 
 ### GL-018 — Period locks
 
@@ -297,11 +300,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-019 — Posting controls
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
+- Notes: Balance, postable and active accounts, control accounts, open periods, role permissions, approval policy for large manual journals, and immutable posted entries.
 - Evidence:
-  - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
   - apps/api/test/ledger.e2e.test.ts › journal posting
-  - apps/web/src
+  - apps/api/test/ledger.e2e.test.ts › immutability and reversal
+  - apps/api/test/ledger.e2e.test.ts › period locks
+  - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
+  - apps/api/test/journal-approvals.e2e.test.ts
+  - apps/api/test/gl-foundation.e2e.test.ts › adjusting journals
 
 ### GL-020 — Audit history
 
@@ -325,10 +332,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-022 — General ledger reports
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
 - Evidence:
+  - apps/api/test/gl-foundation.e2e.test.ts › general ledger report
   - apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances
-  - apps/web/src
+  - apps/web/src/app/orgs/[orgId]/reports/general-ledger/page.tsx
 
 ### GL-023 — Subsidiary ledgers
 
@@ -7362,13 +7370,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/regional-deployment-flow.test.mjs
   - docs/REGIONAL_DEPLOYMENT.md
 
+### PERF-016 — Common API reads under 300 milliseconds at the 95th percentile under defined load
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Measured on the CI runner and one dev machine only.
+- Evidence:
+  - scripts/load-test.mjs › common reads p95 under 300 ms (CI step Load test)
+
 ### PERF-017 — Financial posting with transactional consistency
 
 - Module: Performance and scalability
 - Status: **Tested**
-- Notes: Correctness under concurrency is tested; throughput has not been benchmarked.
+- Notes: Correctness under concurrency is tested; posting p95 under load is checked by the load test (budget 1,000 ms).
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › idempotency and concurrency
+  - scripts/load-test.mjs › posting under load, books checked afterwards
 
 ### PERF-018 — No cross-tenant data exposure
 
@@ -7497,6 +7514,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
 
+### QA-014 — AI agent evaluation tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: 14 labelled cases for the bank, close, collections and CFO agents. The live run against Claude needs an API key and has not been run yet; CI runs the graders and the runner with stand-in models.
+- Evidence:
+  - packages/accounting-engine/test/agent-evals.test.ts
+  - apps/api/test/agent-evals.test.ts
+  - apps/api/src/ai-control/agent-evals.cli.ts
+
 ### QA-015 — Prompt injection tests
 
 - Module: Testing and quality assurance
@@ -7520,6 +7547,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/workflows.e2e.test.ts
   - apps/api/test/workflow-schedules.e2e.test.ts
   - apps/api/src/workflows/workflow-runner.service.ts
+
+### QA-017 — Load tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Many organisations at once; reads p95 109 ms, posting p95 576 ms, 155 req/s on one machine. Soak runs and PERF-002 volumes not covered.
+- Evidence:
+  - scripts/load-test.mjs
+  - docs/LOAD_TESTING.md
+  - .github/workflows/ci.yml › Load test
 
 ### QA-018 — Accessibility tests
 
@@ -7641,10 +7678,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### QA-031 — Use deterministic test fixtures
 
 - Module: Testing and quality assurance
-- Status: **Implementing**
-- Notes: The demo seed and test fixtures are deterministic; a shared fixture library for all scenarios is not done.
+- Status: **Tested**
+- Notes: seededRandom and fixtureAmount give the same numbers and decimal amounts each run; CI refuses Math.random or unseeded faker in any test file. Unique-only values use randomUUID.
 - Evidence:
-  - apps/web/src
+  - packages/accounting-engine/src/fixtures.ts
+  - packages/accounting-engine/test/fixtures.test.ts
+  - scripts/check-test-determinism.mjs
+  - scripts/check-test-determinism.test.mjs
 
 ### DEMO-013 — Journal entries
 
@@ -8294,6 +8334,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - deploy/docker-compose.prod.yml
   - docs/DEPLOYMENT.md
+
+### RULE-019 — Do not sacrifice financial accuracy for visual effects
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: Screen previews (withholding, foreign-currency conversion, reconciliations, retainers, salary, GST and TDS totals, usage, unbilled revenue, progress billing) use Decimal helpers; CI refuses float arithmetic on amounts.
+- Evidence:
+  - scripts/check-money-math.mjs
+  - scripts/check-money-math.test.mjs
+  - packages/accounting-engine/src/money.ts
+  - packages/accounting-engine/test/money.test.ts
+  - docs/ACCOUNTING_ENGINE.md
 
 ### RULE-020 — Do not prioritize cosmetic completeness over working accounting functionality
 

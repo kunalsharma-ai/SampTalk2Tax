@@ -28,7 +28,7 @@ const ist = (d) => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 1
 const ddmmyyyy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const unsigned = (data) => `e30.${Buffer.from(JSON.stringify({ data: JSON.stringify(data) })).toString('base64url')}.c2ln`;
 function irpResponse(doc, over = {}) {
-  const irn = createHash('sha256').update(`${doc.id}-${Math.random()}`).digest('hex');
+  const irn = createHash('sha256').update(`${doc.id}-${randomUUID()}`).digest('hex');
   const qr = { SellerGstin: OWN, BuyerGstin: BUYER, DocNo: doc.number, DocTyp: 'INV', DocDt: ddmmyyyy(doc.issueDate), TotInvVal: Number(doc.total), ItemCnt: 1, MainHsnCode: '9403', Irn: irn, IrnDt: ist(new Date()), ...over };
   return { Irn: irn, AckNo: 112610000098765, AckDt: ist(new Date()), SignedInvoice: unsigned({ DocDtls: { No: doc.number } }), SignedQRCode: unsigned(qr), Status: 'ACT' };
 }
