@@ -75,7 +75,7 @@ test('a new organisation is set up from the checklist and activated', async () =
   await page.getByText('Organisation active').waitFor();
   await shot('setup-activated');
   await page.goto(`${WEB}/orgs/${orgId}`);
-  await page.getByText('Net income YTD').waitFor().catch(async (e) => { await page.screenshot({ path: '/tmp/claude-0/shots/setup-debug.png' }); throw e; });
+  await page.getByText('Net income YTD').waitFor();
   assert.equal(await page.getByText('Finish setting up').count(), 0);
   assert.deepEqual(consoleErrors, []);
 });
