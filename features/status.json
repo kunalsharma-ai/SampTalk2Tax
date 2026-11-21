@@ -7834,6 +7834,58 @@
       ],
       "notes": "Emailed as an attachment to members who can read reports, through the organisation's mail server or the server SMTP; failures keep the mail server's reason."
     },
+    "UX-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "CSV with headings matched by name; type, subtype, parent (same type, a header, no loops) checked; parents created first; codes already in the chart skipped, never changed."
+    },
+    "UX-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "CSV with email, GSTIN (tax-engine check), PAN, state, PIN code, terms and credit limit checked; names already in contacts skipped."
+    },
+    "UX-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "Same as customers, created as vendors."
+    },
+    "UX-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "CSV by account code, debit or credit per line, decimal amounts; replaces the opening journal; the difference goes to Opening Balance Equity and is shown in the preview."
+    },
     "RPT-016": {
       "status": "Tested",
       "evidence": [

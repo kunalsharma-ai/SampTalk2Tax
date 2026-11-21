@@ -87,6 +87,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/journal-suggestions', label: 'Journal suggestions' },
       { href: '/accounts', label: 'Chart of accounts' },
       { href: '/opening-balances', label: 'Opening balances' },
+      { href: '/import', label: 'Import data', perm: 'accounts.read' },
       { href: '/fixed-assets', label: 'Fixed assets' },
       { href: '/deferrals', label: 'Prepaid and deferred' },
       { href: '/accruals', label: 'Accruals' },

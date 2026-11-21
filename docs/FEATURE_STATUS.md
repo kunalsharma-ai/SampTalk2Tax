@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 710 |
+| Not started | 706 |
 | Designed | 0 |
 | Implementing | 36 |
 | Implemented | 31 |
-| Tested | 552 |
+| Tested | 556 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -55,7 +55,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
 | Security and enterprise governance | M1 | 38 | 0 | 38 |
-| User experience and onboarding | M1 | 22 | 16 | 6 |
+| User experience and onboarding | M1 | 22 | 12 | 10 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
@@ -6630,6 +6630,62 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/auth-tenancy.e2e.test.ts › organization onboarding
   - apps/web/src/app/onboarding
   - apps/web/e2e/ledger-flow.test.mjs
+
+### UX-009 — Import chart of accounts
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: CSV with headings matched by name; type, subtype, parent (same type, a header, no loops) checked; parents created first; codes already in the chart skipped, never changed.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
+
+### UX-010 — Import customers
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: CSV with email, GSTIN (tax-engine check), PAN, state, PIN code, terms and credit limit checked; names already in contacts skipped.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
+
+### UX-011 — Import vendors
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Same as customers, created as vendors.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
+
+### UX-012 — Import opening balances
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: CSV by account code, debit or credit per line, decimal amounts; replaces the opening journal; the difference goes to Opening Balance Equity and is shown in the preview.
+- Evidence:
+  - packages/accounting-engine/src/data-import.ts
+  - packages/accounting-engine/test/data-import.test.ts
+  - apps/api/src/data-import/data-import.service.ts
+  - apps/api/test/data-import.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/import/page.tsx
+  - apps/web/e2e/data-import-flow.test.mjs
+  - docs/DATA_IMPORT.md
 
 ### UX-015 — Configure team roles
 

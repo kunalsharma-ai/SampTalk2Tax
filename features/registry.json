@@ -29527,9 +29527,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "CSV with headings matched by name; type, subtype, parent (same type, a header, no loops) checked; parents created first; codes already in the chart skipped, never changed."
     },
     {
       "id": "UX-010",
@@ -29551,9 +29559,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "CSV with email, GSTIN (tax-engine check), PAN, state, PIN code, terms and credit limit checked; names already in contacts skipped."
     },
     {
       "id": "UX-011",
@@ -29575,9 +29591,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "Same as customers, created as vendors."
     },
     {
       "id": "UX-012",
@@ -29599,9 +29623,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/data-import.ts",
+        "packages/accounting-engine/test/data-import.test.ts",
+        "apps/api/src/data-import/data-import.service.ts",
+        "apps/api/test/data-import.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/import/page.tsx",
+        "apps/web/e2e/data-import-flow.test.mjs",
+        "docs/DATA_IMPORT.md"
+      ],
+      "notes": "CSV by account code, debit or credit per line, decimal amounts; replaces the opening journal; the difference goes to Opening Balance Equity and is shown in the preview."
     },
     {
       "id": "UX-013",
