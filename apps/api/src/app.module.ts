@@ -97,6 +97,8 @@ import { InvitationsService } from './organizations/invitations.service';
 import { OrganizationsService } from './organizations/organizations.service';
 import { ReportViewsController } from './report-views/report-views.controller';
 import { ReportViewsService } from './report-views/report-views.service';
+import { SegregationOfDutiesController } from './segregation-of-duties/segregation-of-duties.controller';
+import { SegregationOfDutiesService } from './segregation-of-duties/segregation-of-duties.service';
 import { SetupController } from './setup/setup.controller';
 import { SetupService } from './setup/setup.service';
 import { DataImportController } from './data-import/data-import.controller';
@@ -312,6 +314,7 @@ export class AppModule {
         OpeningBalancesController,
         SetupController,
         ReportViewsController,
+        SegregationOfDutiesController,
         DataImportController,
         JournalsController,
         ReportsController,
@@ -461,6 +464,7 @@ export class AppModule {
         OpeningBalancesService,
         SetupService,
         ReportViewsService,
+        SegregationOfDutiesService,
         DataImportService,
         JournalsService,
         ReportsService,

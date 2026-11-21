@@ -829,7 +829,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-011 |  | capability | Audit findings | Not started |
 | AUDIT-012 |  | capability | Remediation workflows | Not started |
 | AUDIT-013 |  | capability | Control ownership | Not started |
-| AUDIT-014 |  | capability | Segregation-of-duties checks | Not started |
+| AUDIT-014 |  | capability | Segregation-of-duties checks | Tested |
 | AUDIT-015 |  | capability | Period-close certification | Tested |
 | AUDIT-016 |  | capability | AI action history | Tested |
 | AUDIT-017 |  | capability | Financial transaction replay | Not started |

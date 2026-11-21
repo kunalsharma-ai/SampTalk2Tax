@@ -751,6 +751,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Planning. Assessments go to Business impact.',
   },
   // ---------------------------------------------------------------- governance and settings
+  'segregation-of-duties': {
+    what: 'Places where one person did two jobs that should be split: a journal written and posted by the same person, a bill entered and posted by them, a payment batch they prepared and approved, a vendor paid by whoever changed the vendor\'s bank details, or a bank reconciled by whoever recorded its payments. It also shows which members\' roles let them do conflicting jobs together.',
+    how: 'Pick the dates (up to 400 days; the last 90 by default). Open each record, then clear the finding with what you checked. Only an approver, owner or admin who was not involved can clear one, and each review is kept in the audit trail.',
+    where: 'Governance. Reading needs the audit trail permission. Nothing here changes the books.',
+  },
   audit: {
     what: 'Every change made in the organisation: who did what, and when.',
     how: 'Filter by person, action or date. Entries can never be changed or deleted.',

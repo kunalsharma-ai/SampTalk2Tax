@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 645 |
+| Not started | 644 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 615 |
+| Tested | 616 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 17 | 13 |
+| Continuous audit and governance | M6 | 30 | 16 | 14 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4812,6 +4812,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/alerts.e2e.test.ts
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
+
+### AUDIT-014 — Segregation-of-duties checks
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Detective checks over a period: manual journals and bills posted by their author, self-approved payment batches, a vendor paid by whoever changed their bank details, a bank reconciled by whoever recorded its payments; conflicting duties per member's role; findings cleared by an uninvolved approver with a reason, immutable and audited. Preventive rules stay in approvals and payment batches.
+- Evidence:
+  - packages/accounting-engine/src/segregation-of-duties.ts
+  - packages/accounting-engine/test/segregation-of-duties.test.ts
+  - apps/api/src/segregation-of-duties/segregation-of-duties.service.ts
+  - apps/api/test/segregation-of-duties.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/segregation-of-duties/page.tsx
+  - apps/web/e2e/segregation-of-duties-flow.test.mjs
+  - docs/SEGREGATION_OF_DUTIES.md
 
 ### AUDIT-015 — Period-close certification
 
