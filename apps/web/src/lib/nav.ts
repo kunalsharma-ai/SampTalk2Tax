@@ -25,6 +25,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/sales/customers', label: 'Customers' },
       { href: '/sales/onboarding', label: 'Customer onboarding' },
       { href: '/sales/customer-insights', label: 'Customer insights', perm: 'reports.read' },
+      { href: '/sales/customer-behaviour', label: 'Customer behaviour', perm: 'reports.read' },
       { href: '/sales/payment-predictions', label: 'Payment predictions', perm: 'reports.read' },
       { href: '/sales/collection-priorities', label: 'Collection priorities', perm: 'reports.read' },
       { href: '/sales/collection-forecast', label: 'Collection forecast', perm: 'reports.read' },

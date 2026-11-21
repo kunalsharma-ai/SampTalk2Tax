@@ -8867,6 +8867,19 @@
         "docs/PAYMENT_PLANS.md"
       ],
       "notes": "Suggested instalment plans for overdue, undisputed invoices: count = overdue amount over the customer's average monthly receipts in the last 6 months, 2-12 (3 with no receipts, at most 6 with debt over 90 days), monthly from a first date within 60 days, equal decimal instalments with the rounding last, with reasons. Plans agreed from the server-side suggestion, one running per customer, tracked from receipts since (on track, behind, broken after 7 days, completed), cancel with reason; append-only record and audit events."
+    },
+    "AR-038": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-behaviour.ts",
+        "packages/accounting-engine/test/customer-behaviour.test.ts",
+        "apps/api/src/customer-behaviour/customer-behaviour.service.ts",
+        "apps/api/test/customer-behaviour.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/customer-behaviour/page.tsx",
+        "apps/web/e2e/customer-behaviour-flow.test.mjs",
+        "docs/CUSTOMER_BEHAVIOUR.md"
+      ],
+      "notes": "Per customer invoiced in the last two years: amount-weighted days late (12 months, last 6, 6 before) and its trend, spread, share paid in parts, usual pay day; buying in the last 12 months against the 12 before and a stop in buying; a profile (on time, late steadily, unpredictable, new, too little history) and explained signals (paying slower/faster, stopped buying, buying less/more, pays in parts, usual pay day). Deterministic; read-only; complements CRM-012 Customer 360."
     }
   }
 }

@@ -36,6 +36,7 @@ export const hi: Record<string, string> = {
   'Payment predictions': 'भुगतान पूर्वानुमान',
   'Collection priorities': 'वसूली प्राथमिकताएँ',
   'Payment plans': 'भुगतान योजनाएँ',
+  'Customer behaviour': 'ग्राहक व्यवहार',
   'Collection forecast': 'वसूली पूर्वानुमान',
   'Revenue forecast': 'राजस्व पूर्वानुमान',
   'Revenue recognition': 'राजस्व मान्यता',
