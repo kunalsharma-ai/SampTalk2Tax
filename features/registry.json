@@ -33239,9 +33239,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/visual-regression.test.mjs",
+        "apps/web/e2e/visual/*.png"
+      ],
+      "notes": "Seven screens that do not depend on the date, pinned fonts, 0.5% pixel tolerance. Update references with UPDATE_VISUAL=1."
     },
     {
       "id": "QA-020",
