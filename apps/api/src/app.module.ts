@@ -220,6 +220,9 @@ import { RecoveryService } from './recovery/recovery.service';
 import { TwinController } from './twin/twin.controller';
 import { TwinService } from './twin/twin.service';
 import { ReportExportService } from './report-exports/report-exports.service';
+import { ReportSchedulesController } from './report-schedules/report-schedules.controller';
+import { ReportSchedulesRunnerService } from './report-schedules/report-schedules-runner.service';
+import { ReportSchedulesService } from './report-schedules/report-schedules.service';
 import { LoansService } from './loans/loans.service';
 import { DepositsService } from './deposits/deposits.service';
 import { CrmService } from './crm/crm.service';
@@ -391,6 +394,7 @@ export class AppModule {
         InvoiceTemplatesController,
         InvoicePrintController,
         ReportExportsController,
+        ReportSchedulesController,
         ConsolidationController,
         TwinController,
         RecoveryController,
@@ -538,6 +542,8 @@ export class AppModule {
         RecurringBillsRunnerService,
         InvoiceTemplatesService,
         ReportExportService,
+        ReportSchedulesService,
+        ReportSchedulesRunnerService,
         ConsolidationService,
         IntercompanyService,
         TwinService,

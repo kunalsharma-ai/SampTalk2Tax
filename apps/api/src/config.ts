@@ -171,6 +171,8 @@ const schema = z.object({
   CONTRACT_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
   /** How often months that have ended are checked for a close to start automatically (0 turns the runner off). */
   CLOSE_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
+  /** How often scheduled reports are checked for runs that are due (RPT-031; 0 turns the runner off). */
+  REPORT_SCHEDULE_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(900),
   /** How often recurring journals are checked for runs that have fallen due (0 turns the runner off). */
   RECURRING_JOURNAL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
   /** How often each organisation's data retention periods are applied (SEC-020; 0 turns the runner off). */
