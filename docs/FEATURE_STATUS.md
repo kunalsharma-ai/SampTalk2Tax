@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 740 |
+| Not started | 734 |
 | Designed | 0 |
 | Implementing | 37 |
-| Implemented | 36 |
-| Tested | 516 |
+| Implemented | 37 |
+| Tested | 521 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -23,7 +23,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
-| Competitive benchmarking | M0 | 49 | 49 | 0 |
+| Competitive benchmarking | M0 | 49 | 46 | 3 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 11 | 25 |
@@ -66,9 +66,38 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
 | Design system | M1 | 36 | 33 | 3 |
-| Absolute quality rules | All | 20 | 4 | 16 |
+| Absolute quality rules | All | 20 | 1 | 19 |
 
 ## Features with progress and evidence
+
+### COMP-046 — Do not incorrectly claim that a competitor lacks functionality
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: CI refuses customer-facing text saying a competitor lacks something, or that Talk2Tax is better than one, unless the sentence cites a verified source or says it is not confirmed.
+- Evidence:
+  - scripts/check-claims.mjs
+  - scripts/check-claims.test.mjs
+
+### COMP-048 — Do not copy proprietary source code, designs, branding or copyrighted materials
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Same check as RULE-017. Designs and branding are original (docs/BRANDING.md).
+- Evidence:
+  - scripts/check-licences.mjs
+  - scripts/check-licences.test.mjs
+  - docs/SECURITY.md
+
+### COMP-049 — Build original implementations
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: All features are implemented in this repository; no competitor code, and packages only under licences listed in scripts/check-licences.mjs.
+- Evidence:
+  - scripts/check-licences.mjs
+  - scripts/check-licences.test.mjs
+  - docs/SECURITY.md
 
 ### GL-001 — Create a full enterprise-grade accounting foundation
 
@@ -134,7 +163,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/recurring-journals.ts
   - packages/accounting-engine/test/recurring-journals.test.ts
-  - packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/journal-templates/journal-templates.service.ts
   - apps/api/test/journal-templates.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/journal-templates
@@ -178,7 +208,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/year-end.ts
   - packages/accounting-engine/test/year-end.test.ts
-  - packages/database/prisma/migrations/20261126090000_year_end_close/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/year-end/year-end.service.ts
   - apps/api/test/year-end.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/year-end/page.tsx
@@ -193,7 +224,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/recurring-journals.ts
   - packages/accounting-engine/test/recurring-journals.test.ts
-  - packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/journal-templates/journal-templates.service.ts
   - apps/api/test/journal-templates.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/journal-templates
@@ -257,7 +289,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Evidence:
   - apps/api/test/ledger.e2e.test.ts › blocks posting into a locked period and allows it again after unlock
-  - packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/periods
   - apps/web/e2e/ledger-flow.test.mjs
 
@@ -329,7 +362,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
   - apps/web/src/components/dimensions/line-dimensions.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
-  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/FINANCIAL_DIMENSIONS.md
   - packages/accounting-engine/src/cost-allocation.ts
   - packages/accounting-engine/test/cost-allocation.test.ts
@@ -365,7 +399,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
   - apps/web/src/components/dimensions/line-dimensions.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
-  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/FINANCIAL_DIMENSIONS.md
 
 ### GL-027 — Business units
@@ -408,7 +443,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
   - apps/web/src/components/dimensions/line-dimensions.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
-  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/FINANCIAL_DIMENSIONS.md
 
 ### GL-030 — Financial dimensions
@@ -425,7 +461,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
   - apps/web/src/components/dimensions/line-dimensions.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
-  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/FINANCIAL_DIMENSIONS.md
 
 ### GL-031 — Custom financial tags
@@ -466,7 +503,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Same as ENT-008 and ENT-009: intercompany charges and settlements posted in both companies together, reversed together and eliminated on consolidation.
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)
-  - packages/database/prisma/migrations/20261103180000_intercompany/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/intercompany.service.ts
   - apps/web/src/components/consolidation/intercompany.tsx
   - packages/accounting-engine/test/consolidation.test.ts
@@ -497,7 +535,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/fx.ts
   - packages/accounting-engine/test/fx.test.ts
-  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/fx/fx.service.ts
   - apps/api/test/fx-revaluation.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/fx/page.tsx
@@ -526,7 +565,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/test/journal.test.ts › rejects an unbalanced entry
   - apps/api/test/ledger.e2e.test.ts › refuses an unbalanced posted entry even if inserted directly in SQL
-  - packages/database/prisma/migrations/*_init/migration.sql (integrity triggers) (deferred constraint trigger)
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### GL-038 — Use fixed-precision decimal arithmetic
 
@@ -579,7 +619,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Module: General ledger and accounting engine
 - Status: **Tested**
 - Evidence:
-  - packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/test/ledger.e2e.test.ts › immutability and reversal
 
 ### AR-001 — Build a comprehensive AR module
@@ -609,7 +650,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/customer-onboarding.ts
   - packages/accounting-engine/test/customer-onboarding.test.ts
-  - packages/database/prisma/migrations/20261207090000_customer_onboarding/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/customer-onboarding/customer-onboarding.service.ts
   - apps/api/test/customer-onboarding.e2e.test.ts
   - apps/web/src/components/onboarding/onboarding-panel.tsx
@@ -633,7 +675,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Same feature as CRM-005: Quotations QT-0001 with the invoice tax rules (tax rates, GST place of supply, HSN/SAC); draft (editable, deletable) -> sent (frozen by a trigger) -> accepted or declined (reason); expired past valid-until; revisions QT-0001-R2 supersede the previous one when sent; linked to a deal, which is won on acceptance; acceptance rate on the list. No PDF or e-mail of a quotation yet.
 - Evidence:
   - packages/accounting-engine/src/sales-orders.ts
-  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/sales-orders.service.ts
   - apps/api/test/sales-orders.e2e.test.ts
   - apps/web/e2e/quotes-orders-flow.test.mjs
@@ -661,7 +704,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Same feature as CRM-007: Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal.
 - Evidence:
   - packages/accounting-engine/src/sales-orders.ts
-  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/sales-orders.service.ts
   - apps/api/test/sales-orders.e2e.test.ts
   - apps/web/e2e/quotes-orders-flow.test.mjs
@@ -676,7 +720,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/pro-forma.ts
   - packages/accounting-engine/test/pro-forma.test.ts
-  - packages/database/prisma/migrations/20261202090000_pro_forma_invoices/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/pro-forma.service.ts
   - apps/api/test/pro-forma.e2e.test.ts
   - apps/web/e2e/pro-forma-flow.test.mjs
@@ -702,7 +747,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Each due contract period becomes a draft invoice (invoice rules incl. GST), by the background runner (CONTRACT_RUNNER_INTERVAL_SECONDS), on activation, Bill now, or Bill due periods now; each period recorded once (no double billing); deleted/voided invoice can be billed again; failures kept on the contract and retried. Invoices are drafts to check and post; no auto-posting or auto-email yet.
 - Evidence:
   - packages/accounting-engine/src/contracts.ts
-  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/contracts.service.ts
   - apps/api/src/sales-orders/contracts-runner.service.ts
   - apps/api/test/contracts.e2e.test.ts
@@ -717,7 +763,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Fixed-fee recurring billing works through contracts (CRM-006/AR-010), usage charges through meters (AR-012), and part periods are billed by days when a contract is billed on a fixed day of the month. Cancelling part-way through a period billed in advance credits the unused days on a draft credit note per invoice (preview in the cancel dialog). Not built: card or mandate auto-collection (needs a payment gateway).
 - Evidence:
   - packages/accounting-engine/src/contracts.ts
-  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/contracts.service.ts
   - apps/api/src/sales-orders/contracts-runner.service.ts
   - apps/api/test/contracts.e2e.test.ts
@@ -737,7 +784,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/usage-billing.ts
   - packages/accounting-engine/test/usage-billing.test.ts
-  - packages/database/prisma/migrations/20261211090000_usage_billing/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/usage-billing.service.ts
   - apps/api/src/sales-orders/contracts.service.ts
   - apps/api/test/usage-billing.e2e.test.ts
@@ -753,7 +801,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/project-billing.ts
   - packages/accounting-engine/test/project-billing.test.ts
-  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/sales-orders.service.ts
   - apps/api/test/project-billing.e2e.test.ts
   - apps/web/src/components/sales-orders/project-billing.tsx
@@ -768,7 +817,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/project-billing.ts
   - packages/accounting-engine/test/project-billing.test.ts
-  - packages/database/prisma/migrations/20261204090000_project_billing/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/sales-orders.service.ts
   - apps/api/test/project-billing.e2e.test.ts
   - apps/web/src/components/sales-orders/project-billing.tsx
@@ -783,7 +833,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/retainers.ts
   - packages/accounting-engine/test/retainers.test.ts
-  - packages/database/prisma/migrations/20261205090000_retainers/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/retainers.service.ts
   - apps/api/test/retainers.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/sales/retainers/[retainerId]/page.tsx
@@ -804,7 +855,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Notes: Debit notes DN-000001: an INVOICE linked to an earlier posted invoice (same customer, currency, place of supply, not before it); owed, aged and paid like an invoice; GSTR-1 9B type D with the original number, table 13 own series, GSTR-3B outward tax, e-invoice DBN, print titled Debit note with Against invoice. Invoice cannot be voided while a debit note stands (trigger). Sales side only.
 - Evidence:
-  - packages/database/prisma/migrations/20261128090000_debit_notes/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/ledgers/documents.service.ts
   - apps/api/test/debit-notes.e2e.test.ts
   - packages/tax-engine/src/india/returns.ts
@@ -821,7 +873,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/payment-links.ts
   - packages/accounting-engine/test/payment-links.test.ts
-  - packages/database/prisma/migrations/20261206090000_payment_links/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/payment-links/payment-links.service.ts
   - apps/api/test/payment-links.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/settings/payment-gateways/page.tsx
@@ -888,7 +941,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/disputes.ts
   - packages/accounting-engine/test/disputes.test.ts
-  - packages/database/prisma/migrations/20261201090000_invoice_disputes/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/disputes/disputes.service.ts
   - apps/api/test/disputes.e2e.test.ts
   - apps/web/e2e/disputes-flow.test.mjs
@@ -903,7 +957,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/bad-debts.ts
   - packages/accounting-engine/test/bad-debts.test.ts
-  - packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/bad-debts/bad-debts.service.ts
   - apps/api/test/bad-debts.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx
@@ -918,7 +973,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/bad-debts.ts
   - packages/accounting-engine/test/bad-debts.test.ts
-  - packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/bad-debts/bad-debts.service.ts
   - apps/api/test/bad-debts.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx
@@ -933,7 +989,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/revenue-recognition.ts
   - packages/accounting-engine/test/revenue-recognition.test.ts
-  - packages/database/prisma/migrations/20261212090000_revenue_recognition/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/revenue-recognition/revenue-recognition.service.ts
   - apps/api/src/ledgers/documents.service.ts
   - apps/api/test/revenue-recognition.e2e.test.ts
@@ -949,7 +1006,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Contract billing from the contract's lines in force on the billing day; price changes and renewals apply to later periods only; reference CT-0001 <period> / customer reference.
 - Evidence:
   - packages/accounting-engine/src/contracts.ts
-  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/contracts.service.ts
   - apps/api/src/sales-orders/contracts-runner.service.ts
   - apps/api/test/contracts.e2e.test.ts
@@ -965,7 +1023,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/customer-portal.ts
   - packages/accounting-engine/test/customer-portal.test.ts
-  - packages/database/prisma/migrations/20261213090000_customer_portal/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/customer-portal/customer-portal.service.ts
   - apps/api/src/customer-portal/customer-portal.controller.ts
   - apps/api/test/customer-portal.e2e.test.ts
@@ -983,7 +1042,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/fx-documents.ts
   - packages/accounting-engine/test/fx-documents.test.ts
-  - packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/ledgers/documents.service.ts
   - apps/api/src/ledgers/subledger.service.ts
   - apps/api/test/fx-documents.e2e.test.ts
@@ -1027,7 +1087,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/unbilled-revenue.ts
   - packages/accounting-engine/test/unbilled-revenue.test.ts
-  - packages/database/prisma/migrations/20261216090000_unbilled_revenue/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/unbilled-revenue/unbilled-revenue.service.ts
   - apps/api/test/unbilled-revenue.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/sales/unbilled-revenue/page.tsx
@@ -1049,7 +1110,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: One onboarding per vendor (separate from customer onboarding, own setting and checklist): email, address with PIN, GSTIN or PAN, verified bank details and payment terms read from the vendor, plus the checklist with files; submit, second-person approval sets payment terms (no credit limit), reject, reopen. Optional setting starts one for every new vendor. Bills from and payments to a vendor with an unapproved onboarding are refused. Not built: vendor self-service portal.
 - Evidence:
   - packages/accounting-engine/src/customer-onboarding.ts
-  - packages/database/prisma/migrations/20261208090000_vendor_onboarding/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/customer-onboarding/customer-onboarding.service.ts
   - apps/api/src/customer-onboarding/customer-onboarding.controller.ts
   - apps/api/test/vendor-onboarding.e2e.test.ts
@@ -1084,7 +1146,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/recurring-bills.ts
   - packages/accounting-engine/test/recurring-bills.test.ts
-  - packages/database/prisma/migrations/20261129090000_recurring_bills/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recurring-bills/recurring-bills.service.ts
   - apps/api/test/recurring-bills.e2e.test.ts
   - apps/web/e2e/recurring-bills-flow.test.mjs
@@ -1109,7 +1172,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/payment-schedule.ts
   - packages/accounting-engine/test/payment-schedule.test.ts
-  - packages/database/prisma/migrations/20261130090000_payment_schedule/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/payment-batches/payment-schedule.service.ts
   - apps/api/test/payment-schedule.e2e.test.ts
   - apps/web/e2e/payment-schedule-flow.test.mjs
@@ -1168,7 +1232,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/vendor-portal.ts
   - packages/accounting-engine/test/vendor-portal.test.ts
-  - packages/database/prisma/migrations/20261217090000_vendor_portal/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/vendor-portal/vendor-portal.service.ts
   - apps/api/src/vendor-portal/vendor-portal.controller.ts
   - apps/api/test/vendor-portal.e2e.test.ts
@@ -1187,7 +1252,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/payment-batches.ts
   - packages/accounting-engine/test/payment-batches.test.ts
-  - packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/payment-batches/payment-batches.service.ts
   - apps/api/test/payment-batches.e2e.test.ts
   - apps/web/e2e/payment-batches-flow.test.mjs
@@ -1202,7 +1268,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/purchase-orders.ts
   - packages/accounting-engine/test/purchase-orders.test.ts
-  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/purchase-orders/purchase-orders.service.ts
   - apps/api/src/purchase-orders/matching.ts
   - apps/api/test/purchase-orders.e2e.test.ts
@@ -1218,7 +1285,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/purchase-orders.ts
   - packages/accounting-engine/test/purchase-orders.test.ts
-  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/purchase-orders/purchase-orders.service.ts
   - apps/api/src/purchase-orders/matching.ts
   - apps/api/test/purchase-orders.e2e.test.ts
@@ -1234,7 +1302,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/purchase-orders.ts
   - packages/accounting-engine/test/purchase-orders.test.ts
-  - packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/purchase-orders/purchase-orders.service.ts
   - apps/api/src/purchase-orders/matching.ts
   - apps/api/test/purchase-orders.e2e.test.ts
@@ -1259,7 +1328,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/tax-engine/src/india/supplier-checks.ts
   - packages/tax-engine/test/supplier-checks.test.ts
-  - packages/database/prisma/migrations/20261214090000_supplier_tax_checks/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/supplier-tax/supplier-tax.service.ts
   - apps/api/test/supplier-tax.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/purchases/supplier-tax/page.tsx
@@ -1275,7 +1345,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/vendor-performance.ts
   - packages/accounting-engine/test/vendor-performance.test.ts
-  - packages/database/prisma/migrations/20261209090000_vendor_performance/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/vendor-performance/vendor-performance.service.ts
   - apps/api/test/vendor-performance.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/purchases/vendor-performance/page.tsx
@@ -1299,7 +1370,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/international-payments.ts
   - packages/accounting-engine/test/international-payments.test.ts
-  - packages/database/prisma/migrations/20261210090000_international_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/international-payments/international-payments.service.ts
   - apps/api/test/international-payments.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/purchases/international-payments/page.tsx
@@ -1316,7 +1388,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/vendor-risk.ts
   - packages/accounting-engine/test/vendor-risk.test.ts
-  - packages/database/prisma/migrations/20261215090000_vendor_risk/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/vendor-risk/vendor-risk.service.ts
   - apps/api/test/vendor-risk.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/purchases/vendor-risk/page.tsx
@@ -1332,7 +1405,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/payment-batches.ts
   - packages/accounting-engine/test/payment-batches.test.ts
-  - packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/payment-batches/payment-batches.service.ts
   - apps/api/test/payment-batches.e2e.test.ts
   - apps/web/e2e/payment-batches-flow.test.mjs
@@ -1452,7 +1526,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/loans.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/loans
   - apps/web/e2e/loans-flow.test.mjs
-  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/LOANS_AND_TREASURY.md
   - packages/accounting-engine/src/deposits.ts
   - packages/accounting-engine/test/deposits.test.ts
@@ -1469,7 +1544,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/fx-documents.ts
   - packages/accounting-engine/test/fx-documents.test.ts
-  - packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/ledgers/documents.service.ts
   - apps/api/src/ledgers/subledger.service.ts
   - apps/api/test/fx-documents.e2e.test.ts
@@ -2162,7 +2238,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/loans.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/loans
   - apps/web/e2e/loans-flow.test.mjs
-  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/LOANS_AND_TREASURY.md
 
 ### TRS-010 — Loan schedules
@@ -2177,7 +2254,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/loans.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/loans
   - apps/web/e2e/loans-flow.test.mjs
-  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/LOANS_AND_TREASURY.md
 
 ### TRS-011 — Interest calculations
@@ -2192,7 +2270,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/loans.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/loans
   - apps/web/e2e/loans-flow.test.mjs
-  - packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/LOANS_AND_TREASURY.md
 
 ### TRS-012 — Investment tracking
@@ -2216,7 +2295,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/fx.ts
   - packages/accounting-engine/test/fx.test.ts
-  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/fx/fx.service.ts
   - apps/api/test/fx-revaluation.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/fx/page.tsx
@@ -2311,7 +2391,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/budgets
   - apps/api/test/budgets.e2e.test.ts
   - apps/web/e2e/budgets-flow.test.mjs
-  - packages/database/prisma/migrations/20261101260000_budgets
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### FPA-024 — Forecast accuracy monitoring
 
@@ -2325,7 +2406,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/cash-flow.e2e.test.ts
   - apps/web/e2e/cash-flow-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/planning/cash-flow
-  - packages/database/prisma/migrations/20261101280000_cash_flow_forecast
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### FPA-029 — 30-day forecasts
 
@@ -2412,7 +2494,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Monthly driver model built from the last 3, 6 or 12 months of posted figures: revenue as volume x price x exchange rate, cost of sales following volume, payroll, other costs, receivables and payables days, cash, and tax.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2427,7 +2510,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Revenue growth per month, from a chosen month.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2442,7 +2526,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Expense change by percentage and/or monthly amount on operating costs, payroll or cost of sales.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2457,7 +2542,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: People, monthly cost each, one-off cost each, from a month.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2472,7 +2558,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: One-off cost, running cost, and revenue ramping to full speed.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2487,7 +2574,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Price change with a volume response; cost of sales follows volume, not price.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2502,7 +2590,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Income tax rate on profit before tax; losses get no relief (documented simplification). Rate comes from the scenario, else history, else none (asked for).
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2517,7 +2606,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: New loan repaid by EMI from the month after; interest through profit, principal through cash.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2532,7 +2622,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Asset purchase depreciated straight-line from the month after.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2547,7 +2638,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Supplier cost change on cost of sales.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2562,7 +2654,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Monthly compounding churn on volume.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2577,7 +2670,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Share of revenue in foreign currency and a rate change.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2592,7 +2686,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Revenue drop and slower collections, for a number of months or for good.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2607,7 +2702,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Yearly cost inflation compounded monthly.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2622,7 +2718,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Collection and payment days changes, flowing through receivables and payables.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2637,7 +2734,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Gaps listed as Inputs to confirm: no tax rate (none in the scenario or history), no revenue in the baseline, no inflation over horizons beyond 12 months, and no investment when hiring five or more people.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2652,7 +2750,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Each missing input is asked as a question, with an Add button for the change it needs.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2667,7 +2766,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Nine ready-made templates plus a builder with 15 kinds of change. Templates are fixed placeholder figures, not AI-generated.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2682,7 +2782,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Monthly projection of revenue, costs, EBITDA, depreciation, interest, tax, net profit, cash flow and closing cash.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2697,7 +2798,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Lowest cash, the month cash runs out, and cash to raise to stay above the buffer.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2712,7 +2814,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Net profit and margin over the horizon, and break-even month.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2727,7 +2830,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Rule-based risks, each High/Medium/Low: cash runs out (with the amount to raise), cash below the buffer, a loss over the horizon, ending loss-making, thin gross margin, growing receivables, weak loan-payment cover, and a short history.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2742,7 +2846,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Up to five saved scenarios side by side with no change, same baseline and horizon.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2757,7 +2862,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every change and baseline figure explained in words in the Assumptions list.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2772,7 +2878,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Saved per organisation with name, description, baseline and horizon; re-run against the latest actuals on every open; audited.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2787,7 +2894,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Scenarios are stored only as inputs in twin_scenarios; nothing posts to the ledger (API and browser tests count journals before and after).
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2802,7 +2910,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Actual months solid, hypothetical dashed over a shaded band, every projected figure labelled hypothetical. The separate cash-flow forecast stays on its own page and is not overlaid here.
 - Evidence:
   - packages/accounting-engine/src/twin.ts
-  - packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/components/twin/scenario-builder.tsx
   - packages/accounting-engine/test/twin.test.ts
@@ -2817,7 +2926,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Virtual CFO built: health score, nine analyses, nine worked questions, board packs and investor updates with a checked AI summary. Peer benchmarking and configurable thresholds are not built.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2832,7 +2942,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Health score out of 100 from five stated rules (liquidity, profitability, working capital, growth, solvency) with a grade.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2847,7 +2958,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Deterministic headline on every assessment; AI executive summary of packs written from the facts and rejected if it quotes any figure not in them. Tested against the scripted model and the local stand-in; needs a live check with a Claude key.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx
@@ -2863,7 +2975,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Recommendations from areas needing action, then watch, with priority, link and required approval.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2878,7 +2991,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Liquidity: cash, current and quick ratios, monthly change in cash, runway, 90-day forecast lowest point against the minimum balance.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2893,7 +3007,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Profitability: revenue, gross, operating and net profit and margins over three months against the previous three and last year.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2908,7 +3023,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Working capital: DSO, DPO, days inventory, cash conversion cycle, overdue receivables.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2923,7 +3039,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Revenue growth: three months against the three before and last year, 12 against the 12 before, largest customer share.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2938,7 +3055,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Cost reduction: expense lines up more than 15% on the six months before, with the monthly saving and who approves a cut.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2953,7 +3071,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Risk detection: runway, forecast below minimum, losses, negative equity, interest cover, concentration, overdue filings, high alerts.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2968,7 +3087,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Scenario analysis: 10% salary rise measured on the digital twin; planning section counts saved, approved and waiting scenarios; links to the twin and war room.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -2983,7 +3103,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Board packs: every area, recommendations, commentary, checked AI summary, refresh while draft, finalise (immutable at the database level), print.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx
@@ -2999,7 +3120,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Investor updates: growth, profitability, liquidity, capital and debt, with the same commentary, summary and finalise.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx
@@ -3015,7 +3137,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Planning: year-to-date variance against the approved budget and scenario status, with a prompt to prepare a budget.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3030,7 +3153,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Capital allocation: free cash above a reserve of three months of fixed costs or the minimum balance, with options and approvals.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3045,7 +3169,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Expansion: months an expansion adding a fifth to fixed costs could be funded from free cash, with a link to the twin expansion template.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3060,7 +3185,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Debt: loans outstanding, principal and interest due in 12 months, interest cover, debt service cover, liabilities to equity.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3075,7 +3201,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Compares with the organisation's own history (previous months, same months last year) only; peer and industry benchmarks are the benchmarking module.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3090,7 +3217,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Why profit changed (fell or rose) last month: accounts by their effect on profit.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3105,7 +3233,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Clients ranked by revenue, share, change, overdue and days late. Costs are not recorded per client, so profit per client is not known; the answer says so with low confidence.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3120,7 +3249,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Projects with a net loss over 12 months from profit by project.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3135,7 +3265,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Cash needed next quarter: minimum balance minus the 90-day forecast lowest point, base and late cases, plus the twin trend.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3150,7 +3281,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Expenses to investigate: accounts more than 25% above their six-month average, plus duplicate and unusual-journal alerts.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3165,7 +3297,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Salaries +10%: twin with and without, profit, cash and runway.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3180,7 +3313,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Vendors charging more: unit price by vendor and item, last 90 days against the 9 months before, with extra cost.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3195,7 +3329,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Tax exposure: tax payable balances and statutory items overdue or due in 45 days.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3210,7 +3345,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Invoices likely to be paid late from each customer's record over 12 months.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3225,7 +3361,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every finding and answer lists its source reports and a table of the records behind it.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3240,7 +3377,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every finding and answer states its period.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3255,7 +3393,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every finding and answer states its calculation method.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3270,7 +3409,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every finding and answer lists its assumptions.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3285,7 +3425,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every finding and answer has a confidence level and the reason.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3300,7 +3441,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every finding and answer lists recommended actions with links.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3315,7 +3457,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Each recommended action names who has to approve it.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3330,7 +3473,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Figures are worked out in code; the AI summary is rejected if it quotes any figure not in the facts; the copilot reads CFO answers through tools and is told to pass on method and confidence.
 - Evidence:
   - packages/accounting-engine/src/cfo.ts
-  - packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/cfo/cfo.service.ts
   - apps/web/src/app/orgs/[orgId]/cfo/page.tsx
   - packages/accounting-engine/test/cfo.test.ts
@@ -3349,7 +3493,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
 
 ### AGENT-004 — Bank Reconciliation Agent
@@ -3403,7 +3548,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
 
 ### AGENT-046 — Tracks execution status
@@ -3416,7 +3562,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
   - apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx
 
@@ -3430,7 +3577,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
 
 ### AGENT-053 — Tracks model costs
@@ -3443,7 +3591,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
   - apps/api/test/ai-costs.e2e.test.ts
   - apps/web/e2e/ai-costs-flow.test.mjs
@@ -3459,7 +3608,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
 
 ### AGENT-056 — Level 2: Prepare changes for approval
@@ -3472,7 +3622,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
 
 ### AGENT-060 — Provide an emergency stop and tenant-wide AI disable controls
@@ -3485,13 +3636,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ai-control.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/ai-control/page.tsx
   - apps/web/e2e/ai-control-flow.test.mjs
-  - packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/AI_CONTROL_CENTER.md
   - apps/api/src/copilot
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
-  - packages/database/prisma/migrations/20261102090000_ai_copilot
 
 ### WFLOW-001 — Create a visual no-code and low-code workflow automation builder
 
@@ -3526,7 +3677,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/workflows.test.ts
   - apps/api/test/workflow-schedules.e2e.test.ts
   - apps/web/e2e/automations-schedule-email.test.mjs
-  - packages/database/prisma/migrations/20261102150000_workflow_schedules_email
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### WFLOW-004 — Event-based automation
 
@@ -3613,7 +3765,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: A change to trigger, conditions or actions makes a new immutable version (database trigger); runs keep their version; stale edits are refused.
 - Evidence:
   - apps/api/src/workflows/workflows.service.ts
-  - packages/database/prisma/migrations/20261102120000_workflow_automations
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/test/workflows.e2e.test.ts
   - apps/web/e2e/automations-flow.test.mjs
 
@@ -3682,7 +3835,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts
   - packages/accounting-engine/test/consolidation.test.ts
-  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/consolidation.service.ts
   - apps/api/src/consolidation/consolidation.controller.ts
   - apps/api/test/consolidation.e2e.test.ts
@@ -3698,7 +3852,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts
   - packages/accounting-engine/test/consolidation.test.ts
-  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/consolidation.service.ts
   - apps/api/src/consolidation/consolidation.controller.ts
   - apps/api/test/consolidation.e2e.test.ts
@@ -3714,7 +3869,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts
   - packages/accounting-engine/test/consolidation.test.ts
-  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/consolidation.service.ts
   - apps/api/src/consolidation/consolidation.controller.ts
   - apps/api/test/consolidation.e2e.test.ts
@@ -3729,7 +3885,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Charges and settlements posted in both companies in one database transaction, reversed together, and eliminated by their exact amounts. Journals only: no GST/VAT, stock or unrealised profit.
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)
-  - packages/database/prisma/migrations/20261103180000_intercompany/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/intercompany.service.ts
   - apps/web/src/components/consolidation/intercompany.tsx
   - packages/accounting-engine/test/consolidation.test.ts
@@ -3745,7 +3902,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts
   - packages/accounting-engine/test/consolidation.test.ts
-  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/consolidation.service.ts
   - apps/api/src/consolidation/consolidation.controller.ts
   - apps/api/test/consolidation.e2e.test.ts
@@ -3774,7 +3932,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts
   - packages/accounting-engine/test/consolidation.test.ts
-  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/consolidation.service.ts
   - apps/api/src/consolidation/consolidation.controller.ts
   - apps/api/test/consolidation.e2e.test.ts
@@ -3790,7 +3949,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/consolidation.ts
   - packages/accounting-engine/test/consolidation.test.ts
-  - packages/database/prisma/migrations/20261103130000_consolidation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/consolidation/consolidation.service.ts
   - apps/api/src/consolidation/consolidation.controller.ts
   - apps/api/test/consolidation.e2e.test.ts
@@ -3812,7 +3972,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/dimensions/page.tsx
   - apps/web/src/components/dimensions/line-dimensions.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
-  - packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/FINANCIAL_DIMENSIONS.md
 
 ### ENT-016 — Deferred revenue
@@ -3827,7 +3988,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/deferrals.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/deferrals
   - apps/web/e2e/deferrals-flow.test.mjs
-  - packages/database/prisma/migrations/20261103050000_prepaid_deferred_accruals/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/PREPAID_AND_DEFERRED.md
 
 ### ENT-017 — Prepaid expenses
@@ -3842,7 +4004,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/deferrals.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/deferrals
   - apps/web/e2e/deferrals-flow.test.mjs
-  - packages/database/prisma/migrations/20261103050000_prepaid_deferred_accruals/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/PREPAID_AND_DEFERRED.md
 
 ### ENT-018 — Accruals
@@ -3869,7 +4032,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/fixed-assets.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/fixed-assets
   - apps/web/e2e/fixed-assets-flow.test.mjs
-  - packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/FIXED_ASSETS.md
 
 ### ENT-020 — Depreciation
@@ -3884,7 +4048,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/fixed-assets.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/fixed-assets
   - apps/web/e2e/fixed-assets-flow.test.mjs
-  - packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/FIXED_ASSETS.md
 
 ### ENT-028 — Design for configurable accounting frameworks such as IFRS and applicable local GAAP
@@ -3909,8 +4074,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/crm.ts
   - packages/accounting-engine/src/crm-api.ts
-  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
-  - packages/database/prisma/migrations/20261122090000_crm_external_api/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/crm/crm.service.ts
   - apps/api/src/crm-api/crm-api.controller.ts
   - apps/api/src/crm-api/crm-webhooks.service.ts
@@ -3928,7 +4093,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Leads LD-0001 with source, owner (a member), estimated value; NEW/CONTACTED/QUALIFIED/DISQUALIFIED (reason required, reopenable); duplicate warning by email against leads and contacts; converted once into a new or existing customer (a vendor becomes a customer too), optionally with a deal. Never deleted; a converted lead is frozen by a trigger; append-only activity timeline (calls, emails, meetings, notes, every change).
 - Evidence:
   - packages/accounting-engine/src/crm.ts
-  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/crm/crm.service.ts
   - apps/api/test/crm.e2e.test.ts
   - apps/web/e2e/crm-pipeline-flow.test.mjs
@@ -3942,7 +4108,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Deals DL-0001 for a customer through PROSPECTING/QUALIFICATION/PROPOSAL/NEGOTIATION to WON (100%) or LOST (0%, reason required), reopenable; default stage probabilities overridable; weighted value; board by stage, overdue deals, 90-day win rate and days to win, weighted value by expected close month; deals on the customer page. Single currency (functional) for now.
 - Evidence:
   - packages/accounting-engine/src/crm.ts
-  - packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/crm/crm.service.ts
   - apps/api/test/crm.e2e.test.ts
   - apps/web/e2e/crm-pipeline-flow.test.mjs
@@ -3956,7 +4123,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Quotations QT-0001 with the invoice tax rules (tax rates, GST place of supply, HSN/SAC); draft (editable, deletable) -> sent (frozen by a trigger) -> accepted or declined (reason); expired past valid-until; revisions QT-0001-R2 supersede the previous one when sent; linked to a deal, which is won on acceptance; acceptance rate on the list. No PDF or e-mail of a quotation yet.
 - Evidence:
   - packages/accounting-engine/src/sales-orders.ts
-  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/sales-orders.service.ts
   - apps/api/test/sales-orders.e2e.test.ts
   - apps/web/e2e/quotes-orders-flow.test.mjs
@@ -3970,7 +4138,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Customer contracts CT-0001: monthly/quarterly/half-yearly/yearly, in advance or arrears, fixed end on a period end or rolling; draft -> active <-> paused -> ended/cancelled; renew by hand (with % price change) or automatically; renewal-due flag from notice days; MRR/ARR; append-only history; activating for a deal wins it.
 - Evidence:
   - packages/accounting-engine/src/contracts.ts
-  - packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/contracts.service.ts
   - apps/api/src/sales-orders/contracts-runner.service.ts
   - apps/api/test/contracts.e2e.test.ts
@@ -3985,7 +4154,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Sales orders SO-0001 from an accepted quotation or entered directly with the customer's PO; lines and prices never change (trigger); open/partly billed/billed; cancel with a reason only while nothing is billed; entering one for a deal wins the deal.
 - Evidence:
   - packages/accounting-engine/src/sales-orders.ts
-  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/sales-orders.service.ts
   - apps/api/test/sales-orders.e2e.test.ts
   - apps/web/e2e/quotes-orders-flow.test.mjs
@@ -3999,7 +4169,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Bill an order in full or by chosen quantities into a draft invoice (reference SO-0001 / customer PO) built by the normal invoice rules; billed quantities count while the invoice is draft or posted and are freed when it is voided or the draft deleted; over-billing refused under a row lock.
 - Evidence:
   - packages/accounting-engine/src/sales-orders.ts
-  - packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/sales-orders/sales-orders.service.ts
   - apps/api/test/sales-orders.e2e.test.ts
   - apps/web/e2e/quotes-orders-flow.test.mjs
@@ -4013,7 +4184,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Customer profitability: revenue (income lines of posted invoices less credit notes) less direct costs (expenses posted to the customer's linked projects), monthly for 12 months and to date; ranked on Customer insights.
 - Evidence:
   - packages/accounting-engine/src/customer-insights.ts
-  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/crm/customer-insights.service.ts
   - apps/api/test/customer-insights.e2e.test.ts
   - apps/web/e2e/customer-360-flow.test.mjs
@@ -4028,7 +4200,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Lifetime value = gross profit to date + yearly gross profit (max of trailing 12m revenue and contract ARR, at the customer's margin) x expected years r/(1-r) (max 5) from the org's own 12-month retention; 3 years assumed (and shown) with fewer than 5 customers to measure.
 - Evidence:
   - packages/accounting-engine/src/customer-insights.ts
-  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/crm/customer-insights.service.ts
   - apps/api/test/customer-insights.e2e.test.ts
   - apps/web/e2e/customer-360-flow.test.mjs
@@ -4043,7 +4216,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Credit risk score 0-100 from 5 explained factors (overdue share, oldest overdue, days late, limit use, slowing), ratings low/medium/high/very high, suggested credit limit, credit hold that blocks invoice posting with audit trail.
 - Evidence:
   - packages/accounting-engine/src/customer-insights.ts
-  - packages/database/prisma/migrations/20261120090000_customer_360/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/crm/customer-insights.service.ts
   - apps/api/test/customer-insights.e2e.test.ts
   - apps/web/e2e/customer-360-flow.test.mjs
@@ -4058,7 +4232,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Deterministic forecast by month from active contracts (by invoice date, auto-renew runs on), open orders (left to bill, this month), open deals (weighted/full at close month) and the 3-month run rate of other sales; committed/expected/best; itemised; saved forecasts RF-0001 (immutable) compared with actual revenue (WAPE). AI explanation not built yet.
 - Evidence:
   - packages/accounting-engine/src/revenue-forecast.ts
-  - packages/database/prisma/migrations/20261121090000_revenue_forecasts/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/crm/revenue-forecast.service.ts
   - apps/api/test/revenue-forecast.e2e.test.ts
   - apps/web/e2e/revenue-forecast-flow.test.mjs
@@ -4180,7 +4355,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/close.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx
   - apps/web/e2e/close-flow.test.mjs
-  - packages/database/prisma/migrations/20261102230000_month_end_close/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/MONTH_END_CLOSE.md
 
 ### AUDIT-016 — AI action history
@@ -4193,7 +4369,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
-  - packages/database/prisma/migrations/20261102090000_ai_copilot
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### AUDIT-019 — Model version
 
@@ -4392,7 +4569,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/kpis.e2e.test.ts
   - apps/web/e2e/kpis-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/reports/management
-  - packages/database/prisma/migrations/20261101300000_kpis_management_reports
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### RPT-027 — Financial dimensions
 
@@ -4555,7 +4733,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: One page per scenario where the team works together: model, impacts, suggestions, notes, versions and approval. Not live: others see changes on reload, with no presence or live cursors.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4610,7 +4789,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Planning board: scenarios in Draft, Waiting for approval, Approved and Rejected columns, with version, open notes and who submitted or decided.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4626,7 +4806,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Risk map on the comparison page: each risk the engine finds, by scenario, with its level and details.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4642,7 +4823,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Each change can belong to a department; the war room shows the measured net profit and cash effect of each change and the total by department.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4683,7 +4865,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Notes on a scenario, optionally pinned to a projected month and a change, recorded against the version; resolve by the author or a scenario manager, delete by the author; open notes counted on the board.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4698,7 +4881,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Submit, withdraw, approve, reject (with a reason) and reopen; frozen while waiting or approved; the submitter cannot decide; new permission scenarios.approve (owners, admins, approvers); every step audited.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4713,7 +4897,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Every saved set of inputs is an immutable version with who and why; restoring makes an earlier version the newest.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4728,7 +4913,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Left column: scenario settings and the changes, each with its department.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4743,7 +4929,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Centre: the projection updating as changes are typed, chart, risks, inputs to confirm, impacts and month table.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4758,7 +4945,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Suggested next moves (fund the gap, collect sooner, price rise, delay the largest cost, set the tax rate) measured by re-running the model, plus risks and assumptions in words. Rule-based, not written by AI yet.
 - Evidence:
   - packages/accounting-engine/src/twin-insights.ts
-  - packages/database/prisma/migrations/20261103220000_war_room/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/twin/twin.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx
   - packages/accounting-engine/test/twin-insights.test.ts
@@ -4787,7 +4975,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Recovery workspace: options from the books, plans with owners, due dates, status and notes, liquidity forecast, and copying into a twin scenario. Rule-based, not AI-assisted yet.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4802,7 +4991,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Spending freeze option (other operating costs -10%) measured on the twin.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4817,7 +5007,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Chase overdue invoices (up to 90 days late counted as recoverable, customers listed largest first) and shorter terms for new invoices.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4832,7 +5023,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: A 20% cut option for each of the five largest operating expense accounts, from their average monthly spend.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4847,7 +5039,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Longer payment terms and 3% lower prices from suppliers, listing suppliers by average monthly bills.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4862,7 +5055,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Working capital loan sized until its repayments no longer open a gap, and new capital from owners or investors.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4877,7 +5071,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Price rise option (+5% with 2% less volume).
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4892,7 +5087,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Payroll cost reduction modelled only, marked as a decision for the owners, never a recommendation to let anyone go.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4907,7 +5103,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Liquidity forecast of the plan against no action: runway, lowest cash, cash still to raise, month-end cash chart.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4922,7 +5119,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Each option and the plan show measured outcomes (lowest cash, cash at the end, net profit, whether cash runs out) and risks.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4937,7 +5135,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: The planner only records decisions: tests check no journal, payment or loan is created; options needing a decision are marked.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -4952,7 +5151,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Opt-in network: owners and admins join with recorded, versioned consent and can withdraw at any time.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -4967,7 +5167,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Give-to-get: each shared metric is compared with the median and quartiles of peer groups (industry, size, country), narrowest group with enough participants first.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -4982,7 +5183,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Gross margin over 12 months.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -4997,7 +5199,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Net margin over 12 months.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5012,7 +5215,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Revenue growth, 12 months against the 12 before.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5027,7 +5231,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Operating expense ratio over 12 months.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5042,7 +5247,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Days sales outstanding (3-month basis).
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5057,7 +5263,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Days payables outstanding (3-month basis).
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5072,7 +5279,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Working capital efficiency: days of sales tied up in receivables + inventory − payables.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5087,7 +5295,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Revenue per employee from payroll headcount (or entered); compared only within the same currency.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5102,7 +5311,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Project profitability: profit before overheads of tagged projects ÷ their revenue.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5117,7 +5327,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Cash conversion cycle: DSO + days inventory − DPO.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5132,7 +5343,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Explicit consent statement must be ticked; who agreed, when and the consent version are stored and audited.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5147,7 +5359,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Median only with 5+ other participants; quartiles only with 10+.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5162,7 +5375,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Groups below the threshold are suppressed and the next broader group is tried; counts are shown only as bands.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5177,7 +5391,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Only aggregates over other participants are returned; no organisation id in the pool; tests check no single value is returned.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5192,7 +5407,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Rounded ratios under random keys in a system-only pool; no differential-privacy noise yet (differencing over time is a documented limitation).
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5207,7 +5423,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Participation is a tenant table with forced RLS; the pool has a system-only RLS policy, tested against tenant reads and writes.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5222,7 +5439,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Formulas, thresholds, peer-group order and privacy rules are shown on the page and in docs/BENCHMARKING.md.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5237,7 +5455,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: The live pool holds only real participants; nothing is invented. Demo organisations never reach it.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5252,7 +5471,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Synthetic peers (seed:benchmark-peers, refused in production) are flagged is_synthetic, compared only with demo organisations and labelled on the page.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -5286,7 +5506,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines
   - packages/accounting-engine/src/fx.ts
   - packages/accounting-engine/test/fx.test.ts
-  - packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/fx/fx.service.ts
   - apps/api/test/fx-revaluation.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/fx/page.tsx
@@ -5336,7 +5557,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/src/locale.ts
   - packages/accounting-engine/test/invoice-templates.test.ts
   - packages/accounting-engine/test/locale.test.ts
-  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### I18N-005 — Country-specific tax configurations
 
@@ -5365,7 +5587,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
   - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
   - apps/web/e2e/invoice-templates-flow.test.mjs
-  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/INVOICE_TEMPLATES.md
 
 ### I18N-007 — Local financial reporting
@@ -5415,7 +5638,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/invoice-templates
   - apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx
   - apps/web/e2e/invoice-templates-flow.test.mjs
-  - packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - docs/INVOICE_TEMPLATES.md
 
 ### I18N-010 — Configurable fiscal years
@@ -5537,7 +5761,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -5556,7 +5781,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -5586,7 +5812,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/integrations/secret-box.ts
-  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
   - apps/api/test/integrations.e2e.test.ts
   - apps/web/e2e/integrations-flow.test.mjs
@@ -5600,7 +5827,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/integrations/secret-box.ts
-  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
   - apps/api/test/integrations.e2e.test.ts
   - apps/web/e2e/integrations-flow.test.mjs
@@ -5614,7 +5842,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/integrations/secret-box.ts
-  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
   - apps/api/test/integrations.e2e.test.ts
   - apps/web/e2e/integrations-flow.test.mjs
@@ -5628,7 +5857,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/integrations/secret-box.ts
-  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
   - apps/api/test/integrations.e2e.test.ts
   - apps/web/e2e/integrations-flow.test.mjs
@@ -5642,7 +5872,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/integrations/secret-box.ts
-  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
   - apps/api/test/integrations.e2e.test.ts
   - apps/web/e2e/integrations-flow.test.mjs
@@ -5656,7 +5887,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/integrations/secret-box.ts
-  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
   - apps/api/test/integrations.e2e.test.ts
   - apps/web/e2e/integrations-flow.test.mjs
@@ -5666,12 +5898,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Tested**
-- Notes: Application-level scoping, composite foreign keys, and PostgreSQL row-level security (forced, transaction-local tenant settings) on every tenant table.
+- Notes: Application-level scoping on every query, plus a second layer in the data layer: tenant policies on every tenant collection that keep organisations apart even when a service forgets its org filter (tested by bypassing the application filters).
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
   - Composite (id, org_id) foreign keys in schema
-  - packages/database/prisma/migrations/20261031220000_row_level_security
-  - apps/api/test/row-level-security.e2e.test.ts
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
+  - apps/api/test/tenant-isolation.e2e.test.ts
 
 ### SEC-002 — Organization-level access controls
 
@@ -6064,7 +6297,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
-  - packages/database/prisma/migrations/20261102090000_ai_copilot
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### SEC-033 — AI usage controls
 
@@ -6076,7 +6310,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
-  - packages/database/prisma/migrations/20261102090000_ai_copilot
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### SEC-034 — Model access policies
 
@@ -6098,9 +6333,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Security and enterprise governance
 - Status: **Tested**
-- Notes: Covers API probes (404) and database-level checks that bypass application filters. No AI features exist yet, so AI-specific leakage tests are not applicable.
+- Notes: Covers API probes (404) and data-layer checks that bypass application filters. AI features read only through the same tenant-scoped services.
 - Evidence:
-  - apps/api/test/row-level-security.e2e.test.ts
+  - apps/api/test/tenant-isolation.e2e.test.ts
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
 
 ### SEC-036 — Human approval gates
@@ -6209,7 +6444,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6218,7 +6454,6 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/PLANS_AND_SUBSCRIPTIONS.md
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6236,7 +6471,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6252,7 +6488,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6268,7 +6505,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6284,7 +6522,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6300,7 +6539,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6316,7 +6556,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6332,7 +6573,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6348,7 +6590,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6364,7 +6607,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6380,7 +6624,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6397,7 +6642,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6413,7 +6659,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6429,7 +6676,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6445,7 +6693,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6454,7 +6703,6 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/PLANS_AND_SUBSCRIPTIONS.md
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6472,7 +6720,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6481,7 +6730,6 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/PLANS_AND_SUBSCRIPTIONS.md
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6517,7 +6765,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/usage.ts
   - packages/accounting-engine/test/usage.test.ts
-  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/usage/usage.service.ts
   - apps/api/src/usage/usage.controller.ts
   - apps/api/test/usage.e2e.test.ts
@@ -6545,7 +6794,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/usage.ts
   - packages/accounting-engine/test/usage.test.ts
-  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/usage/usage.service.ts
   - apps/api/src/usage/usage.controller.ts
   - apps/api/test/usage.e2e.test.ts
@@ -6563,7 +6813,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6579,7 +6830,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6634,7 +6886,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6650,7 +6903,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6669,7 +6923,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6688,7 +6943,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6707,7 +6963,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6726,7 +6983,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6745,7 +7003,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6759,7 +7018,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Notes: A dedicated platform administration area (/admin) of the web app with its own layout and API (/v1/admin), for people with a platform role (SUPER_ADMIN, SUPPORT); first administrator via the admin:grant command.
 - Evidence:
-  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/admin/admin.service.ts
   - apps/api/src/admin/admin.controller.ts
   - apps/api/src/auth/guards.ts
@@ -6774,7 +7034,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Notes: Tenants (organisations) listed and searched by name, member email or id, with country, region, members, owners and status; overview counts.
 - Evidence:
-  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/admin/admin.service.ts
   - apps/api/src/admin/admin.controller.ts
   - apps/api/src/auth/guards.ts
@@ -6790,7 +7051,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Notes: Organisation detail (metadata and members only), suspension with a reason shown to members (read-only, 423 ORG_SUSPENDED on changes) and reinstatement, written to the organisation's own audit trail.
 - Evidence:
-  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/admin/admin.service.ts
   - apps/api/src/admin/admin.controller.ts
   - apps/api/src/auth/guards.ts
@@ -6823,7 +7085,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6840,7 +7103,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/plans.ts
   - packages/accounting-engine/test/plans.test.ts
-  - packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/billing.service.ts
   - apps/api/src/billing/platform-billing.service.ts
   - apps/api/test/plans-subscriptions.e2e.test.ts
@@ -6864,7 +7128,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/test/nav.test.ts
   - packages/accounting-engine/src/operations.ts
   - packages/accounting-engine/test/operations.test.ts
-  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/operations/operations.controller.ts
   - apps/api/test/operations.e2e.test.ts
   - apps/web/e2e/operations-flow.test.mjs
@@ -6878,7 +7143,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/usage.ts
   - packages/accounting-engine/test/usage.test.ts
-  - packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/usage/usage.service.ts
   - apps/api/src/usage/usage.controller.ts
   - apps/api/test/usage.e2e.test.ts
@@ -6899,7 +7165,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/system/page.tsx
   - packages/accounting-engine/src/operations.ts
   - packages/accounting-engine/test/operations.test.ts
-  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/operations/operations.controller.ts
   - apps/api/test/operations.e2e.test.ts
   - apps/web/e2e/operations-flow.test.mjs
@@ -6916,7 +7183,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/admin/system/page.tsx
   - packages/accounting-engine/src/operations.ts
   - packages/accounting-engine/test/operations.test.ts
-  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/operations/operations.controller.ts
   - apps/api/test/operations.e2e.test.ts
   - apps/web/e2e/operations-flow.test.mjs
@@ -6930,7 +7198,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/support.ts
   - packages/accounting-engine/test/support.test.ts
-  - packages/database/prisma/migrations/20261114090000_support/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/support/support.service.ts
   - apps/api/src/support/support.controller.ts
   - apps/api/test/support.e2e.test.ts
@@ -6949,7 +7218,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/subscription-billing.ts
   - packages/accounting-engine/test/subscription-billing.test.ts
-  - packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/billing/payments/subscription-payments.service.ts
   - apps/api/src/billing/payments/gateways.ts
   - apps/api/src/billing/payments/renewals-runner.service.ts
@@ -6968,13 +7238,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/operations/errors.service.ts
   - apps/api/src/common/errors.ts
-  - packages/database/prisma/migrations/20261116090100_error_events_rls/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/admin/errors/page.tsx
   - apps/web/src/app/admin/errors/[id]/page.tsx
   - apps/web/src/lib/api.ts
   - packages/accounting-engine/src/operations.ts
   - packages/accounting-engine/test/operations.test.ts
-  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
   - apps/api/src/operations/operations.controller.ts
   - apps/api/test/operations.e2e.test.ts
   - apps/web/e2e/operations-flow.test.mjs
@@ -6986,7 +7256,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Notes: Announcements with tone, start and optional end, withdrawn early if needed, shown on every page to everyone signed in.
 - Evidence:
-  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/admin/admin.service.ts
   - apps/api/src/admin/admin.controller.ts
   - apps/api/src/auth/guards.ts
@@ -7010,7 +7281,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/api/status/route.ts
   - packages/accounting-engine/src/operations.ts
   - packages/accounting-engine/test/operations.test.ts
-  - packages/database/prisma/migrations/20261116090000_operations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/operations/operations.controller.ts
   - apps/api/test/operations.e2e.test.ts
   - apps/web/e2e/operations-flow.test.mjs
@@ -7022,7 +7294,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Notes: Platform roles never grant organisation routes (membership still required, 404 otherwise); admin views select metadata columns only; tested that a super admin gets 404 on an organisation's accounts and journals. Since M9 slice 4 the one exception is support access the organisation grants itself (ADMIN-022): read-only, time-limited and logged.
 - Evidence:
-  - packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/admin/admin.service.ts
   - apps/api/src/admin/admin.controller.ts
   - apps/api/src/auth/guards.ts
@@ -7040,7 +7313,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/support.ts
   - packages/accounting-engine/test/support.test.ts
-  - packages/database/prisma/migrations/20261114090000_support/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/support/support.service.ts
   - apps/api/src/support/support.controller.ts
   - apps/api/test/support.e2e.test.ts
@@ -7078,7 +7352,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Implemented**
 - Notes: One deployment per region (DEPLOYMENT_REGION); organisations tagged with their data region at creation and served only there (421 WRONG_REGION elsewhere, with a link to the home region); audited operator move command. Implemented, not Production ready: no second region is running, and the data copy during a move is a manual database step.
 - Evidence:
-  - packages/database/prisma/migrations/20261110090000_data_regions/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/regions/regions.service.ts
   - apps/api/src/regions/move-org.ts
   - apps/api/src/auth/guards.ts
@@ -7107,7 +7382,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Module: Testing and quality assurance
 - Status: **Tested**
 - Evidence:
-  - pnpm test runs unit + integration suites
+  - apps/api/test
+  - packages/accounting-engine/test
+  - packages/tax-engine/test
+  - apps/web/e2e
   - .github/workflows/ci.yml
 
 ### QA-002 — Unit tests
@@ -7380,9 +7658,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Demonstration data
 - Status: **Tested**
-- Notes: Demo org is named "(SYNTHETIC DATA)", flagged is_demo, and the seed refuses to run when NODE_ENV=production.
+- Notes: Demo org is named "(SYNTHETIC DATA)", flagged is_demo, and the seed refuses to run in production or outside the local region.
 - Evidence:
   - apps/api/src/seed/seed-demo.ts
+  - apps/api/src/seed/guard.ts
+  - apps/api/test/seed-guard.test.ts
 
 ### INNOV-001 — Connect customers, contracts, invoices, vendors, projects, payments, journal entries and risks in an explainable relationship graph
 
@@ -7405,7 +7685,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/decisions.ts
   - packages/accounting-engine/test/decisions.test.ts
-  - packages/database/prisma/migrations/20261105120000_decision_memory/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/decisions
   - apps/api/test/decisions.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/decisions
@@ -7420,7 +7701,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/policies.ts
   - packages/accounting-engine/test/policies.test.ts
-  - packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/policies
   - apps/api/test/policies.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/governance/policies
@@ -7436,7 +7718,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/policies.ts
   - packages/accounting-engine/test/policies.test.ts
-  - packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/policies
   - apps/api/test/policies.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/governance/policies
@@ -7500,7 +7783,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/impact.ts
   - packages/accounting-engine/test/impact.test.ts
-  - packages/database/prisma/migrations/20261107090000_business_impact/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/impact
   - apps/api/test/business-impact.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/planning/impact
@@ -7515,7 +7799,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/forecast-lab.ts
   - packages/accounting-engine/test/forecast-lab.test.ts
-  - packages/database/prisma/migrations/20261105150000_forecast_lab/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/forecast-lab
   - apps/api/test/forecast-lab.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/planning/forecast-lab
@@ -7530,7 +7815,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/disaster.ts
   - packages/accounting-engine/test/disaster.test.ts
-  - packages/database/prisma/migrations/20261105180000_disaster_simulation/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/disasters
   - apps/api/test/disasters.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/planning/disasters
@@ -7558,7 +7844,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Covered by the financial recovery planner (docs/RECOVERY_PLANNER.md): recovery options measured on the digital twin from the books (collections, supplier terms, cost cuts, funding, pricing), combined into plans with their cash effect and evidence.
 - Evidence:
   - packages/accounting-engine/src/recovery.ts
-  - packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/recovery/recovery.service.ts
   - apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx
   - packages/accounting-engine/test/recovery.test.ts
@@ -7572,7 +7859,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Integration pending**
 - Notes: Speak a question (browser Web Speech API, en-IN; Talk2Tax receives only text), stored as VOICE, model told it was spoken; answers to spoken questions read aloud. Tested end to end with test doubles for speech recognition and output; waits on a live Claude key and a real-browser microphone check.
 - Evidence:
-  - packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/copilot/copilot.actions.ts
   - apps/api/src/copilot/copilot.tools.ts
   - apps/api/test/voice-assistant.e2e.test.ts
@@ -7587,7 +7875,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Notes: The copilot can only propose a task or acknowledging/dismissing an alert; the member who asked confirms on screen within 15 minutes (never by speech; sensitive ones ask twice), permission re-checked and the action carried out in the same transaction as the decision; decided actions immutable (trigger); audited.
 - Evidence:
-  - packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/copilot/copilot.actions.ts
   - apps/api/src/copilot/copilot.tools.ts
   - apps/api/test/voice-assistant.e2e.test.ts
@@ -7604,7 +7893,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/dashboards.ts
   - packages/accounting-engine/test/dashboards.test.ts
-  - packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/dashboards
   - apps/api/test/dashboards.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/reports/dashboards
@@ -7620,7 +7910,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/dashboards.ts
   - packages/accounting-engine/test/dashboards.test.ts
-  - packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/dashboards
   - apps/api/test/dashboards.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/reports/dashboards
@@ -7636,7 +7927,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/src/report-designer.ts
   - packages/accounting-engine/test/report-designer.test.ts
-  - packages/database/prisma/migrations/20261106120000_report_designer/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/report-designer
   - apps/api/test/report-designer.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/reports/designer
@@ -7651,7 +7943,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Covered by benchmarking (docs/BENCHMARKING.md): opt-in with recorded consent, an anonymous pool with no organisation id, medians only with 5+ peers and quartiles with 10+, each metric's formula shown for explanation.
 - Evidence:
   - packages/accounting-engine/src/benchmark.ts
-  - packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/api/src/benchmarking/benchmarking.service.ts
   - apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx
   - packages/accounting-engine/test/benchmark.test.ts
@@ -7688,7 +7981,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
-  - packages/database/prisma/migrations/20261102090000_ai_copilot
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### NAV-005 — Accounting
 
@@ -7762,7 +8056,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/integrations/integrations.service.ts
   - apps/api/src/integrations/secret-box.ts
-  - packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
   - apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx
   - apps/api/test/integrations.e2e.test.ts
   - apps/web/e2e/integrations-flow.test.mjs
@@ -7876,7 +8171,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
-  - packages/database/prisma/migrations/20261102090000_ai_copilot
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### RULE-006 — Do not claim live banking integration without credentials and provider validation
 
@@ -7913,9 +8209,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Absolute quality rules
 - Status: **Tested**
+- Notes: Secrets come from the environment or sealed per-organisation settings; CI refuses secrets and private keys written into code.
 - Evidence:
   - .env.example
   - .gitignore
+  - scripts/check-shortcuts.mjs
+  - scripts/check-shortcuts.test.mjs
 
 ### RULE-010 — Do not bypass tenant permissions
 
@@ -7934,7 +8233,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/copilot.e2e.test.ts
   - apps/web/e2e/copilot-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/copilot
-  - packages/database/prisma/migrations/20261102090000_ai_copilot
+  - apps/api/src/db/guards
+  - apps/api/src/db/constraints/catalog.json
 
 ### RULE-012 — Do not use floating-point arithmetic for financial postings
 
@@ -7969,7 +8269,39 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Absolute quality rules
 - Status: **Tested**
+- Notes: The registry is generated from features/status.json; CI refuses a Tested feature that names no test and evidence that is no longer in the repository.
 - Evidence:
   - docs/FEATURE_STATUS.md
   - docs/KNOWN_LIMITATIONS.md
+  - scripts/check-registry-evidence.mjs
+  - scripts/check-registry-evidence.test.mjs
+
+### RULE-017 — Do not implement proprietary competitor code
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: CI refuses a source file with a competitor copyright or proprietary notice, and any installed package whose licence does not allow a commercial product (only permissive licences, plus named exceptions with the reason).
+- Evidence:
+  - scripts/check-licences.mjs
+  - scripts/check-licences.test.mjs
+  - docs/SECURITY.md
+
+### RULE-018 — Do not over-engineer infrastructure unnecessarily
+
+- Module: Absolute quality rules
+- Status: **Implemented**
+- Notes: Production is one compose file: migrate, API, web and Caddy, on MongoDB. No queue, cache or orchestrator is added until the load test shows a need.
+- Evidence:
+  - deploy/docker-compose.prod.yml
+  - docs/DEPLOYMENT.md
+
+### RULE-020 — Do not prioritize cosmetic completeness over working accounting functionality
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: A feature counts as Tested only with a test in the repository; evidence that no longer exists fails CI. 275 stale references to removed PostgreSQL migrations now point at the MongoDB guards and checks that replaced them.
+- Evidence:
+  - scripts/check-registry-evidence.mjs
+  - scripts/check-registry-evidence.test.mjs
+  - docs/FEATURE_STATUS.md
 

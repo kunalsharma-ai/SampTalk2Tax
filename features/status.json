@@ -110,9 +110,11 @@
     "DEMO-021": {
       "status": "Tested",
       "evidence": [
-        "apps/api/src/seed/seed-demo.ts"
+        "apps/api/src/seed/seed-demo.ts",
+        "apps/api/src/seed/guard.ts",
+        "apps/api/test/seed-guard.test.ts"
       ],
-      "notes": "Demo org is named \"(SYNTHETIC DATA)\", flagged is_demo, and the seed refuses to run when NODE_ENV=production."
+      "notes": "Demo org is named \"(SYNTHETIC DATA)\", flagged is_demo, and the seed refuses to run in production or outside the local region."
     },
     "GL-001": {
       "status": "Implementing",
@@ -227,7 +229,8 @@
       "status": "Tested",
       "evidence": [
         "apps/api/test/ledger.e2e.test.ts › blocks posting into a locked period and allows it again after unlock",
-        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/periods",
         "apps/web/e2e/ledger-flow.test.mjs"
       ]
@@ -275,7 +278,8 @@
         "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
         "apps/web/src/components/dimensions/line-dimensions.tsx",
         "apps/web/e2e/dimensions-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/FINANCIAL_DIMENSIONS.md"
       ],
       "notes": "Departments and projects as masters (code unique per kind, never deleted, made inactive instead) tagging journal, invoice, credit note, bill and vendor credit lines; tags checked by organisation, kind and active state in the API and by the database, carried from document lines to the journal and kept on reversals. The older free-form JSON dimensions on journal lines remain but are not reported. Not built: location or custom dimensions, required tags per account."
@@ -285,7 +289,8 @@
       "evidence": [
         "packages/accounting-engine/test/journal.test.ts › rejects an unbalanced entry",
         "apps/api/test/ledger.e2e.test.ts › refuses an unbalanced posted entry even if inserted directly in SQL",
-        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers) (deferred constraint trigger)"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ]
     },
     "GL-038": {
@@ -331,7 +336,8 @@
     "GL-044": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/*_init/migration.sql (integrity triggers)",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/test/ledger.e2e.test.ts › immutability and reversal"
       ]
     },
@@ -341,7 +347,8 @@
         "apps/api/test/ledger.e2e.test.ts › converts foreign-currency lines",
         "packages/accounting-engine/src/fx.ts",
         "packages/accounting-engine/test/fx.test.ts",
-        "packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/fx/fx.service.ts",
         "apps/api/test/fx-revaluation.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/fx/page.tsx",
@@ -463,7 +470,10 @@
     "QA-001": {
       "status": "Tested",
       "evidence": [
-        "pnpm test runs unit + integration suites",
+        "apps/api/test",
+        "packages/accounting-engine/test",
+        "packages/tax-engine/test",
+        "apps/web/e2e",
         ".github/workflows/ci.yml"
       ]
     },
@@ -616,8 +626,11 @@
       "status": "Tested",
       "evidence": [
         ".env.example",
-        ".gitignore"
-      ]
+        ".gitignore",
+        "scripts/check-shortcuts.mjs",
+        "scripts/check-shortcuts.test.mjs"
+      ],
+      "notes": "Secrets come from the environment or sealed per-organisation settings; CI refuses secrets and private keys written into code."
     },
     "RULE-010": {
       "status": "Tested",
@@ -654,18 +667,22 @@
       "status": "Tested",
       "evidence": [
         "docs/FEATURE_STATUS.md",
-        "docs/KNOWN_LIMITATIONS.md"
-      ]
+        "docs/KNOWN_LIMITATIONS.md",
+        "scripts/check-registry-evidence.mjs",
+        "scripts/check-registry-evidence.test.mjs"
+      ],
+      "notes": "The registry is generated from features/status.json; CI refuses a Tested feature that names no test and evidence that is no longer in the repository."
     },
     "SEC-001": {
       "status": "Tested",
       "evidence": [
         "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation",
         "Composite (id, org_id) foreign keys in schema",
-        "packages/database/prisma/migrations/20261031220000_row_level_security",
-        "apps/api/test/row-level-security.e2e.test.ts"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
+        "apps/api/test/tenant-isolation.e2e.test.ts"
       ],
-      "notes": "Application-level scoping, composite foreign keys, and PostgreSQL row-level security (forced, transaction-local tenant settings) on every tenant table."
+      "notes": "Application-level scoping on every query, plus a second layer in the data layer: tenant policies on every tenant collection that keep organisations apart even when a service forgets its org filter (tested by bypassing the application filters)."
     },
     "SEC-002": {
       "status": "Tested",
@@ -1329,10 +1346,10 @@
     "SEC-035": {
       "status": "Tested",
       "evidence": [
-        "apps/api/test/row-level-security.e2e.test.ts",
+        "apps/api/test/tenant-isolation.e2e.test.ts",
         "apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation"
       ],
-      "notes": "Covers API probes (404) and database-level checks that bypass application filters. No AI features exist yet, so AI-specific leakage tests are not applicable."
+      "notes": "Covers API probes (404) and data-layer checks that bypass application filters. AI features read only through the same tenant-scoped services."
     },
     "ADMIN-004": {
       "status": "Tested",
@@ -1730,7 +1747,8 @@
         "apps/api/src/budgets",
         "apps/api/test/budgets.e2e.test.ts",
         "apps/web/e2e/budgets-flow.test.mjs",
-        "packages/database/prisma/migrations/20261101260000_budgets"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Submit, withdraw, send back with a reason, approve by someone other than the submitter (API and CHECK); one approved version per year, earlier one superseded; approved versions immutable (triggers). Single approval step."
     },
@@ -1755,7 +1773,8 @@
         "apps/api/test/cash-flow.e2e.test.ts",
         "apps/web/e2e/cash-flow-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/planning/cash-flow",
-        "packages/database/prisma/migrations/20261101280000_cash_flow_forecast"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Saved forecasts are immutable (trigger) and compared day by day with the actual closing cash from posted journals: average miss, bias, share of days inside the range, largest miss. No alerts when accuracy drops."
     },
@@ -1888,7 +1907,8 @@
         "apps/api/test/kpis.e2e.test.ts",
         "apps/web/e2e/kpis-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/reports/management",
-        "packages/database/prisma/migrations/20261101300000_kpis_management_reports"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Monthly management report: grouped P&L for the month vs previous month, same month last year and the approved budget, year to date, cash, KPIs and top customers, with commentary. Finalising freezes figures and commentary (trigger); later postings are listed against it. Printable from the browser; no PDF export, scheduling or distribution yet."
     },
@@ -1986,7 +2006,8 @@
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/copilot",
-        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Copilot screen with saved conversations; answers come from read-only tools over the books (P&L, balance sheet, trial balance, ageing, KPIs, management report, cash-flow forecast, budget vs actual, alerts, compliance calendar) and list the reports used. Runs on Anthropic's Claude API through the official SDK; tested end to end against a local stand-in for the API. Not yet run against the live API: waiting for ANTHROPIC_API_KEY."
     },
@@ -1997,7 +2018,8 @@
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/copilot",
-        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Copilot: off per organisation until an owner or admin turns it on (copilot.use to ask, org.manage to switch), at most 60 questions per member per hour, a step limit and a time limit per answer."
     },
@@ -2008,7 +2030,8 @@
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/copilot",
-        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Copilot: every question and answer is in the audit trail (who, outcome, tools used, model that answered, tokens); answers keep the exact exchange with the model."
     },
@@ -2019,7 +2042,8 @@
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/copilot",
-        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Copilot conversations keep each answer with the reports it read; finished messages cannot be changed (database trigger)."
     },
@@ -2030,7 +2054,8 @@
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/copilot",
-        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Without an API key the copilot says it is not set up and sends nothing; it never shows canned answers. Tests use a scripted stand-in model that is never reachable from the app."
     },
@@ -2041,7 +2066,8 @@
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
         "apps/web/src/app/orgs/[orgId]/copilot",
-        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "The copilot has read-only tools only; a call to any other tool is refused and reported back to the model."
     },
@@ -2052,13 +2078,13 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md",
         "apps/api/src/copilot",
         "apps/api/test/copilot.e2e.test.ts",
         "apps/web/e2e/copilot-flow.test.mjs",
-        "apps/web/src/app/orgs/[orgId]/copilot",
-        "packages/database/prisma/migrations/20261102090000_ai_copilot"
+        "apps/web/src/app/orgs/[orgId]/copilot"
       ],
       "notes": "Organisation-wide emergency stop with a reason (owners and admins), shown in every refusal; every agent checks before each model call, so work already running stops and what it had not reached is marked as not done. Per-agent switches too. Not built: a platform-wide stop across all organisations (only removing the API key does that)."
     },
@@ -2135,7 +2161,8 @@
       "status": "Tested",
       "evidence": [
         "apps/api/src/workflows/workflows.service.ts",
-        "packages/database/prisma/migrations/20261102120000_workflow_automations",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/test/workflows.e2e.test.ts",
         "apps/web/e2e/automations-flow.test.mjs"
       ],
@@ -2191,7 +2218,8 @@
         "packages/accounting-engine/test/workflows.test.ts",
         "apps/api/test/workflow-schedules.e2e.test.ts",
         "apps/web/e2e/automations-schedule-email.test.mjs",
-        "packages/database/prisma/migrations/20261102150000_workflow_schedules_email"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Three schedule triggers: on a schedule (every day, every week on a weekday, or every month on day 1-28, at a time in India time), an invoice N days overdue, and a bill due in N days. Each acts once per occurrence (unique index on workflow and occurrence), only on times and dates from when it was turned on, so turning one on never sends a backlog. Schedule facts include overdue and outstanding receivables and payables."
     },
@@ -2367,7 +2395,8 @@
         "apps/api/test/close.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/close/[periodId]/page.tsx",
         "apps/web/e2e/close-flow.test.mjs",
-        "packages/database/prisma/migrations/20261102230000_month_end_close/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/MONTH_END_CLOSE.md"
       ],
       "notes": "Closing a month records a certification: who closed it and when, the checklist as it stood (with the warnings accepted and the note saying why), and the month's totals (revenue, expenses, net profit, assets, liabilities, trial balance, journals posted). Only owners and admins can close or reopen; a database trigger keeps a certification unchanged except for recording one reopening with its reason, and an unlock on the periods page is refused while the close stands."
@@ -2379,7 +2408,8 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md"
       ],
       "notes": "AI control center page: every AI agent (copilot, collections, bank reconciliation, month-end close) with its action level, on/off switch, monthly token budget, usage this month, failures, acceptance rate over 90 days, what is running and waiting, and the organisation-wide emergency stop."
@@ -2391,7 +2421,8 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md"
       ],
       "notes": "Acceptance rate per agent over the last 90 days, from what people did with its proposals: reminders sent (with or without edits) or rejected, bank suggestions accepted or dismissed by a person, adjusting entries posted or rejected. Not built: accuracy against a labelled set."
@@ -2403,7 +2434,8 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md",
         "apps/api/test/ai-costs.e2e.test.ts",
         "apps/web/e2e/ai-costs-flow.test.mjs",
@@ -2418,7 +2450,8 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md"
       ],
       "notes": "The copilot is level 0: it can only run read-only reports; shown in the control center."
@@ -2430,7 +2463,8 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md"
       ],
       "notes": "Collections, bank reconciliation and month-end close agents are level 2: they prepare reminders, matches and entries that only take effect when a person approves them. The level is fixed in code, not a setting."
@@ -2442,7 +2476,8 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md"
       ],
       "notes": "Each agent run needs the starting member's permission for that feature, the organisation's AI switch, the agent's own switch and its budget, checked again before every model call. Not built: an orchestrator assigning work between agents."
@@ -2454,7 +2489,8 @@
         "apps/api/test/ai-control.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/ai-control/page.tsx",
         "apps/web/e2e/ai-control-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103010000_ai_control_center/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/AI_CONTROL_CENTER.md",
         "apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx"
       ],
@@ -2469,7 +2505,8 @@
         "apps/api/test/fixed-assets.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/fixed-assets",
         "apps/web/e2e/fixed-assets-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/FIXED_ASSETS.md"
       ],
       "notes": "Fixed asset register: assets with category, serial number, location, accounts, cost, residual value and dates; purchase posted from the register or already in the books; assets brought in part-depreciated; terms fixed once depreciation is posted (database trigger); disposal with proceeds and gain or loss posted. Not built: asset categories with default terms, transfers between locations, revaluation, impairment, partial disposal, tagging or photos."
@@ -2483,7 +2520,8 @@
         "apps/api/test/fixed-assets.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/fixed-assets",
         "apps/web/e2e/fixed-assets-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103030000_fixed_assets/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/FIXED_ASSETS.md"
       ],
       "notes": "Straight-line and written-down-value depreciation by month, posted once a month as one journal (catching up missed months), reversible latest first; schedules per asset. Not tested against a published depreciation schedule (for example Companies Act Schedule II rates); no separate tax-book (Income Tax Act block) depreciation."
@@ -2505,7 +2543,8 @@
         "apps/api/test/deferrals.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/deferrals",
         "apps/web/e2e/deferrals-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103050000_prepaid_deferred_accruals/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/PREPAID_AND_DEFERRED.md"
       ],
       "notes": "Deferred revenue schedules: receipt posted to a liability (2350 Deferred Revenue in the standard chart) or already in the books, released to revenue evenly by month or by days in one monthly journal with catch-up, latest-first reversal, ended early with what is left to revenue or refunded; month-end close warns about unposted releases. Not built: schedules created from invoice lines, recognition by milestone, usage or performance obligation (Ind AS 115 beyond straight-line over time)."
@@ -2519,7 +2558,8 @@
         "apps/api/test/deferrals.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/deferrals",
         "apps/web/e2e/deferrals-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103050000_prepaid_deferred_accruals/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/PREPAID_AND_DEFERRED.md"
       ],
       "notes": "Prepaid expense schedules: payment posted to a prepaid account or already in the books, released to expense evenly by month or by days in one monthly journal with catch-up, latest-first reversal, ended early with what is left expensed or moved to a refund account. Not built: schedules created from bill lines, foreign-currency schedules."
@@ -2546,7 +2586,8 @@
         "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
         "apps/web/src/components/dimensions/line-dimensions.tsx",
         "apps/web/e2e/dimensions-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/FINANCIAL_DIMENSIONS.md"
       ],
       "notes": "Departments and projects as masters (code unique per kind, never deleted, made inactive instead) tagging journal, invoice, credit note, bill and vendor credit lines; tags checked by organisation, kind and active state in the API and by the database, carried from document lines to the journal and kept on reversals. Not built: more than two dimensions, cost allocation across departments, splitting one line across projects."
@@ -2574,7 +2615,8 @@
         "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
         "apps/web/src/components/dimensions/line-dimensions.tsx",
         "apps/web/e2e/dimensions-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/FINANCIAL_DIMENSIONS.md"
       ],
       "notes": "Departments: code, name, description, active; tag any journal or document line; profit and loss by department."
@@ -2590,7 +2632,8 @@
         "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
         "apps/web/src/components/dimensions/line-dimensions.tsx",
         "apps/web/e2e/dimensions-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/FINANCIAL_DIMENSIONS.md"
       ],
       "notes": "Projects: code, name, customer, start and end dates, active; tag any journal or document line; profit and loss by project. Not built: project budgets, time or billing by project."
@@ -2606,7 +2649,8 @@
         "apps/web/src/app/orgs/[orgId]/dimensions/page.tsx",
         "apps/web/src/components/dimensions/line-dimensions.tsx",
         "apps/web/e2e/dimensions-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103070000_financial_dimensions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/FINANCIAL_DIMENSIONS.md",
         "packages/accounting-engine/src/cost-allocation.ts",
         "packages/accounting-engine/test/cost-allocation.test.ts",
@@ -2651,7 +2695,8 @@
         "apps/api/test/loans.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/loans",
         "apps/web/e2e/loans-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/LOANS_AND_TREASURY.md"
       ],
       "notes": "Loans kept as a register: money received posted or brought in from opening balances, installments posted from the bank split into principal and interest, prepayments with charges (shorter term or lower installment), floating-rate changes, reversal of the latest entry, closing when repaid, overdue installments, and what is owed within 12 months and later. Not built: covenants, security, drawdowns in tranches, moratorium periods, foreign-currency loans, loans given (receivable)."
@@ -2665,7 +2710,8 @@
         "apps/api/test/loans.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/loans",
         "apps/web/e2e/loans-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/LOANS_AND_TREASURY.md"
       ],
       "notes": "Repayment schedules for EMI and equal-principal loans, previewed as the loan is entered, recomputed after prepayments and rate changes, with installments paid and still to pay. Not built: bullet or balloon repayments, quarterly or irregular installments, step-up EMIs."
@@ -2679,7 +2725,8 @@
         "apps/api/test/loans.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/loans",
         "apps/web/e2e/loans-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/LOANS_AND_TREASURY.md"
       ],
       "notes": "Interest monthly on the opening balance of each installment period (monthly rests), rounded to the currency; the lender's own split can be recorded instead. Not built: daily-balance interest, interest accrued at month end between installment dates, interest income on deposits."
@@ -2717,7 +2764,8 @@
         "apps/api/test/loans.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/loans",
         "apps/web/e2e/loans-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103090000_loans_treasury/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/LOANS_AND_TREASURY.md",
         "packages/accounting-engine/src/deposits.ts",
         "packages/accounting-engine/test/deposits.test.ts",
@@ -2738,7 +2786,8 @@
         "apps/web/src/app/orgs/[orgId]/settings/invoice-templates",
         "apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx",
         "apps/web/e2e/invoice-templates-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/INVOICE_TEMPLATES.md"
       ],
       "notes": "Invoice and credit note layouts from country presets: India GST tax invoice (CGST Rule 46 checks), UAE VAT (bilingual title), UK VAT, US, Singapore GST, Australia GST, EU VAT (Article 226 checks) and generic. Each preset sets the title, tax number label, columns, date and number style, paper size and the rules the designer warns about. Not built: Saudi ZATCA QR, Arabic right-to-left body text, legal review of each preset."
@@ -2753,7 +2802,8 @@
         "apps/web/src/app/orgs/[orgId]/settings/invoice-templates",
         "apps/web/src/app/orgs/[orgId]/print/[documentId]/page.tsx",
         "apps/web/e2e/invoice-templates-flow.test.mjs",
-        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "docs/INVOICE_TEMPLATES.md"
       ],
       "notes": "Templates per organisation: five themes, eight palettes plus custom colours, fonts, editable and reorderable sections and columns, logos, and HTML templates with safe placeholders. Covers invoices and credit notes; quotes, statements, receipts and payslips do not use templates yet."
@@ -2779,7 +2829,8 @@
         "packages/accounting-engine/src/locale.ts",
         "packages/accounting-engine/test/invoice-templates.test.ts",
         "packages/accounting-engine/test/locale.test.ts",
-        "packages/database/prisma/migrations/20261103110000_invoice_templates/migration.sql"
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json"
       ],
       "notes": "Each person chooses how dates are shown (06 Nov 2026, 06/11/2026, 11/06/2026 or 2026-11-06); month names follow the language. Invoice templates keep their own per-template date style for the printed document."
     },
@@ -2833,7 +2884,8 @@
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts",
         "packages/accounting-engine/test/consolidation.test.ts",
-        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/consolidation.service.ts",
         "apps/api/src/consolidation/consolidation.controller.ts",
         "apps/api/test/consolidation.e2e.test.ts",
@@ -2848,7 +2900,8 @@
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts",
         "packages/accounting-engine/test/consolidation.test.ts",
-        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/consolidation.service.ts",
         "apps/api/src/consolidation/consolidation.controller.ts",
         "apps/api/test/consolidation.e2e.test.ts",
@@ -2863,7 +2916,8 @@
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts",
         "packages/accounting-engine/test/consolidation.test.ts",
-        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/consolidation.service.ts",
         "apps/api/src/consolidation/consolidation.controller.ts",
         "apps/api/test/consolidation.e2e.test.ts",
@@ -2878,7 +2932,8 @@
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts",
         "packages/accounting-engine/test/consolidation.test.ts",
-        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/consolidation.service.ts",
         "apps/api/src/consolidation/consolidation.controller.ts",
         "apps/api/test/consolidation.e2e.test.ts",
@@ -2893,7 +2948,8 @@
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts",
         "packages/accounting-engine/test/consolidation.test.ts",
-        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/consolidation.service.ts",
         "apps/api/src/consolidation/consolidation.controller.ts",
         "apps/api/test/consolidation.e2e.test.ts",
@@ -2908,7 +2964,8 @@
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts",
         "packages/accounting-engine/test/consolidation.test.ts",
-        "packages/database/prisma/migrations/20261103130000_consolidation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/consolidation.service.ts",
         "apps/api/src/consolidation/consolidation.controller.ts",
         "apps/api/test/consolidation.e2e.test.ts",
@@ -2934,7 +2991,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)",
-        "packages/database/prisma/migrations/20261103180000_intercompany/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/intercompany.service.ts",
         "apps/web/src/components/consolidation/intercompany.tsx",
         "packages/accounting-engine/test/consolidation.test.ts",
@@ -2948,7 +3006,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -2962,7 +3021,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -2976,7 +3036,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -2990,7 +3051,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3004,7 +3066,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3018,7 +3081,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3032,7 +3096,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3046,7 +3111,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3060,7 +3126,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3074,7 +3141,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3088,7 +3156,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3102,7 +3171,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3116,7 +3186,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3130,7 +3201,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3144,7 +3216,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3158,7 +3231,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3172,7 +3246,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3186,7 +3261,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3200,7 +3276,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3214,7 +3291,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3228,7 +3306,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3242,7 +3321,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3256,7 +3336,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3270,7 +3351,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3284,7 +3366,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3298,7 +3381,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3312,7 +3396,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin.ts",
-        "packages/database/prisma/migrations/20261103200000_twin_scenarios/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/components/twin/scenario-builder.tsx",
         "packages/accounting-engine/test/twin.test.ts",
@@ -3327,7 +3412,8 @@
       "evidence": [
         "apps/api/src/integrations/integrations.service.ts",
         "apps/api/src/integrations/secret-box.ts",
-        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
         "apps/api/test/integrations.e2e.test.ts",
         "apps/web/e2e/integrations-flow.test.mjs",
@@ -3340,7 +3426,8 @@
       "evidence": [
         "apps/api/src/integrations/integrations.service.ts",
         "apps/api/src/integrations/secret-box.ts",
-        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
         "apps/api/test/integrations.e2e.test.ts",
         "apps/web/e2e/integrations-flow.test.mjs",
@@ -3353,7 +3440,8 @@
       "evidence": [
         "apps/api/src/integrations/integrations.service.ts",
         "apps/api/src/integrations/secret-box.ts",
-        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
         "apps/api/test/integrations.e2e.test.ts",
         "apps/web/e2e/integrations-flow.test.mjs",
@@ -3366,7 +3454,8 @@
       "evidence": [
         "apps/api/src/integrations/integrations.service.ts",
         "apps/api/src/integrations/secret-box.ts",
-        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
         "apps/api/test/integrations.e2e.test.ts",
         "apps/web/e2e/integrations-flow.test.mjs",
@@ -3379,7 +3468,8 @@
       "evidence": [
         "apps/api/src/integrations/integrations.service.ts",
         "apps/api/src/integrations/secret-box.ts",
-        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
         "apps/api/test/integrations.e2e.test.ts",
         "apps/web/e2e/integrations-flow.test.mjs",
@@ -3392,7 +3482,8 @@
       "evidence": [
         "apps/api/src/integrations/integrations.service.ts",
         "apps/api/src/integrations/secret-box.ts",
-        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
         "apps/api/test/integrations.e2e.test.ts",
         "apps/web/e2e/integrations-flow.test.mjs",
@@ -3405,7 +3496,8 @@
       "evidence": [
         "apps/api/src/integrations/integrations.service.ts",
         "apps/api/src/integrations/secret-box.ts",
-        "packages/database/prisma/migrations/20261103210000_org_integrations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/orgs/[orgId]/settings/integrations/page.tsx",
         "apps/api/test/integrations.e2e.test.ts",
         "apps/web/e2e/integrations-flow.test.mjs",
@@ -3417,7 +3509,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3468,7 +3561,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3483,7 +3577,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3498,7 +3593,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3536,7 +3632,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3550,7 +3647,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3564,7 +3662,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3578,7 +3677,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3592,7 +3692,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3606,7 +3707,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/twin-insights.ts",
-        "packages/database/prisma/migrations/20261103220000_war_room/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/twin/twin.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/twin/[scenarioId]/page.tsx",
         "packages/accounting-engine/test/twin-insights.test.ts",
@@ -3633,7 +3735,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3647,7 +3750,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3661,7 +3765,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3675,7 +3780,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3689,7 +3795,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3703,7 +3810,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3717,7 +3825,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3731,7 +3840,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3745,7 +3855,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3759,7 +3870,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3773,7 +3885,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -3787,7 +3900,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3801,7 +3915,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3815,7 +3930,8 @@
       "status": "Integration pending",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx",
@@ -3830,7 +3946,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3844,7 +3961,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3858,7 +3976,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3872,7 +3991,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3886,7 +4006,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3900,7 +4021,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3914,7 +4036,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3928,7 +4051,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3942,7 +4066,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx",
@@ -3957,7 +4082,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "apps/web/src/app/orgs/[orgId]/cfo/reports/[reportId]/page.tsx",
@@ -3972,7 +4098,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -3986,7 +4113,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4000,7 +4128,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4014,7 +4143,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4028,7 +4158,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4042,7 +4173,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4056,7 +4188,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4070,7 +4203,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4084,7 +4218,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4098,7 +4233,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4112,7 +4248,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4126,7 +4263,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4140,7 +4278,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4154,7 +4293,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4168,7 +4308,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4182,7 +4323,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4196,7 +4338,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4210,7 +4353,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4224,7 +4368,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4238,7 +4383,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4252,7 +4398,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4266,7 +4413,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/cfo.ts",
-        "packages/database/prisma/migrations/20261104180000_virtual_cfo/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/cfo/cfo.service.ts",
         "apps/web/src/app/orgs/[orgId]/cfo/page.tsx",
         "packages/accounting-engine/test/cfo.test.ts",
@@ -4281,7 +4429,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4295,7 +4444,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4309,7 +4459,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4323,7 +4474,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4337,7 +4489,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4351,7 +4504,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4365,7 +4519,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4379,7 +4534,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4393,7 +4549,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4407,7 +4564,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4421,7 +4579,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4435,7 +4594,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4449,7 +4609,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4463,7 +4624,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4477,7 +4639,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4491,7 +4654,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4505,7 +4669,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4519,7 +4684,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4533,7 +4699,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4547,7 +4714,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4561,7 +4729,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4605,7 +4774,8 @@
       "evidence": [
         "packages/accounting-engine/src/decisions.ts",
         "packages/accounting-engine/test/decisions.test.ts",
-        "packages/database/prisma/migrations/20261105120000_decision_memory/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/decisions",
         "apps/api/test/decisions.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/decisions",
@@ -4619,7 +4789,8 @@
       "evidence": [
         "packages/accounting-engine/src/forecast-lab.ts",
         "packages/accounting-engine/test/forecast-lab.test.ts",
-        "packages/database/prisma/migrations/20261105150000_forecast_lab/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/forecast-lab",
         "apps/api/test/forecast-lab.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/planning/forecast-lab",
@@ -4633,7 +4804,8 @@
       "evidence": [
         "packages/accounting-engine/src/disaster.ts",
         "packages/accounting-engine/test/disaster.test.ts",
-        "packages/database/prisma/migrations/20261105180000_disaster_simulation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/disasters",
         "apps/api/test/disasters.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/planning/disasters",
@@ -4647,7 +4819,8 @@
       "evidence": [
         "packages/accounting-engine/src/policies.ts",
         "packages/accounting-engine/test/policies.test.ts",
-        "packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/policies",
         "apps/api/test/policies.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/governance/policies",
@@ -4662,7 +4835,8 @@
       "evidence": [
         "packages/accounting-engine/src/policies.ts",
         "packages/accounting-engine/test/policies.test.ts",
-        "packages/database/prisma/migrations/20261105210000_policy_studio/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/policies",
         "apps/api/test/policies.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/governance/policies",
@@ -4677,7 +4851,8 @@
       "evidence": [
         "packages/accounting-engine/src/dashboards.ts",
         "packages/accounting-engine/test/dashboards.test.ts",
-        "packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/dashboards",
         "apps/api/test/dashboards.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/reports/dashboards",
@@ -4692,7 +4867,8 @@
       "evidence": [
         "packages/accounting-engine/src/dashboards.ts",
         "packages/accounting-engine/test/dashboards.test.ts",
-        "packages/database/prisma/migrations/20261106090000_ai_dashboards/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/dashboards",
         "apps/api/test/dashboards.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/reports/dashboards",
@@ -4706,7 +4882,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/recovery.ts",
-        "packages/database/prisma/migrations/20261104090000_recovery_planner/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recovery/recovery.service.ts",
         "apps/web/src/app/orgs/[orgId]/planning/recovery/[planId]/page.tsx",
         "packages/accounting-engine/test/recovery.test.ts",
@@ -4720,7 +4897,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/benchmark.ts",
-        "packages/database/prisma/migrations/20261105090000_benchmarking/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/benchmarking/benchmarking.service.ts",
         "apps/web/src/app/orgs/[orgId]/benchmarking/page.tsx",
         "packages/accounting-engine/test/benchmark.test.ts",
@@ -4735,7 +4913,8 @@
       "evidence": [
         "packages/accounting-engine/src/report-designer.ts",
         "packages/accounting-engine/test/report-designer.test.ts",
-        "packages/database/prisma/migrations/20261106120000_report_designer/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/report-designer",
         "apps/api/test/report-designer.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/reports/designer",
@@ -4748,7 +4927,8 @@
     "INNOV-013": {
       "status": "Integration pending",
       "evidence": [
-        "packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/copilot/copilot.actions.ts",
         "apps/api/src/copilot/copilot.tools.ts",
         "apps/api/test/voice-assistant.e2e.test.ts",
@@ -4762,7 +4942,8 @@
     "INNOV-014": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/20261106150000_voice_assistant/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/copilot/copilot.actions.ts",
         "apps/api/src/copilot/copilot.tools.ts",
         "apps/api/test/voice-assistant.e2e.test.ts",
@@ -4778,7 +4959,8 @@
       "evidence": [
         "packages/accounting-engine/src/impact.ts",
         "packages/accounting-engine/test/impact.test.ts",
-        "packages/database/prisma/migrations/20261107090000_business_impact/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/impact",
         "apps/api/test/business-impact.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/planning/impact",
@@ -4997,7 +5179,8 @@
       "evidence": [
         "packages/accounting-engine/src/fx.ts",
         "packages/accounting-engine/test/fx.test.ts",
-        "packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/fx/fx.service.ts",
         "apps/api/test/fx-revaluation.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/fx/page.tsx",
@@ -5011,7 +5194,8 @@
       "evidence": [
         "packages/accounting-engine/src/fx.ts",
         "packages/accounting-engine/test/fx.test.ts",
-        "packages/database/prisma/migrations/20261109090000_fx_revaluation/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/fx/fx.service.ts",
         "apps/api/test/fx-revaluation.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/fx/page.tsx",
@@ -5023,7 +5207,8 @@
     "PERF-007": {
       "status": "Implemented",
       "evidence": [
-        "packages/database/prisma/migrations/20261110090000_data_regions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/regions/regions.service.ts",
         "apps/api/src/regions/move-org.ts",
         "apps/api/src/auth/guards.ts",
@@ -5037,7 +5222,8 @@
     "ADMIN-001": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/admin/admin.service.ts",
         "apps/api/src/admin/admin.controller.ts",
         "apps/api/src/auth/guards.ts",
@@ -5051,7 +5237,8 @@
     "ADMIN-002": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/admin/admin.service.ts",
         "apps/api/src/admin/admin.controller.ts",
         "apps/api/src/auth/guards.ts",
@@ -5066,7 +5253,8 @@
     "ADMIN-003": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/admin/admin.service.ts",
         "apps/api/src/admin/admin.controller.ts",
         "apps/api/src/auth/guards.ts",
@@ -5081,7 +5269,8 @@
     "ADMIN-019": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/admin/admin.service.ts",
         "apps/api/src/admin/admin.controller.ts",
         "apps/api/src/auth/guards.ts",
@@ -5097,7 +5286,8 @@
     "ADMIN-021": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/20261111090000_platform_admin/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/admin/admin.service.ts",
         "apps/api/src/admin/admin.controller.ts",
         "apps/api/src/auth/guards.ts",
@@ -5114,7 +5304,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5123,7 +5314,6 @@
         "docs/PLANS_AND_SUBSCRIPTIONS.md",
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5140,7 +5330,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5155,7 +5346,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5170,7 +5362,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5185,7 +5378,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5200,7 +5394,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5215,7 +5410,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5230,7 +5426,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5245,7 +5442,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5260,7 +5458,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5275,7 +5474,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5291,7 +5491,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5306,7 +5507,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5321,7 +5523,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5336,7 +5539,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5345,7 +5549,6 @@
         "docs/PLANS_AND_SUBSCRIPTIONS.md",
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5362,7 +5565,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5371,7 +5575,6 @@
         "docs/PLANS_AND_SUBSCRIPTIONS.md",
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5388,7 +5591,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5403,7 +5607,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5426,7 +5631,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5441,7 +5647,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5456,7 +5663,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5472,7 +5680,8 @@
       "evidence": [
         "packages/accounting-engine/src/plans.ts",
         "packages/accounting-engine/test/plans.test.ts",
-        "packages/database/prisma/migrations/20261112090000_plans_subscriptions/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/billing.service.ts",
         "apps/api/src/billing/platform-billing.service.ts",
         "apps/api/test/plans-subscriptions.e2e.test.ts",
@@ -5488,7 +5697,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5506,7 +5716,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5524,7 +5735,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5542,7 +5754,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5560,7 +5773,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5578,7 +5792,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5596,7 +5811,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5614,7 +5830,8 @@
       "evidence": [
         "packages/accounting-engine/src/subscription-billing.ts",
         "packages/accounting-engine/test/subscription-billing.test.ts",
-        "packages/database/prisma/migrations/20261113090000_subscription_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/billing/payments/subscription-payments.service.ts",
         "apps/api/src/billing/payments/gateways.ts",
         "apps/api/src/billing/payments/renewals-runner.service.ts",
@@ -5632,7 +5849,8 @@
       "evidence": [
         "packages/accounting-engine/src/support.ts",
         "packages/accounting-engine/test/support.test.ts",
-        "packages/database/prisma/migrations/20261114090000_support/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/support/support.service.ts",
         "apps/api/src/support/support.controller.ts",
         "apps/api/test/support.e2e.test.ts",
@@ -5650,7 +5868,8 @@
       "evidence": [
         "packages/accounting-engine/src/support.ts",
         "packages/accounting-engine/test/support.test.ts",
-        "packages/database/prisma/migrations/20261114090000_support/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/support/support.service.ts",
         "apps/api/src/support/support.controller.ts",
         "apps/api/test/support.e2e.test.ts",
@@ -5682,7 +5901,8 @@
       "evidence": [
         "packages/accounting-engine/src/usage.ts",
         "packages/accounting-engine/test/usage.test.ts",
-        "packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/usage/usage.service.ts",
         "apps/api/src/usage/usage.controller.ts",
         "apps/api/test/usage.e2e.test.ts",
@@ -5709,7 +5929,8 @@
       "evidence": [
         "packages/accounting-engine/src/usage.ts",
         "packages/accounting-engine/test/usage.test.ts",
-        "packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/usage/usage.service.ts",
         "apps/api/src/usage/usage.controller.ts",
         "apps/api/test/usage.e2e.test.ts",
@@ -5726,7 +5947,8 @@
       "evidence": [
         "packages/accounting-engine/src/usage.ts",
         "packages/accounting-engine/test/usage.test.ts",
-        "packages/database/prisma/migrations/20261115090000_usage_metering/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/usage/usage.service.ts",
         "apps/api/src/usage/usage.controller.ts",
         "apps/api/test/usage.e2e.test.ts",
@@ -5749,7 +5971,8 @@
         "apps/web/test/nav.test.ts",
         "packages/accounting-engine/src/operations.ts",
         "packages/accounting-engine/test/operations.test.ts",
-        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/operations/operations.controller.ts",
         "apps/api/test/operations.e2e.test.ts",
         "apps/web/e2e/operations-flow.test.mjs",
@@ -5766,7 +5989,8 @@
         "apps/web/src/app/admin/system/page.tsx",
         "packages/accounting-engine/src/operations.ts",
         "packages/accounting-engine/test/operations.test.ts",
-        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/operations/operations.controller.ts",
         "apps/api/test/operations.e2e.test.ts",
         "apps/web/e2e/operations-flow.test.mjs",
@@ -5782,7 +6006,8 @@
         "apps/web/src/app/admin/system/page.tsx",
         "packages/accounting-engine/src/operations.ts",
         "packages/accounting-engine/test/operations.test.ts",
-        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/operations/operations.controller.ts",
         "apps/api/test/operations.e2e.test.ts",
         "apps/web/e2e/operations-flow.test.mjs",
@@ -5795,13 +6020,13 @@
       "evidence": [
         "apps/api/src/operations/errors.service.ts",
         "apps/api/src/common/errors.ts",
-        "packages/database/prisma/migrations/20261116090100_error_events_rls/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/web/src/app/admin/errors/page.tsx",
         "apps/web/src/app/admin/errors/[id]/page.tsx",
         "apps/web/src/lib/api.ts",
         "packages/accounting-engine/src/operations.ts",
         "packages/accounting-engine/test/operations.test.ts",
-        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
         "apps/api/src/operations/operations.controller.ts",
         "apps/api/test/operations.e2e.test.ts",
         "apps/web/e2e/operations-flow.test.mjs",
@@ -5819,7 +6044,8 @@
         "apps/web/src/app/api/status/route.ts",
         "packages/accounting-engine/src/operations.ts",
         "packages/accounting-engine/test/operations.test.ts",
-        "packages/database/prisma/migrations/20261116090000_operations/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/operations/operations.controller.ts",
         "apps/api/test/operations.e2e.test.ts",
         "apps/web/e2e/operations-flow.test.mjs",
@@ -5841,7 +6067,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/crm.ts",
-        "packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/crm/crm.service.ts",
         "apps/api/test/crm.e2e.test.ts",
         "apps/web/e2e/crm-pipeline-flow.test.mjs",
@@ -5854,7 +6081,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/crm.ts",
-        "packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/crm/crm.service.ts",
         "apps/api/test/crm.e2e.test.ts",
         "apps/web/e2e/crm-pipeline-flow.test.mjs",
@@ -5868,8 +6096,8 @@
       "evidence": [
         "packages/accounting-engine/src/crm.ts",
         "packages/accounting-engine/src/crm-api.ts",
-        "packages/database/prisma/migrations/20261117090000_crm_pipeline/migration.sql",
-        "packages/database/prisma/migrations/20261122090000_crm_external_api/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/crm/crm.service.ts",
         "apps/api/src/crm-api/crm-api.controller.ts",
         "apps/api/src/crm-api/crm-webhooks.service.ts",
@@ -5886,7 +6114,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/sales-orders.ts",
-        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/sales-orders.service.ts",
         "apps/api/test/sales-orders.e2e.test.ts",
         "apps/web/e2e/quotes-orders-flow.test.mjs",
@@ -5899,7 +6128,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/sales-orders.ts",
-        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/sales-orders.service.ts",
         "apps/api/test/sales-orders.e2e.test.ts",
         "apps/web/e2e/quotes-orders-flow.test.mjs",
@@ -5912,7 +6142,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/sales-orders.ts",
-        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/sales-orders.service.ts",
         "apps/api/test/sales-orders.e2e.test.ts",
         "apps/web/e2e/quotes-orders-flow.test.mjs",
@@ -5925,7 +6156,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/contracts.ts",
-        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/contracts.service.ts",
         "apps/api/src/sales-orders/contracts-runner.service.ts",
         "apps/api/test/contracts.e2e.test.ts",
@@ -5939,7 +6171,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/contracts.ts",
-        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/contracts.service.ts",
         "apps/api/src/sales-orders/contracts-runner.service.ts",
         "apps/api/test/contracts.e2e.test.ts",
@@ -5953,7 +6186,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/contracts.ts",
-        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/contracts.service.ts",
         "apps/api/src/sales-orders/contracts-runner.service.ts",
         "apps/api/test/contracts.e2e.test.ts",
@@ -5967,7 +6201,8 @@
       "status": "Implementing",
       "evidence": [
         "packages/accounting-engine/src/contracts.ts",
-        "packages/database/prisma/migrations/20261119090000_sales_contracts/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/contracts.service.ts",
         "apps/api/src/sales-orders/contracts-runner.service.ts",
         "apps/api/test/contracts.e2e.test.ts",
@@ -5993,7 +6228,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/customer-insights.ts",
-        "packages/database/prisma/migrations/20261120090000_customer_360/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/crm/customer-insights.service.ts",
         "apps/api/test/customer-insights.e2e.test.ts",
         "apps/web/e2e/customer-360-flow.test.mjs",
@@ -6007,7 +6243,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/customer-insights.ts",
-        "packages/database/prisma/migrations/20261120090000_customer_360/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/crm/customer-insights.service.ts",
         "apps/api/test/customer-insights.e2e.test.ts",
         "apps/web/e2e/customer-360-flow.test.mjs",
@@ -6021,7 +6258,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/customer-insights.ts",
-        "packages/database/prisma/migrations/20261120090000_customer_360/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/crm/customer-insights.service.ts",
         "apps/api/test/customer-insights.e2e.test.ts",
         "apps/web/e2e/customer-360-flow.test.mjs",
@@ -6035,7 +6273,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/revenue-forecast.ts",
-        "packages/database/prisma/migrations/20261121090000_revenue_forecasts/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/crm/revenue-forecast.service.ts",
         "apps/api/test/revenue-forecast.e2e.test.ts",
         "apps/web/e2e/revenue-forecast-flow.test.mjs",
@@ -6059,7 +6298,8 @@
       "evidence": [
         "packages/accounting-engine/src/fx-documents.ts",
         "packages/accounting-engine/test/fx-documents.test.ts",
-        "packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/ledgers/documents.service.ts",
         "apps/api/src/ledgers/subledger.service.ts",
         "apps/api/test/fx-documents.e2e.test.ts",
@@ -6074,7 +6314,8 @@
       "evidence": [
         "packages/accounting-engine/src/fx-documents.ts",
         "packages/accounting-engine/test/fx-documents.test.ts",
-        "packages/database/prisma/migrations/20261123090000_fx_documents/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/ledgers/documents.service.ts",
         "apps/api/src/ledgers/subledger.service.ts",
         "apps/api/test/fx-documents.e2e.test.ts",
@@ -6101,7 +6342,8 @@
       "evidence": [
         "packages/accounting-engine/src/recurring-journals.ts",
         "packages/accounting-engine/test/recurring-journals.test.ts",
-        "packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/journal-templates/journal-templates.service.ts",
         "apps/api/test/journal-templates.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/journal-templates",
@@ -6115,7 +6357,8 @@
       "evidence": [
         "packages/accounting-engine/src/recurring-journals.ts",
         "packages/accounting-engine/test/recurring-journals.test.ts",
-        "packages/database/prisma/migrations/20261124090000_journal_templates/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/journal-templates/journal-templates.service.ts",
         "apps/api/test/journal-templates.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/journal-templates",
@@ -6130,7 +6373,8 @@
       "evidence": [
         "packages/accounting-engine/src/bad-debts.ts",
         "packages/accounting-engine/test/bad-debts.test.ts",
-        "packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/bad-debts/bad-debts.service.ts",
         "apps/api/test/bad-debts.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx",
@@ -6144,7 +6388,8 @@
       "evidence": [
         "packages/accounting-engine/src/bad-debts.ts",
         "packages/accounting-engine/test/bad-debts.test.ts",
-        "packages/database/prisma/migrations/20261125090000_bad_debts/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/bad-debts/bad-debts.service.ts",
         "apps/api/test/bad-debts.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/sales/bad-debts/page.tsx",
@@ -6158,7 +6403,8 @@
       "evidence": [
         "packages/accounting-engine/src/year-end.ts",
         "packages/accounting-engine/test/year-end.test.ts",
-        "packages/database/prisma/migrations/20261126090000_year_end_close/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/year-end/year-end.service.ts",
         "apps/api/test/year-end.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/year-end/page.tsx",
@@ -6172,7 +6418,8 @@
       "evidence": [
         "packages/accounting-engine/src/payment-batches.ts",
         "packages/accounting-engine/test/payment-batches.test.ts",
-        "packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/payment-batches/payment-batches.service.ts",
         "apps/api/test/payment-batches.e2e.test.ts",
         "apps/web/e2e/payment-batches-flow.test.mjs",
@@ -6186,7 +6433,8 @@
       "evidence": [
         "packages/accounting-engine/src/payment-batches.ts",
         "packages/accounting-engine/test/payment-batches.test.ts",
-        "packages/database/prisma/migrations/20261127090000_payment_batches/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/payment-batches/payment-batches.service.ts",
         "apps/api/test/payment-batches.e2e.test.ts",
         "apps/web/e2e/payment-batches-flow.test.mjs",
@@ -6199,7 +6447,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/sales-orders.ts",
-        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/sales-orders.service.ts",
         "apps/api/test/sales-orders.e2e.test.ts",
         "apps/web/e2e/quotes-orders-flow.test.mjs",
@@ -6212,7 +6461,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/sales-orders.ts",
-        "packages/database/prisma/migrations/20261118090000_quotes_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/sales-orders.service.ts",
         "apps/api/test/sales-orders.e2e.test.ts",
         "apps/web/e2e/quotes-orders-flow.test.mjs",
@@ -6224,7 +6474,8 @@
     "AR-017": {
       "status": "Tested",
       "evidence": [
-        "packages/database/prisma/migrations/20261128090000_debit_notes/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/ledgers/documents.service.ts",
         "apps/api/test/debit-notes.e2e.test.ts",
         "packages/tax-engine/src/india/returns.ts",
@@ -6240,7 +6491,8 @@
       "evidence": [
         "packages/accounting-engine/src/recurring-bills.ts",
         "packages/accounting-engine/test/recurring-bills.test.ts",
-        "packages/database/prisma/migrations/20261129090000_recurring_bills/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/recurring-bills/recurring-bills.service.ts",
         "apps/api/test/recurring-bills.e2e.test.ts",
         "apps/web/e2e/recurring-bills-flow.test.mjs",
@@ -6254,7 +6506,8 @@
       "evidence": [
         "packages/accounting-engine/src/payment-schedule.ts",
         "packages/accounting-engine/test/payment-schedule.test.ts",
-        "packages/database/prisma/migrations/20261130090000_payment_schedule/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/payment-batches/payment-schedule.service.ts",
         "apps/api/test/payment-schedule.e2e.test.ts",
         "apps/web/e2e/payment-schedule-flow.test.mjs",
@@ -6268,7 +6521,8 @@
       "evidence": [
         "packages/accounting-engine/src/disputes.ts",
         "packages/accounting-engine/test/disputes.test.ts",
-        "packages/database/prisma/migrations/20261201090000_invoice_disputes/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/disputes/disputes.service.ts",
         "apps/api/test/disputes.e2e.test.ts",
         "apps/web/e2e/disputes-flow.test.mjs",
@@ -6282,7 +6536,8 @@
       "evidence": [
         "packages/accounting-engine/src/pro-forma.ts",
         "packages/accounting-engine/test/pro-forma.test.ts",
-        "packages/database/prisma/migrations/20261202090000_pro_forma_invoices/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/pro-forma.service.ts",
         "apps/api/test/pro-forma.e2e.test.ts",
         "apps/web/e2e/pro-forma-flow.test.mjs",
@@ -6296,7 +6551,8 @@
       "evidence": [
         "packages/accounting-engine/src/purchase-orders.ts",
         "packages/accounting-engine/test/purchase-orders.test.ts",
-        "packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/purchase-orders/purchase-orders.service.ts",
         "apps/api/src/purchase-orders/matching.ts",
         "apps/api/test/purchase-orders.e2e.test.ts",
@@ -6311,7 +6567,8 @@
       "evidence": [
         "packages/accounting-engine/src/purchase-orders.ts",
         "packages/accounting-engine/test/purchase-orders.test.ts",
-        "packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/purchase-orders/purchase-orders.service.ts",
         "apps/api/src/purchase-orders/matching.ts",
         "apps/api/test/purchase-orders.e2e.test.ts",
@@ -6326,7 +6583,8 @@
       "evidence": [
         "packages/accounting-engine/src/purchase-orders.ts",
         "packages/accounting-engine/test/purchase-orders.test.ts",
-        "packages/database/prisma/migrations/20261203090000_purchase_orders/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/purchase-orders/purchase-orders.service.ts",
         "apps/api/src/purchase-orders/matching.ts",
         "apps/api/test/purchase-orders.e2e.test.ts",
@@ -6354,7 +6612,8 @@
       "evidence": [
         "packages/accounting-engine/src/project-billing.ts",
         "packages/accounting-engine/test/project-billing.test.ts",
-        "packages/database/prisma/migrations/20261204090000_project_billing/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/sales-orders.service.ts",
         "apps/api/test/project-billing.e2e.test.ts",
         "apps/web/src/components/sales-orders/project-billing.tsx",
@@ -6368,7 +6627,8 @@
       "evidence": [
         "packages/accounting-engine/src/project-billing.ts",
         "packages/accounting-engine/test/project-billing.test.ts",
-        "packages/database/prisma/migrations/20261204090000_project_billing/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/sales-orders.service.ts",
         "apps/api/test/project-billing.e2e.test.ts",
         "apps/web/src/components/sales-orders/project-billing.tsx",
@@ -6382,7 +6642,8 @@
       "evidence": [
         "packages/accounting-engine/src/retainers.ts",
         "packages/accounting-engine/test/retainers.test.ts",
-        "packages/database/prisma/migrations/20261205090000_retainers/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/retainers.service.ts",
         "apps/api/test/retainers.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/sales/retainers/[retainerId]/page.tsx",
@@ -6396,7 +6657,8 @@
       "evidence": [
         "packages/accounting-engine/src/payment-links.ts",
         "packages/accounting-engine/test/payment-links.test.ts",
-        "packages/database/prisma/migrations/20261206090000_payment_links/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/payment-links/payment-links.service.ts",
         "apps/api/test/payment-links.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/settings/payment-gateways/page.tsx",
@@ -6411,7 +6673,8 @@
       "evidence": [
         "packages/accounting-engine/src/customer-onboarding.ts",
         "packages/accounting-engine/test/customer-onboarding.test.ts",
-        "packages/database/prisma/migrations/20261207090000_customer_onboarding/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/customer-onboarding/customer-onboarding.service.ts",
         "apps/api/test/customer-onboarding.e2e.test.ts",
         "apps/web/src/components/onboarding/onboarding-panel.tsx",
@@ -6425,7 +6688,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/customer-onboarding.ts",
-        "packages/database/prisma/migrations/20261208090000_vendor_onboarding/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/customer-onboarding/customer-onboarding.service.ts",
         "apps/api/src/customer-onboarding/customer-onboarding.controller.ts",
         "apps/api/test/vendor-onboarding.e2e.test.ts",
@@ -6442,7 +6706,8 @@
       "evidence": [
         "packages/accounting-engine/src/vendor-performance.ts",
         "packages/accounting-engine/test/vendor-performance.test.ts",
-        "packages/database/prisma/migrations/20261209090000_vendor_performance/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/vendor-performance/vendor-performance.service.ts",
         "apps/api/test/vendor-performance.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/purchases/vendor-performance/page.tsx",
@@ -6457,7 +6722,8 @@
       "evidence": [
         "packages/accounting-engine/src/international-payments.ts",
         "packages/accounting-engine/test/international-payments.test.ts",
-        "packages/database/prisma/migrations/20261210090000_international_payments/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/international-payments/international-payments.service.ts",
         "apps/api/test/international-payments.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/purchases/international-payments/page.tsx",
@@ -6473,7 +6739,8 @@
       "evidence": [
         "packages/accounting-engine/src/usage-billing.ts",
         "packages/accounting-engine/test/usage-billing.test.ts",
-        "packages/database/prisma/migrations/20261211090000_usage_billing/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/sales-orders/usage-billing.service.ts",
         "apps/api/src/sales-orders/contracts.service.ts",
         "apps/api/test/usage-billing.e2e.test.ts",
@@ -6488,7 +6755,8 @@
       "evidence": [
         "packages/accounting-engine/src/revenue-recognition.ts",
         "packages/accounting-engine/test/revenue-recognition.test.ts",
-        "packages/database/prisma/migrations/20261212090000_revenue_recognition/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/revenue-recognition/revenue-recognition.service.ts",
         "apps/api/src/ledgers/documents.service.ts",
         "apps/api/test/revenue-recognition.e2e.test.ts",
@@ -6504,7 +6772,8 @@
       "evidence": [
         "packages/accounting-engine/src/customer-portal.ts",
         "packages/accounting-engine/test/customer-portal.test.ts",
-        "packages/database/prisma/migrations/20261213090000_customer_portal/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/customer-portal/customer-portal.service.ts",
         "apps/api/src/customer-portal/customer-portal.controller.ts",
         "apps/api/test/customer-portal.e2e.test.ts",
@@ -6521,7 +6790,8 @@
       "evidence": [
         "packages/tax-engine/src/india/supplier-checks.ts",
         "packages/tax-engine/test/supplier-checks.test.ts",
-        "packages/database/prisma/migrations/20261214090000_supplier_tax_checks/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/supplier-tax/supplier-tax.service.ts",
         "apps/api/test/supplier-tax.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/purchases/supplier-tax/page.tsx",
@@ -6536,7 +6806,8 @@
       "evidence": [
         "packages/accounting-engine/src/vendor-risk.ts",
         "packages/accounting-engine/test/vendor-risk.test.ts",
-        "packages/database/prisma/migrations/20261215090000_vendor_risk/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/vendor-risk/vendor-risk.service.ts",
         "apps/api/test/vendor-risk.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/purchases/vendor-risk/page.tsx",
@@ -6551,7 +6822,8 @@
       "evidence": [
         "packages/accounting-engine/src/unbilled-revenue.ts",
         "packages/accounting-engine/test/unbilled-revenue.test.ts",
-        "packages/database/prisma/migrations/20261216090000_unbilled_revenue/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/unbilled-revenue/unbilled-revenue.service.ts",
         "apps/api/test/unbilled-revenue.e2e.test.ts",
         "apps/web/src/app/orgs/[orgId]/sales/unbilled-revenue/page.tsx",
@@ -6565,7 +6837,8 @@
       "evidence": [
         "packages/accounting-engine/src/vendor-portal.ts",
         "packages/accounting-engine/test/vendor-portal.test.ts",
-        "packages/database/prisma/migrations/20261217090000_vendor_portal/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/vendor-portal/vendor-portal.service.ts",
         "apps/api/src/vendor-portal/vendor-portal.controller.ts",
         "apps/api/test/vendor-portal.e2e.test.ts",
@@ -6776,7 +7049,8 @@
       "status": "Tested",
       "evidence": [
         "packages/accounting-engine/src/consolidation.ts (intercompanyEliminations, ledger eliminations)",
-        "packages/database/prisma/migrations/20261103180000_intercompany/migration.sql",
+        "apps/api/src/db/guards",
+        "apps/api/src/db/constraints/catalog.json",
         "apps/api/src/consolidation/intercompany.service.ts",
         "apps/web/src/components/consolidation/intercompany.tsx",
         "packages/accounting-engine/test/consolidation.test.ts",
@@ -7300,6 +7574,58 @@
         ".github/workflows/ci.yml"
       ],
       "notes": "CI fails on code that turns a protection off (eval, TLS checks off, unescaped HTML, weak hashes and ciphers, shell commands, unsafe JWT and CORS settings, predictable or hard-coded secrets)."
+    },
+    "RULE-017": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-licences.mjs",
+        "scripts/check-licences.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "CI refuses a source file with a competitor copyright or proprietary notice, and any installed package whose licence does not allow a commercial product (only permissive licences, plus named exceptions with the reason)."
+    },
+    "COMP-048": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-licences.mjs",
+        "scripts/check-licences.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "Same check as RULE-017. Designs and branding are original (docs/BRANDING.md)."
+    },
+    "COMP-049": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-licences.mjs",
+        "scripts/check-licences.test.mjs",
+        "docs/SECURITY.md"
+      ],
+      "notes": "All features are implemented in this repository; no competitor code, and packages only under licences listed in scripts/check-licences.mjs."
+    },
+    "COMP-046": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs"
+      ],
+      "notes": "CI refuses customer-facing text saying a competitor lacks something, or that Talk2Tax is better than one, unless the sentence cites a verified source or says it is not confirmed."
+    },
+    "RULE-020": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-registry-evidence.mjs",
+        "scripts/check-registry-evidence.test.mjs",
+        "docs/FEATURE_STATUS.md"
+      ],
+      "notes": "A feature counts as Tested only with a test in the repository; evidence that no longer exists fails CI. 275 stale references to removed PostgreSQL migrations now point at the MongoDB guards and checks that replaced them."
+    },
+    "RULE-018": {
+      "status": "Implemented",
+      "evidence": [
+        "deploy/docker-compose.prod.yml",
+        "docs/DEPLOYMENT.md"
+      ],
+      "notes": "Production is one compose file: migrate, API, web and Caddy, on MongoDB. No queue, cache or orchestrator is added until the load test shows a need."
     }
   }
 }

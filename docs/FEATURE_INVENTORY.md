@@ -57,10 +57,10 @@ Part 4 · M0 · priority P0 · depends on: none
 | COMP-043 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Available through integrations | Not started |
 | COMP-044 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Not confirmed | Not started |
 | COMP-045 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Potentially differentiated | Not started |
-| COMP-046 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not incorrectly claim that a competitor lacks functionality | Not started |
+| COMP-046 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not incorrectly claim that a competitor lacks functionality | Tested |
 | COMP-047 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Include official sources and verification dates wherever available | Not started |
-| COMP-048 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not copy proprietary source code, designs, branding or copyrighted materials | Not started |
-| COMP-049 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Build original implementations | Not started |
+| COMP-048 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not copy proprietary source code, designs, branding or copyrighted materials | Tested |
+| COMP-049 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Build original implementations | Tested |
 
 ## General ledger and accounting engine
 
@@ -1652,8 +1652,8 @@ Part 50 · All · priority P0 · depends on: none
 | RULE-014 |  | rule | Do not expose financial information across tenants | Tested |
 | RULE-015 |  | rule | Do not skip tests for critical accounting functions | Tested |
 | RULE-016 |  | rule | Do not conceal incomplete features | Tested |
-| RULE-017 |  | rule | Do not implement proprietary competitor code | Not started |
-| RULE-018 |  | rule | Do not over-engineer infrastructure unnecessarily | Not started |
+| RULE-017 |  | rule | Do not implement proprietary competitor code | Tested |
+| RULE-018 |  | rule | Do not over-engineer infrastructure unnecessarily | Implemented |
 | RULE-019 |  | rule | Do not sacrifice financial accuracy for visual effects | Not started |
-| RULE-020 |  | rule | Do not prioritize cosmetic completeness over working accounting functionality | Not started |
+| RULE-020 |  | rule | Do not prioritize cosmetic completeness over working accounting functionality | Tested |
 
