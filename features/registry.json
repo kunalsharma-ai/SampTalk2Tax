@@ -3785,9 +3785,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-predictions.ts",
+        "packages/accounting-engine/test/payment-predictions.test.ts",
+        "apps/api/src/payment-predictions/payment-predictions.service.ts",
+        "apps/api/test/payment-predictions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx",
+        "apps/web/e2e/payment-predictions-flow.test.mjs",
+        "docs/PAYMENT_PREDICTIONS.md"
+      ],
+      "notes": "Every open invoice gets a likely payment date, days after due, chance of being late, confidence and reasons, from the customer's recency-weighted payment record blended with the organisation's average (counts as three invoices), a recent slowdown or speed-up, and overdue status. Deterministic, no AI model. Accuracy is checked on invoices paid in the last year, each predicted from what was known on its issue date."
     },
     {
       "id": "AR-034",

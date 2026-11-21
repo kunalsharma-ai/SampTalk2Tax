@@ -8761,6 +8761,19 @@
         "docs/AUDITOR_PORTAL.md"
       ],
       "notes": "Owners/admins give a named external auditor a private read-only link (7/30/90 days, secret shown once, SHA-256 stored) to one engagement: scope, work and sign-offs, conclusion, accepted evidence only (files downloadable, each opening audited), findings, samples and the trial balance at scope end; views and downloads counted; withdraw at any time; links immutable and kept; public routes rate-limited, no-store, region and suspension checked."
+    },
+    "AR-033": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-predictions.ts",
+        "packages/accounting-engine/test/payment-predictions.test.ts",
+        "apps/api/src/payment-predictions/payment-predictions.service.ts",
+        "apps/api/test/payment-predictions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx",
+        "apps/web/e2e/payment-predictions-flow.test.mjs",
+        "docs/PAYMENT_PREDICTIONS.md"
+      ],
+      "notes": "Every open invoice gets a likely payment date, days after due, chance of being late, confidence and reasons, from the customer's recency-weighted payment record blended with the organisation's average (counts as three invoices), a recent slowdown or speed-up, and overdue status. Deterministic, no AI model. Accuracy is checked on invoices paid in the last year, each predicted from what was known on its issue date."
     }
   }
 }

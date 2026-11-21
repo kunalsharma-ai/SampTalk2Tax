@@ -114,6 +114,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Sort by the figure you care about and filter by risk or credit hold. Open a customer for the full workings.',
     where: 'Sales. Figures come from posted invoices, receipts and costs on projects linked to each customer.',
   },
+  'sales/payment-predictions': {
+    what: 'Every open invoice with the day it is likely to be paid, the chance it is paid late and the reasons, worked out from how each customer has paid before; and how accurate the same method has been on invoices already paid.',
+    how: 'Start at the top: the riskiest invoices come first. Filter by band to see only very late ones, open the invoice or customer to chase it, and read the reasons to see what drives each prediction. Customers with little history lean on your organisation\'s average.',
+    where: 'Sales. Needs the reports permission. Predictions come from receipts and credits applied to posted invoices; nothing here changes the books, and no AI model is used.',
+  },
   'sales/unbilled-revenue': {
     what: 'Revenue earned or agreed but not yet invoiced, found in your records: milestones marked complete without an invoice, contract periods due but not invoiced, draft invoices left more than a week, delivery orders still unbilled a month on, pro forma invoices that ran out without a tax invoice, and customers billed every month who were not billed last month.',
     how: 'Start with Due now. Open each finding to bill it from its order, contract or draft. If something should not be billed, dismiss it with the reason; it comes back by itself if the amount grows.',
