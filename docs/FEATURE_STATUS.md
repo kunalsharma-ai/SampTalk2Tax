@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 640 |
+| Not started | 639 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 620 |
+| Tested | 621 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 12 | 18 |
+| Continuous audit and governance | M6 | 30 | 11 | 19 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4814,6 +4814,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/controls/[controlId]/page.tsx
   - apps/web/e2e/controls-register-flow.test.mjs
   - docs/INTERNAL_CONTROLS.md
+
+### AUDIT-009 — Audit sampling
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Random, monetary unit (systematic, items above the interval always picked) and high-value samples of posted journals, bills, invoices or supplier payments for a date range; seeded so the same sample can be drawn again and checked; population fingerprint shows later changes; each item result recorded once; completed samples immutable; audited.
+- Evidence:
+  - packages/accounting-engine/src/audit-sampling.ts
+  - packages/accounting-engine/test/audit-sampling.test.ts
+  - apps/api/src/audit-sampling/audit-sampling.service.ts
+  - apps/api/test/audit-sampling.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/audit-samples/page.tsx
+  - apps/web/src/app/orgs/[orgId]/audit-samples/[sampleId]/page.tsx
+  - apps/web/e2e/audit-samples-flow.test.mjs
+  - docs/AUDIT_SAMPLING.md
 
 ### AUDIT-010 — Exception tracking
 

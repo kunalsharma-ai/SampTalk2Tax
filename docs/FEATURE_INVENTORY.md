@@ -824,7 +824,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-006 |  | capability | Approval history | Tested |
 | AUDIT-007 |  | capability | Document versioning | Not started |
 | AUDIT-008 |  | capability | Financial control testing | Tested |
-| AUDIT-009 |  | capability | Audit sampling | Not started |
+| AUDIT-009 |  | capability | Audit sampling | Tested |
 | AUDIT-010 |  | capability | Exception tracking | Tested |
 | AUDIT-011 |  | capability | Audit findings | Tested |
 | AUDIT-012 |  | capability | Remediation workflows | Tested |

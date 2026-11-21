@@ -99,6 +99,8 @@ import { ReportViewsController } from './report-views/report-views.controller';
 import { ReportViewsService } from './report-views/report-views.service';
 import { AuditFindingsController } from './audit-findings/audit-findings.controller';
 import { AuditFindingsService } from './audit-findings/audit-findings.service';
+import { AuditSamplingController } from './audit-sampling/audit-sampling.controller';
+import { AuditSamplingService } from './audit-sampling/audit-sampling.service';
 import { InternalControlsController } from './internal-controls/internal-controls.controller';
 import { InternalControlsService } from './internal-controls/internal-controls.service';
 import { SegregationOfDutiesController } from './segregation-of-duties/segregation-of-duties.controller';
@@ -321,6 +323,7 @@ export class AppModule {
         SegregationOfDutiesController,
         InternalControlsController,
         AuditFindingsController,
+        AuditSamplingController,
         DataImportController,
         JournalsController,
         ReportsController,
@@ -473,6 +476,7 @@ export class AppModule {
         SegregationOfDutiesService,
         InternalControlsService,
         AuditFindingsService,
+        AuditSamplingService,
         DataImportService,
         JournalsService,
         ReportsService,
