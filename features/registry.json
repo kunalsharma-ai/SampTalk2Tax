@@ -33108,9 +33108,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/agent-evals.test.ts",
+        "apps/api/test/agent-evals.test.ts",
+        "apps/api/src/ai-control/agent-evals.cli.ts"
+      ],
+      "notes": "14 labelled cases for the bank, close, collections and CFO agents. The live run against Claude needs an API key and has not been run yet; CI runs the graders and the runner with stand-in models."
     },
     {
       "id": "QA-015",

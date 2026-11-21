@@ -7280,6 +7280,15 @@
         "scripts/load-test.mjs › common reads p95 under 300 ms (CI step Load test)"
       ],
       "notes": "Measured on the CI runner and one dev machine only."
+    },
+    "QA-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/agent-evals.test.ts",
+        "apps/api/test/agent-evals.test.ts",
+        "apps/api/src/ai-control/agent-evals.cli.ts"
+      ],
+      "notes": "14 labelled cases for the bank, close, collections and CFO agents. The live run against Claude needs an API key and has not been run yet; CI runs the graders and the runner with stand-in models."
     }
   }
 }
