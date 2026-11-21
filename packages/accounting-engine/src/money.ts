@@ -76,3 +76,21 @@ export function sum(values: Iterable<Dec>): Dec {
 export function fmt(value: Dec, scale = 2): string {
   return value.toFixed(scale);
 }
+
+/**
+ * A typed-in amount as a Decimal, for screens that preview totals while the
+ * user types: blank or half-typed input counts as zero instead of throwing.
+ */
+export function amountOrZero(value: string | Dec | null | undefined): Dec {
+  if (value instanceof D) return value;
+  if (typeof value !== 'string') return new D(0);
+  const t = value.trim();
+  return DECIMAL_STRING.test(t) ? new D(t) : new D(0);
+}
+
+/** The exact total of typed-in amounts; blank entries count as zero. */
+export function addAmounts(values: Iterable<string | Dec | null | undefined>): Dec {
+  let total = new D(0);
+  for (const v of values) total = total.plus(amountOrZero(v));
+  return total;
+}

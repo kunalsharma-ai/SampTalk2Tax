@@ -462,6 +462,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add an account with a code, name and type. Deactivate accounts you no longer use; accounts with entries cannot be deleted.',
     where: 'Accounting. Every document line and journal line uses an account from here.',
   },
+  'opening-balances': {
+    what: 'The balances you bring in on the day you start keeping your books in Talk2Tax, posted as one opening journal.',
+    how: 'Pick the opening date, enter each account\'s balance as a debit or a credit, and post. Any difference goes to Opening Balance Equity; clear it once the figures are agreed. Saving again replaces the balances. Enter unpaid customer invoices and vendor bills as invoices and bills instead.',
+    where: 'Accounting. The trial balance, ledgers and statements start from these balances.',
+  },
   'fixed-assets': {
     what: 'Things you own and use for years, such as machines and vehicles, with their depreciation.',
     how: 'Add an asset with its cost, date and method. Run depreciation each month. Record a sale, scrap or write-off when it goes.',

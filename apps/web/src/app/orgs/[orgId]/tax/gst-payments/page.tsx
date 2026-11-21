@@ -1,4 +1,5 @@
 'use client';
+import { addAmounts } from '@talk2tax/accounting-engine';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, CardHeader, Dialog, Field, Input, SectionHelpSlot, Select, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -74,7 +75,7 @@ export default function GstPaymentsPage() {
   const d = p.data;
   const c = d?.currency ?? 'INR';
   const post = can(org.role, 'journals.post');
-  const sum = (h: Heads) => HEADS.reduce((s, k) => s + Math.round(Number(h[k]) * 100), 0) / 100;
+  const sum = (h: Heads) => addAmounts(HEADS.map((k) => h[k]));
   return (
     <>
       <PageHeader
@@ -197,7 +198,7 @@ function Payments({ orgId, rows, c, canVoid }: { orgId: string; rows: Payment[];
                 <Td className="whitespace-nowrap">{date(r.paymentDate)}</Td>
                 <Td className="num text-sm">{r.cin ? `${r.cin}${r.cpin ? ` · ${r.cpin}` : ''}` : 'By credit only'}</Td>
                 <Td numeric><Money value={r.totalCash} currency={c} /></Td>
-                <Td numeric><Money value={(Number(r.interest) + Number(r.lateFee)).toFixed(2)} currency={c} /></Td>
+                <Td numeric><Money value={addAmounts([r.interest, r.lateFee]).toFixed(2)} currency={c} /></Td>
                 <Td className="text-xs text-fg-muted">{r.uses.length ? r.uses.map((u) => `${u.label} ${new Intl.NumberFormat('en-IN').format(Number(u.amount))}`).join('; ') : 'None'}{r.voidReason ? <p>Void: {r.voidReason}</p> : null}</Td>
                 <Td className="text-right">{canVoid && r.canVoid ? <Button size="sm" variant="ghost" onClick={() => { v.reset(); setReason(''); setVoiding(r); }}>Void</Button> : null}</Td>
               </tr>

@@ -1,4 +1,5 @@
 'use client';
+import { addAmounts, D } from '@talk2tax/accounting-engine';
 import { Button, Input, Select } from '@talk2tax/ui';
 import { money } from '@/lib/format';
 import type { PayComponentKind } from '@/lib/types';
@@ -21,11 +22,10 @@ const AMT = /^\d{0,13}(\.\d{0,2})?$/;
 /** Monthly salary components. "Counts as wages" decides PF and ESI under the Code on Social Security. */
 export function SalaryEditor({ value, onChange }: { value: ComponentDraft[]; onChange: (v: ComponentDraft[]) => void }) {
   const set = (i: number, patch: Partial<ComponentDraft>) => onChange(value.map((c, j) => (j === i ? { ...c, ...patch } : c)));
-  const cents = (v: string) => Math.round(Number(v || '0') * 100);
-  const total = value.reduce((s, c) => s + cents(c.monthlyAmount), 0);
-  const excluded = value.filter((c) => c.kind === 'EXCLUDED').reduce((s, c) => s + cents(c.monthlyAmount), 0);
-  const addedBack = excluded * 2 > total ? excluded - Math.floor(total / 2) : 0;
-  const wages = total - excluded + addedBack;
+  const total = addAmounts(value.map((c) => c.monthlyAmount));
+  const excluded = addAmounts(value.filter((c) => c.kind === 'EXCLUDED').map((c) => c.monthlyAmount));
+  const addedBack = excluded.times(2).gt(total) ? excluded.minus(total.div(2).toDecimalPlaces(2, D.ROUND_DOWN)) : new D(0);
+  const wages = total.minus(excluded).plus(addedBack);
   return (
     <div className="flex flex-col gap-2">
       <div className="hidden grid-cols-[6rem_1fr_11rem_8rem_2rem] gap-2 text-[11px] font-medium uppercase tracking-wide text-fg-muted sm:grid">
@@ -46,8 +46,8 @@ export function SalaryEditor({ value, onChange }: { value: ComponentDraft[]; onC
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <Button type="button" size="sm" variant="secondary" onClick={() => onChange([...value, { code: '', name: '', kind: 'EXCLUDED', monthlyAmount: '' }])}>+ Add component</Button>
         <p className="text-right text-xs text-fg-muted">
-          Gross <span className="num font-medium text-fg">{money((total / 100).toFixed(2), 'INR')}</span> a month · wages for PF/ESI <span className="num font-medium text-fg">{money((wages / 100).toFixed(2), 'INR')}</span>
-          {addedBack ? <span className="block text-warning">Excluded allowances are over half the pay, so {money((addedBack / 100).toFixed(2), 'INR')} counts as wages (Code on Social Security s.2(88)).</span> : null}
+          Gross <span className="num font-medium text-fg">{money(total.toFixed(2), 'INR')}</span> a month · wages for PF/ESI <span className="num font-medium text-fg">{money(wages.toFixed(2), 'INR')}</span>
+          {addedBack.gt(0) ? <span className="block text-warning">Excluded allowances are over half the pay, so {money(addedBack.toFixed(2), 'INR')} counts as wages (Code on Social Security s.2(88)).</span> : null}
         </p>
       </div>
     </div>

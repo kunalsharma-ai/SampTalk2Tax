@@ -1,5 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { addAmounts, amountOrZero, D, isSupportedCurrency, minorUnits } from '@talk2tax/accounting-engine';
 import { Alert, Badge, Button, Card, CardHeader, Dialog, Field, Input, Select, Table, Td, Textarea, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -14,7 +15,6 @@ import { useAccounts, useOrg } from '@/lib/org';
 import { RETAINER_STATE, type RetainerDetail } from '@/lib/retainers';
 
 const MONEY = /^\d{0,15}(\.\d{0,2})?$/;
-const cents = (s: string) => Math.round(Number(s || 0) * 100);
 type Dlg = null | 'receipt' | 'existing' | 'pay' | 'edit' | 'close';
 
 export default function RetainerPage() {
@@ -48,6 +48,7 @@ export default function RetainerPage() {
   const r = q.data;
   if (!r) return <p className="text-sm text-fg-muted">Loading…</p>;
   const cur = r.currency;
+  const places = isSupportedCurrency(cur) ? minorUnits(cur) : 2;
   const active = r.status === 'ACTIVE' && r.can.manage;
   const open = (d: Dlg) => {
     run.reset();
@@ -57,16 +58,16 @@ export default function RetainerPage() {
     setPaymentId(r.otherReceipts[0]?.id ?? '');
     setBankId(bankId || (banks.find((b) => b.subtype === 'BANK') ?? banks[0])?.id || '');
     if (d === 'pay') {
-      let left = cents(r.held);
-      setPay(Object.fromEntries(r.openInvoices.map((i) => { const take = Math.min(left, cents(i.open)); left -= take; return [i.id, take > 0 ? (take / 100).toFixed(2) : '']; })));
+      let left = amountOrZero(r.held);
+      setPay(Object.fromEntries(r.openInvoices.map((i) => { const take = D.min(left, amountOrZero(i.open)); left = left.minus(take); return [i.id, take.gt(0) ? take.toFixed(places) : '']; })));
     }
     if (d === 'edit') setTerms({ name: r.name, amount: r.amount, minimumBalance: r.minimumBalance, startDate: r.startDate, terms: r.terms ?? '' });
     setReason('');
     setDlg(d);
   };
-  const chosen = r.openInvoices.filter((i) => cents(pay[i.id] ?? '') > 0);
-  const payTotal = chosen.reduce((t, i) => t + cents(pay[i.id]!), 0);
-  const over = r.openInvoices.filter((i) => cents(pay[i.id] ?? '') > cents(i.open));
+  const chosen = r.openInvoices.filter((i) => amountOrZero(pay[i.id]).gt(0));
+  const payTotal = addAmounts(chosen.map((i) => pay[i.id]));
+  const over = r.openInvoices.filter((i) => amountOrZero(pay[i.id]).gt(amountOrZero(i.open)));
   const s = RETAINER_STATE[r.state];
   return (
     <>
@@ -200,10 +201,10 @@ export default function RetainerPage() {
               ))}
             </tbody>
           </Table>
-          <p className={`text-sm ${payTotal > cents(r.held) ? 'text-warning' : 'text-fg-muted'}`}>Paying <Money value={(payTotal / 100).toFixed(2)} currency={cur} /> of <Money value={r.held} currency={cur} /> held.</p>
+          <p className={`text-sm ${payTotal.gt(amountOrZero(r.held)) ? 'text-warning' : 'text-fg-muted'}`}>Paying <Money value={payTotal.toFixed(places)} currency={cur} /> of <Money value={r.held} currency={cur} /> held.</p>
           {over.length ? <p className="text-sm text-warning">{over.map((i) => i.number).join(', ')}: more than is owed.</p> : null}
           <ErrorAlert title="Could not pay the invoices" error={run.error} />
-          <div className="flex justify-end"><Button type="submit" loading={run.isPending} disabled={!chosen.length || over.length > 0 || payTotal > cents(r.held)}>Pay from retainer</Button></div>
+          <div className="flex justify-end"><Button type="submit" loading={run.isPending} disabled={!chosen.length || over.length > 0 || payTotal.gt(amountOrZero(r.held))}>Pay from retainer</Button></div>
         </form>
       </Dialog>
 
