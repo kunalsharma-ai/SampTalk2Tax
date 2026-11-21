@@ -573,6 +573,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the date and compare it with an earlier one. Open a line to see its entries.',
     where: 'Reports. Assets always equal liabilities plus equity.',
   },
+  'reports/vendor-spend': {
+    what: 'What you bought, from whom and on what, compared with the period before.',
+    how: 'Pick the dates. Start with the largest vendors and the biggest changes; open an account to see its entries.',
+    where: 'Reports. Posted bills before tax, less vendor credits, in your currency.',
+  },
   'reports/schedules': {
     what: 'Reports emailed to members on a weekly or monthly day, such as the profit and loss on the 3rd of each month.',
     how: 'Choose the report, the dates it covers, when it goes and who gets it. Send now to try it.',

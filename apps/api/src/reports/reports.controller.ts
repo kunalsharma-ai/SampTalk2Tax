@@ -1,6 +1,7 @@
-import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, ForbiddenException, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { STATUTORY_FORMAT_IDS } from '@talk2tax/accounting-engine';
+import { hasPermission } from '@talk2tax/security';
 import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
 import { isoDate, ZodPipe } from '../common/zod';
@@ -45,6 +46,15 @@ export class ReportsController {
   @RequirePermission('reports.read')
   balanceSheet(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(AsOfQuery)) q: z.infer<typeof AsOfQuery>) {
     return this.reports.balanceSheet(org.id, q);
+  }
+
+  /** Vendor spending (RPT-016); needs purchases.read as well as reports.read. */
+  @Get('vendor-spend')
+  @RequirePermission('reports.read')
+  vendorSpend(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(RangeQuery)) q: z.infer<typeof RangeQuery>) {
+    if (!hasPermission(org.role, 'purchases.read')) throw new ForbiddenException({ error: 'FORBIDDEN', message: `Your role (${org.role}) does not have purchases.read` });
+    checkRange(q.from, q.to);
+    return this.reports.vendorSpend(org.id, q);
   }
 
   /** Formats for local financial statements, and the one the organisation's country uses. */
