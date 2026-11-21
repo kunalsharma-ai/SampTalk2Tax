@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
 import { ExportButtons } from '@/components/reports/export-buttons';
+import { SavedViews } from '@/components/reports/saved-views';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { useDimensions } from '@/lib/dimensions';
@@ -45,6 +46,18 @@ export default function IncomeStatementPage() {
         title="Profit and loss"
         description={cash ? 'Revenue and expenses as money was received or paid in the period: invoices, bills, credit notes, expense claims and pay runs count in the share settled in the period; bank and cash entries count in full; accruals with no cash are left out.' : 'Revenue and expenses from posted journals in the period.'}
         actions={<><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /><ExportButtons orgId={orgId} report="income-statement" params={{ from, to, departmentId, projectId, basis: cash ? 'CASH' : null }} /></>}
+      />
+      <SavedViews
+        orgId={orgId}
+        report="income-statement"
+        current={{ from, to, basis, departmentId: departmentId || null, projectId: projectId || null }}
+        onApply={(v) => {
+          setFrom(v.from ?? from);
+          setTo(v.to);
+          setBasis(v.basis ?? 'ACCRUAL');
+          setDepartment(v.departmentId ?? '');
+          setProject(v.projectId ?? '');
+        }}
       />
       <div className="mb-4 flex flex-wrap gap-3">
           <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-fg-muted">

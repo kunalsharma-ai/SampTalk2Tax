@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 653 |
+| Not started | 650 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 607 |
+| Tested | 610 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 12 | 29 |
+| Advanced financial reporting | M6 | 41 | 9 | 32 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -5197,6 +5197,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/dimensions-flow.test.mjs
   - docs/FINANCIAL_DIMENSIONS.md
 
+### RPT-028 — Filters
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Report filters (dates, basis, department, project) are checked per report and kept in saved views; periods relative to the day (fiscal quarters and years) or fixed dates.
+- Evidence:
+  - packages/accounting-engine/src/report-views.ts
+  - packages/accounting-engine/test/report-views.test.ts
+  - apps/api/src/report-views/report-views.service.ts
+  - apps/api/test/report-views.e2e.test.ts
+  - apps/web/src/components/reports/saved-views.tsx
+  - apps/web/e2e/report-views-flow.test.mjs
+  - docs/REPORT_VIEWS.md
+
+### RPT-029 — Saved views
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Saved views on the P&L, balance sheet, trial balance, cash flow statement and vendor spend; choosing one applies its filters; audited; at most 30 per person per report.
+- Evidence:
+  - packages/accounting-engine/src/report-views.ts
+  - packages/accounting-engine/test/report-views.test.ts
+  - apps/api/src/report-views/report-views.service.ts
+  - apps/api/test/report-views.e2e.test.ts
+  - apps/web/src/components/reports/saved-views.tsx
+  - apps/web/e2e/report-views-flow.test.mjs
+  - docs/REPORT_VIEWS.md
+
 ### RPT-031 — Scheduled reports
 
 - Module: Advanced financial reporting
@@ -5282,6 +5310,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/cash-flow-statement-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/reports/income-statement
   - apps/web/src/app/orgs/[orgId]/reports/cash-flow-statement
+
+### RPT-037 — Report sharing
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: A view can be shared with every member who can read reports; only its owner (or an owner/admin for shared views) changes or deletes it; views grant no data access.
+- Evidence:
+  - packages/accounting-engine/src/report-views.ts
+  - packages/accounting-engine/test/report-views.test.ts
+  - apps/api/src/report-views/report-views.service.ts
+  - apps/api/test/report-views.e2e.test.ts
+  - apps/web/src/components/reports/saved-views.tsx
+  - apps/web/e2e/report-views-flow.test.mjs
+  - docs/REPORT_VIEWS.md
 
 ### RPT-038 — Permission-based access
 

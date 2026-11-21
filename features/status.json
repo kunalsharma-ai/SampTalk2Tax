@@ -8421,6 +8421,45 @@
         "docs/CASH_FLOW_FORECAST.md"
       ],
       "notes": "Cash-flow forecast from open invoices and bills at each contact's usual delay plus planned items, with a range and backtests."
+    },
+    "RPT-028": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-views.ts",
+        "packages/accounting-engine/test/report-views.test.ts",
+        "apps/api/src/report-views/report-views.service.ts",
+        "apps/api/test/report-views.e2e.test.ts",
+        "apps/web/src/components/reports/saved-views.tsx",
+        "apps/web/e2e/report-views-flow.test.mjs",
+        "docs/REPORT_VIEWS.md"
+      ],
+      "notes": "Report filters (dates, basis, department, project) are checked per report and kept in saved views; periods relative to the day (fiscal quarters and years) or fixed dates."
+    },
+    "RPT-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-views.ts",
+        "packages/accounting-engine/test/report-views.test.ts",
+        "apps/api/src/report-views/report-views.service.ts",
+        "apps/api/test/report-views.e2e.test.ts",
+        "apps/web/src/components/reports/saved-views.tsx",
+        "apps/web/e2e/report-views-flow.test.mjs",
+        "docs/REPORT_VIEWS.md"
+      ],
+      "notes": "Saved views on the P&L, balance sheet, trial balance, cash flow statement and vendor spend; choosing one applies its filters; audited; at most 30 per person per report."
+    },
+    "RPT-037": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-views.ts",
+        "packages/accounting-engine/test/report-views.test.ts",
+        "apps/api/src/report-views/report-views.service.ts",
+        "apps/api/test/report-views.e2e.test.ts",
+        "apps/web/src/components/reports/saved-views.tsx",
+        "apps/web/e2e/report-views-flow.test.mjs",
+        "docs/REPORT_VIEWS.md"
+      ],
+      "notes": "A view can be shared with every member who can read reports; only its owner (or an owner/admin for shared views) changes or deletes it; views grant no data access."
     }
   }
 }

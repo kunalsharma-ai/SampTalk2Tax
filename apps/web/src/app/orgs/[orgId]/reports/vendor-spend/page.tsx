@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
+import { SavedViews } from '@/components/reports/saved-views';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date, today } from '@/lib/format';
@@ -44,6 +45,7 @@ export default function VendorSpendPage() {
         description="Posted bills before tax, less vendor credits, by vendor, account and month, in your currency at each bill's own rate. Compared with the same number of days just before."
         actions={<><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /></>}
       />
+      <SavedViews orgId={orgId} report="vendor-spend" current={{ from, to }} onApply={(v) => { setFrom(v.from ?? from); setTo(v.to); }} />
       {bad ? <Alert tone="warning" title="Check the dates">The start date is after the end date.</Alert> : null}
       {q.error ? <Alert title="Could not load">{(q.error as Error).message}</Alert> : null}
       {d ? (

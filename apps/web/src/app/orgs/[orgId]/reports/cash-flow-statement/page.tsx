@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
+import { SavedViews } from '@/components/reports/saved-views';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { today } from '@/lib/format';
@@ -62,6 +63,7 @@ export default function CashFlowStatementPage() {
         description="Where the period's cash came from and went, by the indirect method: profit, adjusted for items with no cash and for working capital, then investing and financing. It explains the change in your cash and bank accounts."
         actions={<><DateInput label="From" value={from} onChange={setFrom} /><DateInput label="To" value={to} onChange={setTo} /></>}
       />
+      <SavedViews orgId={orgId} report="cash-flow-statement" current={{ from, to }} onApply={(v) => { setFrom(v.from ?? from); setTo(v.to); }} />
       {bad ? <Alert tone="warning" title="Check the dates">The start date is after the end date.</Alert> : null}
       {q.error ? <Alert title="Could not load">{(q.error as Error).message}</Alert> : null}
       {q.data && !q.data.reconciles ? (
