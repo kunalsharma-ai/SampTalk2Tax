@@ -2,10 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   AccountMovement,
   AccountType,
+  addDays,
   buildAccountLedger,
-  buildVendorSpend,
-  previousPeriod,
-  type SpendDocument,
+  buildCashFlowStatement,
+  CASH_SUBTYPES,
   buildBalanceSheet,
   buildIncomeStatement,
   buildStatutoryStatements,
@@ -242,6 +242,38 @@ export class ReportsService {
       vendors: s.vendors.map((v) => ({ id: v.id, name: v.name, amount: f(v.amount), share: pct(v.share), bills: v.bills, previous: f(v.previous), change: f(v.change) })),
       accounts: s.accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, amount: f(a.amount), share: pct(a.share) })),
       months: s.months.map((m) => ({ month: m.month, amount: f(m.amount) })),
+    };
+  }
+  /**
+   * Statement of cash flows by the indirect method (RPT-004): profit for the period, adjusted
+   * for depreciation and working capital, then investing and financing, explaining the change
+   * in cash and bank. Closing entries are left out, as on the income statement.
+   */
+  async cashFlowStatement(orgId: string, q: { from: string; to: string }) {
+    const ccy = await this.currency(orgId);
+    const f = (d: Dec) => d.toFixed(minorUnits(ccy));
+    const s = buildCashFlowStatement(await this.movements(orgId, q.from, q.to, {}, true));
+    const before = await this.movements(orgId, null, addDays(q.from, -1));
+    const cashAccounts = before.filter((m) => m.subtype && CASH_SUBTYPES.includes(m.subtype));
+    const openingCash = cashAccounts.reduce((t, m) => t.plus(m.debit).minus(m.credit), new D(0));
+    const section = (x: { lines: { accountId: string; code: string; name: string; subtype: string | null; group: string; amount: Dec }[]; total: Dec }) => ({
+      lines: x.lines.map((l) => ({ ...l, amount: f(l.amount) })),
+      total: f(x.total),
+    });
+    return {
+      currency: ccy,
+      from: q.from,
+      to: q.to,
+      profit: f(s.profit),
+      operating: section(s.operating),
+      investing: section(s.investing),
+      financing: section(s.financing),
+      netChange: f(s.netChange),
+      openingCash: f(openingCash),
+      closingCash: f(openingCash.plus(s.netChange)),
+      reconciles: s.reconciles,
+      unexplained: f(s.netChange.minus(s.explained)),
+      unclassified: s.unclassified,
     };
   }
 

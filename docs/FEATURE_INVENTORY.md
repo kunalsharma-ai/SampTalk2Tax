@@ -57,10 +57,10 @@ Part 4 · M0 · priority P0 · depends on: none
 | COMP-043 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Available through integrations | Not started |
 | COMP-044 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Not confirmed | Not started |
 | COMP-045 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Potentially differentiated | Not started |
-| COMP-046 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not incorrectly claim that a competitor lacks functionality | Not started |
+| COMP-046 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not incorrectly claim that a competitor lacks functionality | Tested |
 | COMP-047 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Include official sources and verification dates wherever available | Not started |
-| COMP-048 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not copy proprietary source code, designs, branding or copyrighted materials | Not started |
-| COMP-049 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Build original implementations | Not started |
+| COMP-048 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not copy proprietary source code, designs, branding or copyrighted materials | Tested |
+| COMP-049 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Build original implementations | Tested |
 
 ## General ledger and accounting engine
 
@@ -75,21 +75,21 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-005 | 5.1 General Ledger | capability | Account types and subtypes | Tested |
 | GL-006 | 5.1 General Ledger | capability | Journal entries | Tested |
 | GL-007 | 5.1 General Ledger | capability | Recurring journals | Tested |
-| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Implemented |
+| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Tested |
 | GL-009 | 5.1 General Ledger | capability | Reversing journals | Tested |
 | GL-010 | 5.1 General Ledger | capability | Opening balances | Tested |
 | GL-011 | 5.1 General Ledger | capability | Closing balances | Tested |
 | GL-012 | 5.1 General Ledger | capability | Journal templates | Tested |
 | GL-013 | 5.1 General Ledger | capability | Accrual accounting | Tested |
 | GL-014 | 5.1 General Ledger | capability | Cash accounting | Tested |
-| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implemented |
+| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Tested |
 | GL-016 | 5.1 General Ledger | capability | Financial periods | Tested |
-| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Implemented |
+| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Tested |
 | GL-018 | 5.1 General Ledger | capability | Period locks | Tested |
-| GL-019 | 5.1 General Ledger | capability | Posting controls | Implemented |
+| GL-019 | 5.1 General Ledger | capability | Posting controls | Tested |
 | GL-020 | 5.1 General Ledger | capability | Audit history | Tested |
 | GL-021 | 5.1 General Ledger | capability | Trial balance | Tested |
-| GL-022 | 5.1 General Ledger | capability | General ledger reports | Implemented |
+| GL-022 | 5.1 General Ledger | capability | General ledger reports | Tested |
 | GL-023 | 5.1 General Ledger | capability | Subsidiary ledgers | Tested |
 | GL-024 | 5.1 General Ledger | capability | Cost centers | Tested |
 | GL-025 | 5.1 General Ledger | capability | Profit centers | Tested |
@@ -888,17 +888,17 @@ Part 26 · M6 · priority P1 · depends on: GL
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | RPT-001 |  | rule | Build a professional reporting studio | Not started |
-| RPT-002 |  | capability | Profit and loss | Not started |
-| RPT-003 |  | capability | Balance sheet | Not started |
-| RPT-004 |  | capability | Cash-flow statement | Not started |
-| RPT-005 |  | capability | Trial balance | Not started |
-| RPT-006 |  | capability | General ledger | Not started |
-| RPT-007 |  | capability | Accounts receivable aging | Not started |
-| RPT-008 |  | capability | Accounts payable aging | Not started |
+| RPT-002 |  | capability | Profit and loss | Tested |
+| RPT-003 |  | capability | Balance sheet | Tested |
+| RPT-004 |  | capability | Cash-flow statement | Tested |
+| RPT-005 |  | capability | Trial balance | Tested |
+| RPT-006 |  | capability | General ledger | Tested |
+| RPT-007 |  | capability | Accounts receivable aging | Tested |
+| RPT-008 |  | capability | Accounts payable aging | Tested |
 | RPT-009 |  | capability | Tax reports | Not started |
 | RPT-010 |  | capability | Payroll reports | Not started |
-| RPT-011 |  | capability | Expense reports | Not started |
-| RPT-012 |  | capability | Budget-versus-actual | Not started |
+| RPT-011 |  | capability | Expense reports | Tested |
+| RPT-012 |  | capability | Budget-versus-actual | Tested |
 | RPT-013 |  | capability | Project profitability | Tested |
 | RPT-014 |  | capability | Department profitability | Tested |
 | RPT-015 |  | capability | Customer profitability | Tested |
@@ -906,28 +906,28 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-017 |  | capability | Cash forecasts | Tested |
 | RPT-018 |  | capability | Working capital | Tested |
 | RPT-019 |  | capability | Financial ratios | Tested |
-| RPT-020 |  | capability | Consolidated statements | Not started |
+| RPT-020 |  | capability | Consolidated statements | Tested |
 | RPT-021 |  | capability | Audit reports | Not started |
 | RPT-022 |  | capability | Executive reports | Not started |
 | RPT-023 |  | capability | Investor reports | Not started |
 | RPT-024 |  | capability | Board reports | Tested |
-| RPT-025 | Reporting Features | capability | Custom report builder | Not started |
+| RPT-025 | Reporting Features | capability | Custom report builder | Tested |
 | RPT-026 | Reporting Features | capability | Drag-and-drop metrics | Not started |
 | RPT-027 | Reporting Features | capability | Financial dimensions | Tested |
 | RPT-028 | Reporting Features | capability | Filters | Not started |
 | RPT-029 | Reporting Features | capability | Saved views | Not started |
 | RPT-030 | Reporting Features | capability | Report templates | Not started |
-| RPT-031 | Reporting Features | capability | Scheduled reports | Not started |
-| RPT-032 | Reporting Features | capability | Email delivery | Not started |
+| RPT-031 | Reporting Features | capability | Scheduled reports | Tested |
+| RPT-032 | Reporting Features | capability | Email delivery | Tested |
 | RPT-033 | Reporting Features | capability | PDF exports | Tested |
 | RPT-034 | Reporting Features | capability | Excel exports | Tested |
 | RPT-035 | Reporting Features | capability | CSV exports | Tested |
-| RPT-036 | Reporting Features | capability | Interactive drill-downs | Not started |
+| RPT-036 | Reporting Features | capability | Interactive drill-downs | Tested |
 | RPT-037 | Reporting Features | capability | Report sharing | Not started |
-| RPT-038 | Reporting Features | capability | Permission-based access | Not started |
+| RPT-038 | Reporting Features | capability | Permission-based access | Tested |
 | RPT-039 | Reporting Features | capability | Report version history | Not started |
-| RPT-040 | Reporting Features | capability | AI narrative generation | Not started |
-| RPT-041 | Reporting Features | rule | All exported numbers must reconcile with authoritative financial records | Not started |
+| RPT-040 | Reporting Features | capability | AI narrative generation | Tested |
+| RPT-041 | Reporting Features | rule | All exported numbers must reconcile with authoritative financial records | Tested |
 
 ## Dashboard design
 
@@ -1652,8 +1652,8 @@ Part 50 · All · priority P0 · depends on: none
 | RULE-014 |  | rule | Do not expose financial information across tenants | Tested |
 | RULE-015 |  | rule | Do not skip tests for critical accounting functions | Tested |
 | RULE-016 |  | rule | Do not conceal incomplete features | Tested |
-| RULE-017 |  | rule | Do not implement proprietary competitor code | Not started |
-| RULE-018 |  | rule | Do not over-engineer infrastructure unnecessarily | Not started |
-| RULE-019 |  | rule | Do not sacrifice financial accuracy for visual effects | Not started |
-| RULE-020 |  | rule | Do not prioritize cosmetic completeness over working accounting functionality | Not started |
+| RULE-017 |  | rule | Do not implement proprietary competitor code | Tested |
+| RULE-018 |  | rule | Do not over-engineer infrastructure unnecessarily | Implemented |
+| RULE-019 |  | rule | Do not sacrifice financial accuracy for visual effects | Tested |
+| RULE-020 |  | rule | Do not prioritize cosmetic completeness over working accounting functionality | Tested |
 

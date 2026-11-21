@@ -568,6 +568,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the dates. Start with the largest vendors and the biggest changes; open an account to see its entries.',
     where: 'Reports. Posted bills before tax, less vendor credits, in your currency.',
   },
+  'reports/schedules': {
+    what: 'Reports emailed to members on a weekly or monthly day, such as the profit and loss on the 3rd of each month.',
+    how: 'Choose the report, the dates it covers, when it goes and who gets it. Send now to try it.',
+    where: 'Reports. Email must be set up in Settings › Integrations; each run is kept with the file it sent.',
+  },
+  'reports/cash-flow-statement': {
+    what: 'Where the cash came from and went in a period: operating, investing and financing activities.',
+    how: 'Pick the dates. Start from profit, see what working capital used, then open a line to see its entries.',
+    where: 'Reports. It explains the change in your cash and bank accounts, so the last line matches the balance sheet.',
+  },
   'reports/statutory': {
     what: 'Financial statements in a statutory format, such as Schedule III in India.',
     how: 'Choose the format and period, check every line is mapped, and export.',

@@ -12,6 +12,9 @@ import { api } from '@/lib/api';
 import { date, today } from '@/lib/format';
 import { useAccounts, useOrg } from '@/lib/org';
 
+/** A bar's width on the waterfall chart: a share of the largest month, drawn only. */
+const barWidth = (amount: string, max: number) => (max ? `${(Number(amount) / max) * 100}%` : 0); // not money: a chart width
+
 interface Settings {
   deferredAccount: { id: string; code: string; name: string } | null;
   chosen: boolean;
@@ -88,7 +91,7 @@ export default function RevenueRecognitionPage() {
                 <Tr key={m.month}>
                   <Td>{monthLabel(m.month)}{m.month < today().slice(0, 7) ? null : <span className="ml-2 text-xs text-fg-muted">scheduled</span>}</Td>
                   <Td numeric><Money value={m.amount} currency={cur} /></Td>
-                  <Td className="w-1/2"><div className="h-2 rounded bg-[var(--t2t-accent)]" style={{ width: max ? `${(Number(m.amount) / max) * 100}%` : 0 }} /></Td>
+                  <Td className="w-1/2"><div className="h-2 rounded bg-[var(--t2t-accent)]" style={{ width: barWidth(m.amount, max) }} /></Td>
                 </Tr>
               ))}
               <Tr><Td className="text-fg-muted">After {monthLabel(o.waterfall.months.at(-1)!.month)}</Td><Td numeric className="text-fg-muted"><Money value={o.waterfall.after} currency={cur} /></Td><Td /></Tr>

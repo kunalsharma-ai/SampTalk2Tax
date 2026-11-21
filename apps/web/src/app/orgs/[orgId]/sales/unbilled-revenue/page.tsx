@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { UNBILLED_CONFIDENCE_LABEL, UNBILLED_SOURCE_LABEL, UNBILLED_SOURCES, type UnbilledConfidence, type UnbilledSource } from '@talk2tax/accounting-engine';
+import { UNBILLED_CONFIDENCE_LABEL, UNBILLED_SOURCE_LABEL, UNBILLED_SOURCES, type UnbilledConfidence, type UnbilledSource, addAmounts } from '@talk2tax/accounting-engine';
 import { Alert, Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Select, Table, Td, Textarea, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -51,7 +51,7 @@ export default function UnbilledRevenuePage() {
   const canManage = can(org.role, 'sales.manage');
   const rows = r ? r.findings.filter((f) => (view === 'open' ? !f.dismissed : !!f.dismissed) && (!source || f.source === source)) : [];
   const main = r?.totals.find((t) => t.currency === r.currency) ?? r?.totals[0];
-  const sum = (s: UnbilledSource[]) => (main ? s.reduce((t, x) => t + Number(main.bySource[x] ?? 0), 0).toFixed(2) : '0');
+  const sum = (s: UnbilledSource[]) => (main ? addAmounts(s.map((x) => main.bySource[x])).toFixed(2) : '0');
   return (
     <>
       <PageHeader title="Unbilled revenue" description="Revenue that was earned or agreed but not yet invoiced: milestones completed, contract periods due, draft invoices waiting, orders left unbilled, pro forma invoices that ran out, and regular customers not billed last month. Each finding says what it rests on; amounts are before tax." />

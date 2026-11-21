@@ -121,6 +121,16 @@ Talk2Tax holds no certification or attestation (SOC 2, ISO 27001 or any other); 
 
 The same check refuses claims of approval or licensing by a tax authority, the government or a regulator, claims of "fully compliant" or "guaranteed compliance" (RULE-007), and claims of live, real-time or direct bank feeds or connections (RULE-006): none of these exists. A sentence that denies or defers the claim, or sits under a heading that does ("Not in this release", "Known limitations"), is fine.
 
+It also refuses saying a competitor lacks something, or that Talk2Tax is better than one, unless the sentence cites a verified source or says the point is not confirmed (COMP-046).
+
+## Original code and licences (RULE-017)
+
+Talk2Tax is written in this repository; no competitor's code, design or branding is copied in. `scripts/check-licences.mjs` runs in CI and fails when a source file carries a competitor's copyright or proprietary notice, or when an installed package's licence does not allow use in a commercial product. Permissive licences (MIT, ISC, BSD, Apache-2.0 and similar) are allowed; MPL-2.0 is allowed for packages used unchanged; LGPL is allowed only for the image library that `sharp` loads; CC-BY-4.0 only for browser-support data. Anything else, including GPL, AGPL, SSPL, BUSL and unlicensed packages, needs a decision recorded in that file first.
+
+## The feature registry (RULE-020)
+
+`scripts/check-registry-evidence.mjs` runs in CI: a feature marked Tested must name a test that exists, and every file named as evidence for a Tested or Implemented feature must still be in the repository.
+
 ## No insecure shortcuts (RULE-008)
 
 `scripts/check-shortcuts.mjs` reads the application code (tests excluded) and fails CI on code that

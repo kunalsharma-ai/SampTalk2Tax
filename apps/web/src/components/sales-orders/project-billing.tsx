@@ -1,4 +1,5 @@
 'use client';
+import { addAmounts, amountOrZero, D } from '@talk2tax/accounting-engine';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, CardHeader, Dialog, Field, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
@@ -17,7 +18,7 @@ const METHOD: Record<BillingMethod, { label: string; help: string }> = {
   PROGRESS: { label: 'By progress', help: 'Each claim says how complete the work is. The invoice bills every line up to that share, less earlier claims.' },
 };
 const TONE = { DRAFT: 'neutral', POSTED: 'positive', VOID: 'negative' } as const;
-const sum = (xs: string[]) => xs.reduce((t, x) => t + Math.round(Number(x || 0) * 100), 0) / 100;
+const sum = (xs: string[]) => addAmounts(xs).toNumber(); // percents, not money
 
 function InvoiceLink({ orgId, inv }: { orgId: string; inv: OrderInvoiceRef }) {
   return (
@@ -78,7 +79,7 @@ export function ProjectBilling({ orgId, o, onChanged }: { orgId: string; o: Orde
   const planTotal = sum(plan.map((m) => m.percent));
   const claimed = Number(o.progress.claimed);
   const preview = Number(percent || 0);
-  const previewValue = Math.max(0, ((preview - claimed) * Number(o.total)) / 100);
+  const previewValue = D.max(0, amountOrZero(percent).minus(amountOrZero(o.progress.claimed)).times(amountOrZero(o.total)).div(100));
 
   return (
     <>

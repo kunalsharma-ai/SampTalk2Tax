@@ -1,4 +1,5 @@
 'use client';
+import { addAmounts } from '@talk2tax/accounting-engine';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { taxQuarterOf } from '@talk2tax/tax-engine';
 import { Alert, Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, Select, Stat, Table, Td, Th } from '@talk2tax/ui';
@@ -192,7 +193,7 @@ function ChallanDialog({ open, onClose, kind, rows, c }: { open: boolean; onClos
   const accounts = useAccounts();
   const qc = useQueryClient();
   const [form, setForm] = useState({ depositDate: today(), bankAccountId: '', challanReference: '', interestAmount: '', interestAccountId: '' });
-  const total = rows.reduce((s, x) => s + Math.round(Number(x.amount) * 100), 0);
+  const total = addAmounts(rows.map((x) => x.amount));
   const save = useMutation({
     mutationFn: () => api<WithholdingDeposit>(`/v1/orgs/${orgId}/withholding/deposits`, { method: 'POST', body: { kind, depositDate: form.depositDate, bankAccountId: form.bankAccountId, challanReference: form.challanReference, documentIds: rows.map((x) => x.documentId), interestAmount: form.interestAmount || undefined, interestAccountId: form.interestAmount ? form.interestAccountId : null } }),
     onSuccess: async () => {
@@ -204,7 +205,7 @@ function ChallanDialog({ open, onClose, kind, rows, c }: { open: boolean; onClos
   const banks = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && (a.subtype === 'BANK' || a.subtype === 'CASH'));
   const expenses = (accounts.data ?? []).filter((a) => a.isPostable && a.isActive && a.type === 'EXPENSE');
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose(false)} title={`Record ${kind} challan`} description={`${rows.length} document${rows.length === 1 ? '' : 's'}, ${money((total / 100).toFixed(2), c)} of ${kind}. Enter the challan as the bank or the income-tax portal issued it.`}>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose(false)} title={`Record ${kind} challan`} description={`${rows.length} document${rows.length === 1 ? '' : 's'}, ${money(total.toFixed(2), c)} of ${kind}. Enter the challan as the bank or the income-tax portal issued it.`}>
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
         <Field label="Paid on">{(p) => <Input {...p} type="date" value={form.depositDate} onChange={(e) => setForm({ ...form, depositDate: e.target.value })} />}</Field>
         <Field label="Paid from">{(p) => <Select {...p} value={form.bankAccountId} onChange={(e) => setForm({ ...form, bankAccountId: e.target.value })}><option value="">Choose a bank account…</option>{banks.map((a) => <option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}</Select>}</Field>

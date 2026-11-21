@@ -257,6 +257,8 @@ export const SECTION_HELP: Record<string, Help> = {
   'Spend by vendor': { what: 'Each vendor\'s bills before tax less credits, their share of spend, and the period before.', how: 'Look at the few vendors that make up most of the spend first.' },
   'Spend by account': { what: 'The same spend by the expense or asset account the bill lines went to.', how: 'Open an account to see the entries behind it.' },
   'Spend by month': { what: 'Spend in each month, by bill date.', how: 'Look for months out of line with the rest.' },
+  'Report schedules': { what: 'Each schedule, when it runs next and how its last run went.', how: 'Send now to check a schedule; pause it to stop the emails without losing it.' },
+  'Statement of cash flows': { what: 'Profit adjusted to cash, then money spent on assets and raised from loans or owners.', how: 'Read the three section totals first; they add up to the change in cash and bank.' },
   'Income statement': { what: 'Revenue less expenses for the period: your profit or loss.', how: 'Change the dates or compare periods. Click a line to see its entries.' },
   'Profit and loss': { what: 'Profit and loss for the month, with the previous month and the budget.', how: 'Look at the biggest differences first.' },
   KPIs: { what: 'Key figures for the month: margins, days to collect and pay, cash runway and growth.', how: 'Read with the trend; each KPI shows how it is calculated.' },

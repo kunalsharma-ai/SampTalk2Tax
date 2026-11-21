@@ -48,13 +48,21 @@ export class ReportsController {
     return this.reports.balanceSheet(org.id, q);
   }
 
-  /** Formats for local financial statements, and the one the organisation's country uses. */
+  /** Vendor spending (RPT-016); needs purchases.read as well as reports.read. */
   @Get('vendor-spend')
   @RequirePermission('reports.read')
   vendorSpend(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(RangeQuery)) q: z.infer<typeof RangeQuery>) {
     if (!hasPermission(org.role, 'purchases.read')) throw new ForbiddenException({ error: 'FORBIDDEN', message: `Your role (${org.role}) does not have purchases.read` });
     checkRange(q.from, q.to);
     return this.reports.vendorSpend(org.id, q);
+  }
+
+  /** Formats for local financial statements, and the one the organisation's country uses. */
+  @Get('cash-flow-statement')
+  @RequirePermission('reports.read')
+  cashFlowStatement(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(RangeQuery)) q: z.infer<typeof RangeQuery>) {
+    checkRange(q.from, q.to);
+    return this.reports.cashFlowStatement(org.id, q);
   }
 
   @Get('statutory/formats')

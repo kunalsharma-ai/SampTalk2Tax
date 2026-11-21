@@ -69,3 +69,23 @@ All reports use functional-currency amounts of POSTED entries only.
 ## Not yet built
 
 Recurring templates and schedules, accrual auto-reversal, exchange-rate tables and revaluation, dimension masters, subsidiary ledgers, intercompany and consolidation, cash-basis reporting.
+
+<<<<<<< HEAD
+## Statement of cash flows (RPT-004)
+
+`buildCashFlowStatement` uses the indirect method on each account's posted movements over the period, with year-end closing entries left out. Because every journal balances, the change in cash and bank (subtypes CASH and BANK) equals the opposite of the change in every other account, so the statement always adds up when the ledger does:
+
+* **Operating**: profit for the period, plus the rise in accumulated depreciation, plus the change in working capital (receivables, inventory, prepayments, other current assets, tax receivable, payables, employee reimbursements, credit cards, accruals, taxes, payroll and other current liabilities).
+* **Investing**: fixed assets and other non-current assets.
+* **Financing**: long-term debt, other non-current liabilities, share capital, drawings, retained earnings (direct entries only) and other equity.
+
+A balance-sheet account with no subtype is shown under operating and named, so it can be given one. `GET /v1/orgs/:orgId/reports/cash-flow-statement?from&to` adds the opening and closing cash, which match the balance sheet on the day before `from` and on `to`.
+
+Not yet: a separate line for exchange differences on foreign-currency cash (they sit in profit), separate interest and tax paid, disposals split from depreciation, the direct method, and export.
+=======
+## Money on screens (RULE-019)
+
+Screens that preview a total while the user types use the same Decimal code as the ledger: `amountOrZero` reads a typed-in amount (blank or half-typed counts as zero) and `addAmounts` totals a list exactly. A preview never adds, multiplies or rounds an amount as a JS number, so what a screen shows before saving matches what the server posts.
+
+`scripts/check-money-math.mjs` runs in CI and fails when app code turns an amount into a number and calculates with it. It looks for amount-like names next to arithmetic, so it is a guard rather than a proof; a line that handles numbers that are not money (a chart width, minutes, a count) ends with `// not money` to say so.
+>>>>>>> origin/main

@@ -76,6 +76,7 @@ Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `ta
 | `CONTRACT_RUNNER_INTERVAL_SECONDS` | no | How often customer contracts are billed as periods fall due. Default 3600; 0 turns it off |
 | `RECURRING_JOURNAL_RUNNER_INTERVAL_SECONDS` | no | How often recurring journals are made as their runs fall due. Default 3600; 0 turns it off |
 | `CLOSE_RUNNER_INTERVAL_SECONDS` | no | How often months that have ended are checked for a close to start automatically (where an organisation turned that on). Default 3600; 0 turns it off |
+| `REPORT_SCHEDULE_RUNNER_INTERVAL_SECONDS` | no | How often scheduled reports are checked for runs that are due, and sent. Default 900; 0 turns it off |
 | `RECURRING_BILL_RUNNER_INTERVAL_SECONDS` | no | How often recurring vendor bills are made as their runs fall due. Default 3600; 0 turns it off |
 | `RETENTION_RUNNER_INTERVAL_SECONDS` | no | How often each organisation's data retention periods are applied (SEC-020). Default 86400; 0 turns it off |
 | `SSO_ALLOW_PRIVATE_NETWORKS` | no | `true` lets organisations' single sign-on providers be http:// or on private networks. Local development and tests only |

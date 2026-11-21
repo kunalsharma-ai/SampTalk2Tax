@@ -47,6 +47,15 @@ jobs:
       # without the assessment, approval or provider connection behind them.
       - name: No claims we cannot back
         run: node --test scripts/check-claims.test.mjs && node scripts/check-claims.mjs
+      # RULE-017: only original code and packages under licences that allow a commercial product.
+      - name: Licences and original code
+        run: node --test scripts/check-licences.test.mjs && node scripts/check-licences.mjs
+      # RULE-020: a Tested feature names a test that exists; registry evidence is still in the repository.
+      - name: Registry evidence
+        run: node --test scripts/check-registry-evidence.test.mjs && node scripts/check-registry-evidence.mjs
+      # RULE-019: no screen or service calculates money as a binary float, not even for a preview.
+      - name: Decimal money math
+        run: node --test scripts/check-money-math.test.mjs && node scripts/check-money-math.mjs
       # RULE-008: no protection turned off to make something work.
       - name: No insecure shortcuts
         run: node --test scripts/check-shortcuts.test.mjs && node scripts/check-shortcuts.mjs

@@ -61,3 +61,14 @@ test('lets regulatory and banking denials, conditions and ordinary words through
 test('nothing a customer can read makes one of these claims today', () => {
   assert.deepEqual(scanRepository(), []);
 });
+
+test('finds unverified claims about competitors (COMP-046)', () => {
+  for (const claim of ['Unlike QuickBooks, Talk2Tax closes the month for you.', 'Xero does not support Indian GST returns.', 'Talk2Tax is better than Zoho Books.', 'Other tools cannot reconcile GST.']) {
+    const found = findClaims(claim);
+    assert.equal(found.length, 1, claim);
+    assert.equal(found[0].kind, 'competitor', claim);
+  }
+  for (const ok of ['Import a chart of accounts exported from Tally.', 'Xero does not offer this (not confirmed).', 'Do not incorrectly claim that a competitor lacks functionality.', 'The bill does not include tax.', 'A wave of payments does not clear today.']) {
+    assert.deepEqual(findClaims(ok), [], ok);
+  }
+});
