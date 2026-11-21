@@ -10,3 +10,7 @@ coverage/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+
+# Visual regression output on failure (QA-019)
+apps/web/e2e/visual/*.actual.png
+apps/web/e2e/visual/*.diff.png

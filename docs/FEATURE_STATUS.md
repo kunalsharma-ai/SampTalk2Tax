@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 745 |
+| Not started | 744 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 511 |
+| Tested | 512 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 3 | 28 |
+| Testing and quality assurance | M1 | 31 | 2 | 29 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7254,6 +7254,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/globals.css
   - packages/design-system/test
   - docs/TEST_STRATEGY.md
+
+### QA-019 — Visual regression tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: Seven screens that do not depend on the date, pinned fonts, 0.5% pixel tolerance. Update references with UPDATE_VISUAL=1.
+- Evidence:
+  - apps/web/e2e/visual-regression.test.mjs
+  - apps/web/e2e/visual/*.png
 
 ### QA-020 — Security tests
 
