@@ -7264,6 +7264,14 @@
         "docs/TEST_STRATEGY.md"
       ],
       "notes": "Route sweep over all ~940 API routes read from controller metadata: 401 without or with a bad token, 403/404 for non-members on every organisation route and method, an exact list of 33 public routes, secret-link and API-key routes refuse without the secret. Forged/alg-none/re-signed/expired/truncated JWTs, NoSQL operator injection, malformed and 4 MB bodies, mass-assignment fields, and no internals in errors."
+    },
+    "QA-019": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/visual-regression.test.mjs",
+        "apps/web/e2e/visual/*.png"
+      ],
+      "notes": "Seven screens that do not depend on the date, pinned fonts, 0.5% pixel tolerance. Update references with UPDATE_VISUAL=1."
     }
   }
 }
