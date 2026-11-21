@@ -36,6 +36,7 @@ export interface Engagement extends Omit<EngagementSummary, 'mine'> {
   steps: EngagementStep[];
   samples: { id: string; reference: string; name: string; status: 'OPEN' | 'COMPLETED'; progress: { tested: number; exceptions: number; remaining: number } }[];
   findings: { id: string; reference: string; title: string; severity: 'LOW' | 'MEDIUM' | 'HIGH'; status: string }[];
+  evidence: { id: string; reference: string; title: string; owner: Person; dueDate: string; status: 'REQUESTED' | 'SUBMITTED' | 'ACCEPTED'; overdue: boolean; files: number }[];
   conclusion: string | null;
   history: { at: string; by: Person; action: string; note: string }[];
   createdBy: Person;

@@ -24,6 +24,8 @@ export interface EngagementState {
   steps: readonly EngagementStep[];
   /** Linked samples that are still being tested. */
   openSamples: number;
+  /** Evidence requests (AUDIT-003) not yet accepted. */
+  openEvidence?: number;
 }
 
 const MOVES: Readonly<Record<EngagementStatus, readonly EngagementStatus[]>> = {
@@ -49,15 +51,19 @@ export function engagementMoveIssue(e: EngagementState, to: EngagementStatus, us
     const open = e.steps.filter((s) => s.status === 'OPEN').length;
     if (open) return `${open} ${open === 1 ? 'step is' : 'steps are'} not done yet`;
     if (e.openSamples) return `${e.openSamples} linked ${e.openSamples === 1 ? 'sample is' : 'samples are'} still being tested`;
+    if (e.openEvidence) return evidenceWords(e.openEvidence);
   }
   if (to === 'CLOSED') {
     const left = e.steps.filter((s) => s.status !== 'SIGNED_OFF').length;
     if (left) return `${left} ${left === 1 ? 'step is' : 'steps are'} not signed off yet`;
     if (e.openSamples) return `${e.openSamples} linked ${e.openSamples === 1 ? 'sample is' : 'samples are'} still being tested`;
+    if (e.openEvidence) return evidenceWords(e.openEvidence);
     if (note.trim().length < 20) return 'Write the conclusion, in at least 20 characters';
   } else if (byReviewer && note.trim().length < 10) return 'Say what needs more work, in at least 10 characters';
   return null;
 }
+
+const evidenceWords = (n: number) => `${n} evidence ${n === 1 ? 'request is' : 'requests are'} not accepted yet`;
 
 /** Why `userId` may not mark a step done, or null when they may. */
 export function stepDoneIssue(e: Pick<EngagementState, 'status' | 'leadId'>, step: EngagementStep, userId: string, work: string): string | null {

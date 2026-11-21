@@ -8731,6 +8731,21 @@
         "docs/INTERNAL_AUDIT.md"
       ],
       "notes": "Internal audit engagements (IA-001…) with scope, a lead and a different reviewer who can approve; planning, fieldwork, review, closed; work programme steps done by assignee or lead and signed off only by the reviewer (never their own work) or sent back; linked samples must be tested before review; linked findings shown live; closed with a conclusion and kept as closed (guards); every change in history and audited."
+    },
+    "AUDIT-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/audit-evidence.ts",
+        "packages/accounting-engine/test/audit-evidence.test.ts",
+        "apps/api/src/db/collections/audit-evidence.ts",
+        "apps/api/src/audit-evidence/audit-evidence.service.ts",
+        "apps/api/src/attachments/attachments.service.ts",
+        "apps/api/test/audit-evidence-requests.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/audit-evidence/[requestId]/page.tsx",
+        "apps/web/e2e/audit-evidence-requests-flow.test.mjs",
+        "docs/AUDIT_EVIDENCE.md"
+      ],
+      "notes": "Evidence requests (ER-001…) asked by the engagement lead of a member (not the reviewer) with a due date; files attached only by that member or the lead while requested; submitted with each file's SHA-256; returned with what is missing or accepted by the lead or reviewer, never the submitter; overdue tracking and Waiting for me; engagement held from review until all evidence is accepted; accepted evidence immutable (guards and attachment access); audited with file references."
     }
   }
 }

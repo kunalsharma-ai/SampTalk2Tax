@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { ENGAGEMENT_STATUS, STEP_STATUS, type Engagement, type EngagementStatus } from '@/components/controls/engagements';
+import { EVIDENCE_STATUS } from '@/components/controls/evidence';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { date, dateTime } from '@/lib/format';
@@ -33,6 +34,7 @@ export default function EngagementPage() {
   const [backNote, setBackNote] = useState<Record<string, string>>({});
   const [link, setLink] = useState('');
   const [note, setNote] = useState('');
+  const [ask, setAsk] = useState({ title: '', details: '', ownerId: '', dueDate: '' });
   const done = (x: Engagement) => {
     qc.setQueryData(key, x);
     void qc.invalidateQueries({ queryKey: ['audit-engagements', orgId] });
@@ -42,6 +44,14 @@ export default function EngagementPage() {
   const doStep = useMutation({ mutationFn: (id: string) => api<Engagement>(`${base}/steps/${id}/done`, { method: 'POST', body: { work: work[id] ?? '' } }), onSuccess: done });
   const review = useMutation({ mutationFn: (v: { id: string; decision: 'SIGN_OFF' | 'REOPEN' }) => api<Engagement>(`${base}/steps/${v.id}/review`, { method: 'POST', body: { decision: v.decision, note: backNote[v.id] ?? '' } }), onSuccess: done });
   const addLink = useMutation({ mutationFn: () => { const [kind, id] = link.split(':'); return api<Engagement>(`${base}/links`, { method: 'POST', body: { kind, id } }); }, onSuccess: (x) => { done(x); setLink(''); } });
+  const askFor = useMutation({
+    mutationFn: () => api(`/v1/orgs/${orgId}/audit-evidence`, { method: 'POST', body: { ...ask, engagementId } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: key });
+      void qc.invalidateQueries({ queryKey: ['audit-evidence', orgId] });
+      setAsk({ title: '', details: '', ownerId: ask.ownerId, dueDate: ask.dueDate });
+    },
+  });
   const move = useMutation({ mutationFn: (status: EngagementStatus) => api<Engagement>(`${base}/move`, { method: 'POST', body: { status, note } }), onSuccess: (x) => { done(x); setNote(''); } });
   if (!org) return null;
   if (q.error) return <ErrorAlert title="Could not load the engagement" error={q.error} />;
@@ -116,6 +126,40 @@ export default function EngagementPage() {
           </form>
         ) : null}
         <div className="px-4 pb-4"><ErrorAlert title="That did not work" error={addStep.error ?? doStep.error ?? review.error} /></div>
+      </Card>
+      <Card className="mb-4">
+        <CardHeader title="Evidence requests" description="Evidence the audit has asked for, from whom and by when. All of it must be accepted before the audit goes for review." />
+        {!e.evidence.length ? <EmptyState title="No evidence asked for">{e.canPlan ? 'Ask for it below.' : 'The lead asks for evidence.'}</EmptyState> : (
+          <Table aria-label="Evidence asked for">
+            <thead><Tr><Th>Evidence</Th><Th>Asked of</Th><Th>Due</Th><Th>Status</Th></Tr></thead>
+            <tbody>
+              {e.evidence.map((r) => (
+                <Tr key={r.id}>
+                  <Td><Link className="hover:text-accent" href={`/orgs/${orgId}/audit-evidence/${r.id}`}>{r.reference} {r.title}</Link>{r.files ? <div className="text-xs text-fg-muted">{r.files} {r.files === 1 ? 'file' : 'files'}</div> : null}</Td>
+                  <Td className="text-sm">{r.owner.name}</Td>
+                  <Td className="whitespace-nowrap text-sm">{date(r.dueDate)}{r.overdue ? <div><Badge tone="negative">Overdue</Badge></div> : null}</Td>
+                  <Td><Badge tone={EVIDENCE_STATUS[r.status].tone}>{EVIDENCE_STATUS[r.status].label}</Badge></Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+        {e.canPlan ? (
+          <form
+            className="grid gap-3 border-t border-line p-4 sm:grid-cols-4"
+            onSubmit={(x) => {
+              x.preventDefault();
+              askFor.mutate();
+            }}
+          >
+            <Field label="Evidence needed">{(p) => <Input {...p} maxLength={200} value={ask.title} onChange={(x) => setAsk({ ...ask, title: x.target.value })} placeholder="Such as October bank statement" />}</Field>
+            <Field label="Details" hint="Optional">{(p) => <Input {...p} maxLength={2000} value={ask.details} onChange={(x) => setAsk({ ...ask, details: x.target.value })} />}</Field>
+            <Field label="Ask">{(p) => <Select {...p} value={ask.ownerId} onChange={(x) => setAsk({ ...ask, ownerId: x.target.value })}><option value="">Choose…</option>{assignable.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</Select>}</Field>
+            <Field label="Due by">{(p) => <Input {...p} type="date" value={ask.dueDate} onChange={(x) => setAsk({ ...ask, dueDate: x.target.value })} />}</Field>
+            <div className="sm:col-span-4"><Button type="submit" size="sm" variant="secondary" disabled={ask.title.trim().length < 3 || !ask.ownerId || !ask.dueDate} loading={askFor.isPending}>Ask for evidence</Button></div>
+            <div className="sm:col-span-4"><ErrorAlert title="The evidence was not asked for" error={askFor.error} /></div>
+          </form>
+        ) : null}
       </Card>
       <Card className="mb-4">
         <CardHeader title="Samples and findings" description="Samples tested and findings raised for this audit, with where each one stands now. Linked samples must be fully tested before review." />

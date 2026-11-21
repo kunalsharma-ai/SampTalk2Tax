@@ -791,6 +791,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'The lead adds steps and assigns them, links samples and findings, and starts fieldwork. Each person records the work done on their steps. Once every step is done and linked samples are tested, the lead sends it for review. The reviewer signs off each step or sends it back, and closes the audit with the conclusion. A closed engagement is kept as it was closed.',
     where: 'Internal audit. Every change is in the audit trail.',
   },
+  'audit-evidence': {
+    what: 'Evidence internal audits have asked for: what, from whom, by when, and whether it was submitted and accepted.',
+    how: 'Open a request to attach the files and submit them. Choose Waiting for me to see what you have been asked for. The audit lead asks for evidence from the engagement page.',
+    where: 'Governance. Needs the audit trail permission.',
+  },
+  'audit-evidence/[id]': {
+    what: 'One evidence request: what is asked for, the files, and who submitted and accepted them.',
+    how: 'The person asked (or the audit lead) attaches the files and submits them. The lead or reviewer, never whoever submitted, accepts the evidence or returns it with what is missing. Files can change only while the evidence is requested; accepted evidence is kept exactly as accepted, with each file\'s SHA-256.',
+    where: 'Audit evidence and the internal audit it belongs to. Every step is in the audit trail, with the files attached at the time.',
+  },
   'ledger-replay': {
     what: 'The books exactly as they were recorded at a past moment, beside the books now for the same dates, with every entry posted since that explains the difference.',
     how: 'Pick the moment (your local time) and the last date to include, then replay. Posted entries are never changed, so the replay shows what anyone could have seen then; back-dated entries, reversals and corrections posted later show as the difference.',
