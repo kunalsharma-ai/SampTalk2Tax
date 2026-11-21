@@ -7676,6 +7676,137 @@
         "docs/DEPLOYMENT.md"
       ],
       "notes": "Production is one compose file: migrate, API, web and Caddy, on MongoDB. No queue, cache or orchestrator is added until the load test shows a need."
+    },
+    "RPT-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cash-flow-statement.ts",
+        "packages/accounting-engine/test/cash-flow-statement.test.ts",
+        "apps/api/src/reports/reports.service.ts",
+        "apps/api/test/cash-flow-statement.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/cash-flow-statement/page.tsx",
+        "apps/web/e2e/cash-flow-statement-flow.test.mjs",
+        "docs/ACCOUNTING_ENGINE.md"
+      ],
+      "notes": "Indirect method from posted journals: profit, depreciation added back, working-capital changes, investing and financing by account subtype; explains the change in cash and bank exactly and opens and closes on the balance sheet. No separate FX effect line, no interest/tax-paid split, no export yet."
+    },
+    "RPT-002": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts › financial reports",
+        "apps/api/test/cash-basis.e2e.test.ts",
+        "apps/web/e2e/cash-basis-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement"
+      ],
+      "notes": "Accrual or cash basis, by department or project, with exports."
+    },
+    "RPT-003": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts › financial reports",
+        "apps/web/src/app/orgs/[orgId]/reports/balance-sheet"
+      ],
+      "notes": "Balances to a date; assets equal liabilities plus equity including unclosed earnings."
+    },
+    "RPT-005": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts › financial reports",
+        "apps/api/test/report-exports.e2e.test.ts",
+        "apps/web/e2e/ledger-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/trial-balance"
+      ],
+      "notes": "Balanced trial balance with exports that match the report."
+    },
+    "RPT-006": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances",
+        "apps/api/test/report-exports.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/general-ledger"
+      ],
+      "notes": "Account ledger with opening and running balances, tied to the trial balance."
+    },
+    "RPT-007": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts › ageing ties to the receivables control account",
+        "apps/web/e2e/sales-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/sales/ageing"
+      ],
+      "notes": "Receivables ageing ties to the control account today and on earlier dates."
+    },
+    "RPT-008": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/sales-purchases.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/ageing"
+      ],
+      "notes": "Payables ageing from open bills."
+    },
+    "RPT-011": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/expense-report.e2e.test.ts",
+        "apps/web/e2e/expense-report-flow.test.mjs"
+      ],
+      "notes": "Claimed spending by category, month, person, status and merchant."
+    },
+    "RPT-012": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/budgets.e2e.test.ts",
+        "apps/web/e2e/budgets-flow.test.mjs"
+      ],
+      "notes": "Each month against posted actuals, including unbudgeted spending; by quarter and year."
+    },
+    "RPT-020": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/consolidation.e2e.test.ts",
+        "apps/web/e2e/consolidation-flow.test.mjs"
+      ],
+      "notes": "Group statements with intercompany eliminations and exports."
+    },
+    "RPT-025": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/report-designer.e2e.test.ts",
+        "apps/web/e2e/report-designer-flow.test.mjs"
+      ],
+      "notes": "Report designer: layouts checked, previewed from the books, saved and finalised."
+    },
+    "RPT-040": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/report-designer.e2e.test.ts › with the AI, writes commentary from the report figures and rejects invented numbers"
+      ],
+      "notes": "Commentary from report figures only; invented numbers are rejected; without an AI key the commentary is left for a person."
+    },
+    "RPT-041": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/report-exports.e2e.test.ts › exports the trial balance as CSV with the same figures as the report",
+        "apps/api/test/cash-flow-statement.e2e.test.ts"
+      ],
+      "notes": "Exports carry the same figures as the reports; the cash flow statement ties to balance-sheet cash."
+    },
+    "RPT-036": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/cash-flow-statement-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/reports/income-statement",
+        "apps/web/src/app/orgs/[orgId]/reports/cash-flow-statement"
+      ],
+      "notes": "Statement lines open the account ledger for the same dates."
+    },
+    "RPT-038": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/report-exports.e2e.test.ts › needs reports.read and keeps organisations apart",
+        "apps/api/test/dashboards.e2e.test.ts"
+      ],
+      "notes": "Reports need reports.read; members without it and other organisations are refused."
     }
   }
 }

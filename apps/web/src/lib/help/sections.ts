@@ -254,6 +254,7 @@ export const SECTION_HELP: Record<string, Help> = {
   // ---------------------------------------------------------------- reports
   Assets: { what: 'What the business owns or is owed, at the report date.', how: 'Click a line to see the accounts behind it.' },
   'Liabilities and equity': { what: 'What the business owes and what belongs to its owners, at the report date.', how: 'Assets always equal liabilities plus equity; if not, something has not been posted correctly.' },
+  'Statement of cash flows': { what: 'Profit adjusted to cash, then money spent on assets and raised from loans or owners.', how: 'Read the three section totals first; they add up to the change in cash and bank.' },
   'Income statement': { what: 'Revenue less expenses for the period: your profit or loss.', how: 'Change the dates or compare periods. Click a line to see its entries.' },
   'Profit and loss': { what: 'Profit and loss for the month, with the previous month and the budget.', how: 'Look at the biggest differences first.' },
   KPIs: { what: 'Key figures for the month: margins, days to collect and pay, cash runway and growth.', how: 'Read with the trend; each KPI shows how it is calculated.' },

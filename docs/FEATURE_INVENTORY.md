@@ -888,17 +888,17 @@ Part 26 · M6 · priority P1 · depends on: GL
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | RPT-001 |  | rule | Build a professional reporting studio | Not started |
-| RPT-002 |  | capability | Profit and loss | Not started |
-| RPT-003 |  | capability | Balance sheet | Not started |
-| RPT-004 |  | capability | Cash-flow statement | Not started |
-| RPT-005 |  | capability | Trial balance | Not started |
-| RPT-006 |  | capability | General ledger | Not started |
-| RPT-007 |  | capability | Accounts receivable aging | Not started |
-| RPT-008 |  | capability | Accounts payable aging | Not started |
+| RPT-002 |  | capability | Profit and loss | Tested |
+| RPT-003 |  | capability | Balance sheet | Tested |
+| RPT-004 |  | capability | Cash-flow statement | Tested |
+| RPT-005 |  | capability | Trial balance | Tested |
+| RPT-006 |  | capability | General ledger | Tested |
+| RPT-007 |  | capability | Accounts receivable aging | Tested |
+| RPT-008 |  | capability | Accounts payable aging | Tested |
 | RPT-009 |  | capability | Tax reports | Not started |
 | RPT-010 |  | capability | Payroll reports | Not started |
-| RPT-011 |  | capability | Expense reports | Not started |
-| RPT-012 |  | capability | Budget-versus-actual | Not started |
+| RPT-011 |  | capability | Expense reports | Tested |
+| RPT-012 |  | capability | Budget-versus-actual | Tested |
 | RPT-013 |  | capability | Project profitability | Tested |
 | RPT-014 |  | capability | Department profitability | Tested |
 | RPT-015 |  | capability | Customer profitability | Not started |
@@ -906,12 +906,12 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-017 |  | capability | Cash forecasts | Not started |
 | RPT-018 |  | capability | Working capital | Tested |
 | RPT-019 |  | capability | Financial ratios | Tested |
-| RPT-020 |  | capability | Consolidated statements | Not started |
+| RPT-020 |  | capability | Consolidated statements | Tested |
 | RPT-021 |  | capability | Audit reports | Not started |
 | RPT-022 |  | capability | Executive reports | Not started |
 | RPT-023 |  | capability | Investor reports | Not started |
 | RPT-024 |  | capability | Board reports | Tested |
-| RPT-025 | Reporting Features | capability | Custom report builder | Not started |
+| RPT-025 | Reporting Features | capability | Custom report builder | Tested |
 | RPT-026 | Reporting Features | capability | Drag-and-drop metrics | Not started |
 | RPT-027 | Reporting Features | capability | Financial dimensions | Tested |
 | RPT-028 | Reporting Features | capability | Filters | Not started |
@@ -922,12 +922,12 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-033 | Reporting Features | capability | PDF exports | Tested |
 | RPT-034 | Reporting Features | capability | Excel exports | Tested |
 | RPT-035 | Reporting Features | capability | CSV exports | Tested |
-| RPT-036 | Reporting Features | capability | Interactive drill-downs | Not started |
+| RPT-036 | Reporting Features | capability | Interactive drill-downs | Tested |
 | RPT-037 | Reporting Features | capability | Report sharing | Not started |
-| RPT-038 | Reporting Features | capability | Permission-based access | Not started |
+| RPT-038 | Reporting Features | capability | Permission-based access | Tested |
 | RPT-039 | Reporting Features | capability | Report version history | Not started |
-| RPT-040 | Reporting Features | capability | AI narrative generation | Not started |
-| RPT-041 | Reporting Features | rule | All exported numbers must reconcile with authoritative financial records | Not started |
+| RPT-040 | Reporting Features | capability | AI narrative generation | Tested |
+| RPT-041 | Reporting Features | rule | All exported numbers must reconcile with authoritative financial records | Tested |
 
 ## Dashboard design
 
