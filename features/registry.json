@@ -19407,9 +19407,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/internal-controls.ts",
+        "packages/accounting-engine/test/internal-controls.test.ts",
+        "apps/api/src/internal-controls/internal-controls.service.ts",
+        "apps/api/test/internal-controls.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/controls/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/controls/[controlId]/page.tsx",
+        "apps/web/e2e/controls-register-flow.test.mjs",
+        "docs/INTERNAL_CONTROLS.md"
+      ],
+      "notes": "Controls tested per ended period (monthly, fiscal quarter, fiscal year); four library controls are checked against the books by the server (bank reconciliations, journal segregation, vendor bank detail verification, period locks) with the evidence kept; manual tests need a result and notes; tests immutable and audited; due and overdue tracking."
     },
     {
       "id": "AUDIT-009",
@@ -19539,9 +19548,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/internal-controls.ts",
+        "packages/accounting-engine/test/internal-controls.test.ts",
+        "apps/api/src/internal-controls/internal-controls.service.ts",
+        "apps/api/test/internal-controls.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/controls/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/controls/[controlId]/page.tsx",
+        "apps/web/e2e/controls-register-flow.test.mjs",
+        "docs/INTERNAL_CONTROLS.md"
+      ],
+      "notes": "Every control has an owner who must be a member working on the books; owners cannot test their own control while someone else can (marked when they must); owner changes audited with before and after."
     },
     {
       "id": "AUDIT-014",

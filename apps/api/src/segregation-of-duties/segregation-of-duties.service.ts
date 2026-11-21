@@ -65,6 +65,14 @@ export class SegregationOfDutiesService {
     return sodFindings(await this.facts(orgId, from, to));
   }
 
+  /** The findings over a period that no one has reviewed yet (for the control tests that rely on them). */
+  async unreviewedFindings(orgId: string, from: string, to: string) {
+    const findings = await this.findingsFor(orgId, from, to);
+    if (!findings.length) return [];
+    const reviewed = new Set((await this.store.collection(sodReviews).find({ findingKey: { $in: findings.map((f) => f.key) } })).map((r) => r.findingKey));
+    return findings.filter((f) => !reviewed.has(f.key));
+  }
+
   /** The findings over a period with their reviews, the rules, and the duties each member's role holds. */
   async overview(org: OrgContext, user: AuthUser, q: { from?: string; to?: string }) {
     const { from, to } = this.period(q.from, q.to);
