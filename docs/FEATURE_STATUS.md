@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 745 |
 | Designed | 0 |
 | Implementing | 37 |
-| Implemented | 36 |
-| Tested | 511 |
+| Implemented | 35 |
+| Tested | 512 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -164,11 +164,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-010 — Opening balances
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
-- Notes: Opening balances are entered as a journal on the first day; there is no dedicated opening-balance import screen yet.
+- Status: **Tested**
+- Notes: Accounting → Opening balances: balances posted as one OPENING journal, difference to 3250 Opening Balance Equity, replacing reverses the previous journal in the same transaction. Receivables and payables are brought in as unpaid invoices and bills, not here. No spreadsheet import yet.
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts
-  - apps/web/src
+  - packages/accounting-engine/test/opening-balances.test.ts
+  - apps/api/test/opening-balances.e2e.test.ts
+  - apps/web/e2e/opening-balances-flow.test.mjs
 
 ### GL-011 — Closing balances
 
