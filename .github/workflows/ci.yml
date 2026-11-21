@@ -88,6 +88,11 @@ jobs:
           done
       - name: Browser end-to-end tests
         run: pnpm e2e
+      # QA-017: organisations read and post at once against the running API; fails when a
+      # performance budget (reads p95 < 300 ms, posting p95 < 1 s) is missed, any request fails,
+      # or the books disagree afterwards. Sized for a shared CI runner.
+      - name: Load test
+        run: node scripts/load-test.mjs --orgs 10 --users 2 --rate 3 --seconds 20 --seed 10 --check --out /tmp/load-test.json
       - name: Server logs on failure
         if: failure()
         run: tail -n 100 /tmp/api.log /tmp/web.log || true

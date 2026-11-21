@@ -140,6 +140,15 @@ export class DocumentStore {
   }
 
   /**
+   * Next value of a global counter, outside any transaction: for ids that must be unique and
+   * increasing but may have gaps (an aborted transaction skips its value). Taking it outside means
+   * concurrent transactions of different organisations never conflict on the one counter document.
+   */
+  async nextSerial(name: string): Promise<number> {
+    return nextSequenceValue(this.db(), name);
+  }
+
+  /**
    * Raises a global counter to at least `value` (never lowers it), inside the current
    * transaction if there is one. For counters that started elsewhere and are catching up.
    */
