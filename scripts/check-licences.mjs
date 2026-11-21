@@ -40,7 +40,7 @@ export function licenceAllowed(name, expr) {
   return e.split(/\s+AND\s+/).every((p) => partAllowed(name, p));
 }
 
-const COMPETITORS = ['Intuit', 'QuickBooks', 'Xero', 'Zoho', 'Oracle', 'NetSuite', 'SAP SE', 'Microsoft Corporation', 'Sage Group', 'Sage Software', 'Tally Solutions', 'Workday', 'FreshBooks', 'Odoo', 'Wave Financial', 'Acumatica', 'Ramp Business', 'Bill\\.com', 'BILL Holdings'];
+const COMPETITORS = ['Intuit', 'QuickBooks', 'Xero', 'Zoho', 'Oracle', 'NetSuite', 'SAP SE', 'Microsoft Corporation', 'Sage Group', 'Sage Software', 'Tally Solutions', 'Workday', 'FreshBooks', 'Odoo', 'Wave Financial', 'Acumatica', 'Ramp Business', 'BILL Holdings'];
 const NOTICE = new RegExp(`(copyright|©|\\(c\\)\\s*\\d{4})[^\\n]{0,40}\\b(${COMPETITORS.join('|')})\\b|\\b(${COMPETITORS.join('|')})\\b[^\\n]{0,40}(all rights reserved|proprietary and confidential|confidential and proprietary)`, 'i');
 
 /** Lines of `text` with a competitor's copyright or proprietary notice. */

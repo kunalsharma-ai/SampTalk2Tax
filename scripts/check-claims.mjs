@@ -36,7 +36,7 @@ const REGULATORY = new RegExp(
   'i',
 );
 const LIVE_BANKING = /\b(?:live|real[- ]time|automatic|automated|direct|instant)\s+bank(?:ing)?\s+(?:feeds?|sync(?:ing|hroni[sz]ation)?|connections?|integrations?)\b|\b(?:live|real[- ]time)\s+feeds?\s+from\s+(?:your\s+)?banks?\b|\bconnects?\s+(?:directly\s+)?to\s+(?:your|all|every|any)\s+banks?\b/i;
-const COMPETITOR_NAMES = String.raw`(?:QuickBooks|Intuit|Xero|Zoho(?:\s+Books)?|NetSuite|Oracle|SAP|Dynamics\s*365|Business\s+Central|Sage(?:\s+Intacct)?|FreshBooks|Odoo|Wave|Acumatica|Workday|Ramp|BILL|Bill\.com|Tally(?:Prime)?|[Cc]ompetitors?|[Oo]ther\s+(?:tools|software|products|apps))`;
+const COMPETITOR_NAMES = String.raw`(?:QuickBooks|Intuit|Xero|Zoho(?:\s+Books)?|NetSuite|Oracle|SAP|Dynamics\s*365|Business\s+Central|Sage(?:\s+Intacct)?|FreshBooks|Odoo|Wave|Acumatica|Workday|Ramp|BILL|Tally(?:Prime)?|[Cc]ompetitors?|[Oo]ther\s+(?:tools|software|products|apps))`;
 /** COMP-046: a competitor is not said to lack something, or to be worse, without a verified source. */
 const COMPETITOR = new RegExp(
   String.raw`\b(?:[Uu]nlike|[Bb]etter\s+than|[Bb]eats|[Oo]utperforms|[Ss]uperior\s+to|[Rr]eplaces)\s+(?:the\s+)?${COMPETITOR_NAMES}\b|\b${COMPETITOR_NAMES}\b[^.!?\n]{0,40}?\b(?:lacks?|lacking|doesn't|does\s+not|don't|do\s+not|can't|cannot|has\s+no|have\s+no|offers?\s+no|is\s+missing|are\s+missing|fails?\s+to)\b`,
