@@ -14,7 +14,17 @@ export const CODES = new Set(['EM', 'EL', 'AO', 'AI', 'NC', 'PD']);
 /** Codes that say the vendor has the capability, so they need a source. */
 const NEEDS_SOURCE = new Set(['EM', 'EL', 'AO', 'AI']);
 /** Not the vendor's own word: review and comparison sites. */
-const UNOFFICIAL = /\b(?:g2|capterra|trustradius|getapp|softwareadvice|gartner|forrester|reddit|wikipedia|medium|quora)\.com\b/i;
+const UNOFFICIAL = ['g2.com', 'capterra.com', 'trustradius.com', 'getapp.com', 'softwareadvice.com', 'gartner.com', 'forrester.com', 'reddit.com', 'wikipedia.org', 'medium.com', 'quora.com'];
+/** Whether a source URL is on a review or comparison site (or a subdomain of one). */
+export function isUnofficial(url) {
+  let host;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return UNOFFICIAL.some((d) => host === d || host.endsWith(`.${d}`));
+}
 /** Summary rows whose cells are words rather than codes. */
 const TEXT_ROWS = new Set(['Subscription model', 'Limitations']);
 
@@ -60,7 +70,7 @@ export function checkMatrix(text) {
       if (NEEDS_SOURCE.has(code) && !urls.length) problems.push({ line: r.line, problem: `${t.heading} / ${capability}: ${code} needs an official source` });
       for (const u of urls) {
         if (!u.startsWith('https://')) problems.push({ line: r.line, problem: `${t.heading} / ${capability}: source is not https` });
-        if (UNOFFICIAL.test(u)) problems.push({ line: r.line, problem: `${t.heading} / ${capability}: ${u} is not an official vendor source` });
+        if (isUnofficial(u)) problems.push({ line: r.line, problem: `${t.heading} / ${capability}: ${u} is not an official vendor source` });
       }
     }
     details.set(t.heading, rows);

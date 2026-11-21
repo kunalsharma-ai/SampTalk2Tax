@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { checkMatrix } from './check-competitive-matrix.mjs';
+import { checkMatrix, isUnofficial } from './check-competitive-matrix.mjs';
 
 const doc = (summaryCode, detailRow) => `## Summary
 
@@ -42,4 +42,11 @@ test('refuses a detail table with no verification date', () => {
 
 test('the real matrix passes', () => {
   assert.deepEqual(checkMatrix(readFileSync(new URL('../docs/COMPETITIVE_FEATURE_MATRIX.md', import.meta.url), 'utf8')), []);
+});
+
+test('judges a source by its host, not by text anywhere in the URL', () => {
+  assert.equal(isUnofficial('https://www.g2.com/products/x/reviews'), true);
+  assert.equal(isUnofficial('https://en.wikipedia.org/wiki/X'), true);
+  assert.equal(isUnofficial('https://vendor.example/compare?from=g2.com'), false);
+  assert.equal(isUnofficial('https://g2.com.vendor.example/'), false);
 });
