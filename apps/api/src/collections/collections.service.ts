@@ -77,7 +77,7 @@ interface Written {
 }
 
 /** Checks the model's submission has the right shape; returns null when it does not. */
-function parseSubmission(input: unknown): Written | null {
+export function parseSubmission(input: unknown): Written | null {
   if (!input || typeof input !== 'object') return null;
   const i = input as Record<string, unknown>;
   if (typeof i.risk !== 'string' || !(RISK_LEVELS as readonly string[]).includes(i.risk)) return null;

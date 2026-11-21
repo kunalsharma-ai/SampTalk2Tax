@@ -1,7 +1,7 @@
 import type { DocumentStore } from '@talk2tax/document-db';
 import type { Tx } from '../common/prisma.service';
 
-type Coordination = Pick<DocumentStore, 'nextSequence' | 'raiseSequence' | 'lock' | 'lease' | 'release'>;
+type Coordination = Pick<DocumentStore, 'nextSequence' | 'nextSerial' | 'raiseSequence' | 'lock' | 'lease' | 'release'>;
 let store: Coordination | undefined;
 
 /** The MongoDB store numbering and locks use (none in unit tests without MongoDB). */

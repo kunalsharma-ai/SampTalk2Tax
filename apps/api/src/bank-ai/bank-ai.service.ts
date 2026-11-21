@@ -106,7 +106,7 @@ export function reconciliationPrompt(org: { name: string; functionalCurrency: st
   ].join('\n');
 }
 
-function parse(input: unknown): (BankProposalInput & { confidence: string; reason: string }) | null {
+export function parse(input: unknown): (BankProposalInput & { confidence: string; reason: string }) | null {
   if (!input || typeof input !== 'object') return null;
   const i = input as Record<string, unknown>;
   if (typeof i.action !== 'string' || !(BANK_AI_ACTIONS as readonly string[]).includes(i.action)) return null;

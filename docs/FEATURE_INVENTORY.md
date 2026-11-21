@@ -1434,7 +1434,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-013 |  | capability | Asynchronous document processing | Not started |
 | PERF-014 |  | rule | Establish measurable performance budgets | Not started |
 | PERF-015 |  | capability | Typical dashboard interaction under two seconds under defined test conditions | Not started |
-| PERF-016 |  | capability | Common API reads under 300 milliseconds at the 95th percentile under defined load | Not started |
+| PERF-016 |  | capability | Common API reads under 300 milliseconds at the 95th percentile under defined load | Tested |
 | PERF-017 |  | capability | Financial posting with transactional consistency | Tested |
 | PERF-018 |  | capability | No cross-tenant data exposure | Tested |
 | PERF-019 |  | capability | Recoverable background jobs | Not started |
@@ -1460,10 +1460,10 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-011 | Required Tests | capability | Financial reporting tests | Tested |
 | QA-012 | Required Tests | capability | Permission tests | Tested |
 | QA-013 | Required Tests | capability | Tenant isolation tests | Tested |
-| QA-014 | Required Tests | capability | AI agent evaluation tests | Not started |
+| QA-014 | Required Tests | capability | AI agent evaluation tests | Tested |
 | QA-015 | Required Tests | capability | Prompt injection tests | Tested |
 | QA-016 | Required Tests | capability | Workflow recovery tests | Tested |
-| QA-017 | Required Tests | capability | Load tests | Not started |
+| QA-017 | Required Tests | capability | Load tests | Tested |
 | QA-018 | Required Tests | capability | Accessibility tests | Tested |
 | QA-019 | Required Tests | capability | Visual regression tests | Tested |
 | QA-020 | Required Tests | capability | Security tests | Tested |
@@ -1477,7 +1477,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-028 | Financial Test Scenarios | capability | Concurrent operations preserve accounting consistency | Tested |
 | QA-029 | Financial Test Scenarios | capability | Tax calculations use the correct effective-dated rules | Tested |
 | QA-030 | Financial Test Scenarios | capability | Unauthorized AI agents cannot post entries or initiate payments | Tested |
-| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Implementing |
+| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Tested |
 
 ## Demonstration data
 
@@ -1639,11 +1639,11 @@ Part 50 · All · priority P0 · depends on: none
 | RULE-001 |  | rule | Do not create fake functional buttons | Implemented |
 | RULE-002 |  | rule | Do not create disconnected dashboards | Implemented |
 | RULE-003 |  | rule | Do not substitute static cards for implemented business logic | Implemented |
-| RULE-004 |  | rule | Do not invent financial data in production | Not started |
+| RULE-004 |  | rule | Do not invent financial data in production | Tested |
 | RULE-005 |  | rule | Do not claim AI functionality when only a static response exists | Tested |
-| RULE-006 |  | rule | Do not claim live banking integration without credentials and provider validation | Not started |
-| RULE-007 |  | rule | Do not claim regulatory compliance without verification | Not started |
-| RULE-008 |  | rule | Do not use insecure shortcuts | Not started |
+| RULE-006 |  | rule | Do not claim live banking integration without credentials and provider validation | Tested |
+| RULE-007 |  | rule | Do not claim regulatory compliance without verification | Tested |
+| RULE-008 |  | rule | Do not use insecure shortcuts | Tested |
 | RULE-009 |  | rule | Do not store secrets in source code | Tested |
 | RULE-010 |  | rule | Do not bypass tenant permissions | Tested |
 | RULE-011 |  | rule | Do not permit unauthorized AI financial actions | Tested |

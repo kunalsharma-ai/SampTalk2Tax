@@ -32641,9 +32641,11 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/load-test.mjs › common reads p95 under 300 ms (CI step Load test)"
+      ],
+      "notes": "Measured on the CI runner and one dev machine only."
     },
     {
       "id": "PERF-017",
@@ -32665,9 +32667,10 @@
       },
       "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › idempotency and concurrency"
+        "apps/api/test/ledger.e2e.test.ts › idempotency and concurrency",
+        "scripts/load-test.mjs › posting under load, books checked afterwards"
       ],
-      "notes": "Correctness under concurrency is tested; throughput has not been benchmarked."
+      "notes": "Correctness under concurrency is tested; posting p95 under load is checked by the load test (budget 1,000 ms)."
     },
     {
       "id": "PERF-018",
@@ -33110,9 +33113,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/agent-evals.test.ts",
+        "apps/api/test/agent-evals.test.ts",
+        "apps/api/src/ai-control/agent-evals.cli.ts"
+      ],
+      "notes": "14 labelled cases for the bank, close, collections and CFO agents. The live run against Claude needs an API key and has not been run yet; CI runs the graders and the runner with stand-in models."
     },
     {
       "id": "QA-015",
@@ -33188,9 +33195,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/load-test.mjs",
+        "docs/LOAD_TESTING.md",
+        ".github/workflows/ci.yml › Load test"
+      ],
+      "notes": "Many organisations at once; reads p95 109 ms, posting p95 576 ms, 155 req/s on one machine. Soak runs and PERF-002 volumes not covered."
     },
     {
       "id": "QA-018",
@@ -33543,11 +33554,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "packages/accounting-engine/src/fixtures.ts",
+        "packages/accounting-engine/test/fixtures.test.ts",
+        "scripts/check-test-determinism.mjs",
+        "scripts/check-test-determinism.test.mjs"
       ],
-      "notes": "The demo seed and test fixtures are deterministic; a shared fixture library for all scenarios is not done."
+      "notes": "seededRandom and fixtureAmount give the same numbers and decimal amounts each run; CI refuses Math.random or unseeded faker in any test file. Unique-only values use randomUUID."
     },
     {
       "id": "DEMO-001",
@@ -36721,9 +36735,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/seed-guard.test.ts",
+        "packages/accounting-engine/test/cfo.test.ts",
+        "packages/accounting-engine/test/collections.test.ts",
+        "packages/accounting-engine/test/bank-ai.test.ts"
+      ],
+      "notes": "Synthetic data is refused in production and in any deployed region. Figures shown or sent come from the books: AI summaries and reminders quoting an amount not in the books are rejected, and AI bank suggestions can only use records they were shown."
     },
     {
       "id": "RULE-005",
@@ -36771,9 +36790,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on any customer-readable text that claims a live, real-time or direct bank feed or connection."
     },
     {
       "id": "RULE-007",
@@ -36793,9 +36816,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-claims.mjs",
+        "scripts/check-claims.test.mjs",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on claims of certification, regulator or tax-authority approval, or guaranteed compliance."
     },
     {
       "id": "RULE-008",
@@ -36815,9 +36842,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-shortcuts.mjs",
+        "scripts/check-shortcuts.test.mjs",
+        "apps/api/test/security-suite.e2e.test.ts",
+        ".github/workflows/ci.yml"
+      ],
+      "notes": "CI fails on code that turns a protection off (eval, TLS checks off, unescaped HTML, weak hashes and ciphers, shell commands, unsafe JWT and CORS settings, predictable or hard-coded secrets)."
     },
     {
       "id": "RULE-009",
