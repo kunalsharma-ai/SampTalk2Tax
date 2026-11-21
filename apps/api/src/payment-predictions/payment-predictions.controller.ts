@@ -7,6 +7,7 @@ import { CollectionPrioritiesService } from './collection-priorities.service';
 import { PaymentPredictionsService } from './payment-predictions.service';
 
 const PredictionQuery = z.object({ contactId: z.uuid().optional() }).strict();
+const ForecastQuery = z.object({ weeks: z.coerce.number().int().min(1).max(26).default(13) }).strict();
 
 @ApiTags('sales')
 @ApiBearerAuth()
@@ -19,6 +20,13 @@ export class PaymentPredictionsController {
   @RequirePermission('reports.read')
   list(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(PredictionQuery)) q: z.infer<typeof PredictionQuery>) {
     return this.predictions.predictions(org, q);
+  }
+
+  /** Money expected from customers week by week, from the predictions, beside what the due dates say. */
+  @Get('forecast')
+  @RequirePermission('reports.read')
+  forecast(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(ForecastQuery)) q: z.infer<typeof ForecastQuery>) {
+    return this.predictions.forecast(org, q);
   }
 }
 

@@ -8800,6 +8800,33 @@
         "docs/PAYMENT_FRAUD.md"
       ],
       "notes": "Vendor payments in open batches and recorded in the last 90 days checked for warning signs: bank account shared with an employee or another vendor, bank details changed in the 30 days before (unverified is high), same amount paid within 7 days or the same bill in two open batches, new vendor, amount over 3x the usual, payment against no bill, the same person changing bank details and paying, near-identical vendor names, large round amounts. Deterministic, no outside data or AI model; account numbers never shown."
+    },
+    "AR-039": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/collection-forecast.ts",
+        "packages/accounting-engine/test/collection-forecast.test.ts",
+        "apps/api/src/payment-predictions/payment-predictions.service.ts",
+        "apps/api/test/payment-predictions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/collection-forecast/page.tsx",
+        "apps/web/e2e/collection-forecast-flow.test.mjs",
+        "docs/COLLECTION_FORECAST.md"
+      ],
+      "notes": "Expected collections week by week (1-26 weeks) from each open invoice's predicted payment date (AR-033), beside the same amounts by due date, with later and doubtful (over 90 days past due) shown apart and the predictions' backtested accuracy. Decimal totals; deterministic."
+    },
+    "AR-036": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-insights.ts",
+        "apps/api/src/crm/customer-insights.service.ts",
+        "apps/api/test/customer-insights.e2e.test.ts",
+        "apps/web/e2e/customer-360-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx",
+        "packages/accounting-engine/src/payment-predictions.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx",
+        "docs/CUSTOMER_360.md"
+      ],
+      "notes": "Customer risk analysis is the credit risk in Customer 360 (CRM-012): a 0-100 score from five explained factors (overdue share, oldest overdue, days late, credit limit use, slowing down), a rating, a suggested credit limit and credit hold, with every customer filterable by rating on Customer insights; plus each open invoice's chance of being paid late with reasons (AR-033). Deterministic; an AI-written narrative is not built."
     }
   }
 }
