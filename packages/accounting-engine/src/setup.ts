@@ -92,6 +92,8 @@ export interface SetupFacts {
   members: number;
   approvalRules: number;
   mailReady: boolean;
+  /** Onboarding assistant recommendations still to accept or dismiss; null when the assistant was not used (UX-022). */
+  pendingRecommendations?: number | null;
 }
 
 export type SetupStatus = 'DONE' | 'TODO';
@@ -120,6 +122,15 @@ export function setupChecks(f: SetupFacts): SetupCheck[] {
     c('bank', 'Bank account', f.bankAccounts > 0, true, `${plural(f.bankAccounts, 'bank account')} in the chart.`, 'Add at least one bank account to the chart of accounts.', '/accounts'),
     c('tax', india ? 'GST registration' : 'Tax rates', f.taxConfigured, india, india ? 'GSTIN and state saved.' : 'Tax rates are set up.', india ? 'Save your GSTIN and state so invoices carry the right GST.' : 'Set up the sales tax or VAT rates you charge.', india ? '/settings/gst' : '/settings/tax-rates'),
     c('ai', 'AI preferences', !!p.aiPreference, true, `AI: ${AI_PREFERENCES.find((x) => x.id === p.aiPreference)?.name ?? p.aiPreference}.`, 'Choose how much the AI agents do; each AI action still needs approval.', '/setup'),
+    c(
+      'assistant',
+      'Assistant recommendations',
+      !f.pendingRecommendations,
+      f.pendingRecommendations != null,
+      f.pendingRecommendations == null ? 'The setup assistant was not used.' : 'Every recommendation was accepted or dismissed.',
+      `${plural(f.pendingRecommendations ?? 0, 'recommendation')} from the setup assistant still to accept or dismiss.`,
+      '/setup',
+    ),
     c('opening', 'Opening balances', f.openingBalancesPosted, false, 'Opening balances are posted.', 'Bring in the balances from the day you start, or skip this for a new business.', '/opening-balances'),
     c('contacts', 'Customers and vendors', f.customers + f.vendors > 0, false, `${plural(f.customers, 'customer')} and ${plural(f.vendors, 'vendor')}.`, 'Add or import your customers and vendors.', '/import'),
     c('team', 'Team', f.members > 1, false, `${plural(f.members, 'member')}.`, 'Invite your accountant or team, each with a role.', '/members'),

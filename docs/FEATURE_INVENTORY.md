@@ -1291,9 +1291,9 @@ Part 36 · M1 · priority P1 · depends on: DS
 | UX-017 | Onboarding Wizard | capability | Select AI automation preferences | Tested |
 | UX-018 | Onboarding Wizard | capability | Review setup validation | Tested |
 | UX-019 | Onboarding Wizard | capability | Activate organization | Tested |
-| UX-020 | AI Onboarding Assistant | rule | Allow the user to describe the business conversationally | Not started |
-| UX-021 | AI Onboarding Assistant | rule | The assistant should recommend relevant configuration options | Not started |
-| UX-022 | AI Onboarding Assistant | rule | All recommendations must be reviewed before activation | Not started |
+| UX-020 | AI Onboarding Assistant | rule | Allow the user to describe the business conversationally | Tested |
+| UX-021 | AI Onboarding Assistant | rule | The assistant should recommend relevant configuration options | Tested |
+| UX-022 | AI Onboarding Assistant | rule | All recommendations must be reviewed before activation | Tested |
 
 ## Accounting data migration
 

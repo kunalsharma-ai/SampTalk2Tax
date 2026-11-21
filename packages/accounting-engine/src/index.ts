@@ -103,4 +103,5 @@ export * from './opening-balances';
 export * from './vendor-spend';
 export * from './report-schedules';
 export * from './setup';
+export * from './onboarding-assistant';
 export * from './data-import';
