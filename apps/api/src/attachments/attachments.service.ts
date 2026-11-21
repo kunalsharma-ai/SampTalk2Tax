@@ -125,7 +125,8 @@ export class AttachmentsService {
   /** The checks every uploaded file passes: not empty, at most 5 MB, a known type by its bytes, and scanned. */
   private async checkFile(org: Org, actor: { id: string }, fileName: string, content: unknown) {
     // Only a Buffer is accepted, so a tampered body (an array or a string) never reaches the checks below.
-    const bytes = Buffer.isBuffer(content) ? content : Buffer.alloc(0);
+    if (typeof content === 'string' || Array.isArray(content) || !Buffer.isBuffer(content)) throw new DomainError('EMPTY_FILE', 'The file is empty');
+    const bytes: Buffer = content;
     if (bytes.length === 0) throw new DomainError('EMPTY_FILE', 'The file is empty');
     if (bytes.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
     const contentType = sniffContentType(bytes);

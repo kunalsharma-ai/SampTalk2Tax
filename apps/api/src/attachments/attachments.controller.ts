@@ -14,6 +14,8 @@ const ListQuery = z.object({
 });
 const UploadQuery = z.object({ entityType: z.enum(ENTITIES), entityId: z.uuid(), fileName: z.string().min(1).max(255) });
 const VersionQuery = z.object({ fileName: z.string().min(1).max(255), note: z.string().trim().min(3, 'Say why the file changed, in at least 3 characters').max(500, 'Keep the note under 500 characters') });
+/** The raw upload body: only bytes. A string or an array (a tampered body) is treated as no file. */
+const bytesOf = (body: unknown): Buffer => (typeof body === 'string' || Array.isArray(body) || !Buffer.isBuffer(body) ? Buffer.alloc(0) : body);
 const RemoveBody = z.object({ reason: z.string().trim().min(3).max(500) });
 
 /**
@@ -45,7 +47,7 @@ export class AttachmentsController {
   @RequirePermission('org.read')
   @ApiConsumes('application/octet-stream')
   upload(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Query(new ZodPipe(UploadQuery)) q: z.infer<typeof UploadQuery>, @Body() body: unknown) {
-    return this.attachments.upload(org, user, { ...q, content: Buffer.isBuffer(body) ? body : Buffer.alloc(0) });
+    return this.attachments.upload(org, user, { ...q, content: bytesOf(body) });
   }
 
   @Get(':attachmentId/content')
@@ -67,7 +69,7 @@ export class AttachmentsController {
   @RequirePermission('org.read')
   @ApiConsumes('application/octet-stream')
   newVersion(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('attachmentId', ParseUUIDPipe) id: string, @Query(new ZodPipe(VersionQuery)) q: z.infer<typeof VersionQuery>, @Body() body: unknown) {
-    return this.attachments.newVersion(org, user, id, { fileName: q.fileName, note: q.note, content: Buffer.isBuffer(body) ? body : Buffer.alloc(0) });
+    return this.attachments.newVersion(org, user, id, { fileName: q.fileName, note: q.note, content: bytesOf(body) });
   }
 
   /** Every version of a file, newest first. */
