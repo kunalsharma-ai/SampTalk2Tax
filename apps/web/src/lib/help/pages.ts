@@ -781,6 +781,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Open each item, check it against its documents, then record no exception or an exception with what you found. Each result is kept as recorded; the sample completes when every item is tested. If the books in the range change later, the page says so.',
     where: 'Audit samples. Every draw and result is in the audit trail.',
   },
+  'ledger-replay': {
+    what: 'The books exactly as they were recorded at a past moment, beside the books now for the same dates, with every entry posted since that explains the difference.',
+    how: 'Pick the moment (your local time) and the last date to include, then replay. Posted entries are never changed, so the replay shows what anyone could have seen then; back-dated entries, reversals and corrections posted later show as the difference.',
+    where: 'Governance. Needs the audit trail permission. Each replay is kept in the audit trail; nothing here changes the books.',
+  },
   'segregation-of-duties': {
     what: 'Places where one person did two jobs that should be split: a journal written and posted by the same person, a bill entered and posted by them, a payment batch they prepared and approved, a vendor paid by whoever changed the vendor\'s bank details, or a bank reconciled by whoever recorded its payments. It also shows which members\' roles let them do conflicting jobs together.',
     how: 'Pick the dates (up to 400 days; the last 90 by default). Open each record, then clear the finding with what you checked. Only an approver, owner or admin who was not involved can clear one, and each review is kept in the audit trail.',

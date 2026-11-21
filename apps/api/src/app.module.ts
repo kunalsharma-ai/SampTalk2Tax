@@ -101,6 +101,8 @@ import { AuditFindingsController } from './audit-findings/audit-findings.control
 import { AuditFindingsService } from './audit-findings/audit-findings.service';
 import { AuditSamplingController } from './audit-sampling/audit-sampling.controller';
 import { AiDecisionsController } from './ai-decisions/ai-decisions.controller';
+import { LedgerReplayController } from './ledger-replay/ledger-replay.controller';
+import { LedgerReplayService } from './ledger-replay/ledger-replay.service';
 import { AiDecisionsService } from './ai-decisions/ai-decisions.service';
 import { AuditSamplingService } from './audit-sampling/audit-sampling.service';
 import { InternalControlsController } from './internal-controls/internal-controls.controller';
@@ -327,6 +329,7 @@ export class AppModule {
         AuditFindingsController,
         AuditSamplingController,
         AiDecisionsController,
+        LedgerReplayController,
         DataImportController,
         JournalsController,
         ReportsController,
@@ -481,6 +484,7 @@ export class AppModule {
         AuditFindingsService,
         AuditSamplingService,
         AiDecisionsService,
+        LedgerReplayService,
         DataImportService,
         JournalsService,
         ReportsService,

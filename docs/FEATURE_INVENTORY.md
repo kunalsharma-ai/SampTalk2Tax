@@ -832,7 +832,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-014 |  | capability | Segregation-of-duties checks | Tested |
 | AUDIT-015 |  | capability | Period-close certification | Tested |
 | AUDIT-016 |  | capability | AI action history | Tested |
-| AUDIT-017 |  | capability | Financial transaction replay | Not started |
+| AUDIT-017 |  | capability | Financial transaction replay | Tested |
 | AUDIT-018 | Explainable AI Ledger | capability | Agent identity | Tested |
 | AUDIT-019 | Explainable AI Ledger | capability | Model version | Tested |
 | AUDIT-020 | Explainable AI Ledger | capability | Prompt or policy version | Tested |

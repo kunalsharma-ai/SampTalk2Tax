@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 632 |
+| Not started | 631 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 628 |
+| Tested | 629 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 4 | 26 |
+| Continuous audit and governance | M6 | 30 | 3 | 27 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4942,6 +4942,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/copilot
   - apps/api/src/db/guards
   - apps/api/src/db/constraints/catalog.json
+
+### AUDIT-017 — Financial transaction replay
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Replays the posted ledger as it stood at a past moment (posting time) for entries dated up to a cut-off, beside the ledger now, with each entry posted since that explains the difference; read-only, audited (ledger.replayed), needs audit.read.
+- Evidence:
+  - packages/accounting-engine/src/ledger-replay.ts
+  - packages/accounting-engine/test/ledger-replay.test.ts
+  - apps/api/src/ledger-replay/ledger-replay.service.ts
+  - apps/api/test/ledger-replay.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/ledger-replay/page.tsx
+  - apps/web/e2e/ledger-replay-flow.test.mjs
+  - docs/LEDGER_REPLAY.md
 
 ### AUDIT-018 — Agent identity
 
