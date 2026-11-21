@@ -86,6 +86,7 @@ export const hi: Record<string, string> = {
   'Chart of accounts': 'खातों की सूची',
   'Opening balances': 'प्रारंभिक शेष',
   'Organisation setup': 'संगठन सेटअप',
+  'Import data': 'डेटा आयात करें',
   'Fixed assets': 'स्थायी संपत्तियाँ',
   'Prepaid and deferred': 'अग्रिम और आस्थगित',
   Accruals: 'उपार्जन',
