@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 620 |
+| Not started | 619 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 640 |
+| Tested | 641 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 4 | 39 |
+| Accounts receivable | M2 | 43 | 3 | 40 |
 | Accounts payable | M2 | 36 | 8 | 28 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1589,6 +1589,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/src/payment-predictions.ts
   - apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx
   - docs/CUSTOMER_360.md
+
+### AR-038 — Customer financial behavior analysis
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Per customer invoiced in the last two years: amount-weighted days late (12 months, last 6, 6 before) and its trend, spread, share paid in parts, usual pay day; buying in the last 12 months against the 12 before and a stop in buying; a profile (on time, late steadily, unpredictable, new, too little history) and explained signals (paying slower/faster, stopped buying, buying less/more, pays in parts, usual pay day). Deterministic; read-only; complements CRM-012 Customer 360.
+- Evidence:
+  - packages/accounting-engine/src/customer-behaviour.ts
+  - packages/accounting-engine/test/customer-behaviour.test.ts
+  - apps/api/src/customer-behaviour/customer-behaviour.service.ts
+  - apps/api/test/customer-behaviour.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/customer-behaviour/page.tsx
+  - apps/web/e2e/customer-behaviour-flow.test.mjs
+  - docs/CUSTOMER_BEHAVIOUR.md
 
 ### AR-039 — Cash collection forecasting
 

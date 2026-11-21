@@ -156,7 +156,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-035 | Advanced AR AI | capability | Automated reminder drafting | Integration pending |
 | AR-036 | Advanced AR AI | capability | Customer risk analysis | Tested |
 | AR-037 | Advanced AR AI | capability | Invoice dispute classification | Not started |
-| AR-038 | Advanced AR AI | capability | Customer financial behavior analysis | Not started |
+| AR-038 | Advanced AR AI | capability | Customer financial behavior analysis | Tested |
 | AR-039 | Advanced AR AI | capability | Cash collection forecasting | Tested |
 | AR-040 | Advanced AR AI | capability | Suggested payment plans | Tested |
 | AR-041 | Advanced AR AI | capability | AI-assisted contract-to-invoice matching | Not started |

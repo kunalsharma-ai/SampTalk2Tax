@@ -3949,9 +3949,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/customer-behaviour.ts",
+        "packages/accounting-engine/test/customer-behaviour.test.ts",
+        "apps/api/src/customer-behaviour/customer-behaviour.service.ts",
+        "apps/api/test/customer-behaviour.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/customer-behaviour/page.tsx",
+        "apps/web/e2e/customer-behaviour-flow.test.mjs",
+        "docs/CUSTOMER_BEHAVIOUR.md"
+      ],
+      "notes": "Per customer invoiced in the last two years: amount-weighted days late (12 months, last 6, 6 before) and its trend, spread, share paid in parts, usual pay day; buying in the last 12 months against the 12 before and a stop in buying; a profile (on time, late steadily, unpredictable, new, too little history) and explained signals (paying slower/faster, stopped buying, buying less/more, pays in parts, usual pay day). Deterministic; read-only; complements CRM-012 Customer 360."
     },
     {
       "id": "AR-039",

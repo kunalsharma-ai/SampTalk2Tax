@@ -109,6 +109,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Change the statement dates to see any period. Record a receipt or make an invoice from the buttons at the top. Put the customer on credit hold from Credit risk if needed.',
     where: 'Opened from Customers or anywhere a customer is named.',
   },
+  'sales/customer-behaviour': {
+    what: 'How each customer invoiced in the last two years pays and buys, and what is changing. A profile (pays on time, pays late steadily, unpredictable, new, too little history) and signals: paying slower or faster than six months before, stopped buying, buying less or more than the year before, paying in parts, and the day of the month they usually pay.',
+    how: 'Start with customers marked Paying slower or Stopped buying: call them before the next invoice falls due. Filter by a signal to work through one kind at a time. Time reminders a few days before a customer\'s usual pay day.',
+    where: 'Sales. Needs the reports permission. Worked out from posted invoices and the receipts and credits applied to them; nothing here changes the books, and no AI model is used.',
+  },
   'sales/customer-insights': {
     what: 'Every customer ranked by what they are worth: revenue, gross profit, margin, lifetime value, overdue money and credit risk.',
     how: 'Sort by the figure you care about and filter by risk or credit hold. Open a customer for the full workings.',
