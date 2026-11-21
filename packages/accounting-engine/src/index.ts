@@ -120,3 +120,4 @@ export * from './payment-predictions';
 export * from './collection-priorities';
 export * from './payment-fraud';
 export * from './collection-forecast';
+export * from './payment-priorities';

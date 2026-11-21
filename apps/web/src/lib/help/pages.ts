@@ -210,6 +210,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with the serious problems. Open a vendor to fix their details or record a GST portal check: look the GSTIN up on the portal\'s Search Taxpayer page and record its status, type and legal name.',
     where: 'Purchases. Talk2Tax does not query the GST portal itself; registration status comes from the checks people record. Nothing here changes the books.',
   },
+  'purchases/payment-priorities': {
+    what: 'Open bills ranked against the cash in the bank: which to pay now (past due or due within a week, highest score first), which can wait for their due date, which the cash will not cover, and which are blocked because the vendor\'s bank details are not verified. When the cash covers everything, it suggests asking vendors for a discount to be paid early.',
+    how: 'Set how much to keep in the bank and the return you want on spare cash, then work it out. Open a score to see its points. Prepare a payment batch for the bills to pay now; offer the listed discounts to vendors before paying those bills early.',
+    where: 'Purchases. Needs the reports permission. Uses bank balances, posted bills in your currency, open payment batches and twelve months of purchases; nothing is paid or planned here.',
+  },
   'purchases/payment-fraud': {
     what: 'Warning signs on vendor payments: those waiting in open payment batches and those recorded in the last 90 days. High: a bank account shared with an employee or another vendor, bank details changed in the 30 days before and not verified, or the same amount paid twice within a week. Medium: a recently changed (verified) account, a new vendor, an amount far above the usual, a payment against no bill, or the same person changing bank details and paying. Low: near-identical vendor names and large round amounts.',
     how: 'Start with High and with payments still in a batch: they can be stopped. Open the batch or payment, check with the vendor on a number you already have, verify or correct the bank details, and cancel the batch if needed.',
