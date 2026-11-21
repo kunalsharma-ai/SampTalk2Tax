@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 626 |
+| Not started | 625 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 634 |
+| Tested | 635 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 7 | 36 |
-| Accounts payable | M2 | 36 | 11 | 25 |
+| Accounts payable | M2 | 36 | 10 | 26 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1908,6 +1908,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/payment-batches-flow.test.mjs
   - docs/PAYMENT_BATCHES.md
   - apps/web/src/components/purchases/vendor-bank-card.tsx
+
+### AP-028 — Payment fraud indicators
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Vendor payments in open batches and recorded in the last 90 days checked for warning signs: bank account shared with an employee or another vendor, bank details changed in the 30 days before (unverified is high), same amount paid within 7 days or the same bill in two open batches, new vendor, amount over 3x the usual, payment against no bill, the same person changing bank details and paying, near-identical vendor names, large round amounts. Deterministic, no outside data or AI model; account numbers never shown.
+- Evidence:
+  - packages/accounting-engine/src/payment-fraud.ts
+  - packages/accounting-engine/test/payment-fraud.test.ts
+  - apps/api/src/payment-fraud/payment-fraud.service.ts
+  - apps/api/test/payment-fraud.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-fraud/page.tsx
+  - apps/web/e2e/payment-fraud-flow.test.mjs
+  - docs/PAYMENT_FRAUD.md
 
 ### AP-031 — Invoice anomaly detection
 

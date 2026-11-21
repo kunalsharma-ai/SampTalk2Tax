@@ -5014,9 +5014,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payment-fraud.ts",
+        "packages/accounting-engine/test/payment-fraud.test.ts",
+        "apps/api/src/payment-fraud/payment-fraud.service.ts",
+        "apps/api/test/payment-fraud.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/payment-fraud/page.tsx",
+        "apps/web/e2e/payment-fraud-flow.test.mjs",
+        "docs/PAYMENT_FRAUD.md"
+      ],
+      "notes": "Vendor payments in open batches and recorded in the last 90 days checked for warning signs: bank account shared with an employee or another vendor, bank details changed in the 30 days before (unverified is high), same amount paid within 7 days or the same bill in two open batches, new vendor, amount over 3x the usual, payment against no bill, the same person changing bank details and paying, near-identical vendor names, large round amounts. Deterministic, no outside data or AI model; account numbers never shown."
     },
     {
       "id": "AP-029",

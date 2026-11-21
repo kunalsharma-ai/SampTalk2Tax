@@ -205,6 +205,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with the serious problems. Open a vendor to fix their details or record a GST portal check: look the GSTIN up on the portal\'s Search Taxpayer page and record its status, type and legal name.',
     where: 'Purchases. Talk2Tax does not query the GST portal itself; registration status comes from the checks people record. Nothing here changes the books.',
   },
+  'purchases/payment-fraud': {
+    what: 'Warning signs on vendor payments: those waiting in open payment batches and those recorded in the last 90 days. High: a bank account shared with an employee or another vendor, bank details changed in the 30 days before and not verified, or the same amount paid twice within a week. Medium: a recently changed (verified) account, a new vendor, an amount far above the usual, a payment against no bill, or the same person changing bank details and paying. Low: near-identical vendor names and large round amounts.',
+    how: 'Start with High and with payments still in a batch: they can be stopped. Open the batch or payment, check with the vendor on a number you already have, verify or correct the bank details, and cancel the batch if needed.',
+    where: 'Purchases. Needs the reports permission. Account numbers are never shown here. Worked out from the books; no outside data or AI model is used, and nothing here changes the books.',
+  },
   'purchases/vendor-risk': {
     what: 'Every active vendor\'s risk, worked out from what the books hold: bank details changed, unverified or shared with another vendor, tax problems, a poor performance grade, a large share of purchases, a new vendor growing fast, onboarding not approved and bills paid late.',
     how: 'Work through the vendors waiting for a review. Open each, look at the factors and record a decision with a note and a date to look again. A new factor, a higher risk or that date asks for another review.',
