@@ -19441,9 +19441,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/audit-sampling.ts",
+        "packages/accounting-engine/test/audit-sampling.test.ts",
+        "apps/api/src/audit-sampling/audit-sampling.service.ts",
+        "apps/api/test/audit-sampling.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/audit-samples/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/audit-samples/[sampleId]/page.tsx",
+        "apps/web/e2e/audit-samples-flow.test.mjs",
+        "docs/AUDIT_SAMPLING.md"
+      ],
+      "notes": "Random, monetary unit (systematic, items above the interval always picked) and high-value samples of posted journals, bills, invoices or supplier payments for a date range; seeded so the same sample can be drawn again and checked; population fingerprint shows later changes; each item result recorded once; completed samples immutable; audited."
     },
     {
       "id": "AUDIT-010",

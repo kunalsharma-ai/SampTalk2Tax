@@ -771,6 +771,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'The remediation owner moves it to in progress or ready for review, saying what was done. Someone else closes it once the fix is checked. Closed findings are kept as they were closed.',
     where: 'Audit findings.',
   },
+  'audit-samples': {
+    what: 'Audit samples: transactions picked from a period\'s posted journals, bills, invoices or supplier payments for you to test, by random, monetary unit or high-value selection.',
+    how: 'Name the sample, pick the population, the dates, how many items and the method. For high value, give the threshold: every item at or above it is tested, and the rest are picked at random. Each sample keeps its seed, so anyone can draw it again from the books and get the same items.',
+    where: 'Governance. Drawing and testing need the audit trail permission. Nothing here changes the books.',
+  },
+  'audit-samples/[id]': {
+    what: 'One audit sample: the items picked, why each was picked, and the result of testing each.',
+    how: 'Open each item, check it against its documents, then record no exception or an exception with what you found. Each result is kept as recorded; the sample completes when every item is tested. If the books in the range change later, the page says so.',
+    where: 'Audit samples. Every draw and result is in the audit trail.',
+  },
   'segregation-of-duties': {
     what: 'Places where one person did two jobs that should be split: a journal written and posted by the same person, a bill entered and posted by them, a payment batch they prepared and approved, a vendor paid by whoever changed the vendor\'s bank details, or a bank reconciled by whoever recorded its payments. It also shows which members\' roles let them do conflicting jobs together.',
     how: 'Pick the dates (up to 400 days; the last 90 by default). Open each record, then clear the finding with what you checked. Only an approver, owner or admin who was not involved can clear one, and each review is kept in the audit trail.',
