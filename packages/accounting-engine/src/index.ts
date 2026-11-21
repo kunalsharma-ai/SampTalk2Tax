@@ -117,3 +117,4 @@ export * from './setup';
 export * from './onboarding-assistant';
 export * from './data-import';
 export * from './payment-predictions';
+export * from './collection-priorities';

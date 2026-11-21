@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 627 |
+| Not started | 626 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 633 |
+| Tested | 634 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 8 | 35 |
+| Accounts receivable | M2 | 43 | 7 | 36 |
 | Accounts payable | M2 | 36 | 11 | 25 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1545,6 +1545,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx
   - apps/web/e2e/payment-predictions-flow.test.mjs
   - docs/PAYMENT_PREDICTIONS.md
+
+### AR-034 — Intelligent collection prioritization
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Customers ranked by a 0-100 score with its points: money overdue and not disputed (40), age of the oldest overdue invoice (25), chance of paying late from the payment predictions (20), an invoice due this week likely late (5) and no recent reminder (10); with a suggested action (settle the dispute, wait after a recent reminder, call and consider a credit hold, call, remind, friendly note). Deterministic, no AI model.
+- Evidence:
+  - packages/accounting-engine/src/collection-priorities.ts
+  - packages/accounting-engine/test/collection-priorities.test.ts
+  - apps/api/src/payment-predictions/collection-priorities.service.ts
+  - apps/api/test/collection-priorities.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/collection-priorities/page.tsx
+  - apps/web/e2e/collection-priorities-flow.test.mjs
+  - docs/COLLECTION_PRIORITIES.md
 
 ### AR-035 — Automated reminder drafting
 

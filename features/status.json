@@ -8774,6 +8774,19 @@
         "docs/PAYMENT_PREDICTIONS.md"
       ],
       "notes": "Every open invoice gets a likely payment date, days after due, chance of being late, confidence and reasons, from the customer's recency-weighted payment record blended with the organisation's average (counts as three invoices), a recent slowdown or speed-up, and overdue status. Deterministic, no AI model. Accuracy is checked on invoices paid in the last year, each predicted from what was known on its issue date."
+    },
+    "AR-034": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/collection-priorities.ts",
+        "packages/accounting-engine/test/collection-priorities.test.ts",
+        "apps/api/src/payment-predictions/collection-priorities.service.ts",
+        "apps/api/test/collection-priorities.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/collection-priorities/page.tsx",
+        "apps/web/e2e/collection-priorities-flow.test.mjs",
+        "docs/COLLECTION_PRIORITIES.md"
+      ],
+      "notes": "Customers ranked by a 0-100 score with its points: money overdue and not disputed (40), age of the oldest overdue invoice (25), chance of paying late from the payment predictions (20), an invoice due this week likely late (5) and no recent reminder (10); with a suggested action (settle the dispute, wait after a recent reminder, call and consider a credit hold, call, remind, friendly note). Deterministic, no AI model."
     }
   }
 }

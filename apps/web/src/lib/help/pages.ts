@@ -114,6 +114,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Sort by the figure you care about and filter by risk or credit hold. Open a customer for the full workings.',
     where: 'Sales. Figures come from posted invoices, receipts and costs on projects linked to each customer.',
   },
+  'sales/collection-priorities': {
+    what: 'Customers ranked by who to chase first today, with a suggested action (call, remind, a friendly note before the due date, settle a dispute, or wait after a recent reminder) and the points behind each score.',
+    how: 'Work down from the top. Open a score to see why it is high: money overdue and not disputed, the age of the oldest overdue invoice, the chance of paying late and when the customer was last reminded. Draft reminders from Collections.',
+    where: 'Sales. Needs the reports permission. Built from posted invoices, receipts, open disputes, sent reminders and the payment predictions; nothing here changes the books, and no AI model is used.',
+  },
   'sales/payment-predictions': {
     what: 'Every open invoice with the day it is likely to be paid, the chance it is paid late and the reasons, worked out from how each customer has paid before; and how accurate the same method has been on invoices already paid.',
     how: 'Start at the top: the riskiest invoices come first. Filter by band to see only very late ones, open the invoice or customer to chase it, and read the reasons to see what drives each prediction. Customers with little history lean on your organisation\'s average.',
