@@ -1639,11 +1639,11 @@ Part 50 · All · priority P0 · depends on: none
 | RULE-001 |  | rule | Do not create fake functional buttons | Implemented |
 | RULE-002 |  | rule | Do not create disconnected dashboards | Implemented |
 | RULE-003 |  | rule | Do not substitute static cards for implemented business logic | Implemented |
-| RULE-004 |  | rule | Do not invent financial data in production | Not started |
+| RULE-004 |  | rule | Do not invent financial data in production | Tested |
 | RULE-005 |  | rule | Do not claim AI functionality when only a static response exists | Tested |
-| RULE-006 |  | rule | Do not claim live banking integration without credentials and provider validation | Not started |
-| RULE-007 |  | rule | Do not claim regulatory compliance without verification | Not started |
-| RULE-008 |  | rule | Do not use insecure shortcuts | Not started |
+| RULE-006 |  | rule | Do not claim live banking integration without credentials and provider validation | Tested |
+| RULE-007 |  | rule | Do not claim regulatory compliance without verification | Tested |
+| RULE-008 |  | rule | Do not use insecure shortcuts | Tested |
 | RULE-009 |  | rule | Do not store secrets in source code | Tested |
 | RULE-010 |  | rule | Do not bypass tenant permissions | Tested |
 | RULE-011 |  | rule | Do not permit unauthorized AI financial actions | Tested |

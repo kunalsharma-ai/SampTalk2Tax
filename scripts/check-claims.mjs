@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 /**
- * No certification claims (SEC-028): Talk2Tax must not say it is SOC 2, ISO 27001, PCI DSS or
- * similar certified, compliant or attested until an independent assessment is complete. This
- * scans everything a customer can read (the web app, e-mails and messages from the API, public
- * files, the docs and README) for a sentence that pairs a framework with a claim word, unless the
- * sentence says the opposite ("not certified", "working toward", ...).
+ * Claims Talk2Tax must not make (SEC-028, RULE-006, RULE-007). This scans everything a customer
+ * can read (the web app, e-mails and messages from the API, public files, the docs and README) for
+ * a sentence that makes one of these claims, unless the sentence, or the heading it sits under,
+ * says the opposite ("not certified", "no live bank feed", "Not in this release", ...):
+ *
+ *   - certification: SOC 2, ISO 27001, PCI DSS or similar certified, compliant or attested, until
+ *     an independent assessment is complete;
+ *   - regulatory: approved, certified or licensed by a tax authority, the government or a
+ *     regulator, or "fully compliant" / "guaranteed compliance", which nothing has verified;
+ *   - live banking: a live, real-time or direct bank feed or connection, which needs a provider,
+ *     credentials and validation that Talk2Tax does not have.
  *
  *   node scripts/check-claims.mjs          exits 1 and lists each claim found
  *
@@ -21,18 +27,37 @@ export const ASSESSED = [];
 const FRAMEWORK = String.raw`(?:SOC\s?[123](?:\s+Type\s+(?:I{1,2}|[12]))?|ISO(?:\/IEC)?\s?27(?:001|017|018|701)|PCI[\s-]?DSS|HIPAA|GDPR|DPDP(?:\s+Act)?|CSA\s+STAR|FedRAMP)`;
 const CLAIM = String.raw`(?:certified|certificate|certification\s+(?:achieved|obtained|granted)|compliant|accredited|attested|attestation\s+(?:achieved|obtained)|audited|approved)`;
 const PAIR = new RegExp(String.raw`\b${FRAMEWORK}\b[^.!?\n]{0,60}?\b${CLAIM}\b|\b${CLAIM}\b[^.!?\n]{0,40}?\b${FRAMEWORK}\b`, 'i');
-/** A sentence that denies or defers the claim is fine. */
-const NEGATED = /\b(?:not|no|never|nor|without|toward|towards|readiness|until|unless|before|cannot|can't|isn't|aren't|don't|doesn't|won't|claim|claims|claiming|pending|planned)\b/i;
+const AUTHORITY = String.raw`(?:GSTN?|IRP|e-?invoic\w*|e-?way\s+bill\w*|TDS|TCS|income[- ]tax(?:\s+department)?|CBDT|CBIC|RBI|SEBI|MCA|ICAI|government|govt|statutory|regulatory|regulators?|tax\s+department)`;
+const ENDORSED = String.raw`(?:approved|certified|accredited|endorsed|licensed|authori[sz]ed|recogni[sz]ed|empanelled)`;
+const REGULATORY = new RegExp(
+  String.raw`\b${AUTHORITY}\b[^.!?\n]{0,40}?\b${ENDORSED}\b|\b${ENDORSED}\s+by\s+(?:the\s+)?${AUTHORITY}\b|\b(?:100%|fully|completely|guaranteed|always)\s+(?:tax[- ]|GST[- ]|legally\s+|regulatory\s+|statutory\s+)?compliant\b|\bguarantee[sd]?\s+(?:tax\s+|GST\s+|regulatory\s+|statutory\s+|legal\s+)?compliance\b`,
+  'i',
+);
+const LIVE_BANKING = /\b(?:live|real[- ]time|automatic|automated|direct|instant)\s+bank(?:ing)?\s+(?:feeds?|sync(?:ing|hroni[sz]ation)?|connections?|integrations?)\b|\b(?:live|real[- ]time)\s+feeds?\s+from\s+(?:your\s+)?banks?\b|\bconnects?\s+(?:directly\s+)?to\s+(?:your|all|every|any)\s+banks?\b/i;
+const KINDS = [
+  ['certification', PAIR],
+  ['regulatory', REGULATORY],
+  ['live-banking', LIVE_BANKING],
+];
+/** A sentence that denies, defers or only describes a condition for the claim is fine. */
+const NEGATED = /\b(?:not|no|never|nor|without|toward|towards|readiness|until|unless|before|cannot|can't|isn't|aren't|don't|doesn't|won't|claim|claims|claiming|pending|planned|only|needs|requires|must)\b/i;
 
-/** Each sentence of the text that claims a certification, with its line number. */
+/** Each sentence of the text that makes a claim, with its line number and kind. Markdown headings that deny (such as "Not in slice 2") cover the lines under them. */
 export function findClaims(text) {
   const found = [];
+  let deniedSection = false;
   text.split('\n').forEach((line, i) => {
+    const heading = line.match(/^#{1,6}\s+(.*)/);
+    if (heading) deniedSection = NEGATED.test(heading[1]) || /\blimitations?\b|\bout of scope\b/i.test(heading[1]);
+    if (deniedSection && !heading) return;
     for (const sentence of line.split(/(?<=[.!?])\s+/)) {
-      const m = sentence.match(PAIR);
-      if (!m || NEGATED.test(sentence)) continue;
-      if (ASSESSED.some((a) => m[0].toLowerCase().includes(a.toLowerCase()))) continue;
-      found.push({ line: i + 1, text: sentence.trim().slice(0, 200) });
+      for (const [kind, re] of KINDS) {
+        const m = sentence.match(re);
+        if (!m || NEGATED.test(sentence)) continue;
+        if (kind === 'certification' && ASSESSED.some((a) => m[0].toLowerCase().includes(a.toLowerCase()))) continue;
+        found.push({ line: i + 1, kind, text: sentence.trim().slice(0, 200) });
+        break;
+      }
     }
   });
   return found;
@@ -68,9 +93,9 @@ export function scanRepository() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const claims = scanRepository();
   if (claims.length) {
-    console.error(`Certification claims found (SEC-028). Talk2Tax has no completed independent assessment:`);
-    for (const c of claims) console.error(`  ${c.file}:${c.line}  ${c.text}`);
+    console.error('Claims Talk2Tax cannot back (SEC-028, RULE-006, RULE-007): no independent assessment, regulator approval or live bank connection exists.');
+    for (const c of claims) console.error(`  ${c.file}:${c.line}  [${c.kind}] ${c.text}`);
     process.exit(1);
   }
-  console.log('No certification claims.');
+  console.log('No certification, regulatory or live-banking claims.');
 }
