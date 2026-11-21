@@ -7254,6 +7254,15 @@
         "docs/TEST_STRATEGY.md"
       ],
       "notes": "Route sweep over all ~940 API routes read from controller metadata: 401 without or with a bad token, 403/404 for non-members on every organisation route and method, an exact list of 33 public routes, secret-link and API-key routes refuse without the secret. Forged/alg-none/re-signed/expired/truncated JWTs, NoSQL operator injection, malformed and 4 MB bodies, mass-assignment fields, and no internals in errors."
+    },
+    "QA-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/agent-evals.test.ts",
+        "apps/api/test/agent-evals.test.ts",
+        "apps/api/src/ai-control/agent-evals.cli.ts"
+      ],
+      "notes": "14 labelled cases for the bank, close, collections and CFO agents. The live run against Claude needs an API key and has not been run yet; CI runs the graders and the runner with stand-in models."
     }
   }
 }

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 745 |
+| Not started | 744 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 511 |
+| Tested | 512 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -61,7 +61,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 18 | 3 |
-| Testing and quality assurance | M1 | 31 | 3 | 28 |
+| Testing and quality assurance | M1 | 31 | 2 | 29 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
@@ -7218,6 +7218,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
+
+### QA-014 — AI agent evaluation tests
+
+- Module: Testing and quality assurance
+- Status: **Tested**
+- Notes: 14 labelled cases for the bank, close, collections and CFO agents. The live run against Claude needs an API key and has not been run yet; CI runs the graders and the runner with stand-in models.
+- Evidence:
+  - packages/accounting-engine/test/agent-evals.test.ts
+  - apps/api/test/agent-evals.test.ts
+  - apps/api/src/ai-control/agent-evals.cli.ts
 
 ### QA-015 — Prompt injection tests
 

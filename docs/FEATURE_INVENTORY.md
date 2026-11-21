@@ -1460,7 +1460,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-011 | Required Tests | capability | Financial reporting tests | Tested |
 | QA-012 | Required Tests | capability | Permission tests | Tested |
 | QA-013 | Required Tests | capability | Tenant isolation tests | Tested |
-| QA-014 | Required Tests | capability | AI agent evaluation tests | Not started |
+| QA-014 | Required Tests | capability | AI agent evaluation tests | Tested |
 | QA-015 | Required Tests | capability | Prompt injection tests | Tested |
 | QA-016 | Required Tests | capability | Workflow recovery tests | Tested |
 | QA-017 | Required Tests | capability | Load tests | Not started |

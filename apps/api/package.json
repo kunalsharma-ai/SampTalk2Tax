@@ -13,6 +13,7 @@
     "pentest:accounts": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/security/pentest-accounts.js",
     "admin:grant": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/admin/grant-admin.js",
     "region:move": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/regions/move-org.js",
+    "agent-evals": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/ai-control/agent-evals.cli.js",
     "test": "vitest run",
     "db:migrate": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env dist/db/migrate.js"
   },

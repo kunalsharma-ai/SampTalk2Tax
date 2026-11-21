@@ -95,3 +95,5 @@ export * from './cost-allocation';
 export * from './bank-watch';
 export * from './journal-suggestions';
 export * from './retention';
+export * from './agent-evals';
+export * from './agent-eval-cases';
