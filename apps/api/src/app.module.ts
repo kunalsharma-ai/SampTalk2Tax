@@ -95,6 +95,8 @@ import { JournalsService } from './journals/journals.service';
 import { InvitationLinksController, OrganizationsController } from './organizations/organizations.controller';
 import { InvitationsService } from './organizations/invitations.service';
 import { OrganizationsService } from './organizations/organizations.service';
+import { ReportViewsController } from './report-views/report-views.controller';
+import { ReportViewsService } from './report-views/report-views.service';
 import { SetupController } from './setup/setup.controller';
 import { SetupService } from './setup/setup.service';
 import { DataImportController } from './data-import/data-import.controller';
@@ -309,6 +311,7 @@ export class AppModule {
         PeriodsController,
         OpeningBalancesController,
         SetupController,
+        ReportViewsController,
         DataImportController,
         JournalsController,
         ReportsController,
@@ -457,6 +460,7 @@ export class AppModule {
         PeriodsService,
         OpeningBalancesService,
         SetupService,
+        ReportViewsService,
         DataImportService,
         JournalsService,
         ReportsService,

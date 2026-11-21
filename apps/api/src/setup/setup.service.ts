@@ -231,12 +231,22 @@ export class SetupService {
 
   /** Accepts or dismisses one recommendation (UX-022). Accepting a profile one saves that field. */
   async decide(org: OrgContext, user: AuthUser, recommendationId: string, decision: 'ACCEPTED' | 'DISMISSED') {
+    // Decisions clicked in quick succession each rewrite the recommendations list, so the write only
+    // lands on the version it read (compare-and-set on updatedAt); otherwise it reads again.
+    for (let attempt = 0; ; attempt++) {
+      const out = await this.tryDecide(org, user, recommendationId, decision);
+      if (out !== 'CHANGED') return out;
+      if (attempt >= 9) throw new DomainError('SETUP_CHANGED', 'The setup changed while saving this decision. Try again.', HttpStatus.CONFLICT);
+    }
+  }
+
+  private async tryDecide(org: OrgContext, user: AuthUser, recommendationId: string, decision: 'ACCEPTED' | 'DISMISSED') {
     const doc = await this.record(org.id);
     if (doc?.activatedAt) throw new DomainError('ALREADY_ACTIVE', 'This organisation is already active', HttpStatus.CONFLICT);
     const rec = doc?.assistant?.recommendations.find((r) => r.id === recommendationId);
     if (!doc?.assistant || !rec) throw new DomainError('NOT_FOUND', 'Recommendation not found', HttpStatus.NOT_FOUND);
     if (rec.status !== 'PENDING') throw new DomainError('ALREADY_DECIDED', `This recommendation was already ${rec.status.toLowerCase()}`, HttpStatus.CONFLICT);
-    const now = new Date();
+    const now = new Date(Math.max(Date.now(), new Date(doc.updatedAt).getTime() + 1));
     const set: Partial<OrgSetupDoc> = {};
     if (decision === 'ACCEPTED' && rec.kind === 'PROFILE' && rec.field && rec.value) {
       const field = rec.field as ProfileField;
@@ -247,7 +257,8 @@ export class SetupService {
       set[field] = rec.value;
     }
     const recommendations = doc.assistant.recommendations.map((r) => (r.id === rec.id ? { ...r, status: decision, decidedById: user.id, decidedAt: now } : r));
-    await runInOrg(org.id, () => this.store.collection(orgSetup).updateOne({ id: doc.id }, { $set: { ...set, assistant: { ...doc.assistant!, recommendations }, updatedById: user.id, updatedAt: now } }));
+    const written = await runInOrg(org.id, () => this.store.collection(orgSetup).updateOne({ id: doc.id, updatedAt: doc.updatedAt }, { $set: { ...set, assistant: { ...doc.assistant!, recommendations }, updatedById: user.id, updatedAt: now } }));
+    if (!written.matched) return 'CHANGED' as const;
     if (set.aiPreference && set.aiPreference !== doc.aiPreference) await this.applyAiPreference(org, user, set.aiPreference as AiPreference);
     await this.prisma.$transaction((tx) =>
       this.audit.append(tx, { orgId: org.id, actorId: user.id, action: decision === 'ACCEPTED' ? 'setup.recommendation_accepted' : 'setup.recommendation_dismissed', entityType: 'org_setup', entityId: org.id, data: { recommendation: rec.id, kind: rec.kind, field: rec.field, value: rec.value, applied: Object.keys(set).length > 0 } }),

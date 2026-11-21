@@ -102,6 +102,7 @@ export * from './agent-eval-cases';
 export * from './opening-balances';
 export * from './vendor-spend';
 export * from './report-schedules';
+export * from './report-views';
 export * from './setup';
 export * from './onboarding-assistant';
 export * from './data-import';
