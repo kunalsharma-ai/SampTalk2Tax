@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 745 |
 | Designed | 0 |
 | Implementing | 37 |
-| Implemented | 35 |
-| Tested | 512 |
+| Implemented | 30 |
+| Tested | 517 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -145,11 +145,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-008 — Adjusting journals
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
-- Notes: Adjusting journals are ordinary posted journals with a memo; there is no separate adjusting-entry type or period-end workflow yet.
+- Status: **Tested**
+- Notes: Adjusting is its own journal type, listed with ?type=ADJUSTING and included in every report; the month-end close agent proposes adjusting entries for a person to post. No separate adjusted-versus-unadjusted trial balance yet.
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts
-  - apps/web/src
+  - apps/api/test/gl-foundation.e2e.test.ts › adjusting journals
+  - apps/api/test/opening-balances.e2e.test.ts
+  - apps/web/src/components/journal-form.tsx
 
 ### GL-009 — Reversing journals
 
@@ -228,11 +229,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-015 — Multi-period accounting
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts › creates further fiscal years
+  - apps/api/test/gl-foundation.e2e.test.ts › multi-period posting
+  - apps/api/test/ledger.e2e.test.ts › period locks
   - packages/accounting-engine/test/periods.test.ts
-  - apps/web/src
 
 ### GL-016 — Financial periods
 
@@ -247,10 +248,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-017 — Fiscal calendars
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
+- Notes: Monthly periods for a year starting in any month. 4-4-5 and 13-period calendars are not supported.
 - Evidence:
-  - packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year
-  - apps/web/src
+  - apps/api/test/gl-foundation.e2e.test.ts › fiscal calendars
+  - packages/accounting-engine/test/periods.test.ts
 
 ### GL-018 — Period locks
 
@@ -265,11 +267,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-019 — Posting controls
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
+- Notes: Balance, postable and active accounts, control accounts, open periods, role permissions, approval policy for large manual journals, and immutable posted entries.
 - Evidence:
-  - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
   - apps/api/test/ledger.e2e.test.ts › journal posting
-  - apps/web/src
+  - apps/api/test/ledger.e2e.test.ts › immutability and reversal
+  - apps/api/test/ledger.e2e.test.ts › period locks
+  - apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions
+  - apps/api/test/journal-approvals.e2e.test.ts
+  - apps/api/test/gl-foundation.e2e.test.ts › adjusting journals
 
 ### GL-020 — Audit history
 
@@ -293,10 +299,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### GL-022 — General ledger reports
 
 - Module: General ledger and accounting engine
-- Status: **Implemented**
+- Status: **Tested**
 - Evidence:
+  - apps/api/test/gl-foundation.e2e.test.ts › general ledger report
   - apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances
-  - apps/web/src
+  - apps/web/src/app/orgs/[orgId]/reports/general-ledger/page.tsx
 
 ### GL-023 — Subsidiary ledgers
 

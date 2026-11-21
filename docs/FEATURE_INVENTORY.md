@@ -75,21 +75,21 @@ Part 5 · M1 · priority P0 · depends on: SEC, I18N
 | GL-005 | 5.1 General Ledger | capability | Account types and subtypes | Tested |
 | GL-006 | 5.1 General Ledger | capability | Journal entries | Tested |
 | GL-007 | 5.1 General Ledger | capability | Recurring journals | Tested |
-| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Implemented |
+| GL-008 | 5.1 General Ledger | capability | Adjusting journals | Tested |
 | GL-009 | 5.1 General Ledger | capability | Reversing journals | Tested |
 | GL-010 | 5.1 General Ledger | capability | Opening balances | Tested |
 | GL-011 | 5.1 General Ledger | capability | Closing balances | Tested |
 | GL-012 | 5.1 General Ledger | capability | Journal templates | Tested |
 | GL-013 | 5.1 General Ledger | capability | Accrual accounting | Tested |
 | GL-014 | 5.1 General Ledger | capability | Cash accounting | Tested |
-| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Implemented |
+| GL-015 | 5.1 General Ledger | capability | Multi-period accounting | Tested |
 | GL-016 | 5.1 General Ledger | capability | Financial periods | Tested |
-| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Implemented |
+| GL-017 | 5.1 General Ledger | capability | Fiscal calendars | Tested |
 | GL-018 | 5.1 General Ledger | capability | Period locks | Tested |
-| GL-019 | 5.1 General Ledger | capability | Posting controls | Implemented |
+| GL-019 | 5.1 General Ledger | capability | Posting controls | Tested |
 | GL-020 | 5.1 General Ledger | capability | Audit history | Tested |
 | GL-021 | 5.1 General Ledger | capability | Trial balance | Tested |
-| GL-022 | 5.1 General Ledger | capability | General ledger reports | Implemented |
+| GL-022 | 5.1 General Ledger | capability | General ledger reports | Tested |
 | GL-023 | 5.1 General Ledger | capability | Subsidiary ledgers | Tested |
 | GL-024 | 5.1 General Ledger | capability | Cost centers | Tested |
 | GL-025 | 5.1 General Ledger | capability | Profit centers | Tested |

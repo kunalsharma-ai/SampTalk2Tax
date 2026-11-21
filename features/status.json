@@ -165,12 +165,13 @@
       ]
     },
     "GL-008": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts",
-        "apps/web/src"
+        "apps/api/test/gl-foundation.e2e.test.ts › adjusting journals",
+        "apps/api/test/opening-balances.e2e.test.ts",
+        "apps/web/src/components/journal-form.tsx"
       ],
-      "notes": "Adjusting journals are ordinary posted journals with a memo; there is no separate adjusting-entry type or period-end workflow yet."
+      "notes": "Adjusting is its own journal type, listed with ?type=ADJUSTING and included in every report; the month-end close agent proposes adjusting entries for a person to post. No separate adjusted-versus-unadjusted trial balance yet."
     },
     "GL-009": {
       "status": "Tested",
@@ -201,12 +202,13 @@
       "notes": "The books are kept on an accrual basis: invoices and bills post when issued, accruals and deferrals post to the period they belong to, and reports are accrual by default. The profit and loss can be switched to a cash basis from the same entries (GL-014)."
     },
     "GL-015": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts › creates further fiscal years",
-        "packages/accounting-engine/test/periods.test.ts",
-        "apps/web/src"
-      ]
+        "apps/api/test/gl-foundation.e2e.test.ts › multi-period posting",
+        "apps/api/test/ledger.e2e.test.ts › period locks",
+        "packages/accounting-engine/test/periods.test.ts"
+      ],
+      "notes": null
     },
     "GL-016": {
       "status": "Tested",
@@ -218,11 +220,12 @@
       ]
     },
     "GL-017": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "packages/accounting-engine/test/periods.test.ts › generates an April-March fiscal year",
-        "apps/web/src"
-      ]
+        "apps/api/test/gl-foundation.e2e.test.ts › fiscal calendars",
+        "packages/accounting-engine/test/periods.test.ts"
+      ],
+      "notes": "Monthly periods for a year starting in any month. 4-4-5 and 13-period calendars are not supported."
     },
     "GL-018": {
       "status": "Tested",
@@ -234,12 +237,16 @@
       ]
     },
     "GL-019": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
         "apps/api/test/ledger.e2e.test.ts › journal posting",
-        "apps/web/src"
-      ]
+        "apps/api/test/ledger.e2e.test.ts › immutability and reversal",
+        "apps/api/test/ledger.e2e.test.ts › period locks",
+        "apps/api/test/auth-tenancy.e2e.test.ts › roles and permissions",
+        "apps/api/test/journal-approvals.e2e.test.ts",
+        "apps/api/test/gl-foundation.e2e.test.ts › adjusting journals"
+      ],
+      "notes": "Balance, postable and active accounts, control accounts, open periods, role permissions, approval policy for large manual journals, and immutable posted entries."
     },
     "GL-020": {
       "status": "Tested",
@@ -259,11 +266,13 @@
       ]
     },
     "GL-022": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
+        "apps/api/test/gl-foundation.e2e.test.ts › general ledger report",
         "apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances",
-        "apps/web/src"
-      ]
+        "apps/web/src/app/orgs/[orgId]/reports/general-ledger/page.tsx"
+      ],
+      "notes": null
     },
     "GL-030": {
       "status": "Tested",
