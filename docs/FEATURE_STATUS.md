@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 625 |
+| Not started | 623 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 635 |
+| Tested | 637 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 7 | 36 |
+| Accounts receivable | M2 | 43 | 5 | 38 |
 | Accounts payable | M2 | 36 | 10 | 26 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1574,6 +1574,35 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/collections/[reminderId]/page.tsx
   - apps/web/e2e/collections-flow.test.mjs
   - docs/AI_COLLECTIONS.md
+
+### AR-036 — Customer risk analysis
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Customer risk analysis is the credit risk in Customer 360 (CRM-012): a 0-100 score from five explained factors (overdue share, oldest overdue, days late, credit limit use, slowing down), a rating, a suggested credit limit and credit hold, with every customer filterable by rating on Customer insights; plus each open invoice's chance of being paid late with reasons (AR-033). Deterministic; an AI-written narrative is not built.
+- Evidence:
+  - packages/accounting-engine/src/customer-insights.ts
+  - apps/api/src/crm/customer-insights.service.ts
+  - apps/api/test/customer-insights.e2e.test.ts
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/sales/customer-insights/page.tsx
+  - packages/accounting-engine/src/payment-predictions.ts
+  - apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx
+  - docs/CUSTOMER_360.md
+
+### AR-039 — Cash collection forecasting
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Expected collections week by week (1-26 weeks) from each open invoice's predicted payment date (AR-033), beside the same amounts by due date, with later and doubtful (over 90 days past due) shown apart and the predictions' backtested accuracy. Decimal totals; deterministic.
+- Evidence:
+  - packages/accounting-engine/src/collection-forecast.ts
+  - packages/accounting-engine/test/collection-forecast.test.ts
+  - apps/api/src/payment-predictions/payment-predictions.service.ts
+  - apps/api/test/payment-predictions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/collection-forecast/page.tsx
+  - apps/web/e2e/collection-forecast-flow.test.mjs
+  - docs/COLLECTION_FORECAST.md
 
 ### AR-042 — Automated detection of unbilled revenue
 

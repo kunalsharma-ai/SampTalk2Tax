@@ -114,6 +114,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Sort by the figure you care about and filter by risk or credit hold. Open a customer for the full workings.',
     where: 'Sales. Figures come from posted invoices, receipts and costs on projects linked to each customer.',
   },
+  'sales/collection-forecast': {
+    what: 'Money expected from customers week by week, from when each open invoice is predicted to be paid, beside what the due dates alone would say; with what is expected later and what is doubtful (over 90 days past due).',
+    how: 'Choose how many weeks to see. Where Expected trails By due date, customers are paying later than their terms: chase them from Collection priorities. Open Payment predictions to see each invoice.',
+    where: 'Sales. Needs the reports permission. Uses the same predictions as Payment predictions; the cash-flow forecast adds bills and planned items for the full cash position. Nothing here changes the books.',
+  },
   'sales/collection-priorities': {
     what: 'Customers ranked by who to chase first today, with a suggested action (call, remind, a friendly note before the due date, settle a dispute, or wait after a recent reminder) and the points behind each score.',
     how: 'Work down from the top. Open a score to see why it is high: money overdue and not disputed, the age of the oldest overdue invoice, the chance of paying late and when the customer was last reminded. Draft reminders from Collections.',

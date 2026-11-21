@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { backtestPredictions, D, minorUnits, predictionSummary, predictOpenInvoices, type OpenInvoiceForPrediction, type PaidInvoiceForPrediction } from '@talk2tax/accounting-engine';
+import { backtestPredictions, collectionForecast, D, minorUnits, predictionSummary, predictOpenInvoices, type OpenInvoiceForPrediction, type PaidInvoiceForPrediction } from '@talk2tax/accounting-engine';
 import type { OrgContext } from '../auth/decorators';
 import { fromDbDate, todayIso, toDbDate } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
@@ -60,5 +60,12 @@ export class PaymentPredictionsService {
       accuracy: backtestPredictions(paid, today),
       invoices,
     };
+  }
+
+  /** Cash collection forecast (AR-039): expected receipts week by week from the predictions, beside the due dates. */
+  async forecast(org: OrgContext, q: { weeks: number }, today = todayIso()) {
+    const p = await this.predictions(org, {}, today);
+    const f = collectionForecast(p.invoices, today, q.weeks, minorUnits(org.functionalCurrency));
+    return { asOf: today, currency: org.functionalCurrency, unscored: p.summary.unscored, accuracy: p.accuracy, ...f };
   }
 }

@@ -110,3 +110,34 @@ describe('payment-delay predictions', () => {
     expect(theirs).toMatchObject({ invoices: [], summary: { invoices: 0, outstanding: '0.00', paidHistory: 0 }, accuracy: { tested: 0 } });
   });
 });
+
+describe('cash collection forecast (AR-039)', () => {
+  type Forecast = { asOf: string; currency: string; weeks: { from: string; to: string; expected: string; byDueDate: string; invoices: number; cumulative: string }[]; later: { expected: string; byDueDate: string; invoices: number }; doubtful: { amount: string; invoices: number }; total: string; inHorizon: string };
+  const F = (q = '', user = owner) => ctx.http().get(`${org.base}/payment-predictions/forecast${q}`).set(user.auth);
+  const cents = (x: string) => BigInt(x.replace('.', ''));
+
+  it('spreads open invoices over the weeks they are predicted to be paid, beside their due dates', async () => {
+    const f = (await F('', viewer).expect(200)).body as Forecast;
+    expect(f).toMatchObject({ asOf: T, currency: 'INR', total: '54000.50', doubtful: { amount: '0.00', invoices: 0 } });
+    expect(f.weeks).toHaveLength(13);
+    expect(f.weeks[0]).toMatchObject({ from: T, to: addDays(T, 6) });
+    // Banyan's past-due invoice: due before today (first week by due date), predicted a week from today.
+    expect(f.weeks[0]!.byDueDate).toBe('20000.00');
+    expect(f.weeks[1]!.from).toBe(addDays(T, 7));
+    expect(cents(f.weeks[1]!.expected)).toBeGreaterThanOrEqual(cents('20000.00'));
+    const expected = f.weeks.reduce((s, w) => s + cents(w.expected), 0n) + cents(f.later.expected);
+    const byDue = f.weeks.reduce((s, w) => s + cents(w.byDueDate), 0n) + cents(f.later.byDueDate);
+    expect(expected).toBe(cents(f.total));
+    expect(byDue).toBe(cents(f.total));
+    expect(f.weeks.at(-1)!.cumulative).toBe(f.inHorizon);
+    expect(f.weeks.reduce((s, w) => s + w.invoices, 0) + f.later.invoices).toBe(4);
+  });
+
+  it('takes 1 to 26 weeks', async () => {
+    expect(((await F('?weeks=2').expect(200)).body as Forecast).weeks).toHaveLength(2);
+    await F('?weeks=0').expect(400);
+    await F('?weeks=27').expect(400);
+    await F('?other=1').expect(400);
+    await ctx.http().get(`${org.base}/payment-predictions/forecast`).set(outsider.auth).expect(404);
+  });
+});
