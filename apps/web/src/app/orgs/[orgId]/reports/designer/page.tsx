@@ -1,7 +1,8 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, EmptyState, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Button, Card, CardHeader, EmptyState, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -11,10 +12,18 @@ import type { DesignListItem } from '@/lib/report-designer';
 import { monthLabel } from '@/lib/twin';
 import { can } from '@/lib/types';
 
+type Template = { id: string; name: string; description: string; sections: string[] };
+
 /** Report designs: layouts of headings, text, commentary and figures, produced each month. */
 export default function ReportDesignsPage() {
   const { org, orgId } = useOrg();
   const q = useQuery({ queryKey: ['report-designs', orgId], queryFn: () => api<{ items: DesignListItem[] }>(`/v1/orgs/${orgId}/report-designer/designs`), enabled: !!org });
+  const cat = useQuery({ queryKey: ['report-catalogue', orgId], queryFn: () => api<{ templates: Template[] }>(`/v1/orgs/${orgId}/report-designer/catalogue`), enabled: !!org });
+  const router = useRouter();
+  const use = useMutation({
+    mutationFn: (templateId: string) => api<{ id: string }>(`/v1/orgs/${orgId}/report-designer/designs/from-template`, { method: 'POST', body: { templateId } }),
+    onSuccess: (d) => router.push(`/orgs/${orgId}/reports/designer/${d.id}`),
+  });
   if (!org) return null;
   const items = q.data?.items ?? [];
   return (
@@ -60,6 +69,24 @@ export default function ReportDesignsPage() {
           <p className="p-5 text-sm text-fg-muted">Loading…</p>
         )}
       </Card>
+      {can(org.role, 'reports.design') && cat.data?.templates.length ? (
+        <Card className="mt-4">
+          <CardHeader title="Report templates" description="Start from a ready-made design and change it as you need. Every figure still comes from your books." />
+          <ErrorAlert title="The design was not created" error={use.error} />
+          <div className="grid gap-3 p-5 md:grid-cols-2">
+            {cat.data.templates.map((t) => (
+              <div key={t.id} className="flex flex-col gap-2 rounded-md border border-line p-4">
+                <p className="font-medium">{t.name}</p>
+                <p className="text-sm text-fg-muted">{t.description}</p>
+                <p className="text-xs text-fg-muted">{t.sections.length} sections</p>
+                <div>
+                  <Button size="sm" variant="secondary" aria-label={`Use template: ${t.name}`} loading={use.isPending && use.variables === t.id} onClick={() => use.mutate(t.id)}>Use template</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
     </>
   );
 }

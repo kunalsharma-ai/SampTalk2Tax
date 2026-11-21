@@ -916,7 +916,7 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-027 | Reporting Features | capability | Financial dimensions | Tested |
 | RPT-028 | Reporting Features | capability | Filters | Tested |
 | RPT-029 | Reporting Features | capability | Saved views | Tested |
-| RPT-030 | Reporting Features | capability | Report templates | Not started |
+| RPT-030 | Reporting Features | capability | Report templates | Tested |
 | RPT-031 | Reporting Features | capability | Scheduled reports | Tested |
 | RPT-032 | Reporting Features | capability | Email delivery | Tested |
 | RPT-033 | Reporting Features | capability | PDF exports | Tested |
@@ -925,7 +925,7 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-036 | Reporting Features | capability | Interactive drill-downs | Tested |
 | RPT-037 | Reporting Features | capability | Report sharing | Tested |
 | RPT-038 | Reporting Features | capability | Permission-based access | Tested |
-| RPT-039 | Reporting Features | capability | Report version history | Not started |
+| RPT-039 | Reporting Features | capability | Report version history | Tested |
 | RPT-040 | Reporting Features | capability | AI narrative generation | Tested |
 | RPT-041 | Reporting Features | rule | All exported numbers must reconcile with authoritative financial records | Tested |
 

@@ -10,6 +10,8 @@ import {
   MAX_DASHBOARD_MONTHS,
   MAX_REPORT_SECTIONS,
   reportFacts,
+  reportTemplate,
+  REPORT_TEMPLATES,
   WIDGET_SIZES,
   WIDGET_TYPES,
   type ReportLayout,
@@ -20,12 +22,14 @@ import { AiControlService } from '../ai-control/ai-control.service';
 import { aiProviderError } from '../ai-control/provider-error';
 import { AuditService } from '../audit/audit.service';
 import type { OrgContext } from '../auth/decorators';
+import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { AppConfig, CONFIG } from '../config';
 import type { CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { DashboardsService } from '../dashboards/dashboards.service';
 import { IntegrationsService } from '../integrations/integrations.service';
+import { reportDesignVersions, type ReportDesignVersionDoc } from '../db/collections/report-design-versions';
 import { lockRow } from '../db/locks';
 
 type Actor = { id: string };
@@ -60,10 +64,55 @@ export class ReportDesignerService {
     private readonly guard: AiControlService,
     private readonly integrations: IntegrationsService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly store: DocumentStoreService,
   ) {}
 
   catalogue() {
-    return { ...this.dashboards.catalogue(), sectionLimit: MAX_REPORT_SECTIONS };
+    return { ...this.dashboards.catalogue(), sectionLimit: MAX_REPORT_SECTIONS, templates: REPORT_TEMPLATES.map((t) => ({ id: t.id, name: t.name, description: t.description, sections: describeLayout(t.layout) })) };
+  }
+
+  // ------------------------------------------------------------------ versions (RPT-039) and templates (RPT-030)
+
+  /** Keeps the version just saved. Runs after the save commits; the unique index keeps one per version. */
+  private async keepVersion(orgId: string, actor: Actor, designId: string, change: ReportDesignVersionDoc['change'], extra: { restoredFrom?: number; templateId?: string } = {}) {
+    const d = await this.findDesign(orgId, designId);
+    await this.store.collection(reportDesignVersions).insertOne({ designId, version: d.version, name: d.name, description: d.description, layout: d.layout as unknown as Record<string, unknown>, change, restoredFrom: extra.restoredFrom ?? null, templateId: extra.templateId ?? null, savedById: actor.id, savedAt: d.updatedAt });
+  }
+
+  /** Every kept version of a design, newest first. Designs saved before history was kept start with their current version. */
+  async listVersions(orgId: string, id: string) {
+    const d = await this.findDesign(orgId, id);
+    const rows = await this.store.collection(reportDesignVersions).find({ designId: id }, { sort: { version: -1 } });
+    const people = await this.names([...rows.map((v) => v.savedById), d.updatedById]);
+    const items = rows.map((v) => ({ version: v.version, name: v.name, change: v.change, restoredFrom: v.restoredFrom, templateId: v.templateId, sections: ((v.layout as { sections?: unknown[] }).sections ?? []).length, savedBy: people[v.savedById] ?? 'Former member', savedAt: v.savedAt.toISOString(), current: v.version === d.version }));
+    if (!items.some((v) => v.current)) items.unshift({ version: d.version, name: d.name, change: d.version === 1 ? 'CREATED' : 'EDITED', restoredFrom: null, templateId: null, sections: ((d.layout as { sections?: unknown[] }).sections ?? []).length, savedBy: people[d.updatedById] ?? 'Former member', savedAt: d.updatedAt.toISOString(), current: true });
+    return { designId: id, current: d.version, items };
+  }
+
+  async getVersion(orgId: string, id: string, version: number) {
+    const d = await this.findDesign(orgId, id);
+    const v = await this.store.collection(reportDesignVersions).findOne({ designId: id, version });
+    if (!v && version !== d.version) throw new DomainError('NOT_FOUND', `Version ${version} of this design was not kept`, HttpStatus.NOT_FOUND);
+    const src = v ?? { name: d.name, description: d.description, layout: d.layout as unknown as Record<string, unknown> };
+    const layout = src.layout as unknown as ReportLayout;
+    return { designId: id, version, current: version === d.version, name: src.name, description: src.description, layout, descriptions: describeLayout(layout) };
+  }
+
+  /** Restores an earlier version as a new version; the history keeps every version in between. */
+  async restoreVersion(orgId: string, actor: Actor, id: string, version: number, baseVersion: number) {
+    const old = await this.getVersion(orgId, id, version);
+    if (old.current) throw new DomainError('ALREADY_CURRENT', 'That version is the current one', HttpStatus.CONFLICT);
+    await this.nameFree(orgId, old.name, id);
+    await this.saveLayout(orgId, actor, id, { name: old.name, description: old.description, layout: old.layout }, baseVersion, { action: 'report_design.restored', restoredFrom: version });
+    await this.keepVersion(orgId, actor, id, 'RESTORED', { restoredFrom: version });
+    return this.getDesign(orgId, id);
+  }
+
+  /** A new design from a template (RPT-030), under the name given. */
+  async createFromTemplate(orgId: string, actor: Actor, templateId: string, name?: string) {
+    const t = reportTemplate(templateId);
+    if (!t) throw new DomainError('NOT_FOUND', 'Report template not found', HttpStatus.NOT_FOUND);
+    return this.createDesign(orgId, actor, { name: name?.trim() || t.name, description: t.description, layout: t.layout }, t.id);
   }
 
   private check(layout: unknown) {
@@ -131,31 +180,37 @@ export class ReportDesignerService {
     if (await this.prisma.reportDesign.findFirst({ where: { orgId, name, ...(exceptId ? { NOT: { id: exceptId } } : {}) } })) throw new DomainError('DUPLICATE', 'A report design with that name already exists', HttpStatus.CONFLICT);
   }
 
-  async createDesign(orgId: string, actor: Actor, input: DesignInput) {
+  async createDesign(orgId: string, actor: Actor, input: DesignInput, templateId?: string) {
     const layout = this.check(input.layout);
     await this.nameFree(orgId, input.name.trim());
     const id = await this.prisma.$transaction(async (tx) => {
       const top = await tx.reportDesign.aggregate({ where: { orgId }, _max: { number: true } });
       const d = await tx.reportDesign.create({ data: { orgId, number: (top._max.number ?? 0) + 1, name: input.name.trim(), description: input.description?.trim() || null, layout: layout as unknown as Prisma.InputJsonValue, createdById: actor.id, updatedById: actor.id } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'report_design.created', entityType: 'report_design', entityId: d.id, data: { name: d.name, sections: layout.sections.length } });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'report_design.created', entityType: 'report_design', entityId: d.id, data: { name: d.name, sections: layout.sections.length, templateId: templateId ?? null } });
       return d.id;
     });
+    await this.keepVersion(orgId, actor, id, templateId ? 'FROM_TEMPLATE' : 'CREATED', { templateId });
     return this.getDesign(orgId, id);
   }
 
   /** Changes apply to reports produced afterwards; reports already produced keep their layout. */
   async updateDesign(orgId: string, actor: Actor, id: string, input: DesignInput & { baseVersion: number }) {
-    const layout = this.check(input.layout);
     await this.nameFree(orgId, input.name.trim(), id);
+    await this.saveLayout(orgId, actor, id, input, input.baseVersion, { action: 'report_design.updated' });
+    await this.keepVersion(orgId, actor, id, 'EDITED');
+    return this.getDesign(orgId, id);
+  }
+
+  private async saveLayout(orgId: string, actor: Actor, id: string, input: { name: string; description?: string | null; layout: unknown }, baseVersion: number, how: { action: string; restoredFrom?: number }) {
+    const layout = this.check(input.layout);
     await this.prisma.$transaction(async (tx) => {
       await lockRow(tx, 'report_designs', id, orgId);
       const d = await tx.reportDesign.findFirst({ where: { id, orgId } });
       if (!d) throw new DomainError('NOT_FOUND', 'Report design not found', HttpStatus.NOT_FOUND);
-      if (d.version !== input.baseVersion) throw new DomainError('DESIGN_CHANGED', 'Someone changed this design while you were editing. Reload it and make your change again.', HttpStatus.CONFLICT);
+      if (d.version !== baseVersion) throw new DomainError('DESIGN_CHANGED', 'Someone changed this design while you were editing. Reload it and make your change again.', HttpStatus.CONFLICT);
       await tx.reportDesign.update({ where: { id }, data: { name: input.name.trim(), description: input.description?.trim() || null, layout: layout as unknown as Prisma.InputJsonValue, version: d.version + 1, updatedById: actor.id } });
-      await this.audit.append(tx, { orgId, actorId: actor.id, action: 'report_design.updated', entityType: 'report_design', entityId: id, data: { version: d.version + 1, before: { name: d.name, layout: d.layout }, after: { name: input.name.trim(), layout: layout as unknown as Prisma.InputJsonValue } } });
+      await this.audit.append(tx, { orgId, actorId: actor.id, action: how.action, entityType: 'report_design', entityId: id, data: { version: d.version + 1, ...(how.restoredFrom ? { restoredFrom: how.restoredFrom } : {}), before: { name: d.name, layout: d.layout }, after: { name: input.name.trim(), layout: layout as unknown as Prisma.InputJsonValue } } });
     });
-    return this.getDesign(orgId, id);
   }
 
   /** Only a design with no reports can be deleted; reports keep their design. */

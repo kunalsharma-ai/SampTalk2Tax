@@ -21529,9 +21529,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-templates.ts",
+        "packages/accounting-engine/test/report-templates.test.ts",
+        "apps/api/src/report-designer/report-designer.service.ts",
+        "apps/api/test/report-design-versions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/designer/page.tsx",
+        "apps/web/e2e/report-templates-flow.test.mjs",
+        "docs/REPORT_DESIGNER.md"
+      ],
+      "notes": "Four ready-made designs (management pack, board report, investor update, cash and collections), each checked by the layout rules; Use template creates an ordinary design."
     },
     {
       "id": "RPT-031",
@@ -21806,9 +21814,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/db/collections/report-design-versions.ts",
+        "apps/api/src/report-designer/report-designer.service.ts",
+        "apps/api/test/report-design-versions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/designer/[designId]/page.tsx",
+        "apps/web/e2e/report-templates-flow.test.mjs",
+        "docs/REPORT_DESIGNER.md"
+      ],
+      "notes": "Every save keeps an immutable version (who, when, how); view any version; restore as a new version with a concurrency check; audited."
     },
     {
       "id": "RPT-040",
