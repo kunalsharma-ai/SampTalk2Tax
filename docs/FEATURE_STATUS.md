@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 650 |
+| Not started | 647 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 610 |
+| Tested | 613 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -55,7 +55,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Internationalization | M8 | 16 | 0 | 16 |
 | Integration marketplace | M6 | 50 | 41 | 9 |
 | Security and enterprise governance | M1 | 38 | 0 | 38 |
-| User experience and onboarding | M1 | 22 | 5 | 17 |
+| User experience and onboarding | M1 | 22 | 2 | 20 |
 | Accounting data migration | M6 | 20 | 20 | 0 |
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
@@ -7306,6 +7306,48 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/setup.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/setup/page.tsx
   - apps/web/e2e/setup-flow.test.mjs
+  - docs/ORG_SETUP.md
+
+### UX-020 — Allow the user to describe the business conversationally
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: The owner describes the business in their own words; word rules or the AI model read industry, size and signals, each finding quoting the owner's words (AI findings that do not are dropped).
+- Evidence:
+  - packages/accounting-engine/src/onboarding-assistant.ts
+  - packages/accounting-engine/test/onboarding-assistant.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup-assistant.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-assistant-flow.test.mjs
+  - docs/ORG_SETUP.md
+
+### UX-021 — The assistant should recommend relevant configuration options
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Recommends the profile (industry, size, framework, AI preference) and the setup steps that fit what was said, with links, plus plain notes on what is not covered.
+- Evidence:
+  - packages/accounting-engine/src/onboarding-assistant.ts
+  - packages/accounting-engine/test/onboarding-assistant.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup-assistant.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-assistant-flow.test.mjs
+  - docs/ORG_SETUP.md
+
+### UX-022 — All recommendations must be reviewed before activation
+
+- Module: User experience and onboarding
+- Status: **Tested**
+- Notes: Each recommendation is accepted or dismissed by an owner or admin; nothing applies on its own; activation waits while any is undecided; audited.
+- Evidence:
+  - packages/accounting-engine/src/onboarding-assistant.ts
+  - packages/accounting-engine/test/onboarding-assistant.test.ts
+  - apps/api/src/setup/setup.service.ts
+  - apps/api/test/setup-assistant.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/setup/page.tsx
+  - apps/web/e2e/setup-assistant-flow.test.mjs
   - docs/ORG_SETUP.md
 
 ### SUBS-001 — Create a flexible SaaS billing platform

@@ -464,7 +464,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   setup: {
     what: 'The business profile, how much the AI agents do, and a checklist that says whether the books are ready for day-to-day use.',
-    how: 'Choose the industry, size, accounting framework and AI preference, or use the suggestions, and save. Work through each required step on the checklist, then activate the organisation.',
+    how: 'Describe the business and review what the assistant recommends, or choose the industry, size, accounting framework and AI preference yourself, and save. Work through each required step on the checklist, then activate the organisation.',
     where: 'Governance. The checklist is worked out from your books each time; activation is recorded once in the audit trail.',
   },
   'opening-balances': {

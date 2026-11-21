@@ -8391,6 +8391,45 @@
       ],
       "notes": "Activation only once every required step is done; records who and when, audited, immutable, once only (409)."
     },
+    "UX-020": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/onboarding-assistant.ts",
+        "packages/accounting-engine/test/onboarding-assistant.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup-assistant.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-assistant-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "The owner describes the business in their own words; word rules or the AI model read industry, size and signals, each finding quoting the owner's words (AI findings that do not are dropped)."
+    },
+    "UX-021": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/onboarding-assistant.ts",
+        "packages/accounting-engine/test/onboarding-assistant.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup-assistant.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-assistant-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Recommends the profile (industry, size, framework, AI preference) and the setup steps that fit what was said, with links, plus plain notes on what is not covered."
+    },
+    "UX-022": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/onboarding-assistant.ts",
+        "packages/accounting-engine/test/onboarding-assistant.test.ts",
+        "apps/api/src/setup/setup.service.ts",
+        "apps/api/test/setup-assistant.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/setup/page.tsx",
+        "apps/web/e2e/setup-assistant-flow.test.mjs",
+        "docs/ORG_SETUP.md"
+      ],
+      "notes": "Each recommendation is accepted or dismissed by an owner or admin; nothing applies on its own; activation waits while any is undecided; audited."
+    },
     "RPT-016": {
       "status": "Tested",
       "evidence": [

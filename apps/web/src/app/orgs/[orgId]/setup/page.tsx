@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, CardHeader, Field, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { Alert, Badge, Button, Card, CardHeader, Field, Select, Table, Td, Textarea, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
@@ -12,6 +12,12 @@ import { useOrg } from '@/lib/org';
 type Option = { id: string; name: string };
 type Check = { id: string; title: string; status: 'DONE' | 'TODO'; required: boolean; detail: string; link: string };
 type Suggestion = { framework: string; aiPreference: string; reasons: string[] };
+type Recommendation = { id: string; kind: 'PROFILE' | 'STEP' | 'NOTE'; field: string | null; value: string | null; title: string; reason: string; link: string | null; status: 'PENDING' | 'ACCEPTED' | 'DISMISSED' };
+type Assistant = {
+  ai: { configured: boolean; available: boolean; reason: string | null };
+  maxLength: number;
+  reading: { description: string; source: 'AI' | 'RULES'; model: string | null; dropped: string[]; readAt: string; recommendations: Recommendation[] } | null;
+};
 type Profile = { industry: string | null; size: string | null; framework: string | null; aiPreference: string | null };
 type SetupOverview = {
   countryCode: string;
@@ -22,6 +28,7 @@ type SetupOverview = {
   options: { industries: Option[]; sizes: Option[]; frameworks: Option[]; aiPreferences: (Option & { what: string })[] };
   checks: Check[];
   activation: { ok: boolean; missing: string[]; activatedAt: string | null; activatedById: string | null };
+  assistant: Assistant;
 };
 
 /** Organisation setup: business profile, AI preference, the setup checklist and activation (UX-004 to UX-019). */
@@ -41,6 +48,21 @@ export default function SetupPage() {
       qc.setQueryData(['setup', orgId], o);
       void qc.invalidateQueries({ queryKey: ['ai-control', orgId] });
       setSaved(true);
+    },
+  });
+  const [description, setDescription] = useState('');
+  useEffect(() => {
+    if (q.data?.assistant.reading) setDescription((d) => d || q.data!.assistant.reading!.description);
+  }, [q.data?.assistant.reading?.readAt]); // eslint-disable-line react-hooks/exhaustive-deps
+  const readIt = useMutation({
+    mutationFn: (useAi: boolean) => api<SetupOverview>(`${base}/assistant`, { method: 'POST', body: { description, useAi } }),
+    onSuccess: (o) => qc.setQueryData(['setup', orgId], o),
+  });
+  const decide = useMutation({
+    mutationFn: (v: { id: string; decision: 'ACCEPTED' | 'DISMISSED' }) => api<SetupOverview>(`${base}/assistant/recommendations/${encodeURIComponent(v.id)}`, { method: 'POST', body: { decision: v.decision } }),
+    onSuccess: (o) => {
+      qc.setQueryData(['setup', orgId], o);
+      void qc.invalidateQueries({ queryKey: ['ai-control', orgId] });
     },
   });
   const activate = useMutation({ mutationFn: () => api<SetupOverview>(`${base}/activate`, { method: 'POST' }), onSuccess: (o) => qc.setQueryData(['setup', orgId], o) });
@@ -63,6 +85,57 @@ export default function SetupPage() {
       <ErrorAlert title="Could not load setup" error={q.error} />
       {o ? (
         <>
+          {!o.activation.activatedAt && o.canManage ? (
+            <Card className="mb-4">
+              <CardHeader title="Describe your business" description="Say in your own words what the business does. The assistant recommends a profile and the setup steps that fit; nothing changes until you accept a recommendation." />
+              <div className="px-5 py-4">
+                <Field label="What does your business do?" hint="For example: who your customers are, how many people work with you, whether you sell abroad, bill monthly or own machinery.">
+                  {(p) => <Textarea {...p} rows={3} maxLength={o.assistant.maxLength} value={description} onChange={(e) => setDescription(e.target.value)} />}
+                </Field>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Button variant="secondary" disabled={description.trim().length < 10} loading={readIt.isPending && readIt.variables === false} onClick={() => readIt.mutate(false)}>Recommend setup</Button>
+                  <Button variant="secondary" disabled={description.trim().length < 10 || !o.assistant.ai.available} loading={readIt.isPending && readIt.variables === true} onClick={() => readIt.mutate(true)}>Recommend with AI</Button>
+                  <span className="text-xs text-fg-muted">{o.assistant.ai.available ? 'With AI, the description is sent to the AI model; each finding must quote your words.' : o.assistant.ai.reason}</span>
+                </div>
+                <ErrorAlert title="No recommendations" error={readIt.error} />
+              </div>
+              {o.assistant.reading ? (
+                <>
+                  <p className="border-t border-line px-5 py-3 text-sm text-fg-muted">
+                    {o.assistant.reading.source === 'AI' ? `Read by the AI model${o.assistant.reading.model ? ` (${o.assistant.reading.model})` : ''}` : 'Read from the words you used'} on {dateTime(o.assistant.reading.readAt)}.
+                    {o.assistant.reading.dropped.length ? ` Left out because they did not quote your words or were not on the lists: ${o.assistant.reading.dropped.join('; ')}.` : ''}
+                  </p>
+                  <Table aria-label="Recommendations">
+                    <thead><tr><Th>Recommendation</Th><Th>Why</Th><Th>Decision</Th></tr></thead>
+                    <tbody>
+                      {o.assistant.reading.recommendations.map((r) => (
+                        <Tr key={r.id}>
+                          <Td>
+                            <span className="font-medium">{r.title}</span>
+                            <span className="block text-xs text-fg-muted">{r.kind === 'PROFILE' ? 'Fills the business profile' : r.kind === 'STEP' ? 'Setup step' : 'Note'}</span>
+                          </Td>
+                          <Td className="text-sm">
+                            {r.reason}
+                            {r.link && r.status === 'ACCEPTED' ? <> <Link className="text-accent hover:underline" href={`/orgs/${orgId}${r.link}`}>Go there</Link></> : null}
+                          </Td>
+                          <Td className="whitespace-nowrap">
+                            {r.status === 'PENDING' ? (
+                              <div className="flex gap-2">
+                                <Button size="sm" aria-label={`Accept: ${r.title}`} loading={decide.isPending && decide.variables?.id === r.id && decide.variables.decision === 'ACCEPTED'} onClick={() => decide.mutate({ id: r.id, decision: 'ACCEPTED' })}>{r.kind === 'NOTE' ? 'Noted' : 'Accept'}</Button>
+                                <Button size="sm" variant="ghost" aria-label={`Dismiss: ${r.title}`} loading={decide.isPending && decide.variables?.id === r.id && decide.variables.decision === 'DISMISSED'} onClick={() => decide.mutate({ id: r.id, decision: 'DISMISSED' })}>Dismiss</Button>
+                              </div>
+                            ) : <Badge tone={r.status === 'ACCEPTED' ? 'positive' : 'neutral'}>{r.status === 'ACCEPTED' ? 'Accepted' : 'Dismissed'}</Badge>}
+                          </Td>
+                        </Tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                  <div className="px-5 pb-4"><ErrorAlert title="The decision was not saved" error={decide.error} /></div>
+                </>
+              ) : null}
+            </Card>
+          ) : null}
+
           <Card className="mb-4">
             <CardHeader title="Business profile" description="Used for the suggestions below and kept with your organisation's records." />
             <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
