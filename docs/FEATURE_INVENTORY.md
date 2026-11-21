@@ -1477,7 +1477,7 @@ Part 42 · M1 · priority P0 · depends on: none
 | QA-028 | Financial Test Scenarios | capability | Concurrent operations preserve accounting consistency | Tested |
 | QA-029 | Financial Test Scenarios | capability | Tax calculations use the correct effective-dated rules | Tested |
 | QA-030 | Financial Test Scenarios | capability | Unauthorized AI agents cannot post entries or initiate payments | Tested |
-| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Implementing |
+| QA-031 | Financial Test Scenarios | rule | Use deterministic test fixtures | Tested |
 
 ## Demonstration data
 

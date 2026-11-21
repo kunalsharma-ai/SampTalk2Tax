@@ -46,6 +46,9 @@ jobs:
       # SEC-028: no SOC 2 / ISO 27001 / other certification claims without a completed assessment.
       - name: No certification claims
         run: node --test scripts/check-claims.test.mjs && node scripts/check-claims.mjs
+      # QA-031: tests use seeded data, never Math.random, so a run gives the same result every time.
+      - name: Deterministic test data
+        run: node --test scripts/check-test-determinism.test.mjs && node scripts/check-test-determinism.mjs
       - name: Install Chromium for browser tests
         working-directory: apps/web
         run: npx playwright install --with-deps chromium
