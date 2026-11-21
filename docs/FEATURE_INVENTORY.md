@@ -12,53 +12,53 @@ Part 4 · M0 · priority P0 · depends on: none
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| COMP-001 |  | capability | QuickBooks Online | Not started |
-| COMP-002 |  | capability | Xero | Not started |
-| COMP-003 |  | capability | Zoho Books | Not started |
-| COMP-004 |  | capability | Oracle NetSuite | Not started |
-| COMP-005 |  | capability | SAP Cloud ERP | Not started |
-| COMP-006 |  | capability | Microsoft Dynamics 365 Business Central | Not started |
-| COMP-007 |  | capability | Sage Intacct | Not started |
-| COMP-008 |  | capability | FreshBooks | Not started |
-| COMP-009 |  | capability | Odoo | Not started |
-| COMP-010 |  | capability | Wave | Not started |
-| COMP-011 |  | capability | Acumatica | Not started |
-| COMP-012 |  | capability | Workday Financial Management | Not started |
-| COMP-013 |  | capability | Ramp | Not started |
-| COMP-014 |  | capability | BILL | Not started |
-| COMP-015 |  | capability | TallyPrime | Not started |
-| COMP-016 |  | capability | Oracle Fusion Cloud Financials | Not started |
-| COMP-017 |  | capability | SAP finance and treasury products | Not started |
-| COMP-018 |  | capability | Microsoft Dynamics 365 Finance | Not started |
-| COMP-019 |  | capability | Workday Adaptive Planning | Not started |
-| COMP-020 |  | capability | Sage AI capabilities | Not started |
-| COMP-021 |  | capability | Enterprise FP&A platforms | Not started |
-| COMP-022 |  | capability | Modern treasury management systems | Not started |
-| COMP-023 |  | capability | Global payroll systems | Not started |
-| COMP-024 |  | capability | Modern procurement systems | Not started |
-| COMP-025 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Core accounting features | Not started |
-| COMP-026 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Advanced finance capabilities | Not started |
-| COMP-027 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | AI features | Not started |
-| COMP-028 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Automation capabilities | Not started |
-| COMP-029 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Enterprise functionality | Not started |
-| COMP-030 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Payroll | Not started |
-| COMP-031 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Tax | Not started |
-| COMP-032 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Treasury | Not started |
-| COMP-033 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Procurement | Not started |
-| COMP-034 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Reporting | Not started |
-| COMP-035 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Integrations | Not started |
-| COMP-036 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Security | Not started |
-| COMP-037 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Subscription model | Not started |
-| COMP-038 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Limitations | Not started |
-| COMP-039 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Differentiation opportunities | Not started |
-| COMP-040 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Existing and mature | Not started |
-| COMP-041 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Existing but limited | Not started |
-| COMP-042 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Available through add-ons | Not started |
-| COMP-043 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Available through integrations | Not started |
-| COMP-044 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Not confirmed | Not started |
-| COMP-045 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Potentially differentiated | Not started |
+| COMP-001 |  | capability | QuickBooks Online | Tested |
+| COMP-002 |  | capability | Xero | Tested |
+| COMP-003 |  | capability | Zoho Books | Tested |
+| COMP-004 |  | capability | Oracle NetSuite | Tested |
+| COMP-005 |  | capability | SAP Cloud ERP | Implementing |
+| COMP-006 |  | capability | Microsoft Dynamics 365 Business Central | Tested |
+| COMP-007 |  | capability | Sage Intacct | Tested |
+| COMP-008 |  | capability | FreshBooks | Tested |
+| COMP-009 |  | capability | Odoo | Tested |
+| COMP-010 |  | capability | Wave | Tested |
+| COMP-011 |  | capability | Acumatica | Tested |
+| COMP-012 |  | capability | Workday Financial Management | Tested |
+| COMP-013 |  | capability | Ramp | Tested |
+| COMP-014 |  | capability | BILL | Tested |
+| COMP-015 |  | capability | TallyPrime | Tested |
+| COMP-016 |  | capability | Oracle Fusion Cloud Financials | Tested |
+| COMP-017 |  | capability | SAP finance and treasury products | Tested |
+| COMP-018 |  | capability | Microsoft Dynamics 365 Finance | Tested |
+| COMP-019 |  | capability | Workday Adaptive Planning | Tested |
+| COMP-020 |  | capability | Sage AI capabilities | Tested |
+| COMP-021 |  | capability | Enterprise FP&A platforms | Tested |
+| COMP-022 |  | capability | Modern treasury management systems | Tested |
+| COMP-023 |  | capability | Global payroll systems | Implementing |
+| COMP-024 |  | capability | Modern procurement systems | Tested |
+| COMP-025 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Core accounting features | Tested |
+| COMP-026 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Advanced finance capabilities | Tested |
+| COMP-027 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | AI features | Tested |
+| COMP-028 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Automation capabilities | Tested |
+| COMP-029 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Enterprise functionality | Tested |
+| COMP-030 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Payroll | Tested |
+| COMP-031 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Tax | Tested |
+| COMP-032 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Treasury | Tested |
+| COMP-033 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Procurement | Tested |
+| COMP-034 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Reporting | Tested |
+| COMP-035 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Integrations | Tested |
+| COMP-036 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Security | Tested |
+| COMP-037 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Subscription model | Tested |
+| COMP-038 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Limitations | Tested |
+| COMP-039 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Differentiation opportunities | Tested |
+| COMP-040 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Existing and mature | Tested |
+| COMP-041 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Existing but limited | Tested |
+| COMP-042 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Available through add-ons | Tested |
+| COMP-043 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Available through integrations | Tested |
+| COMP-044 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Not confirmed | Tested |
+| COMP-045 | docs/COMPETITIVE_FEATURE_MATRIX.md | capability | Potentially differentiated | Tested |
 | COMP-046 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not incorrectly claim that a competitor lacks functionality | Tested |
-| COMP-047 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Include official sources and verification dates wherever available | Not started |
+| COMP-047 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Include official sources and verification dates wherever available | Tested |
 | COMP-048 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Do not copy proprietary source code, designs, branding or copyrighted materials | Tested |
 | COMP-049 | docs/COMPETITIVE_FEATURE_MATRIX.md | rule | Build original implementations | Tested |
 

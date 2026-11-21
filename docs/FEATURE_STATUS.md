@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 699 |
+| Not started | 653 |
 | Designed | 0 |
-| Implementing | 36 |
+| Implementing | 38 |
 | Implemented | 31 |
-| Tested | 563 |
+| Tested | 607 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -23,7 +23,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Module | Milestone | Entries | Not started | In progress or later |
 |---|---|---|---|---|
-| Competitive benchmarking | M0 | 49 | 46 | 3 |
+| Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 9 | 34 |
 | Accounts payable | M2 | 36 | 11 | 25 |
@@ -70,6 +70,456 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 ## Features with progress and evidence
 
+### COMP-001 — QuickBooks Online
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-002 — Xero
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-003 — Zoho Books
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-004 — Oracle NetSuite
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-005 — SAP Cloud ERP
+
+- Module: Competitive benchmarking
+- Status: **Implementing**
+- Notes: Only SAP AI release notes could be read on 2026-11-21 (SAP finance pages refused automated reading); most cells NC. Next pass reads SAP finance pages.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-006 — Microsoft Dynamics 365 Business Central
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-007 — Sage Intacct
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-008 — FreshBooks
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-009 — Odoo
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-010 — Wave
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-011 — Acumatica
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-012 — Workday Financial Management
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-013 — Ramp
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-014 — BILL
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-015 — TallyPrime
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-016 — Oracle Fusion Cloud Financials
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-017 — SAP finance and treasury products
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-018 — Microsoft Dynamics 365 Finance
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-019 — Workday Adaptive Planning
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-020 — Sage AI capabilities
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-021 — Enterprise FP&A platforms
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-022 — Modern treasury management systems
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-023 — Global payroll systems
+
+- Module: Competitive benchmarking
+- Status: **Implementing**
+- Notes: Covered only through the accounting vendors' own payroll; named global payroll vendors not yet researched.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-024 — Modern procurement systems
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Researched from the vendor's own pages, verified 2026-11-21; each cell names its source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-025 — Core accounting features
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-026 — Advanced finance capabilities
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-027 — AI features
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-028 — Automation capabilities
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-029 — Enterprise functionality
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-030 — Payroll
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-031 — Tax
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-032 — Treasury
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-033 — Procurement
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-034 — Reporting
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-035 — Integrations
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-036 — Security
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-037 — Subscription model
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-038 — Limitations
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-039 — Differentiation opportunities
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-040 — Existing and mature
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A code on the matrix scale; the check refuses any code off the scale or without a source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-041 — Existing but limited
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A code on the matrix scale; the check refuses any code off the scale or without a source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-042 — Available through add-ons
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A code on the matrix scale; the check refuses any code off the scale or without a source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-043 — Available through integrations
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A code on the matrix scale; the check refuses any code off the scale or without a source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-044 — Not confirmed
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A code on the matrix scale; the check refuses any code off the scale or without a source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
+### COMP-045 — Potentially differentiated
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: A code on the matrix scale; the check refuses any code off the scale or without a source.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
+
 ### COMP-046 — Do not incorrectly claim that a competitor lacks functionality
 
 - Module: Competitive benchmarking
@@ -78,6 +528,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - scripts/check-claims.mjs
   - scripts/check-claims.test.mjs
+
+### COMP-047 — Include official sources and verification dates wherever available
+
+- Module: Competitive benchmarking
+- Status: **Tested**
+- Notes: Every confirmed finding names an official https source and every vendor table its verification date; review and comparison sites are refused by the check.
+- Evidence:
+  - docs/COMPETITIVE_FEATURE_MATRIX.md
+  - scripts/check-competitive-matrix.mjs
+  - scripts/check-competitive-matrix.test.mjs
 
 ### COMP-048 — Do not copy proprietary source code, designs, branding or copyrighted materials
 

@@ -7808,6 +7808,420 @@
       ],
       "notes": "Reports need reports.read; members without it and other organisations are refused."
     },
+    "COMP-001": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-002": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-003": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-004": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-005": {
+      "status": "Implementing",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Only SAP AI release notes could be read on 2026-11-21 (SAP finance pages refused automated reading); most cells NC. Next pass reads SAP finance pages."
+    },
+    "COMP-006": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-007": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-008": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-009": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-010": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-011": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-012": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-013": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-014": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-015": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-016": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-017": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-018": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-019": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-020": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-021": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-022": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-023": {
+      "status": "Implementing",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Covered only through the accounting vendors' own payroll; named global payroll vendors not yet researched."
+    },
+    "COMP-024": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Researched from the vendor's own pages, verified 2026-11-21; each cell names its source."
+    },
+    "COMP-025": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-026": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-027": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-028": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-029": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-030": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-031": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-032": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-033": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-034": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-035": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-036": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-037": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-038": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-039": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A row of the matrix for every competitor, each cell with code, finding and official source, verified 2026-11-21."
+    },
+    "COMP-040": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
+    },
+    "COMP-041": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
+    },
+    "COMP-042": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
+    },
+    "COMP-043": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
+    },
+    "COMP-044": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
+    },
+    "COMP-045": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "A code on the matrix scale; the check refuses any code off the scale or without a source."
+    },
+    "COMP-047": {
+      "status": "Tested",
+      "evidence": [
+        "docs/COMPETITIVE_FEATURE_MATRIX.md",
+        "scripts/check-competitive-matrix.mjs",
+        "scripts/check-competitive-matrix.test.mjs"
+      ],
+      "notes": "Every confirmed finding names an official https source and every vendor table its verification date; review and comparison sites are refused by the check."
+    },
     "RPT-031": {
       "status": "Tested",
       "evidence": [
