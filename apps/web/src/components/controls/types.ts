@@ -14,6 +14,8 @@ export interface ControlTest {
   selfTested: boolean;
   testedBy: Person;
   testedAt: string;
+  /** The finding raised from this test, if any (failed tests only). */
+  finding?: { id: string; reference: string; status: string } | null;
 }
 export interface Control {
   id: string;

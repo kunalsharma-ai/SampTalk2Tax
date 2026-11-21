@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 642 |
+| Not started | 640 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 618 |
+| Tested | 620 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 14 | 16 |
+| Continuous audit and governance | M6 | 30 | 12 | 18 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4827,6 +4827,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/alerts.e2e.test.ts
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
+
+### AUDIT-011 — Audit findings
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Findings raised by hand or from a failed control test (once per test, with its exceptions), with severity, remediation owner, plan and due date (14/30/60 days by severity); numbered F-001; overdue tracking; immutable once closed; audited.
+- Evidence:
+  - packages/accounting-engine/src/audit-findings.ts
+  - packages/accounting-engine/test/audit-findings.test.ts
+  - apps/api/src/audit-findings/audit-findings.service.ts
+  - apps/api/test/audit-findings.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/audit-findings/page.tsx
+  - apps/web/src/app/orgs/[orgId]/audit-findings/[findingId]/page.tsx
+  - apps/web/e2e/audit-findings-flow.test.mjs
+  - docs/AUDIT_FINDINGS.md
+
+### AUDIT-012 — Remediation workflows
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Remediation workflow: open, in progress, ready for review (and back), with a note per step; closed only by someone other than the remediation owner with approvals.decide, and for control-test findings only after a later passing test of the control.
+- Evidence:
+  - packages/accounting-engine/src/audit-findings.ts
+  - packages/accounting-engine/test/audit-findings.test.ts
+  - apps/api/src/audit-findings/audit-findings.service.ts
+  - apps/api/test/audit-findings.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/audit-findings/page.tsx
+  - apps/web/src/app/orgs/[orgId]/audit-findings/[findingId]/page.tsx
+  - apps/web/e2e/audit-findings-flow.test.mjs
+  - docs/AUDIT_FINDINGS.md
 
 ### AUDIT-013 — Control ownership
 

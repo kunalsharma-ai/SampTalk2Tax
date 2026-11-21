@@ -761,6 +761,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the period (such as 2026-10). For an automatic check, run it to see the exceptions, fix them if you can, then record the test; the result and evidence come from the books. For a manual control, say whether it worked and what you checked.',
     where: 'Controls register. Tests are kept as recorded and listed in the audit trail.',
   },
+  'audit-findings': {
+    what: 'Audit findings: problems found by a failed control test, a review or day to day, each with a remediation owner, a plan, a severity and a due date.',
+    how: 'Raise a finding here, or from a failed test on a control. The remediation owner records progress until it is ready for review; then an approver, owner or admin who was not fixing it closes it. A finding from a failed control test closes only after a later test of that control passes.',
+    where: 'Governance. Reading and raising need the audit trail permission; closing needs the approvals permission.',
+  },
+  'audit-findings/[id]': {
+    what: 'One finding: what was found, the plan to fix it, and every update in order.',
+    how: 'The remediation owner moves it to in progress or ready for review, saying what was done. Someone else closes it once the fix is checked. Closed findings are kept as they were closed.',
+    where: 'Audit findings.',
+  },
   'segregation-of-duties': {
     what: 'Places where one person did two jobs that should be split: a journal written and posted by the same person, a bill entered and posted by them, a payment batch they prepared and approved, a vendor paid by whoever changed the vendor\'s bank details, or a bank reconciled by whoever recorded its payments. It also shows which members\' roles let them do conflicting jobs together.',
     how: 'Pick the dates (up to 400 days; the last 90 by default). Open each record, then clear the finding with what you checked. Only an approver, owner or admin who was not involved can clear one, and each review is kept in the audit trail.',

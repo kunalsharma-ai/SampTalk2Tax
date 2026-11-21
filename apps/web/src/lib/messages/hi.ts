@@ -148,6 +148,7 @@ export const hi: Record<string, string> = {
   'Audit trail': 'ऑडिट ट्रेल',
   'Segregation of duties': 'कर्तव्यों का पृथक्करण',
   'Internal controls': 'आंतरिक नियंत्रण',
+  'Audit findings': 'ऑडिट निष्कर्ष',
   'AI control center': 'AI नियंत्रण केंद्र',
   'Data retention': 'डेटा प्रतिधारण',
   'Single sign-on': 'सिंगल साइन-ऑन',

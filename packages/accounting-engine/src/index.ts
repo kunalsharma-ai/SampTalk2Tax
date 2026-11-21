@@ -106,6 +106,7 @@ export * from './report-views';
 export * from './report-templates';
 export * from './segregation-of-duties';
 export * from './internal-controls';
+export * from './audit-findings';
 export * from './setup';
 export * from './onboarding-assistant';
 export * from './data-import';
