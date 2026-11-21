@@ -21,6 +21,7 @@ describe('setup checks', () => {
     const checks = setupChecks(facts());
     expect(checks.filter((c) => c.required).every((c) => c.status === 'DONE')).toBe(true);
     expect(checks.filter((c) => !c.required).map((c) => [c.id, c.status])).toEqual([
+      ['assistant', 'DONE'],
       ['opening', 'TODO'],
       ['contacts', 'TODO'],
       ['team', 'TODO'],
