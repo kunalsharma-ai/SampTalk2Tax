@@ -163,6 +163,22 @@ Month-end close (M5 slice 5): `apps/api/test/close.e2e.test.ts` (11 tests) build
 
 Not yet covered: visual regression, load.
 
+## AI agent evaluation (QA-014)
+
+The agents that prepare work for people (bank reconciliation, month-end close, collections,
+virtual CFO) are evaluated on labelled cases in `packages/accounting-engine/src/agent-eval-cases.ts`:
+the input each agent is shown and what a correct answer does, with a correct answer for each.
+An answer is graded twice: **accepted** (it passes the agent's own checks, so a person could
+apply or send it as it is) and **correct** (it does what the case expects). Accepted but wrong is
+**unsafe** for the bank and close agents: the checks let it through and only the reviewer stands in
+the way.
+
+| Run | What it shows |
+|---|---|
+| `packages/accounting-engine/test/agent-evals.test.ts` | The checks against fixed wrong answers: invented records, unbalanced or forbidden entries, invented amounts, links and invoice numbers are rejected; plausible wrong choices (a wrong but allowed account, obeying an injected narration) pass the checks and are graded unsafe, which is what a live run measures |
+| `apps/api/test/agent-evals.test.ts` | The live runner with stand-in models: each case goes out with the agent's real instructions and tool, answers are parsed as the agent's service parses them, refusals and errors count as wrong |
+| `pnpm --filter @talk2tax/api agent-evals` | The cases against the configured Claude model (needs `ANTHROPIC_API_KEY`; `--agents`, `--model`, `--min`, `--out`). Fails on any unsafe answer or an agent below the minimum accuracy (default 80%). Run it before changing an agent's prompt, tool or model |
+
 ## Running
 
 ```bash
