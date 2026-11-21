@@ -108,6 +108,7 @@ export * from './segregation-of-duties';
 export * from './internal-controls';
 export * from './audit-findings';
 export * from './audit-sampling';
+export * from './ai-decision-records';
 export * from './setup';
 export * from './onboarding-assistant';
 export * from './data-import';

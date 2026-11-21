@@ -812,9 +812,9 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Governance. Applies to the copilot, collections, bank suggestions and other AI features.',
   },
   'ai-activity': {
-    what: 'A log of everything the AI did: questions, drafts, suggestions and who approved them.',
-    how: 'Filter by agent or date and open an entry to see its input and output.',
-    where: 'Governance. Kept for review and audit.',
+    what: 'A log of everything the AI did: questions, drafts, suggestions and who approved them, and below it the decision record of every AI call: the agent, who it acted for, the versions of its instructions and tools, the data it was given, when it ran and its own short explanation.',
+    how: 'Filter the calls by feature and the decision records by agent, and open an entry to see what it worked on. The model\'s hidden reasoning is never kept, and copilot answers stay private to the member who asked.',
+    where: 'Governance. Reading needs the audit trail permission. Decision records cannot be changed or deleted.',
   },
   members: {
     what: 'The people in the organisation and their roles.',

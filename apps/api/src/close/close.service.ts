@@ -604,7 +604,7 @@ export class CloseService {
     };
     let outcome: { data: Prisma.CloseAiReviewUpdateInput; adjustments: AdjustmentInput[] };
     try {
-      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000) });
+      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000), record: { agent: 'CLOSE_REVIEW', subject: { type: 'CLOSE_AI_REVIEW', id }, sources: [`Close checks and account movements for ${context.period.name}`] } });
       const usage = { servedModel: res.model, inputTokens: res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0), outputTokens: res.usage.output_tokens };
       const call = res.content.find((b): b is Anthropic.Beta.Messages.BetaToolUseBlock => b.type === 'tool_use' && b.name === REVIEW_TOOL.name);
       const input = (res.stop_reason === 'max_tokens' ? null : call?.input) as Record<string, unknown> | null | undefined;

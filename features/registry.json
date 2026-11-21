@@ -19740,9 +19740,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-decision-records.ts",
+        "packages/accounting-engine/test/ai-decision-records.test.ts",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/ai-decisions/ai-decisions.service.ts",
+        "apps/api/test/ai-decisions.e2e.test.ts",
+        "apps/web/src/components/ai/decision-records.tsx",
+        "apps/web/e2e/ai-decision-records-flow.test.mjs",
+        "docs/AI_DECISION_RECORDS.md"
+      ],
+      "notes": "Every AI call's decision record names the agent (Copilot, bank line assistant, month-end reviewer, collections, CFO writer, policy/dashboard/report drafters, setup assistant), the member it acted for and whose key it used."
     },
     {
       "id": "AUDIT-019",
@@ -19795,9 +19804,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-decision-records.ts",
+        "packages/accounting-engine/test/ai-decision-records.test.ts",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/ai-decisions/ai-decisions.service.ts",
+        "apps/api/test/ai-decisions.e2e.test.ts",
+        "apps/web/src/components/ai/decision-records.tsx",
+        "apps/web/e2e/ai-decision-records-flow.test.mjs",
+        "docs/AI_DECISION_RECORDS.md"
+      ],
+      "notes": "Each decision record keeps SHA-256 fingerprints of the exact system prompt and tool definitions sent (promptVersion, toolsVersion), the tool names and the model requested and served."
     },
     {
       "id": "AUDIT-021",
@@ -19820,9 +19838,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-decision-records.ts",
+        "packages/accounting-engine/test/ai-decision-records.test.ts",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/ai-decisions/ai-decisions.service.ts",
+        "apps/api/test/ai-decisions.e2e.test.ts",
+        "apps/web/src/components/ai/decision-records.tsx",
+        "apps/web/e2e/ai-decision-records-flow.test.mjs",
+        "docs/AI_DECISION_RECORDS.md"
+      ],
+      "notes": "Each decision record lists the data the model was given: the caller's description (bank line, close figures, customer balances, report facts) plus every tool result read in that call, and the record it was about."
     },
     {
       "id": "AUDIT-022",
@@ -19996,9 +20023,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-decision-records.ts",
+        "packages/accounting-engine/test/ai-decision-records.test.ts",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/ai-decisions/ai-decisions.service.ts",
+        "apps/api/test/ai-decisions.e2e.test.ts",
+        "apps/web/src/components/ai/decision-records.tsx",
+        "apps/web/e2e/ai-decision-records-flow.test.mjs",
+        "docs/AI_DECISION_RECORDS.md"
+      ],
+      "notes": "Each decision record keeps when the call started and ended and how long it took; listed newest first with paging by time."
     },
     {
       "id": "AUDIT-028",
@@ -20053,9 +20089,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-decision-records.ts",
+        "packages/accounting-engine/test/ai-decision-records.test.ts",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/ai-decisions/ai-decisions.service.ts",
+        "apps/api/test/ai-decisions.e2e.test.ts",
+        "apps/web/src/components/ai/decision-records.tsx",
+        "apps/web/e2e/ai-decision-records-flow.test.mjs",
+        "docs/AI_DECISION_RECORDS.md"
+      ],
+      "notes": "Thinking and redacted-thinking blocks are never copied into decision records or returned by any endpoint (tested); records only say whether reasoning was withheld."
     },
     {
       "id": "AUDIT-030",
@@ -20078,9 +20123,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-decision-records.ts",
+        "packages/accounting-engine/test/ai-decision-records.test.ts",
+        "apps/api/src/usage/usage.service.ts",
+        "apps/api/src/ai-decisions/ai-decisions.service.ts",
+        "apps/api/test/ai-decisions.e2e.test.ts",
+        "apps/web/src/components/ai/decision-records.tsx",
+        "apps/web/e2e/ai-decision-records-flow.test.mjs",
+        "docs/AI_DECISION_RECORDS.md"
+      ],
+      "notes": "Each decision record keeps the model's own short stated reason (tool reason field, else 'Used <tool>' or the start of its text, max 500 chars); copilot answers stay private (only the fact of the answer)."
     },
     {
       "id": "DOC-001",

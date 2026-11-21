@@ -514,7 +514,7 @@ export class CfoService {
     };
     let data: Prisma.CfoReportUpdateInput;
     try {
-      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000) });
+      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000), record: { agent: 'CFO_SUMMARY', subject: { type: 'CFO_REPORT', id: r.id }, sources: [`Facts for the ${r.title}`] } });
       const usage = { servedModel: res.model, inputTokens: { increment: res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0) }, outputTokens: { increment: res.usage.output_tokens } };
       const text = res.content
         .filter((b): b is Anthropic.Beta.Messages.BetaTextBlock => b.type === 'text')

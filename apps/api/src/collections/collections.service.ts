@@ -362,7 +362,7 @@ export class CollectionsService {
     const blocked = await this.guard.check(orgId, 'COLLECTIONS');
     if (blocked) data = { status: 'FAILED', ...AiControlService.stoppedError(blocked) };
     else try {
-      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000) });
+      const res = await model.send(request, { signal: AbortSignal.timeout(this.config.COPILOT_TURN_TIMEOUT_SECONDS * 1000), record: { agent: 'COLLECTIONS', subject: { type: 'COLLECTION_DRAFT', id: draftId }, sources: [`What ${facts.customer} owes: ${facts.overdue.length} overdue and ${facts.notYetDue.length} not yet due invoices`] } });
       const usage = { servedModel: res.model, inputTokens: res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0), outputTokens: res.usage.output_tokens };
       const call = res.content.find((b): b is Anthropic.Beta.Messages.BetaToolUseBlock => b.type === 'tool_use' && b.name === SUBMIT_TOOL.name);
       const written = res.stop_reason === 'max_tokens' ? null : parseSubmission(call?.input);

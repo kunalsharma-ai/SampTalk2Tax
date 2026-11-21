@@ -1,8 +1,13 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { allowsOneMore, PlanLimits, recentMonths, usageLevel, usageMonth, usageMonthRange } from '@talk2tax/accounting-engine';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx, withSystemAccess } from '../common/prisma.service';
-import type { CopilotModel, CopilotRequest, CopilotResponse } from '../copilot/copilot.model';
+import { createHash } from 'node:crypto';
+import { agentForRequest, dataSourcesFor, explanationFor, promptText, reasoningWithheld, toolsText, type AiRequestShape, type AiResponseShape } from '@talk2tax/accounting-engine';
+import type { AiCallOptions, CopilotModel, CopilotRequest, CopilotResponse } from '../copilot/copilot.model';
+import { DocumentStoreService } from '../common/document-store.service';
+import { runInOrg } from '../common/tenant-context';
+import { aiDecisionRecords } from '../db/collections/ai-decision-records';
 import { planLimits } from '../billing/limits';
 import { lockName } from '../db/locks';
 import { AiCreditsService } from '../billing/ai-credits.service';
@@ -19,17 +24,31 @@ export const AI_CREDITS_USED_UP = 'AI_CREDITS_USED_UP';
  */
 @Injectable()
 export class UsageService {
+  private readonly log = new Logger(UsageService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly credits: AiCreditsService,
+    private readonly store: DocumentStoreService,
   ) {}
 
-  /** Wraps a model so that each answered call is recorded for the organisation. */
+  /**
+   * Wraps a model so that each answered call is recorded for the organisation, and every call,
+   * answered or failed, gets a decision record in the explainable AI ledger (AUDIT-018 and others).
+   */
   metered(orgId: string, model: CopilotModel, source: 'ORGANISATION' | 'SERVER'): CopilotModel {
     return {
       provider: model.provider,
-      send: async (request: CopilotRequest, options: { signal: AbortSignal }): Promise<CopilotResponse> => {
-        const res = await model.send(request, options);
+      send: async (request: CopilotRequest, options: AiCallOptions): Promise<CopilotResponse> => {
+        const startedAt = new Date();
+        let res: CopilotResponse;
+        try {
+          res = await model.send(request, options);
+        } catch (e) {
+          await this.decisionRecord(orgId, source, request, options, startedAt, null, e);
+          throw e;
+        }
+        await this.decisionRecord(orgId, source, request, options, startedAt, res, null);
         // Past the plan's requests for the month, the request comes from a bought pack (SUBS-018).
         const creditGrantId = await this.creditFor(orgId);
         await this.prisma.usageEvent.create({
@@ -38,6 +57,51 @@ export class UsageService {
         return res;
       },
     };
+  }
+
+  /**
+   * Writes one call's decision record. It holds the agent and who it acted for, fingerprints of
+   * the prompt and tools, the data given, the timing and the model's own short explanation; the
+   * model's hidden reasoning is never copied (AUDIT-029). A failure to write it is logged and does
+   * not undo the call.
+   */
+  private async decisionRecord(orgId: string, keySource: 'ORGANISATION' | 'SERVER', request: CopilotRequest, options: AiCallOptions, startedAt: Date, res: CopilotResponse | null, error: unknown) {
+    const req = request as unknown as AiRequestShape;
+    const out = res as unknown as AiResponseShape | null;
+    const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 12);
+    const completedAt = new Date();
+    const user = (request.metadata as { user_id?: unknown } | undefined)?.user_id;
+    try {
+      const agent = agentForRequest(req, options.record?.agent);
+      await runInOrg(orgId, () =>
+        this.store.collection(aiDecisionRecords).insertOne({
+          agent,
+          actingForUserId: typeof user === 'string' ? user : null,
+          keySource,
+          modelRequested: String(request.model),
+          servedModel: res?.model ?? null,
+          promptVersion: hash(promptText(req)),
+          toolsVersion: hash(toolsText(req)),
+          toolNames: (request.tools ?? []).map((t) => ('name' in t && typeof t.name === 'string' ? t.name : 'tool')).slice(0, 100),
+          dataSources: dataSourcesFor(req, options.record?.sources),
+          subjectType: options.record?.subject?.type ?? null,
+          subjectId: options.record?.subject?.id ?? null,
+          // A member's copilot answers stay private to them: only the fact of the answer is kept.
+          explanation: out ? explanationFor(out, { privateText: agent === 'COPILOT' }) : null,
+          reasoningWithheld: out ? reasoningWithheld(out) : false,
+          stopReason: res?.stop_reason ?? null,
+          outcome: res ? 'ANSWERED' : 'FAILED',
+          errorName: res ? null : error instanceof Error ? error.constructor.name.slice(0, 80) : 'Error',
+          inputTokens: res ? res.usage.input_tokens + (res.usage.cache_creation_input_tokens ?? 0) + (res.usage.cache_read_input_tokens ?? 0) : 0,
+          outputTokens: res?.usage.output_tokens ?? 0,
+          startedAt,
+          completedAt,
+          durationMs: completedAt.getTime() - startedAt.getTime(),
+        }),
+      );
+    } catch (e) {
+      this.log.error(`Could not write the AI decision record for ${orgId}`, e instanceof Error ? e.stack : String(e));
+    }
   }
 
   /** A month's uploads, or its AI requests counted against the plan (not those from bought packs). */

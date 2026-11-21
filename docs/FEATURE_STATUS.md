@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 638 |
+| Not started | 632 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 622 |
+| Tested | 628 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 10 | 20 |
+| Continuous audit and governance | M6 | 30 | 4 | 26 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4943,6 +4943,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/db/guards
   - apps/api/src/db/constraints/catalog.json
 
+### AUDIT-018 — Agent identity
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Every AI call's decision record names the agent (Copilot, bank line assistant, month-end reviewer, collections, CFO writer, policy/dashboard/report drafters, setup assistant), the member it acted for and whose key it used.
+- Evidence:
+  - packages/accounting-engine/src/ai-decision-records.ts
+  - packages/accounting-engine/test/ai-decision-records.test.ts
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/ai-decisions/ai-decisions.service.ts
+  - apps/api/test/ai-decisions.e2e.test.ts
+  - apps/web/src/components/ai/decision-records.tsx
+  - apps/web/e2e/ai-decision-records-flow.test.mjs
+  - docs/AI_DECISION_RECORDS.md
+
 ### AUDIT-019 — Model version
 
 - Module: Continuous audit and governance
@@ -4953,6 +4968,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/collections.e2e.test.ts
   - apps/web/e2e/collections-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx
+
+### AUDIT-020 — Prompt or policy version
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Each decision record keeps SHA-256 fingerprints of the exact system prompt and tool definitions sent (promptVersion, toolsVersion), the tool names and the model requested and served.
+- Evidence:
+  - packages/accounting-engine/src/ai-decision-records.ts
+  - packages/accounting-engine/test/ai-decision-records.test.ts
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/ai-decisions/ai-decisions.service.ts
+  - apps/api/test/ai-decisions.e2e.test.ts
+  - apps/web/src/components/ai/decision-records.tsx
+  - apps/web/e2e/ai-decision-records-flow.test.mjs
+  - docs/AI_DECISION_RECORDS.md
+
+### AUDIT-021 — Data sources
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Each decision record lists the data the model was given: the caller's description (bank line, close figures, customer balances, report facts) plus every tool result read in that call, and the record it was about.
+- Evidence:
+  - packages/accounting-engine/src/ai-decision-records.ts
+  - packages/accounting-engine/test/ai-decision-records.test.ts
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/ai-decisions/ai-decisions.service.ts
+  - apps/api/test/ai-decisions.e2e.test.ts
+  - apps/web/src/components/ai/decision-records.tsx
+  - apps/web/e2e/ai-decision-records-flow.test.mjs
+  - docs/AI_DECISION_RECORDS.md
 
 ### AUDIT-022 — Proposed action
 
@@ -5009,6 +5054,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/collections-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/ai-activity/page.tsx
 
+### AUDIT-027 — Timestamp
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Each decision record keeps when the call started and ended and how long it took; listed newest first with paging by time.
+- Evidence:
+  - packages/accounting-engine/src/ai-decision-records.ts
+  - packages/accounting-engine/test/ai-decision-records.test.ts
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/ai-decisions/ai-decisions.service.ts
+  - apps/api/test/ai-decisions.e2e.test.ts
+  - apps/web/src/components/ai/decision-records.tsx
+  - apps/web/e2e/ai-decision-records-flow.test.mjs
+  - docs/AI_DECISION_RECORDS.md
+
 ### AUDIT-028 — Relevant evidence references
 
 - Module: Continuous audit and governance
@@ -5021,6 +5081,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/audit-evidence-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/audit/page.tsx
   - docs/SECURITY.md
+
+### AUDIT-029 — Do not expose hidden model chain-of-thought
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Thinking and redacted-thinking blocks are never copied into decision records or returned by any endpoint (tested); records only say whether reasoning was withheld.
+- Evidence:
+  - packages/accounting-engine/src/ai-decision-records.ts
+  - packages/accounting-engine/test/ai-decision-records.test.ts
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/ai-decisions/ai-decisions.service.ts
+  - apps/api/test/ai-decisions.e2e.test.ts
+  - apps/web/src/components/ai/decision-records.tsx
+  - apps/web/e2e/ai-decision-records-flow.test.mjs
+  - docs/AI_DECISION_RECORDS.md
+
+### AUDIT-030 — Store concise, auditable decision explanations instead
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Each decision record keeps the model's own short stated reason (tool reason field, else 'Used <tool>' or the start of its text, max 500 chars); copilot answers stay private (only the fact of the answer).
+- Evidence:
+  - packages/accounting-engine/src/ai-decision-records.ts
+  - packages/accounting-engine/test/ai-decision-records.test.ts
+  - apps/api/src/usage/usage.service.ts
+  - apps/api/src/ai-decisions/ai-decisions.service.ts
+  - apps/api/test/ai-decisions.e2e.test.ts
+  - apps/web/src/components/ai/decision-records.tsx
+  - apps/web/e2e/ai-decision-records-flow.test.mjs
+  - docs/AI_DECISION_RECORDS.md
 
 ### DOC-001 — Create a secure financial document management system
 

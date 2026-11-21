@@ -100,6 +100,8 @@ import { ReportViewsService } from './report-views/report-views.service';
 import { AuditFindingsController } from './audit-findings/audit-findings.controller';
 import { AuditFindingsService } from './audit-findings/audit-findings.service';
 import { AuditSamplingController } from './audit-sampling/audit-sampling.controller';
+import { AiDecisionsController } from './ai-decisions/ai-decisions.controller';
+import { AiDecisionsService } from './ai-decisions/ai-decisions.service';
 import { AuditSamplingService } from './audit-sampling/audit-sampling.service';
 import { InternalControlsController } from './internal-controls/internal-controls.controller';
 import { InternalControlsService } from './internal-controls/internal-controls.service';
@@ -324,6 +326,7 @@ export class AppModule {
         InternalControlsController,
         AuditFindingsController,
         AuditSamplingController,
+        AiDecisionsController,
         DataImportController,
         JournalsController,
         ReportsController,
@@ -477,6 +480,7 @@ export class AppModule {
         InternalControlsService,
         AuditFindingsService,
         AuditSamplingService,
+        AiDecisionsService,
         DataImportService,
         JournalsService,
         ReportsService,
