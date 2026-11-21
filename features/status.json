@@ -8537,6 +8537,34 @@
         "docs/SEGREGATION_OF_DUTIES.md"
       ],
       "notes": "Detective checks over a period: manual journals and bills posted by their author, self-approved payment batches, a vendor paid by whoever changed their bank details, a bank reconciled by whoever recorded its payments; conflicting duties per member's role; findings cleared by an uninvolved approver with a reason, immutable and audited. Preventive rules stay in approvals and payment batches."
+    },
+    "AUDIT-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/internal-controls.ts",
+        "packages/accounting-engine/test/internal-controls.test.ts",
+        "apps/api/src/internal-controls/internal-controls.service.ts",
+        "apps/api/test/internal-controls.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/controls/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/controls/[controlId]/page.tsx",
+        "apps/web/e2e/controls-register-flow.test.mjs",
+        "docs/INTERNAL_CONTROLS.md"
+      ],
+      "notes": "Controls tested per ended period (monthly, fiscal quarter, fiscal year); four library controls are checked against the books by the server (bank reconciliations, journal segregation, vendor bank detail verification, period locks) with the evidence kept; manual tests need a result and notes; tests immutable and audited; due and overdue tracking."
+    },
+    "AUDIT-013": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/internal-controls.ts",
+        "packages/accounting-engine/test/internal-controls.test.ts",
+        "apps/api/src/internal-controls/internal-controls.service.ts",
+        "apps/api/test/internal-controls.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/controls/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/controls/[controlId]/page.tsx",
+        "apps/web/e2e/controls-register-flow.test.mjs",
+        "docs/INTERNAL_CONTROLS.md"
+      ],
+      "notes": "Every control has an owner who must be a member working on the books; owners cannot test their own control while someone else can (marked when they must); owner changes audited with before and after."
     }
   }
 }

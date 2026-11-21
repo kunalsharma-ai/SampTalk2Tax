@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 644 |
+| Not started | 642 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 616 |
+| Tested | 618 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 16 | 14 |
+| Continuous audit and governance | M6 | 30 | 14 | 16 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4800,6 +4800,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/attachments-approvals.e2e.test.ts
   - apps/web/src/components/approvals/approval-card.tsx
 
+### AUDIT-008 — Financial control testing
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Controls tested per ended period (monthly, fiscal quarter, fiscal year); four library controls are checked against the books by the server (bank reconciliations, journal segregation, vendor bank detail verification, period locks) with the evidence kept; manual tests need a result and notes; tests immutable and audited; due and overdue tracking.
+- Evidence:
+  - packages/accounting-engine/src/internal-controls.ts
+  - packages/accounting-engine/test/internal-controls.test.ts
+  - apps/api/src/internal-controls/internal-controls.service.ts
+  - apps/api/test/internal-controls.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/controls/page.tsx
+  - apps/web/src/app/orgs/[orgId]/controls/[controlId]/page.tsx
+  - apps/web/e2e/controls-register-flow.test.mjs
+  - docs/INTERNAL_CONTROLS.md
+
 ### AUDIT-010 — Exception tracking
 
 - Module: Continuous audit and governance
@@ -4812,6 +4827,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/alerts.e2e.test.ts
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
+
+### AUDIT-013 — Control ownership
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Every control has an owner who must be a member working on the books; owners cannot test their own control while someone else can (marked when they must); owner changes audited with before and after.
+- Evidence:
+  - packages/accounting-engine/src/internal-controls.ts
+  - packages/accounting-engine/test/internal-controls.test.ts
+  - apps/api/src/internal-controls/internal-controls.service.ts
+  - apps/api/test/internal-controls.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/controls/page.tsx
+  - apps/web/src/app/orgs/[orgId]/controls/[controlId]/page.tsx
+  - apps/web/e2e/controls-register-flow.test.mjs
+  - docs/INTERNAL_CONTROLS.md
 
 ### AUDIT-014 — Segregation-of-duties checks
 

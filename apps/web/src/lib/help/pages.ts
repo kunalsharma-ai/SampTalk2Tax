@@ -751,6 +751,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Planning. Assessments go to Business impact.',
   },
   // ---------------------------------------------------------------- governance and settings
+  controls: {
+    what: 'The internal controls register: each check that keeps the books right, such as monthly bank reconciliations or locking closed months, with its owner, how often it runs and whether it passed for the last period.',
+    how: 'Add controls from the library or write your own, and give each an owner. After each period ends, someone other than the owner opens the control and records a test. Library controls marked as checked against the books are tested from the books for you.',
+    where: 'Governance. Reading and testing need the audit trail permission; adding and changing controls needs an owner or admin.',
+  },
+  'controls/[id]': {
+    what: 'One control: test it for a period, see every test recorded with its evidence, and change its owner, frequency or wording.',
+    how: 'Pick the period (such as 2026-10). For an automatic check, run it to see the exceptions, fix them if you can, then record the test; the result and evidence come from the books. For a manual control, say whether it worked and what you checked.',
+    where: 'Controls register. Tests are kept as recorded and listed in the audit trail.',
+  },
   'segregation-of-duties': {
     what: 'Places where one person did two jobs that should be split: a journal written and posted by the same person, a bill entered and posted by them, a payment batch they prepared and approved, a vendor paid by whoever changed the vendor\'s bank details, or a bank reconciled by whoever recorded its payments. It also shows which members\' roles let them do conflicting jobs together.',
     how: 'Pick the dates (up to 400 days; the last 90 by default). Open each record, then clear the finding with what you checked. Only an approver, owner or admin who was not involved can clear one, and each review is kept in the audit trail.',
