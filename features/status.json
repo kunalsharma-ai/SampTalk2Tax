@@ -588,11 +588,14 @@
       ]
     },
     "QA-031": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "packages/accounting-engine/src/fixtures.ts",
+        "packages/accounting-engine/test/fixtures.test.ts",
+        "scripts/check-test-determinism.mjs",
+        "scripts/check-test-determinism.test.mjs"
       ],
-      "notes": "The demo seed and test fixtures are deterministic; a shared fixture library for all scenarios is not done."
+      "notes": "seededRandom and fixtureAmount give the same numbers and decimal amounts each run; CI refuses Math.random or unseeded faker in any test file. Unique-only values use randomUUID."
     },
     "RULE-001": {
       "status": "Implemented",

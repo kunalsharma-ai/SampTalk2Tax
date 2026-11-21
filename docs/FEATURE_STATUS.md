@@ -10,9 +10,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|
 | Not started | 741 |
 | Designed | 0 |
-| Implementing | 37 |
+| Implementing | 36 |
 | Implemented | 35 |
-| Tested | 516 |
+| Tested | 517 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -7393,10 +7393,13 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### QA-031 — Use deterministic test fixtures
 
 - Module: Testing and quality assurance
-- Status: **Implementing**
-- Notes: The demo seed and test fixtures are deterministic; a shared fixture library for all scenarios is not done.
+- Status: **Tested**
+- Notes: seededRandom and fixtureAmount give the same numbers and decimal amounts each run; CI refuses Math.random or unseeded faker in any test file. Unique-only values use randomUUID.
 - Evidence:
-  - apps/web/src
+  - packages/accounting-engine/src/fixtures.ts
+  - packages/accounting-engine/test/fixtures.test.ts
+  - scripts/check-test-determinism.mjs
+  - scripts/check-test-determinism.test.mjs
 
 ### DEMO-013 — Journal entries
 
