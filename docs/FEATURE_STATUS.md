@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 628 |
+| Not started | 627 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 632 |
+| Tested | 633 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 9 | 34 |
+| Accounts receivable | M2 | 43 | 8 | 35 |
 | Accounts payable | M2 | 36 | 11 | 25 |
 | Banking and reconciliation | M2 | 24 | 5 | 19 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1531,6 +1531,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/alerts.e2e.test.ts
   - apps/web/e2e/alerts-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/alerts
+
+### AR-033 — Predictive payment-delay scoring
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Every open invoice gets a likely payment date, days after due, chance of being late, confidence and reasons, from the customer's recency-weighted payment record blended with the organisation's average (counts as three invoices), a recent slowdown or speed-up, and overdue status. Deterministic, no AI model. Accuracy is checked on invoices paid in the last year, each predicted from what was known on its issue date.
+- Evidence:
+  - packages/accounting-engine/src/payment-predictions.ts
+  - packages/accounting-engine/test/payment-predictions.test.ts
+  - apps/api/src/payment-predictions/payment-predictions.service.ts
+  - apps/api/test/payment-predictions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx
+  - apps/web/e2e/payment-predictions-flow.test.mjs
+  - docs/PAYMENT_PREDICTIONS.md
 
 ### AR-035 — Automated reminder drafting
 
