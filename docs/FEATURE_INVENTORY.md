@@ -816,7 +816,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| AUDIT-001 |  | capability | Internal audit workspace | Not started |
+| AUDIT-001 |  | capability | Internal audit workspace | Tested |
 | AUDIT-002 |  | capability | External auditor portal | Not started |
 | AUDIT-003 |  | capability | Audit evidence management | Not started |
 | AUDIT-004 |  | capability | Audit trails | Tested |
