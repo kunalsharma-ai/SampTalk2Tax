@@ -21,6 +21,7 @@ import { PrismaService } from '../common/prisma.service';
 import { bankReconciliations } from '../db/collections/banking';
 import { accounts, fiscalPeriods } from '../db/collections/chart';
 import { users } from '../db/collections/identity';
+import { auditFindings } from '../db/collections/audit-findings';
 import { controlTests, internalControls, type ControlTestDoc, type InternalControlDoc } from '../db/collections/internal-controls';
 import { journalEntries } from '../db/collections/ledger';
 import { contacts } from '../db/collections/sales';
@@ -148,11 +149,13 @@ export class InternalControlsService {
     const names = await this.names([c.ownerId, ...tests.map((t) => t.testedById)]);
     const period = dueControlPeriod(c.frequency, todayIso(), fy);
     const forPeriod = tests.find((t) => t.periodKey === period.key) ?? null;
+    const failed = tests.filter((t) => t.result === 'FAIL').map((t) => t.id);
+    const raised = new Map((failed.length ? await this.store.collection(auditFindings).find({ testId: { $in: failed } }) : []).map((f) => [f.testId, { id: f.id, reference: `F-${String(f.number).padStart(3, '0')}`, status: f.status }]));
     return {
       ...this.view(c, names),
       duePeriod: period,
       status: controlStatus(c, forPeriod?.result ?? null, todayIso(), fy),
-      tests: tests.map((t) => this.testView(t, names)),
+      tests: tests.map((t) => ({ ...this.testView(t, names), finding: raised.get(t.id) ?? null })),
       canTest: c.active && hasPermission(org.role, 'audit.read'),
       canManage: hasPermission(org.role, 'org.manage'),
       isOwner: c.ownerId === user.id,

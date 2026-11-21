@@ -826,8 +826,8 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-008 |  | capability | Financial control testing | Tested |
 | AUDIT-009 |  | capability | Audit sampling | Not started |
 | AUDIT-010 |  | capability | Exception tracking | Tested |
-| AUDIT-011 |  | capability | Audit findings | Not started |
-| AUDIT-012 |  | capability | Remediation workflows | Not started |
+| AUDIT-011 |  | capability | Audit findings | Tested |
+| AUDIT-012 |  | capability | Remediation workflows | Tested |
 | AUDIT-013 |  | capability | Control ownership | Tested |
 | AUDIT-014 |  | capability | Segregation-of-duties checks | Tested |
 | AUDIT-015 |  | capability | Period-close certification | Tested |

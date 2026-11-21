@@ -141,7 +141,14 @@ export default function ControlPage() {
               {c.tests.map((t) => (
                 <Tr key={t.id}>
                   <Td className="whitespace-nowrap">{t.periodKey}</Td>
-                  <Td><Badge tone={t.result === 'PASS' ? 'positive' : 'negative'}>{t.result === 'PASS' ? 'Passed' : 'Failed'}</Badge></Td>
+                  <Td>
+                    <Badge tone={t.result === 'PASS' ? 'positive' : 'negative'}>{t.result === 'PASS' ? 'Passed' : 'Failed'}</Badge>
+                    {t.finding ? (
+                      <div className="mt-1 text-xs"><Link className="text-accent" href={`/orgs/${orgId}/audit-findings/${t.finding.id}`}>Finding {t.finding.reference}</Link></div>
+                    ) : t.result === 'FAIL' ? (
+                      <div className="mt-1 text-xs"><Link className="text-accent" href={`/orgs/${orgId}/audit-findings?testId=${t.id}`}>Raise finding</Link></div>
+                    ) : null}
+                  </Td>
                   <Td>{t.method === 'AUTOMATIC' ? 'Checked against the books' : 'By hand'}</Td>
                   <Td className="text-sm">
                     {t.evidence ? <div>{t.evidence.summary}</div> : null}
