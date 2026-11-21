@@ -152,6 +152,7 @@ export const hi: Record<string, string> = {
   'Audit samples': 'ऑडिट नमूने',
   'Ledger replay': 'लेजर रीप्ले',
   'Internal audit': 'आंतरिक ऑडिट',
+  'Audit evidence': 'ऑडिट साक्ष्य',
   'AI control center': 'AI नियंत्रण केंद्र',
   'Data retention': 'डेटा प्रतिधारण',
   'Single sign-on': 'सिंगल साइन-ऑन',

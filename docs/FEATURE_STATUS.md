@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 630 |
+| Not started | 629 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 630 |
+| Tested | 631 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 2 | 28 |
+| Continuous audit and governance | M6 | 30 | 1 | 29 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4787,6 +4787,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/audit-engagements/[engagementId]/page.tsx
   - apps/web/e2e/audit-engagements-flow.test.mjs
   - docs/INTERNAL_AUDIT.md
+
+### AUDIT-003 — Audit evidence management
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Evidence requests (ER-001…) asked by the engagement lead of a member (not the reviewer) with a due date; files attached only by that member or the lead while requested; submitted with each file's SHA-256; returned with what is missing or accepted by the lead or reviewer, never the submitter; overdue tracking and Waiting for me; engagement held from review until all evidence is accepted; accepted evidence immutable (guards and attachment access); audited with file references.
+- Evidence:
+  - packages/accounting-engine/src/audit-evidence.ts
+  - packages/accounting-engine/test/audit-evidence.test.ts
+  - apps/api/src/db/collections/audit-evidence.ts
+  - apps/api/src/audit-evidence/audit-evidence.service.ts
+  - apps/api/src/attachments/attachments.service.ts
+  - apps/api/test/audit-evidence-requests.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/audit-evidence/[requestId]/page.tsx
+  - apps/web/e2e/audit-evidence-requests-flow.test.mjs
+  - docs/AUDIT_EVIDENCE.md
 
 ### AUDIT-004 — Audit trails
 

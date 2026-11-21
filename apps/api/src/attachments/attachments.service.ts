@@ -12,6 +12,8 @@ import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { ATTACHMENTS, attachments } from '../db/collections/sales';
+import { auditEngagements } from '../db/collections/audit-engagements';
+import { auditEvidenceRequests } from '../db/collections/audit-evidence';
 import { MovedTables } from '../db/moved-table';
 import { UsageService } from '../usage/usage.service';
 
@@ -285,12 +287,13 @@ export class AttachmentsService {
   private async describe(org: Org, actor: { id: string }, list: { entityType: AttachmentEntity; entityId: string }[]) {
     const out = new Map<string, { label: string; path: string | null; use: FileUse }>();
     const ids = (t: AttachmentEntity) => [...new Set(list.filter((l) => l.entityType === t).map((l) => l.entityId))];
-    const [docs, pays, journals, claims, lines] = await Promise.all([
+    const [docs, pays, journals, claims, lines, evidence] = await Promise.all([
       ids('DOCUMENT').length ? this.prisma.document.findMany({ where: { orgId: org.id, id: { in: ids('DOCUMENT') } }, select: { id: true, kind: true, number: true } }) : [],
       ids('PAYMENT').length ? this.prisma.payment.findMany({ where: { orgId: org.id, id: { in: ids('PAYMENT') } }, select: { id: true, kind: true, number: true } }) : [],
       ids('JOURNAL_ENTRY').length ? this.prisma.journalEntry.findMany({ where: { orgId: org.id, id: { in: ids('JOURNAL_ENTRY') } }, select: { id: true, entryNumber: true } }) : [],
       ids('EXPENSE_CLAIM').length ? this.prisma.expenseClaim.findMany({ where: { orgId: org.id, id: { in: ids('EXPENSE_CLAIM') } }, select: { id: true, number: true, title: true } }) : [],
       ids('BANK_STATEMENT_LINE').length ? this.prisma.bankStatementLine.findMany({ where: { orgId: org.id, id: { in: ids('BANK_STATEMENT_LINE') } }, select: { id: true, accountId: true, description: true } }) : [],
+      ids('AUDIT_EVIDENCE').length ? this.store.collection(auditEvidenceRequests).find({ id: { $in: ids('AUDIT_EVIDENCE') } }) : [],
     ]);
     const DOC: Record<string, { label: string; path: string }> = { INVOICE: { label: 'Invoice', path: 'sales/invoices' }, CREDIT_NOTE: { label: 'Credit note', path: 'sales/invoices' }, BILL: { label: 'Bill', path: 'purchases/bills' }, VENDOR_CREDIT: { label: 'Vendor credit', path: 'purchases/bills' } };
     const found: [AttachmentEntity, string, { label: string; path: string | null; use: FileUse }][] = [
@@ -299,6 +302,7 @@ export class AttachmentsService {
       ...journals.map((j) => ['JOURNAL_ENTRY', j.id, { label: `Journal ${j.entryNumber ?? '(draft)'}`, path: `journals/${j.id}`, use: 'OTHER' }] as const),
       ...claims.map((c) => ['EXPENSE_CLAIM', c.id, { label: `Expense claim ${c.number}: ${c.title}`, path: `expenses/${c.id}`, use: 'EXPENSE_CLAIM' }] as const),
       ...lines.map((l) => ['BANK_STATEMENT_LINE', l.id, { label: `Bank line: ${l.description}`, path: `banking/${l.accountId}`, use: 'OTHER' }] as const),
+      ...evidence.map((r) => ['AUDIT_EVIDENCE', r.id, { label: `Evidence request ER-${String(r.number).padStart(3, '0')}: ${r.title}`, path: `audit-evidence/${r.id}`, use: 'OTHER' }] as const),
       ...ids('CUSTOMER_ONBOARDING').map((id) => ['CUSTOMER_ONBOARDING', id, { label: 'Onboarding documents', path: null, use: 'OTHER' }] as const),
     ] as never;
     for (const [type, id, d] of found) {
@@ -367,6 +371,18 @@ export class AttachmentsService {
         // The files behind an onboarding stay as they were once it is submitted.
         if (access === 'manage' && o.status !== 'OPEN') throw new DomainError('ONBOARDING_NOT_OPEN', 'Files can be added or removed only while the onboarding is in progress', HttpStatus.CONFLICT);
         permission = `${o.party === 'VENDOR' ? 'purchases' : 'sales'}.${access}`;
+        break;
+      }
+      case 'AUDIT_EVIDENCE': {
+        const r = await this.store.collection(auditEvidenceRequests).findById(id);
+        if (!r) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Evidence request not found' });
+        permission = 'audit.read';
+        if (access === 'manage' && hasPermission(org.role, permission)) {
+          // Files are added or replaced only by the person asked (or the lead) while the request waits for them.
+          const e = await this.store.collection(auditEngagements).findById(r.engagementId);
+          if (r.status !== 'REQUESTED' || e?.status === 'CLOSED') throw new DomainError('EVIDENCE_NOT_OPEN', 'Files can be added or removed only while the evidence is still requested', HttpStatus.CONFLICT);
+          if (actor.id !== r.ownerId && actor.id !== e?.leadId) throw new DomainError('FORBIDDEN', 'Only the person asked for the evidence, or the engagement lead, adds files to it', HttpStatus.FORBIDDEN);
+        }
         break;
       }
       case 'EXPENSE_CLAIM':

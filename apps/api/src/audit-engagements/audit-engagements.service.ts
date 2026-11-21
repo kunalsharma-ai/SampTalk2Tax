@@ -1,14 +1,15 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { engagementMoveIssue, engagementProgress, sampleProgress, stepDoneIssue, stepReviewIssue, type EngagementStatus } from '@talk2tax/accounting-engine';
+import { engagementMoveIssue, engagementProgress, evidenceOverdue, sampleProgress, stepDoneIssue, stepReviewIssue, type EngagementStatus } from '@talk2tax/accounting-engine';
 import { hasPermission, type Permission, type RoleName } from '@talk2tax/security';
 import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import type { AuthUser, OrgContext } from '../auth/decorators';
-import { fromDbDate, toDbDate } from '../common/dates';
+import { fromDbDate, toDbDate, todayIso } from '../common/dates';
 import { DocumentStoreService } from '../common/document-store.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { auditEngagements, type AuditEngagementDoc } from '../db/collections/audit-engagements';
+import { auditEvidenceRequests } from '../db/collections/audit-evidence';
 import { auditFindings } from '../db/collections/audit-findings';
 import { auditSamples } from '../db/collections/audit-samples';
 import { users } from '../db/collections/identity';
@@ -62,11 +63,13 @@ export class AuditEngagementsService {
   }
 
   private async view(e: AuditEngagementDoc, user: AuthUser) {
-    const [samples, findings] = await Promise.all([
+    const [samples, findings, evidence] = await Promise.all([
       e.sampleIds.length ? this.store.collection(auditSamples).find({ id: { $in: e.sampleIds } }) : [],
       e.findingIds.length ? this.store.collection(auditFindings).find({ id: { $in: e.findingIds } }) : [],
+      this.store.collection(auditEvidenceRequests).find({ engagementId: e.id }, { sort: { number: 1 } }),
     ]);
-    const names = await this.names([e.leadId, e.reviewerId, e.createdById, ...e.steps.flatMap((s) => [s.assigneeId, s.doneById, s.signedOffById].filter((x): x is string => !!x)), ...e.history.map((h) => h.byId)]);
+    const today = todayIso();
+    const names = await this.names([e.leadId, e.reviewerId, e.createdById, ...evidence.map((r) => r.ownerId), ...e.steps.flatMap((s) => [s.assigneeId, s.doneById, s.signedOffById].filter((x): x is string => !!x)), ...e.history.map((h) => h.byId)]);
     const person = (id: string) => ({ id, name: names.get(id) ?? 'A former member' });
     const bySample = new Map(samples.map((s) => [s.id, s]));
     const byFinding = new Map(findings.map((f) => [f.id, f]));
@@ -98,6 +101,7 @@ export class AuditEngagementsService {
       })),
       samples: e.sampleIds.map((id) => bySample.get(id)).filter((s) => !!s).map((s) => ({ id: s.id, reference: ref('S', s.number), name: s.name, status: s.status, progress: sampleProgress(s.items) })),
       findings: e.findingIds.map((id) => byFinding.get(id)).filter((f) => !!f).map((f) => ({ id: f.id, reference: ref('F', f.number), title: f.title, severity: f.severity, status: f.status })),
+      evidence: evidence.map((r) => ({ id: r.id, reference: ref('ER', r.number), title: r.title, owner: person(r.ownerId), dueDate: fromDbDate(r.dueDate), status: r.status, overdue: evidenceOverdue({ status: r.status, dueDate: fromDbDate(r.dueDate) }, today), files: r.files.length })),
       conclusion: e.conclusion,
       history: e.history.map((h) => ({ at: h.at.toISOString(), by: person(h.byId), action: h.action, note: h.note })),
       createdBy: person(e.createdById),
@@ -245,7 +249,8 @@ export class AuditEngagementsService {
   /** The lead moves it to fieldwork or review; the reviewer sends it back or closes it with the conclusion. */
   async move(org: OrgContext, user: AuthUser, id: string, input: { status: EngagementStatus; note: string }) {
     const e = await this.engagement(id);
-    const issue = engagementMoveIssue({ ...e, openSamples: await this.openSamples(e) }, input.status, user.id, input.note);
+    const openEvidence = await this.store.collection(auditEvidenceRequests).count({ engagementId: e.id, status: { $ne: 'ACCEPTED' } });
+    const issue = engagementMoveIssue({ ...e, openSamples: await this.openSamples(e), openEvidence }, input.status, user.id, input.note);
     if (issue) {
       const notYou = e.status !== 'CLOSED' && (e.status === 'REVIEW' ? user.id !== e.reviewerId : user.id !== e.leadId);
       throw new DomainError(notYou ? 'NOT_ALLOWED' : 'CANNOT_MOVE', issue, notYou ? HttpStatus.FORBIDDEN : HttpStatus.CONFLICT);

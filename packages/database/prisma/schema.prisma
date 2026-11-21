@@ -86,6 +86,7 @@ enum AttachmentEntity {
   BANK_STATEMENT_LINE
   EXPENSE_CLAIM
   CUSTOMER_ONBOARDING
+  AUDIT_EVIDENCE
 }
 
 enum ApprovalStatus {
