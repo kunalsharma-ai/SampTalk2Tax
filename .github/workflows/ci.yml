@@ -46,6 +46,9 @@ jobs:
       # SEC-028: no SOC 2 / ISO 27001 / other certification claims without a completed assessment.
       - name: No certification claims
         run: node --test scripts/check-claims.test.mjs && node scripts/check-claims.mjs
+      # RULE-019: no screen or service calculates money as a binary float, not even for a preview.
+      - name: Decimal money math
+        run: node --test scripts/check-money-math.test.mjs && node scripts/check-money-math.mjs
       - name: Install Chromium for browser tests
         working-directory: apps/web
         run: npx playwright install --with-deps chromium

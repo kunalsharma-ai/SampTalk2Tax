@@ -7262,6 +7262,17 @@
         "apps/web/e2e/visual/*.png"
       ],
       "notes": "Seven screens that do not depend on the date, pinned fonts, 0.5% pixel tolerance. Update references with UPDATE_VISUAL=1."
+    },
+    "RULE-019": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-money-math.mjs",
+        "scripts/check-money-math.test.mjs",
+        "packages/accounting-engine/src/money.ts",
+        "packages/accounting-engine/test/money.test.ts",
+        "docs/ACCOUNTING_ENGINE.md"
+      ],
+      "notes": "Screen previews (withholding, foreign-currency conversion, reconciliations, retainers, salary, GST and TDS totals, usage, unbilled revenue, progress billing) use Decimal helpers; CI refuses float arithmetic on amounts."
     }
   }
 }
