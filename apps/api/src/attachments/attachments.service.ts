@@ -83,7 +83,7 @@ export class AttachmentsService {
 
   async upload(org: Org, actor: { id: string }, input: { entityType: AttachmentEntity; entityId: string; fileName: string; content: Buffer }) {
     await this.entity(org, actor, input.entityType, input.entityId, 'manage');
-    const { contentType, sha256 } = await this.checkFile(org, actor, input.fileName, input.content);
+    const { bytes, contentType, sha256 } = await this.checkFile(org, actor, input.fileName, input.content);
     const saved = await this.prisma.$transaction(async (tx) => {
       // Earlier versions of a file (AUDIT-007) do not count: only the files in use.
       const count = await this.store.collection(attachments).count({ entityType: input.entityType, entityId: input.entityId, removedAt: null, replacedById: null });
@@ -91,16 +91,16 @@ export class AttachmentsService {
       const same = await this.store.collection(attachments).findOne({ entityType: input.entityType, entityId: input.entityId, sha256, removedAt: null, replacedById: null }, { projection: { id: 1 } });
       if (same) throw new DomainError('DUPLICATE_FILE', 'This file is already attached to this record', HttpStatus.CONFLICT, { attachmentId: same.id });
       // Counted against the plan's uploads for the month (refused past it).
-      await this.usage.takeUpload(tx, org.id, input.content.length);
+      await this.usage.takeUpload(tx, org.id, bytes.length);
       const row = await this.moved.create<{ id: string; fileName: string; contentType: string; sizeBytes: number; sha256: string; createdAt: Date }>(tx, ATTACHMENTS, org.id, {
         entityType: input.entityType,
         entityId: input.entityId,
         fileName: cleanFileName(input.fileName),
         contentType,
-        sizeBytes: input.content.length,
+        sizeBytes: bytes.length,
         sha256,
         // Encryption at rest (SEC-011).
-        ...this.vault.seal(input.content),
+        ...this.vault.seal(bytes),
         uploadedById: actor.id,
         createdAt: new Date(),
         removedAt: null,
@@ -123,13 +123,15 @@ export class AttachmentsService {
   }
 
   /** The checks every uploaded file passes: not empty, at most 5 MB, a known type by its bytes, and scanned. */
-  private async checkFile(org: Org, actor: { id: string }, fileName: string, content: Buffer) {
-    if (!Buffer.isBuffer(content) || content.length === 0) throw new DomainError('EMPTY_FILE', 'The file is empty');
-    if (content.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
-    const contentType = sniffContentType(content);
+  private async checkFile(org: Org, actor: { id: string }, fileName: string, content: unknown) {
+    // Only a Buffer is accepted, so a tampered body (an array or a string) never reaches the checks below.
+    const bytes = Buffer.isBuffer(content) ? content : Buffer.alloc(0);
+    if (bytes.length === 0) throw new DomainError('EMPTY_FILE', 'The file is empty');
+    if (bytes.length > MAX_ATTACHMENT_BYTES) throw new DomainError('FILE_TOO_LARGE', 'Files can be at most 5 MB', HttpStatus.PAYLOAD_TOO_LARGE);
+    const contentType = sniffContentType(bytes);
     if (!contentType) throw new DomainError('UNSUPPORTED_FILE', 'Only PDF, PNG, JPEG and WebP files can be attached', HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-    await this.scanner.check({ orgId: org.id, source: 'ATTACHMENT', fileName: cleanFileName(fileName), contentType, content, actorId: actor.id });
-    return { contentType, sha256: createHash('sha256').update(content).digest('hex') };
+    await this.scanner.check({ orgId: org.id, source: 'ATTACHMENT', fileName: cleanFileName(fileName), contentType, content: bytes, actorId: actor.id });
+    return { bytes, contentType, sha256: createHash('sha256').update(bytes).digest('hex') };
   }
 
   /**
@@ -145,11 +147,11 @@ export class AttachmentsService {
     if (prev.removedAt) throw new DomainError('REMOVED', 'This file was removed', HttpStatus.GONE);
     if (prev.replacedById) throw new DomainError('NOT_LATEST', 'A later version of this file was already uploaded; open the latest one', HttpStatus.CONFLICT, { attachmentId: prev.replacedById });
     const note = input.note.trim();
-    const { contentType, sha256 } = await this.checkFile(org, actor, input.fileName, input.content);
+    const { bytes, contentType, sha256 } = await this.checkFile(org, actor, input.fileName, input.content);
     if (sha256 === prev.sha256) throw new DomainError('SAME_FILE', 'This is the same file as the current version', HttpStatus.CONFLICT);
     const version = (prev.version ?? 1) + 1;
     const saved = await this.prisma.$transaction(async (tx) => {
-      await this.usage.takeUpload(tx, org.id, input.content.length);
+      await this.usage.takeUpload(tx, org.id, bytes.length);
       const now = new Date();
       const row = await this.moved
         .create<{ id: string; fileName: string; contentType: string; sizeBytes: number; sha256: string; createdAt: Date }>(tx, ATTACHMENTS, org.id, {
@@ -157,9 +159,9 @@ export class AttachmentsService {
           entityId: prev.entityId,
           fileName: cleanFileName(input.fileName),
           contentType,
-          sizeBytes: input.content.length,
+          sizeBytes: bytes.length,
           sha256,
-          ...this.vault.seal(input.content),
+          ...this.vault.seal(bytes),
           uploadedById: actor.id,
           createdAt: now,
           removedAt: null,
