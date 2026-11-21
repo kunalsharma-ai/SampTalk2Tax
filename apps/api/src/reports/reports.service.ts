@@ -4,6 +4,9 @@ import {
   AccountType,
   addDays,
   buildAccountLedger,
+  buildVendorSpend,
+  previousPeriod,
+  type SpendDocument,
   buildCashFlowStatement,
   CASH_SUBTYPES,
   buildBalanceSheet,
@@ -201,6 +204,49 @@ export class ReportsService {
     };
   }
 
+  /**
+   * Vendor spending (RPT-016): posted bills before tax less vendor credits, by vendor, account
+   * and month, against the same number of days just before. Functional currency.
+   */
+  async vendorSpend(orgId: string, q: { from: string; to: string }) {
+    const ccy = await this.currency(orgId);
+    const f = (d: Dec) => d.toFixed(minorUnits(ccy));
+    const accounts = new Map((await this.prisma.account.findMany({ where: { orgId }, select: { id: true, code: true, name: true } })).map((a) => [a.id, a]));
+    const before = previousPeriod(q.from, q.to);
+    const load = async (from: string, to: string): Promise<SpendDocument[]> => {
+      const docs = await this.prisma.document.findMany({
+        where: { orgId, kind: { in: ['BILL', 'VENDOR_CREDIT'] }, status: 'POSTED', issueDate: { gte: toDbDate(from), lte: toDbDate(to) } },
+        select: { contactId: true, kind: true, issueDate: true, exchangeRate: true, lines: { select: { accountId: true, netAmount: true } } },
+      });
+      return docs.map((d) => ({
+        vendorId: d.contactId,
+        vendorName: '',
+        kind: d.kind as SpendDocument['kind'],
+        issueDate: fromDbDate(d.issueDate),
+        exchangeRate: d.exchangeRate.toString(),
+        lines: d.lines.map((l) => ({ accountId: l.accountId, accountCode: accounts.get(l.accountId)?.code ?? '', accountName: accounts.get(l.accountId)?.name ?? '', netAmount: l.netAmount.toString() })),
+      }));
+    };
+    const [current, previous] = await Promise.all([load(q.from, q.to), load(before.from, before.to)]);
+    const ids = [...new Set([...current, ...previous].map((d) => d.vendorId))];
+    const names = new Map((ids.length ? await this.prisma.contact.findMany({ where: { orgId, id: { in: ids } }, select: { id: true, name: true } }) : []).map((c) => [c.id, c.name]));
+    for (const d of [...current, ...previous]) d.vendorName = names.get(d.vendorId) ?? 'Unknown vendor';
+    const s = buildVendorSpend(current, previous, ccy);
+    const pct = (x: Dec | null) => (x === null ? null : x.toFixed(4));
+    return {
+      currency: ccy,
+      from: q.from,
+      to: q.to,
+      previous: before,
+      total: f(s.total),
+      previousTotal: f(s.previousTotal),
+      change: f(s.change),
+      vendorsFor80Percent: s.vendorsFor80Percent,
+      vendors: s.vendors.map((v) => ({ id: v.id, name: v.name, amount: f(v.amount), share: pct(v.share), bills: v.bills, previous: f(v.previous), change: f(v.change) })),
+      accounts: s.accounts.map((a) => ({ id: a.id, code: a.code, name: a.name, amount: f(a.amount), share: pct(a.share) })),
+      months: s.months.map((m) => ({ month: m.month, amount: f(m.amount) })),
+    };
+  }
   /**
    * Statement of cash flows by the indirect method (RPT-004): profit for the period, adjusted
    * for depreciation and working capital, then investing and financing, explaining the change

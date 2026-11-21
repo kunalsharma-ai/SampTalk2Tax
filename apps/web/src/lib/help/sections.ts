@@ -259,6 +259,9 @@ export const SECTION_HELP: Record<string, Help> = {
   // ---------------------------------------------------------------- reports
   Assets: { what: 'What the business owns or is owed, at the report date.', how: 'Click a line to see the accounts behind it.' },
   'Liabilities and equity': { what: 'What the business owes and what belongs to its owners, at the report date.', how: 'Assets always equal liabilities plus equity; if not, something has not been posted correctly.' },
+  'Spend by vendor': { what: 'Each vendor\'s bills before tax less credits, their share of spend, and the period before.', how: 'Look at the few vendors that make up most of the spend first.' },
+  'Spend by account': { what: 'The same spend by the expense or asset account the bill lines went to.', how: 'Open an account to see the entries behind it.' },
+  'Spend by month': { what: 'Spend in each month, by bill date.', how: 'Look for months out of line with the rest.' },
   'Report schedules': { what: 'Each schedule, when it runs next and how its last run went.', how: 'Send now to check a schedule; pause it to stop the emails without losing it.' },
   'Statement of cash flows': { what: 'Profit adjusted to cash, then money spent on assets and raised from loans or owners.', how: 'Read the three section totals first; they add up to the change in cash and bank.' },
   'Income statement': { what: 'Revenue less expenses for the period: your profit or loss.', how: 'Change the dates or compare periods. Click a line to see its entries.' },

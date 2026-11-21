@@ -7976,6 +7976,37 @@
         "docs/ORG_SETUP.md"
       ],
       "notes": "Activation only once every required step is done; records who and when, audited, immutable, once only (409)."
+    },
+    "RPT-016": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/vendor-spend.ts",
+        "packages/accounting-engine/test/vendor-spend.test.ts",
+        "apps/api/src/reports/reports.service.ts",
+        "apps/api/test/vendor-spend.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/vendor-spend/page.tsx",
+        "apps/web/e2e/vendor-spend-flow.test.mjs",
+        "docs/VENDOR_SPEND.md"
+      ],
+      "notes": "Posted bills before tax less vendor credits, by vendor (share, period before, change), account and month, at each bill's own rate; concentration as vendors making up 80%."
+    },
+    "RPT-015": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/customer-insights.e2e.test.ts › works out profit, payment behaviour, lifetime value and risk for a good customer",
+        "apps/web/e2e/customer-360-flow.test.mjs",
+        "docs/CUSTOMER_360.md"
+      ],
+      "notes": "Customer 360 and Customer insights: revenue less direct costs posted to the customer's projects, margin, ranked across customers."
+    },
+    "RPT-017": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/cash-flow.e2e.test.ts",
+        "apps/web/e2e/cash-flow-flow.test.mjs",
+        "docs/CASH_FLOW_FORECAST.md"
+      ],
+      "notes": "Cash-flow forecast from open invoices and bills at each contact's usual delay plus planned items, with a range and backtests."
     }
   }
 }

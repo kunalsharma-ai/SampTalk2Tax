@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 702 |
+| Not started | 699 |
 | Designed | 0 |
 | Implementing | 36 |
 | Implemented | 31 |
-| Tested | 560 |
+| Tested | 563 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 15 | 26 |
+| Advanced financial reporting | M6 | 41 | 12 | 29 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -4630,6 +4630,40 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/income-statement/page.tsx
   - apps/web/e2e/dimensions-flow.test.mjs
   - docs/FINANCIAL_DIMENSIONS.md
+
+### RPT-015 — Customer profitability
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Customer 360 and Customer insights: revenue less direct costs posted to the customer's projects, margin, ranked across customers.
+- Evidence:
+  - apps/api/test/customer-insights.e2e.test.ts › works out profit, payment behaviour, lifetime value and risk for a good customer
+  - apps/web/e2e/customer-360-flow.test.mjs
+  - docs/CUSTOMER_360.md
+
+### RPT-016 — Vendor spending
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Posted bills before tax less vendor credits, by vendor (share, period before, change), account and month, at each bill's own rate; concentration as vendors making up 80%.
+- Evidence:
+  - packages/accounting-engine/src/vendor-spend.ts
+  - packages/accounting-engine/test/vendor-spend.test.ts
+  - apps/api/src/reports/reports.service.ts
+  - apps/api/test/vendor-spend.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/vendor-spend/page.tsx
+  - apps/web/e2e/vendor-spend-flow.test.mjs
+  - docs/VENDOR_SPEND.md
+
+### RPT-017 — Cash forecasts
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Cash-flow forecast from open invoices and bills at each contact's usual delay plus planned items, with a range and backtests.
+- Evidence:
+  - apps/api/test/cash-flow.e2e.test.ts
+  - apps/web/e2e/cash-flow-flow.test.mjs
+  - docs/CASH_FLOW_FORECAST.md
 
 ### RPT-018 — Working capital
 
