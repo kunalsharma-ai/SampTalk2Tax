@@ -43,12 +43,19 @@ jobs:
       - run: pnpm test
       - name: Feature registry is up to date
         run: node scripts/generate-feature-registry.mjs --check
-      # SEC-028: no SOC 2 / ISO 27001 / other certification claims without a completed assessment.
-      - name: No certification claims
+      # SEC-028, RULE-006, RULE-007: no certification, regulator-approval or live-banking claims
+      # without the assessment, approval or provider connection behind them.
+      - name: No claims we cannot back
         run: node --test scripts/check-claims.test.mjs && node scripts/check-claims.mjs
       # RULE-019: no screen or service calculates money as a binary float, not even for a preview.
       - name: Decimal money math
         run: node --test scripts/check-money-math.test.mjs && node scripts/check-money-math.mjs
+      # RULE-008: no protection turned off to make something work.
+      - name: No insecure shortcuts
+        run: node --test scripts/check-shortcuts.test.mjs && node scripts/check-shortcuts.mjs
+      # QA-031: tests use seeded data, never Math.random, so a run gives the same result every time.
+      - name: Deterministic test data
+        run: node --test scripts/check-test-determinism.test.mjs && node scripts/check-test-determinism.mjs
       - name: Install Chromium for browser tests
         working-directory: apps/web
         run: npx playwright install --with-deps chromium
@@ -91,6 +98,11 @@ jobs:
           done
       - name: Browser end-to-end tests
         run: pnpm e2e
+      # QA-017: organisations read and post at once against the running API; fails when a
+      # performance budget (reads p95 < 300 ms, posting p95 < 1 s) is missed, any request fails,
+      # or the books disagree afterwards. Sized for a shared CI runner.
+      - name: Load test
+        run: node scripts/load-test.mjs --orgs 10 --users 2 --rate 3 --seconds 20 --seed 10 --check --out /tmp/load-test.json
       - name: Server logs on failure
         if: failure()
         run: tail -n 100 /tmp/api.log /tmp/web.log || true

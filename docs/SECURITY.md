@@ -119,6 +119,20 @@ Report privately, never in a public issue. A server that sets `SECURITY_CONTACT`
 
 Talk2Tax holds no certification or attestation (SOC 2, ISO 27001 or any other); no independent assessment has been done. How the controls map to those frameworks, and what is missing, is in [`COMPLIANCE_READINESS.md`](COMPLIANCE_READINESS.md). CI fails on any text a customer can read that claims otherwise (`scripts/check-claims.mjs`, SEC-028).
 
+The same check refuses claims of approval or licensing by a tax authority, the government or a regulator, claims of "fully compliant" or "guaranteed compliance" (RULE-007), and claims of live, real-time or direct bank feeds or connections (RULE-006): none of these exists. A sentence that denies or defers the claim, or sits under a heading that does ("Not in this release", "Known limitations"), is fine.
+
+## No insecure shortcuts (RULE-008)
+
+`scripts/check-shortcuts.mjs` reads the application code (tests excluded) and fails CI on code that
+turns a protection off: `eval` or `new Function`, TLS certificate checks turned off, unescaped HTML
+(`dangerouslySetInnerHTML`, `innerHTML =`), MD5 or SHA-1, `createCipher`, shell commands,
+unsigned or expired JWTs accepted, CORS open to any site, `Math.random` for a token or secret, and
+secrets or private keys written into the code. An exception goes in its `ALLOWED` list with the
+reason, so it is reviewed like any other change. There are none today.
+
+Synthetic data (the demo organisation, benchmark peers) is refused in production and in any
+deployed region, whatever `NODE_ENV` says (`apps/api/src/seed/guard.ts`, RULE-004).
+
 ## Integration secrets
 
 API keys and SMTP passwords that owners and admins enter in Settings → Integrations are encrypted with AES-256-GCM before storage (key from `INTEGRATIONS_ENCRYPTION_KEY`, or derived from `JWT_SECRET` with HKDF-SHA256 under its own label), in a tenant table with forced row-level security. They are never returned to the browser or written to the audit trail (only whether they changed and their last four characters). Only `org.manage` can see or change integrations. On a public server, mail servers on private, loopback or link-local addresses and unencrypted SMTP are refused, and the connection goes to the address checked. See [`INTEGRATIONS.md`](INTEGRATIONS.md).
