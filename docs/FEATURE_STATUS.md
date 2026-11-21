@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 629 |
+| Not started | 628 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 631 |
+| Tested | 632 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -43,7 +43,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Project financial management | M6 | 33 | 33 | 0 |
 | CRM and finance integration | M6 | 13 | 2 | 11 |
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
-| Continuous audit and governance | M6 | 30 | 1 | 29 |
+| Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 7 | 34 |
 | Dashboard design | M1 | 68 | 58 | 10 |
@@ -4787,6 +4787,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/audit-engagements/[engagementId]/page.tsx
   - apps/web/e2e/audit-engagements-flow.test.mjs
   - docs/INTERNAL_AUDIT.md
+
+### AUDIT-002 — External auditor portal
+
+- Module: Continuous audit and governance
+- Status: **Tested**
+- Notes: Owners/admins give a named external auditor a private read-only link (7/30/90 days, secret shown once, SHA-256 stored) to one engagement: scope, work and sign-offs, conclusion, accepted evidence only (files downloadable, each opening audited), findings, samples and the trial balance at scope end; views and downloads counted; withdraw at any time; links immutable and kept; public routes rate-limited, no-store, region and suspension checked.
+- Evidence:
+  - packages/accounting-engine/src/auditor-portal.ts
+  - packages/accounting-engine/test/auditor-portal.test.ts
+  - apps/api/src/db/collections/auditor-portal.ts
+  - apps/api/src/auditor-portal/auditor-portal.service.ts
+  - apps/api/test/auditor-portal.e2e.test.ts
+  - apps/web/src/app/auditor-portal/[token]/page.tsx
+  - apps/web/src/components/auditor-portal/auditor-links-card.tsx
+  - apps/web/e2e/auditor-portal-flow.test.mjs
+  - docs/AUDITOR_PORTAL.md
 
 ### AUDIT-003 — Audit evidence management
 

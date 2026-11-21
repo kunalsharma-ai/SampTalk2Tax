@@ -61,6 +61,8 @@ const urlOf = (r: Route, orgId: string) => r.path.replace(':orgId', orgId).repla
 
 const PUBLIC_ROUTES = [
   'GET /health',
+  'GET /v1/auditor-portal/:token',
+  'GET /v1/auditor-portal/:token/files/:attachmentId',
   'GET /v1/crm-api/customers',
   'GET /v1/crm-api/customers/:id',
   'GET /v1/crm-api/deals',
@@ -140,7 +142,7 @@ describe('every route', () => {
   it('refuses the public routes that need a secret, without it', async () => {
     const failures: string[] = [];
     const secretRoutes = routes.filter((x) => x.public && /crm-api|portal|webhooks/.test(x.path));
-    expect(secretRoutes.length).toBe(23);
+    expect(secretRoutes.length).toBe(25);
     for (const r of secretRoutes) {
       const req = (ctx.http() as unknown as Record<string, (u: string) => { send: (b: unknown) => Promise<{ status: number; text: string }> }>)[r.method](urlOf(r, org.orgId));
       const res = await req.send({ event: 'payment.captured', payload: {} });
