@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 744 |
+| Not started | 729 |
 | Designed | 0 |
 | Implementing | 37 |
 | Implemented | 36 |
-| Tested | 512 |
+| Tested | 527 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 17 | 13 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 32 | 9 |
+| Advanced financial reporting | M6 | 41 | 17 | 24 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -4328,6 +4328,98 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/duplicate-files-flow.test.mjs
   - docs/DUPLICATE_FILES.md
 
+### RPT-002 — Profit and loss
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Accrual or cash basis, by department or project, with exports.
+- Evidence:
+  - apps/api/test/ledger.e2e.test.ts › financial reports
+  - apps/api/test/cash-basis.e2e.test.ts
+  - apps/web/e2e/cash-basis-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/income-statement
+
+### RPT-003 — Balance sheet
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Balances to a date; assets equal liabilities plus equity including unclosed earnings.
+- Evidence:
+  - apps/api/test/ledger.e2e.test.ts › financial reports
+  - apps/web/src/app/orgs/[orgId]/reports/balance-sheet
+
+### RPT-004 — Cash-flow statement
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Indirect method from posted journals: profit, depreciation added back, working-capital changes, investing and financing by account subtype; explains the change in cash and bank exactly and opens and closes on the balance sheet. No separate FX effect line, no interest/tax-paid split, no export yet.
+- Evidence:
+  - packages/accounting-engine/src/cash-flow-statement.ts
+  - packages/accounting-engine/test/cash-flow-statement.test.ts
+  - apps/api/src/reports/reports.service.ts
+  - apps/api/test/cash-flow-statement.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/cash-flow-statement/page.tsx
+  - apps/web/e2e/cash-flow-statement-flow.test.mjs
+  - docs/ACCOUNTING_ENGINE.md
+
+### RPT-005 — Trial balance
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Balanced trial balance with exports that match the report.
+- Evidence:
+  - apps/api/test/ledger.e2e.test.ts › financial reports
+  - apps/api/test/report-exports.e2e.test.ts
+  - apps/web/e2e/ledger-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/trial-balance
+
+### RPT-006 — General ledger
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Account ledger with opening and running balances, tied to the trial balance.
+- Evidence:
+  - apps/api/test/ledger.e2e.test.ts › builds an account ledger with opening and running balances
+  - apps/api/test/report-exports.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/general-ledger
+
+### RPT-007 — Accounts receivable aging
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Receivables ageing ties to the control account today and on earlier dates.
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts › ageing ties to the receivables control account
+  - apps/web/e2e/sales-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/sales/ageing
+
+### RPT-008 — Accounts payable aging
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Payables ageing from open bills.
+- Evidence:
+  - apps/api/test/sales-purchases.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/ageing
+
+### RPT-011 — Expense reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Claimed spending by category, month, person, status and merchant.
+- Evidence:
+  - apps/api/test/expense-report.e2e.test.ts
+  - apps/web/e2e/expense-report-flow.test.mjs
+
+### RPT-012 — Budget-versus-actual
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Each month against posted actuals, including unbudgeted spending; by quarter and year.
+- Evidence:
+  - apps/api/test/budgets.e2e.test.ts
+  - apps/web/e2e/budgets-flow.test.mjs
+
 ### RPT-013 — Project profitability
 
 - Module: Advanced financial reporting
@@ -4380,6 +4472,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/kpis-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/reports/kpis
 
+### RPT-020 — Consolidated statements
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Group statements with intercompany eliminations and exports.
+- Evidence:
+  - apps/api/test/consolidation.e2e.test.ts
+  - apps/web/e2e/consolidation-flow.test.mjs
+
 ### RPT-024 — Board reports
 
 - Module: Advanced financial reporting
@@ -4393,6 +4494,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/kpis-flow.test.mjs
   - apps/web/src/app/orgs/[orgId]/reports/management
   - packages/database/prisma/migrations/20261101300000_kpis_management_reports
+
+### RPT-025 — Custom report builder
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Report designer: layouts checked, previewed from the books, saved and finalised.
+- Evidence:
+  - apps/api/test/report-designer.e2e.test.ts
+  - apps/web/e2e/report-designer-flow.test.mjs
 
 ### RPT-027 — Financial dimensions
 
@@ -4454,6 +4564,42 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/export-buttons.tsx
   - apps/web/e2e/report-exports-flow.test.mjs
   - docs/REPORT_EXPORTS.md
+
+### RPT-036 — Interactive drill-downs
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Statement lines open the account ledger for the same dates.
+- Evidence:
+  - apps/web/e2e/cash-flow-statement-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/reports/income-statement
+  - apps/web/src/app/orgs/[orgId]/reports/cash-flow-statement
+
+### RPT-038 — Permission-based access
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Reports need reports.read; members without it and other organisations are refused.
+- Evidence:
+  - apps/api/test/report-exports.e2e.test.ts › needs reports.read and keeps organisations apart
+  - apps/api/test/dashboards.e2e.test.ts
+
+### RPT-040 — AI narrative generation
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Commentary from report figures only; invented numbers are rejected; without an AI key the commentary is left for a person.
+- Evidence:
+  - apps/api/test/report-designer.e2e.test.ts › with the AI, writes commentary from the report figures and rejects invented numbers
+
+### RPT-041 — All exported numbers must reconcile with authoritative financial records
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Exports carry the same figures as the reports; the cash flow statement ties to balance-sheet cash.
+- Evidence:
+  - apps/api/test/report-exports.e2e.test.ts › exports the trial balance as CSV with the same figures as the report
+  - apps/api/test/cash-flow-statement.e2e.test.ts
 
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 
