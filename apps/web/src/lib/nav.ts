@@ -112,6 +112,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/reports/cash-flow-statement', label: 'Cash flow statement' },
       { href: '/reports/statutory', label: 'Statutory statements' },
       { href: '/reports/general-ledger', label: 'General ledger' },
+      { href: '/reports/vendor-spend', label: 'Vendor spend' },
       { href: '/graph', label: 'Relationship explorer' },
       { href: '/reports/kpis', label: 'KPIs' },
       { href: '/reports/management', label: 'Management reports' },
