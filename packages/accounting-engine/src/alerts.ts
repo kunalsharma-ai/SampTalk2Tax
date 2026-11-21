@@ -55,6 +55,7 @@ export const ALERT_RULE_KEYS = [
   'VENDOR_RISK',
   'BANK_ACCOUNT_WATCH',
   'APPROVAL_WAITING',
+  'UNUSUAL_BANK_ACTIVITY',
 ] as const;
 export type AlertRuleKey = (typeof ALERT_RULE_KEYS)[number];
 
@@ -148,6 +149,13 @@ export const ALERT_RULES: readonly AlertRuleDef[] = Object.freeze([
     name: 'Approval waiting too long',
     description: 'An invoice, bill, credit note or manual journal has been waiting for approval for more than the set number of days, so it goes to the people who get alerts. Critical after three times as long. Clears once someone decides or the request is withdrawn.',
     params: [p('waitingDays', 'Waiting for more than', 'days', '1', '90', '3')],
+  },
+  {
+    key: 'UNUSUAL_BANK_ACTIVITY',
+    area: 'CASH',
+    name: 'Unusual bank activity',
+    description: 'An imported bank statement line in the set number of days with a serious or medium warning sign: a possible duplicate, several movements just under the set amount, money straight in and out, an unusually large movement, a large payment to a new payee, or money out not in the books. Critical for a serious sign. Clears once the line no longer shows one, for example after it is matched or excluded.',
+    params: [p('days', 'Look back', 'days', '7', '90', '14'), p('threshold', 'Splitting just under', 'amount', '1000', '9999999999999', '50000', false)],
   },
 ] satisfies AlertRuleDef[]);
 

@@ -111,6 +111,8 @@ import { PaymentPlansController } from './payment-plans/payment-plans.controller
 import { PaymentPlansService } from './payment-plans/payment-plans.service';
 import { CustomerBehaviourController } from './customer-behaviour/customer-behaviour.controller';
 import { CustomerBehaviourService } from './customer-behaviour/customer-behaviour.service';
+import { BankActivityController } from './bank-activity/bank-activity.controller';
+import { BankActivityService } from './bank-activity/bank-activity.service';
 import { PaymentFraudService } from './payment-fraud/payment-fraud.service';
 import { PaymentPredictionsService } from './payment-predictions/payment-predictions.service';
 import { LedgerReplayService } from './ledger-replay/ledger-replay.service';
@@ -353,6 +355,7 @@ export class AppModule {
         PaymentPrioritiesController,
         PaymentPlansController,
         CustomerBehaviourController,
+        BankActivityController,
         AuditEngagementsController,
         AuditEvidenceController,
         AuditorLinksController,
@@ -518,6 +521,7 @@ export class AppModule {
         PaymentPrioritiesService,
         PaymentPlansService,
         CustomerBehaviourService,
+        BankActivityService,
         AuditEngagementsService,
         AuditEvidenceService,
         AuditorPortalService,

@@ -390,6 +390,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Add a bank account, then open it to import statements, match lines to entries and reconcile.',
     where: 'Banking. Receipts, payments and journals that touch a bank account appear here.',
   },
+  'banking/unusual-activity': {
+    what: 'Imported bank statement lines with warning signs, compared with the year before on the same account. High: a possible duplicate (same amount and narration within 3 days), three or more deposits or payments within a week each just under a threshold (50,000 unless set otherwise), or money paid out within 2 days of a large credit of almost the same amount. Medium: over three times the largest movement of the last 90 days, a payment of a lakh or more to a narration not seen in 180 days, or money out more than 14 days ago not matched in the books. Low: large round amounts.',
+    how: 'Start with High. Check each line with the bank and the person who made the payment; match it to the books from the account\'s reconcile page, or exclude it with the reason if it is not real. Turn on the Unusual bank activity check in Alerts settings to be told about new ones.',
+    where: 'Banking. Needs the banking permission. Works on imported statements only: Talk2Tax has no live bank feed. Nothing here changes the books, and no AI model is used.',
+  },
   'banking/[id]': {
     what: 'One bank account: imported statement lines, what is matched and what is not.',
     how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance. Use Files on a line to keep the bank advice or receipt behind it; the button shows how many are attached. Suggestions learn from your matches: when two ledger lines have the same amount, the one with the contact or account you matched similar lines to comes first, and What matching learned shows what it has picked up.',

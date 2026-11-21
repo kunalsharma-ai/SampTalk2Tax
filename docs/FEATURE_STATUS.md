@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 619 |
+| Not started | 617 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 641 |
+| Tested | 643 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -27,7 +27,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 3 | 40 |
 | Accounts payable | M2 | 36 | 8 | 28 |
-| Banking and reconciliation | M2 | 24 | 5 | 19 |
+| Banking and reconciliation | M2 | 24 | 3 | 21 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -2218,6 +2218,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/test/bank.test.ts
   - apps/web/e2e/banking-flow.test.mjs
 
+### BANK-019 — Suspicious transaction monitoring
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Warning signs on imported statement lines against the year before on the account: possible duplicates (same amount and narration within 3 days), 3+ movements within 7 days just under a threshold, money out within 2 days of a large credit of almost the same amount (high); over 3x the largest 90-day movement, 1 lakh+ to a narration unseen for 180 days, money out over 14 days unmatched (medium); large round amounts (low). Deterministic; statements only (no live bank feed).
+- Evidence:
+  - packages/accounting-engine/src/bank-activity.ts
+  - packages/accounting-engine/test/bank-activity.test.ts
+  - apps/api/src/bank-activity/bank-activity.service.ts
+  - apps/api/test/bank-activity.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/banking/unusual-activity/page.tsx
+  - apps/web/e2e/unusual-bank-activity-flow.test.mjs
+  - docs/BANK_ACTIVITY.md
+
 ### BANK-021 — Missing transaction identification
 
 - Module: Banking and reconciliation
@@ -2229,6 +2243,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/statement-gaps.e2e.test.ts
   - apps/web/e2e/banking-flow.test.mjs
   - docs/STATEMENT_GAPS.md
+
+### BANK-023 — Unusual bank activity alerts
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Alert check UNUSUAL_BANK_ACTIVITY (look-back 7-90 days, threshold setting): a critical alert per statement line with a high sign, a warning for a medium sign, with the line's facts and links; clears by itself once the line is matched or excluded.
+- Evidence:
+  - packages/accounting-engine/src/bank-activity.ts
+  - packages/accounting-engine/test/bank-activity.test.ts
+  - apps/api/src/bank-activity/bank-activity.service.ts
+  - apps/api/test/bank-activity.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/banking/unusual-activity/page.tsx
+  - apps/web/e2e/unusual-bank-activity-flow.test.mjs
+  - docs/BANK_ACTIVITY.md
+  - packages/accounting-engine/src/alerts.ts
+  - apps/api/src/alerts/alerts.service.ts
 
 ### BANK-024 — Provide a dedicated banking reconciliation workspace
 

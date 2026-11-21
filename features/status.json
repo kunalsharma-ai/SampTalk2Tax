@@ -8880,6 +8880,34 @@
         "docs/CUSTOMER_BEHAVIOUR.md"
       ],
       "notes": "Per customer invoiced in the last two years: amount-weighted days late (12 months, last 6, 6 before) and its trend, spread, share paid in parts, usual pay day; buying in the last 12 months against the 12 before and a stop in buying; a profile (on time, late steadily, unpredictable, new, too little history) and explained signals (paying slower/faster, stopped buying, buying less/more, pays in parts, usual pay day). Deterministic; read-only; complements CRM-012 Customer 360."
+    },
+    "BANK-019": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bank-activity.ts",
+        "packages/accounting-engine/test/bank-activity.test.ts",
+        "apps/api/src/bank-activity/bank-activity.service.ts",
+        "apps/api/test/bank-activity.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/unusual-activity/page.tsx",
+        "apps/web/e2e/unusual-bank-activity-flow.test.mjs",
+        "docs/BANK_ACTIVITY.md"
+      ],
+      "notes": "Warning signs on imported statement lines against the year before on the account: possible duplicates (same amount and narration within 3 days), 3+ movements within 7 days just under a threshold, money out within 2 days of a large credit of almost the same amount (high); over 3x the largest 90-day movement, 1 lakh+ to a narration unseen for 180 days, money out over 14 days unmatched (medium); large round amounts (low). Deterministic; statements only (no live bank feed)."
+    },
+    "BANK-023": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bank-activity.ts",
+        "packages/accounting-engine/test/bank-activity.test.ts",
+        "apps/api/src/bank-activity/bank-activity.service.ts",
+        "apps/api/test/bank-activity.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/unusual-activity/page.tsx",
+        "apps/web/e2e/unusual-bank-activity-flow.test.mjs",
+        "docs/BANK_ACTIVITY.md",
+        "packages/accounting-engine/src/alerts.ts",
+        "apps/api/src/alerts/alerts.service.ts"
+      ],
+      "notes": "Alert check UNUSUAL_BANK_ACTIVITY (look-back 7-90 days, threshold setting): a critical alert per statement line with a high sign, a warning for a medium sign, with the line's facts and links; clears by itself once the line is matched or excluded."
     }
   }
 }

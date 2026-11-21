@@ -123,3 +123,4 @@ export * from './collection-forecast';
 export * from './payment-priorities';
 export * from './payment-plans';
 export * from './customer-behaviour';
+export * from './bank-activity';
