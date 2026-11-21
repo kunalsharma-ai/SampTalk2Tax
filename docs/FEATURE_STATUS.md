@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 737 |
+| Not started | 736 |
 | Designed | 0 |
 | Implementing | 36 |
 | Implemented | 30 |
-| Tested | 526 |
+| Tested | 527 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -66,7 +66,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
 | Design system | M1 | 36 | 33 | 3 |
-| Absolute quality rules | All | 20 | 4 | 16 |
+| Absolute quality rules | All | 20 | 3 | 17 |
 
 ## Features with progress and evidence
 
@@ -8012,4 +8012,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - docs/FEATURE_STATUS.md
   - docs/KNOWN_LIMITATIONS.md
+
+### RULE-019 — Do not sacrifice financial accuracy for visual effects
+
+- Module: Absolute quality rules
+- Status: **Tested**
+- Notes: Screen previews (withholding, foreign-currency conversion, reconciliations, retainers, salary, GST and TDS totals, usage, unbilled revenue, progress billing) use Decimal helpers; CI refuses float arithmetic on amounts.
+- Evidence:
+  - scripts/check-money-math.mjs
+  - scripts/check-money-math.test.mjs
+  - packages/accounting-engine/src/money.ts
+  - packages/accounting-engine/test/money.test.ts
+  - docs/ACCOUNTING_ENGINE.md
 

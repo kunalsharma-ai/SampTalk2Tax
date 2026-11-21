@@ -37112,9 +37112,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-money-math.mjs",
+        "scripts/check-money-math.test.mjs",
+        "packages/accounting-engine/src/money.ts",
+        "packages/accounting-engine/test/money.test.ts",
+        "docs/ACCOUNTING_ENGINE.md"
+      ],
+      "notes": "Screen previews (withholding, foreign-currency conversion, reconciliations, retainers, salary, GST and TDS totals, usage, unbilled revenue, progress billing) use Decimal helpers; CI refuses float arithmetic on amounts."
     },
     {
       "id": "RULE-020",

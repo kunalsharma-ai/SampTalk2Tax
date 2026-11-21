@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseUsageCsv, USAGE_PRICING, USAGE_PRICING_LABEL, type UsagePricing } from '@talk2tax/accounting-engine';
+import { parseUsageCsv, USAGE_PRICING, USAGE_PRICING_LABEL, type UsagePricing, addAmounts } from '@talk2tax/accounting-engine';
 import { Alert, Badge, Button, Card, CardHeader, Dialog, Field, Input, Select, Table, Td, Textarea, Th, Tr } from '@talk2tax/ui';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
@@ -73,7 +73,7 @@ export function UsageCard({ orgId, contractId, status, onChange }: { orgId: stri
   const recording = m.contract.status === 'ACTIVE' || m.contract.status === 'PAUSED';
   const open = m.contract.status !== 'ENDED' && m.contract.status !== 'CANCELLED';
   const cur = m.contract.currency;
-  const total = m.meters.reduce((s, x) => s + Number(x.estimate ?? 0), 0);
+  const total = addAmounts(m.meters.map((x) => x.estimate));
   return (
     <Card role="region" aria-label="Usage charges">
       <CardHeader

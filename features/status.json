@@ -7339,6 +7339,17 @@
         ".github/workflows/ci.yml"
       ],
       "notes": "CI fails on code that turns a protection off (eval, TLS checks off, unescaped HTML, weak hashes and ciphers, shell commands, unsafe JWT and CORS settings, predictable or hard-coded secrets)."
+    },
+    "RULE-019": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-money-math.mjs",
+        "scripts/check-money-math.test.mjs",
+        "packages/accounting-engine/src/money.ts",
+        "packages/accounting-engine/test/money.test.ts",
+        "docs/ACCOUNTING_ENGINE.md"
+      ],
+      "notes": "Screen previews (withholding, foreign-currency conversion, reconciliations, retainers, salary, GST and TDS totals, usage, unbilled revenue, progress billing) use Decimal helpers; CI refuses float arithmetic on amounts."
     }
   }
 }

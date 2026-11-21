@@ -69,3 +69,9 @@ All reports use functional-currency amounts of POSTED entries only.
 ## Not yet built
 
 Recurring templates and schedules, accrual auto-reversal, exchange-rate tables and revaluation, dimension masters, subsidiary ledgers, intercompany and consolidation, cash-basis reporting.
+
+## Money on screens (RULE-019)
+
+Screens that preview a total while the user types use the same Decimal code as the ledger: `amountOrZero` reads a typed-in amount (blank or half-typed counts as zero) and `addAmounts` totals a list exactly. A preview never adds, multiplies or rounds an amount as a JS number, so what a screen shows before saving matches what the server posts.
+
+`scripts/check-money-math.mjs` runs in CI and fails when app code turns an amount into a number and calculates with it. It looks for amount-like names next to arithmetic, so it is a guard rather than a proof; a line that handles numbers that are not money (a chart width, minutes, a count) ends with `// not money` to say so.

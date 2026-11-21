@@ -1,4 +1,5 @@
 'use client';
+import { amountOrZero } from '@talk2tax/accounting-engine';
 import { useQuery } from '@tanstack/react-query';
 import { Input, Select } from '@talk2tax/ui';
 import { api } from '@/lib/api';
@@ -46,7 +47,7 @@ export function CurrencyRate({ currency, setCurrency, rate, setRate, date, amoun
   const options = [...new Set([fc, ...COMMON_CURRENCIES, ...rates.map((r) => r.currency), currency])].filter(Boolean);
   const foreign = currency !== fc;
   const used = rate.trim() || recorded?.rate || '';
-  const converted = foreign && used && amount && Number.isFinite(Number(amount)) ? (Math.round(Number(amount) * Number(used) * 100) / 100).toFixed(2) : null;
+  const converted = foreign && used && amount && amountOrZero(amount).gt(0) && amountOrZero(used).gt(0) ? amountOrZero(amount).times(amountOrZero(used)).toFixed(2) : null;
   return (
     <>
       <label htmlFor={`${id}-currency`} className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
