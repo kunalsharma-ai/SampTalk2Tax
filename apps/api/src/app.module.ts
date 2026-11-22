@@ -313,6 +313,8 @@ import { InternationalPaymentsService } from './international-payments/internati
 import { VendorPerformanceService } from './vendor-performance/vendor-performance.service';
 import { SupplierNegotiationController } from './supplier-negotiation/supplier-negotiation.controller';
 import { SupplierNegotiationService } from './supplier-negotiation/supplier-negotiation.service';
+import { AuditReportController } from './audit-report/audit-report.controller';
+import { AuditReportService } from './audit-report/audit-report.service';
 import { PayrollReportController } from './payroll-report/payroll-report.controller';
 import { PayrollReportService } from './payroll-report/payroll-report.service';
 import { TaxReportController } from './tax-report/tax-report.controller';
@@ -505,6 +507,7 @@ export class AppModule {
     TaxScenariosController,
     TaxReportController,
     PayrollReportController,
+    AuditReportController,
     VendorRiskController,
     UnbilledRevenueController,
     InternationalPaymentsController,
@@ -697,6 +700,7 @@ export class AppModule {
     TaxScenariosService,
     TaxReportService,
     PayrollReportService,
+    AuditReportService,
     VendorRiskService,
     UnbilledRevenueService,
     InternationalPaymentsService,

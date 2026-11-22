@@ -143,3 +143,4 @@ export * from './expense-evidence';
 export * from './contract-compliance';
 export * from './tax-report';
 export * from './payroll-report';
+export * from './audit-report';
