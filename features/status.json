@@ -9269,6 +9269,19 @@
         "docs/VENDOR_CONTRACTS.md"
       ],
       "notes": "Vendor contracts (vendor_contracts collection: term, payment terms, spend cap, items-only, price list by HSN/description; fixed terms, terminate with reason, audited). Posted bills checked against the contract covering their date: price above contract (excess x qty), over the spend cap, shorter payment terms, after the term with no other contract, item not on the list. Read-only checks. Not built: contract PDF extraction, blocking bills at entry."
+    },
+    "TAX-049": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/tax-scenarios.ts",
+        "packages/tax-engine/test/tax-scenarios.test.ts",
+        "apps/api/src/tax-scenarios/tax-scenarios.service.ts",
+        "apps/api/test/tax-scenarios.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/scenarios/page.tsx",
+        "apps/web/e2e/tax-scenarios-flow.test.mjs",
+        "docs/TAX_SCENARIOS.md"
+      ],
+      "notes": "What-if scenarios against the advance tax estimate: change in sales and deductible expenses (with GST rates), extra depreciation, non-deductible add-backs and regime switch; gives taxable income, corporate tax with surcharge/marginal relief/cess, change vs estimate, net payable after credits, profit after tax, effective rate, net GST on the change and cash effect. Regimes compared on the estimate. Saved scenarios (tax_scenarios) recomputed on every read, audited. Not modelled: loss carry-forward, MAT, instalment timing; India only."
     }
   }
 }

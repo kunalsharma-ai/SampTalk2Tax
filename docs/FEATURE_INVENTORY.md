@@ -291,7 +291,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-046 | AI Tax Intelligence | capability | Regulatory change monitoring | Not started |
 | TAX-047 | AI Tax Intelligence | capability | Compliance deadline predictions | Tested |
 | TAX-048 | AI Tax Intelligence | capability | Tax liability forecasting | Tested |
-| TAX-049 | AI Tax Intelligence | capability | Tax scenario simulations | Not started |
+| TAX-049 | AI Tax Intelligence | capability | Tax scenario simulations | Tested |
 | TAX-050 | AI Tax Intelligence | capability | Tax notice analysis | Not started |
 | TAX-051 | AI Tax Intelligence | capability | Audit preparation assistance | Not started |
 | TAX-052 | AI Tax Intelligence | capability | Source-backed tax explanations | Not started |

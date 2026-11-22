@@ -7573,9 +7573,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/tax-scenarios.ts",
+        "packages/tax-engine/test/tax-scenarios.test.ts",
+        "apps/api/src/tax-scenarios/tax-scenarios.service.ts",
+        "apps/api/test/tax-scenarios.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/scenarios/page.tsx",
+        "apps/web/e2e/tax-scenarios-flow.test.mjs",
+        "docs/TAX_SCENARIOS.md"
+      ],
+      "notes": "What-if scenarios against the advance tax estimate: change in sales and deductible expenses (with GST rates), extra depreciation, non-deductible add-backs and regime switch; gives taxable income, corporate tax with surcharge/marginal relief/cess, change vs estimate, net payable after credits, profit after tax, effective rate, net GST on the change and cash effect. Regimes compared on the estimate. Saved scenarios (tax_scenarios) recomputed on every read, audited. Not modelled: loss carry-forward, MAT, instalment timing; India only."
     },
     {
       "id": "TAX-050",
