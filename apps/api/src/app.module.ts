@@ -43,6 +43,8 @@ import { AllowancesService } from './expenses/allowances.service';
 import { ExpensesService } from './expenses/expenses.service';
 import { ExpenseReportController } from './expenses/expense-report.controller';
 import { ExpenseReportService } from './expenses/expense-report.service';
+import { ExpenseReconciliationController } from './expenses/expense-reconciliation.controller';
+import { ExpenseReconciliationService } from './expenses/expense-reconciliation.service';
 import { ErrorFilter } from './common/errors';
 import { ErrorsService } from './operations/errors.service';
 import { FlagsService } from './operations/flags.service';
@@ -386,6 +388,7 @@ export class AppModule {
         ApprovalsController,
         ExpensesController,
         ExpenseReportController,
+        ExpenseReconciliationController,
         AllowanceRatesController,
         ExpensePolicyController,
         TaxNoticesController,
@@ -554,6 +557,7 @@ export class AppModule {
         ApprovalsService,
         ExpensesService,
         ExpenseReportService,
+        ExpenseReconciliationService,
         AllowancesService,
         ExpensePolicyService,
         TaxNoticesService,

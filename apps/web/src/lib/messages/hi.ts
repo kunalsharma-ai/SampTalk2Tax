@@ -84,6 +84,7 @@ export const hi: Record<string, string> = {
   'Expense claims': 'ख़र्च के दावे',
   'Expense reports': 'ख़र्च की रिपोर्ट',
   'Unusual expenses': 'असामान्य ख़र्च',
+  'Expense reconciliation': 'ख़र्च मिलान',
   'My expense report': 'मेरी ख़र्च रिपोर्ट',
   'My expense claims': 'मेरे ख़र्च के दावे',
   // Payroll

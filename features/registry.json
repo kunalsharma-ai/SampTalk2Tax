@@ -9740,9 +9740,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-reconciliation.ts",
+        "packages/accounting-engine/test/expense-reconciliation.test.ts",
+        "apps/api/src/expenses/expense-reconciliation.service.ts",
+        "apps/api/test/expense-reconciliation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/reconciliation/page.tsx",
+        "apps/web/e2e/expense-reconciliation-flow.test.mjs",
+        "docs/EXPENSE_RECONCILIATION.md"
+      ],
+      "notes": "As of any date: the Employee Reimbursements Payable balance against approved claims not yet reimbursed or voided, with every difference itemised (entries no claim made, claims whose own entries differ); claims owed by employee and age (over 30 days overdue); reimbursements of the last 90 days against imported bank statements (matched, not on the statement once statements run 3+ days past, or awaiting the statement). Read-only and deterministic."
     },
     {
       "id": "EXP-017",
