@@ -105,7 +105,8 @@ import { LedgerReplayController } from './ledger-replay/ledger-replay.controller
 import { CollectionPrioritiesController, PaymentPredictionsController } from './payment-predictions/payment-predictions.controller';
 import { CollectionPrioritiesService } from './payment-predictions/collection-priorities.service';
 import { PaymentFraudController } from './payment-fraud/payment-fraud.controller';
-import { PaymentPrioritiesController } from './payment-priorities/payment-priorities.controller';
+import { PaymentPrioritiesController, PredictivePaymentsController } from './payment-priorities/payment-priorities.controller';
+import { PredictivePaymentsService } from './payment-priorities/predictive-payments.service';
 import { PaymentPrioritiesService } from './payment-priorities/payment-priorities.service';
 import { PaymentPlansController } from './payment-plans/payment-plans.controller';
 import { PaymentPlansService } from './payment-plans/payment-plans.service';
@@ -357,6 +358,7 @@ export class AppModule {
         CollectionPrioritiesController,
         PaymentFraudController,
         PaymentPrioritiesController,
+        PredictivePaymentsController,
         PaymentPlansController,
         CustomerBehaviourController,
         BankActivityController,
@@ -526,6 +528,7 @@ export class AppModule {
         CollectionPrioritiesService,
         PaymentFraudService,
         PaymentPrioritiesService,
+        PredictivePaymentsService,
         PaymentPlansService,
         CustomerBehaviourService,
         BankActivityService,

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 613 |
+| Not started | 612 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 647 |
+| Tested | 648 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 3 | 40 |
-| Accounts payable | M2 | 36 | 8 | 28 |
+| Accounts payable | M2 | 36 | 7 | 29 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -2022,6 +2022,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/purchases/bill-checks, bill page Unusual bill checks card
   - apps/web/e2e/bill-checks-flow.test.mjs
   - docs/BILL_CHECKS.md
+
+### AP-034 — Predictive payment scheduling
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: A suggested payment date for each open bill over 30/60/90 days from the bank balances and the predicted customer receipts (AR-033), keeping a chosen balance every day: overdue first, then by due date and priority score (AP-030); a bill waits for receipts when paying it on time would breach the balance, or is shown as not covered. Unverified vendors and bills in batches are listed, not dated. Dates can be applied as AP-007 payment plans (audited). Deterministic; open invoices are the only receipts forecast.
+- Evidence:
+  - packages/accounting-engine/src/predictive-payments.ts
+  - packages/accounting-engine/test/predictive-payments.test.ts
+  - apps/api/src/payment-priorities/predictive-payments.service.ts
+  - apps/api/test/predictive-payments.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-schedule/predicted/page.tsx
+  - apps/web/e2e/predicted-payments-flow.test.mjs
+  - docs/PREDICTIVE_PAYMENTS.md
 
 ### BANK-001 — Multiple bank account management
 

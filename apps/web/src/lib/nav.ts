@@ -60,6 +60,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/purchases/payments', label: 'Payments' },
       { href: '/purchases/recurring-bills', label: 'Recurring bills' },
       { href: '/purchases/payment-schedule', label: 'Payment schedule' },
+      { href: '/purchases/payment-schedule/predicted', label: 'Predicted payment dates', perm: 'reports.read' },
       { href: '/purchases/payment-priorities', label: 'Payment priorities', perm: 'reports.read' },
       { href: '/purchases/payment-batches', label: 'Payment batches' },
       { href: '/purchases/international-payments', label: 'International payments' },

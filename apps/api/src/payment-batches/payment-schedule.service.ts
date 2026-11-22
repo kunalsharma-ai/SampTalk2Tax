@@ -117,6 +117,29 @@ export class PaymentScheduleService {
   }
 
   /**
+   * Plan several bills for given dates at once (AP-034 predicted dates), replacing any plan they
+   * had. Each date must be a valid plan for its bill; nothing is saved if one is not.
+   */
+  async planMany(org: ScheduleOrg, actor: Actor, plans: { documentId: string; payDate: string }[], source: string) {
+    const today = todayIst();
+    const bills = new Map((await this.batches.payableBills(org)).map((b) => [b.id, b]));
+    const issues = plans.flatMap((p) => {
+      const b = bills.get(p.documentId);
+      if (!b) return [`${p.documentId}: not an open bill`];
+      return planIssues({ payDate: p.payDate, issueDate: b.issueDate, due: b.due, currency: b.currency, today }).map((i) => `${b.number ?? 'Bill'}: ${i}`);
+    });
+    if (issues.length) throw new DomainError('PLAN_INVALID', issues[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+    await this.prisma.$transaction(async (tx) => {
+      for (const p of plans) {
+        const data = { payDate: toDbDate(p.payDate), amount: null, note: source, updatedById: actor.id };
+        await tx.billPaymentPlan.upsert({ where: { documentId: p.documentId }, create: { ...data, orgId: org.id, documentId: p.documentId }, update: data });
+      }
+      if (plans.length) await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'bill_payment.predicted_planned', entityType: 'organization', entityId: org.id, data: { bills: plans.length, plans: plans.map((p) => ({ number: bills.get(p.documentId)!.number, payDate: p.payDate })) } });
+    });
+    return { planned: plans.length };
+  }
+
+  /**
    * Plan every open bill that has no plan (or only `documentIds`) for its suggested date: its due
    * date, or the last pay day before it when `payWeekday` is given, never before today.
    */
