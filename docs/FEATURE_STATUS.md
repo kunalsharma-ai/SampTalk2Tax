@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 604 |
+| Not started | 603 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 656 |
+| Tested | 657 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 1 | 42 |
+| Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1646,6 +1646,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/payment-plans/page.tsx
   - apps/web/e2e/payment-plans-flow.test.mjs
   - docs/PAYMENT_PLANS.md
+
+### AR-041 — AI-assisted contract-to-invoice matching
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Hand-made invoices to customers with contracts matched to the contract they most likely bill (lines by account and description, prices, period total, date in term; score 0-100, strong at 80). Shows the period, billing twice, earlier periods unbilled, voided or skipped periods and line-by-line price differences. Count as period N records the invoice as the contract's next period so the runner does not bill it again (locked, re-checked, contract history + audit); dismiss with reason (append-only, audited). Not built: reading terms from contract PDFs, language-model explanations.
+- Evidence:
+  - packages/accounting-engine/src/contract-invoice-matching.ts
+  - packages/accounting-engine/test/contract-invoice-matching.test.ts
+  - apps/api/src/contract-matching/contract-matching.service.ts
+  - apps/api/src/db/collections/contract-matching.ts
+  - apps/api/test/contract-matching.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/sales/contract-matching/page.tsx
+  - apps/web/e2e/contract-matching-flow.test.mjs
+  - docs/CONTRACT_MATCHING.md
 
 ### AR-042 — Automated detection of unbilled revenue
 

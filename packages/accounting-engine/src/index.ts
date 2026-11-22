@@ -60,6 +60,7 @@ export * from './coupons';
 export * from './add-ons';
 export * from './ai-credits';
 export * from './contracts';
+export * from './contract-invoice-matching';
 export * from './support';
 export * from './usage';
 export * from './feature-flags';

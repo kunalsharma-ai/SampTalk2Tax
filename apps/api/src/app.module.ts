@@ -40,6 +40,8 @@ import { FinancialTagsService } from './financial-tags/financial-tags.service';
 import { BillChecksController } from './bill-checks/bill-checks.controller';
 import { CommunicationPolicyController } from './communication-policy/communication-policy.controller';
 import { CommunicationPolicyService } from './communication-policy/communication-policy.service';
+import { ContractMatchingController } from './contract-matching/contract-matching.controller';
+import { ContractMatchingService } from './contract-matching/contract-matching.service';
 import { ExpenseCategorizationController } from './expense-categorization/expense-categorization.controller';
 import { ExpenseCategorizationService } from './expense-categorization/expense-categorization.service';
 import { BillChecksService } from './bill-checks/bill-checks.service';
@@ -404,6 +406,7 @@ export class AppModule {
         JournalApprovalsController,
         BillChecksController,
         CommunicationPolicyController,
+        ContractMatchingController,
         ExpenseCategorizationController,
         GstController,
         WithholdingController,
@@ -575,6 +578,7 @@ export class AppModule {
         JournalApprovalsService,
         BillChecksService,
         CommunicationPolicyService,
+        ContractMatchingService,
         ExpenseCategorizationService,
         GstService,
         WithholdingService,

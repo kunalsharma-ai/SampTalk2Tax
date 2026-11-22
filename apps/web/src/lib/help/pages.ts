@@ -139,6 +139,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start at the top: the riskiest invoices come first. Filter by band to see only very late ones, open the invoice or customer to chase it, and read the reasons to see what drives each prediction. Customers with little history lean on your organisation\'s average.',
     where: 'Sales. Needs the reports permission. Predictions come from receipts and credits applied to posted invoices; nothing here changes the books, and no AI model is used.',
   },
+  'sales/contract-matching': {
+    what: 'Invoices raised by hand to customers with contracts, each matched to the contract it most likely bills, with the period it falls in, any period billed twice and any price that differs from the contract.',
+    how: 'Start with Billed twice?: void one invoice, or dismiss the match if both are right. Count an invoice as the contract\'s next period so the contract does not bill it again. Dismiss a wrong match with the reason; that pair is not suggested again.',
+    where: 'Sales. The score comes from the lines, prices, total and date; every link and dismissal is in the contract\'s history and the audit trail.',
+  },
   'sales/unbilled-revenue': {
     what: 'Revenue earned or agreed but not yet invoiced, found in your records: milestones marked complete without an invoice, contract periods due but not invoiced, draft invoices left more than a week, delivery orders still unbilled a month on, pro forma invoices that ran out without a tax invoice, and customers billed every month who were not billed last month.',
     how: 'Start with Due now. Open each finding to bill it from its order, contract or draft. If something should not be billed, dismiss it with the reason; it comes back by itself if the amount grows.',

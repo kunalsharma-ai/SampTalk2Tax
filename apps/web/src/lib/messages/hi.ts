@@ -41,6 +41,7 @@ export const hi: Record<string, string> = {
   'Revenue forecast': 'राजस्व पूर्वानुमान',
   'Revenue recognition': 'राजस्व मान्यता',
   'Unbilled revenue': 'बिना बिल का राजस्व',
+  'Contract matching': 'अनुबंध मिलान',
   Invoices: 'इनवॉइस',
   Receipts: 'प्राप्तियाँ',
   'Receivables ageing': 'प्राप्य राशि की आयु',
