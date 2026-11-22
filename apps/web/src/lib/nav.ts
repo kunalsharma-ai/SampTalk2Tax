@@ -32,7 +32,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/sales/payment-plans', label: 'Payment plans', perm: 'sales.read' },
       { href: '/sales/revenue-forecast', label: 'Revenue forecast', perm: 'reports.read' },
       { href: '/sales/revenue-recognition', label: 'Revenue recognition' },
-      { href: '/sales/unbilled-revenue', label: 'Unbilled revenue' },
+      { href: '/sales/unbilled-revenue', label: 'Unbilled revenue' }, { href: '/sales/contract-matching', label: 'Contract matching' },
       { href: '/sales/invoices', label: 'Invoices' },
       { href: '/sales/receipts', label: 'Receipts' },
       { href: '/sales/payment-links', label: 'Payment links' },

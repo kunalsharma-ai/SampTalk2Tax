@@ -9082,6 +9082,20 @@
         "docs/COMMUNICATION_POLICY.md"
       ],
       "notes": "Every email passes the policy in MailerService.send: never to a contact who opted out (append-only consent history with reason, audited), AI-drafted messages only after a person approves, and an owner can stop automations emailing customers and vendors. Collections skip opted-out customers and re-check at send (409 OPTED_OUT, audited communication.blocked); automation emails to contacts fail with the reason. Positive and negative tests against real SMTP. Not built: self-service unsubscribe links, SMS/WhatsApp consent, quiet hours."
+    },
+    "AR-041": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/contract-invoice-matching.ts",
+        "packages/accounting-engine/test/contract-invoice-matching.test.ts",
+        "apps/api/src/contract-matching/contract-matching.service.ts",
+        "apps/api/src/db/collections/contract-matching.ts",
+        "apps/api/test/contract-matching.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/sales/contract-matching/page.tsx",
+        "apps/web/e2e/contract-matching-flow.test.mjs",
+        "docs/CONTRACT_MATCHING.md"
+      ],
+      "notes": "Hand-made invoices to customers with contracts matched to the contract they most likely bill (lines by account and description, prices, period total, date in term; score 0-100, strong at 80). Shows the period, billing twice, earlier periods unbilled, voided or skipped periods and line-by-line price differences. Count as period N records the invoice as the contract's next period so the runner does not bill it again (locked, re-checked, contract history + audit); dismiss with reason (append-only, audited). Not built: reading terms from contract PDFs, language-model explanations."
     }
   }
 }
