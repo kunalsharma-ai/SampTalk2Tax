@@ -56,6 +56,7 @@ export const ALERT_RULE_KEYS = [
   'BANK_ACCOUNT_WATCH',
   'APPROVAL_WAITING',
   'UNUSUAL_BANK_ACTIVITY',
+  'UNUSUAL_EXPENSE',
 ] as const;
 export type AlertRuleKey = (typeof ALERT_RULE_KEYS)[number];
 
@@ -156,6 +157,13 @@ export const ALERT_RULES: readonly AlertRuleDef[] = Object.freeze([
     name: 'Unusual bank activity',
     description: 'An imported bank statement line in the set number of days with a serious or medium warning sign: a possible duplicate, several movements just under the set amount, money straight in and out, an unusually large movement, a large payment to a new payee, or money out not in the books. Critical for a serious sign. Clears once the line no longer shows one, for example after it is matched or excluded.',
     params: [p('days', 'Look back', 'days', '7', '90', '14'), p('threshold', 'Splitting just under', 'amount', '1000', '9999999999999', '50000', false)],
+  },
+  {
+    key: 'UNUSUAL_EXPENSE',
+    area: 'CONTROLS',
+    name: 'Unusual expense claims',
+    description: 'An expense claim submitted in the set number of days with a serious or medium warning sign: the same receipt on another claim, receipts split around a limit, an unusually large amount, lines just under a limit or someone who keeps landing there, an old receipt, or receipts over the set amount with no file attached. Critical for a serious sign. Clears once the claim no longer shows one, for example after it is rejected or voided.',
+    params: [p('days', 'Look back', 'days', '7', '90', '30'), p('receiptsFrom', 'Receipts needed from', 'amount', '100', '9999999999999', '5000', false)],
   },
 ] satisfies AlertRuleDef[]);
 

@@ -125,3 +125,4 @@ export * from './payment-plans';
 export * from './customer-behaviour';
 export * from './bank-activity';
 export * from './reconciliation-exceptions';
+export * from './expense-risk';

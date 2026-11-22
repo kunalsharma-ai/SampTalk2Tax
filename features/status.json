@@ -8921,6 +8921,33 @@
         "docs/RECONCILIATION_EXCEPTIONS.md"
       ],
       "notes": "Per active bank account, unmatched statement lines and entries grouped into explained exceptions with a suggested action: amounts that differ by up to 2% within 7 days, splits (one item = 2-3 on the other side), reversals (in and out within 7 days), bank charges or interest by narration, not in the books, in transit (within 7 days of the latest statement line), stale (over 30 days before it) and outstanding; ageing buckets. Deterministic; read-only; statements only (no live bank feed)."
+    },
+    "EXP-023": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-risk.ts",
+        "packages/accounting-engine/test/expense-risk.test.ts",
+        "apps/api/src/expense-risk/expense-risk.service.ts",
+        "apps/api/test/expense-risk.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/risk/page.tsx",
+        "apps/web/e2e/expense-risk-flow.test.mjs",
+        "docs/EXPENSE_RISK.md",
+        "apps/api/src/alerts/alerts.service.ts (UNUSUAL_EXPENSE)"
+      ],
+      "notes": "Unusual expenses page and the Unusual expense claims alert check: claims submitted in a period with serious or medium warning signs (duplicate receipts across claims, splits around a limit, unusually large, just under a limit, repeatedly just under, old receipts, missing receipts) raise critical or warning alerts that clear when the claim is rejected or voided. Deterministic; no AI model."
+    },
+    "EXP-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-risk.ts",
+        "packages/accounting-engine/test/expense-risk.test.ts",
+        "apps/api/src/expense-risk/expense-risk.service.ts",
+        "apps/api/test/expense-risk.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/risk/page.tsx",
+        "apps/web/e2e/expense-risk-flow.test.mjs",
+        "docs/EXPENSE_RISK.md"
+      ],
+      "notes": "Fraud risk indicators on expense claims across claims and people: the same receipt (date, amount, merchant or category) on another claim, receipts split around a per-receipt limit, someone with 3+ lines just under a limit in 90 days, receipts over 60 days old, receipts of 5,000+ with no file, Sundays and round amounts; a per-claim score (3/2/1 by level) and a People to look at ranking. Signs for review, not proof; deterministic; read-only."
     }
   }
 }

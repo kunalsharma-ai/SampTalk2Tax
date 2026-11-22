@@ -404,8 +404,8 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-020 | AI Expense Features | capability | Automatic expense categorization | Not started |
 | EXP-021 | AI Expense Features | capability | Missing receipt detection | Implemented |
 | EXP-022 | AI Expense Features | capability | Policy violation detection | Tested |
-| EXP-023 | AI Expense Features | capability | Unusual expense alerts | Not started |
-| EXP-024 | AI Expense Features | capability | Fraud risk indicators | Not started |
+| EXP-023 | AI Expense Features | capability | Unusual expense alerts | Tested |
+| EXP-024 | AI Expense Features | capability | Fraud risk indicators | Tested |
 | EXP-025 | AI Expense Features | capability | Expense forecasting | Not started |
 | EXP-026 | AI Expense Features | capability | Intelligent reimbursement routing | Not started |
 | EXP-027 | AI Expense Features | capability | Automated audit evidence collection | Not started |

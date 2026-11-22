@@ -34,6 +34,7 @@ Every change is kept in the alert's history and in the audit trail.
 | Bank account low or not reconciled | Cash | A bank or cash account in use whose balance in the books is below zero (overdrawn) or below the set amount, or a bank account not reconciled to a statement for more than N days (counted from its first entry when it was never reconciled) | Critical when overdrawn, otherwise warning | 0 (overdrawn only), 45 days |
 | Approval waiting too long | Controls | An invoice, bill, credit note or manual journal waiting for approval for more than N days | Warning, critical after 3×N days | 3 days |
 | Unusual bank activity | Cash | An imported statement line in the last N days with a serious or medium warning sign (see docs/BANK_ACTIVITY.md) | Critical for a serious sign, otherwise warning | 14 days; splitting just under 50,000 |
+| Unusual expense claims | Controls | An expense claim submitted in the last N days with a serious or medium warning sign (see docs/EXPENSE_RISK.md) | Critical for a serious sign, otherwise warning | 30 days; receipts needed from 5,000 |
 | Vendor risk needs a review | Controls | A vendor with a medium or high risk never reviewed, a new risk since the last review, or a review date reached (see VENDOR_RISK.md) | Critical for high risk, warning for medium, info for low | None |
 
 Notes on individual checks:

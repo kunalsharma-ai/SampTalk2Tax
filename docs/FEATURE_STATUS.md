@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 616 |
+| Not started | 614 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 644 |
+| Tested | 646 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 14 | 13 |
+| Expense management | M2 | 27 | 12 | 15 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -2851,6 +2851,35 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/src/expense-anomalies.ts + test/expense-anomalies.test.ts
   - apps/api/test/expense-anomalies.e2e.test.ts
   - apps/web/e2e/expense-anomalies-flow.test.mjs
+
+### EXP-023 — Unusual expense alerts
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Unusual expenses page and the Unusual expense claims alert check: claims submitted in a period with serious or medium warning signs (duplicate receipts across claims, splits around a limit, unusually large, just under a limit, repeatedly just under, old receipts, missing receipts) raise critical or warning alerts that clear when the claim is rejected or voided. Deterministic; no AI model.
+- Evidence:
+  - packages/accounting-engine/src/expense-risk.ts
+  - packages/accounting-engine/test/expense-risk.test.ts
+  - apps/api/src/expense-risk/expense-risk.service.ts
+  - apps/api/test/expense-risk.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/risk/page.tsx
+  - apps/web/e2e/expense-risk-flow.test.mjs
+  - docs/EXPENSE_RISK.md
+  - apps/api/src/alerts/alerts.service.ts (UNUSUAL_EXPENSE)
+
+### EXP-024 — Fraud risk indicators
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Fraud risk indicators on expense claims across claims and people: the same receipt (date, amount, merchant or category) on another claim, receipts split around a per-receipt limit, someone with 3+ lines just under a limit in 90 days, receipts over 60 days old, receipts of 5,000+ with no file, Sundays and round amounts; a per-claim score (3/2/1 by level) and a People to look at ranking. Signs for review, not proof; deterministic; read-only.
+- Evidence:
+  - packages/accounting-engine/src/expense-risk.ts
+  - packages/accounting-engine/test/expense-risk.test.ts
+  - apps/api/src/expense-risk/expense-risk.service.ts
+  - apps/api/test/expense-risk.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/risk/page.tsx
+  - apps/web/e2e/expense-risk-flow.test.mjs
+  - docs/EXPENSE_RISK.md
 
 ### TRS-002 — Cash positioning
 
