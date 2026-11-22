@@ -50,6 +50,7 @@ export * from './bad-debts';
 export * from './year-end';
 export * from './payment-batches';
 export * from './payment-schedule';
+export * from './predictive-payments';
 export * from './disputes';
 export * from './pro-forma';
 export * from './plans';

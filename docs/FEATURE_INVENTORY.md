@@ -202,7 +202,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-031 | Advanced AP AI | capability | Invoice anomaly detection | Tested |
 | AP-032 | Advanced AP AI | capability | Contract compliance checks | Not started |
 | AP-033 | Advanced AP AI | capability | Supplier negotiation assistance | Not started |
-| AP-034 | Advanced AP AI | capability | Predictive payment scheduling | Not started |
+| AP-034 | Advanced AP AI | capability | Predictive payment scheduling | Tested |
 | AP-035 | Advanced AP AI | capability | Automated exception investigation | Not started |
 | AP-036 | Advanced AP AI | rule | AI may prepare payments but must never execute unauthorized fund transfers | Not started |
 

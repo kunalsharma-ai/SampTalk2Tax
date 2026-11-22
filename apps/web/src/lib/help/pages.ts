@@ -220,6 +220,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with the serious problems. Open a vendor to fix their details or record a GST portal check: look the GSTIN up on the portal\'s Search Taxpayer page and record its status, type and legal name.',
     where: 'Purchases. Talk2Tax does not query the GST portal itself; registration status comes from the checks people record. Nothing here changes the books.',
   },
+  'purchases/payment-schedule/predicted': {
+    what: 'A suggested payment date for each open bill over the next 30, 60 or 90 days. The cash starts at the bank balances today, less bills already in payment batches; each open customer invoice comes in on its predicted payment date (from how that customer has paid). Bills are taken by due date, then by priority score, and each is paid on its due date (today, if overdue) when the bank stays at or above the balance to keep on every later day; otherwise on the first day it does, waiting for receipts.',
+    how: 'Set the balance to keep and how far ahead to plan. Check the bills paid late and those not covered: chase the receipts they wait for, or talk to the vendor. Plan these dates (or one bill at a time) to add them to the payment schedule, then prepare a payment batch from there.',
+    where: 'Purchases. Needs the reports permission to see and purchases.manage to plan. Bills in the functional currency only; bills of vendors without verified bank details are blocked. Nothing is paid here, and no AI model is used.',
+  },
   'purchases/payment-priorities': {
     what: 'Open bills ranked against the cash in the bank: which to pay now (past due or due within a week, highest score first), which can wait for their due date, which the cash will not cover, and which are blocked because the vendor\'s bank details are not verified. When the cash covers everything, it suggests asking vendors for a discount to be paid early.',
     how: 'Set how much to keep in the bank and the return you want on spare cash, then work it out. Open a score to see its points. Prepare a payment batch for the bills to pay now; offer the listed discounts to vendors before paying those bills early.',
