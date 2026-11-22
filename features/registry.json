@@ -5902,9 +5902,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/reconciliation-exceptions.ts",
+        "packages/accounting-engine/test/reconciliation-exceptions.test.ts",
+        "apps/api/src/bank-activity/reconciliation-exceptions.service.ts",
+        "apps/api/test/reconciliation-exceptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/reconciliation-exceptions/page.tsx",
+        "apps/web/e2e/reconciliation-exceptions-flow.test.mjs",
+        "docs/RECONCILIATION_EXCEPTIONS.md"
+      ],
+      "notes": "Per active bank account, unmatched statement lines and entries grouped into explained exceptions with a suggested action: amounts that differ by up to 2% within 7 days, splits (one item = 2-3 on the other side), reversals (in and out within 7 days), bank charges or interest by narration, not in the books, in transit (within 7 days of the latest statement line), stale (over 30 days before it) and outstanding; ageing buckets. Deterministic; read-only; statements only (no live bank feed)."
     },
     {
       "id": "BANK-021",

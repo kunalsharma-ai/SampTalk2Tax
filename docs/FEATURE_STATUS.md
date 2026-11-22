@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 617 |
+| Not started | 616 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 643 |
+| Tested | 644 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -27,7 +27,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 3 | 40 |
 | Accounts payable | M2 | 36 | 8 | 28 |
-| Banking and reconciliation | M2 | 24 | 3 | 21 |
+| Banking and reconciliation | M2 | 24 | 2 | 22 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -2231,6 +2231,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/banking/unusual-activity/page.tsx
   - apps/web/e2e/unusual-bank-activity-flow.test.mjs
   - docs/BANK_ACTIVITY.md
+
+### BANK-020 — Reconciliation exception analysis
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Per active bank account, unmatched statement lines and entries grouped into explained exceptions with a suggested action: amounts that differ by up to 2% within 7 days, splits (one item = 2-3 on the other side), reversals (in and out within 7 days), bank charges or interest by narration, not in the books, in transit (within 7 days of the latest statement line), stale (over 30 days before it) and outstanding; ageing buckets. Deterministic; read-only; statements only (no live bank feed).
+- Evidence:
+  - packages/accounting-engine/src/reconciliation-exceptions.ts
+  - packages/accounting-engine/test/reconciliation-exceptions.test.ts
+  - apps/api/src/bank-activity/reconciliation-exceptions.service.ts
+  - apps/api/test/reconciliation-exceptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/banking/reconciliation-exceptions/page.tsx
+  - apps/web/e2e/reconciliation-exceptions-flow.test.mjs
+  - docs/RECONCILIATION_EXCEPTIONS.md
 
 ### BANK-021 — Missing transaction identification
 
