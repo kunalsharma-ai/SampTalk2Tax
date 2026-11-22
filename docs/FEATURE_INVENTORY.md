@@ -896,7 +896,7 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-007 |  | capability | Accounts receivable aging | Tested |
 | RPT-008 |  | capability | Accounts payable aging | Tested |
 | RPT-009 |  | capability | Tax reports | Tested |
-| RPT-010 |  | capability | Payroll reports | Not started |
+| RPT-010 |  | capability | Payroll reports | Tested |
 | RPT-011 |  | capability | Expense reports | Tested |
 | RPT-012 |  | capability | Budget-versus-actual | Tested |
 | RPT-013 |  | capability | Project profitability | Tested |

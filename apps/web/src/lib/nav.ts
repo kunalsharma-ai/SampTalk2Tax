@@ -128,6 +128,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/reports/general-ledger', label: 'General ledger' },
       { href: '/reports/vendor-spend', label: 'Vendor spend' },
       { href: '/reports/tax', label: 'Tax report', perm: 'reports.read' },
+      { href: '/reports/payroll', label: 'Payroll report', perm: 'payroll.read' },
       { href: '/graph', label: 'Relationship explorer' },
       { href: '/reports/kpis', label: 'KPIs' },
       { href: '/reports/management', label: 'Management reports' },

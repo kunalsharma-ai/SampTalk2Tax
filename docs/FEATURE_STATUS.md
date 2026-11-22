@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 588 |
+| Not started | 587 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 672 |
+| Tested | 673 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 6 | 35 |
+| Advanced financial reporting | M6 | 41 | 5 | 36 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -5874,6 +5874,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/tax/page.tsx
   - apps/web/e2e/tax-report-flow.test.mjs
   - docs/TAX_REPORTS.md
+
+### RPT-010 — Payroll reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Payroll report over a range of months (FY to date by default, up to 24): totals from posted payslips, statutory amounts (PF employee/employer incl. EDLI and admin, ESI, PT, TDS), by month with gross change flagged at 10%, by employee, draft runs listed. CSV export audited. No bank details. Read-only.
+- Evidence:
+  - packages/accounting-engine/src/payroll-report.ts
+  - packages/accounting-engine/test/payroll-report.test.ts
+  - apps/api/src/payroll-report/payroll-report.service.ts
+  - apps/api/test/payroll-report.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/payroll/page.tsx
+  - apps/web/e2e/payroll-report-flow.test.mjs
+  - docs/PAYROLL_REPORTS.md
 
 ### RPT-011 — Expense reports
 
