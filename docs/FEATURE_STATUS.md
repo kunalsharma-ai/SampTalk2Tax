@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 607 |
+| Not started | 606 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 653 |
+| Tested | 654 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 2 | 41 |
-| Accounts payable | M2 | 36 | 5 | 31 |
+| Accounts payable | M2 | 36 | 4 | 32 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -1978,6 +1978,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/vendor-risk/risk-card.tsx
   - apps/web/e2e/vendor-risk-flow.test.mjs
   - docs/VENDOR_RISK.md
+
+### AP-026 — AI invoice coding
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Code lines from history on a new bill: each line's expense account (same rules as AP-020), then the tax rate, department and project that more than half of the vendor's earlier posted lines on that account had (active ones only), with reasons. Fills blank fields only; the person reviews and saves. Deterministic, no AI model call; document extraction (AP-025) is separate.
+- Evidence:
+  - packages/accounting-engine/src/expense-categorization.ts
+  - packages/accounting-engine/test/expense-categorization.test.ts
+  - apps/api/src/expense-categorization/expense-categorization.service.ts
+  - apps/api/test/expense-categorization.e2e.test.ts
+  - apps/web/src/components/purchases/bill-coding.tsx
+  - apps/web/e2e/expense-categorization-flow.test.mjs
+  - docs/EXPENSE_CATEGORIZATION.md
 
 ### AP-027 — Supplier bank-detail change detection
 

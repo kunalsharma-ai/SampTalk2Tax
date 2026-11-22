@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helpers';
 
 /**
- * Automatic expense categorisation (EXP-020, AP-020) against the real API and database: approved
+ * Automatic expense categorisation (EXP-020, AP-020) and bill coding (AP-026) against the real API and database: approved
  * claims from the same merchant, a merchant whose name says the kind of spending, draft claims
  * that do not count, a vendor's posted bills for a bill line, permissions, validation and
  * isolation between organisations.
@@ -17,6 +17,9 @@ let outsider: TestUser;
 let org: Awaited<ReturnType<typeof createOrg>>;
 let other: Awaited<ReturnType<typeof createOrg>>;
 let paperMart: string;
+let advisors: string;
+let tax18: string;
+const dim: Record<string, string> = {};
 
 const claimLine = (body: object, user = ravi, o = org) => ctx.http().post(`${o.base}/expense-categorization/claim-line`).set(user.auth).send(body);
 const billLine = (body: object, user = owner, o = org) => ctx.http().post(`${o.base}/expense-categorization/bill-line`).set(user.auth).send(body);
@@ -40,6 +43,12 @@ beforeAll(async () => {
   await claim([{ account: '6700', merchant: 'synthetic movers!', description: 'Site visit Nashik' }, { account: '6500', merchant: 'Synthetic Movers', description: 'Expo stall' }]);
   await claim([{ account: '6200', merchant: 'Draft Only Co' }, { account: '6200', merchant: 'Draft Only Co' }], false);
   paperMart = (await ctx.http().post(`${org.base}/contacts`).set(owner.auth).send({ name: 'Paper Mart', isVendor: true }).expect(201)).body.id;
+  tax18 = (await ctx.http().post(`${org.base}/tax-rates`).set(owner.auth).send({ name: 'Standard 18%', rate: '18', salesAccountId: org.acc['2300'], purchaseAccountId: org.acc['1450'] }).expect(201)).body.id;
+  for (const [type, code, name] of [['DEPARTMENT', 'FIN', 'Finance'], ['DEPARTMENT', 'OPS', 'Operations'], ['PROJECT', 'AUD', 'Annual audit']] as const) dim[code] = (await ctx.http().post(`${org.base}/dimensions`).set(owner.auth).send({ type, code, name }).expect(201)).body.id;
+  advisors = (await ctx.http().post(`${org.base}/contacts`).set(owner.auth).send({ name: 'Synthetic Advisors', isVendor: true }).expect(201)).body.id;
+  for (const [i, dept, project] of [[1, 'FIN', 'AUD'], [2, 'FIN', null], [3, 'OPS', null]] as const) {
+    await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId: advisors, issueDate: addDays(T, -30 * i), reference: `SA-${i}`, post: true, lines: [{ accountId: org.acc['6600'], description: 'Monthly retainer', quantity: '1', unitPrice: '25000.00', taxRateId: tax18, departmentId: dim[dept], projectId: project ? dim[project] : null }, { accountId: org.acc['6500'], description: 'Newsletter design', quantity: '1', unitPrice: '5000.00', taxRateId: null }] }).expect(201);
+  }
   for (const ref of ['PM-1', 'PM-2']) await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId: paperMart, issueDate: addDays(T, -20), reference: ref, post: true, lines: [{ accountId: org.acc['6600'], description: 'A4 paper reams', quantity: '1', unitPrice: '2400.00' }] }).expect(201);
 });
 afterAll(async () => {
@@ -66,6 +75,26 @@ describe('expense categorisation', () => {
     const r = (await billLine({ contactId: paperMart, description: 'A4 paper, 5 reams' }, viewer).expect(200)).body;
     expect(r.suggestions[0]).toMatchObject({ code: '6600', confidence: 'HIGH', score: 5, because: ['2 of 2 earlier lines from Paper Mart went here', '"paper" was on 2 earlier lines, 2 of them booked here', '"reams" was on 2 earlier lines, 2 of them booked here'] });
     expect((await billLine({ description: 'Annual Zoom licence' }).expect(200)).body.suggestions[0]).toMatchObject({ code: '6400', because: ['"licence" reads as software'] });
+  });
+
+  it("codes a vendor's bill lines with the tax and department they usually had", async () => {
+    const coding = (body: object, user = owner, o = org) => ctx.http().post(`${o.base}/expense-categorization/bill-coding`).set(user.auth).send(body);
+    const r = (await coding({ contactId: advisors, lines: [{ lineNo: 1, description: 'Retainer for November' }, { lineNo: 2, description: 'Newsletter design' }, { lineNo: 3 }] }, viewer).expect(200)).body;
+    expect(r).toMatchObject({ vendor: 'Synthetic Advisors', vendorLines: 6 });
+    expect(r.lines[0]).toMatchObject({ lineNo: 1, account: { code: '6600' }, taxRateId: tax18, departmentId: dim.FIN, projectId: null, because: ['Standard 18% on 3 of 3 earlier lines from Synthetic Advisors to 6600', 'Finance on 2 of 3 earlier lines from Synthetic Advisors to 6600'] });
+    // The newsletter went to Marketing with no tax and no department: nothing more is suggested.
+    expect(r.lines[1]).toMatchObject({ lineNo: 2, account: { code: '6500' }, taxRateId: null, departmentId: null, because: [] });
+    // With nothing but the vendor, half its lines went to each account: 1.5 points each, so the lower code first.
+    expect(r.lines[2]).toMatchObject({ lineNo: 3, account: { code: '6500', confidence: 'LOW' } });
+    // A department no longer in use is not suggested.
+    await ctx.http().put(`${org.base}/dimensions/${dim.FIN}`).set(owner.auth).send({ code: 'FIN', name: 'Finance', isActive: false }).expect(200);
+    const after = (await coding({ contactId: advisors, lines: [{ lineNo: 1, description: 'Retainer' }] }).expect(200)).body;
+    expect(after.lines[0]).toMatchObject({ taxRateId: tax18, departmentId: null });
+    await ctx.http().put(`${org.base}/dimensions/${dim.FIN}`).set(owner.auth).send({ code: 'FIN', name: 'Finance', isActive: true }).expect(200);
+    await coding({ contactId: advisors, lines: [] }).expect(400);
+    await coding({ lines: [{ lineNo: 1 }] }).expect(400);
+    await coding({ contactId: advisors, lines: [{ lineNo: 1 }] }, ravi).expect(403);
+    await coding({ contactId: advisors, lines: [{ lineNo: 1 }] }, outsider, other).expect(404);
   });
 
   it('checks permissions, validates and keeps organisations apart', async () => {

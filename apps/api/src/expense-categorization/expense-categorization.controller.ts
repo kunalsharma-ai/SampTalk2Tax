@@ -6,9 +6,10 @@ import { openApi, ZodPipe } from '../common/zod';
 import { ExpenseCategorizationService } from './expense-categorization.service';
 
 const ClaimLine = z.object({ merchant: z.string().trim().max(200).nullish(), description: z.string().trim().max(500).nullish() }).strict();
+const BillCoding = z.object({ contactId: z.uuid(), lines: z.array(z.object({ lineNo: z.number().int().min(1).max(500), description: z.string().trim().max(500).nullish() }).strict()).min(1).max(200) }).strict();
 const BillLine = z.object({ contactId: z.uuid().nullish(), description: z.string().trim().max(500).nullish() }).strict();
 
-/** Expense account suggestions (EXP-020, AP-020): the service checks expenses.submit or purchases.read. */
+/** Expense account suggestions (EXP-020, AP-020) and bill coding (AP-026): the service checks expenses.submit or purchases.read. */
 @ApiTags('expense-claims')
 @ApiBearerAuth()
 @Controller('v1/orgs/:orgId/expense-categorization')
@@ -29,5 +30,13 @@ export class ExpenseCategorizationController {
   @ApiBody({ schema: openApi(BillLine) })
   billLine(@CurrentOrg() org: OrgContext, @Body(new ZodPipe(BillLine)) body: z.infer<typeof BillLine>) {
     return this.categories.forBillLine(org, body);
+  }
+
+  @Post('bill-coding')
+  @HttpCode(200)
+  @RequirePermission('purchases.read')
+  @ApiBody({ schema: openApi(BillCoding) })
+  billCoding(@CurrentOrg() org: OrgContext, @Body(new ZodPipe(BillCoding)) body: z.infer<typeof BillCoding>) {
+    return this.categories.billCoding(org, body);
   }
 }

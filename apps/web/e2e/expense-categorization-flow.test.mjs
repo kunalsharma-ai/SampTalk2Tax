@@ -1,8 +1,9 @@
 /**
- * Browser end-to-end test for automatic expense categorisation (EXP-020, AP-020): an employee's
+ * Browser end-to-end test for automatic expense categorisation (EXP-020, AP-020) and bill coding (AP-026): an employee's
  * approved claims from one merchant, then a new claim where typing that merchant suggests the
  * account it went to before, and a merchant whose name says the kind of spending; on a bill, the
- * vendor's earlier bills suggest the account. Nothing changes until Use is pressed.
+ * vendor's earlier bills suggest the account, and Code lines from history fills the account, tax
+ * and department of every blank line. Nothing changes until Use or Code is pressed.
  * Real Next.js app → real API → real MongoDB.
  */
 import assert from 'node:assert/strict';
@@ -62,6 +63,10 @@ test('claim and bill lines suggest the account used before', async () => {
   }
   const vendor = await must(call(owner, `${B}/contacts`, { name: 'Paper Mart', isVendor: true }));
   for (const reference of ['PM-1', 'PM-2']) await must(call(owner, `${B}/purchases/documents`, { kind: 'BILL', contactId: vendor.id, issueDate: d(20), reference, post: true, lines: [{ accountId: acc['6600'], description: 'A4 paper reams', quantity: '1', unitPrice: '2400.00' }] }));
+  const tax18 = (await must(call(owner, `${B}/tax-rates`, { name: 'Standard 18%', rate: '18', salesAccountId: acc['2300'], purchaseAccountId: acc['1450'] }))).id;
+  const fin = (await must(call(owner, `${B}/dimensions`, { type: 'DEPARTMENT', code: 'FIN', name: 'Finance' }))).id;
+  const advisors = await must(call(owner, `${B}/contacts`, { name: 'Synthetic Advisors', isVendor: true }));
+  for (const i of [1, 2]) await must(call(owner, `${B}/purchases/documents`, { kind: 'BILL', contactId: advisors.id, issueDate: d(30 * i), reference: `SA-${i}`, post: true, lines: [{ accountId: acc['6600'], description: 'Monthly retainer', quantity: '1', unitPrice: '25000.00', taxRateId: tax18, departmentId: fin }, { accountId: acc['6500'], description: 'Newsletter design', quantity: '1', unitPrice: '5000.00' }] }));
   consoleErrors.length = 0;
 
   await employee.goto(`${base}/expenses/new`);
@@ -100,5 +105,27 @@ test('claim and bill lines suggest the account used before', async () => {
   await owner.getByRole('button', { name: 'Use the suggested account for line 1' }).click();
   assert.equal(await owner.getByLabel('Account for line 1').inputValue(), acc['6600']);
   await hint3.waitFor({ state: 'detached' });
+
+  // A whole bill coded from the vendor's history: blank fields only.
+  await owner.goto(`${base}/purchases/bills/new`);
+  await owner.locator('#doc-contact option', { hasText: 'Synthetic Advisors' }).waitFor({ state: 'attached' });
+  await owner.locator('#doc-contact').selectOption({ label: 'Synthetic Advisors' });
+  await owner.getByLabel('Description for line 1').fill('Retainer for November');
+  await owner.getByLabel('Unit price for line 1').fill('25000');
+  await owner.getByRole('button', { name: '+ Add line' }).click();
+  await owner.getByLabel('Description for line 2').fill('Newsletter design');
+  await owner.getByLabel('Unit price for line 2').fill('5000');
+  await owner.getByRole('button', { name: 'Code lines from history' }).click();
+  await owner.getByRole('status', { name: 'Bill coding' }).waitFor();
+  assert.equal(await owner.getByRole('status', { name: 'Bill coding' }).innerText(), 'Filled 2 lines from the 4 lines on earlier bills from Synthetic Advisors. Check them before saving.');
+  assert.equal(await owner.getByLabel('Account for line 1').inputValue(), acc['6600']);
+  assert.equal(await owner.getByLabel('Tax for line 1').inputValue(), tax18);
+  assert.equal(await owner.getByLabel('Department for line 1').inputValue(), fin);
+  assert.equal(await owner.getByLabel('Account for line 2').inputValue(), acc['6500']);
+  assert.equal(await owner.getByLabel('Tax for line 2').inputValue(), '');
+  await owner.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
+  if (SHOTS) await owner.screenshot({ path: `${SHOTS}/bill-coding.png`, fullPage: true });
+  await owner.getByRole('button', { name: 'Post bill' }).click();
+  await owner.waitForURL(/\/purchases\/bills\/[0-9a-f-]{36}$/);
   assert.deepEqual(consoleErrors, []);
 });

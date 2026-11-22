@@ -202,7 +202,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'purchases/bills': {
     what: 'Bills from vendors. Drafts can be changed; posted bills are in the books.',
-    how: 'Enter a bill with the vendor\'s reference, lines and tax. TDS and reverse charge are worked out for you. Each line suggests an expense account from the vendor\'s earlier bills and the description; press Use to take it. Post it, or submit it for approval if a rule requires.',
+    how: 'Enter a bill with the vendor\'s reference, lines and tax. TDS and reverse charge are worked out for you. Each line suggests an expense account from the vendor\'s earlier bills and the description; press Use to take it. Code lines from history fills every blank account, tax, department and project the way this vendor\'s earlier bills were coded. Post it, or submit it for approval if a rule requires.',
     where: 'Purchases. Posting adds to payables and expenses, and to input tax credit and TDS.',
   },
   'purchases/payments': {

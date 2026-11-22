@@ -5000,9 +5000,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-categorization.ts",
+        "packages/accounting-engine/test/expense-categorization.test.ts",
+        "apps/api/src/expense-categorization/expense-categorization.service.ts",
+        "apps/api/test/expense-categorization.e2e.test.ts",
+        "apps/web/src/components/purchases/bill-coding.tsx",
+        "apps/web/e2e/expense-categorization-flow.test.mjs",
+        "docs/EXPENSE_CATEGORIZATION.md"
+      ],
+      "notes": "Code lines from history on a new bill: each line's expense account (same rules as AP-020), then the tax rate, department and project that more than half of the vendor's earlier posted lines on that account had (active ones only), with reasons. Fills blank fields only; the person reviews and saves. Deterministic, no AI model call; document extraction (AP-025) is separate."
     },
     {
       "id": "AP-027",
