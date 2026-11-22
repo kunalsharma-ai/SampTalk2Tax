@@ -81,6 +81,8 @@ test('opening balances are posted, show in the trial balance, and can be replace
 
   // The missing ₹50,000 was a loan: add it and replace the balances.
   await page.reload();
+  // The form fills in once the posted balances load; wait for that rather than reading it at once.
+  await page.waitForFunction(() => [...document.querySelectorAll('input')].some((i) => i.getAttribute('aria-label') === '1120 Operating Bank Account debit' && i.value !== ''));
   assert.equal(await page.getByLabel('1120 Operating Bank Account debit').inputValue(), '250000.00');
   await page.getByLabel('2700 Long-Term Loans credit').fill('50000');
   await page.getByRole('row', { name: /To 3250 Opening Balance Equity/ }).getByText('₹').waitFor({ state: 'detached' });

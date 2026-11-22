@@ -62,6 +62,7 @@ export const hi: Record<string, string> = {
   'Recurring bills': 'आवर्ती बिल',
   'Payment schedule': 'भुगतान अनुसूची',
   'Predicted payment dates': 'अनुमानित भुगतान तिथियाँ',
+  'Bill exceptions': 'बिल अपवाद',
   'Purchase orders': 'क्रय आदेश',
   'Payment batches': 'भुगतान बैच',
   'International payments': 'अंतरराष्ट्रीय भुगतान',

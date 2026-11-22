@@ -8974,6 +8974,19 @@
         "docs/PREDICTIVE_PAYMENTS.md"
       ],
       "notes": "A suggested payment date for each open bill over 30/60/90 days from the bank balances and the predicted customer receipts (AR-033), keeping a chosen balance every day: overdue first, then by due date and priority score (AP-030); a bill waits for receipts when paying it on time would breach the balance, or is shown as not covered. Unverified vendors and bills in batches are listed, not dated. Dates can be applied as AP-007 payment plans (audited). Deterministic; open invoices are the only receipts forecast."
+    },
+    "AP-035": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bill-exceptions.ts",
+        "packages/accounting-engine/test/bill-exceptions.test.ts",
+        "apps/api/src/purchase-orders/bill-exceptions.service.ts",
+        "apps/api/test/bill-exceptions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/bill-exceptions/page.tsx",
+        "apps/web/e2e/bill-exceptions-flow.test.mjs",
+        "docs/BILL_EXCEPTIONS.md"
+      ],
+      "notes": "Draft bills held by purchase-order match exceptions (AP-017), each difference investigated against the order, goods received and the vendor's bills of the last year: goods not received yet vs billed beyond delivery, likely duplicate (same order line, quantity and price, or same vendor invoice number) vs over-billing, vendor price rise seen on posted bills since the order vs price error, unlinked line, extra charge, closed order. Next step, amount at stake, and accepting confirmed differences from the page. Rule-based and explained; no AI model."
     }
   }
 }

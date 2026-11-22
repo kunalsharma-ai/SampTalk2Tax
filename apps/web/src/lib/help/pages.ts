@@ -220,6 +220,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with the serious problems. Open a vendor to fix their details or record a GST portal check: look the GSTIN up on the portal\'s Search Taxpayer page and record its status, type and legal name.',
     where: 'Purchases. Talk2Tax does not query the GST portal itself; registration status comes from the checks people record. Nothing here changes the books.',
   },
+  'purchases/bill-exceptions': {
+    what: 'Draft bills that cannot post because they do not match their purchase order, each difference with its likely cause: goods not received yet or billed beyond what was delivered, a possible duplicate of an earlier bill, a vendor price rise seen on other bills since the order, a line not linked to the order, or an extra charge such as freight. Each bill gets a next step and the amount at stake.',
+    how: 'Work down the list. Send duplicates, over-billing and wrong invoices back to the vendor; record goods received when they arrive; link unlinked lines on the bill. When only a confirmed price rise or charge is left, an approver can accept the differences here with a reason, and the bill can post.',
+    where: 'Purchases. Needs purchases.read to see, and approvals.decide to accept differences. Compares with the vendor\'s bills of the last year. Rule-based and explained; nothing changes until someone acts, and no AI model is used.',
+  },
   'purchases/payment-schedule/predicted': {
     what: 'A suggested payment date for each open bill over the next 30, 60 or 90 days. The cash starts at the bank balances today, less bills already in payment batches; each open customer invoice comes in on its predicted payment date (from how that customer has paid). Bills are taken by due date, then by priority score, and each is paid on its due date (today, if overdue) when the bank stays at or above the balance to keep on every later day; otherwise on the first day it does, waiting for receipts.',
     how: 'Set the balance to keep and how far ahead to plan. Check the bills paid late and those not covered: chase the receipts they wait for, or talk to the vendor. Plan these dates (or one bill at a time) to add them to the payment schedule, then prepare a payment batch from there.',

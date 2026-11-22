@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { decimalString, isoDate, openApi, ZodPipe } from '../common/zod';
+import { BillExceptionsService } from './bill-exceptions.service';
 import { PurchaseOrdersService } from './purchase-orders.service';
 
 const id = z.string().uuid('Not a valid id');
@@ -155,5 +156,19 @@ export class BillMatchController {
   @ApiBody({ schema: openApi(AcceptBody) })
   accept(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('documentId', new ZodPipe(id)) did: string, @Body(new ZodPipe(AcceptBody)) b: z.infer<typeof AcceptBody>) {
     return this.orders.acceptDifferences(org, user, did, b.reason);
+  }
+}
+
+/** Draft bills held by differences from their purchase order, investigated (AP-035). */
+@ApiTags('purchases')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/purchases/bill-exceptions')
+export class BillExceptionsController {
+  constructor(private readonly exceptions: BillExceptionsService) {}
+
+  @Get()
+  @RequirePermission('purchases.read')
+  list(@CurrentOrg() org: OrgContext) {
+    return this.exceptions.list(org);
   }
 }
