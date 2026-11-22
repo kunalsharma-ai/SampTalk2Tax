@@ -76,6 +76,7 @@ import { MovedTables } from './db/moved-table';
 import { AppConfig, CONFIG } from './config';
 import { GstController } from './gst/gst.controller';
 import { GstService } from './gst/gst.service';
+import { GstReconciliationService } from './gst/gst-reconciliation.service';
 import { HealthController } from './health/health.controller';
 import { RegionsController } from './regions/regions.controller';
 import { AdminController, AnnouncementsController } from './admin/admin.controller';
@@ -589,6 +590,7 @@ export class AppModule {
         ContractMatchingService,
         ExpenseCategorizationService,
         GstService,
+        GstReconciliationService,
         WithholdingService,
         PayrollService,
         LeaveService,

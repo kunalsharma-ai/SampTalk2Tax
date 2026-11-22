@@ -719,6 +719,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose how the business is taxed and how to estimate the year (the profit so far scaled up to a full year, or your own figure), add adjustments from book profit to taxable income, and pick the accounts that hold advance tax paid and tax deducted at source. Pay what each instalment shows by its date.',
     where: 'Tax. Reads posted journals for the tax year (April to March); income tax expense and year-end closing are left out. Saving changes only the plan, not the books. For companies, firms and LLPs; not individuals, presumptive income, MAT or interest for late instalments.',
   },
+  'tax/gst-reconciliation': {
+    what: "A month's GST accounts in the books against what its documents say (the GSTR-3B figures), with every difference traced to the journal or document that made it: a manual journal on a GST account, a document dated in another month but posted in this one, a document voided later or an earlier one voided now, or a posting that no longer matches its document. The month's documents are also checked for tax mistakes: IGST on a supply within the state or CGST and SGST between states, unequal CGST and SGST, tax that is not the rate on the value, tax on exempt lines, an invalid GSTIN or one from another state than the supplier, input tax credit without the supplier's GSTIN, missing HSN codes and one HSN sold at different rates.",
+    how: 'Choose the month, usually before filing GSTR-3B. When the books differ, open each item: correct a manual journal, or amend the return of the month a document belongs to. Fix high-severity mistakes before filing; low ones are worth a look.',
+    where: 'Tax. Needs the reports permission and a GST registration. GST payments settle the accounts and are shown apart. Reads posted journals and documents only; nothing is changed or filed, and no AI model is used.',
+  },
   'tax/gst-payments': {
     what: 'Settling a month\'s GST: the tax payable and input tax credit in your books, the credit set off in the order the CGST Act requires, and the cash paid by PMT-06 challan.',
     how: 'Choose the month, check the set-off, pay the cash on the GST portal, then record the payment with the CPIN and CIN. Interest and late fee go to an expense account you choose.',
