@@ -9732,9 +9732,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/department-budgets.ts",
+        "packages/accounting-engine/test/department-budgets.test.ts",
+        "apps/api/src/department-budgets/department-budgets.service.ts",
+        "apps/api/test/department-budgets.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/department-budgets/page.tsx",
+        "apps/web/e2e/department-budgets-flow.test.mjs",
+        "docs/DEPARTMENT_BUDGETS.md"
+      ],
+      "notes": "Department per expense claim line (validated active DEPARTMENT dimension, carried to the journal debit). Yearly budget per department (budgets.manage, audited, department_budgets collection). Report: spent from ledger expense lines with the department, waiting from submitted claims, left, year-end pace; Over / At risk / On track / No budget, worst first. Approvers see per-department impact on a submitted claim. Never blocks. Not built: monthly or per-account budgets, over-budget alerts."
     },
     {
       "id": "EXP-015",

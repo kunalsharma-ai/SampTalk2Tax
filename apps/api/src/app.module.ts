@@ -128,6 +128,8 @@ import { ExpenseRiskController } from './expense-risk/expense-risk.controller';
 import { ExpenseRiskService } from './expense-risk/expense-risk.service';
 import { ExpenseForecastController } from './expense-forecast/expense-forecast.controller';
 import { ExpenseForecastService } from './expense-forecast/expense-forecast.service';
+import { DepartmentBudgetsController } from './department-budgets/department-budgets.controller';
+import { DepartmentBudgetsService } from './department-budgets/department-budgets.service';
 import { PaymentFraudService } from './payment-fraud/payment-fraud.service';
 import { PaymentPredictionsService } from './payment-predictions/payment-predictions.service';
 import { LedgerReplayService } from './ledger-replay/ledger-replay.service';
@@ -376,6 +378,7 @@ export class AppModule {
         CashMovementsController,
         ExpenseRiskController,
         ExpenseForecastController,
+        DepartmentBudgetsController,
         ReconciliationExceptionsController,
         AuditEngagementsController,
         AuditEvidenceController,
@@ -552,6 +555,7 @@ export class AppModule {
         CashMovementsService,
         ExpenseRiskService,
         ExpenseForecastService,
+        DepartmentBudgetsService,
         ReconciliationExceptionsService,
         AuditEngagementsService,
         AuditEvidenceService,

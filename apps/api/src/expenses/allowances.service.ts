@@ -27,6 +27,7 @@ export interface ClaimLineInput {
   amount?: string | null;
   taxRateId?: string | null;
   allowance?: AllowanceInput | null;
+  departmentId?: string | null;
 }
 
 type Detail = Omit<ClaimAllowanceDoc, 'id' | 'orgId' | 'claimId' | 'createdAt'>;
@@ -115,7 +116,7 @@ export class AllowancesService {
       if (!l.allowance) {
         if (!l.accountId) issues.push(`Line ${n}: choose a category`);
         if (!l.amount) issues.push(`Line ${n}: enter the amount paid`);
-        return { date: l.date, accountId: l.accountId ?? '', merchant: l.merchant, description: l.description, amount: l.amount ?? '0', taxRateId: l.taxRateId };
+        return { date: l.date, accountId: l.accountId ?? '', merchant: l.merchant, description: l.description, amount: l.amount ?? '0', taxRateId: l.taxRateId, departmentId: l.departmentId ?? null };
       }
       const r = rates.get(l.allowance.rateId);
       if (!r || !r.isActive) {
@@ -138,7 +139,7 @@ export class AllowancesService {
           purpose: l.allowance.purpose?.trim() || null,
           amount: a.amount.toFixed(scale),
         });
-        return { date: l.date, accountId: r.accountId, merchant: null, description: a.description, amount: a.amount.toFixed(scale), taxRateId: null };
+        return { date: l.date, accountId: r.accountId, merchant: null, description: a.description, amount: a.amount.toFixed(scale), taxRateId: null, departmentId: l.departmentId ?? null };
       } catch (e) {
         issues.push(`Line ${n}: ${e instanceof MoneyError ? e.message : 'the allowance is invalid'}`);
         return { date: l.date, accountId: r.accountId, amount: '0' };

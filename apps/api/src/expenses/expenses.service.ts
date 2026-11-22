@@ -235,7 +235,7 @@ export class ExpensesService {
       const computed = await this.prepare(
         tx,
         org,
-        c.lines.map((l) => ({ date: fromDbDate(l.date), accountId: l.accountId, merchant: l.merchant, description: l.description, amount: l.amount.toFixed(), taxRateId: l.taxRateId })),
+        c.lines.map((l) => ({ date: fromDbDate(l.date), accountId: l.accountId, merchant: l.merchant, description: l.description, amount: l.amount.toFixed(), taxRateId: l.taxRateId, departmentId: l.departmentId ?? null })),
       );
       if (!computed.total.eq(c.total.toFixed()) || !computed.taxTotal.eq(c.taxTotal.toFixed())) {
         throw new DomainError('TOTAL_CHANGED', 'A tax rate used on this claim changed since it was submitted. Reject it so the claimant can save it again.', HttpStatus.CONFLICT);
@@ -405,7 +405,14 @@ export class ExpensesService {
     const taxes = await tx.taxRate.findMany({ where: { orgId: org.id, id: { in: taxIds } } });
     const issues: string[] = [];
     const today = todayIso();
+    const deptIds = [...new Set(lines.map((l) => l.departmentId).filter((x): x is string => !!x))];
+    const departments = deptIds.length ? await tx.dimensionValue.findMany({ where: { orgId: org.id, id: { in: deptIds }, type: 'DEPARTMENT' }, select: { id: true, name: true, isActive: true } }) : [];
     lines.forEach((l, i) => {
+      if (l.departmentId) {
+        const dep = departments.find((d) => d.id === l.departmentId);
+        if (!dep) issues.push(`Line ${i + 1}: department not found`);
+        else if (!dep.isActive) issues.push(`Line ${i + 1}: ${dep.name} is no longer an active department`);
+      }
       const a = accounts.find((x) => x.id === l.accountId);
       if (!a) issues.push(`Line ${i + 1}: account not found`);
       else if (control.has(a.id)) issues.push(`Line ${i + 1}: ${a.code} is a control account`);
@@ -472,6 +479,8 @@ export class ExpensesService {
     const receipts = await db.attachment.count({ where: { orgId: org.id, entityType: 'EXPENSE_CLAIM', entityId: c.id, removedAt: null } });
     const bank = c.bankAccountId ? await db.account.findUnique({ where: { id: c.bankAccountId }, select: { code: true, name: true } }) : null;
     const allowanceByLine = await this.allowances.forClaim(c.id);
+    const deptIds = [...new Set(c.lines.map((l) => l.departmentId).filter((x): x is string => !!x))];
+    const deptNames = new Map((deptIds.length ? await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, id: { in: deptIds } }, select: { id: true, code: true, name: true } }) : []).map((d) => [d.id, `${d.code} · ${d.name}`]));
     const own = c.claimantId === actor.id;
     // Checked while the claim can still change or be decided; afterwards the audit trail keeps what was found.
     const policy = ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) ? await this.policyCheck(org, db, c, c.status === 'SUBMITTED' ? c.submittedAt!.toISOString().slice(0, 10) : todayIso()) : null;
@@ -522,6 +531,8 @@ export class ExpensesService {
         taxRate: l.taxRate.toFixed(),
         netAmount: l.netAmount.toFixed(scale),
         taxAmount: l.taxAmount.toFixed(scale),
+        departmentId: l.departmentId ?? null,
+        department: l.departmentId ? (deptNames.get(l.departmentId) ?? null) : null,
         possibleDuplicateOf: dupes.get(l.lineNo) ?? [],
         /** Set on a mileage or per diem line: what the amount was worked out from. */
         allowance: allowanceByLine.get(l.lineNo) ?? null,
@@ -554,6 +565,7 @@ function lineRows(computed: ReturnType<typeof computeExpenseClaim>) {
     taxRate: l.taxRate.toFixed(),
     netAmount: l.netAmount.toFixed(),
     taxAmount: l.taxAmount.toFixed(),
+    departmentId: l.departmentId,
   }));
 }
 

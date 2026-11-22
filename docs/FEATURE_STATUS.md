@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 602 |
+| Not started | 601 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 658 |
+| Tested | 659 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 9 | 18 |
+| Expense management | M2 | 27 | 8 | 19 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -2918,6 +2918,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card
   - apps/web/e2e/expense-policy-flow.test.mjs
   - docs/EXPENSE_POLICY.md
+
+### EXP-014 — Department budgets
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Department per expense claim line (validated active DEPARTMENT dimension, carried to the journal debit). Yearly budget per department (budgets.manage, audited, department_budgets collection). Report: spent from ledger expense lines with the department, waiting from submitted claims, left, year-end pace; Over / At risk / On track / No budget, worst first. Approvers see per-department impact on a submitted claim. Never blocks. Not built: monthly or per-account budgets, over-budget alerts.
+- Evidence:
+  - packages/accounting-engine/src/department-budgets.ts
+  - packages/accounting-engine/test/department-budgets.test.ts
+  - apps/api/src/department-budgets/department-budgets.service.ts
+  - apps/api/test/department-budgets.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/department-budgets/page.tsx
+  - apps/web/e2e/department-budgets-flow.test.mjs
+  - docs/DEPARTMENT_BUDGETS.md
 
 ### EXP-015 — Policy enforcement
 
