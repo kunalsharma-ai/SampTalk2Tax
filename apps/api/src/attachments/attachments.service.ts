@@ -10,6 +10,8 @@ import { OrgContext } from '../auth/decorators';
 import { ExpensesService } from '../expenses/expenses.service';
 import { ExpenseReceiptsService } from '../expense-receipts/expense-receipts.service';
 import { expenseReceipts } from '../db/collections/expense-receipts';
+import { ComplianceDocumentsService } from '../compliance-documents/compliance-documents.service';
+import { complianceDocuments } from '../db/collections/compliance-documents';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
 import { DocumentStoreService } from '../common/document-store.service';
@@ -61,6 +63,7 @@ export class AttachmentsService {
     private readonly scanner: FileScannerService,
     private readonly vault: FileVault,
     private readonly receipts: ExpenseReceiptsService,
+    private readonly complianceDocs: ComplianceDocumentsService,
   ) {}
 
   async list(org: Org, actor: { id: string }, entityType: AttachmentEntity, entityId: string, includeRemoved: boolean) {
@@ -290,7 +293,7 @@ export class AttachmentsService {
   private async describe(org: Org, actor: { id: string }, list: { entityType: AttachmentEntity; entityId: string }[]) {
     const out = new Map<string, { label: string; path: string | null; use: FileUse }>();
     const ids = (t: AttachmentEntity) => [...new Set(list.filter((l) => l.entityType === t).map((l) => l.entityId))];
-    const [docs, pays, journals, claims, lines, evidence, receipts] = await Promise.all([
+    const [docs, pays, journals, claims, lines, evidence, receipts, compliance] = await Promise.all([
       ids('DOCUMENT').length ? this.prisma.document.findMany({ where: { orgId: org.id, id: { in: ids('DOCUMENT') } }, select: { id: true, kind: true, number: true } }) : [],
       ids('PAYMENT').length ? this.prisma.payment.findMany({ where: { orgId: org.id, id: { in: ids('PAYMENT') } }, select: { id: true, kind: true, number: true } }) : [],
       ids('JOURNAL_ENTRY').length ? this.prisma.journalEntry.findMany({ where: { orgId: org.id, id: { in: ids('JOURNAL_ENTRY') } }, select: { id: true, entryNumber: true } }) : [],
@@ -298,6 +301,7 @@ export class AttachmentsService {
       ids('BANK_STATEMENT_LINE').length ? this.prisma.bankStatementLine.findMany({ where: { orgId: org.id, id: { in: ids('BANK_STATEMENT_LINE') } }, select: { id: true, accountId: true, description: true } }) : [],
       ids('AUDIT_EVIDENCE').length ? this.store.collection(auditEvidenceRequests).find({ id: { $in: ids('AUDIT_EVIDENCE') } }) : [],
       ids('EXPENSE_RECEIPT').length ? this.store.collection(expenseReceipts).find({ id: { $in: ids('EXPENSE_RECEIPT') } }) : [],
+      ids('COMPLIANCE_DOCUMENT').length ? this.store.collection(complianceDocuments).find({ id: { $in: ids('COMPLIANCE_DOCUMENT') } }) : [],
     ]);
     const DOC: Record<string, { label: string; path: string }> = { INVOICE: { label: 'Invoice', path: 'sales/invoices' }, CREDIT_NOTE: { label: 'Credit note', path: 'sales/invoices' }, BILL: { label: 'Bill', path: 'purchases/bills' }, VENDOR_CREDIT: { label: 'Vendor credit', path: 'purchases/bills' } };
     const found: [AttachmentEntity, string, { label: string; path: string | null; use: FileUse }][] = [
@@ -308,6 +312,7 @@ export class AttachmentsService {
       ...lines.map((l) => ['BANK_STATEMENT_LINE', l.id, { label: `Bank line: ${l.description}`, path: `banking/${l.accountId}`, use: 'OTHER' }] as const),
       ...evidence.map((r) => ['AUDIT_EVIDENCE', r.id, { label: `Evidence request ER-${String(r.number).padStart(3, '0')}: ${r.title}`, path: `audit-evidence/${r.id}`, use: 'OTHER' }] as const),
       ...receipts.map((r) => ['EXPENSE_RECEIPT', r.id, { label: `Receipt RC-${String(r.number).padStart(3, '0')}: ${r.merchant}`, path: 'expenses/receipts', use: 'EXPENSE_CLAIM' }] as const),
+      ...compliance.map((d) => ['COMPLIANCE_DOCUMENT', d.id, { label: `Compliance document CD-${String(d.number).padStart(3, '0')}: ${d.title}`, path: `tax/compliance-documents/${d.id}`, use: 'OTHER' }] as const),
       ...ids('CUSTOMER_ONBOARDING').map((id) => ['CUSTOMER_ONBOARDING', id, { label: 'Onboarding documents', path: null, use: 'OTHER' }] as const),
     ] as never;
     for (const [type, id, d] of found) {
@@ -390,6 +395,8 @@ export class AttachmentsService {
         }
         break;
       }
+      case 'COMPLIANCE_DOCUMENT':
+        return this.complianceDocs.attachmentAccess(org, id, access);
       case 'EXPENSE_RECEIPT':
         // Uploaders see and change files on their own unmatched receipts; finance on any.
         return this.receipts.attachmentAccess(org, actor.id, id, access);

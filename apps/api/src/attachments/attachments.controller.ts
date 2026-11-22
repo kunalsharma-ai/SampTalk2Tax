@@ -6,7 +6,7 @@ import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from
 import { openApi, ZodPipe } from '../common/zod';
 import { AttachmentsService } from './attachments.service';
 
-const ENTITIES = ['DOCUMENT', 'PAYMENT', 'JOURNAL_ENTRY', 'BANK_STATEMENT_LINE', 'EXPENSE_CLAIM', 'CUSTOMER_ONBOARDING', 'AUDIT_EVIDENCE', 'EXPENSE_RECEIPT'] as const;
+const ENTITIES = ['DOCUMENT', 'PAYMENT', 'JOURNAL_ENTRY', 'BANK_STATEMENT_LINE', 'EXPENSE_CLAIM', 'CUSTOMER_ONBOARDING', 'AUDIT_EVIDENCE', 'EXPENSE_RECEIPT', 'COMPLIANCE_DOCUMENT'] as const;
 const ListQuery = z.object({
   entityType: z.enum(ENTITIES),
   entityId: z.uuid(),

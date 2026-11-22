@@ -6867,9 +6867,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/compliance-documents.ts",
+        "packages/tax-engine/test/compliance-documents.test.ts",
+        "apps/api/src/compliance-documents/compliance-documents.service.ts",
+        "apps/api/test/compliance-documents.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/compliance-documents/page.tsx",
+        "apps/web/e2e/compliance-documents-flow.test.mjs",
+        "docs/COMPLIANCE_DOCUMENTS.md"
+      ],
+      "notes": "Compliance document records (acknowledgement, challan, return copy, working, registration, notice, other) linked to compliance-calendar obligations from the last year/next 30 days, files as COMPLIANCE_DOCUMENT attachments, keep-until date (end of 8th FY after the period; registrations while registered), void with reason (never deleted), and a missing-documents list: filed returns without acknowledgement and made payments without challan (with a file). India only. Not built: portal download, older periods, retention reminders."
     },
     {
       "id": "TAX-026",

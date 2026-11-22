@@ -21,7 +21,7 @@ export interface AuditInput {
  * and SHA-256. The reference is part of the hashed event, so the trail shows which receipts a bill
  * had when it was posted, and a file swapped later no longer matches its recorded checksum.
  */
-export const EVIDENCE_ENTITIES: Record<string, 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING' | 'AUDIT_EVIDENCE' | 'EXPENSE_RECEIPT'> = {
+export const EVIDENCE_ENTITIES: Record<string, 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING' | 'AUDIT_EVIDENCE' | 'EXPENSE_RECEIPT' | 'COMPLIANCE_DOCUMENT'> = {
   document: 'DOCUMENT',
   payment: 'PAYMENT',
   journal_entry: 'JOURNAL_ENTRY',
@@ -30,6 +30,7 @@ export const EVIDENCE_ENTITIES: Record<string, 'DOCUMENT' | 'PAYMENT' | 'JOURNAL
   customer_onboarding: 'CUSTOMER_ONBOARDING',
   audit_evidence_request: 'AUDIT_EVIDENCE',
   expense_receipt: 'EXPENSE_RECEIPT',
+  compliance_document: 'COMPLIANCE_DOCUMENT',
 };
 export const MAX_EVIDENCE_REFS = 20;
 export interface EvidenceRef {
