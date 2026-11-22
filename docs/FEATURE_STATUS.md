@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 605 |
+| Not started | 604 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 655 |
+| Tested | 656 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 2 | 41 |
+| Accounts receivable | M2 | 43 | 1 | 42 |
 | Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1662,6 +1662,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/sales/unbilled-revenue/page.tsx
   - apps/web/e2e/unbilled-revenue-flow.test.mjs
   - docs/UNBILLED_REVENUE.md
+
+### AR-043 — All external communication must respect tenant-configured approval and consent policies
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: Every email passes the policy in MailerService.send: never to a contact who opted out (append-only consent history with reason, audited), AI-drafted messages only after a person approves, and an owner can stop automations emailing customers and vendors. Collections skip opted-out customers and re-check at send (409 OPTED_OUT, audited communication.blocked); automation emails to contacts fail with the reason. Positive and negative tests against real SMTP. Not built: self-service unsubscribe links, SMS/WhatsApp consent, quiet hours.
+- Evidence:
+  - packages/accounting-engine/src/communication-policy.ts
+  - packages/accounting-engine/test/communication-policy.test.ts
+  - apps/api/src/db/collections/communication.ts
+  - apps/api/src/communication-policy/communication-policy.service.ts
+  - apps/api/src/workflows/email.ts
+  - apps/api/test/communication-policy.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/communication/page.tsx
+  - apps/web/src/components/communication/email-consent-card.tsx
+  - apps/web/e2e/communication-policy-flow.test.mjs
+  - docs/COMMUNICATION_POLICY.md
 
 ### AP-001 — Supplier management
 

@@ -29,6 +29,7 @@ import { AppConfig, CONFIG } from '../config';
 import { HeartbeatsService } from '../operations/heartbeats.service';
 import { addDays, ROLE_LABELS, TasksService, todayIst } from '../tasks/tasks.service';
 import { EMAIL_NOT_SET_UP, MailerService } from './email';
+import { CommunicationPolicyService } from '../communication-policy/communication-policy.service';
 import { sendWebhook, signPayload, WebhookResult } from './webhook';
 import { dueDocuments, EventFacts, loadDueDocumentFacts, loadEventFacts, loadScheduleFacts, WATCHED_ACTIONS } from './workflow-facts';
 
@@ -61,6 +62,8 @@ export interface EmailPreview {
   body: string;
   /** Why it cannot be sent (no address), or null. */
   problem: string | null;
+  /** Addressed to the customer or vendor rather than to members (AR-043). */
+  toContact?: boolean;
 }
 
 /** Where a live run came from: an audit event, or an occurrence of a schedule trigger. */
@@ -107,6 +110,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     private readonly mailer: MailerService,
     @Inject(CONFIG) private readonly config: AppConfig,
     private readonly heartbeats: HeartbeatsService,
+    private readonly communication: CommunicationPolicyService,
   ) {}
 
   onApplicationBootstrap() {
@@ -319,6 +323,11 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
       if (email) to = [email];
       else problem = `${recipientLabel} has no email address`;
       body += `\n\n--\nSent by ${org.name}.`;
+      // AR-043: consent and the organisation's policy decide before the email is queued.
+      if (email) {
+        const d = await this.communication.decide(orgId, to, { source: 'AUTOMATION', toContact: true });
+        if (!d.allowed) problem = `Not sent: ${d.reason}`;
+      }
     } else {
       if ('role' in a.to) {
         recipientLabel = ROLE_LABELS[a.to.role] ?? a.to.role;
@@ -340,7 +349,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
       problem = `${to.length} addresses is more than ${MAX_RECIPIENTS}`;
       to = to.slice(0, MAX_RECIPIENTS);
     }
-    return { to, recipientLabel, subject, body, problem };
+    return { to, recipientLabel, subject, body, problem, ...('contact' in a.to ? { toContact: true } : {}) };
   }
 
   /** Records a live run: conditions, then each action of the branch they lead to. Tasks are created here; webhooks and emails are queued. */
@@ -449,7 +458,7 @@ export class WorkflowRunnerService implements OnApplicationBootstrap, OnModuleDe
     const attempt = a.attempts + 1;
     if (a.type === 'SEND_EMAIL') {
       const e = a.input as unknown as EmailPreview;
-      const res = await this.mailer.send(orgId, { to: e.to, subject: e.subject, text: e.body, messageId: `<${a.id}@talk2tax.workflow>`, headers: { 'X-T2T-Workflow': a.run.workflow.id, 'X-T2T-Attempt': String(attempt) } });
+      const res = await this.mailer.send(orgId, { to: e.to, subject: e.subject, text: e.body, messageId: `<${a.id}@talk2tax.workflow>`, headers: { 'X-T2T-Workflow': a.run.workflow.id, 'X-T2T-Attempt': String(attempt) }, context: { source: 'AUTOMATION', toContact: !!e.toContact } });
       const now = new Date();
       await this.recordAttempt(a.id, a.runId, attempt, { status: res.status, ok: res.ok, durationMs: res.durationMs, error: res.error, responseSnippet: res.responseSnippet }, res.ok ? null : nextDeliveryAttempt(attempt, res.retryable, now), now);
       return;

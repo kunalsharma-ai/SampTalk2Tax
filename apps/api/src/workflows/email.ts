@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { smtpRetryable } from '@talk2tax/accounting-engine';
 import { IntegrationsService, MailSetupError, type ResolvedMail } from '../integrations/integrations.service';
 import { brandedEmailAttachments, brandedEmailHtml } from './branded-email';
+import { CommunicationPolicyService, type MessageContext } from '../communication-policy/communication-policy.service';
 
 export interface EmailMessage {
   to: string[];
@@ -17,6 +18,8 @@ export interface EmailMessage {
   branded?: boolean;
   /** Files sent with the message, such as a scheduled report. Not used with branded messages. */
   files?: { fileName: string; contentType: string; content: Buffer }[];
+  /** How the message came to be sent, for the communication policy (AR-043); 'OTHER' when left out. */
+  context?: MessageContext;
 }
 
 export interface EmailResult {
@@ -41,7 +44,10 @@ export const EMAIL_NOT_SET_UP = 'Email is not set up: an owner or admin can add 
  */
 @Injectable()
 export class MailerService {
-  constructor(private readonly integrations: IntegrationsService) {}
+  constructor(
+    private readonly integrations: IntegrationsService,
+    private readonly communication: CommunicationPolicyService,
+  ) {}
 
   /** Whether this organisation can send email, from which address, and whose server is used. */
   async status(orgId: string): Promise<{ ready: boolean; from: string | null; source: 'ORGANISATION' | 'SERVER' | 'NONE' }> {
@@ -49,7 +55,10 @@ export class MailerService {
     return { ready: m.source !== 'NONE', from: m.from, source: m.source };
   }
 
+  /** Every email an organisation sends passes the communication policy first: never to a contact who opted out (AR-043). */
   async send(orgId: string, m: EmailMessage): Promise<EmailResult> {
+    const d = await this.communication.decide(orgId, m.to, m.context ?? { source: 'OTHER' });
+    if (!d.allowed) return { ok: false, status: null, retryable: false, error: `Not sent: ${d.reason}`, responseSnippet: null, durationMs: 0 };
     return this.deliver(await this.integrations.mail(orgId), m);
   }
 
