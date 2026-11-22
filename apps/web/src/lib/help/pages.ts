@@ -475,6 +475,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with High and with the people at the top. Open a claim to see its receipts and ask the claimant; reject a claim that is wrong so they can fix it, or void one already approved. Turn on the Unusual expense claims check in Alerts settings to be told about new ones.',
     where: 'Expenses. Needs the expenses permission. Draft, rejected and void claims are left out. These are signs for a second look, not proof of fraud; nothing here blocks or changes a claim, and no AI model is used.',
   },
+  'expenses/reconciliation': {
+    what: 'Employee expense claims reconciled three ways as of a date. The Employee Reimbursements Payable account in the books against the approved claims not yet paid back or voided by then, with every difference listed: an entry on the account that no claim made, or a claim whose own entries do not come to what it says is owed. Each claim paid back in the last 90 days against the imported bank statement. And what is owed to each employee, by days since approval.',
+    how: 'Pick a date, such as a month end, or leave it empty for today. When the books and claims differ, open the entry or claim listed to see why. Pay back claims owed over 30 days. A payment not on the statement although the statement runs past it needs a look in Banking: match it, or check it was really paid.',
+    where: 'Expenses. Needs the expenses permission. Claims in the functional currency; reimbursements count as on the statement once matched to a statement line. Nothing is posted here, and no AI model is used.',
+  },
   'expenses/allowance-rates': {
     what: 'The rates employees can claim without a receipt: mileage per kilometre and per diem per day, each posting to an expense account.',
     how: 'Add a rate with a clear name, such as Car or Metro city, its amount and the expense account. Change a rate or make it inactive when your policy changes; claims already saved keep the rate they were saved with.',

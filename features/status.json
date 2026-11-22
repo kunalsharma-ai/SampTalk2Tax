@@ -8987,6 +8987,19 @@
         "docs/BILL_EXCEPTIONS.md"
       ],
       "notes": "Draft bills held by purchase-order match exceptions (AP-017), each difference investigated against the order, goods received and the vendor's bills of the last year: goods not received yet vs billed beyond delivery, likely duplicate (same order line, quantity and price, or same vendor invoice number) vs over-billing, vendor price rise seen on posted bills since the order vs price error, unlinked line, extra charge, closed order. Next step, amount at stake, and accepting confirmed differences from the page. Rule-based and explained; no AI model."
+    },
+    "EXP-016": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-reconciliation.ts",
+        "packages/accounting-engine/test/expense-reconciliation.test.ts",
+        "apps/api/src/expenses/expense-reconciliation.service.ts",
+        "apps/api/test/expense-reconciliation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/reconciliation/page.tsx",
+        "apps/web/e2e/expense-reconciliation-flow.test.mjs",
+        "docs/EXPENSE_RECONCILIATION.md"
+      ],
+      "notes": "As of any date: the Employee Reimbursements Payable balance against approved claims not yet reimbursed or voided, with every difference itemised (entries no claim made, claims whose own entries differ); claims owed by employee and age (over 30 days overdue); reimbursements of the last 90 days against imported bank statements (matched, not on the statement once statements run 3+ days past, or awaiting the statement). Read-only and deterministic."
     }
   }
 }

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 611 |
+| Not started | 610 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 649 |
+| Tested | 650 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 12 | 15 |
+| Expense management | M2 | 27 | 11 | 16 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -2844,6 +2844,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/expenses/policy, claim detail Expense policy card
   - apps/web/e2e/expense-policy-flow.test.mjs
   - docs/EXPENSE_POLICY.md
+
+### EXP-016 — Expense reconciliation
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: As of any date: the Employee Reimbursements Payable balance against approved claims not yet reimbursed or voided, with every difference itemised (entries no claim made, claims whose own entries differ); claims owed by employee and age (over 30 days overdue); reimbursements of the last 90 days against imported bank statements (matched, not on the statement once statements run 3+ days past, or awaiting the statement). Read-only and deterministic.
+- Evidence:
+  - packages/accounting-engine/src/expense-reconciliation.ts
+  - packages/accounting-engine/test/expense-reconciliation.test.ts
+  - apps/api/src/expenses/expense-reconciliation.service.ts
+  - apps/api/test/expense-reconciliation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/reconciliation/page.tsx
+  - apps/web/e2e/expense-reconciliation-flow.test.mjs
+  - docs/EXPENSE_RECONCILIATION.md
 
 ### EXP-017 — Expense reporting
 
