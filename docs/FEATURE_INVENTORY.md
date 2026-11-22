@@ -908,8 +908,8 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-019 |  | capability | Financial ratios | Tested |
 | RPT-020 |  | capability | Consolidated statements | Tested |
 | RPT-021 |  | capability | Audit reports | Tested |
-| RPT-022 |  | capability | Executive reports | Not started |
-| RPT-023 |  | capability | Investor reports | Not started |
+| RPT-022 |  | capability | Executive reports | Tested |
+| RPT-023 |  | capability | Investor reports | Tested |
 | RPT-024 |  | capability | Board reports | Tested |
 | RPT-025 | Reporting Features | capability | Custom report builder | Tested |
 | RPT-026 | Reporting Features | capability | Drag-and-drop metrics | Not started |
