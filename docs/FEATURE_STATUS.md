@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 610 |
+| Not started | 608 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 650 |
+| Tested | 652 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,12 +26,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 3 | 40 |
-| Accounts payable | M2 | 36 | 6 | 30 |
+| Accounts payable | M2 | 36 | 5 | 31 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 11 | 16 |
+| Expense management | M2 | 27 | 10 | 17 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -1891,6 +1891,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/supplier-tax-flow.test.mjs
   - docs/SUPPLIER_TAX_CHECKS.md
 
+### AP-020 — Expense classification
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Bill lines suggest the expense account from the vendor's posted bills of the last two years, the kind of spending named in the description and words seen on earlier bill lines, with confidence and reasons; the person presses Use. Same rules as EXP-020. Only expense accounts are suggested (not inventory or asset lines).
+- Evidence:
+  - packages/accounting-engine/src/expense-categorization.ts
+  - packages/accounting-engine/test/expense-categorization.test.ts
+  - apps/api/src/expense-categorization/expense-categorization.service.ts
+  - apps/api/test/expense-categorization.e2e.test.ts
+  - apps/web/src/components/ledger/document-form.tsx
+  - apps/web/e2e/expense-categorization-flow.test.mjs
+  - docs/EXPENSE_CATEGORIZATION.md
+
 ### AP-021 — Vendor performance tracking
 
 - Module: Accounts payable
@@ -2882,6 +2896,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/test/expenses.test.ts
   - apps/api/test/expenses.e2e.test.ts › flags a receipt that looks claimed twice
+
+### EXP-020 — Automatic expense categorization
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Receipt lines on expense claims suggest the likely expense account while typing: the same merchant on approved and reimbursed claims of the last two years (share of its lines per account), kinds of spending named in the merchant or description (taxi, hotel, restaurant, phone, software...) matched to account names, and description words seen on earlier lines. Up to three accounts with HIGH/MEDIUM/LOW confidence and reasons; nothing is booked until the person presses Use. Rule-based, no AI model.
+- Evidence:
+  - packages/accounting-engine/src/expense-categorization.ts
+  - packages/accounting-engine/test/expense-categorization.test.ts
+  - apps/api/src/expense-categorization/expense-categorization.service.ts
+  - apps/api/test/expense-categorization.e2e.test.ts
+  - apps/web/src/components/expenses/category-suggestion.tsx
+  - apps/web/src/components/expenses/claim-form.tsx
+  - apps/web/e2e/expense-categorization-flow.test.mjs
+  - docs/EXPENSE_CATEGORIZATION.md
 
 ### EXP-021 — Missing receipt detection
 
