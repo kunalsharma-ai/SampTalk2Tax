@@ -285,7 +285,8 @@ import { InternationalPaymentsController } from './international-payments/intern
 import { InternationalPaymentsService } from './international-payments/international-payments.service';
 import { VendorPerformanceService } from './vendor-performance/vendor-performance.service';
 import { RetainersService } from './sales-orders/retainers.service';
-import { BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
+import { BillExceptionsController, BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
+import { BillExceptionsService } from './purchase-orders/bill-exceptions.service';
 import { PurchaseOrdersService } from './purchase-orders/purchase-orders.service';
 import { DimensionsController } from './dimensions/dimensions.controller';
 import { DimensionsService } from './dimensions/dimensions.service';
@@ -456,6 +457,7 @@ export class AppModule {
     PaymentLinkWebhooksController,
     PurchaseOrdersController,
     BillMatchController,
+    BillExceptionsController,
         VendorBankDetailsController,
         InvoiceTemplatesController,
         InvoicePrintController,
@@ -625,6 +627,7 @@ export class AppModule {
     UnbilledRevenueService,
     InternationalPaymentsService,
     PurchaseOrdersService,
+    BillExceptionsService,
         JournalTemplatesRunnerService,
         RetentionRunnerService,
         RecurringBillsService,

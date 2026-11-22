@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 612 |
+| Not started | 611 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 648 |
+| Tested | 649 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 3 | 40 |
-| Accounts payable | M2 | 36 | 7 | 29 |
+| Accounts payable | M2 | 36 | 6 | 30 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -2036,6 +2036,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/purchases/payment-schedule/predicted/page.tsx
   - apps/web/e2e/predicted-payments-flow.test.mjs
   - docs/PREDICTIVE_PAYMENTS.md
+
+### AP-035 — Automated exception investigation
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Draft bills held by purchase-order match exceptions (AP-017), each difference investigated against the order, goods received and the vendor's bills of the last year: goods not received yet vs billed beyond delivery, likely duplicate (same order line, quantity and price, or same vendor invoice number) vs over-billing, vendor price rise seen on posted bills since the order vs price error, unlinked line, extra charge, closed order. Next step, amount at stake, and accepting confirmed differences from the page. Rule-based and explained; no AI model.
+- Evidence:
+  - packages/accounting-engine/src/bill-exceptions.ts
+  - packages/accounting-engine/test/bill-exceptions.test.ts
+  - apps/api/src/purchase-orders/bill-exceptions.service.ts
+  - apps/api/test/bill-exceptions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/bill-exceptions/page.tsx
+  - apps/web/e2e/bill-exceptions-flow.test.mjs
+  - docs/BILL_EXCEPTIONS.md
 
 ### BANK-001 — Multiple bank account management
 
