@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 614 |
+| Not started | 613 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 646 |
+| Tested | 647 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -27,7 +27,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 3 | 40 |
 | Accounts payable | M2 | 36 | 8 | 28 |
-| Banking and reconciliation | M2 | 24 | 2 | 22 |
+| Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -2257,6 +2257,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/statement-gaps.e2e.test.ts
   - apps/web/e2e/banking-flow.test.mjs
   - docs/STATEMENT_GAPS.md
+
+### BANK-022 — Cash movement forecasting
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Each bank account's balance week by week for 30/60/90 days from its imported statements: movements that repeat (same narration and direction, 3+, weekly/monthly/quarterly, within 25% of the median) projected from when last seen, the average week of the other movements of the last 13 weeks with a 25th-75th percentile range, starting from the book balance; lowest week-end balance. Deterministic; statements only (no live bank feed).
+- Evidence:
+  - packages/accounting-engine/src/cash-movements.ts
+  - packages/accounting-engine/test/cash-movements.test.ts
+  - apps/api/src/bank-activity/cash-movements.service.ts
+  - apps/api/test/cash-movements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/banking/cash-movements/page.tsx
+  - apps/web/e2e/cash-movements-flow.test.mjs
+  - docs/BANK_CASH_FORECAST.md
 
 ### BANK-023 — Unusual bank activity alerts
 

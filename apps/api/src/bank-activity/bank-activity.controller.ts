@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
 import { BankActivityService } from './bank-activity.service';
+import { CashMovementsService } from './cash-movements.service';
 import { ReconciliationExceptionsService } from './reconciliation-exceptions.service';
 
 const ActivityQuery = z
@@ -40,5 +41,26 @@ export class ReconciliationExceptionsController {
   @RequirePermission('banking.read')
   list(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(ExceptionsQuery)) q: z.infer<typeof ExceptionsQuery>) {
     return this.exceptions.analyse(org, q);
+  }
+}
+
+const MovementsQuery = z
+  .object({
+    accountId: z.uuid().optional(),
+    days: z.enum(['30', '60', '90']).default('90').transform(Number),
+  })
+  .strict();
+
+@ApiTags('banking')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/banking/cash-movements')
+export class CashMovementsController {
+  constructor(private readonly movements: CashMovementsService) {}
+
+  /** Each bank account's balance week by week ahead, from what repeats on its statements and its other recent movements. */
+  @Get()
+  @RequirePermission('banking.read')
+  forecast(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(MovementsQuery)) q: z.infer<typeof MovementsQuery>) {
+    return this.movements.forecast(org, q);
   }
 }

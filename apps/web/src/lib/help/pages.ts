@@ -400,6 +400,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Work from the top. Open the account\'s reconcile page to match the items, create an entry from a line, or exclude a line with the reason. In transit needs nothing yet. Pick a bank account to see its exceptions by kind and how long items have been waiting.',
     where: 'Banking. Needs the banking permission. Works on imported statements only: Talk2Tax has no live bank feed. Entries are looked at from the first reconciliation, or the first statement line if there is none. Nothing here changes the books, and no AI model is used.',
   },
+  'banking/cash-movements': {
+    what: 'Each bank account\'s balance week by week for the next 30, 60 or 90 days, from its imported statements. Movements that repeat (the same narration and direction at least 3 times, weekly, monthly or quarterly, each within 25% of the usual amount) are projected forward from when they were last seen; one due but not on a statement yet is put on tomorrow. Everything else is the average week of the last 13 weeks. The forecast starts from the account\'s balance in the books.',
+    how: 'Pick an account and how far ahead to look. Watch the lowest expected balance; check the repeating movements are still right (a stopped one is shown but not projected). Import statements regularly to keep it current. For a forecast from open invoices and bills, use the Cash-flow forecast under Planning.',
+    where: 'Banking. Needs the banking permission. Excluded statement lines are left out. The range is how the other movements have varied week to week, not a statistical confidence interval. Nothing here changes the books, and no AI model is used.',
+  },
   'banking/[id]': {
     what: 'One bank account: imported statement lines, what is matched and what is not.',
     how: 'Import a statement, match each line to a receipt, payment or journal (or create one), then reconcile to the statement balance. Use Files on a line to keep the bank advice or receipt behind it; the button shows how many are attached. Suggestions learn from your matches: when two ledger lines have the same amount, the one with the contact or account you matched similar lines to comes first, and What matching learned shows what it has picked up.',

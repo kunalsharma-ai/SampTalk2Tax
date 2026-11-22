@@ -111,7 +111,8 @@ import { PaymentPlansController } from './payment-plans/payment-plans.controller
 import { PaymentPlansService } from './payment-plans/payment-plans.service';
 import { CustomerBehaviourController } from './customer-behaviour/customer-behaviour.controller';
 import { CustomerBehaviourService } from './customer-behaviour/customer-behaviour.service';
-import { BankActivityController, ReconciliationExceptionsController } from './bank-activity/bank-activity.controller';
+import { BankActivityController, CashMovementsController, ReconciliationExceptionsController } from './bank-activity/bank-activity.controller';
+import { CashMovementsService } from './bank-activity/cash-movements.service';
 import { ReconciliationExceptionsService } from './bank-activity/reconciliation-exceptions.service';
 import { BankActivityService } from './bank-activity/bank-activity.service';
 import { ExpenseRiskController } from './expense-risk/expense-risk.controller';
@@ -359,6 +360,7 @@ export class AppModule {
         PaymentPlansController,
         CustomerBehaviourController,
         BankActivityController,
+        CashMovementsController,
         ExpenseRiskController,
         ReconciliationExceptionsController,
         AuditEngagementsController,
@@ -527,6 +529,7 @@ export class AppModule {
         PaymentPlansService,
         CustomerBehaviourService,
         BankActivityService,
+        CashMovementsService,
         ExpenseRiskService,
         ReconciliationExceptionsService,
         AuditEngagementsService,

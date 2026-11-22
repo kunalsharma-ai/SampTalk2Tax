@@ -96,6 +96,7 @@ export * from './bank-watch';
 export * from './journal-suggestions';
 export * from './retention';
 export * from './cash-flow-statement';
+export * from './cash-movements';
 export * from './fixtures';
 export * from './agent-evals';
 export * from './agent-eval-cases';
