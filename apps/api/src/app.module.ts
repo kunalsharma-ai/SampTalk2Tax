@@ -319,6 +319,8 @@ import { StakeholderReportsController } from './stakeholder-reports/stakeholder-
 import { StakeholderReportsService } from './stakeholder-reports/stakeholder-reports.service';
 import { ExpenseTripsController } from './expense-trips/expense-trips.controller';
 import { ExpenseTripsService } from './expense-trips/expense-trips.service';
+import { IncomeTaxController } from './income-tax/income-tax.controller';
+import { IncomeTaxService } from './income-tax/income-tax.service';
 import { PayrollReportController } from './payroll-report/payroll-report.controller';
 import { PayrollReportService } from './payroll-report/payroll-report.service';
 import { TaxReportController } from './tax-report/tax-report.controller';
@@ -514,6 +516,7 @@ export class AppModule {
     AuditReportController,
     StakeholderReportsController,
     ExpenseTripsController,
+    IncomeTaxController,
     VendorRiskController,
     UnbilledRevenueController,
     InternationalPaymentsController,
@@ -709,6 +712,7 @@ export class AppModule {
     AuditReportService,
     StakeholderReportsService,
     ExpenseTripsService,
+    IncomeTaxService,
     VendorRiskService,
     UnbilledRevenueService,
     InternationalPaymentsService,

@@ -17,3 +17,4 @@ export * from './india/deadline-predictions';
 export * from './india/tax-audit';
 export * from './india/compliance-documents';
 export * from './india/tax-scenarios';
+export * from './india/income-computation';
