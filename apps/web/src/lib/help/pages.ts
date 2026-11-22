@@ -734,6 +734,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: "Choose how many months ahead. From the books: the period is over and the books say what is owed (GST after input credit set-off, including any earlier unpaid months; TDS/TCS deducted and not deposited; payroll dues of a posted pay run not paid). From the advance tax plan: the instalment the plan needs. Recent average: the average of the last three periods, with a range of how much it usually moves. Pay overdue items first.",
     where: 'Tax. Needs the reports permission; Indian organisations with GST, TDS/TCS, payroll or advance tax set up. Nothing is paid or filed here, and no AI model is used.',
   },
+  'tax/compliance-documents': {
+    what: 'The documents behind the compliance calendar: acknowledgements of returns, challans of payments, copies of returns, working papers, registration certificates and notices, each linked to its return or payment with the files attached and the date to keep it until; and the returns marked filed and payments made in the last year that do not have their acknowledgement or challan on file.',
+    how: "Use Add on a missing document, or choose the return or payment yourself; the kind of document and a title are filled in. Then attach the file. A record added by mistake is voided with a reason, not deleted. Keep until is the end of the eighth financial year after the period (Companies Act, section 128(5)); registration certificates are kept while the registration lasts.",
+    where: 'Tax. Reading needs the reports permission; adding, attaching and voiding need the accounts permission (as marking a return filed does). Indian organisations; returns and payments due in the last year or the next 30 days can be linked. Nothing is filed and no AI model is used.',
+  },
+  'tax/compliance-documents/[id]': {
+    what: 'One compliance document: its kind, the return or payment it belongs to, the reference, the files, and how long to keep it.',
+    how: 'Attach the files while the record is on file. Void a record added by mistake with a reason; it stays, and its files can no longer change.',
+    where: 'Compliance documents. Every step is in the audit trail, with the files attached at the time.',
+  },
   'tax/tax-audit': {
     what: 'Working papers for the tax audit report (Form 3CD) of a financial year, from the books: whether a tax audit is needed on turnover (section 44AB(a)), cash paid to one person in a day over 10,000 (section 40A(3), clause 21(d)), cash received of 2 lakh or more from one person in a day (section 269ST, clause 31), TDS deposited late or not at all with interest at 1.5% a month or part (clause 34), and spending by whether the supplier is registered for GST (clause 44).',
     how: 'Choose the financial year (the last one by default). Share the figures with your auditor, fix what can still be fixed (deposit TDS still owed), and keep the lists as support for the clauses. Cash means payments and receipts from or into an account with the Cash subtype.',

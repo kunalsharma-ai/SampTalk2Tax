@@ -141,6 +141,7 @@ export const hi: Record<string, string> = {
   'Tax forecast': 'कर पूर्वानुमान',
   'Deadline risk': 'समय-सीमा जोखिम',
   'Tax audit': 'कर ऑडिट',
+  'Compliance documents': 'अनुपालन दस्तावेज़',
   'GST returns': 'GST रिटर्न',
   'E-invoices': 'ई-इनवॉइस',
   'E-way bills': 'ई-वे बिल',

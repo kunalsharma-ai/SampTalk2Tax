@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 595 |
+| Not started | 594 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 665 |
+| Tested | 666 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 24 | 30 |
+| Global taxation engine | M3 | 54 | 23 | 31 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 7 | 20 |
@@ -2649,6 +2649,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/notices
   - apps/web/e2e/tax-notices-flow.test.mjs
   - docs/TAX_NOTICES.md
+
+### TAX-025 — Compliance document management
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Compliance document records (acknowledgement, challan, return copy, working, registration, notice, other) linked to compliance-calendar obligations from the last year/next 30 days, files as COMPLIANCE_DOCUMENT attachments, keep-until date (end of 8th FY after the period; registrations while registered), void with reason (never deleted), and a missing-documents list: filed returns without acknowledgement and made payments without challan (with a file). India only. Not built: portal download, older periods, retention reminders.
+- Evidence:
+  - packages/tax-engine/src/india/compliance-documents.ts
+  - packages/tax-engine/test/compliance-documents.test.ts
+  - apps/api/src/compliance-documents/compliance-documents.service.ts
+  - apps/api/test/compliance-documents.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/compliance-documents/page.tsx
+  - apps/web/e2e/compliance-documents-flow.test.mjs
+  - docs/COMPLIANCE_DOCUMENTS.md
 
 ### TAX-026 — Tax audit support
 

@@ -735,7 +735,7 @@ async function checkDocumentLinks(before: DocumentDoc | null, x: DocumentDoc, ct
 
 // ------------------------------------------------------------------ attachments
 
-export type AttachmentEntityName = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING' | 'AUDIT_EVIDENCE' | 'EXPENSE_RECEIPT';
+export type AttachmentEntityName = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING' | 'AUDIT_EVIDENCE' | 'EXPENSE_RECEIPT' | 'COMPLIANCE_DOCUMENT';
 export const ATTACHMENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
 
 export interface AttachmentDoc {
@@ -784,7 +784,7 @@ export const attachments = defineCollection<AttachmentDoc>({
     bsonType: 'object',
     required: ['entityType', 'entityId', 'fileName', 'contentType', 'sizeBytes', 'sha256', 'content', 'uploadedById', 'createdAt'],
     properties: {
-      entityType: { enum: ['DOCUMENT', 'PAYMENT', 'JOURNAL_ENTRY', 'BANK_STATEMENT_LINE', 'EXPENSE_CLAIM', 'CUSTOMER_ONBOARDING', 'AUDIT_EVIDENCE', 'EXPENSE_RECEIPT'] },
+      entityType: { enum: ['DOCUMENT', 'PAYMENT', 'JOURNAL_ENTRY', 'BANK_STATEMENT_LINE', 'EXPENSE_CLAIM', 'CUSTOMER_ONBOARDING', 'AUDIT_EVIDENCE', 'EXPENSE_RECEIPT', 'COMPLIANCE_DOCUMENT'] },
       contentType: { enum: ATTACHMENT_TYPES },
       sha256: { bsonType: 'string', pattern: '^[0-9a-f]{64}$' },
       sizeBytes: { bsonType: ['int', 'long'] },
