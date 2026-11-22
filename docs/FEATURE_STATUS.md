@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 603 |
+| Not started | 602 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 657 |
+| Tested | 658 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 10 | 17 |
+| Expense management | M2 | 27 | 9 | 18 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -3039,6 +3039,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/expenses/risk/page.tsx
   - apps/web/e2e/expense-risk-flow.test.mjs
   - docs/EXPENSE_RISK.md
+
+### EXP-025 — Expense forecasting
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Forecast of expense-claim spending by account for 1-6 months from 12 months of approved/reimbursed claim lines (by spend date): last-3-month average, seasonal factor (0.5-2) with 10+ months of history, range from the 6-month spread, trend vs prior 3 months; irregular accounts listed separately; spent so far, owed to employees and waiting approval. Decimal-only, deterministic. Not built: bills/payroll in this view, department budgets, hand-entered planned spend.
+- Evidence:
+  - packages/accounting-engine/src/expense-forecast.ts
+  - packages/accounting-engine/test/expense-forecast.test.ts
+  - apps/api/src/expense-forecast/expense-forecast.service.ts
+  - apps/api/test/expense-forecast.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/forecast/page.tsx
+  - apps/web/e2e/expense-forecast-flow.test.mjs
+  - docs/EXPENSE_FORECAST.md
 
 ### TRS-002 — Cash positioning
 
