@@ -21804,9 +21804,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/stakeholder-report.ts",
+        "packages/accounting-engine/test/stakeholder-report.test.ts",
+        "apps/api/src/stakeholder-reports/stakeholder-reports.service.ts",
+        "apps/api/test/stakeholder-reports.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/executive/page.tsx",
+        "apps/web/src/components/reports/stakeholder-report.tsx",
+        "apps/web/e2e/stakeholder-reports-flow.test.mjs",
+        "docs/STAKEHOLDER_REPORTS.md"
+      ],
+      "notes": "Executive report per fiscal quarter or year: headline (revenue growth on prior period and last year, gross/net margin, cash, runway), summary P&L vs prior period and last year, months, named top customers, points for attention (net loss, revenue -10%, margin -5 pts, runway <12 months, customer >=30%), narrative. Live while draft; finalising after period end freezes figures and narrative, later postings listed. Audited."
     },
     {
       "id": "RPT-023",
@@ -21828,9 +21837,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/stakeholder-report.ts",
+        "packages/accounting-engine/test/stakeholder-report.test.ts",
+        "apps/api/src/stakeholder-reports/stakeholder-reports.service.ts",
+        "apps/api/test/stakeholder-reports.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/investor/page.tsx",
+        "apps/web/src/components/reports/stakeholder-report.tsx",
+        "apps/web/e2e/stakeholder-reports-flow.test.mjs",
+        "docs/STAKEHOLDER_REPORTS.md"
+      ],
+      "notes": "Investor report per fiscal quarter or year: same headline, P&L comparison and months as the executive report, revenue concentration without customer names, no internal attention points, investor update (highlights, challenges, outlook, asks). Separate from the executive report; finalise freezes; audited."
     },
     {
       "id": "RPT-024",

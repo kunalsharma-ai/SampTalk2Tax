@@ -718,6 +718,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the days, or leave them blank for the financial year to date. Work through the journal checks first, high ones first: open each journal, check its support and who approved it. Ask about every sensitive action you do not recognise. Download the CSV for your auditor; each download is kept in the audit trail.',
     where: 'Reports. Needs the audit read permission. Days are in your organisation\'s time zone. Built from the audit trail and posted journals; nothing here changes the books.',
   },
+  'reports/executive': {
+    what: 'A report on a fiscal quarter or year for the leadership team and the board: revenue with its growth on the period before and on a year before, gross margin, net income, cash at the end and the runway; a summary profit and loss against the period before and the same period last year; each month; the largest customers; points that need attention (a net loss, revenue down 10% or more, gross margin down 5 points or more, a runway under a year, one customer with 30% or more of revenue); and your narrative.',
+    how: 'Choose the period. Write the highlights, challenges, outlook and the decisions you need, and save. When the period has ended, finalise the report: the figures and the narrative are frozen, and postings made later are listed on it instead of changing it. Print it to share it.',
+    where: 'Reports. Anyone who can read reports can open it; writing and finalising need the budgets permission. Built from posted journals and invoices. Each save and finalise is kept in the audit trail.',
+  },
+  'reports/investor': {
+    what: 'A report on a fiscal quarter or year for investors: revenue with its growth, gross margin, net income, cash at the end and the runway; a summary profit and loss against the period before and the same period last year; each month; how concentrated revenue is (customers are never named); and your update with highlights, challenges, outlook and asks.',
+    how: 'Choose the period, write the update and save. When the period has ended, finalise it to freeze the figures and the update; later postings are listed on it instead of changing it. Print it, or save it as a PDF from the print dialog, to send it.',
+    where: 'Reports. Anyone who can read reports can open it; writing and finalising need the budgets permission. It is kept separate from the executive report for the same period, so each can say what its readers need. Each save and finalise is kept in the audit trail.',
+  },
   'reports/tax': {
     what: 'The tax in a period from posted invoices, credit notes, bills and vendor credits: taxable value, output tax and input tax at each rate with the net, the same by month, tax withheld (TDS on bills, TCS on invoices) by section, and every tax payable, tax receivable and tax expense account with its balance at the start, debits, credits and balance at the end.',
     how: 'Choose the period, or leave it blank for the financial year to date. Compare the net with the tax accounts: a difference points to tax posted by hand or a document posted to the wrong account. Download the CSV for your tax adviser; each download is kept in the audit trail.',

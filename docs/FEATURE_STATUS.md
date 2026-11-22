@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 586 |
+| Not started | 584 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 674 |
+| Tested | 676 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 4 | 37 |
+| Advanced financial reporting | M6 | 41 | 2 | 39 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -6015,6 +6015,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/audit/page.tsx
   - apps/web/e2e/audit-report-flow.test.mjs
   - docs/AUDIT_REPORTS.md
+
+### RPT-022 — Executive reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Executive report per fiscal quarter or year: headline (revenue growth on prior period and last year, gross/net margin, cash, runway), summary P&L vs prior period and last year, months, named top customers, points for attention (net loss, revenue -10%, margin -5 pts, runway <12 months, customer >=30%), narrative. Live while draft; finalising after period end freezes figures and narrative, later postings listed. Audited.
+- Evidence:
+  - packages/accounting-engine/src/stakeholder-report.ts
+  - packages/accounting-engine/test/stakeholder-report.test.ts
+  - apps/api/src/stakeholder-reports/stakeholder-reports.service.ts
+  - apps/api/test/stakeholder-reports.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/executive/page.tsx
+  - apps/web/src/components/reports/stakeholder-report.tsx
+  - apps/web/e2e/stakeholder-reports-flow.test.mjs
+  - docs/STAKEHOLDER_REPORTS.md
+
+### RPT-023 — Investor reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Investor report per fiscal quarter or year: same headline, P&L comparison and months as the executive report, revenue concentration without customer names, no internal attention points, investor update (highlights, challenges, outlook, asks). Separate from the executive report; finalise freezes; audited.
+- Evidence:
+  - packages/accounting-engine/src/stakeholder-report.ts
+  - packages/accounting-engine/test/stakeholder-report.test.ts
+  - apps/api/src/stakeholder-reports/stakeholder-reports.service.ts
+  - apps/api/test/stakeholder-reports.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/investor/page.tsx
+  - apps/web/src/components/reports/stakeholder-report.tsx
+  - apps/web/e2e/stakeholder-reports-flow.test.mjs
+  - docs/STAKEHOLDER_REPORTS.md
 
 ### RPT-024 — Board reports
 

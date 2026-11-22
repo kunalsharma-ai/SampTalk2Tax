@@ -315,6 +315,8 @@ import { SupplierNegotiationController } from './supplier-negotiation/supplier-n
 import { SupplierNegotiationService } from './supplier-negotiation/supplier-negotiation.service';
 import { AuditReportController } from './audit-report/audit-report.controller';
 import { AuditReportService } from './audit-report/audit-report.service';
+import { StakeholderReportsController } from './stakeholder-reports/stakeholder-reports.controller';
+import { StakeholderReportsService } from './stakeholder-reports/stakeholder-reports.service';
 import { PayrollReportController } from './payroll-report/payroll-report.controller';
 import { PayrollReportService } from './payroll-report/payroll-report.service';
 import { TaxReportController } from './tax-report/tax-report.controller';
@@ -508,6 +510,7 @@ export class AppModule {
     TaxReportController,
     PayrollReportController,
     AuditReportController,
+    StakeholderReportsController,
     VendorRiskController,
     UnbilledRevenueController,
     InternationalPaymentsController,
@@ -701,6 +704,7 @@ export class AppModule {
     TaxReportService,
     PayrollReportService,
     AuditReportService,
+    StakeholderReportsService,
     VendorRiskService,
     UnbilledRevenueService,
     InternationalPaymentsService,
