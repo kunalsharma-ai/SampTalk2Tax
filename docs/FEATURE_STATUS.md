@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 598 |
+| Not started | 597 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 662 |
+| Tested | 663 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 26 | 28 |
+| Global taxation engine | M3 | 54 | 25 | 29 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 8 | 19 |
@@ -2710,6 +2710,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/gst-reconciliation/page.tsx
   - apps/web/e2e/gst-reconciliation-flow.test.mjs
   - docs/GST_RECONCILIATION.md
+
+### TAX-047 — Compliance deadline predictions
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Open compliance-calendar deadlines (GSTR-1/3B, TDS/TCS, PF, ESI, PT) in the next 7-120 days scored HIGH/MEDIUM/LOW from the last 365 days' record (filing dates, deposit/payment dates; missed = late), median lead, days left, and book readiness (GST reconciliation discrepancies/differences for ended months, missing pay runs). Rule-based, read-only, no AI. Not built: advance tax, annual returns.
+- Evidence:
+  - packages/tax-engine/src/india/deadline-predictions.ts
+  - packages/tax-engine/test/deadline-predictions.test.ts
+  - apps/api/src/compliance/compliance-predictions.service.ts
+  - apps/api/test/compliance-predictions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/compliance-predictions/page.tsx
+  - apps/web/e2e/compliance-predictions-flow.test.mjs
+  - docs/COMPLIANCE_PREDICTIONS.md
 
 ### TAX-048 — Tax liability forecasting
 

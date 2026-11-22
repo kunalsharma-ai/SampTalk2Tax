@@ -9161,6 +9161,19 @@
         "docs/TAX_FORECAST.md"
       ],
       "notes": "Tax payments due in 1-6 months from the compliance calendar (GSTR-3B/PMT-06, TDS/TCS, PF, ESI, PT, advance tax) incl. overdue: known from the books when the period is over (GST payment preview after set-off as one running balance; undeposited TDS/TCS; unpaid pay-run dues), advance tax from the plan, otherwise 3-period average with 6-period std-dev range; totals by due month. India only, read-only. Not built: interest/late fees, unissued sales, self-assessment tax."
+    },
+    "TAX-047": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/deadline-predictions.ts",
+        "packages/tax-engine/test/deadline-predictions.test.ts",
+        "apps/api/src/compliance/compliance-predictions.service.ts",
+        "apps/api/test/compliance-predictions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/compliance-predictions/page.tsx",
+        "apps/web/e2e/compliance-predictions-flow.test.mjs",
+        "docs/COMPLIANCE_PREDICTIONS.md"
+      ],
+      "notes": "Open compliance-calendar deadlines (GSTR-1/3B, TDS/TCS, PF, ESI, PT) in the next 7-120 days scored HIGH/MEDIUM/LOW from the last 365 days' record (filing dates, deposit/payment dates; missed = late), median lead, days left, and book readiness (GST reconciliation discrepancies/differences for ended months, missing pay runs). Rule-based, read-only, no AI. Not built: advance tax, annual returns."
     }
   }
 }
