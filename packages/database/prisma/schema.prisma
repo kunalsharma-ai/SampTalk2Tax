@@ -87,6 +87,7 @@ enum AttachmentEntity {
   EXPENSE_CLAIM
   CUSTOMER_ONBOARDING
   AUDIT_EVIDENCE
+  EXPENSE_RECEIPT
 }
 
 enum ApprovalStatus {

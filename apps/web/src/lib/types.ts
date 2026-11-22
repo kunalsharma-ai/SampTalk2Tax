@@ -539,7 +539,7 @@ export interface Reconciliation {
   lines: number;
 }
 
-export type AttachmentEntity = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING' | 'AUDIT_EVIDENCE';
+export type AttachmentEntity = 'DOCUMENT' | 'PAYMENT' | 'JOURNAL_ENTRY' | 'BANK_STATEMENT_LINE' | 'EXPENSE_CLAIM' | 'CUSTOMER_ONBOARDING' | 'AUDIT_EVIDENCE' | 'EXPENSE_RECEIPT';
 export interface Attachment {
   id: string;
   fileName: string;

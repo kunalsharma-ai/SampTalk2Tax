@@ -475,6 +475,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the dates and which claims to count: waiting for approval, approved, reimbursed. Click a category or a person to see only theirs; click the filter again to clear it.',
     where: 'Expenses. Built from the lines of claims, dated by the day the expense happened. Drafts, rejected and void claims are left out. Those who read expenses see everyone; others see their own.',
   },
+  'expenses/receipts': {
+    what: 'Receipts for spending paid from a company bank or card account, each matched to the money-out line of the bank statement it paid; and the bank payments that still have no receipt. Spending a person paid themselves goes on an expense claim instead.',
+    how: "Add a receipt with the merchant, date and amount, then attach the photo or PDF. Finance sees a suggested bank line for each receipt: Sure when the amount matches, the dates are close and the merchant's name is in the bank narration; Likely or Possible otherwise, with the reasons. Match one at a time, or all the sure ones together. Bank spending without a receipt shows who to ask.",
+    where: 'Expenses. Anyone who submits expenses adds receipts and sees their own; matching needs the banking manage permission, and the bank list needs banking read. Bank lines come from imported statements; matching changes nothing in the books, and no AI model is used.',
+  },
+  'expenses/receipts/[id]': {
+    what: 'One receipt: its file, the bank line it paid (or the suggested one, with the reasons), and its history.',
+    how: 'Attach the file while the receipt is not matched. Finance matches it to the suggested line, or undoes a wrong match with a reason. A receipt uploaded by mistake can be discarded with a reason; it stays as a record.',
+    where: 'Receipt matching. Every step is in the audit trail, with the files attached at the time.',
+  },
   'expenses/forecast': {
     what: 'What expense claims are likely to cost in the coming months, by expense account, with a likely range, and what is owed to employees now and waiting for approval.',
     how: 'Choose how many months ahead. Each account uses the average of its last three months, adjusted for the season once it has a year of history; the range comes from how much it usually moves. Accounts used only now and then are listed separately.',

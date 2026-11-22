@@ -134,5 +134,6 @@ export * from './customer-behaviour';
 export * from './bank-activity';
 export * from './reconciliation-exceptions';
 export * from './expense-risk';
+export * from './receipt-matching';
 export * from './expense-forecast';
 export * from './department-budgets';
