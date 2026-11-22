@@ -10192,9 +10192,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/reimbursement-routing.ts",
+        "packages/accounting-engine/test/reimbursement-routing.test.ts",
+        "apps/api/src/reimbursement-routing/reimbursement-routing.service.ts",
+        "apps/api/test/reimbursement-routing.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/reimbursement-routing/page.tsx",
+        "apps/web/e2e/reimbursement-routing-flow.test.mjs",
+        "docs/REIMBURSEMENT_ROUTING.md"
+      ],
+      "notes": "Approved claims grouped per person and routed: bank transfer when the employee record (matched by email) has a salary account, cash otherwise, wait for cash when no account has room after the amount kept, needs bank details when there is no cash account. Overdue (>7 days since approval) first; last-used account preferred while it has room. Pay the ready ones in one step through the usual reimbursement journal. Not built: payment files for bank transfers, adding reimbursements to payroll."
     },
     {
       "id": "EXP-027",

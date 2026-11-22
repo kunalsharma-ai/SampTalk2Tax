@@ -51,6 +51,8 @@ import { ExpenseReportController } from './expenses/expense-report.controller';
 import { ExpenseReportService } from './expenses/expense-report.service';
 import { ExpenseReconciliationController } from './expenses/expense-reconciliation.controller';
 import { ExpenseReconciliationService } from './expenses/expense-reconciliation.service';
+import { ReimbursementRoutingController } from './reimbursement-routing/reimbursement-routing.controller';
+import { ReimbursementRoutingService } from './reimbursement-routing/reimbursement-routing.service';
 import { ErrorFilter } from './common/errors';
 import { ErrorsService } from './operations/errors.service';
 import { FlagsService } from './operations/flags.service';
@@ -414,6 +416,7 @@ export class AppModule {
         ExpensesController,
         ExpenseReportController,
         ExpenseReconciliationController,
+        ReimbursementRoutingController,
         AllowanceRatesController,
         ExpensePolicyController,
         TaxNoticesController,
@@ -594,6 +597,7 @@ export class AppModule {
         ExpensesService,
         ExpenseReportService,
         ExpenseReconciliationService,
+        ReimbursementRoutingService,
         AllowancesService,
         ExpensePolicyService,
         TaxNoticesService,
