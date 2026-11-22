@@ -268,7 +268,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-023 | India Module | capability | Statutory deadline calendars | Tested |
 | TAX-024 | India Module | capability | Tax notices | Tested |
 | TAX-025 | India Module | capability | Compliance document management | Not started |
-| TAX-026 | India Module | capability | Tax audit support | Not started |
+| TAX-026 | India Module | capability | Tax audit support | Tested |
 | TAX-027 | India Module | rule | External government submission must be implemented only through approved and authorized integrations | Implementing |
 | TAX-028 | Global Tax Modules | capability | US sales tax | Not started |
 | TAX-029 | Global Tax Modules | capability | US federal and state tax-related reporting | Not started |

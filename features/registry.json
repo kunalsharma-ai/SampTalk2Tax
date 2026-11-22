@@ -6893,9 +6893,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/tax-audit.ts",
+        "packages/tax-engine/test/tax-audit.test.ts",
+        "apps/api/src/tax-audit/tax-audit.service.ts",
+        "apps/api/test/tax-audit.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/tax-audit/page.tsx",
+        "apps/web/e2e/tax-audit-flow.test.mjs",
+        "docs/TAX_AUDIT.md"
+      ],
+      "notes": "Form 3CD working papers for a financial year (India): 44AB(a) applicability with the 5% cash test, 40A(3) cash payments over 10,000 per person per day, 269ST cash receipts of 2 lakh or more, TDS late deposits with 201(1A) interest from the TDS register, clause 44 spending by supplier GST registration. Read-only, no AI. Not built: transporter limit/rule 6DD, 43B, 269SS/T, composition split, filing."
     },
     {
       "id": "TAX-027",
