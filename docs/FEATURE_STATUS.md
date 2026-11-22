@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 589 |
+| Not started | 588 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 671 |
+| Tested | 672 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 7 | 34 |
+| Advanced financial reporting | M6 | 41 | 6 | 35 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -5860,6 +5860,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/sales-purchases.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/purchases/ageing
+
+### RPT-009 — Tax reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Tax report for a period (FY to date by default, up to 2 years): output/input tax by rate and month from posted invoices, credit notes, bills and vendor credits (FX converted, GST heads), reverse charge, TDS/TCS by section, and every tax payable/receivable/expense account with opening, debits, credits and closing from the ledger. CSV export with formula guard, audited. Read-only.
+- Evidence:
+  - packages/accounting-engine/src/tax-report.ts
+  - packages/accounting-engine/test/tax-report.test.ts
+  - apps/api/src/tax-report/tax-report.service.ts
+  - apps/api/test/tax-report.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/tax/page.tsx
+  - apps/web/e2e/tax-report-flow.test.mjs
+  - docs/TAX_REPORTS.md
 
 ### RPT-011 — Expense reports
 

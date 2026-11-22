@@ -313,6 +313,8 @@ import { InternationalPaymentsService } from './international-payments/internati
 import { VendorPerformanceService } from './vendor-performance/vendor-performance.service';
 import { SupplierNegotiationController } from './supplier-negotiation/supplier-negotiation.controller';
 import { SupplierNegotiationService } from './supplier-negotiation/supplier-negotiation.service';
+import { TaxReportController } from './tax-report/tax-report.controller';
+import { TaxReportService } from './tax-report/tax-report.service';
 import { TaxScenariosController } from './tax-scenarios/tax-scenarios.controller';
 import { TaxScenariosService } from './tax-scenarios/tax-scenarios.service';
 import { VendorContractsController } from './vendor-contracts/vendor-contracts.controller';
@@ -499,6 +501,7 @@ export class AppModule {
     SupplierNegotiationController,
     VendorContractsController,
     TaxScenariosController,
+    TaxReportController,
     VendorRiskController,
     UnbilledRevenueController,
     InternationalPaymentsController,
@@ -689,6 +692,7 @@ export class AppModule {
     SupplierNegotiationService,
     VendorContractsService,
     TaxScenariosService,
+    TaxReportService,
     VendorRiskService,
     UnbilledRevenueService,
     InternationalPaymentsService,

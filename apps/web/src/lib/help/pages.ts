@@ -708,6 +708,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the date and compare it with an earlier one. Open a line to see its entries.',
     where: 'Reports. Assets always equal liabilities plus equity.',
   },
+  'reports/tax': {
+    what: 'The tax in a period from posted invoices, credit notes, bills and vendor credits: taxable value, output tax and input tax at each rate with the net, the same by month, tax withheld (TDS on bills, TCS on invoices) by section, and every tax payable, tax receivable and tax expense account with its balance at the start, debits, credits and balance at the end.',
+    how: 'Choose the period, or leave it blank for the financial year to date. Compare the net with the tax accounts: a difference points to tax posted by hand or a document posted to the wrong account. Download the CSV for your tax adviser; each download is kept in the audit trail.',
+    where: 'Reports. Needs the reports permission. Foreign-currency documents count at their own exchange rate. Credit notes and vendor credits are taken off. Drafts and voided documents are left out. GST heads show when documents carry them. Nothing here changes the books.',
+  },
   'reports/vendor-spend': {
     what: 'What you bought, from whom and on what, compared with the period before.',
     how: 'Pick the dates. Start with the largest vendors and the biggest changes; open an account to see its entries.',
