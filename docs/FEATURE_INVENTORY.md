@@ -408,7 +408,7 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-024 | AI Expense Features | capability | Fraud risk indicators | Tested |
 | EXP-025 | AI Expense Features | capability | Expense forecasting | Tested |
 | EXP-026 | AI Expense Features | capability | Intelligent reimbursement routing | Tested |
-| EXP-027 | AI Expense Features | capability | Automated audit evidence collection | Not started |
+| EXP-027 | AI Expense Features | capability | Automated audit evidence collection | Tested |
 
 ## Treasury management
 

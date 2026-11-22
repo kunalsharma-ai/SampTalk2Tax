@@ -139,3 +139,4 @@ export * from './expense-forecast';
 export * from './department-budgets';
 export * from './supplier-negotiation';
 export * from './reimbursement-routing';
+export * from './expense-evidence';

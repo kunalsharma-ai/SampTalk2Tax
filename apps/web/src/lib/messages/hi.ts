@@ -91,6 +91,7 @@ export const hi: Record<string, string> = {
   'Department budgets': 'विभाग बजट',
   'Expense reconciliation': 'ख़र्च मिलान',
   'Reimbursement routing': 'प्रतिपूर्ति भुगतान मार्ग',
+  'Expense audit evidence': 'ख़र्च ऑडिट साक्ष्य',
   'My expense report': 'मेरी ख़र्च रिपोर्ट',
   'My expense claims': 'मेरे ख़र्च के दावे',
   // Payroll
