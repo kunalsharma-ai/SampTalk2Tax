@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 591 |
+| Not started | 590 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 669 |
+| Tested | 670 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 0 | 43 |
-| Accounts payable | M2 | 36 | 2 | 34 |
+| Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 23 | 31 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -2096,6 +2096,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/purchases/bill-checks, bill page Unusual bill checks card
   - apps/web/e2e/bill-checks-flow.test.mjs
   - docs/BILL_CHECKS.md
+
+### AP-032 — Contract compliance checks
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Vendor contracts (vendor_contracts collection: term, payment terms, spend cap, items-only, price list by HSN/description; fixed terms, terminate with reason, audited). Posted bills checked against the contract covering their date: price above contract (excess x qty), over the spend cap, shorter payment terms, after the term with no other contract, item not on the list. Read-only checks. Not built: contract PDF extraction, blocking bills at entry.
+- Evidence:
+  - packages/accounting-engine/src/contract-compliance.ts
+  - packages/accounting-engine/test/contract-compliance.test.ts
+  - apps/api/src/vendor-contracts/vendor-contracts.service.ts
+  - apps/api/test/vendor-contracts.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/page.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/new/page.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/[contractId]/page.tsx
+  - apps/web/e2e/vendor-contracts-flow.test.mjs
+  - docs/VENDOR_CONTRACTS.md
 
 ### AP-033 — Supplier negotiation assistance
 
