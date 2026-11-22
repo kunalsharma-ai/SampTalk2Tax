@@ -40,6 +40,7 @@ import { lockName } from '../db/locks';
 import { BankingService } from '../banking/banking.service';
 import { DocumentStoreService } from '../common/document-store.service';
 import { BankActivityService } from '../bank-activity/bank-activity.service';
+import { ExpenseRiskService } from '../expense-risk/expense-risk.service';
 import { journalEntries } from '../db/collections/ledger';
 import { approvalRequests } from '../db/collections/sales';
 import { journalApprovals } from '../db/collections/journal-approvals';
@@ -127,6 +128,7 @@ export class AlertsService {
     private readonly banking: BankingService,
     private readonly store: DocumentStoreService,
     private readonly bankActivity: BankActivityService,
+    private readonly expenseRisk: ExpenseRiskService,
   ) {}
 
   // ------------------------------------------------------------------ notifications
@@ -607,6 +609,34 @@ export class AlertsService {
                   ...i.indicators.map((x) => ({ label: x.label, value: x.detail })),
                 ],
                 links: [{ kind: 'PAGE' as const, path: '/banking/unusual-activity', label: 'Open unusual bank activity' }, { kind: 'PAGE' as const, path: `/banking/${i.account.id}/reconcile`, label: `Reconcile ${i.account.name}` }],
+              },
+            };
+          });
+      }
+      case 'UNUSUAL_EXPENSE': {
+        const r = await this.expenseRisk.findings({ id: orgId }, { days: p.days.toNumber(), receiptsFrom: p.receiptsFrom.toFixed() }, today);
+        return r.items
+          .filter((i) => i.level !== 'LOW')
+          .map((i) => {
+            const money = formatAmountText(i.claim.total, i.claim.currency);
+            const serious = i.indicators.filter((x) => x.level !== 'LOW');
+            return {
+              rule: def.key,
+              fingerprint: i.claim.id,
+              severity: i.level === 'HIGH' ? ('CRITICAL' as const) : ('WARNING' as const),
+              title: `${serious[0]!.label}: ${i.claim.number}, ${money} by ${i.claim.claimantName}`,
+              summary: `${serious.map((x) => x.detail).join('. ')}. Check the receipts with ${i.claim.claimantName} before it is approved or reimbursed.`,
+              amount: new D(i.claim.total),
+              evidence: {
+                facts: [
+                  { label: 'Claim', value: `${i.claim.number} · ${i.claim.title}` },
+                  { label: 'Claimant', value: i.claim.claimantName },
+                  { label: 'Submitted', value: dateLabel(i.claim.submittedOn) },
+                  { label: 'Status', value: i.claim.status.charAt(0) + i.claim.status.slice(1).toLowerCase() },
+                  { label: 'Total', value: money },
+                  ...serious.map((x) => ({ label: x.label, value: x.detail })),
+                ],
+                links: [{ kind: 'PAGE' as const, path: '/expenses/risk', label: 'Open unusual expenses' }, { kind: 'PAGE' as const, path: `/expenses/${i.claim.id}`, label: `Open ${i.claim.number}` }],
               },
             };
           });

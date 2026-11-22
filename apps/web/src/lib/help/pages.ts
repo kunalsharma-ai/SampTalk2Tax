@@ -455,6 +455,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the dates and which claims to count: waiting for approval, approved, reimbursed. Click a category or a person to see only theirs; click the filter again to clear it.',
     where: 'Expenses. Built from the lines of claims, dated by the day the expense happened. Drafts, rejected and void claims are left out. Those who read expenses see everyone; others see their own.',
   },
+  'expenses/risk': {
+    what: 'Expense claims submitted in the period with warning signs, compared across claims and people and with the year before. High: the same receipt (date, amount and merchant, or category when there is no merchant) on another claim, by the same person or someone else, or receipts on one day split to stay under a per-receipt limit. Medium: far above the usual for the category, within 5% under a limit, someone with 3 or more lines just under a limit in 90 days, a receipt more than 60 days older than the claim, or receipts of 5,000 or more with no file attached. Low: a receipt on a Sunday, or a round amount of 1,000 or more.',
+    how: 'Start with High and with the people at the top. Open a claim to see its receipts and ask the claimant; reject a claim that is wrong so they can fix it, or void one already approved. Turn on the Unusual expense claims check in Alerts settings to be told about new ones.',
+    where: 'Expenses. Needs the expenses permission. Draft, rejected and void claims are left out. These are signs for a second look, not proof of fraud; nothing here blocks or changes a claim, and no AI model is used.',
+  },
   'expenses/allowance-rates': {
     what: 'The rates employees can claim without a receipt: mileage per kilometre and per diem per day, each posting to an expense account.',
     how: 'Add a rate with a clear name, such as Car or Metro city, its amount and the expense account. Change a rate or make it inactive when your policy changes; claims already saved keep the rate they were saved with.',

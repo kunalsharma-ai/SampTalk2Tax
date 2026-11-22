@@ -77,7 +77,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/deposits', label: 'Fixed deposits' },
     ],
   },
-  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }, { href: '/expenses/report', label: 'Expense reports' }] },
+  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }, { href: '/expenses/report', label: 'Expense reports' }, { href: '/expenses/risk', label: 'Unusual expenses', perm: 'expenses.read' }] },
   {
     group: 'Payroll',
     items: [
