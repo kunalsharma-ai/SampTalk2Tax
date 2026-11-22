@@ -307,6 +307,8 @@ import { VendorRiskService } from './vendor-risk/vendor-risk.service';
 import { InternationalPaymentsController } from './international-payments/international-payments.controller';
 import { InternationalPaymentsService } from './international-payments/international-payments.service';
 import { VendorPerformanceService } from './vendor-performance/vendor-performance.service';
+import { SupplierNegotiationController } from './supplier-negotiation/supplier-negotiation.controller';
+import { SupplierNegotiationService } from './supplier-negotiation/supplier-negotiation.service';
 import { RetainersService } from './sales-orders/retainers.service';
 import { BillExceptionsController, BillMatchController, PurchaseOrdersController } from './purchase-orders/purchase-orders.controller';
 import { BillExceptionsService } from './purchase-orders/bill-exceptions.service';
@@ -484,6 +486,7 @@ export class AppModule {
     PaymentLinksController,
     CustomerOnboardingController,
     VendorPerformanceController,
+    SupplierNegotiationController,
     VendorRiskController,
     UnbilledRevenueController,
     InternationalPaymentsController,
@@ -669,6 +672,7 @@ export class AppModule {
     PaymentLinksService,
     CustomerOnboardingService,
     VendorPerformanceService,
+    SupplierNegotiationService,
     VendorRiskService,
     UnbilledRevenueService,
     InternationalPaymentsService,

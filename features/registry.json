@@ -5259,9 +5259,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/supplier-negotiation.ts",
+        "packages/accounting-engine/test/supplier-negotiation.test.ts",
+        "apps/api/src/supplier-negotiation/supplier-negotiation.service.ts",
+        "apps/api/test/supplier-negotiation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/negotiation/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/negotiation/[vendorId]/page.tsx",
+        "apps/web/e2e/supplier-negotiation-flow.test.mjs",
+        "docs/SUPPLIER_NEGOTIATION.md"
+      ],
+      "notes": "Deterministic negotiation brief per vendor billed in the last 12 months: price rises (>=5%, saving = paid above first price), same HSN/description cheaper from another vendor (>=3%, saving on quantity bought), volume (+20% or 25% share), good payment record (ask +15 days or early-payment discount), C/D scorecard grade, caution when paying late or overdue. Read-only. Not built: AI-drafted negotiation emails, outside market prices."
     },
     {
       "id": "AP-034",
