@@ -9349,6 +9349,20 @@
         "docs/STAKEHOLDER_REPORTS.md"
       ],
       "notes": "Investor report per fiscal quarter or year: same headline, P&L comparison and months as the executive report, revenue concentration without customer names, no internal attention points, investor update (highlights, challenges, outlook, asks). Separate from the executive report; finalise freezes; audited."
+    },
+    "EXP-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/trip-costs.ts",
+        "packages/accounting-engine/test/trip-costs.test.ts",
+        "apps/api/src/expense-trips/expense-trips.service.ts",
+        "apps/api/test/expense-trips.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/trips/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/expenses/trips/[tripId]/page.tsx",
+        "apps/web/e2e/expense-trips-flow.test.mjs",
+        "docs/BUSINESS_TRIPS.md"
+      ],
+      "notes": "Business trips: request with purpose, destination, dates and a four-part estimate; approve/reject by someone other than the traveller; traveller links own non-void claims (one trip per claim) and unlinks until approved; cost against the estimate (spent, pending, by category, per day, over-estimate and lines outside the dates). Mileage and per diem come in through claims (EXP-006/008). No booking integration or travel advances."
     }
   }
 }
