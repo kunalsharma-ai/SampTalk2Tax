@@ -52,6 +52,7 @@ export * from './payment-batches';
 export * from './payment-schedule';
 export * from './predictive-payments';
 export * from './disputes';
+export * from './dispute-classification';
 export * from './pro-forma';
 export * from './plans';
 export * from './subscription-billing';

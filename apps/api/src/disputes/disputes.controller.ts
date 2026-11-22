@@ -16,6 +16,7 @@ const Fields = {
 };
 const RaiseBody = z.object({ documentId: z.string().uuid(), ...Fields }).strict();
 const UpdateBody = z.object(Fields).strict();
+const ClassifyBody = z.object({ documentId: z.string().uuid(), description: z.string().trim().min(1).max(1000), amount: decimalString.nullish() }).strict();
 const NoteBody = z.object({ body: z.string().trim().min(1).max(2000) }).strict();
 const ResolveBody = z.object({ outcome: z.enum(DISPUTE_OUTCOMES), creditNoteId: z.string().uuid().nullish(), note: z.string().trim().min(1).max(1000) }).strict();
 
@@ -37,6 +38,15 @@ export class DisputesController {
   @ApiBody({ schema: openApi(RaiseBody) })
   raise(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Body(new ZodPipe(RaiseBody)) body: z.infer<typeof RaiseBody>) {
     return this.disputes.raise(this.org(org), user, body);
+  }
+
+  /** The likely reason for a dispute about to be raised (AR-037). Read-only. */
+  @Post('classify')
+  @HttpCode(200)
+  @RequirePermission('sales.read')
+  @ApiBody({ schema: openApi(ClassifyBody) })
+  classify(@CurrentOrg() org: OrgContext, @Body(new ZodPipe(ClassifyBody)) body: z.infer<typeof ClassifyBody>) {
+    return this.disputes.classify(this.org(org), body);
   }
 
   @Get(':id')

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 610 |
+| Not started | 609 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 650 |
+| Tested | 651 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -25,7 +25,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 |---|---|---|---|---|
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
-| Accounts receivable | M2 | 43 | 3 | 40 |
+| Accounts receivable | M2 | 43 | 2 | 41 |
 | Accounts payable | M2 | 36 | 6 | 30 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
@@ -1589,6 +1589,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/accounting-engine/src/payment-predictions.ts
   - apps/web/src/app/orgs/[orgId]/sales/payment-predictions/page.tsx
   - docs/CUSTOMER_360.md
+
+### AR-037 — Invoice dispute classification
+
+- Module: Accounts receivable
+- Status: **Tested**
+- Notes: The likely reason for an invoice dispute (price, quantity, quality, not received, billed twice, tax, other) from the customer's words (scored phrases and words) and the invoice (another invoice for the same total within 45 days; disputed amount equal to the tax), with confidence and what it is based on. Suggested live while raising or changing a dispute, one click to apply; recorded disputes whose reason looks wrong are flagged. Rule-based and explained; no AI model.
+- Evidence:
+  - packages/accounting-engine/src/dispute-classification.ts
+  - packages/accounting-engine/test/dispute-classification.test.ts
+  - apps/api/src/disputes/disputes.service.ts
+  - apps/api/test/dispute-classification.e2e.test.ts
+  - apps/web/src/components/disputes/dispute-form.tsx
+  - apps/web/e2e/dispute-classification-flow.test.mjs
+  - docs/DISPUTE_CLASSIFICATION.md
 
 ### AR-038 — Customer financial behavior analysis
 

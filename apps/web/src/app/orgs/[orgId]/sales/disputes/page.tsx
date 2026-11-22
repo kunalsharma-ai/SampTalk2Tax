@@ -80,7 +80,7 @@ function Disputes() {
                       <Td><Link className="font-medium text-accent hover:underline" href={`/orgs/${orgId}/sales/disputes/${d.id}`}>{d.ref}</Link></Td>
                       <Td><Link className="hover:underline" href={`/orgs/${orgId}/sales/invoices/${d.invoice.id}`}>{d.invoice.number}</Link></Td>
                       <Td>{d.customer.name}</Td>
-                      <Td>{DISPUTE_REASON_LABEL[d.reason]}<span className="block max-w-xs truncate text-xs text-fg-muted">{d.description}</span></Td>
+                      <Td>{DISPUTE_REASON_LABEL[d.reason]}{d.reasonDiffers ? <Badge tone="warning" className="ml-2 whitespace-nowrap">Looks like {d.suggested.label.toLowerCase()}</Badge> : null}<span className="block max-w-xs truncate text-xs text-fg-muted">{d.description}</span></Td>
                       <Td numeric><Money value={d.amount} currency={d.invoice.currency} /></Td>
                       <Td>{d.owner?.name ?? <span className="text-fg-muted">No one</span>}</Td>
                       <Td>{d.targetDate ? <>{date(d.targetDate)}{d.pastTarget ? <Badge tone="negative" className="ml-2">Past</Badge> : null}</> : '—'}</Td>
@@ -108,6 +108,7 @@ function Disputes() {
             today={s.today}
             maxAmount={inv.amountDue}
             currency={inv.currency}
+            classifyFor={{ orgId, documentId: inv.id }}
             submitLabel="Raise dispute"
             pending={raise.isPending}
             error={raise.error}
