@@ -202,7 +202,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'purchases/bills': {
     what: 'Bills from vendors. Drafts can be changed; posted bills are in the books.',
-    how: 'Enter a bill with the vendor\'s reference, lines and tax. TDS and reverse charge are worked out for you. Post it, or submit it for approval if a rule requires.',
+    how: 'Enter a bill with the vendor\'s reference, lines and tax. TDS and reverse charge are worked out for you. Each line suggests an expense account from the vendor\'s earlier bills and the description; press Use to take it. Post it, or submit it for approval if a rule requires.',
     where: 'Purchases. Posting adds to payables and expenses, and to input tax credit and TDS.',
   },
   'purchases/payments': {
@@ -462,7 +462,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   expenses: {
     what: 'Expense claims from employees for money they spent on the organisation\'s behalf.',
-    how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid.',
+    how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid. As you type a merchant or description, a suggested category appears from how earlier claims were booked; press Use to take it.',
     where: 'Expenses. Approved claims post to expense accounts and what is owed to the employee.',
   },
   'expenses/report': {

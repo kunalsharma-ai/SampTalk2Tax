@@ -14,6 +14,7 @@ import { LineDimensions } from '@/components/dimensions/line-dimensions';
 import { useDimensions } from '@/lib/dimensions';
 import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
 import { CurrencyRate } from './currency-rate';
+import { CategorySuggestionHint } from '@/components/expenses/category-suggestion';
 
 interface LineState {
   key: number;
@@ -322,6 +323,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
                         </optgroup>
                       ))}
                     </Select>
+                    {kind === 'BILL' ? <CategorySuggestionHint orgId={orgId} kind="bill-line" line={idx + 1} contactId={contact} description={x.description} current={x.accountId} onUse={(accountId) => update(x.key, { accountId })} /> : null}
                     <LineDimensions values={dims.data?.values} line={idx + 1} departmentId={x.departmentId} projectId={x.projectId} onChange={(p) => update(x.key, p)} />
                   </Td>
                   <Td><Input aria-label={`Description for line ${idx + 1}`} value={x.description} maxLength={500} onChange={(e) => update(x.key, { description: e.target.value })} /></Td>
