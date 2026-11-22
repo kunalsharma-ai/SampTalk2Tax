@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 584 |
+| Not started | 583 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 676 |
+| Tested | 677 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 22 | 32 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 5 | 22 |
+| Expense management | M2 | 27 | 4 | 23 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -3002,6 +3002,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/expense-allowances.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/expenses/allowance-rates, claim form line kinds
   - apps/web/e2e/expense-allowances-flow.test.mjs
+
+### EXP-007 — Travel expenses
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Business trips: request with purpose, destination, dates and a four-part estimate; approve/reject by someone other than the traveller; traveller links own non-void claims (one trip per claim) and unlinks until approved; cost against the estimate (spent, pending, by category, per day, over-estimate and lines outside the dates). Mileage and per diem come in through claims (EXP-006/008). No booking integration or travel advances.
+- Evidence:
+  - packages/accounting-engine/src/trip-costs.ts
+  - packages/accounting-engine/test/trip-costs.test.ts
+  - apps/api/src/expense-trips/expense-trips.service.ts
+  - apps/api/test/expense-trips.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/trips/page.tsx
+  - apps/web/src/app/orgs/[orgId]/expenses/trips/[tripId]/page.tsx
+  - apps/web/e2e/expense-trips-flow.test.mjs
+  - docs/BUSINESS_TRIPS.md
 
 ### EXP-008 — Per diem
 

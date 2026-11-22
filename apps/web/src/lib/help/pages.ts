@@ -495,6 +495,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid. As you type a merchant or description, a suggested category appears from how earlier claims were booked; press Use to take it.',
     where: 'Expenses. Approved claims post to expense accounts and what is owed to the employee.',
   },
+  'expenses/trips': {
+    what: 'Business trips: each request with its purpose, destination, dates and an estimate for travel, lodging, meals and other costs, who is travelling and whether it is approved.',
+    how: 'Request a trip before you travel. Someone other than you approves it, or rejects it with the reason. Once it is approved, link your expense claims to it from the trip page to see what it cost.',
+    where: 'Expenses. Anyone who claims expenses can request trips and sees their own; finance and approvers see everyone\'s. Every request, decision and link is kept in the audit trail.',
+  },
+  'expenses/trips/[id]': {
+    what: 'One trip: the request and the decision, the expense claims linked to it, and what it cost against the estimate: spent (approved and reimbursed claims), not yet approved, what is left, the cost a day, by expense category, and lines dated outside the trip.',
+    how: 'Approvers approve or reject here. The traveller links their claims (any that are not void and not on another trip) and can unlink a claim until it is approved. A trip with no claims can be cancelled.',
+    where: 'Expenses > Business trips. A line dated more than a day before or after the trip is flagged, and so are claims that pass the estimate. The request itself is not changed once made; cancel it and request another.',
+  },
   'expenses/report': {
     what: 'Claimed spending in a period by category, month, person, status and merchant.',
     how: 'Pick the dates and which claims to count: waiting for approval, approved, reimbursed. Click a category or a person to see only theirs; click the filter again to clear it.',

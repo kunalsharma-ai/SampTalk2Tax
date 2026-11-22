@@ -82,7 +82,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/deposits', label: 'Fixed deposits' },
     ],
   },
-  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }, { href: '/expenses/report', label: 'Expense reports' }, { href: '/expenses/receipts', label: 'Receipt matching', perm: 'expenses.submit' }, { href: '/expenses/risk', label: 'Unusual expenses', perm: 'expenses.read' }, { href: '/expenses/forecast', label: 'Expense forecast', perm: 'expenses.read' }, { href: '/expenses/department-budgets', label: 'Department budgets', perm: 'expenses.read' }, { href: '/expenses/reconciliation', label: 'Expense reconciliation', perm: 'expenses.read' }, { href: '/expenses/reimbursement-routing', label: 'Reimbursement routing', perm: 'expenses.reimburse' }, { href: '/expenses/evidence', label: 'Expense audit evidence', perm: 'audit.read' }] },
+  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }, { href: '/expenses/report', label: 'Expense reports' }, { href: '/expenses/trips', label: 'Business trips' }, { href: '/expenses/receipts', label: 'Receipt matching', perm: 'expenses.submit' }, { href: '/expenses/risk', label: 'Unusual expenses', perm: 'expenses.read' }, { href: '/expenses/forecast', label: 'Expense forecast', perm: 'expenses.read' }, { href: '/expenses/department-budgets', label: 'Department budgets', perm: 'expenses.read' }, { href: '/expenses/reconciliation', label: 'Expense reconciliation', perm: 'expenses.read' }, { href: '/expenses/reimbursement-routing', label: 'Reimbursement routing', perm: 'expenses.reimburse' }, { href: '/expenses/evidence', label: 'Expense audit evidence', perm: 'audit.read' }] },
   {
     group: 'Payroll',
     items: [
@@ -170,7 +170,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
 ];
 
 /** Employees only claim expenses; the rest of the books is not theirs to see. */
-export const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/expenses', label: 'My expense claims' }, { href: '/expenses/report', label: 'My expense report' }] }, { group: 'Help', items: [{ href: '/guide', label: 'Feature guide' }, { href: '/support', label: 'Help and support' }] }];
+export const EMPLOYEE_NAV: typeof NAV = [{ group: 'Expenses', items: [{ href: '/expenses', label: 'My expense claims' }, { href: '/expenses/report', label: 'My expense report' }, { href: '/expenses/trips', label: 'My business trips' }] }, { group: 'Help', items: [{ href: '/guide', label: 'Feature guide' }, { href: '/support', label: 'Help and support' }] }];
 
 
 /** The navigation an organisation sees: its role's items, in its country, without empty groups. */

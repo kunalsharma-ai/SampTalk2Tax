@@ -388,7 +388,7 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-004 |  | capability | OCR | Not started |
 | EXP-005 |  | capability | Expense categories | Implemented |
 | EXP-006 |  | capability | Mileage claims | Tested |
-| EXP-007 |  | capability | Travel expenses | Not started |
+| EXP-007 |  | capability | Travel expenses | Tested |
 | EXP-008 |  | capability | Per diem | Tested |
 | EXP-009 |  | capability | Reimbursements | Tested |
 | EXP-010 |  | capability | Expense approval workflows | Tested |
