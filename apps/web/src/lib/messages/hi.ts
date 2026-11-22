@@ -73,6 +73,7 @@ export const hi: Record<string, string> = {
   // Banking
   'Bank accounts': 'बैंक खाते',
   'Unusual bank activity': 'असामान्य बैंक गतिविधि',
+  'Reconciliation exceptions': 'मिलान अपवाद',
   Treasury: 'ट्रेज़री',
   Loans: 'ऋण',
   'Fixed deposits': 'सावधि जमा',

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
 import { BankActivityService } from './bank-activity.service';
+import { ReconciliationExceptionsService } from './reconciliation-exceptions.service';
 
 const ActivityQuery = z
   .object({
@@ -23,5 +24,21 @@ export class BankActivityController {
   @RequirePermission('banking.read')
   list(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(ActivityQuery)) q: z.infer<typeof ActivityQuery>) {
     return this.activity.findings(org, q);
+  }
+}
+
+const ExceptionsQuery = z.object({ accountId: z.uuid().optional() }).strict();
+
+@ApiTags('banking')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/banking/reconciliation-exceptions')
+export class ReconciliationExceptionsController {
+  constructor(private readonly exceptions: ReconciliationExceptionsService) {}
+
+  /** Why statement lines and entries are still unmatched on each bank account, with what to do about each. */
+  @Get()
+  @RequirePermission('banking.read')
+  list(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(ExceptionsQuery)) q: z.infer<typeof ExceptionsQuery>) {
+    return this.exceptions.analyse(org, q);
   }
 }

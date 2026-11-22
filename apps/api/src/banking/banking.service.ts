@@ -783,6 +783,31 @@ export class BankingService {
       .map((l) => toRow(l, !!book?.foreign));
   }
 
+  /**
+   * Everything still unmatched on one bank account, for exception analysis (BANK-020): statement
+   * lines not matched or excluded, and entries in the books not matched to a statement line since
+   * reconciliations began (or since the first statement line), in the account's currency.
+   */
+  async unmatchedItems(org: BankOrg, accountId: string, today = todayIso()) {
+    const book = await this.book(this.prisma, org, accountId);
+    const [firstRec, firstLine, lastLine, lines] = await Promise.all([
+      this.prisma.bankReconciliation.findFirst({ where: { orgId: org.id, accountId, status: 'COMPLETED' }, orderBy: { statementDate: 'asc' } }),
+      this.prisma.bankStatementLine.findFirst({ where: { orgId: org.id, accountId }, orderBy: { date: 'asc' } }),
+      this.prisma.bankStatementLine.findFirst({ where: { orgId: org.id, accountId }, orderBy: { date: 'desc' } }),
+      this.prisma.bankStatementLine.findMany({ where: { orgId: org.id, accountId, status: 'UNMATCHED' }, orderBy: [{ date: 'asc' }, { id: 'asc' }], select: { id: true, date: true, amount: true, description: true, reference: true } }),
+    ]);
+    const from = firstRec ? fromDbDate(firstRec.startDate) : firstLine ? fromDbDate(firstLine.date) : null;
+    const ledger = from ? await this.unmatchedLedgerLines(this.prisma, org.id, accountId, { from, to: today }, book) : [];
+    return {
+      currency: book.currency,
+      scale: book.scale,
+      since: from,
+      lastStatementDate: lastLine ? fromDbDate(lastLine.date) : null,
+      statement: lines.map((l) => ({ id: l.id, date: fromDbDate(l.date), amount: new D(l.amount.toString()).toFixed(book.scale), text: [l.description, l.reference].filter(Boolean).join(' · ') })),
+      book: ledger.map((r) => ({ id: r.id, date: fromDbDate(r.date), amount: new D(r.net.toString()).toFixed(book.scale), text: [entryNo(r.entry_number), r.memo, r.reference, r.description].filter(Boolean).join(' · '), entryId: r.entry_id })),
+    };
+  }
+
   /** For each journal line, the statement dates of the bank matches on it that are not removed. */
   private async activeMatchDates(db: Tx | PrismaService, orgId: string, journalLineIds: string[]) {
     const out = new Map<string, Date[]>();
