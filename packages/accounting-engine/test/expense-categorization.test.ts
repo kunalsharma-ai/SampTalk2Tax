@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { suggestExpenseCategory, type CategoryHistoryLine } from '../src/expense-categorization';
+import { suggestBillCoding, suggestExpenseCategory, type CategoryHistoryLine, type CodingHistoryLine } from '../src/expense-categorization';
 
 const accounts = [
   { id: 'rent', code: '6200', name: 'Rent' },
@@ -33,5 +33,17 @@ describe('expense categorisation', () => {
     const [top] = suggestExpenseCategory({ merchant: 'Synthetic Grand Hotel', description: 'Chennai trip', accounts, history });
     expect(top).toMatchObject({ accountId: 'travel', confidence: 'HIGH', score: 6, because: ['2 of 2 earlier lines from Synthetic Grand Hotel went here', '"hotel" reads as hotel stay', '"trip" was on 3 earlier lines, 3 of them booked here'] });
     expect(suggestExpenseCategory({ merchant: 'Uber', accounts: accounts.filter((a) => a.id !== 'travel'), history: [h('Uber', null, 'travel'), h('Uber', null, 'travel')] })).toEqual([]);
+  });
+
+  it('codes bill lines with the tax, department and project the vendor usually had', () => {
+    const v = (description: string, accountId: string, taxRateId: string | null, departmentId: string | null, projectId: string | null = null): CodingHistoryLine => ({ description, accountId, taxRateId, departmentId, projectId });
+    const vendorHistory = [v('Monthly retainer', 'prof', 'gst18', 'fin'), v('Monthly retainer', 'prof', 'gst18', 'fin', 'p1'), v('Monthly retainer', 'prof', 'gst18', 'ops'), v('Ad campaign', 'mkt', null, null)];
+    const lines = vendorHistory.map((x) => h('Synthetic Advisors', x.description, x.accountId));
+    const r = suggestBillCoding({ vendor: 'Synthetic Advisors', lines: [{ lineNo: 1, description: 'Retainer for November' }, { lineNo: 2, description: null }, { lineNo: 3, description: 'Something new' }], accounts, history: lines, vendorHistory, labels: { taxRates: new Map([['gst18', 'GST 18%']]), departments: new Map([['fin', 'Finance']]) } });
+    expect(r[0]).toMatchObject({ lineNo: 1, account: { accountId: 'prof', code: '6600' }, taxRateId: 'gst18', departmentId: 'fin', projectId: null });
+    // Finance on 2 of 3 is most; one project on 1 of 3 is not.
+    expect(r[0]!.because).toEqual(['GST 18% on 3 of 3 earlier lines from Synthetic Advisors to 6600', 'Finance on 2 of 3 earlier lines from Synthetic Advisors to 6600']);
+    expect(r[1]).toMatchObject({ lineNo: 2, account: { accountId: 'prof' }, taxRateId: 'gst18' });
+    expect(suggestBillCoding({ vendor: null, lines: [{ lineNo: 1, description: 'Something new' }], accounts, history: [], vendorHistory: [] })).toEqual([{ lineNo: 1, account: null, taxRateId: null, departmentId: null, projectId: null, because: [] }]);
   });
 });

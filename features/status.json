@@ -9040,6 +9040,19 @@
         "docs/EXPENSE_CATEGORIZATION.md"
       ],
       "notes": "Bill lines suggest the expense account from the vendor's posted bills of the last two years, the kind of spending named in the description and words seen on earlier bill lines, with confidence and reasons; the person presses Use. Same rules as EXP-020. Only expense accounts are suggested (not inventory or asset lines)."
+    },
+    "AP-026": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-categorization.ts",
+        "packages/accounting-engine/test/expense-categorization.test.ts",
+        "apps/api/src/expense-categorization/expense-categorization.service.ts",
+        "apps/api/test/expense-categorization.e2e.test.ts",
+        "apps/web/src/components/purchases/bill-coding.tsx",
+        "apps/web/e2e/expense-categorization-flow.test.mjs",
+        "docs/EXPENSE_CATEGORIZATION.md"
+      ],
+      "notes": "Code lines from history on a new bill: each line's expense account (same rules as AP-020), then the tax rate, department and project that more than half of the vendor's earlier posted lines on that account had (active ones only), with reasons. Fills blank fields only; the person reviews and saves. Deterministic, no AI model call; document extraction (AP-025) is separate."
     }
   }
 }

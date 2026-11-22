@@ -1,4 +1,4 @@
-# Automatic expense categorisation (EXP-020, AP-020)
+# Automatic expense categorisation (EXP-020, AP-020) and bill coding (AP-026)
 
 While a receipt line on an expense claim or a line on a bill is being typed, Talk2Tax suggests the
 expense account it most likely belongs to. The suggestion shows under the account picker with how
@@ -31,6 +31,17 @@ The engine is `suggestExpenseCategory` in `packages/accounting-engine/src/expens
 Accounts with at least 1 point are suggested, best first, at most three. Confidence is **likely**
 (high) at 3 points or more, **possible** (medium) at 2, and **a guess** (low) below that.
 
+## Coding a whole bill (AP-026)
+
+On a new bill, **Code lines from history** codes every line at once from the chosen vendor's
+posted bills (engine `suggestBillCoding`):
+
+- The account is the top suggestion above for the line's description and the vendor.
+- The tax rate, department and project are those that more than half of the vendor's earlier
+  lines on that account had. Inactive tax rates and dimension values are left out.
+- Only blank fields are filled, and a tax rate only when the bill can use it. The note under the
+  button says how many lines were filled, so the person checks them before saving.
+
 ## API
 
 - `POST /v1/orgs/:orgId/expense-categorization/claim-line` with `{ merchant, description }` needs
@@ -38,7 +49,11 @@ Accounts with at least 1 point are suggested, best first, at most three. Confide
 - `POST /v1/orgs/:orgId/expense-categorization/bill-line` with `{ contactId, description }` needs
   `purchases.read`.
 
-Both return `{ suggestions: [{ accountId, code, name, confidence, because, score }], linesRead }`.
+- `POST /v1/orgs/:orgId/expense-categorization/bill-coding` with `{ contactId, lines: [{ lineNo,
+  description }] }` needs `purchases.read` and returns `{ vendor, vendorLines, lines: [{ lineNo,
+  account, taxRateId, departmentId, projectId, because }] }`.
+
+The first two return `{ suggestions: [{ accountId, code, name, confidence, because, score }], linesRead }`.
 The score is in points, not money.
 
 ## Limits

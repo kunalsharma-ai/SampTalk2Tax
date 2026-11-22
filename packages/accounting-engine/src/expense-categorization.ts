@@ -112,3 +112,58 @@ export function suggestExpenseCategory(input: { merchant?: string | null; descri
       return { accountId: id, code: a.code, name: a.name, confidence: s >= 3 ? 'HIGH' : s >= 2 ? 'MEDIUM' : 'LOW', because: because.get(id)!, score: Math.round(s * 10) / 10 }; // not money: points
     });
 }
+
+/** An earlier line of the same vendor, with how it was coded (AP-026). */
+export interface CodingHistoryLine {
+  description: string | null;
+  accountId: string;
+  taxRateId: string | null;
+  departmentId: string | null;
+  projectId: string | null;
+}
+
+export interface BillLineCoding {
+  lineNo: number;
+  account: CategorySuggestion | null;
+  /** Each field is suggested only when most of the vendor's earlier lines on that account agree. */
+  taxRateId: string | null;
+  departmentId: string | null;
+  projectId: string | null;
+  because: string[];
+}
+
+/** The value most earlier lines agree on, when more than half of them do; null otherwise. */
+function mostOf(values: (string | null)[]): { value: string | null; n: number } | null {
+  if (!values.length) return null;
+  const counts = new Map<string | null, number>();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  const [value, n] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]!;
+  return n * 2 > values.length ? { value, n } : null; // not money: counts
+}
+
+/**
+ * Invoice coding (AP-026): for each line of a vendor's bill, the expense account (as
+ * suggestExpenseCategory, with the vendor's earlier lines and all earlier bill lines), then the tax
+ * rate, department and project that most of the vendor's earlier lines on that account used.
+ * Deterministic and explained; a person applies it.
+ */
+export function suggestBillCoding(input: { vendor: string | null; lines: { lineNo: number; description: string | null }[]; accounts: CategoryAccount[]; history: CategoryHistoryLine[]; vendorHistory: CodingHistoryLine[]; labels?: { taxRates?: Map<string, string>; departments?: Map<string, string>; projects?: Map<string, string> } }): BillLineCoding[] {
+  return input.lines.map((l) => {
+    const [account] = suggestExpenseCategory({ merchant: input.vendor, description: l.description, accounts: input.accounts, history: input.history, limit: 1 });
+    const out: BillLineCoding = { lineNo: l.lineNo, account: account ?? null, taxRateId: null, departmentId: null, projectId: null, because: [] };
+    if (!account) return out;
+    const same = input.vendorHistory.filter((h) => h.accountId === account.accountId);
+    const fields = [
+      ['taxRateId', 'tax', input.labels?.taxRates],
+      ['departmentId', 'department', input.labels?.departments],
+      ['projectId', 'project', input.labels?.projects],
+    ] as const;
+    for (const [key, word, names] of fields) {
+      const m = mostOf(same.map((h) => h[key]));
+      if (!m || m.value === null) continue;
+      out[key] = m.value;
+      out.because.push(`${names?.get(m.value) ?? `The same ${word}`} on ${m.n} of ${same.length} earlier ${same.length === 1 ? 'line' : 'lines'} from ${input.vendor ?? 'this vendor'} to ${account.code}`);
+    }
+    return out;
+  });
+}

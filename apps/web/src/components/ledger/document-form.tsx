@@ -15,6 +15,7 @@ import { useDimensions } from '@/lib/dimensions';
 import { ContactDialog, draftFrom, type ContactDraft } from './contacts-page';
 import { CurrencyRate } from './currency-rate';
 import { CategorySuggestionHint } from '@/components/expenses/category-suggestion';
+import { BillCodingButton } from '@/components/purchases/bill-coding';
 
 interface LineState {
   key: number;
@@ -358,7 +359,10 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
           <tfoot>
             <tr>
               <Td colSpan={gstMode ? 4 : 3}>
-                <Button type="button" variant="secondary" size="sm" onClick={() => setLines((ls) => [...ls, blank(nextKey.current++)])}>+ Add line</Button>
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <Button type="button" variant="secondary" size="sm" onClick={() => setLines((ls) => [...ls, blank(nextKey.current++)])}>+ Add line</Button>
+                  {kind === 'BILL' ? <BillCodingButton orgId={orgId} contactId={contact} lines={lines} taxIds={new Set(taxes.map((t) => t.id))} onApply={(patches) => setLines((ls) => ls.map((x) => (patches.has(x.key) ? { ...x, ...patches.get(x.key) } : x)))} /> : null}
+                </span>
               </Td>
               <Td colSpan={2} className="whitespace-nowrap text-right text-sm text-fg-muted">
                 <p>{gstMode ? 'Taxable value' : 'Subtotal'}</p>
