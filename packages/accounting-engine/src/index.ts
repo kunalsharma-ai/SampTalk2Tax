@@ -141,3 +141,4 @@ export * from './supplier-negotiation';
 export * from './reimbursement-routing';
 export * from './expense-evidence';
 export * from './contract-compliance';
+export * from './tax-report';

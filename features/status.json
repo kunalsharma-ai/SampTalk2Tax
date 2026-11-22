@@ -9282,6 +9282,19 @@
         "docs/TAX_SCENARIOS.md"
       ],
       "notes": "What-if scenarios against the advance tax estimate: change in sales and deductible expenses (with GST rates), extra depreciation, non-deductible add-backs and regime switch; gives taxable income, corporate tax with surcharge/marginal relief/cess, change vs estimate, net payable after credits, profit after tax, effective rate, net GST on the change and cash effect. Regimes compared on the estimate. Saved scenarios (tax_scenarios) recomputed on every read, audited. Not modelled: loss carry-forward, MAT, instalment timing; India only."
+    },
+    "RPT-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/tax-report.ts",
+        "packages/accounting-engine/test/tax-report.test.ts",
+        "apps/api/src/tax-report/tax-report.service.ts",
+        "apps/api/test/tax-report.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/tax/page.tsx",
+        "apps/web/e2e/tax-report-flow.test.mjs",
+        "docs/TAX_REPORTS.md"
+      ],
+      "notes": "Tax report for a period (FY to date by default, up to 2 years): output/input tax by rate and month from posted invoices, credit notes, bills and vendor credits (FX converted, GST heads), reverse charge, TDS/TCS by section, and every tax payable/receivable/expense account with opening, debits, credits and closing from the ledger. CSV export with formula guard, audited. Read-only."
     }
   }
 }

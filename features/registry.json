@@ -21415,9 +21415,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/tax-report.ts",
+        "packages/accounting-engine/test/tax-report.test.ts",
+        "apps/api/src/tax-report/tax-report.service.ts",
+        "apps/api/test/tax-report.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/tax/page.tsx",
+        "apps/web/e2e/tax-report-flow.test.mjs",
+        "docs/TAX_REPORTS.md"
+      ],
+      "notes": "Tax report for a period (FY to date by default, up to 2 years): output/input tax by rate and month from posted invoices, credit notes, bills and vendor credits (FX converted, GST heads), reverse charge, TDS/TCS by section, and every tax payable/receivable/expense account with opening, debits, credits and closing from the ledger. CSV export with formula guard, audited. Read-only."
     },
     {
       "id": "RPT-010",
