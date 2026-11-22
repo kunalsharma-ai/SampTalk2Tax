@@ -80,7 +80,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/deposits', label: 'Fixed deposits' },
     ],
   },
-  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }, { href: '/expenses/report', label: 'Expense reports' }, { href: '/expenses/risk', label: 'Unusual expenses', perm: 'expenses.read' }, { href: '/expenses/reconciliation', label: 'Expense reconciliation', perm: 'expenses.read' }] },
+  { group: 'Expenses', items: [{ href: '/expenses', label: 'Expense claims' }, { href: '/expenses/report', label: 'Expense reports' }, { href: '/expenses/risk', label: 'Unusual expenses', perm: 'expenses.read' }, { href: '/expenses/forecast', label: 'Expense forecast', perm: 'expenses.read' }, { href: '/expenses/reconciliation', label: 'Expense reconciliation', perm: 'expenses.read' }] },
   {
     group: 'Payroll',
     items: [

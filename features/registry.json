@@ -10085,9 +10085,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-forecast.ts",
+        "packages/accounting-engine/test/expense-forecast.test.ts",
+        "apps/api/src/expense-forecast/expense-forecast.service.ts",
+        "apps/api/test/expense-forecast.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/forecast/page.tsx",
+        "apps/web/e2e/expense-forecast-flow.test.mjs",
+        "docs/EXPENSE_FORECAST.md"
+      ],
+      "notes": "Forecast of expense-claim spending by account for 1-6 months from 12 months of approved/reimbursed claim lines (by spend date): last-3-month average, seasonal factor (0.5-2) with 10+ months of history, range from the 6-month spread, trend vs prior 3 months; irregular accounts listed separately; spent so far, owed to employees and waiting approval. Decimal-only, deterministic. Not built: bills/payroll in this view, department budgets, hand-entered planned spend."
     },
     {
       "id": "EXP-026",

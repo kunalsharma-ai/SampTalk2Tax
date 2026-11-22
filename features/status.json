@@ -9096,6 +9096,19 @@
         "docs/CONTRACT_MATCHING.md"
       ],
       "notes": "Hand-made invoices to customers with contracts matched to the contract they most likely bill (lines by account and description, prices, period total, date in term; score 0-100, strong at 80). Shows the period, billing twice, earlier periods unbilled, voided or skipped periods and line-by-line price differences. Count as period N records the invoice as the contract's next period so the runner does not bill it again (locked, re-checked, contract history + audit); dismiss with reason (append-only, audited). Not built: reading terms from contract PDFs, language-model explanations."
+    },
+    "EXP-025": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-forecast.ts",
+        "packages/accounting-engine/test/expense-forecast.test.ts",
+        "apps/api/src/expense-forecast/expense-forecast.service.ts",
+        "apps/api/test/expense-forecast.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/forecast/page.tsx",
+        "apps/web/e2e/expense-forecast-flow.test.mjs",
+        "docs/EXPENSE_FORECAST.md"
+      ],
+      "notes": "Forecast of expense-claim spending by account for 1-6 months from 12 months of approved/reimbursed claim lines (by spend date): last-3-month average, seasonal factor (0.5-2) with 10+ months of history, range from the 6-month spread, trend vs prior 3 months; irregular accounts listed separately; spent so far, owed to employees and waiting approval. Decimal-only, deterministic. Not built: bills/payroll in this view, department budgets, hand-entered planned spend."
     }
   }
 }

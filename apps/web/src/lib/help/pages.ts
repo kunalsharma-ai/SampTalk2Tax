@@ -475,6 +475,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the dates and which claims to count: waiting for approval, approved, reimbursed. Click a category or a person to see only theirs; click the filter again to clear it.',
     where: 'Expenses. Built from the lines of claims, dated by the day the expense happened. Drafts, rejected and void claims are left out. Those who read expenses see everyone; others see their own.',
   },
+  'expenses/forecast': {
+    what: 'What expense claims are likely to cost in the coming months, by expense account, with a likely range, and what is owed to employees now and waiting for approval.',
+    how: 'Choose how many months ahead. Each account uses the average of its last three months, adjusted for the season once it has a year of history; the range comes from how much it usually moves. Accounts used only now and then are listed separately.',
+    where: 'Expenses. Worked out from approved and paid-back claims by the date the money was spent; drafts and rejected claims do not count.',
+  },
   'expenses/risk': {
     what: 'Expense claims submitted in the period with warning signs, compared across claims and people and with the year before. High: the same receipt (date, amount and merchant, or category when there is no merchant) on another claim, by the same person or someone else, or receipts on one day split to stay under a per-receipt limit. Medium: far above the usual for the category, within 5% under a limit, someone with 3 or more lines just under a limit in 90 days, a receipt more than 60 days older than the claim, or receipts of 5,000 or more with no file attached. Low: a receipt on a Sunday, or a round amount of 1,000 or more.',
     how: 'Start with High and with the people at the top. Open a claim to see its receipts and ask the claimant; reject a claim that is wrong so they can fix it, or void one already approved. Turn on the Unusual expense claims check in Alerts settings to be told about new ones.',
