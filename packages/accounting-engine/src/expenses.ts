@@ -20,6 +20,8 @@ export interface ExpenseLineInput {
   /** What was paid, tax included. Decimal string > 0 in the claim currency. */
   amount: string;
   taxRateId?: string | null;
+  /** The department (cost centre) the spending belongs to (EXP-014). */
+  departmentId?: string | null;
 }
 
 export interface ComputedExpenseLine {
@@ -34,6 +36,7 @@ export interface ComputedExpenseLine {
   amount: Dec;
   netAmount: Dec;
   taxAmount: Dec;
+  departmentId: string | null;
 }
 
 export interface ComputedExpenseClaim {
@@ -101,6 +104,7 @@ export function computeExpenseClaim(lines: ExpenseLineInput[], currency: string,
       amount,
       netAmount: amount.minus(tax),
       taxAmount: tax,
+      departmentId: l.departmentId ?? null,
     });
   });
   if (issues.length) throw new DocumentValidationError(issues);
@@ -113,7 +117,7 @@ export function computeExpenseClaim(lines: ExpenseLineInput[], currency: string,
 export function buildExpenseClaimJournal(claim: ComputedExpenseClaim, payableAccountId: string, currency: string): JournalLineInput[] {
   const out: JournalLineInput[] = [{ accountId: payableAccountId, currency, credit: claim.total.toFixed(), description: 'Owed to employee' }];
   for (const l of claim.lines) {
-    if (l.netAmount.gt(0)) out.push({ accountId: l.accountId, currency, debit: l.netAmount.toFixed(), description: [l.merchant, l.description].filter(Boolean).join(' · ') || undefined });
+    if (l.netAmount.gt(0)) out.push({ accountId: l.accountId, currency, debit: l.netAmount.toFixed(), description: [l.merchant, l.description].filter(Boolean).join(' · ') || undefined, ...(l.departmentId ? { departmentId: l.departmentId } : {}) });
   }
   const taxByAccount = new Map<string, Dec>();
   for (const l of claim.lines) {

@@ -704,6 +704,9 @@ export interface ExpenseClaimLine {
   taxRate: string;
   netAmount: string;
   taxAmount: string;
+  /** The department the cost belongs to (EXP-014). */
+  departmentId: string | null;
+  department: string | null;
   possibleDuplicateOf: string[];
   /** A mileage or per diem line: what the amount was worked out from. */
   allowance: ClaimLineAllowance | null;

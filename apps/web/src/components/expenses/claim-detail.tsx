@@ -8,7 +8,7 @@ import { AttachmentsPanel } from '@/components/attachments';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
-import { date, today } from '@/lib/format';
+import { date, money, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can, type BankAccountSummary, type ExpenseClaim } from '@/lib/types';
 import { ClaimForm } from './claim-form';
@@ -32,6 +32,12 @@ export function ClaimDetail() {
   const c0 = q.data;
   // Only people who pay claims back need the bank accounts (employees cannot read them).
   const banks = useQuery({ enabled: !!c0?.actions.reimburse, queryKey: ['bank-accounts', orgId], queryFn: () => api<BankAccountSummary[]>(`/v1/orgs/${orgId}/banking/accounts`) });
+  // Approvers see what approving would do to each department's budget (EXP-014).
+  const impact = useQuery({
+    enabled: c0?.status === 'SUBMITTED' && !!org && can(org.role, 'expenses.read') && c0.lines.some((l) => l.departmentId),
+    queryKey: ['expense-claim-budget-impact', orgId, claimId],
+    queryFn: () => api<{ fiscalYear: number; departments: { departmentId: string; name: string; amount: string; budget: string | null; remainingBefore: string | null; remainingAfter: string | null; takesOver: boolean }[] }>(`${base}/budget-impact`),
+  });
   const refresh = async () => {
     for (const k of ['expense-claim', 'expense-claims', 'dashboard', 'journals', 'bank-accounts']) await qc.invalidateQueries({ queryKey: [k, orgId] });
   };
@@ -116,6 +122,21 @@ export function ClaimDetail() {
           </Alert>
         </div>
       ) : null}
+      {c.status === 'SUBMITTED' && impact.data?.departments.length ? (
+        <div className="mb-4" role="region" aria-label="Department budgets">
+          <Alert tone={impact.data.departments.some((d) => d.takesOver) ? 'warning' : 'accent'} title={impact.data.departments.some((d) => d.takesOver) ? 'Approving takes a department over its budget' : 'Department budgets'}>
+            {impact.data.departments
+              .map((d) =>
+                d.budget === null
+                  ? `${d.name}: ${money(d.amount, cur)} on this claim, no budget set for ${impact.data!.fiscalYear}`
+                  : `${d.name}: ${money(d.amount, cur)} on this claim; ${money(d.remainingBefore!, cur)} left of ${money(d.budget, cur)}, ${d.takesOver ? `${money(d.remainingAfter!.replace('-', ''), cur)} over after approval` : `${money(d.remainingAfter!, cur)} left after approval`}`,
+              )
+              .join('. ')}
+            .{' '}
+            <Link className="underline" href={`/orgs/${orgId}/expenses/department-budgets`}>See department budgets</Link>
+          </Alert>
+        </div>
+      ) : null}
       {policy.length ? (
         <Card className="mb-4" role="region" aria-label="Expense policy">
           <CardHeader
@@ -185,7 +206,7 @@ export function ClaimDetail() {
               <Tr key={l.lineNo}>
                 <Td className="text-fg-muted">{l.lineNo}</Td>
                 <Td>{date(l.date)}</Td>
-                <Td className="text-fg-muted"><span className="num">{l.accountCode}</span> {l.accountName}</Td>
+                <Td className="text-fg-muted"><span className="num">{l.accountCode}</span> {l.accountName}{l.department ? <p className="text-xs">Department: {l.department}</p> : null}</Td>
                 <Td>{l.allowance ? <Badge tone="violet">{l.allowance.kind === 'MILEAGE' ? 'Mileage' : 'Per diem'}</Badge> : null} {[l.merchant, l.description].filter(Boolean).join(' · ') || <span className="text-fg-faint">—</span>}{l.possibleDuplicateOf.length ? <p className="text-xs text-warning">Same date and amount as {l.possibleDuplicateOf.join(', ')}</p> : null}</Td>
                 <Td className="text-fg-muted">{l.taxName ?? '—'}</Td>
                 <Td numeric><Money value={l.taxAmount} currency={cur} /></Td>

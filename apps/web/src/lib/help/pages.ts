@@ -480,6 +480,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose how many months ahead. Each account uses the average of its last three months, adjusted for the season once it has a year of history; the range comes from how much it usually moves. Accounts used only now and then are listed separately.',
     where: 'Expenses. Worked out from approved and paid-back claims by the date the money was spent; drafts and rejected claims do not count.',
   },
+  'expenses/department-budgets': {
+    what: "Each department's budget for the fiscal year against what it has spent on expense accounts, what claims waiting for approval would add, and how much is left. A department is Over when it spent more than its budget, At risk when waiting claims would take it over or when at this pace it would pass the budget by the year end, and On track otherwise.",
+    how: 'Choose a department on each expense claim line. Finance sets a budget per department and year here (it needs the budgets permission); setting it again replaces it. Approvers see on a waiting claim what approving it would leave in each department\'s budget.',
+    where: 'Expenses. Spent counts posted entries on expense accounts that carry the department, by posting date, closing entries left out. Waiting counts submitted claims in the functional currency. A budget does not block a claim; no AI model is used.',
+  },
   'expenses/risk': {
     what: 'Expense claims submitted in the period with warning signs, compared across claims and people and with the year before. High: the same receipt (date, amount and merchant, or category when there is no merchant) on another claim, by the same person or someone else, or receipts on one day split to stay under a per-receipt limit. Medium: far above the usual for the category, within 5% under a limit, someone with 3 or more lines just under a limit in 90 days, a receipt more than 60 days older than the claim, or receipts of 5,000 or more with no file attached. Low: a receipt on a Sunday, or a round amount of 1,000 or more.',
     how: 'Start with High and with the people at the top. Open a claim to see its receipts and ask the claimant; reject a claim that is wrong so they can fix it, or void one already approved. Turn on the Unusual expense claims check in Alerts settings to be told about new ones.',

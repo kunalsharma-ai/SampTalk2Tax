@@ -25,6 +25,8 @@ interface LineState {
   from: string;
   to: string;
   purpose: string;
+  /** The department the cost belongs to (EXP-014); optional. */
+  departmentId: string;
 }
 const KIND_LABEL = { RECEIPT: 'Receipt', MILEAGE: 'Mileage', PER_DIEM: 'Per diem' } as const;
 const QTY = /^\d{0,4}(\.\d{0,1})?$/;
@@ -40,17 +42,20 @@ export function useExpenseOptions() {
 export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onCancel?: () => void }) {
   const { orgId } = useOrg();
   const options = useExpenseOptions();
+  // Departments are optional: an organisation without any never sees the choice.
+  const departments = useQuery({ queryKey: ['expense-departments', orgId], queryFn: () => api<{ departments: { id: string; code: string; name: string }[] }>(`/v1/orgs/${orgId}/expense-departments`), retry: false });
+  const deptList = departments.data?.departments ?? [];
   const router = useRouter();
   const qc = useQueryClient();
   const nextKey = useRef(100);
-  const blank = (key: number, kind: LineState['kind'] = 'RECEIPT'): LineState => ({ key, kind, date: today(), accountId: '', merchant: '', description: '', amount: '', taxRateId: '', rateId: '', quantity: '', from: '', to: '', purpose: '' });
+  const blank = (key: number, kind: LineState['kind'] = 'RECEIPT'): LineState => ({ key, kind, date: today(), accountId: '', merchant: '', description: '', amount: '', taxRateId: '', rateId: '', quantity: '', from: '', to: '', purpose: '', departmentId: '' });
   const [title, setTitle] = useState(existing?.title ?? '');
   const [lines, setLines] = useState<LineState[]>(
     existing
       ? existing.lines.map((x, i) =>
           x.allowance
-            ? { ...blank(i + 1, x.allowance.kind), date: x.date, rateId: x.allowance.rateId, quantity: x.allowance.quantity, from: x.allowance.from ?? '', to: x.allowance.to ?? '', purpose: x.allowance.purpose ?? '' }
-            : { ...blank(i + 1), date: x.date, accountId: x.accountId, merchant: x.merchant ?? '', description: x.description ?? '', amount: x.amount, taxRateId: x.taxRateId ?? '' },
+            ? { ...blank(i + 1, x.allowance.kind), date: x.date, rateId: x.allowance.rateId, quantity: x.allowance.quantity, from: x.allowance.from ?? '', to: x.allowance.to ?? '', purpose: x.allowance.purpose ?? '', departmentId: x.departmentId ?? '' }
+            : { ...blank(i + 1), date: x.date, accountId: x.accountId, merchant: x.merchant ?? '', description: x.description ?? '', amount: x.amount, taxRateId: x.taxRateId ?? '', departmentId: x.departmentId ?? '' },
         )
       : [blank(1)],
   );
@@ -62,8 +67,8 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
   // What goes to the server: an allowance line sends its rate and quantity; the server works out the amount.
   const payload = filled.map((x) =>
     x.kind === 'RECEIPT'
-      ? { date: x.date, accountId: x.accountId, merchant: x.merchant || null, description: x.description || null, amount: x.amount || '0', taxRateId: x.taxRateId || null }
-      : { date: x.date, allowance: { rateId: x.rateId, quantity: x.quantity || '0', from: x.kind === 'MILEAGE' ? x.from || null : null, to: x.to || null, purpose: x.purpose || null } },
+      ? { date: x.date, accountId: x.accountId, merchant: x.merchant || null, description: x.description || null, amount: x.amount || '0', taxRateId: x.taxRateId || null, departmentId: x.departmentId || null }
+      : { date: x.date, departmentId: x.departmentId || null, allowance: { rateId: x.rateId, quantity: x.quantity || '0', from: x.kind === 'MILEAGE' ? x.from || null : null, to: x.to || null, purpose: x.purpose || null } },
   );
   const calc = useMemo(() => {
     const issues: string[] = [];
@@ -149,6 +154,12 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
                       {rates.some((r) => r.kind === 'PER_DIEM') || x.kind === 'PER_DIEM' ? <option value="PER_DIEM">Per diem</option> : null}
                     </Select>
                     <Input className="mt-2" type="date" aria-label={`Date for line ${n}`} max={today()} value={x.date} onChange={(e) => update(x.key, { date: e.target.value })} />
+                    {deptList.length || x.departmentId ? (
+                      <Select className="mt-2" aria-label={`Department for line ${n}`} value={x.departmentId} onChange={(e) => update(x.key, { departmentId: e.target.value })}>
+                        <option value="">No department</option>
+                        {deptList.map((d) => <option key={d.id} value={d.id}>{d.code} · {d.name}</option>)}
+                      </Select>
+                    ) : null}
                   </Td>
                   {x.kind === 'RECEIPT' ? (
                     <>

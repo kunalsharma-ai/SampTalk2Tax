@@ -18,6 +18,8 @@ export interface ExpenseClaimLineDoc {
   taxRate: string;
   netAmount: string;
   taxAmount: string;
+  /** The department (cost centre) the spending belongs to (EXP-014); absent on older lines. */
+  departmentId?: string | null;
 }
 
 export interface ExpenseClaimDoc {

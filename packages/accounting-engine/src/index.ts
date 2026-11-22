@@ -135,3 +135,4 @@ export * from './bank-activity';
 export * from './reconciliation-exceptions';
 export * from './expense-risk';
 export * from './expense-forecast';
+export * from './department-budgets';
