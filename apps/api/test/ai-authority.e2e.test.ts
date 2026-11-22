@@ -87,8 +87,9 @@ describe('what agents may do on their own (QA-030)', () => {
   it('gives the copilot read-only tools and proposals that cannot touch the books', async () => {
     const tools = (await ctx.http().get(`${org.base}/copilot/status`).set(owner.auth).expect(200)).body.toolCatalog.map((t: { name: string }) => t.name) as string[];
     expect(tools.length).toBeGreaterThan(5);
-    for (const t of tools) expect(t, t).toMatch(/^(get|list)_|^propose_(task|alert_update)$/);
-    expect([...ACTION_KINDS]).toEqual(['CREATE_TASK', 'ACKNOWLEDGE_ALERT', 'DISMISS_ALERT']);
+    for (const t of tools) expect(t, t).toMatch(/^(get|list)_|^propose_(task|alert_update|payment_batch)$/);
+    // A payment batch proposal only prepares a draft that another person approves (AP-036); it posts nothing.
+    expect([...ACTION_KINDS]).toEqual(['CREATE_TASK', 'ACKNOWLEDGE_ALERT', 'DISMISS_ALERT', 'PREPARE_PAYMENT_BATCH']);
     for (const k of ACTION_KINDS) expect(ACTION_RULES[k].permission).not.toMatch(/^(journals|payments|banking|documents)\./);
   });
 
