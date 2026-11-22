@@ -21447,9 +21447,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payroll-report.ts",
+        "packages/accounting-engine/test/payroll-report.test.ts",
+        "apps/api/src/payroll-report/payroll-report.service.ts",
+        "apps/api/test/payroll-report.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/payroll/page.tsx",
+        "apps/web/e2e/payroll-report-flow.test.mjs",
+        "docs/PAYROLL_REPORTS.md"
+      ],
+      "notes": "Payroll report over a range of months (FY to date by default, up to 24): totals from posted payslips, statutory amounts (PF employee/employer incl. EDLI and admin, ESI, PT, TDS), by month with gross change flagged at 10%, by employee, draft runs listed. CSV export audited. No bank details. Read-only."
     },
     {
       "id": "RPT-011",

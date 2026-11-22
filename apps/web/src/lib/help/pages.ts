@@ -708,6 +708,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Pick the date and compare it with an earlier one. Open a line to see its entries.',
     where: 'Reports. Assets always equal liabilities plus equity.',
   },
+  'reports/payroll': {
+    what: 'Posted pay runs over a range of months: gross pay, deductions, net pay and the cost to the employer; the statutory amounts (PF, ESI, professional tax and TDS on salary) withheld and added by the employer; each month with its change in gross pay; and each employee with what was paid and withheld.',
+    how: 'Choose the months, or leave them blank for the financial year to date. A change of 10% or more in gross pay on the month before is flagged: check joiners, leavers and one-off pay. Post the draft pay runs listed to include them. Download the CSV for your payroll adviser; each download is kept in the audit trail.',
+    where: 'Reports. Needs the payroll read permission. Built from posted payslips; voided and draft pay runs are left out. Bank account details are never part of this report. Nothing here changes the books.',
+  },
   'reports/tax': {
     what: 'The tax in a period from posted invoices, credit notes, bills and vendor credits: taxable value, output tax and input tax at each rate with the net, the same by month, tax withheld (TDS on bills, TCS on invoices) by section, and every tax payable, tax receivable and tax expense account with its balance at the start, debits, credits and balance at the end.',
     how: 'Choose the period, or leave it blank for the financial year to date. Compare the net with the tax accounts: a difference points to tax posted by hand or a document posted to the wrong account. Download the CSV for your tax adviser; each download is kept in the audit trail.',

@@ -9295,6 +9295,19 @@
         "docs/TAX_REPORTS.md"
       ],
       "notes": "Tax report for a period (FY to date by default, up to 2 years): output/input tax by rate and month from posted invoices, credit notes, bills and vendor credits (FX converted, GST heads), reverse charge, TDS/TCS by section, and every tax payable/receivable/expense account with opening, debits, credits and closing from the ledger. CSV export with formula guard, audited. Read-only."
+    },
+    "RPT-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/payroll-report.ts",
+        "packages/accounting-engine/test/payroll-report.test.ts",
+        "apps/api/src/payroll-report/payroll-report.service.ts",
+        "apps/api/test/payroll-report.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/payroll/page.tsx",
+        "apps/web/e2e/payroll-report-flow.test.mjs",
+        "docs/PAYROLL_REPORTS.md"
+      ],
+      "notes": "Payroll report over a range of months (FY to date by default, up to 24): totals from posted payslips, statutory amounts (PF employee/employer incl. EDLI and admin, ESI, PT, TDS), by month with gross change flagged at 10%, by employee, draft runs listed. CSV export audited. No bank details. Read-only."
     }
   }
 }
