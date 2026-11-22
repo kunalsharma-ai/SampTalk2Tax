@@ -13,6 +13,9 @@ export interface Dispute {
   functionalAmount: string;
   reason: DisputeReason;
   description: string;
+  /** The likely reason (AR-037), and whether it differs from the one recorded. */
+  suggested: DisputeSuggestion;
+  reasonDiffers: boolean;
   owner: { id: string; name: string } | null;
   targetDate: string | null;
   pastTarget: boolean;
@@ -24,6 +27,13 @@ export interface Dispute {
   resolutionNote: string | null;
   resolvedOn: string | null;
   resolvedBy: string | null;
+}
+
+export interface DisputeSuggestion {
+  reason: DisputeReason;
+  label: string;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  because: string[];
 }
 
 export interface DisputeEvent {
@@ -45,6 +55,7 @@ export interface DisputeList {
   currency: string;
   summary: { open: number; openAmount: string; pastTarget: number; oldestOpenDays: number | null; resolved: number; averageDaysToResolve: number | null; outcomes: Record<DisputeOutcome, number> };
   disputes: Dispute[];
+  reasonDiffers: number;
   members: Member[];
   can: { manage: boolean };
 }

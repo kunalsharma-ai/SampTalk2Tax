@@ -9000,6 +9000,19 @@
         "docs/EXPENSE_RECONCILIATION.md"
       ],
       "notes": "As of any date: the Employee Reimbursements Payable balance against approved claims not yet reimbursed or voided, with every difference itemised (entries no claim made, claims whose own entries differ); claims owed by employee and age (over 30 days overdue); reimbursements of the last 90 days against imported bank statements (matched, not on the statement once statements run 3+ days past, or awaiting the statement). Read-only and deterministic."
+    },
+    "AR-037": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/dispute-classification.ts",
+        "packages/accounting-engine/test/dispute-classification.test.ts",
+        "apps/api/src/disputes/disputes.service.ts",
+        "apps/api/test/dispute-classification.e2e.test.ts",
+        "apps/web/src/components/disputes/dispute-form.tsx",
+        "apps/web/e2e/dispute-classification-flow.test.mjs",
+        "docs/DISPUTE_CLASSIFICATION.md"
+      ],
+      "notes": "The likely reason for an invoice dispute (price, quantity, quality, not received, billed twice, tax, other) from the customer's words (scored phrases and words) and the invoice (another invoice for the same total within 45 days; disputed amount equal to the tax), with confidence and what it is based on. Suggested live while raising or changing a dispute, one click to apply; recorded disputes whose reason looks wrong are flagged. Rule-based and explained; no AI model."
     }
   }
 }

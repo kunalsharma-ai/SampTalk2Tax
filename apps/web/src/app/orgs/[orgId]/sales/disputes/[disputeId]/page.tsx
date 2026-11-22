@@ -104,6 +104,7 @@ export default function DisputePage() {
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-fg-muted">Reason</p>
           <p className="mt-2 text-sm">{DISPUTE_REASON_LABEL[d.reason]}</p>
+          {d.reasonDiffers ? <p className="mt-1 text-xs text-warning">Looks like {d.suggested.label.toLowerCase()} ({d.suggested.confidence.toLowerCase()} confidence){d.suggested.because.length ? `: ${d.suggested.because.join(', ')}` : ''}. Change the reason if it fits better.</p> : null}
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide text-fg-muted">Owner</p>
@@ -138,6 +139,7 @@ export default function DisputePage() {
             today={d.targetDate && d.targetDate < d.openedOn ? d.targetDate : d.openedOn}
             maxAmount={d.invoice.due}
             currency={c}
+            classifyFor={{ orgId, documentId: d.invoice.id }}
             submitLabel="Save changes"
             pending={update.isPending}
             error={update.error}

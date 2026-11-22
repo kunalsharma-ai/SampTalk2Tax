@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  classifyDispute,
   D,
   dec,
   disputeAge,
@@ -79,6 +80,8 @@ export class DisputesService {
         org.functionalCurrency,
       ),
       disputes: rows,
+      /** Open disputes whose likely reason (AR-037) differs from the one recorded. */
+      reasonDiffers: rows.filter((r) => r.status === 'OPEN' && r.reasonDiffers).length,
       members: await this.members(org.id),
       can: { manage: hasPermission(org.role, 'sales.manage') },
     };
@@ -224,7 +227,10 @@ export class DisputesService {
   private async context(org: DisputeOrg, rows: { documentId: string; contactId: string; creditNoteId: string | null; ownerId: string | null; openedById: string; resolvedById: string | null }[]) {
     const docIds = [...new Set(rows.flatMap((r) => [r.documentId, ...(r.creditNoteId ? [r.creditNoteId] : [])]))];
     const docs = docIds.length
-      ? await this.prisma.document.findMany({ where: { orgId: org.id, id: { in: docIds } }, select: { id: true, number: true, issueDate: true, dueDate: true, total: true, currency: true, exchangeRate: true } })
+      ? await this.prisma.document.findMany({ where: { orgId: org.id, id: { in: docIds } }, select: { id: true, number: true, issueDate: true, dueDate: true, total: true, taxTotal: true, currency: true, exchangeRate: true } })
+      : [];
+    const invoices = rows.length
+      ? await this.prisma.document.findMany({ where: { orgId: org.id, kind: 'INVOICE', status: 'POSTED', contactId: { in: [...new Set(rows.map((r) => r.contactId))] } }, select: { id: true, number: true, issueDate: true, total: true, contactId: true } })
       : [];
     const contacts = rows.length ? await this.prisma.contact.findMany({ where: { orgId: org.id, id: { in: [...new Set(rows.map((r) => r.contactId))] } }, select: { id: true, name: true } }) : [];
     const users = await this.names(rows.flatMap((r) => [r.ownerId, r.openedById, r.resolvedById]).filter((x): x is string => !!x));
@@ -233,10 +239,32 @@ export class DisputesService {
       : [];
     return {
       docs: new Map(docs.map((d) => [d.id, d])),
+      invoices,
       contacts: new Map(contacts.map((c) => [c.id, c.name])),
       users,
       paid: new Map(due.map((a) => [a.targetId, new D((a._sum.amount ?? 0).toString())])),
     };
+  }
+
+  /** The likely reason for a dispute (AR-037), from its description and the invoice. */
+  private suggest(d: { documentId: string; contactId: string; description: string; amount: Prisma.Decimal }, ctx: Pick<Awaited<ReturnType<DisputesService['context']>>, 'docs' | 'invoices'>) {
+    const doc = ctx.docs.get(d.documentId)!;
+    const c = classifyDispute({
+      description: d.description,
+      amount: d.amount.toFixed(),
+      invoiceTax: doc.taxTotal.toFixed(),
+      invoice: { number: doc.number, issueDate: fromDbDate(doc.issueDate), total: doc.total.toFixed() },
+      others: ctx.invoices.filter((i) => i.contactId === d.contactId && i.id !== doc.id).map((i) => ({ id: i.id, number: i.number, issueDate: fromDbDate(i.issueDate), total: i.total.toFixed() })),
+    });
+    return { reason: c.reason, label: c.label, confidence: c.confidence, because: c.because };
+  }
+
+  /** The likely reason for a dispute about to be raised on an invoice. Read-only. */
+  async classify(org: DisputeOrg, input: { documentId: string; description: string; amount?: string | null }) {
+    const doc = await this.prisma.document.findFirst({ where: { id: input.documentId, orgId: org.id, kind: 'INVOICE' }, select: { id: true, contactId: true, total: true } });
+    if (!doc) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Invoice not found' });
+    const ctx = await this.context(org, [{ documentId: doc.id, contactId: doc.contactId, creditNoteId: null, ownerId: null, openedById: '', resolvedById: null }]);
+    return this.suggest({ documentId: doc.id, contactId: doc.contactId, description: input.description, amount: new Prisma.Decimal(input.amount || doc.total.toFixed()) }, ctx);
   }
 
   private functional(org: DisputeOrg, d: { amount: Prisma.Decimal; documentId: string }, ctx: Awaited<ReturnType<DisputesService['context']>>) {
@@ -252,6 +280,7 @@ export class DisputesService {
     const openedOn = fromDbDate(d.openedOn);
     const resolvedOn = d.resolvedOn ? fromDbDate(d.resolvedOn) : null;
     const targetDate = d.targetDate ? fromDbDate(d.targetDate) : null;
+    const suggested = this.suggest(d, ctx);
     return {
       id: d.id,
       ref: disputeRef(d.number),
@@ -262,6 +291,8 @@ export class DisputesService {
       functionalAmount: this.functional(org, d, ctx).toFixed(minorUnits(org.functionalCurrency)),
       reason: d.reason as DisputeReason,
       description: d.description,
+      suggested,
+      reasonDiffers: suggested.confidence !== 'LOW' && suggested.reason !== d.reason,
       owner: d.ownerId ? { id: d.ownerId, name: ctx.users.get(d.ownerId) ?? 'A member' } : null,
       targetDate,
       pastTarget: d.status === 'OPEN' && targetDate != null && targetDate < today,

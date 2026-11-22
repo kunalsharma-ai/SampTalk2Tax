@@ -377,8 +377,8 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'sales/disputes': {
     what: 'Invoices a customer has queried, with the amount in dispute, the reason, who owns it and the date to settle it by.',
-    how: 'Raise a dispute from the invoice with Raise dispute…. Open a dispute to add notes, change the owner, amount or target date, and resolve it with a credit note, the customer paying, a write-off or the customer withdrawing it.',
-    where: 'Sales. While a dispute is open its invoice is left out of payment reminders and overdue-invoice workflows; it still counts in receivables and the ageing.',
+    how: 'Raise a dispute from the invoice with Raise dispute…. As you type what the customer disputes, the likely reason is suggested from the words used and the invoice (another invoice for the same total within 45 days, or a disputed amount equal to the tax); use it or keep your own. A dispute whose reason looks wrong shows Looks like… in the list. Open a dispute to add notes, change the owner, amount or target date, and resolve it with a credit note, the customer paying, a write-off or the customer withdrawing it.',
+    where: 'Sales. While a dispute is open its invoice is left out of payment reminders and overdue-invoice workflows; it still counts in receivables and the ageing. Suggested reasons are rule-based and explained, never applied by themselves, and use no AI model.',
   },
   'sales/disputes/[id]': {
     what: 'One dispute: what the customer disputes, how much, the owner, the date to settle by and every step taken.',
