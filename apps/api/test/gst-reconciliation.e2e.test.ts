@@ -38,7 +38,7 @@ beforeAll(async () => {
   viewer = await registerUser(ctx, 'GST Recon Viewer');
   employee = await registerUser(ctx, 'GST Recon Employee');
   org = await createOrg(ctx, owner);
-  other = await createOrg(ctx, owner, 'Other GST Co');
+  other = await createOrg(ctx, owner, { name: 'Other GST Co' });
   await ctx.http().post(`${org.base}/members`).set(owner.auth).send({ email: viewer.email, role: 'VIEWER' }).expect(201);
   await ctx.http().post(`${org.base}/members`).set(owner.auth).send({ email: employee.email, role: 'EMPLOYEE' }).expect(201);
   for (const m of [BEFORE, LAST]) await ctx.http().post(`${org.base}/periods/fiscal-years`).set(owner.auth).send({ fiscalYear: fiscalYearForDate(`${m}-01`, 4) });
