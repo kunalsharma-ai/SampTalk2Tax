@@ -255,6 +255,21 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Read the cautions first, then the points with the largest savings. Paid above first price is what the price rises cost you; the best other vendor is the lowest latest price another vendor billed for the same item.',
     where: 'Purchases, Supplier negotiation. The scorecard grade comes from Vendor performance. Nothing here changes the books.',
   },
+  'purchases/vendor-contracts': {
+    what: 'Every vendor contract on record with its term, payment terms, spend cap and price list, and every posted bill that breaks one. High: a unit price above the contract price, or spend taking the contract over its cap. Medium: a bill due sooner than the contract\'s payment terms, or billed after the contract ended with no other contract covering it. Low: an item not on the price list of a "contract items only" contract.',
+    how: 'Record a contract from the vendor\'s signed terms. Start with the High findings: billed above contract prices is what to claim back as a vendor credit. Open a contract to see its findings bill by bill.',
+    where: 'Purchases. Needs the purchases read permission; recording and terminating need purchases manage. Checked from posted bills; items match by HSN/SAC code, or by description. Nothing here changes the books, and no vendor is contacted.',
+  },
+  'purchases/vendor-contracts/new': {
+    what: 'Records a vendor contract: the vendor, its term, payment terms in days, an optional spend cap and the agreed unit prices.',
+    how: 'Give each item its HSN/SAC code where the bills carry one, else its description as the bills write it. Tick "Contract items only" when the vendor may bill nothing else. A vendor can have one contract at a time; terms cannot be changed afterwards, so terminate and record a new one.',
+    where: 'Purchases, Vendor contracts. Needs the purchases manage permission. Prices are in your currency; foreign bills are converted at their own exchange rate.',
+  },
+  'purchases/vendor-contracts/[id]': {
+    what: 'One vendor contract: its state, spend against the cap, the contract prices and every finding on the bills it covers, with what each was raised on.',
+    how: 'Use the findings when you talk to the vendor or ask for a credit. Terminate the contract when it ends early: bills after the last day are flagged as outside the term, and the vendor can have a new contract from the next day.',
+    where: 'Purchases, Vendor contracts. Terminating needs the purchases manage permission and is kept in the audit trail.',
+  },
   'purchases/vendor-risk': {
     what: 'Every active vendor\'s risk, worked out from what the books hold: bank details changed, unverified or shared with another vendor, tax problems, a poor performance grade, a large share of purchases, a new vendor growing fast, onboarding not approved and bills paid late.',
     how: 'Work through the vendors waiting for a review. Open each, look at the factors and record a decision with a note and a date to look again. A new factor, a higher risk or that date asks for another review.',

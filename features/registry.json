@@ -5232,9 +5232,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/contract-compliance.ts",
+        "packages/accounting-engine/test/contract-compliance.test.ts",
+        "apps/api/src/vendor-contracts/vendor-contracts.service.ts",
+        "apps/api/test/vendor-contracts.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/new/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/[contractId]/page.tsx",
+        "apps/web/e2e/vendor-contracts-flow.test.mjs",
+        "docs/VENDOR_CONTRACTS.md"
+      ],
+      "notes": "Vendor contracts (vendor_contracts collection: term, payment terms, spend cap, items-only, price list by HSN/description; fixed terms, terminate with reason, audited). Posted bills checked against the contract covering their date: price above contract (excess x qty), over the spend cap, shorter payment terms, after the term with no other contract, item not on the list. Read-only checks. Not built: contract PDF extraction, blocking bills at entry."
     },
     {
       "id": "AP-033",

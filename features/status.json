@@ -9254,6 +9254,21 @@
         "docs/EXPENSE_EVIDENCE.md"
       ],
       "notes": "Evidence per decided claim collected from the records: receipt files with SHA-256, approver and time, policy exceptions with the approver's note (from the audit trail), posted journal, reimbursement, bank statement match (gap once the statement runs 3+ days past the payment; cash n/a), hash-chained audit events. Gaps-only filter, evidence pack per claim, CSV evidence index with formula guard. Not built: zipped pack of the files themselves."
+    },
+    "AP-032": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/contract-compliance.ts",
+        "packages/accounting-engine/test/contract-compliance.test.ts",
+        "apps/api/src/vendor-contracts/vendor-contracts.service.ts",
+        "apps/api/test/vendor-contracts.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/new/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/purchases/vendor-contracts/[contractId]/page.tsx",
+        "apps/web/e2e/vendor-contracts-flow.test.mjs",
+        "docs/VENDOR_CONTRACTS.md"
+      ],
+      "notes": "Vendor contracts (vendor_contracts collection: term, payment terms, spend cap, items-only, price list by HSN/description; fixed terms, terminate with reason, audited). Posted bills checked against the contract covering their date: price above contract (excess x qty), over the spend cap, shorter payment terms, after the term with no other contract, item not on the list. Read-only checks. Not built: contract PDF extraction, blocking bills at entry."
     }
   }
 }

@@ -71,6 +71,7 @@ export const hi: Record<string, string> = {
   'Vendor risk': 'विक्रेता जोखिम',
   'Payment fraud checks': 'भुगतान धोखाधड़ी जाँच',
   'Supplier negotiation': 'आपूर्तिकर्ता मोलभाव',
+  'Vendor contracts': 'विक्रेता अनुबंध',
   'Payment priorities': 'भुगतान प्राथमिकताएँ',
   'Vendor invoices': 'विक्रेता चालान',
   'Payables ageing': 'देय राशि की आयु',
