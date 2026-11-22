@@ -12,6 +12,7 @@ import { ComplianceService } from '../compliance/compliance.service';
 import { KpisService } from '../kpis/kpis.service';
 import { SubledgerService } from '../ledgers/subledger.service';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { PaymentBatchesService } from '../payment-batches/payment-batches.service';
 import { ReportsService } from '../reports/reports.service';
 import { CopilotActionsService } from './copilot.actions';
 import type { CopilotTool } from './copilot.model';
@@ -21,7 +22,7 @@ import type { CopilotTool } from './copilot.model';
  * tool set it was started with, so an older conversation is closed for new questions
  * rather than continued with tools the model never saw.
  */
-export const TOOLSET_VERSION = 3;
+export const TOOLSET_VERSION = 4;
 
 /** Tool output longer than this is cut, so one call cannot fill the model's context. */
 export const MAX_TOOL_OUTPUT_CHARS = 40_000;
@@ -107,6 +108,8 @@ export const TOOL_TITLES: Record<string, string> = {
   get_cfo_answer: 'Virtual CFO answers',
   propose_task: 'Propose a task',
   propose_alert_update: 'Propose an alert update',
+  list_payable_bills: 'Bills to pay',
+  propose_payment_batch: 'Propose a payment batch',
 };
 
 interface ToolDef<I extends z.ZodTypeAny> {
@@ -136,6 +139,7 @@ export class CopilotTools {
     private readonly orgs: OrganizationsService,
     private readonly cfo: CfoService,
     private readonly actions: CopilotActionsService,
+    private readonly batches: PaymentBatchesService,
   ) {
     const def = <I extends z.ZodTypeAny>(t: ToolDef<I>) => t as unknown as ToolDef<z.ZodTypeAny>;
     this.defs = [
@@ -334,6 +338,41 @@ export class CopilotTools {
         label: (i) => (i.action === 'DISMISS' ? 'Proposed alert dismissal' : 'Proposed alert acknowledgement'),
         path: () => '/alerts',
         run: async (i, c) => this.propose(c, i.action === 'DISMISS' ? { kind: 'DISMISS_ALERT', alertId: i.alert_ref, reason: i.note ?? '' } : { kind: 'ACKNOWLEDGE_ALERT', alertId: i.alert_ref, note: i.note }),
+      }),
+      def({
+        name: 'list_payable_bills',
+        description:
+          "Posted vendor bills with something left to pay, oldest due first: bill_ref, number, vendor, due date, amount due, whether it is already in a payment batch and whether the vendor's bank details are verified; and the bank accounts payments can be made from (bank_account_ref). Call this before propose_payment_batch, or for questions about what to pay.",
+        inputSchema: object({}),
+        input: z.object({}).strict(),
+        permission: 'purchases.read',
+        label: () => 'Bills to pay',
+        path: () => '/purchases/payment-batches/new',
+        run: async (_i, c) => {
+          const o = await this.orgs.get(c.orgId);
+          const bills = await this.batches.payableBills({ id: c.orgId, role: c.role, functionalCurrency: o.functionalCurrency });
+          const banks = await this.batches.bankAccounts(c.orgId);
+          return {
+            currency: o.functionalCurrency,
+            bills: bills.map((b) => ({ bill_ref: b.id, number: b.number, vendor: b.vendor.name, due_date: b.dueDate, amount_due: b.due, in_batch: b.inBatch, vendor_bank_verified: !!b.bank?.verified })),
+            bank_accounts: banks.map((a) => ({ bank_account_ref: a.id, code: a.code, name: a.name })),
+          };
+        },
+      }),
+      def({
+        name: 'propose_payment_batch',
+        description:
+          'Propose preparing a DRAFT supplier payment batch for chosen bills, paid from a bank account on a date. This does NOT pay anything and does NOT create the batch: the member must press Confirm on screen within 15 minutes, and even then the batch is only a draft that someone other than the member must approve before a bank file can be made. You can never approve, release, send or record a payment. Use bill_ref and bank_account_ref from list_payable_bills, and only the bills the member asked for. Afterwards tell them to confirm it on the card; never say anything was paid.',
+        inputSchema: object({
+          bank_account_ref: { type: 'string', description: 'bank_account_ref from list_payable_bills.' },
+          payment_date: S.date('Planned payment date, YYYY-MM-DD, today or later.'),
+          bill_refs: { type: 'array', items: { type: 'string' }, description: 'bill_ref values from list_payable_bills, at most 50.' },
+        }),
+        input: z.object({ bank_account_ref: z.string().uuid('Use a bank_account_ref from list_payable_bills'), payment_date: date, bill_refs: z.array(z.string().uuid('Use bill_refs from list_payable_bills')).min(1).max(50) }).strict(),
+        permission: 'purchases.manage',
+        label: (i) => `Proposed payment batch of ${i.bill_refs.length} ${i.bill_refs.length === 1 ? 'bill' : 'bills'}`,
+        path: () => '/purchases/payment-batches',
+        run: async (i, c) => this.propose(c, { kind: 'PREPARE_PAYMENT_BATCH', bankAccountId: i.bank_account_ref, paymentDate: i.payment_date, documentIds: i.bill_refs }),
       }),
     ];
   }

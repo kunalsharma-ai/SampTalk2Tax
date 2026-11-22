@@ -56,6 +56,8 @@ export interface Batch {
   createdBy: string | null;
   createdById: string;
   createdAt: string;
+  /** Prepared from a proposal by the assistant (AP-036): always approved by someone else. */
+  preparedWithCopilot: boolean;
   approvedBy: string | null;
   approvedAt: string | null;
   selfApproved: boolean;

@@ -116,7 +116,14 @@ export default function PaymentBatchPage() {
           </Alert>
         </div>
       ) : null}
-      {b.status === 'DRAFT' && b.can.approve && mine && !blocked ? (
+      {b.preparedWithCopilot && b.status === 'DRAFT' ? (
+        <div className="mt-4">
+          <Alert tone="violet" title="Prepared with the assistant">
+            {mine ? 'You accepted this batch from the assistant, so someone else with approval rights must approve it. The assistant cannot approve, download the bank file or record payments.' : 'The assistant prepared this batch and a member accepted it. It needs approval by someone other than that member; the assistant cannot approve, download the bank file or record payments.'}
+          </Alert>
+        </div>
+      ) : null}
+      {b.status === 'DRAFT' && b.can.approve && mine && !blocked && !b.preparedWithCopilot ? (
         <p className="mt-3 text-sm text-fg-muted">You prepared this batch, so someone else with approval rights should approve it. If you are the only approver in the organisation, your approval is accepted and marked as self-approved.</p>
       ) : null}
       {b.status === 'DRAFT' && !b.can.approve ? <p className="mt-3 text-sm text-fg-muted">Waiting for someone with approval rights to approve it.</p> : null}
@@ -125,7 +132,7 @@ export default function PaymentBatchPage() {
         <CardHeader title="Batch record" description="Who prepared, approved and paid this batch, and when." />
         <dl className="grid gap-4 p-5 text-sm sm:grid-cols-3">
           <div><dt className="text-fg-muted">Total</dt><dd className="font-semibold"><Money value={b.total} currency={b.currency} /></dd></div>
-          <div><dt className="text-fg-muted">Prepared</dt><dd>{b.createdBy ?? 'Someone'} · {dateTime(b.createdAt)}</dd></div>
+          <div><dt className="text-fg-muted">Prepared</dt><dd>{b.createdBy ?? 'Someone'} · {dateTime(b.createdAt)}{b.preparedWithCopilot ? <> <Badge tone="violet">With the assistant</Badge></> : null}</dd></div>
           <div><dt className="text-fg-muted">Approved</dt><dd>{b.approvedAt ? <>{b.approvedBy ?? 'Someone'} · {dateTime(b.approvedAt)}{b.selfApproved ? <> <Badge tone="warning">Self-approved</Badge></> : null}</> : 'Not yet'}</dd></div>
           <div><dt className="text-fg-muted">Bank file</dt><dd>{b.fileDownloadedAt ? `Downloaded ${dateTime(b.fileDownloadedAt)}` : 'Not downloaded'}</dd></div>
           <div><dt className="text-fg-muted">Paid</dt><dd>{b.paidAt ? `${b.paidBy ?? 'Someone'} · ${dateTime(b.paidAt)}` : 'Not yet'}</dd></div>

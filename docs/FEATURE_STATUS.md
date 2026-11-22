@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 606 |
+| Not started | 605 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 654 |
+| Tested | 655 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 2 | 41 |
-| Accounts payable | M2 | 36 | 4 | 32 |
+| Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 29 | 25 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -2092,6 +2092,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/purchases/bill-exceptions/page.tsx
   - apps/web/e2e/bill-exceptions-flow.test.mjs
   - docs/BILL_EXCEPTIONS.md
+
+### AP-036 — AI may prepare payments but must never execute unauthorized fund transfers
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: The copilot can list bills to pay and propose a draft supplier payment batch (sensitive, confirmed twice by the member). Confirming only prepares a draft as that member; it is always approved by someone other than the member who accepted it, even where self-approval is otherwise allowed. Approving, the bank file, recording payments, transfers and bank-detail changes can never be assistant actions (startup check and database kind check). Positive and negative cases tested in API and browser.
+- Evidence:
+  - apps/api/src/copilot/copilot.actions.ts
+  - apps/api/src/copilot/copilot.tools.ts
+  - apps/api/src/payment-batches/payment-batches.service.ts
+  - apps/api/test/ai-payment-guard.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/payment-batches/[batchId]/page.tsx
+  - apps/web/e2e/ai-payment-guard-flow.test.mjs
+  - docs/AI_PAYMENT_GUARD.md
 
 ### BANK-001 — Multiple bank account management
 
