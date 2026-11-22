@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 587 |
+| Not started | 586 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 673 |
+| Tested | 674 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 5 | 36 |
+| Advanced financial reporting | M6 | 41 | 4 | 37 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -6001,6 +6001,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/consolidation.e2e.test.ts
   - apps/web/e2e/consolidation-flow.test.mjs
+
+### RPT-021 — Audit reports
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Audit report over a period of days (FY to date by default, up to two years, org time zone) from the hash-chained audit trail and posted journals: activity by person and record type, sensitive actions in 7 categories (periods reopened, access, bank details, deletions, voids/reversals, settings, exports), journal checks (posted >30 days late, round manual >=100000 in multiples of 10000, self-posted manual), chain verified. CSV export audited. Read-only.
+- Evidence:
+  - packages/accounting-engine/src/audit-report.ts
+  - packages/accounting-engine/test/audit-report.test.ts
+  - apps/api/src/audit-report/audit-report.service.ts
+  - apps/api/test/audit-report.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/audit/page.tsx
+  - apps/web/e2e/audit-report-flow.test.mjs
+  - docs/AUDIT_REPORTS.md
 
 ### RPT-024 — Board reports
 

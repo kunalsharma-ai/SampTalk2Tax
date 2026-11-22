@@ -21772,9 +21772,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/audit-report.ts",
+        "packages/accounting-engine/test/audit-report.test.ts",
+        "apps/api/src/audit-report/audit-report.service.ts",
+        "apps/api/test/audit-report.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/audit/page.tsx",
+        "apps/web/e2e/audit-report-flow.test.mjs",
+        "docs/AUDIT_REPORTS.md"
+      ],
+      "notes": "Audit report over a period of days (FY to date by default, up to two years, org time zone) from the hash-chained audit trail and posted journals: activity by person and record type, sensitive actions in 7 categories (periods reopened, access, bank details, deletions, voids/reversals, settings, exports), journal checks (posted >30 days late, round manual >=100000 in multiples of 10000, self-posted manual), chain verified. CSV export audited. Read-only."
     },
     {
       "id": "RPT-022",

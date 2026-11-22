@@ -907,7 +907,7 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-018 |  | capability | Working capital | Tested |
 | RPT-019 |  | capability | Financial ratios | Tested |
 | RPT-020 |  | capability | Consolidated statements | Tested |
-| RPT-021 |  | capability | Audit reports | Not started |
+| RPT-021 |  | capability | Audit reports | Tested |
 | RPT-022 |  | capability | Executive reports | Not started |
 | RPT-023 |  | capability | Investor reports | Not started |
 | RPT-024 |  | capability | Board reports | Tested |
