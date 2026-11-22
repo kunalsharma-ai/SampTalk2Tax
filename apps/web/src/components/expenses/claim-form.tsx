@@ -8,6 +8,7 @@ import { api, ApiError } from '@/lib/api';
 import { money, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import type { AllowanceKind, ExpenseClaim, ExpenseOptions } from '@/lib/types';
+import { CategorySuggestionHint } from './category-suggestion';
 
 interface LineState {
   key: number;
@@ -156,6 +157,7 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
                           <option value="">Choose…</option>
                           {accounts.map((a) => <option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}
                         </Select>
+                        <CategorySuggestionHint orgId={orgId} kind="claim-line" line={n} merchant={x.merchant} description={x.description} current={x.accountId} onUse={(accountId) => update(x.key, { accountId })} />
                       </Td>
                       <Td><Input aria-label={`Merchant for line ${n}`} maxLength={200} value={x.merchant} onChange={(e) => update(x.key, { merchant: e.target.value })} /></Td>
                       <Td><Input aria-label={`Description for line ${n}`} maxLength={500} value={x.description} onChange={(e) => update(x.key, { description: e.target.value })} /></Td>

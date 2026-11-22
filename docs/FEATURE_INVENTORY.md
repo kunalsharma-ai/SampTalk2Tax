@@ -188,7 +188,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-017 |  | capability | Three-way matching | Tested |
 | AP-018 |  | capability | Duplicate invoice detection | Tested |
 | AP-019 |  | capability | Supplier tax validation | Tested |
-| AP-020 |  | capability | Expense classification | Not started |
+| AP-020 |  | capability | Expense classification | Tested |
 | AP-021 |  | capability | Vendor performance tracking | Tested |
 | AP-022 |  | capability | Payment reconciliation | Tested |
 | AP-023 |  | capability | International payment preparation | Tested |
@@ -401,7 +401,7 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-017 |  | capability | Expense reporting | Tested |
 | EXP-018 |  | capability | Duplicate expense detection | Implemented |
 | EXP-019 |  | capability | Receipt-to-transaction matching | Not started |
-| EXP-020 | AI Expense Features | capability | Automatic expense categorization | Not started |
+| EXP-020 | AI Expense Features | capability | Automatic expense categorization | Tested |
 | EXP-021 | AI Expense Features | capability | Missing receipt detection | Implemented |
 | EXP-022 | AI Expense Features | capability | Policy violation detection | Tested |
 | EXP-023 | AI Expense Features | capability | Unusual expense alerts | Tested |

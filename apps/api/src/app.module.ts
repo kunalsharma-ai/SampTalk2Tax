@@ -38,6 +38,8 @@ import { JournalApprovalsService } from './journal-approvals/journal-approvals.s
 import { FinancialTagsController } from './financial-tags/financial-tags.controller';
 import { FinancialTagsService } from './financial-tags/financial-tags.service';
 import { BillChecksController } from './bill-checks/bill-checks.controller';
+import { ExpenseCategorizationController } from './expense-categorization/expense-categorization.controller';
+import { ExpenseCategorizationService } from './expense-categorization/expense-categorization.service';
 import { BillChecksService } from './bill-checks/bill-checks.service';
 import { AllowancesService } from './expenses/allowances.service';
 import { ExpensesService } from './expenses/expenses.service';
@@ -399,6 +401,7 @@ export class AppModule {
         GstPaymentsController,
         JournalApprovalsController,
         BillChecksController,
+        ExpenseCategorizationController,
         GstController,
         WithholdingController,
         PayrollController,
@@ -568,6 +571,7 @@ export class AppModule {
         GstPaymentsService,
         JournalApprovalsService,
         BillChecksService,
+        ExpenseCategorizationService,
         GstService,
         WithholdingService,
         PayrollService,

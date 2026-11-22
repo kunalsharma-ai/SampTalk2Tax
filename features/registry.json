@@ -4793,9 +4793,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-categorization.ts",
+        "packages/accounting-engine/test/expense-categorization.test.ts",
+        "apps/api/src/expense-categorization/expense-categorization.service.ts",
+        "apps/api/test/expense-categorization.e2e.test.ts",
+        "apps/web/src/components/ledger/document-form.tsx",
+        "apps/web/e2e/expense-categorization-flow.test.mjs",
+        "docs/EXPENSE_CATEGORIZATION.md"
+      ],
+      "notes": "Bill lines suggest the expense account from the vendor's posted bills of the last two years, the kind of spending named in the description and words seen on earlier bill lines, with confidence and reasons; the person presses Use. Same rules as EXP-020. Only expense accounts are suggested (not inventory or asset lines)."
     },
     {
       "id": "AP-021",
@@ -9872,9 +9880,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-categorization.ts",
+        "packages/accounting-engine/test/expense-categorization.test.ts",
+        "apps/api/src/expense-categorization/expense-categorization.service.ts",
+        "apps/api/test/expense-categorization.e2e.test.ts",
+        "apps/web/src/components/expenses/category-suggestion.tsx",
+        "apps/web/src/components/expenses/claim-form.tsx",
+        "apps/web/e2e/expense-categorization-flow.test.mjs",
+        "docs/EXPENSE_CATEGORIZATION.md"
+      ],
+      "notes": "Receipt lines on expense claims suggest the likely expense account while typing: the same merchant on approved and reimbursed claims of the last two years (share of its lines per account), kinds of spending named in the merchant or description (taxi, hotel, restaurant, phone, software...) matched to account names, and description words seen on earlier lines. Up to three accounts with HIGH/MEDIUM/LOW confidence and reasons; nothing is booked until the person presses Use. Rule-based, no AI model."
     },
     {
       "id": "EXP-021",
