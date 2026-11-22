@@ -70,6 +70,7 @@ export const hi: Record<string, string> = {
   'Supplier tax checks': 'आपूर्तिकर्ता कर जाँच',
   'Vendor risk': 'विक्रेता जोखिम',
   'Payment fraud checks': 'भुगतान धोखाधड़ी जाँच',
+  'Supplier negotiation': 'आपूर्तिकर्ता मोलभाव',
   'Payment priorities': 'भुगतान प्राथमिकताएँ',
   'Vendor invoices': 'विक्रेता चालान',
   'Payables ageing': 'देय राशि की आयु',

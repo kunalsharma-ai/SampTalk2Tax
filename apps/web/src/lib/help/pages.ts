@@ -245,6 +245,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with High and with payments still in a batch: they can be stopped. Open the batch or payment, check with the vendor on a number you already have, verify or correct the bank details, and cancel the batch if needed.',
     where: 'Purchases. Needs the reports permission. Account numbers are never shown here. Worked out from the books; no outside data or AI model is used, and nothing here changes the books.',
   },
+  'purchases/negotiation': {
+    what: 'A negotiation brief for every vendor billed in the last twelve months: items whose price went up 5% or more, the same item 3% or more cheaper from another vendor, spend up 20% on the year before or a 25% share of all purchases, a record of paying on time, and a C or D scorecard grade. Each point says what it was raised on and, where the books show one, the saving.',
+    how: 'Start with the vendors with the largest possible saving. Open a vendor to see the points to raise and the items with their first, latest and best other prices, then use them in your conversation. Settle overdue bills first when the brief says so.',
+    where: 'Purchases. Needs the purchases read permission. Worked out from posted bills, vendor credits and payments; items match by HSN/SAC code, or by description. Nothing here changes the books, and no vendor is contacted.',
+  },
+  'purchases/negotiation/[id]': {
+    what: 'What to raise with one vendor: spend and its change, its share of all purchases, how you pay them, their scorecard grade, the points to raise and every item bought from them in the last twelve months.',
+    how: 'Read the cautions first, then the points with the largest savings. Paid above first price is what the price rises cost you; the best other vendor is the lowest latest price another vendor billed for the same item.',
+    where: 'Purchases, Supplier negotiation. The scorecard grade comes from Vendor performance. Nothing here changes the books.',
+  },
   'purchases/vendor-risk': {
     what: 'Every active vendor\'s risk, worked out from what the books hold: bank details changed, unverified or shared with another vendor, tax problems, a poor performance grade, a large share of purchases, a new vendor growing fast, onboarding not approved and bills paid late.',
     how: 'Work through the vendors waiting for a review. Open each, look at the factors and record a decision with a note and a date to look again. A new factor, a higher risk or that date asks for another review.',

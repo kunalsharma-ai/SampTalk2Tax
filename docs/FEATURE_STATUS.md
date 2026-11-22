@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 594 |
+| Not started | 593 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 666 |
+| Tested | 667 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 0 | 43 |
-| Accounts payable | M2 | 36 | 3 | 33 |
+| Accounts payable | M2 | 36 | 2 | 34 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
 | Global taxation engine | M3 | 54 | 23 | 31 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -2096,6 +2096,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/purchases/bill-checks, bill page Unusual bill checks card
   - apps/web/e2e/bill-checks-flow.test.mjs
   - docs/BILL_CHECKS.md
+
+### AP-033 — Supplier negotiation assistance
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Deterministic negotiation brief per vendor billed in the last 12 months: price rises (>=5%, saving = paid above first price), same HSN/description cheaper from another vendor (>=3%, saving on quantity bought), volume (+20% or 25% share), good payment record (ask +15 days or early-payment discount), C/D scorecard grade, caution when paying late or overdue. Read-only. Not built: AI-drafted negotiation emails, outside market prices.
+- Evidence:
+  - packages/accounting-engine/src/supplier-negotiation.ts
+  - packages/accounting-engine/test/supplier-negotiation.test.ts
+  - apps/api/src/supplier-negotiation/supplier-negotiation.service.ts
+  - apps/api/test/supplier-negotiation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/negotiation/page.tsx
+  - apps/web/src/app/orgs/[orgId]/purchases/negotiation/[vendorId]/page.tsx
+  - apps/web/e2e/supplier-negotiation-flow.test.mjs
+  - docs/SUPPLIER_NEGOTIATION.md
 
 ### AP-034 — Predictive payment scheduling
 

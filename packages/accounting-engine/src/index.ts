@@ -137,3 +137,4 @@ export * from './expense-risk';
 export * from './receipt-matching';
 export * from './expense-forecast';
 export * from './department-budgets';
+export * from './supplier-negotiation';
