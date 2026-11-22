@@ -143,6 +143,7 @@ export const hi: Record<string, string> = {
   'GST payments': 'जीएसटी भुगतान',
   'GST reconciliation': 'जीएसटी मिलान',
   'Tax forecast': 'कर पूर्वानुमान',
+  'Tax scenarios': 'कर परिदृश्य',
   'Deadline risk': 'समय-सीमा जोखिम',
   'Tax audit': 'कर ऑडिट',
   'Compliance documents': 'अनुपालन दस्तावेज़',

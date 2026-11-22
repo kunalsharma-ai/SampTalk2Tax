@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 590 |
+| Not started | 589 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 670 |
+| Tested | 671 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 23 | 31 |
+| Global taxation engine | M3 | 54 | 22 | 32 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 5 | 22 |
@@ -2797,6 +2797,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/forecast/page.tsx
   - apps/web/e2e/tax-forecast-flow.test.mjs
   - docs/TAX_FORECAST.md
+
+### TAX-049 — Tax scenario simulations
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: What-if scenarios against the advance tax estimate: change in sales and deductible expenses (with GST rates), extra depreciation, non-deductible add-backs and regime switch; gives taxable income, corporate tax with surcharge/marginal relief/cess, change vs estimate, net payable after credits, profit after tax, effective rate, net GST on the change and cash effect. Regimes compared on the estimate. Saved scenarios (tax_scenarios) recomputed on every read, audited. Not modelled: loss carry-forward, MAT, instalment timing; India only.
+- Evidence:
+  - packages/tax-engine/src/india/tax-scenarios.ts
+  - packages/tax-engine/test/tax-scenarios.test.ts
+  - apps/api/src/tax-scenarios/tax-scenarios.service.ts
+  - apps/api/test/tax-scenarios.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/scenarios/page.tsx
+  - apps/web/e2e/tax-scenarios-flow.test.mjs
+  - docs/TAX_SCENARIOS.md
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 
