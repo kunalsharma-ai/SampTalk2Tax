@@ -8948,6 +8948,19 @@
         "docs/EXPENSE_RISK.md"
       ],
       "notes": "Fraud risk indicators on expense claims across claims and people: the same receipt (date, amount, merchant or category) on another claim, receipts split around a per-receipt limit, someone with 3+ lines just under a limit in 90 days, receipts over 60 days old, receipts of 5,000+ with no file, Sundays and round amounts; a per-claim score (3/2/1 by level) and a People to look at ranking. Signs for review, not proof; deterministic; read-only."
+    },
+    "BANK-022": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cash-movements.ts",
+        "packages/accounting-engine/test/cash-movements.test.ts",
+        "apps/api/src/bank-activity/cash-movements.service.ts",
+        "apps/api/test/cash-movements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/cash-movements/page.tsx",
+        "apps/web/e2e/cash-movements-flow.test.mjs",
+        "docs/BANK_CASH_FORECAST.md"
+      ],
+      "notes": "Each bank account's balance week by week for 30/60/90 days from its imported statements: movements that repeat (same narration and direction, 3+, weekly/monthly/quarterly, within 25% of the median) projected from when last seen, the average week of the other movements of the last 13 weeks with a 25th-75th percentile range, starting from the book balance; lowest week-end balance. Deterministic; statements only (no live bank feed)."
     }
   }
 }
