@@ -901,6 +901,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Owners and admins choose Keep or Delete after a number of days for each kind of working data. Anything older is deleted each day; Apply now runs it straight away.',
     where: 'Governance. Each run that deleted something is listed, and every change is in the audit trail.',
   },
+  'settings/communication': {
+    what: 'What Talk2Tax may email to your customers and vendors: whether automations may email them at all, and every contact who opted out of email.',
+    how: 'Owners and admins choose whether automations may email contacts. Record an opt-out, or that a contact wants email again, on the customer\'s or vendor\'s page, with the reason. A contact who opted out is never emailed, and an AI-drafted reminder goes only after a person approves it.',
+    where: 'Governance. Each email that was refused, and every change to the policy or to a contact\'s consent, is in the audit trail.',
+  },
   'ai-control': {
     what: 'Controls for every AI feature: which agents run, their limits, and a stop switch.',
     how: 'Turn agents on or off, set their limits, and stop all AI at once if needed.',

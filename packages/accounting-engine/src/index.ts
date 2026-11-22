@@ -95,6 +95,7 @@ export * from './account-reconciliation';
 export * from './expense-report';
 export * from './expense-reconciliation';
 export * from './expense-categorization';
+export * from './communication-policy';
 export * from './duplicate-files';
 export * from './cost-allocation';
 export * from './bank-watch';

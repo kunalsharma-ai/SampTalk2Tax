@@ -161,7 +161,7 @@ Part 6 · M2 · priority P1 · depends on: GL, DOC, WFLOW
 | AR-040 | Advanced AR AI | capability | Suggested payment plans | Tested |
 | AR-041 | Advanced AR AI | capability | AI-assisted contract-to-invoice matching | Not started |
 | AR-042 | Advanced AR AI | capability | Automated detection of unbilled revenue | Tested |
-| AR-043 | Advanced AR AI | rule | All external communication must respect tenant-configured approval and consent policies | Not started |
+| AR-043 | Advanced AR AI | rule | All external communication must respect tenant-configured approval and consent policies | Tested |
 
 ## Accounts payable
 

@@ -9066,6 +9066,22 @@
         "docs/AI_PAYMENT_GUARD.md"
       ],
       "notes": "The copilot can list bills to pay and propose a draft supplier payment batch (sensitive, confirmed twice by the member). Confirming only prepares a draft as that member; it is always approved by someone other than the member who accepted it, even where self-approval is otherwise allowed. Approving, the bank file, recording payments, transfers and bank-detail changes can never be assistant actions (startup check and database kind check). Positive and negative cases tested in API and browser."
+    },
+    "AR-043": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/communication-policy.ts",
+        "packages/accounting-engine/test/communication-policy.test.ts",
+        "apps/api/src/db/collections/communication.ts",
+        "apps/api/src/communication-policy/communication-policy.service.ts",
+        "apps/api/src/workflows/email.ts",
+        "apps/api/test/communication-policy.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/communication/page.tsx",
+        "apps/web/src/components/communication/email-consent-card.tsx",
+        "apps/web/e2e/communication-policy-flow.test.mjs",
+        "docs/COMMUNICATION_POLICY.md"
+      ],
+      "notes": "Every email passes the policy in MailerService.send: never to a contact who opted out (append-only consent history with reason, audited), AI-drafted messages only after a person approves, and an owner can stop automations emailing customers and vendors. Collections skip opted-out customers and re-check at send (409 OPTED_OUT, audited communication.blocked); automation emails to contacts fail with the reason. Positive and negative tests against real SMTP. Not built: self-service unsubscribe links, SMS/WhatsApp consent, quiet hours."
     }
   }
 }

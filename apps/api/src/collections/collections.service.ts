@@ -15,6 +15,7 @@ import { tenantStorage } from '../common/tenant-context';
 import { AppConfig, CONFIG } from '../config';
 import { CopilotModel, CopilotRequest, CopilotTool } from '../copilot/copilot.model';
 import { injectionSignals } from '../copilot/safety';
+import { CommunicationPolicyService } from '../communication-policy/communication-policy.service';
 import { MailerService } from '../workflows/email';
 import { lockName, lockRow } from '../db/locks';
 
@@ -106,6 +107,7 @@ export class CollectionsService {
     private readonly mailer: MailerService,
     @Inject(CONFIG) private readonly config: AppConfig,
     private readonly integrations: IntegrationsService,
+    private readonly communication: CommunicationPolicyService,
   ) {}
 
   // ------------------------------------------------------------------ reading
@@ -301,10 +303,12 @@ export class CollectionsService {
       });
       const skipped: { contactId: string; name: string; reason: string }[] = [];
       const chosen: typeof customers = [];
+      const optedOut = new Set((await this.communication.optedOutContacts(orgId)).map((o) => o.contactId));
       for (const c of customers) {
         const open = recent.find((r) => r.contactId === c.contact_id && r.status !== 'SENT');
         const sent = recent.find((r) => r.contactId === c.contact_id && r.status === 'SENT');
         if (!c.email?.trim()) skipped.push({ contactId: c.contact_id, name: c.name, reason: 'No email address on the customer' });
+        else if (optedOut.has(c.contact_id)) skipped.push({ contactId: c.contact_id, name: c.name, reason: 'Opted out of email' });
         else if (open) skipped.push({ contactId: c.contact_id, name: c.name, reason: 'A reminder is already waiting for review' });
         else if (sent) skipped.push({ contactId: c.contact_id, name: c.name, reason: `Reminded on ${istDate(sent.sentAt!)}` });
         else if (chosen.length >= MAX_CUSTOMERS_PER_RUN) skipped.push({ contactId: c.contact_id, name: c.name, reason: `More than ${MAX_CUSTOMERS_PER_RUN} customers: draft again after these` });
@@ -409,6 +413,12 @@ export class CollectionsService {
    * stays locked while the mail server is talked to, so two people cannot send it twice.
    */
   async send(member: Member, actor: Actor, id: string, input: { subject?: string; body?: string }) {
+    // AR-043: the customer's consent is checked before anything is sent, and a refusal is recorded.
+    const pending = await this.prisma.collectionDraft.findFirst({ where: { id, orgId: member.orgId }, select: { toEmail: true } });
+    if (pending) {
+      const d = await this.communication.check(member.orgId, [pending.toEmail], { source: 'COLLECTION_REMINDER', aiDrafted: true, approvedByPerson: true, toContact: true }, actor.id);
+      if (!d.allowed) throw new DomainError(d.code!, `Not sent: ${d.reason}.`, HttpStatus.CONFLICT);
+    }
     if (!(await this.mailer.status(member.orgId)).ready) throw new DomainError('EMAIL_NOT_SET_UP', 'Email is not set up yet, so reminders cannot be sent: an owner or admin can add a mail server in Settings → Integrations.', HttpStatus.CONFLICT);
     const { orgId } = member;
     await this.prisma.$transaction(
@@ -432,7 +442,7 @@ export class CollectionsService {
         if (changed.length) {
           throw new DomainError('DRAFT_OUT_OF_DATE', `Since this was drafted, ${changed.join(', ')} ${changed.length === 1 ? 'has' : 'have'} been paid or changed. Reject this reminder and draft again.`, HttpStatus.CONFLICT, { invoices: changed });
         }
-        const res = await this.mailer.send(orgId, { to: [d.toEmail], subject, text: body, messageId: `<${d.id}@talk2tax.collections>`, headers: { 'X-T2T-Reminder': d.id } });
+        const res = await this.mailer.send(orgId, { to: [d.toEmail], subject, text: body, messageId: `<${d.id}@talk2tax.collections>`, headers: { 'X-T2T-Reminder': d.id }, context: { source: 'COLLECTION_REMINDER', aiDrafted: true, approvedByPerson: true, toContact: true } });
         const at = new Date();
         const log = [...((d.sendLog as unknown as unknown[]) ?? []), { at: at.toISOString(), ok: res.ok, status: res.status, error: res.error, responseSnippet: res.responseSnippet, by: actor.id }].slice(-10);
         await tx.collectionDraft.update({

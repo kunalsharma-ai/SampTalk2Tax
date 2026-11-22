@@ -24,6 +24,7 @@ import { VendorPortalCard } from '@/components/vendor-portal/vendor-portal-card'
 import { GstinChecksCard } from '@/components/supplier-tax/gstin-checks-card';
 import { VendorPerformanceCard } from '@/components/vendor-performance/performance-card';
 import { VendorRiskCard } from '@/components/vendor-risk/risk-card';
+import { EmailConsentCard } from '@/components/communication/email-consent-card';
 
 export function ContactDetail({ l }: { l: LedgerConfig }) {
   const { org, orgId } = useOrg();
@@ -126,6 +127,7 @@ export function ContactDetail({ l }: { l: LedgerConfig }) {
       {l.ledger === 'SALES' && x.isCustomer && can(org.role, 'reports.read') ? <Customer360 orgId={orgId} contactId={x.id} currency={c} /> : null}
       {l.ledger === 'SALES' && x.isCustomer ? <PortalLinksCard orgId={orgId} contactId={x.id} customerName={x.name} canManage={can(org.role, 'sales.manage')} active={x.isActive} /> : null}
       {l.ledger === 'SALES' && x.isCustomer ? <CustomerDeals orgId={orgId} contactId={x.id} currency={c} /> : null}
+      <EmailConsentCard orgId={orgId} contactId={x.id} name={x.name} />
       <ContactDialog l={l} draft={draft} setDraft={setDraft} />
     </>
   );

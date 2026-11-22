@@ -169,6 +169,7 @@ export const hi: Record<string, string> = {
   'Audit evidence': 'ऑडिट साक्ष्य',
   'AI control center': 'AI नियंत्रण केंद्र',
   'Data retention': 'डेटा प्रतिधारण',
+  'Communication policy': 'संचार नीति',
   'Single sign-on': 'सिंगल साइन-ऑन',
   'Access rules': 'पहुँच नियम',
   'AI activity': 'AI गतिविधि',
