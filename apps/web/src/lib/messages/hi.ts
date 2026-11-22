@@ -72,6 +72,7 @@ export const hi: Record<string, string> = {
   'Payables ageing': 'देय राशि की आयु',
   // Banking
   'Bank accounts': 'बैंक खाते',
+  'Unusual bank activity': 'असामान्य बैंक गतिविधि',
   Treasury: 'ट्रेज़री',
   Loans: 'ऋण',
   'Fixed deposits': 'सावधि जमा',

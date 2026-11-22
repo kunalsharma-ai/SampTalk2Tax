@@ -12,6 +12,7 @@ import {
   D,
   Dec,
   findDuplicates,
+  formatAmountText,
   fiscalYearForDate,
   KPI_DEFINITIONS,
   minorUnits,
@@ -38,6 +39,7 @@ import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
 import { lockName } from '../db/locks';
 import { BankingService } from '../banking/banking.service';
 import { DocumentStoreService } from '../common/document-store.service';
+import { BankActivityService } from '../bank-activity/bank-activity.service';
 import { journalEntries } from '../db/collections/ledger';
 import { approvalRequests } from '../db/collections/sales';
 import { journalApprovals } from '../db/collections/journal-approvals';
@@ -124,6 +126,7 @@ export class AlertsService {
     private readonly vendorRisk: VendorRiskService,
     private readonly banking: BankingService,
     private readonly store: DocumentStoreService,
+    private readonly bankActivity: BankActivityService,
   ) {}
 
   // ------------------------------------------------------------------ notifications
@@ -579,6 +582,34 @@ export class AlertsService {
             evidence: { facts, links },
           };
         });
+      }
+      case 'UNUSUAL_BANK_ACTIVITY': {
+        const r = await this.bankActivity.findings({ id: orgId, role: 'OWNER', functionalCurrency: o.currency }, { days: p.days.toNumber(), threshold: p.threshold.toFixed() }, today);
+        return r.items
+          .filter((i) => i.level !== 'LOW')
+          .map((i) => {
+            const size = new D(i.amount).abs();
+            const money = formatAmountText(size.toFixed(minorUnits(i.account.currency)), i.account.currency);
+            return {
+              rule: def.key,
+              fingerprint: i.lineId,
+              severity: i.level === 'HIGH' ? ('CRITICAL' as const) : ('WARNING' as const),
+              title: `${i.indicators[0]!.label}: ${money} ${i.amount.startsWith('-') ? 'out of' : 'into'} ${i.account.name} on ${dateLabel(i.date)}`,
+              summary: `${i.indicators.map((x) => x.detail).join('. ')}. Check the line with the bank and the person who made it; match it to the books, or exclude it if it is not real.`,
+              amount: size,
+              evidence: {
+                facts: [
+                  { label: 'Account', value: `${i.account.code} ${i.account.name}` },
+                  { label: 'Date', value: dateLabel(i.date) },
+                  { label: i.amount.startsWith('-') ? 'Money out' : 'Money in', value: money },
+                  { label: 'Narration', value: i.description },
+                  ...(i.reference ? [{ label: 'Reference', value: i.reference }] : []),
+                  ...i.indicators.map((x) => ({ label: x.label, value: x.detail })),
+                ],
+                links: [{ kind: 'PAGE' as const, path: '/banking/unusual-activity', label: 'Open unusual bank activity' }, { kind: 'PAGE' as const, path: `/banking/${i.account.id}/reconcile`, label: `Reconcile ${i.account.name}` }],
+              },
+            };
+          });
       }
       case 'APPROVAL_WAITING': {
         const limit = p.waitingDays.toNumber();

@@ -70,6 +70,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Banking',
     items: [
       { href: '/banking', label: 'Bank accounts' },
+      { href: '/banking/unusual-activity', label: 'Unusual bank activity', perm: 'banking.read' },
       { href: '/treasury', label: 'Treasury' },
       { href: '/loans', label: 'Loans' },
       { href: '/deposits', label: 'Fixed deposits' },

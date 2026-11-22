@@ -5869,9 +5869,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bank-activity.ts",
+        "packages/accounting-engine/test/bank-activity.test.ts",
+        "apps/api/src/bank-activity/bank-activity.service.ts",
+        "apps/api/test/bank-activity.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/unusual-activity/page.tsx",
+        "apps/web/e2e/unusual-bank-activity-flow.test.mjs",
+        "docs/BANK_ACTIVITY.md"
+      ],
+      "notes": "Warning signs on imported statement lines against the year before on the account: possible duplicates (same amount and narration within 3 days), 3+ movements within 7 days just under a threshold, money out within 2 days of a large credit of almost the same amount (high); over 3x the largest 90-day movement, 1 lakh+ to a narration unseen for 180 days, money out over 14 days unmatched (medium); large round amounts (low). Deterministic; statements only (no live bank feed)."
     },
     {
       "id": "BANK-020",
@@ -5975,9 +5983,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bank-activity.ts",
+        "packages/accounting-engine/test/bank-activity.test.ts",
+        "apps/api/src/bank-activity/bank-activity.service.ts",
+        "apps/api/test/bank-activity.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/banking/unusual-activity/page.tsx",
+        "apps/web/e2e/unusual-bank-activity-flow.test.mjs",
+        "docs/BANK_ACTIVITY.md",
+        "packages/accounting-engine/src/alerts.ts",
+        "apps/api/src/alerts/alerts.service.ts"
+      ],
+      "notes": "Alert check UNUSUAL_BANK_ACTIVITY (look-back 7-90 days, threshold setting): a critical alert per statement line with a high sign, a warning for a medium sign, with the line's facts and links; clears by itself once the line is matched or excluded."
     },
     {
       "id": "BANK-024",
