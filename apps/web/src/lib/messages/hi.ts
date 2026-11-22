@@ -137,6 +137,7 @@ export const hi: Record<string, string> = {
   'Advance tax': 'अग्रिम कर',
   'GST payments': 'जीएसटी भुगतान',
   'GST reconciliation': 'जीएसटी मिलान',
+  'Tax forecast': 'कर पूर्वानुमान',
   'GST returns': 'GST रिटर्न',
   'E-invoices': 'ई-इनवॉइस',
   'E-way bills': 'ई-वे बिल',

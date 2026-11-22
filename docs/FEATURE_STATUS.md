@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 599 |
+| Not started | 598 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 661 |
+| Tested | 662 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 27 | 27 |
+| Global taxation engine | M3 | 54 | 26 | 28 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 8 | 19 |
@@ -2710,6 +2710,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/gst-reconciliation/page.tsx
   - apps/web/e2e/gst-reconciliation-flow.test.mjs
   - docs/GST_RECONCILIATION.md
+
+### TAX-048 — Tax liability forecasting
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Tax payments due in 1-6 months from the compliance calendar (GSTR-3B/PMT-06, TDS/TCS, PF, ESI, PT, advance tax) incl. overdue: known from the books when the period is over (GST payment preview after set-off as one running balance; undeposited TDS/TCS; unpaid pay-run dues), advance tax from the plan, otherwise 3-period average with 6-period std-dev range; totals by due month. India only, read-only. Not built: interest/late fees, unissued sales, self-assessment tax.
+- Evidence:
+  - packages/tax-engine/src/india/tax-liability-forecast.ts
+  - packages/tax-engine/test/tax-liability-forecast.test.ts
+  - apps/api/src/tax-forecast/tax-forecast.service.ts
+  - apps/api/test/tax-forecast.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/forecast/page.tsx
+  - apps/web/e2e/tax-forecast-flow.test.mjs
+  - docs/TAX_FORECAST.md
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 

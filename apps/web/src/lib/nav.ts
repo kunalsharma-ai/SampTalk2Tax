@@ -139,6 +139,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/tax/compliance', label: 'Compliance calendar', needs: 'COMPLIANCE_CALENDAR' },
       { href: '/tax/notices', label: 'Tax notices', perm: 'reports.read' },
       { href: '/tax/advance-tax', label: 'Advance tax', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
+      { href: '/tax/forecast', label: 'Tax forecast', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/gst-returns', label: 'GST returns', needs: 'SALES_TAX_RETURNS' },
       { href: '/tax/gst-payments', label: 'GST payments', needs: 'SALES_TAX_RETURNS', perm: 'reports.read' },
       { href: '/tax/gst-reconciliation', label: 'GST reconciliation', needs: 'SALES_TAX_RETURNS', perm: 'reports.read' },

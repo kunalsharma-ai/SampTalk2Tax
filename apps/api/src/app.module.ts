@@ -77,6 +77,8 @@ import { AppConfig, CONFIG } from './config';
 import { GstController } from './gst/gst.controller';
 import { GstService } from './gst/gst.service';
 import { GstReconciliationService } from './gst/gst-reconciliation.service';
+import { TaxForecastController } from './tax-forecast/tax-forecast.controller';
+import { TaxForecastService } from './tax-forecast/tax-forecast.service';
 import { HealthController } from './health/health.controller';
 import { RegionsController } from './regions/regions.controller';
 import { AdminController, AnnouncementsController } from './admin/admin.controller';
@@ -410,6 +412,7 @@ export class AppModule {
         CostAllocationsController,
         AdvanceTaxController,
         GstPaymentsController,
+        TaxForecastController,
         JournalApprovalsController,
         BillChecksController,
         CommunicationPolicyController,
@@ -591,6 +594,7 @@ export class AppModule {
         ExpenseCategorizationService,
         GstService,
         GstReconciliationService,
+        TaxForecastService,
         WithholdingService,
         PayrollService,
         LeaveService,

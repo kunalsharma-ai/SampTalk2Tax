@@ -9148,6 +9148,19 @@
         "docs/GST_RECONCILIATION.md"
       ],
       "notes": "Discrepancy checks on the month's posted GST documents: wrong tax heads (IGST vs CGST/SGST), unequal CGST/SGST, tax on exempt lines, tax not at the rate (>1.00), invalid GSTIN, supplier GSTIN state mismatch, ITC without supplier GSTIN, missing HSN, one HSN at different rates; severity High/Medium/Low. Deterministic, no AI."
+    },
+    "TAX-048": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/tax-liability-forecast.ts",
+        "packages/tax-engine/test/tax-liability-forecast.test.ts",
+        "apps/api/src/tax-forecast/tax-forecast.service.ts",
+        "apps/api/test/tax-forecast.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/forecast/page.tsx",
+        "apps/web/e2e/tax-forecast-flow.test.mjs",
+        "docs/TAX_FORECAST.md"
+      ],
+      "notes": "Tax payments due in 1-6 months from the compliance calendar (GSTR-3B/PMT-06, TDS/TCS, PF, ESI, PT, advance tax) incl. overdue: known from the books when the period is over (GST payment preview after set-off as one running balance; undeposited TDS/TCS; unpaid pay-run dues), advance tax from the plan, otherwise 3-period average with 6-period std-dev range; totals by due month. India only, read-only. Not built: interest/late fees, unissued sales, self-assessment tax."
     }
   }
 }

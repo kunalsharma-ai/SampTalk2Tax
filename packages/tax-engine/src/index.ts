@@ -12,3 +12,4 @@ export * from './india/supplier-checks';
 export * from './india/advance-tax';
 export * from './india/gst-setoff';
 export * from './india/gst-reconciliation';
+export * from './india/tax-liability-forecast';
