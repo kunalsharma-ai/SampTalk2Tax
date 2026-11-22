@@ -286,8 +286,8 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-041 | Global Tax Modules | rule | Implement supported jurisdictions incrementally | Not started |
 | TAX-042 | Global Tax Modules | rule | Do not claim worldwide compliance without verified, maintained country modules | Tested |
 | TAX-043 | AI Tax Intelligence | capability | Tax document interpretation | Not started |
-| TAX-044 | AI Tax Intelligence | capability | Tax discrepancy detection | Not started |
-| TAX-045 | AI Tax Intelligence | capability | Tax reconciliation | Not started |
+| TAX-044 | AI Tax Intelligence | capability | Tax discrepancy detection | Tested |
+| TAX-045 | AI Tax Intelligence | capability | Tax reconciliation | Tested |
 | TAX-046 | AI Tax Intelligence | capability | Regulatory change monitoring | Not started |
 | TAX-047 | AI Tax Intelligence | capability | Compliance deadline predictions | Not started |
 | TAX-048 | AI Tax Intelligence | capability | Tax liability forecasting | Not started |

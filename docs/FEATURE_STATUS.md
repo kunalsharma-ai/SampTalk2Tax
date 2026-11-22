@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 601 |
+| Not started | 599 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 659 |
+| Tested | 661 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 29 | 25 |
+| Global taxation engine | M3 | 54 | 27 | 27 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 8 | 19 |
@@ -2682,6 +2682,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
   - apps/web/e2e/country-modules-flow.test.mjs
   - docs/COUNTRY_MODULES.md
+
+### TAX-044 — Tax discrepancy detection
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Discrepancy checks on the month's posted GST documents: wrong tax heads (IGST vs CGST/SGST), unequal CGST/SGST, tax on exempt lines, tax not at the rate (>1.00), invalid GSTIN, supplier GSTIN state mismatch, ITC without supplier GSTIN, missing HSN, one HSN at different rates; severity High/Medium/Low. Deterministic, no AI.
+- Evidence:
+  - packages/tax-engine/src/india/gst-reconciliation.ts
+  - packages/tax-engine/test/gst-reconciliation.test.ts
+  - apps/api/src/gst/gst-reconciliation.service.ts
+  - apps/api/test/gst-reconciliation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/gst-reconciliation/page.tsx
+  - apps/web/e2e/gst-reconciliation-flow.test.mjs
+  - docs/GST_RECONCILIATION.md
+
+### TAX-045 — Tax reconciliation
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Monthly GST reconciliation: movement on the six GST accounts vs the month's documents (GSTR-3B basis), GST payments shown apart, every difference explained per journal entry (manual journal, document from/posted in another period, voids, posting differs). Read-only. Not built: GSTR-2A/2B portal matching, quarter/year view.
+- Evidence:
+  - packages/tax-engine/src/india/gst-reconciliation.ts
+  - packages/tax-engine/test/gst-reconciliation.test.ts
+  - apps/api/src/gst/gst-reconciliation.service.ts
+  - apps/api/test/gst-reconciliation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/gst-reconciliation/page.tsx
+  - apps/web/e2e/gst-reconciliation-flow.test.mjs
+  - docs/GST_RECONCILIATION.md
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 

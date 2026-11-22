@@ -194,8 +194,24 @@ export class GstService {
   }
 
   private async returnDocuments(orgId: string, kinds: GstReturnDocument['kind'][], from: string, to: string): Promise<GstReturnDocument[]> {
+    return (await this.gstDocuments({ orgId, kind: { in: kinds }, status: { in: ['POSTED', 'VOID'] }, placeOfSupply: { not: null }, issueDate: { gte: toDbDate(from), lte: toDbDate(to) } })).map(({ journalEntryId: _j, voidJournalEntryId: _v, ...d }) => d);
+  }
+
+  /**
+   * GST documents for reconciliation (TAX-045): those issued in the period, and those whose posting
+   * or void entry is one of `entryIds`, with their journal entries.
+   */
+  async reconciliationDocuments(orgId: string, from: string, to: string, entryIds: string[]) {
+    const base = { orgId, kind: { in: ['INVOICE', 'CREDIT_NOTE', 'BILL', 'VENDOR_CREDIT'] as GstReturnDocument['kind'][] }, status: { in: ['POSTED', 'VOID'] as ('POSTED' | 'VOID')[] }, placeOfSupply: { not: null } };
+    const inPeriod = await this.gstDocuments({ ...base, issueDate: { gte: toDbDate(from), lte: toDbDate(to) } });
+    const seen = new Set(inPeriod.map((d) => d.id));
+    const linked = entryIds.length ? [...(await this.gstDocuments({ ...base, journalEntryId: { in: entryIds } })), ...(await this.gstDocuments({ ...base, voidJournalEntryId: { in: entryIds } }))] : [];
+    return [...inPeriod, ...linked.filter((d) => !seen.has(d.id) && (seen.add(d.id), true))];
+  }
+
+  private async gstDocuments(where: Prisma.DocumentWhereInput) {
     const docs = await this.prisma.document.findMany({
-      where: { orgId, kind: { in: kinds }, status: { in: ['POSTED', 'VOID'] }, placeOfSupply: { not: null }, issueDate: { gte: toDbDate(from), lte: toDbDate(to) } },
+      where,
       include: { contact: { select: { name: true } }, debitNoteFor: { select: { number: true } }, lines: { orderBy: { lineNo: 'asc' }, include: { tax: { select: { gstCategory: true } } } } },
       orderBy: [{ issueDate: 'asc' }, { number: 'asc' }],
     });
@@ -217,6 +233,8 @@ export class GstService {
       reverseCharge: d.reverseCharge,
       supplierState: d.supplierState ?? undefined,
       ...(d.debitNoteForId ? { debitNote: true, originalNumber: d.debitNoteFor?.number ?? null } : {}),
+      journalEntryId: d.journalEntryId,
+      voidJournalEntryId: d.voidJournalEntryId,
       lines: d.lines.map((l) => ({
         hsnCode: l.hsnCode,
         quantity: l.quantity.toFixed(),

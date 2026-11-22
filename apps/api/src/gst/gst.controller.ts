@@ -4,6 +4,7 @@ import { checkGstin, FOREIGN_PLACE_OF_SUPPLY, INDIA_STATES } from '@talk2tax/tax
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { isoDate, openApi, ZodPipe } from '../common/zod';
+import { GstReconciliationService } from './gst-reconciliation.service';
 import { GstService } from './gst.service';
 
 const RegistrationBody = z
@@ -25,6 +26,7 @@ const RegistrationBody = z
   .strict();
 const GstinBody = z.object({ gstin: z.string().max(20) });
 const PeriodQuery = z.object({ from: isoDate, to: isoDate });
+const MonthQuery = z.object({ period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Give the month as YYYY-MM').optional() }).strict();
 
 function checkPeriod(q: { from: string; to: string }) {
   if (q.from > q.to) throw new BadRequestException({ error: 'INVALID_RANGE', message: '"from" must be on or before "to"' });
@@ -36,7 +38,10 @@ function checkPeriod(q: { from: string; to: string }) {
 @ApiBearerAuth()
 @Controller('v1/orgs/:orgId/gst')
 export class GstController {
-  constructor(private readonly gst: GstService) {}
+  constructor(
+    private readonly gst: GstService,
+    private readonly recon: GstReconciliationService,
+  ) {}
 
   @Get('registration')
   @RequirePermission('accounts.read')
@@ -79,5 +84,12 @@ export class GstController {
   gstr3b(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(PeriodQuery)) q: z.infer<typeof PeriodQuery>) {
     checkPeriod(q);
     return this.gst.gstr3b(org.id, q.from, q.to);
+  }
+
+  /** The month's GST accounts against its documents, every difference explained, and tax mistakes in its documents (TAX-044, TAX-045). */
+  @Get('reconciliation')
+  @RequirePermission('reports.read')
+  reconciliation(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(MonthQuery)) q: z.infer<typeof MonthQuery>) {
+    return this.recon.month(org, q.period);
   }
 }

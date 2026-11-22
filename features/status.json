@@ -9122,6 +9122,32 @@
         "docs/DEPARTMENT_BUDGETS.md"
       ],
       "notes": "Department per expense claim line (validated active DEPARTMENT dimension, carried to the journal debit). Yearly budget per department (budgets.manage, audited, department_budgets collection). Report: spent from ledger expense lines with the department, waiting from submitted claims, left, year-end pace; Over / At risk / On track / No budget, worst first. Approvers see per-department impact on a submitted claim. Never blocks. Not built: monthly or per-account budgets, over-budget alerts."
+    },
+    "TAX-045": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/gst-reconciliation.ts",
+        "packages/tax-engine/test/gst-reconciliation.test.ts",
+        "apps/api/src/gst/gst-reconciliation.service.ts",
+        "apps/api/test/gst-reconciliation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/gst-reconciliation/page.tsx",
+        "apps/web/e2e/gst-reconciliation-flow.test.mjs",
+        "docs/GST_RECONCILIATION.md"
+      ],
+      "notes": "Monthly GST reconciliation: movement on the six GST accounts vs the month's documents (GSTR-3B basis), GST payments shown apart, every difference explained per journal entry (manual journal, document from/posted in another period, voids, posting differs). Read-only. Not built: GSTR-2A/2B portal matching, quarter/year view."
+    },
+    "TAX-044": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/gst-reconciliation.ts",
+        "packages/tax-engine/test/gst-reconciliation.test.ts",
+        "apps/api/src/gst/gst-reconciliation.service.ts",
+        "apps/api/test/gst-reconciliation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/gst-reconciliation/page.tsx",
+        "apps/web/e2e/gst-reconciliation-flow.test.mjs",
+        "docs/GST_RECONCILIATION.md"
+      ],
+      "notes": "Discrepancy checks on the month's posted GST documents: wrong tax heads (IGST vs CGST/SGST), unequal CGST/SGST, tax on exempt lines, tax not at the rate (>1.00), invalid GSTIN, supplier GSTIN state mismatch, ITC without supplier GSTIN, missing HSN, one HSN at different rates; severity High/Medium/Low. Deterministic, no AI."
     }
   }
 }
