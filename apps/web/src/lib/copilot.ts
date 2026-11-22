@@ -71,7 +71,7 @@ export interface CopilotConversation {
 export interface CopilotAction {
   id: string;
   messageId: string;
-  kind: 'CREATE_TASK' | 'ACKNOWLEDGE_ALERT' | 'DISMISS_ALERT';
+  kind: 'CREATE_TASK' | 'ACKNOWLEDGE_ALERT' | 'DISMISS_ALERT' | 'PREPARE_PAYMENT_BATCH';
   summary: string;
   sensitive: boolean;
   status: 'PROPOSED' | 'DONE' | 'CANCELLED' | 'FAILED' | 'EXPIRED';

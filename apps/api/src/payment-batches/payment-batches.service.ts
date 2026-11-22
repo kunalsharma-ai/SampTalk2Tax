@@ -189,16 +189,28 @@ export class PaymentBatchesService {
   }
 
   async create(org: BatchOrg, actor: Actor, input: { bankAccountId: string; paymentDate: string; memo?: string | null; items: { documentId: string; amount?: string | null }[] }) {
-    this.assert(this.can(org).prepare, 'Preparing a payment batch needs purchases.manage');
-    const id = await this.prisma.$transaction(async (tx) => {
-      const bank = await this.checkBank(tx, org.id, input.bankAccountId);
-      const [{ value: number }] = [{ value: await nextCounter(tx, org.id, 'payment_batch') }];
-      const b = await tx.paymentBatch.create({ data: { orgId: org.id, number, bankAccountId: bank.id, paymentDate: toDbDate(input.paymentDate), currency: org.functionalCurrency, memo: input.memo?.trim() || null, createdById: actor.id } });
-      await this.setItems(tx, org, b.id, b.currency, input.items);
-      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'payment_batch.created', entityType: 'payment_batch', entityId: b.id, data: { reference: batchRef(number), items: input.items.length } });
-      return b.id;
-    });
+    const id = await this.prisma.$transaction(async (tx) => (await this.createInTx(tx, org, actor, input)).id);
     return this.get(org, id);
+  }
+
+  /** Prepares a draft batch inside the caller's transaction; also used when a member confirms a batch the assistant proposed (AP-036). */
+  async createInTx(tx: Tx, org: BatchOrg, actor: Actor, input: { bankAccountId: string; paymentDate: string; memo?: string | null; items: { documentId: string; amount?: string | null }[] }, source: 'MEMBER' | 'COPILOT' = 'MEMBER') {
+    this.assert(this.can(org).prepare, 'Preparing a payment batch needs purchases.manage');
+    const bank = await this.checkBank(tx, org.id, input.bankAccountId);
+    const number = await nextCounter(tx, org.id, 'payment_batch');
+    const b = await tx.paymentBatch.create({ data: { orgId: org.id, number, bankAccountId: bank.id, paymentDate: toDbDate(input.paymentDate), currency: org.functionalCurrency, memo: input.memo?.trim() || null, createdById: actor.id } });
+    await this.setItems(tx, org, b.id, b.currency, input.items);
+    await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'payment_batch.created', entityType: 'payment_batch', entityId: b.id, data: { reference: batchRef(number), items: input.items.length, ...(source === 'COPILOT' ? { source } : {}) } });
+    return { id: b.id, reference: batchRef(number), bank: bank.name };
+  }
+
+  /**
+   * Whether the assistant prepared this batch (AP-036): the confirmed proposal that created it, and
+   * the member who confirmed it. Such a batch is always approved by someone else.
+   */
+  private async preparedByCopilot(db: Tx | PrismaService, orgId: string, batchId: string) {
+    const done = await db.copilotAction.findMany({ where: { orgId, kind: 'PREPARE_PAYMENT_BATCH', status: 'DONE' }, select: { id: true, userId: true, result: true } });
+    return done.find((a) => (a.result as { batchId?: string } | null)?.batchId === batchId) ?? null;
   }
 
   async update(org: BatchOrg, actor: Actor, id: string, input: { bankAccountId?: string; paymentDate?: string; memo?: string | null; items?: { documentId: string; amount?: string | null }[] }) {
@@ -235,6 +247,8 @@ export class PaymentBatchesService {
       if (b.status !== 'DRAFT') throw new DomainError('NOT_DRAFT', `This batch is ${b.status.toLowerCase()}`, HttpStatus.CONFLICT);
       if (b.items.length === 0) throw new DomainError('EMPTY_BATCH', 'Add at least one bill before approving', HttpStatus.CONFLICT);
       let self = false;
+      // A batch the assistant prepared needs a second person, even where self-approval is otherwise allowed (AP-036).
+      if (b.createdById === actor.id && (await this.preparedByCopilot(tx, org.id, id))) throw new DomainError('SAME_PERSON', 'This batch was prepared with the assistant, so someone other than the member who accepted it must approve it', HttpStatus.CONFLICT);
       if (b.createdById === actor.id) {
         if (await this.otherApprover(tx, org.id, actor.id)) throw new DomainError('SAME_PERSON', 'A payment batch must be approved by someone other than the person who prepared it', HttpStatus.CONFLICT);
         self = true;
@@ -372,6 +386,7 @@ export class PaymentBatchesService {
     const pay = new Map(payments.map((p) => [p.id, p.number]));
     const banks = await this.accounts(org.id, [b.bankAccountId]);
     const names = await this.names([b.createdById, b.approvedById, b.paidById, b.cancelledById]);
+    const copilot = await this.preparedByCopilot(db, org.id, b.id);
     const items = b.items
       .map((i) => {
         const d = byId.get(i.documentId)!;
@@ -407,6 +422,7 @@ export class PaymentBatchesService {
       createdBy: names.get(b.createdById) ?? null,
       createdById: b.createdById,
       createdAt: b.createdAt.toISOString(),
+      preparedWithCopilot: !!copilot,
       approvedBy: b.approvedById ? names.get(b.approvedById) ?? null : null,
       approvedAt: b.approvedAt?.toISOString() ?? null,
       selfApproved: b.selfApproved,
@@ -451,6 +467,11 @@ export class PaymentBatchesService {
     const agg = docs.length ? await db.allocation.groupBy({ by: ['targetId'], where: { targetId: { in: docs.map((d) => d.id) }, removedOn: null }, _sum: { amount: true } }) : [];
     const used = new Map(agg.map((a) => [a.targetId, new D((a._sum.amount ?? 0).toString())]));
     return new Map(docs.map((d) => [d.id, new D(d.total.toFixed()).minus(used.get(d.id) ?? 0)]));
+  }
+
+  /** Active bank accounts a batch can be paid from. */
+  async bankAccounts(orgId: string) {
+    return this.prisma.account.findMany({ where: { orgId, subtype: 'BANK', isActive: true, isPostable: true }, select: { id: true, code: true, name: true }, orderBy: { code: 'asc' } });
   }
 
   private async accounts(orgId: string, ids: string[]) {

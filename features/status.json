@@ -9053,6 +9053,19 @@
         "docs/EXPENSE_CATEGORIZATION.md"
       ],
       "notes": "Code lines from history on a new bill: each line's expense account (same rules as AP-020), then the tax rate, department and project that more than half of the vendor's earlier posted lines on that account had (active ones only), with reasons. Fills blank fields only; the person reviews and saves. Deterministic, no AI model call; document extraction (AP-025) is separate."
+    },
+    "AP-036": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/copilot/copilot.actions.ts",
+        "apps/api/src/copilot/copilot.tools.ts",
+        "apps/api/src/payment-batches/payment-batches.service.ts",
+        "apps/api/test/ai-payment-guard.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/purchases/payment-batches/[batchId]/page.tsx",
+        "apps/web/e2e/ai-payment-guard-flow.test.mjs",
+        "docs/AI_PAYMENT_GUARD.md"
+      ],
+      "notes": "The copilot can list bills to pay and propose a draft supplier payment batch (sensitive, confirmed twice by the member). Confirming only prepares a draft as that member; it is always approved by someone other than the member who accepted it, even where self-approval is otherwise allowed. Approving, the bank file, recording payments, transfers and bank-detail changes can never be assistant actions (startup check and database kind check). Positive and negative cases tested in API and browser."
     }
   }
 }

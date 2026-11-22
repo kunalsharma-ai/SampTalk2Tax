@@ -2022,7 +2022,7 @@ model CopilotAction {
   /// The answer that proposed it.
   messageId      String              @map("message_id") @db.Uuid
   userId         String              @map("user_id") @db.Uuid
-  /// CREATE_TASK, ACKNOWLEDGE_ALERT or DISMISS_ALERT.
+  /// CREATE_TASK, ACKNOWLEDGE_ALERT, DISMISS_ALERT or PREPARE_PAYMENT_BATCH.
   kind           String              @db.VarChar(30)
   input          Json
   /// What will happen, in words, as shown on the confirmation card.

@@ -386,7 +386,7 @@
     "name": "copilot_actions_decided_check"
    },
    {
-    "def": "CHECK (((kind)::text = ANY ((ARRAY['CREATE_TASK'::character varying, 'ACKNOWLEDGE_ALERT'::character varying, 'DISMISS_ALERT'::character varying])::text[])))",
+    "def": "CHECK (((kind)::text = ANY ((ARRAY['CREATE_TASK'::character varying, 'ACKNOWLEDGE_ALERT'::character varying, 'DISMISS_ALERT'::character varying, 'PREPARE_PAYMENT_BATCH'::character varying])::text[])))",
     "name": "copilot_actions_kind_check"
    },
    {

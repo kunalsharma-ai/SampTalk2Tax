@@ -15,7 +15,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   copilot: {
     what: 'An assistant that answers questions about your books in plain words and can prepare actions for you to confirm.',
-    how: 'Type or speak a question such as "Who owes us the most?" or "Draft an invoice for Asha for ₹40,000". Check its answer: every figure links to the report it came from. Nothing is posted until you confirm it.',
+    how: 'Type or speak a question such as "Who owes us the most?" or "Prepare payment of the Paper Mart bills". Check its answer: every figure links to the report it came from. Nothing is posted until you confirm it, and a payment batch it prepares is only a draft that someone else approves: it never pays.',
     where: 'Overview. It reads the same books as the reports and only does what your role allows. An administrator turns it on under Integrations and the AI control center.',
   },
   alerts: {
@@ -212,7 +212,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'purchases/payment-batches': {
     what: 'Supplier payment runs: bills grouped into one batch that is prepared by one person, approved by another, sent to the bank as a file and then recorded as payments.',
-    how: 'Choose New batch, pick the bank account, the date and the bills. Someone else approves it. Download the bank file, upload it to your bank, and record the payments once the bank has paid.',
+    how: 'Choose New batch, pick the bank account, the date and the bills, or ask the copilot to prepare one. Someone else approves it; a batch prepared with the assistant always needs someone other than the member who accepted it. Download the bank file, upload it to your bank, and record the payments once the bank has paid.',
     where: 'Purchases. Recording a batch posts one payment per vendor with the batch reference, which settles the bills and shows on bank reconciliation.',
   },
   'purchases/supplier-tax': {
