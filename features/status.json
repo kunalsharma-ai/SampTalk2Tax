@@ -9227,6 +9227,19 @@
         "docs/SUPPLIER_NEGOTIATION.md"
       ],
       "notes": "Deterministic negotiation brief per vendor billed in the last 12 months: price rises (>=5%, saving = paid above first price), same HSN/description cheaper from another vendor (>=3%, saving on quantity bought), volume (+20% or 25% share), good payment record (ask +15 days or early-payment discount), C/D scorecard grade, caution when paying late or overdue. Read-only. Not built: AI-drafted negotiation emails, outside market prices."
+    },
+    "EXP-026": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/reimbursement-routing.ts",
+        "packages/accounting-engine/test/reimbursement-routing.test.ts",
+        "apps/api/src/reimbursement-routing/reimbursement-routing.service.ts",
+        "apps/api/test/reimbursement-routing.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/reimbursement-routing/page.tsx",
+        "apps/web/e2e/reimbursement-routing-flow.test.mjs",
+        "docs/REIMBURSEMENT_ROUTING.md"
+      ],
+      "notes": "Approved claims grouped per person and routed: bank transfer when the employee record (matched by email) has a salary account, cash otherwise, wait for cash when no account has room after the amount kept, needs bank details when there is no cash account. Overdue (>7 days since approval) first; last-used account preferred while it has room. Pay the ready ones in one step through the usual reimbursement journal. Not built: payment files for bank transfers, adding reimbursements to payroll."
     }
   }
 }

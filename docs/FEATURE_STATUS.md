@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 593 |
+| Not started | 592 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 667 |
+| Tested | 668 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 23 | 31 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 7 | 20 |
+| Expense management | M2 | 27 | 6 | 21 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -3180,6 +3180,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/expenses/forecast/page.tsx
   - apps/web/e2e/expense-forecast-flow.test.mjs
   - docs/EXPENSE_FORECAST.md
+
+### EXP-026 — Intelligent reimbursement routing
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Approved claims grouped per person and routed: bank transfer when the employee record (matched by email) has a salary account, cash otherwise, wait for cash when no account has room after the amount kept, needs bank details when there is no cash account. Overdue (>7 days since approval) first; last-used account preferred while it has room. Pay the ready ones in one step through the usual reimbursement journal. Not built: payment files for bank transfers, adding reimbursements to payroll.
+- Evidence:
+  - packages/accounting-engine/src/reimbursement-routing.ts
+  - packages/accounting-engine/test/reimbursement-routing.test.ts
+  - apps/api/src/reimbursement-routing/reimbursement-routing.service.ts
+  - apps/api/test/reimbursement-routing.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/reimbursement-routing/page.tsx
+  - apps/web/e2e/reimbursement-routing-flow.test.mjs
+  - docs/REIMBURSEMENT_ROUTING.md
 
 ### TRS-002 — Cash positioning
 

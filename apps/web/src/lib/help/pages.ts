@@ -510,6 +510,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Start with High and with the people at the top. Open a claim to see its receipts and ask the claimant; reject a claim that is wrong so they can fix it, or void one already approved. Turn on the Unusual expense claims check in Alerts settings to be told about new ones.',
     where: 'Expenses. Needs the expenses permission. Draft, rejected and void claims are left out. These are signs for a second look, not proof of fraud; nothing here blocks or changes a claim, and no AI model is used.',
   },
+  'expenses/reimbursement-routing': {
+    what: 'Approved expense claims still to be paid, grouped into one payment per person, each with a route and the account to pay from: a bank transfer when the person\'s employee record (matched by email) has a salary account, cash when it has none, wait for cash when no account has room after the amount you keep, or needs bank details when there is no cash account either.',
+    how: 'Set how much to keep in each account and route the claims. People waiting over 7 days since approval come first. Tick the ready people and pay them: every claim is reimbursed today from the planned account through the usual journal, with your reference.',
+    where: 'Expenses. Needs the expenses.reimburse permission. Only active accounts in your currency are used; the account a person was last reimbursed from is preferred while it has room. Bank account numbers are never shown.',
+  },
   'expenses/reconciliation': {
     what: 'Employee expense claims reconciled three ways as of a date. The Employee Reimbursements Payable account in the books against the approved claims not yet paid back or voided by then, with every difference listed: an entry on the account that no claim made, or a claim whose own entries do not come to what it says is owed. Each claim paid back in the last 90 days against the imported bank statement. And what is owed to each employee, by days since approval.',
     how: 'Pick a date, such as a month end, or leave it empty for today. When the books and claims differ, open the entry or claim listed to see why. Pay back claims owed over 30 days. A payment not on the statement although the statement runs past it needs a look in Banking: match it, or check it was really paid.',
