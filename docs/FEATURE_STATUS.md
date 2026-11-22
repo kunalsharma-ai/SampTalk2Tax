@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 597 |
+| Not started | 596 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 663 |
+| Tested | 664 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 25 | 29 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 8 | 19 |
+| Expense management | M2 | 27 | 7 | 20 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -3040,6 +3040,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/accounting-engine/test/expenses.test.ts
   - apps/api/test/expenses.e2e.test.ts › flags a receipt that looks claimed twice
+
+### EXP-019 — Receipt-to-transaction matching
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Receipts for company-paid spending (merchant, date, amount, file as EXPENSE_RECEIPT attachment) matched to money-out bank statement lines: suggestions scored on amount (exact/within 2%), date gap (<=10 days) and merchant words in the narration, one-to-one, ties never Sure; match one, all sure ones, or undo with a reason; bank spending without a receipt (no match or line attachment). Employees see their own receipts. Read-only on the books; no AI. Not built: OCR, card feeds, email-in receipts.
+- Evidence:
+  - packages/accounting-engine/src/receipt-matching.ts
+  - packages/accounting-engine/test/receipt-matching.test.ts
+  - apps/api/src/expense-receipts/expense-receipts.service.ts
+  - apps/api/test/expense-receipts.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/receipts/page.tsx
+  - apps/web/e2e/receipt-matching-flow.test.mjs
+  - docs/RECEIPT_MATCHING.md
 
 ### EXP-020 — Automatic expense categorization
 

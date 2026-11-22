@@ -86,6 +86,7 @@ export const hi: Record<string, string> = {
   'Expense reports': 'ख़र्च की रिपोर्ट',
   'Unusual expenses': 'असामान्य ख़र्च',
   'Expense forecast': 'ख़र्च पूर्वानुमान',
+  'Receipt matching': 'रसीद मिलान',
   'Department budgets': 'विभाग बजट',
   'Expense reconciliation': 'ख़र्च मिलान',
   'My expense report': 'मेरी ख़र्च रिपोर्ट',

@@ -9930,9 +9930,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/receipt-matching.ts",
+        "packages/accounting-engine/test/receipt-matching.test.ts",
+        "apps/api/src/expense-receipts/expense-receipts.service.ts",
+        "apps/api/test/expense-receipts.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/receipts/page.tsx",
+        "apps/web/e2e/receipt-matching-flow.test.mjs",
+        "docs/RECEIPT_MATCHING.md"
+      ],
+      "notes": "Receipts for company-paid spending (merchant, date, amount, file as EXPENSE_RECEIPT attachment) matched to money-out bank statement lines: suggestions scored on amount (exact/within 2%), date gap (<=10 days) and merchant words in the narration, one-to-one, ties never Sure; match one, all sure ones, or undo with a reason; bank spending without a receipt (no match or line attachment). Employees see their own receipts. Read-only on the books; no AI. Not built: OCR, card feeds, email-in receipts."
     },
     {
       "id": "EXP-020",
