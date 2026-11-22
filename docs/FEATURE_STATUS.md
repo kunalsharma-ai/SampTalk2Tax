@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 596 |
+| Not started | 595 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 664 |
+| Tested | 665 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 3 | 33 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 25 | 29 |
+| Global taxation engine | M3 | 54 | 24 | 30 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 7 | 20 |
@@ -2649,6 +2649,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/notices
   - apps/web/e2e/tax-notices-flow.test.mjs
   - docs/TAX_NOTICES.md
+
+### TAX-026 — Tax audit support
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Form 3CD working papers for a financial year (India): 44AB(a) applicability with the 5% cash test, 40A(3) cash payments over 10,000 per person per day, 269ST cash receipts of 2 lakh or more, TDS late deposits with 201(1A) interest from the TDS register, clause 44 spending by supplier GST registration. Read-only, no AI. Not built: transporter limit/rule 6DD, 43B, 269SS/T, composition split, filing.
+- Evidence:
+  - packages/tax-engine/src/india/tax-audit.ts
+  - packages/tax-engine/test/tax-audit.test.ts
+  - apps/api/src/tax-audit/tax-audit.service.ts
+  - apps/api/test/tax-audit.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/tax-audit/page.tsx
+  - apps/web/e2e/tax-audit-flow.test.mjs
+  - docs/TAX_AUDIT.md
 
 ### TAX-027 — External government submission must be implemented only through approved and authorized integrations
 

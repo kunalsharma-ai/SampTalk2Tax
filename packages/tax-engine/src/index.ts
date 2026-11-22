@@ -14,3 +14,4 @@ export * from './india/gst-setoff';
 export * from './india/gst-reconciliation';
 export * from './india/tax-liability-forecast';
 export * from './india/deadline-predictions';
+export * from './india/tax-audit';

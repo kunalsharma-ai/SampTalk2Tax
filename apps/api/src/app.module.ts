@@ -83,6 +83,8 @@ import { CompliancePredictionsService } from './compliance/compliance-prediction
 import { TaxForecastService } from './tax-forecast/tax-forecast.service';
 import { ExpenseReceiptsController } from './expense-receipts/expense-receipts.controller';
 import { ExpenseReceiptsService } from './expense-receipts/expense-receipts.service';
+import { TaxAuditController } from './tax-audit/tax-audit.controller';
+import { TaxAuditService } from './tax-audit/tax-audit.service';
 import { HealthController } from './health/health.controller';
 import { RegionsController } from './regions/regions.controller';
 import { AdminController, AnnouncementsController } from './admin/admin.controller';
@@ -419,6 +421,7 @@ export class AppModule {
         TaxForecastController,
         CompliancePredictionsController,
         ExpenseReceiptsController,
+        TaxAuditController,
         JournalApprovalsController,
         BillChecksController,
         CommunicationPolicyController,
@@ -603,6 +606,7 @@ export class AppModule {
         TaxForecastService,
         CompliancePredictionsService,
         ExpenseReceiptsService,
+        TaxAuditService,
         WithholdingService,
         PayrollService,
         LeaveService,
