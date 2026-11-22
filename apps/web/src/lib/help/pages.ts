@@ -515,6 +515,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Set how much to keep in each account and route the claims. People waiting over 7 days since approval come first. Tick the ready people and pay them: every claim is reimbursed today from the planned account through the usual journal, with your reference.',
     where: 'Expenses. Needs the expenses.reimburse permission. Only active accounts in your currency are used; the account a person was last reimbursed from is preferred while it has room. Bank account numbers are never shown.',
   },
+  'expenses/evidence': {
+    what: 'The audit evidence of every expense claim approved, reimbursed or voided in a period, collected automatically from the records: receipt files with their SHA-256 checksums, who approved it and when, policy exceptions and the approver\'s note, the journal entry, the reimbursement, its match on the bank statement, and the hash-chained audit trail. Each item is OK, Noted, Pending, n/a or a Gap.',
+    how: 'Choose a period (the 90 days to today by default) and tick Only claims with gaps to see what needs fixing: attach the missing receipts, match payments on the bank statement. Open a claim for its evidence pack, or download the evidence index as CSV for the auditor.',
+    where: 'Expenses. Needs the audit.read permission. A payment counts as missing from the statement only once the statement runs more than 3 days past it; cash payments have no statement. Nothing here changes the books.',
+  },
+  'expenses/evidence/[id]': {
+    what: 'One expense claim\'s evidence pack: each kind of evidence with what the records show, the receipt files with their SHA-256, and the claim\'s events in the audit trail with their hashes.',
+    how: 'Fix the gaps on the claim itself, then come back: the pack is collected again each time it is opened.',
+    where: 'Expenses, Expense audit evidence. The full audit trail is under Audit trail.',
+  },
   'expenses/reconciliation': {
     what: 'Employee expense claims reconciled three ways as of a date. The Employee Reimbursements Payable account in the books against the approved claims not yet paid back or voided by then, with every difference listed: an entry on the account that no claim made, or a claim whose own entries do not come to what it says is owed. Each claim paid back in the last 90 days against the imported bank statement. And what is owed to each employee, by days since approval.',
     how: 'Pick a date, such as a month end, or leave it empty for today. When the books and claims differ, open the entry or claim listed to see why. Pay back claims owed over 30 days. A payment not on the statement although the statement runs past it needs a look in Banking: match it, or check it was really paid.',

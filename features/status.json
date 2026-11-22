@@ -9240,6 +9240,20 @@
         "docs/REIMBURSEMENT_ROUTING.md"
       ],
       "notes": "Approved claims grouped per person and routed: bank transfer when the employee record (matched by email) has a salary account, cash otherwise, wait for cash when no account has room after the amount kept, needs bank details when there is no cash account. Overdue (>7 days since approval) first; last-used account preferred while it has room. Pay the ready ones in one step through the usual reimbursement journal. Not built: payment files for bank transfers, adding reimbursements to payroll."
+    },
+    "EXP-027": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/expense-evidence.ts",
+        "packages/accounting-engine/test/expense-evidence.test.ts",
+        "apps/api/src/expense-evidence/expense-evidence.service.ts",
+        "apps/api/test/expense-evidence.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/evidence/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/expenses/evidence/[claimId]/page.tsx",
+        "apps/web/e2e/expense-evidence-flow.test.mjs",
+        "docs/EXPENSE_EVIDENCE.md"
+      ],
+      "notes": "Evidence per decided claim collected from the records: receipt files with SHA-256, approver and time, policy exceptions with the approver's note (from the audit trail), posted journal, reimbursement, bank statement match (gap once the statement runs 3+ days past the payment; cash n/a), hash-chained audit events. Gaps-only filter, evidence pack per claim, CSV evidence index with formula guard. Not built: zipped pack of the files themselves."
     }
   }
 }

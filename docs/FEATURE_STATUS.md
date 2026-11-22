@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 592 |
+| Not started | 591 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 668 |
+| Tested | 669 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 23 | 31 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 6 | 21 |
+| Expense management | M2 | 27 | 5 | 22 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -3194,6 +3194,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/expenses/reimbursement-routing/page.tsx
   - apps/web/e2e/reimbursement-routing-flow.test.mjs
   - docs/REIMBURSEMENT_ROUTING.md
+
+### EXP-027 — Automated audit evidence collection
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Evidence per decided claim collected from the records: receipt files with SHA-256, approver and time, policy exceptions with the approver's note (from the audit trail), posted journal, reimbursement, bank statement match (gap once the statement runs 3+ days past the payment; cash n/a), hash-chained audit events. Gaps-only filter, evidence pack per claim, CSV evidence index with formula guard. Not built: zipped pack of the files themselves.
+- Evidence:
+  - packages/accounting-engine/src/expense-evidence.ts
+  - packages/accounting-engine/test/expense-evidence.test.ts
+  - apps/api/src/expense-evidence/expense-evidence.service.ts
+  - apps/api/test/expense-evidence.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/evidence/page.tsx
+  - apps/web/src/app/orgs/[orgId]/expenses/evidence/[claimId]/page.tsx
+  - apps/web/e2e/expense-evidence-flow.test.mjs
+  - docs/EXPENSE_EVIDENCE.md
 
 ### TRS-002 — Cash positioning
 
