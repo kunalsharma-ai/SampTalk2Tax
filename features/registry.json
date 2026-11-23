@@ -19781,12 +19781,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/test/ledger.e2e.test.ts",
-        "apps/web/src"
+        "packages/accounting-engine/src/transaction-history.ts",
+        "packages/accounting-engine/test/transaction-history.test.ts",
+        "apps/api/src/transaction-history/transaction-history.service.ts",
+        "apps/api/test/transaction-history.e2e.test.ts",
+        "apps/web/src/components/transaction-history.tsx",
+        "apps/web/e2e/transaction-history-flow.test.mjs"
       ],
-      "notes": null
+      "notes": "Per-transaction history on documents, payments, journals and expense claims: own events plus allocations, files and journal entries, in words, each checked against its hash."
     },
     {
       "id": "AUDIT-006",

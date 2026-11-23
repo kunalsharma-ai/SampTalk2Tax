@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AttachmentsPanel } from '@/components/attachments';
+import { TransactionHistoryCard } from '@/components/transaction-history';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
@@ -255,6 +256,7 @@ export function ClaimDetail() {
         onChanged={() => qc.invalidateQueries({ queryKey: ['expense-claim', orgId, c.id] })}
         description={c.receiptCount === 0 && ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) ? 'No receipts attached yet. Add a photo or PDF of each receipt (PDF, PNG, JPEG or WebP, up to 5 MB).' : 'Receipts for this claim, kept exactly as uploaded.'}
       />
+      <TransactionHistoryCard kind="expense_claim" id={c.id} />
 
       <Dialog
         open={!!dialog}

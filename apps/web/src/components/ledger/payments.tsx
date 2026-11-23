@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AttachmentsPanel } from '@/components/attachments';
+import { TransactionHistoryCard } from '@/components/transaction-history';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, ApiError } from '@/lib/api';
@@ -196,6 +197,7 @@ export function PaymentDetail({ l }: { l: LedgerConfig }) {
         </Card>
       ) : null}
       <AttachmentsPanel entityType="PAYMENT" entityId={p.id} canManage={canManage} description="Remittance advice, bank slips, cheque scans. PDF, PNG, JPEG or WebP up to 5 MB each." />
+      <TransactionHistoryCard kind="payment" id={p.id} />
 
       <Dialog open={voidOpen} onOpenChange={setVoidOpen} title={`Void ${p.number}`} description="Posts an exact reversing journal. Remove any applications first.">
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); voidPay.mutate(); }}>

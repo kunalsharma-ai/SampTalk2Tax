@@ -161,6 +161,8 @@ import { ExpenseCategoriesController } from './expense-categories/expense-catego
 import { ExpenseCategoriesService } from './expense-categories/expense-categories.service';
 import { MissingReceiptsController } from './missing-receipts/missing-receipts.controller';
 import { MissingReceiptsService } from './missing-receipts/missing-receipts.service';
+import { TransactionHistoryController } from './transaction-history/transaction-history.controller';
+import { TransactionHistoryService } from './transaction-history/transaction-history.service';
 import { PaymentFraudService } from './payment-fraud/payment-fraud.service';
 import { PaymentPredictionsService } from './payment-predictions/payment-predictions.service';
 import { LedgerReplayService } from './ledger-replay/ledger-replay.service';
@@ -432,6 +434,7 @@ export class AppModule {
         DepartmentBudgetsController,
         ExpenseCategoriesController,
         MissingReceiptsController,
+        TransactionHistoryController,
         ReconciliationExceptionsController,
         AuditEngagementsController,
         AuditEvidenceController,
@@ -634,6 +637,7 @@ export class AppModule {
         DepartmentBudgetsService,
         ExpenseCategoriesService,
         MissingReceiptsService,
+        TransactionHistoryService,
         ReconciliationExceptionsService,
         AuditEngagementsService,
         AuditEvidenceService,
