@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
 import { DepartmentPerformanceService } from './department-performance.service';
+import { FinancialTimelineService } from './financial-timeline.service';
 import { FinancialVisualsService } from './financial-visuals.service';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM');
@@ -34,5 +35,22 @@ export class DepartmentPerformanceController {
   @RequirePermission('reports.read')
   report(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
     return this.s.report(org, q);
+  }
+}
+
+const day = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'Use YYYY-MM-DD');
+const Range = z.object({ from: day.optional(), to: day.optional(), size: z.enum(['DAY', 'WEEK', 'MONTH']).optional() }).strict();
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/timeline')
+export class FinancialTimelineController {
+  constructor(private readonly s: FinancialTimelineService) {}
+
+  /** Posted entries, cash in and out with the cash balance, and compliance deadlines over a range of days (the last 90 and next 30 by default). */
+  @Get()
+  @RequirePermission('reports.read')
+  timeline(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Range)) q: z.infer<typeof Range>) {
+    return this.s.timeline(org, q);
   }
 }

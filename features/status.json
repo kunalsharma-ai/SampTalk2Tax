@@ -9731,6 +9731,19 @@
         "apps/web/e2e/revenue-forecast-flow.test.mjs"
       ],
       "notes": "Revenue forecast carries an 80% range per month: expected ± the 80th percentile of how far earlier saved forecasts missed at the same months ahead (all errors when fewer than three at that distance; one saved forecast per month counts). With fewer than three judged months the range runs from committed to best case and says so. Drawn as a shaded band on the forecast chart with a 'How sure the forecast is' table."
+    },
+    "DASH-033": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-timeline.ts",
+        "packages/accounting-engine/test/financial-timeline.test.ts",
+        "apps/api/src/financial-visuals/financial-timeline.service.ts",
+        "apps/api/test/financial-timeline.e2e.test.ts",
+        "apps/web/src/components/reports/financial-timeline.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/timeline/page.tsx",
+        "apps/web/e2e/financial-timeline-flow.test.mjs"
+      ],
+      "notes": "Reports → Financial timeline: posted entries (closing entries left out) bucketed by day, week or month (best fit or chosen) with cash in and out through cash and bank accounts (own transfers netted out), the cash balance carried from before the range, and compliance deadlines. Zoom with a brush, filter by kind of entry, choose a bar or period to list its entries and deadlines, open the journal. Up to 400 days."
     }
   }
 }

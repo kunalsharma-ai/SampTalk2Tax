@@ -967,7 +967,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-030 | Advanced Visualization | capability | Financial heatmaps | Tested |
 | DASH-031 | Advanced Visualization | capability | Treemaps | Tested |
 | DASH-032 | Advanced Visualization | capability | Forecast confidence bands | Tested |
-| DASH-033 | Advanced Visualization | capability | Interactive timelines | Not started |
+| DASH-033 | Advanced Visualization | capability | Interactive timelines | Tested |
 | DASH-034 | Advanced Visualization | capability | Drill-down financial charts | Tested |
 | DASH-035 | Advanced Visualization | capability | Department performance visualizations | Tested |
 | DASH-036 | Advanced Visualization | capability | Risk monitoring displays | Not started |

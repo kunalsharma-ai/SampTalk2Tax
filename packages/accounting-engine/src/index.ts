@@ -159,3 +159,4 @@ export * from './bill-extraction';
 export * from './company-cards';
 export * from './financial-visuals';
 export * from './department-performance';
+export * from './financial-timeline';

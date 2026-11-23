@@ -23475,9 +23475,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-timeline.ts",
+        "packages/accounting-engine/test/financial-timeline.test.ts",
+        "apps/api/src/financial-visuals/financial-timeline.service.ts",
+        "apps/api/test/financial-timeline.e2e.test.ts",
+        "apps/web/src/components/reports/financial-timeline.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/timeline/page.tsx",
+        "apps/web/e2e/financial-timeline-flow.test.mjs"
+      ],
+      "notes": "Reports → Financial timeline: posted entries (closing entries left out) bucketed by day, week or month (best fit or chosen) with cash in and out through cash and bank accounts (own transfers netted out), the cash balance carried from before the range, and compliance deadlines. Zoom with a brush, filter by kind of entry, choose a bar or period to list its entries and deadlines, open the journal. Up to 400 days."
     },
     {
       "id": "DASH-034",
