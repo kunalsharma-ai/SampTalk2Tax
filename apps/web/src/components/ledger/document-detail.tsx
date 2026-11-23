@@ -26,6 +26,7 @@ import { RecognitionCard } from '@/components/revenue-recognition/recognition-ca
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
 import { DocumentForm } from './document-form';
 import { TaxExplanationCard } from './tax-explanation';
+import { UnappliedPaymentsCard } from './unapplied-payments';
 import { DocStatus } from './documents-table';
 
 export function DocumentDetail({ l }: { l: LedgerConfig }) {
@@ -289,6 +290,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
       {d.taxTotal !== '0.00' || d.gst || d.withholding || d.reverseCharge ? <TaxExplanationCard orgId={orgId} ledger={l.ledger} documentId={d.id} /> : null}
 
       {l.ledger === 'SALES' && d.kind === 'INVOICE' ? <RecognitionCard orgId={orgId} documentId={d.id} status={d.status} issueDate={d.issueDate} currency={c} functionalCurrency={d.functionalCurrency} onChange={refresh} /> : null}
+
+      {isCharge && d.status === 'POSTED' && d.amountDue !== '0.00' && canManage ? <UnappliedPaymentsCard l={l} orgId={orgId} documentId={d.id} contactId={d.contact.id} currency={c} amountDue={d.amountDue} onApplied={refresh} /> : null}
 
       <Card className="mt-6">
         <CardHeader title={isCharge ? 'Payments and credits applied' : `Applied to ${l.charge.plural.toLowerCase()}`} description={c !== d.functionalCurrency ? `Removing an application keeps a record of it, reopens the amount and reverses its exchange difference. Each amount settled at a rate other than this ${label.toLowerCase()}'s ${d.exchangeRate} posts a realised exchange gain or loss in ${d.functionalCurrency}.` : 'Removing an application keeps a record of it and reopens the amount.'} />

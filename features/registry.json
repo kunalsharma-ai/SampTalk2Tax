@@ -4403,12 +4403,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/src/ledgers/documents.service.ts",
-        "packages/accounting-engine/test/documents.test.ts"
+        "apps/api/test/purchase-settlement.e2e.test.ts",
+        "apps/web/e2e/purchase-settlement-flow.test.mjs",
+        "apps/web/src/components/ledger/unapplied-payments.tsx",
+        "apps/api/src/ledgers/documents.service.ts"
       ],
-      "notes": "Shares the receipts code path, which is tested for partial allocation; no purchases-specific partial test yet."
+      "notes": "Bills paid in parts; still due, ageing, control account and vendor statement checked after each part."
     },
     {
       "id": "AP-009",
@@ -4433,11 +4435,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
+        "apps/api/test/purchase-settlement.e2e.test.ts",
+        "apps/web/e2e/purchase-settlement-flow.test.mjs",
+        "apps/web/src/components/ledger/unapplied-payments.tsx",
         "apps/api/src/ledgers/documents.service.ts"
       ],
-      "notes": "Unallocated vendor payment stays as a vendor credit; shares the tested receipts code path."
+      "notes": "An overpayment or advance stays unapplied as a vendor credit and is applied to a later bill from the bill page."
     },
     {
       "id": "AP-010",
@@ -4462,12 +4467,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/src/ledgers/documents.service.ts",
-        "packages/accounting-engine/test/documents.test.ts"
+        "apps/api/test/purchase-settlement.e2e.test.ts",
+        "apps/web/e2e/purchase-settlement-flow.test.mjs",
+        "apps/web/src/components/ledger/unapplied-payments.tsx",
+        "apps/api/src/ledgers/documents.service.ts"
       ],
-      "notes": "Vendor credits share the tested credit-note path; journal covered by engine tests."
+      "notes": "Vendor credits applied to bills with apply-credit; allocations can be removed; over-allocation refused."
     },
     {
       "id": "AP-011",

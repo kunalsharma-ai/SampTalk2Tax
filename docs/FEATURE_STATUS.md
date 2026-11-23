@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 575 |
 | Designed | 0 |
 | Implementing | 38 |
-| Implemented | 29 |
-| Tested | 687 |
+| Implemented | 26 |
+| Tested | 690 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1783,28 +1783,35 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### AP-008 — Partial payments
 
 - Module: Accounts payable
-- Status: **Implemented**
-- Notes: Shares the receipts code path, which is tested for partial allocation; no purchases-specific partial test yet.
+- Status: **Tested**
+- Notes: Bills paid in parts; still due, ageing, control account and vendor statement checked after each part.
 - Evidence:
+  - apps/api/test/purchase-settlement.e2e.test.ts
+  - apps/web/e2e/purchase-settlement-flow.test.mjs
+  - apps/web/src/components/ledger/unapplied-payments.tsx
   - apps/api/src/ledgers/documents.service.ts
-  - packages/accounting-engine/test/documents.test.ts
 
 ### AP-009 — Advance payments
 
 - Module: Accounts payable
-- Status: **Implemented**
-- Notes: Unallocated vendor payment stays as a vendor credit; shares the tested receipts code path.
+- Status: **Tested**
+- Notes: An overpayment or advance stays unapplied as a vendor credit and is applied to a later bill from the bill page.
 - Evidence:
+  - apps/api/test/purchase-settlement.e2e.test.ts
+  - apps/web/e2e/purchase-settlement-flow.test.mjs
+  - apps/web/src/components/ledger/unapplied-payments.tsx
   - apps/api/src/ledgers/documents.service.ts
 
 ### AP-010 — Credit notes
 
 - Module: Accounts payable
-- Status: **Implemented**
-- Notes: Vendor credits share the tested credit-note path; journal covered by engine tests.
+- Status: **Tested**
+- Notes: Vendor credits applied to bills with apply-credit; allocations can be removed; over-allocation refused.
 - Evidence:
+  - apps/api/test/purchase-settlement.e2e.test.ts
+  - apps/web/e2e/purchase-settlement-flow.test.mjs
+  - apps/web/src/components/ledger/unapplied-payments.tsx
   - apps/api/src/ledgers/documents.service.ts
-  - packages/accounting-engine/test/documents.test.ts
 
 ### AP-011 — Supplier statements
 
