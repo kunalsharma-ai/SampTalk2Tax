@@ -159,6 +159,8 @@ import { DepartmentBudgetsController } from './department-budgets/department-bud
 import { DepartmentBudgetsService } from './department-budgets/department-budgets.service';
 import { ExpenseCategoriesController } from './expense-categories/expense-categories.controller';
 import { ExpenseCategoriesService } from './expense-categories/expense-categories.service';
+import { MissingReceiptsController } from './missing-receipts/missing-receipts.controller';
+import { MissingReceiptsService } from './missing-receipts/missing-receipts.service';
 import { PaymentFraudService } from './payment-fraud/payment-fraud.service';
 import { PaymentPredictionsService } from './payment-predictions/payment-predictions.service';
 import { LedgerReplayService } from './ledger-replay/ledger-replay.service';
@@ -429,6 +431,7 @@ export class AppModule {
         ExpenseForecastController,
         DepartmentBudgetsController,
         ExpenseCategoriesController,
+        MissingReceiptsController,
         ReconciliationExceptionsController,
         AuditEngagementsController,
         AuditEvidenceController,
@@ -630,6 +633,7 @@ export class AppModule {
         ExpenseForecastService,
         DepartmentBudgetsService,
         ExpenseCategoriesService,
+        MissingReceiptsService,
         ReconciliationExceptionsService,
         AuditEngagementsService,
         AuditEvidenceService,

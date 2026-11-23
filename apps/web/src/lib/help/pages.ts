@@ -535,6 +535,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose how many months ahead. Each account uses the average of its last three months, adjusted for the season once it has a year of history; the range comes from how much it usually moves. Accounts used only now and then are listed separately.',
     where: 'Expenses. Worked out from approved and paid-back claims by the date the money was spent; drafts and rejected claims do not count.',
   },
+  'expenses/missing-receipts': {
+    what: 'Expense claims submitted, approved or reimbursed without any receipt attached, with why each matters: a line over the expense policy\'s "receipt above" amount, a category that always needs a receipt, or simply nothing backing the spending.',
+    how: 'Start with the claims marked Required by policy. Ask for receipt records the request on the claim and emails the claimant when email is set up; they can attach the receipt even after approval, and the claim leaves this list once one is attached. The same claim can be asked about again after a day.',
+    where: 'Expenses. Only receipt lines count; mileage and per diem lines are worked out from rates and need no receipt. Bank payments without a receipt are under Receipt matching. No AI model is used.',
+  },
   'expenses/categories': {
     what: 'The categories people claim expenses under, such as Hotels or Client meals. Each posts to one expense account, can carry guidance on what belongs there and a default tax rate, and can always require a receipt.',
     how: 'Finance adds, edits and archives categories here. Once there is at least one, employees pick a category on each receipt line instead of an account; finance can still claim straight to an account. A category that always needs a receipt blocks submitting a claim without one. Per-category spending limits are expense policy rules on the category\'s account, listed beside it.',

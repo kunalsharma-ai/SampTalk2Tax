@@ -13,6 +13,7 @@ import { useOrg } from '@/lib/org';
 import { can, type BankAccountSummary, type ExpenseClaim } from '@/lib/types';
 import { ClaimForm } from './claim-form';
 import { ClaimStatus } from './claims-list';
+import { ReceiptRequestsCard } from './receipt-requests';
 
 type DialogKind = 'submit' | 'approve' | 'reject' | 'reimburse' | 'void' | null;
 const ANOMALY_LABEL = { UNUSUAL_AMOUNT: 'Unusual amount', JUST_UNDER_LIMIT: 'Just under the limit', SPLIT_UNDER_LIMIT: 'Split receipts' } as const;
@@ -246,6 +247,7 @@ export function ClaimDetail() {
         </Table>
       </Card>
 
+      <ReceiptRequestsCard claim={c} />
       <AttachmentsPanel
         entityType="EXPENSE_CLAIM"
         entityId={c.id}

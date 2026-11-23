@@ -402,7 +402,7 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-018 |  | capability | Duplicate expense detection | Tested |
 | EXP-019 |  | capability | Receipt-to-transaction matching | Tested |
 | EXP-020 | AI Expense Features | capability | Automatic expense categorization | Tested |
-| EXP-021 | AI Expense Features | capability | Missing receipt detection | Implemented |
+| EXP-021 | AI Expense Features | capability | Missing receipt detection | Tested |
 | EXP-022 | AI Expense Features | capability | Policy violation detection | Tested |
 | EXP-023 | AI Expense Features | capability | Unusual expense alerts | Tested |
 | EXP-024 | AI Expense Features | capability | Fraud risk indicators | Tested |
