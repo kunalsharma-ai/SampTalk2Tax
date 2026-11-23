@@ -278,12 +278,12 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-033 | Global Tax Modules | capability | GCC VAT | Not started |
 | TAX-034 | Global Tax Modules | capability | Canadian GST/HST | Not started |
 | TAX-035 | Global Tax Modules | capability | Australian GST | Not started |
-| TAX-036 | Global Tax Modules | capability | Singapore GST | Not started |
+| TAX-036 | Global Tax Modules | capability | Singapore GST | Tested |
 | TAX-037 | Global Tax Modules | capability | Withholding taxes | Implementing |
 | TAX-038 | Global Tax Modules | capability | Cross-border tax reporting | Not started |
 | TAX-039 | Global Tax Modules | capability | Country-specific invoice formats | Not started |
 | TAX-040 | Global Tax Modules | capability | Electronic invoicing requirements | Not started |
-| TAX-041 | Global Tax Modules | rule | Implement supported jurisdictions incrementally | Not started |
+| TAX-041 | Global Tax Modules | rule | Implement supported jurisdictions incrementally | Implementing |
 | TAX-042 | Global Tax Modules | rule | Do not claim worldwide compliance without verified, maintained country modules | Tested |
 | TAX-043 | AI Tax Intelligence | capability | Tax document interpretation | Not started |
 | TAX-044 | AI Tax Intelligence | capability | Tax discrepancy detection | Tested |

@@ -1,22 +1,14 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { D, toFunctional } from '@talk2tax/accounting-engine';
 import {
-  normaliseVrn,
-  recentVatPeriods,
-  suggestVatTreatment,
-  ukVatReturn,
-  VAT_BOX_LABEL,
+  taxPeriodChange,
   VAT_STAGGER_LABEL,
   VAT_STAGGERS,
-  VAT_TREATMENT_LABEL,
-  VAT_TREATMENTS,
-  vatCorrectionAllowance,
-  vatDueDate,
-  vatPeriodChange,
-  vatPeriodFor,
+  vatJurisdiction,
   vatReturnCsv,
-  type VatCorrection,
+  type TaxReturnCorrection,
   type VatEntry,
+  type VatJurisdiction,
   type VatRateInfo,
   type VatStagger,
   type VatTreatment,
@@ -30,6 +22,7 @@ import { PrismaService } from '../common/prisma.service';
 import { accounts } from '../db/collections/chart';
 import { users } from '../db/collections/identity';
 import { journalEntries } from '../db/collections/ledger';
+import { lineSums, postedBetween } from '../db/ledger-queries';
 import { vatReturns, vatSettings, type VatReturnDoc, type VatSettingsDoc } from '../db/collections/vat-returns';
 
 export interface VatSettingsBody {
@@ -40,18 +33,19 @@ export interface VatSettingsBody {
   treatments: { taxRateId: string; treatment: VatTreatment }[];
 }
 
-/** HMRC lets an earlier return be corrected for four years. */
-const CORRECTION_YEARS = 4;
 const PERIODS_SHOWN = 8;
 
 /**
- * UK VAT return (TAX-030): the nine boxes for a VAT period, prepared from posted invoices, credit
- * notes, bills, vendor credits and approved expense claims with ukVatReturn; changes to periods
- * already submitted carried as corrections when within HMRC's limit; entries on the VAT accounts
- * that are not on the return listed for checking; and a record of each return the business
- * submitted to HMRC. GB organisations keeping books in pounds only. reports.read reads;
- * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC.
+ * VAT and GST returns (TAX-030 United Kingdom, TAX-036 Singapore, TAX-041 one jurisdiction at a
+ * time): the boxes for a period, prepared from posted invoices, credit notes, bills, vendor
+ * credits and approved expense claims with the country's rules (vatJurisdiction); changes to
+ * periods already submitted carried as corrections when within the authority's limit; entries on
+ * the tax accounts that are not on the return listed for checking; and a record of each return
+ * the business submitted. Books kept in the country's currency only. reports.read reads;
+ * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC or IRAS.
  */
+const direction = (output = '0', input = '0'): 'PAY' | 'RECLAIM' | 'NIL' => (new D(output).gt(input) ? 'PAY' : new D(output).lt(input) ? 'RECLAIM' : 'NIL');
+
 @Injectable()
 export class VatReturnService {
   constructor(
@@ -60,47 +54,58 @@ export class VatReturnService {
     private readonly audit: AuditService,
   ) {}
 
-  private async uk(org: OrgContext) {
+  /** The organisation's VAT or GST return rules: the UK and Singapore, in their own currency. */
+  private async jurisdiction(org: OrgContext): Promise<VatJurisdiction> {
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { countryCode: true } });
-    if (o.countryCode !== 'GB') throw new DomainError('NOT_UK', 'The VAT return is prepared for organisations in the United Kingdom', HttpStatus.UNPROCESSABLE_ENTITY);
-    if (org.functionalCurrency !== 'GBP') throw new DomainError('NOT_GBP', 'The VAT return is prepared from books kept in pounds (GBP)', HttpStatus.UNPROCESSABLE_ENTITY);
+    const j = vatJurisdiction(o.countryCode);
+    if (!j) throw new DomainError('NO_VAT_RETURN', 'A VAT or GST return is prepared here for organisations in the United Kingdom and Singapore', HttpStatus.UNPROCESSABLE_ENTITY);
+    if (org.functionalCurrency !== j.currency) throw new DomainError('WRONG_CURRENCY', `The ${j.returnName} is prepared from books kept in ${j.currency}`, HttpStatus.UNPROCESSABLE_ENTITY);
+    return j;
   }
 
-  private async rates(org: OrgContext, s: VatSettingsDoc | null): Promise<(VatRateInfo & { isActive: boolean; suggested: VatTreatment | null; salesAccountId: string | null; purchaseAccountId: string | null })[]> {
+  private async rates(org: OrgContext, j: VatJurisdiction, s: VatSettingsDoc | null): Promise<(VatRateInfo & { isActive: boolean; suggested: VatTreatment | null; salesAccountId: string | null; purchaseAccountId: string | null })[]> {
     const set = new Map((s?.treatments ?? []).map((t) => [t.taxRateId, t.treatment as VatTreatment]));
     const rows = await this.prisma.taxRate.findMany({ where: { orgId: org.id }, select: { id: true, name: true, rate: true, isActive: true, salesAccountId: true, purchaseAccountId: true }, orderBy: [{ rate: 'desc' }, { name: 'asc' }] });
-    return rows.map((r) => ({ id: r.id, name: r.name, rate: r.rate.toFixed(), isActive: r.isActive, treatment: set.get(r.id) ?? null, suggested: suggestVatTreatment(r.rate.toFixed(), r.name), salesAccountId: r.salesAccountId, purchaseAccountId: r.purchaseAccountId }));
+    return rows.map((r) => ({ id: r.id, name: r.name, rate: r.rate.toFixed(), isActive: r.isActive, treatment: set.get(r.id) ?? null, suggested: j.suggest(r.rate.toFixed(), r.name), salesAccountId: r.salesAccountId, purchaseAccountId: r.purchaseAccountId }));
   }
 
   private stored(org: OrgContext) {
     return this.store.collection(vatSettings).findOne({});
   }
 
-  private async required(org: OrgContext) {
+  private async required(org: OrgContext, j: VatJurisdiction) {
     const s = await this.stored(org);
-    if (!s) throw new DomainError('VAT_NOT_SET_UP', 'Add your VAT registration number and return periods first', HttpStatus.UNPROCESSABLE_ENTITY);
+    if (!s) throw new DomainError('VAT_NOT_SET_UP', `Add your ${j.numberName} and return periods first`, HttpStatus.UNPROCESSABLE_ENTITY);
     return s;
   }
 
   // ---- settings ----
 
+  /** What the page says for this country. */
+  private describe(j: VatJurisdiction) {
+    return { country: j.country, currency: j.currency, taxName: j.taxName, returnName: j.returnName, authority: j.authority, numberName: j.numberName, numberHint: j.numberHint, dueRule: j.dueRule, netBox: j.netBox, wholeBoxes: j.wholeBoxes };
+  }
+
   async settings(org: OrgContext) {
-    await this.uk(org);
+    const j = await this.jurisdiction(org);
     const s = await this.stored(org);
-    const rates = await this.rates(org, s);
+    const rates = await this.rates(org, j, s);
     const by = s ? await this.store.collection(users).findById(s.updatedById) : null;
     return {
       settings: s ? { vrn: s.vrn, registeredFrom: s.registeredFrom, stagger: s.stagger, untaxedTreatment: s.untaxedTreatment, updatedAt: s.updatedAt.toISOString(), updatedBy: by?.name ?? 'Former member' } : null,
       rates: rates.map(({ salesAccountId: _s, purchaseAccountId: _p, ...r }) => r),
       staggers: VAT_STAGGERS.map((k) => ({ key: k, label: VAT_STAGGER_LABEL[k] })),
-      treatments: VAT_TREATMENTS.map((k) => ({ key: k, label: VAT_TREATMENT_LABEL[k] })),
+      treatments: j.treatments.map((k) => ({ key: k, label: j.treatmentLabel[k] })),
+      jurisdiction: this.describe(j),
     };
   }
 
   async saveSettings(org: OrgContext, user: AuthUser, body: VatSettingsBody) {
-    await this.uk(org);
-    const vrn = normaliseVrn(body.vrn);
-    if (!vrn) throw new DomainError('INVALID_VRN', 'That is not a valid UK VAT registration number (9 digits, or 12 for a branch)', HttpStatus.UNPROCESSABLE_ENTITY);
+    const j = await this.jurisdiction(org);
+    const vrn = j.normaliseNumber(body.vrn);
+    if (!vrn) throw new DomainError('INVALID_VRN', j.invalidNumber, HttpStatus.UNPROCESSABLE_ENTITY);
+    const wrong = body.treatments.find((t) => !j.treatments.includes(t.treatment)) ?? (j.treatments.includes(body.untaxedTreatment) ? null : { treatment: body.untaxedTreatment });
+    if (wrong) throw new DomainError('VALIDATION_FAILED', `${j.treatmentLabel[wrong.treatment]} is not a treatment in ${j.country === 'SG' ? 'Singapore' : 'the United Kingdom'}`, HttpStatus.UNPROCESSABLE_ENTITY);
     const known = new Set((await this.prisma.taxRate.findMany({ where: { orgId: org.id }, select: { id: true } })).map((r) => r.id));
     const unknown = body.treatments.filter((t) => !known.has(t.taxRateId));
     if (unknown.length) throw new DomainError('UNKNOWN_TAX_RATE', 'A tax rate in the list is not one of this organisation’s', HttpStatus.UNPROCESSABLE_ENTITY);
@@ -120,8 +125,9 @@ export class VatReturnService {
 
   // ---- the books ----
 
-  /** Every line on the return for a period, in pounds, with the journal entries they posted. */
+  /** Every line on the return for a period, in the books' currency, with the journal entries they posted. */
   private async entries(org: OrgContext, from: string, to: string) {
+    const cur = org.functionalCurrency;
     const range = { gte: toDbDate(from), lte: toDbDate(to) };
     const kinds = { in: ['INVOICE', 'CREDIT_NOTE', 'BILL', 'VENDOR_CREDIT'] as ('INVOICE' | 'CREDIT_NOTE' | 'BILL' | 'VENDOR_CREDIT')[] };
     const docSelect = { id: true, kind: true, number: true, issueDate: true, voidDate: true, exchangeRate: true, journalEntryId: true, voidJournalEntryId: true, lines: { select: { taxRateId: true, taxRate: true, netAmount: true, taxAmount: true } } } as const;
@@ -134,12 +140,12 @@ export class VatReturnService {
     ]);
     const out: VatEntry[] = [];
     const journals = new Set<string>();
-    const gbp = (v: { toFixed(): string }, rate: string) => toFunctional(new D(v.toFixed()), rate, 'GBP').toFixed(2);
+    const local = (v: { toFixed(): string }, rate: string) => toFunctional(new D(v.toFixed()), rate, cur).toFixed(2);
     const fromDoc = (d: (typeof issued)[number], reversal: boolean) => {
       const rate = d.exchangeRate.toFixed();
       const j = reversal ? d.voidJournalEntryId : d.journalEntryId;
       if (j) journals.add(j);
-      for (const l of d.lines) out.push({ source: d.kind, id: d.id, number: d.number ?? 'Draft', date: reversal && d.voidDate ? fromDbDate(d.voidDate) : fromDbDate(d.issueDate), ...(reversal ? { reversal: true } : {}), taxRateId: l.taxRateId, rate: l.taxRate.toFixed(), net: gbp(l.netAmount, rate), vat: gbp(l.taxAmount, rate) });
+      for (const l of d.lines) out.push({ source: d.kind, id: d.id, number: d.number ?? 'Draft', date: reversal && d.voidDate ? fromDbDate(d.voidDate) : fromDbDate(d.issueDate), ...(reversal ? { reversal: true } : {}), taxRateId: l.taxRateId, rate: l.taxRate.toFixed(), net: local(l.netAmount, rate), vat: local(l.taxAmount, rate) });
     };
     const fromClaim = (c: (typeof claims)[number], reversal: boolean) => {
       const j = reversal ? c.voidJournalEntryId : c.journalEntryId;
@@ -179,70 +185,92 @@ export class VatReturnService {
       });
   }
 
-  private async figures(org: OrgContext, s: VatSettingsDoc, from: string, to: string, corrections: VatCorrection[] = []) {
-    const rates = await this.rates(org, s);
+  /** Revenue for the period from the ledger (credits less debits on revenue accounts, closing entries left out). */
+  private async revenue(org: OrgContext, from: string, to: string) {
+    const ids = ((await this.store.collection(accounts).find({ type: 'REVENUE' }, { projection: { id: 1 } })) as { id: string }[]).map((a) => a.id);
+    if (!ids.length) return '0';
+    const sums = await lineSums(this.store, org.id, { entry: postedBetween(toDbDate(from), toDbDate(to), { excludeClosing: true }), line: { accountId: { $in: ids } }, by: {} });
+    return sums.reduce((a, x) => a.plus(x.credit).minus(x.debit), new D(0)).toFixed(2);
+  }
+
+  private async figures(org: OrgContext, j: VatJurisdiction, s: VatSettingsDoc, from: string, to: string, corrections: TaxReturnCorrection[] = []) {
+    const rates = await this.rates(org, j, s);
     const { entries, journals } = await this.entries(org, from, to);
-    const r = ukVatReturn(entries, rates, { untaxed: s.untaxedTreatment as VatTreatment, corrections });
+    const revenue = j.needsRevenue ? await this.revenue(org, from, to) : '0';
+    const r = j.compute(entries, rates, { untaxed: s.untaxedTreatment as VatTreatment, revenue, corrections });
     return { rates, entries, journals, r };
   }
 
   // ---- periods and returns ----
 
+  /** Submitted returns, oldest first, with their own figures and corrections as output and input tax (returns recorded before Singapore was added kept UK box names). */
   private async recorded() {
-    return this.store.collection(vatReturns).find({}, { sort: { periodEnd: 1 } });
+    const rows = await this.store.collection(vatReturns).find({}, { sort: { periodEnd: 1 } });
+    type Legacy = Record<string, string | undefined>;
+    return rows.map((r) => {
+      const own = r.own as unknown as Legacy;
+      return {
+        ...r,
+        own: { output: own.output ?? own.box1 ?? '0', input: own.input ?? own.box4 ?? '0', supplies: own.supplies ?? own.box6 ?? '0', purchases: own.purchases ?? own.box7 ?? '0' },
+        corrections: r.corrections.map((c) => {
+          const x = c as unknown as Legacy;
+          return { periodEnd: c.periodEnd, output: x.output ?? x.box1 ?? '0', input: x.input ?? x.box4 ?? '0' };
+        }),
+      };
+    });
   }
 
   async periods(org: OrgContext, today = todayIso()) {
-    await this.uk(org);
+    const j = await this.jurisdiction(org);
     const s = await this.stored(org);
-    if (!s) return { setUp: false, periods: [] };
+    if (!s) return { setUp: false, periods: [], jurisdiction: this.describe(j) };
     const filed = new Map((await this.recorded()).map((r) => [r.periodEnd, r]));
-    const periods = recentVatPeriods(s.stagger as VatStagger, today, PERIODS_SHOWN).filter((p) => p.end >= s.registeredFrom).map((p) => {
+    const periods = j.recentPeriods(s.stagger as VatStagger, today, PERIODS_SHOWN).filter((p) => p.end >= s.registeredFrom).map((p) => {
       const f = filed.get(p.end);
       const status = f ? 'SUBMITTED' : p.end >= today ? 'OPEN' : p.due < today ? 'OVERDUE' : 'DUE';
-      return { ...p, start: p.start < s.registeredFrom ? s.registeredFrom : p.start, status, submittedOn: f?.submittedOn ?? null, box5: f?.boxes.box5 ?? null, direction: f ? (new D(f.boxes.box3).gt(f.boxes.box4) ? 'PAY' : new D(f.boxes.box3).lt(f.boxes.box4) ? 'RECLAIM' : 'NIL') : null };
+      return { ...p, start: p.start < s.registeredFrom ? s.registeredFrom : p.start, status, submittedOn: f?.submittedOn ?? null, net: f ? (f.boxes[j.netBox] ?? null) : null, direction: f ? direction(f.boxes[j.outputBox], f.boxes[j.inputBox]) : null };
     });
     // Returns recorded under an earlier stagger stay listed.
     const shown = new Set(periods.map((p) => p.end));
     const older = [...filed.values()].filter((f) => !shown.has(f.periodEnd) && f.periodEnd < (periods.at(-1)?.start ?? today)).slice(-PERIODS_SHOWN);
-    return { setUp: true, stagger: s.stagger, vrn: s.vrn, periods, older: older.reverse().map((f) => ({ start: f.periodStart, end: f.periodEnd, submittedOn: f.submittedOn, box5: f.boxes.box5 })) };
+    return { setUp: true, stagger: s.stagger, vrn: s.vrn, periods, older: older.reverse().map((f) => ({ start: f.periodStart, end: f.periodEnd, submittedOn: f.submittedOn, net: f.boxes[j.netBox] ?? null })), jurisdiction: this.describe(j) };
   }
 
-  private period(s: VatSettingsDoc, end: string, filed: VatReturnDoc | undefined) {
-    if (filed) return { start: filed.periodStart, end: filed.periodEnd, due: vatDueDate(filed.periodEnd) };
-    const p = vatPeriodFor(s.stagger as VatStagger, end);
-    if (!p) throw new DomainError('NOT_A_PERIOD', `${end} is not the last day of a VAT period on your stagger`, HttpStatus.UNPROCESSABLE_ENTITY);
-    if (end < s.registeredFrom) throw new DomainError('BEFORE_REGISTRATION', `The period ends before your VAT registration took effect on ${s.registeredFrom}`, HttpStatus.UNPROCESSABLE_ENTITY);
+  private period(j: VatJurisdiction, s: VatSettingsDoc, end: string, filed: { periodStart: string; periodEnd: string } | undefined) {
+    if (filed) return { start: filed.periodStart, end: filed.periodEnd, due: j.dueDate(filed.periodEnd) };
+    const p = j.periodFor(s.stagger as VatStagger, end);
+    if (!p) throw new DomainError('NOT_A_PERIOD', `${end} is not the last day of a ${j.taxName} period on your return cycle`, HttpStatus.UNPROCESSABLE_ENTITY);
+    if (end < s.registeredFrom) throw new DomainError('BEFORE_REGISTRATION', `The period ends before your ${j.taxName} registration took effect on ${s.registeredFrom}`, HttpStatus.UNPROCESSABLE_ENTITY);
     // The first return starts on the registration date.
     return p.start < s.registeredFrom ? { ...p, start: s.registeredFrom } : p;
   }
 
-  /** Changes to submitted periods since they were submitted (within four years of this period), less corrections already made. */
-  private async changes(org: OrgContext, s: VatSettingsDoc, start: string, filed: VatReturnDoc[]) {
-    const earliest = `${Number(start.slice(0, 4)) - CORRECTION_YEARS}${start.slice(4)}`; // not money
-    const out: (VatCorrection & { net: string; periodStart: string })[] = [];
+  /** Changes to submitted periods since they were submitted (within the years a correction is allowed), less corrections already made. */
+  private async changes(org: OrgContext, j: VatJurisdiction, s: VatSettingsDoc, start: string, filed: Awaited<ReturnType<VatReturnService['recorded']>>) {
+    const earliest = `${Number(start.slice(0, 4)) - j.correctionYears}${start.slice(4)}`; // not money
+    const out: (TaxReturnCorrection & { net: string; periodStart: string })[] = [];
     for (const f of filed.filter((x) => x.periodEnd < start && x.periodEnd >= earliest)) {
-      const now = (await this.figures(org, s, f.periodStart, f.periodEnd)).r.own;
+      const now = (await this.figures(org, j, s, f.periodStart, f.periodEnd)).r.own;
       const done = filed.flatMap((x) => x.corrections.filter((c) => c.periodEnd === f.periodEnd));
-      const c = vatPeriodChange(f.own, now, done);
-      if (c.changed) out.push({ periodStart: f.periodStart, periodEnd: f.periodEnd, box1: c.box1, box4: c.box4, net: c.net });
+      const c = taxPeriodChange(f.own, now, done);
+      if (c.changed) out.push({ periodStart: f.periodStart, periodEnd: f.periodEnd, output: c.output, input: c.input, net: c.net });
     }
     return out;
   }
 
   async vatReturn(org: OrgContext, periodEnd: string, today = todayIso()) {
-    await this.uk(org);
-    const s = await this.required(org);
+    const j = await this.jurisdiction(org);
+    const s = await this.required(org, j);
     const filed = await this.recorded();
     const mine = filed.find((f) => f.periodEnd === periodEnd);
-    const p = this.period(s, periodEnd, mine);
+    const p = this.period(j, s, periodEnd, mine);
     const due = p.due;
 
-    const pending = mine ? [] : await this.changes(org, s, p.start, filed);
-    const first = await this.figures(org, s, p.start, p.end);
-    const allowance = vatCorrectionAllowance(pending, first.r.own.box6);
+    const pending = mine ? [] : await this.changes(org, j, s, p.start, filed);
+    const first = await this.figures(org, j, s, p.start, p.end);
+    const allowance = j.correctionAllowance(pending, first.r.own);
     const included = !mine && pending.length && allowance.allowed ? pending : mine ? mine.corrections : [];
-    const { r, entries, journals, rates } = included.length ? await this.figures(org, s, p.start, p.end, included) : first;
+    const { r, entries, journals, rates } = included.length ? await this.figures(org, j, s, p.start, p.end, included) : first;
     const other = await this.otherVatEntries(org, p.start, p.end, journals, rates);
     const byRate = new Map(rates.map((x) => [x.id, x]));
     const treatmentOf = (e: VatEntry) => (e.taxRateId ? (byRate.get(e.taxRateId)?.treatment ?? byRate.get(e.taxRateId)?.suggested ?? 'UNCLASSIFIED') : s.untaxedTreatment);
@@ -250,8 +278,8 @@ export class VatReturnService {
     let submitted = null;
     if (mine) {
       const by = await this.store.collection(users).findById(mine.recordedById);
-      const change = vatPeriodChange(mine.own, r.own, filed.flatMap((x) => x.corrections.filter((c) => c.periodEnd === mine.periodEnd)));
-      submitted = { boxes: mine.boxes, corrections: mine.corrections, submittedOn: mine.submittedOn, reference: mine.reference, recordedBy: by?.name ?? 'Former member', recordedAt: mine.recordedAt.toISOString(), changedSince: change.changed ? { box1: change.box1, box4: change.box4, net: change.net } : null };
+      const change = taxPeriodChange(mine.own, r.own, filed.flatMap((x) => x.corrections.filter((c) => c.periodEnd === mine.periodEnd)));
+      submitted = { boxes: mine.boxes, corrections: mine.corrections, submittedOn: mine.submittedOn, reference: mine.reference, recordedBy: by?.name ?? 'Former member', recordedAt: mine.recordedAt.toISOString(), changedSince: change.changed ? { output: change.output, input: change.input, net: change.net } : null };
     }
     const issues = [...r.issues];
     if (!mine && p.end >= today) issues.push(`The period ends on ${p.end}; record the return once it has ended`);
@@ -259,16 +287,18 @@ export class VatReturnService {
       period: { start: p.start, end: p.end, due },
       vrn: s.vrn,
       status: mine ? 'SUBMITTED' : p.end >= today ? 'OPEN' : due < today ? 'OVERDUE' : 'DUE',
-      boxes: mine ? mine.boxes : r.boxes,
+      jurisdiction: this.describe(j),
+      boxes: (mine ? mine.boxes : r.boxes) as Record<string, string>,
       prepared: r.boxes,
-      labels: VAT_BOX_LABEL,
-      direction: r.direction,
+      labels: j.boxLabels,
+      net: ((mine ? mine.boxes : r.boxes) as Record<string, string>)[j.netBox] ?? '0.00',
+      direction: mine ? direction(mine.boxes[j.outputBox], mine.boxes[j.inputBox]) : r.direction,
       own: r.own,
       breakdown: r.breakdown,
       corrections: { pending, included: !mine && included.length > 0, allowance },
       unclassified: r.unclassified,
       issues,
-      warnings: [...r.warnings, ...(pending.length && !allowance.allowed ? [`The corrections of earlier returns come to £${allowance.net}, over the £${allowance.limit} that may go on this return: tell HMRC about them separately (form VAT652)`] : [])],
+      warnings: [...r.warnings, ...(pending.length && !allowance.allowed ? [`The corrections of earlier returns come to ${j.currency} ${allowance.net}, over the ${j.currency} ${allowance.limit} that may go on this return: ${j.overLimit}`] : [])],
       otherVatEntries: other,
       entries: entries.map((e) => ({ ...e, treatment: treatmentOf(e) })),
       submitted,
@@ -277,20 +307,20 @@ export class VatReturnService {
 
   async exportCsv(org: OrgContext, user: AuthUser, periodEnd: string) {
     const v = await this.vatReturn(org, periodEnd);
-    const csv = vatReturnCsv(v.period, v.boxes, v.entries);
-    await this.prisma.$transaction((tx) => this.audit.append(tx, { orgId: org.id, actorId: user.id, action: 'vat_return.exported', entityType: 'vat_return', entityId: `vat:${v.period.end}`, data: { periodStart: v.period.start, periodEnd: v.period.end, box5: v.boxes.box5 } }));
-    return { fileName: `vat-return-${v.period.start}-to-${v.period.end}.csv`, csv };
+    const csv = vatReturnCsv(v.period, v.boxes, v.entries, { title: v.jurisdiction.returnName, labels: v.labels });
+    await this.prisma.$transaction((tx) => this.audit.append(tx, { orgId: org.id, actorId: user.id, action: 'vat_return.exported', entityType: 'vat_return', entityId: `vat:${v.period.end}`, data: { periodStart: v.period.start, periodEnd: v.period.end, net: v.net } }));
+    return { fileName: `${v.jurisdiction.taxName.toLowerCase()}-return-${v.period.start}-to-${v.period.end}.csv`, csv };
   }
 
-  /** Records that the business submitted the period's return to HMRC: the boxes as prepared now are kept and never change. */
-  async record(org: OrgContext, user: AuthUser, body: { periodEnd: string; submittedOn: string; reference?: string | null; box5?: string }, today = todayIso()) {
+  /** Records that the business submitted the period's return to the tax authority: the boxes as prepared now are kept and never change. */
+  async record(org: OrgContext, user: AuthUser, body: { periodEnd: string; submittedOn: string; reference?: string | null; net?: string }, today = todayIso()) {
     const v = await this.vatReturn(org, body.periodEnd, today);
     if (v.submitted) throw new DomainError('ALREADY_RECORDED', `The return for the period ending ${v.period.end} is already recorded as submitted`, HttpStatus.CONFLICT);
     if (v.issues.length) throw new DomainError('RETURN_NOT_READY', v.issues[0]!, HttpStatus.UNPROCESSABLE_ENTITY, { issues: v.issues });
     if (body.submittedOn <= v.period.end || body.submittedOn > today) throw new DomainError('VALIDATION_FAILED', 'The submission date falls after the period ends and no later than today', HttpStatus.UNPROCESSABLE_ENTITY);
     // The figures must still be the ones the person looked at.
-    if (body.box5 !== undefined && !new D(body.box5).eq(v.boxes.box5)) throw new DomainError('FIGURES_CHANGED', `The return has changed since it was opened: box 5 is now £${v.boxes.box5}. Check it again`, HttpStatus.CONFLICT);
-    const corrections = v.corrections.included ? v.corrections.pending.map((c) => ({ periodEnd: c.periodEnd, box1: c.box1, box4: c.box4 })) : [];
+    if (body.net !== undefined && !new D(body.net).eq(v.net)) throw new DomainError('FIGURES_CHANGED', `The return has changed since it was opened: the net ${v.jurisdiction.taxName} is now ${v.jurisdiction.currency} ${v.net}. Check it again`, HttpStatus.CONFLICT);
+    const corrections = v.corrections.included ? v.corrections.pending.map((c) => ({ periodEnd: c.periodEnd, output: c.output, input: c.input })) : [];
     const doc = await this.store.collection(vatReturns).insertOne({
       periodStart: v.period.start,
       periodEnd: v.period.end,

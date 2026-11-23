@@ -157,6 +157,7 @@ export const hi: Record<string, string> = {
   'GST reconciliation': 'जीएसटी मिलान',
   'Reverse charge': 'रिवर्स चार्ज',
   'VAT return': 'वैट रिटर्न',
+  'GST return': 'जीएसटी रिटर्न',
   'Tax forecast': 'कर पूर्वानुमान',
   'Tax scenarios': 'कर परिदृश्य',
   'Deadline risk': 'समय-सीमा जोखिम',

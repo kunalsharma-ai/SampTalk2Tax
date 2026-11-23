@@ -53,7 +53,7 @@ missing from the return.
 Accounts manage records the day the return was submitted and HMRC's reference. The boxes, the
 period's own figures and the corrections it carried are stored in `vat_returns` and never change
 (guards refuse updates and deletes). The page sends box 5 as shown; if the books changed in the
-meantime the request is refused (`FIGURES_CHANGED`) so the person checks again.
+meantime the request is refused (`FIGURES_CHANGED`; the request carries `net`, box 5 as shown) so the person checks again.
 
 ## Corrections
 
@@ -75,7 +75,7 @@ shows the change as a warning until it is corrected.
 | GET | `/v1/orgs/:orgId/tax/vat/return/export?periodEnd=` | reports.read (audited) |
 | POST | `/v1/orgs/:orgId/tax/vat/returns` | accounts.manage (audited) |
 
-Errors: `NOT_UK`, `NOT_GBP`, `VAT_NOT_SET_UP`, `INVALID_VRN`, `UNKNOWN_TAX_RATE`, `NOT_A_PERIOD`,
+Errors: `NO_VAT_RETURN` (another country), `WRONG_CURRENCY` (books not in pounds), `VAT_NOT_SET_UP`, `INVALID_VRN`, `UNKNOWN_TAX_RATE`, `NOT_A_PERIOD`,
 `BEFORE_REGISTRATION`, `RETURN_NOT_READY`, `ALREADY_RECORDED`, `FIGURES_CHANGED`.
 
 ## Not covered
@@ -87,3 +87,5 @@ professional tax advice.
 
 Code: `packages/tax-engine/src/uk/vat-return.ts`, `apps/api/src/vat-return/`,
 `apps/web/src/app/orgs/[orgId]/tax/vat-return/page.tsx`.
+
+Singapore's GST F5 uses the same page and API: see `SG_GST_RETURN.md`.
