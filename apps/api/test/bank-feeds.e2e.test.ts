@@ -21,7 +21,7 @@ let bank: string;
 const s: Record<string, string> = {};
 const url = (p = '') => `${org.base}/banking/feeds${p}`;
 const feed = (token: string) => ({ Authorization: `Bearer ${token}` });
-const tx = (id: string, n: number, amount: string, extra: Record<string, unknown> = {}) => ({ id, date: day(n), amount, description: `Feed line ${id}`, ...extra });
+const tx = (id: string, n: number, amount: string | number, extra: Record<string, unknown> = {}) => ({ id, date: day(n), amount, description: `Feed line ${id}`, ...extra });
 const lines = async () => (await ctx.http().get(`${org.base}/banking/accounts/${bank}/lines`).set(owner.auth).expect(200)).body.lines as { description: string; amount: string; status: string }[];
 
 beforeAll(async () => {
