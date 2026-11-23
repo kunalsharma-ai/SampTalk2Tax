@@ -26,8 +26,9 @@ const Line = z
     taxRateId: z.uuid().nullish(),
     allowance: Allowance.nullish(),
     departmentId: z.uuid().nullish(),
+    categoryId: z.uuid().nullish(),
   })
-  .refine((l) => !!l.allowance || (!!l.accountId && !!l.amount), 'A line needs a category and an amount, or a mileage or per diem rate');
+  .refine((l) => !!l.allowance || ((!!l.accountId || !!l.categoryId) && !!l.amount), 'A line needs a category and an amount, or a mileage or per diem rate');
 const RateBody = z.object({ kind: z.enum(['MILEAGE', 'PER_DIEM']), name: z.string().trim().min(1).max(80), rate: decimalString, accountId: z.uuid() });
 const RateUpdateBody = z.object({ name: z.string().trim().min(1).max(80), rate: decimalString, accountId: z.uuid(), isActive: z.boolean() });
 const PolicyFields = {

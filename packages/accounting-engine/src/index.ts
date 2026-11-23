@@ -151,3 +151,4 @@ export * from './trip-costs';
 export * from './supplier-statements';
 export * from './bank-feeds';
 export * from './expense-receipt-files';
+export * from './expense-categories';

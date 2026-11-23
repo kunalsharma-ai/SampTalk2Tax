@@ -23,6 +23,8 @@ export interface ExpenseLineInput {
   taxRateId?: string | null;
   /** The department (cost centre) the spending belongs to (EXP-014). */
   departmentId?: string | null;
+  /** The expense category the claimant picked (EXP-005); kept on the line, not posted. */
+  categoryId?: string | null;
 }
 
 export interface ComputedExpenseLine {
@@ -38,6 +40,7 @@ export interface ComputedExpenseLine {
   netAmount: Dec;
   taxAmount: Dec;
   departmentId: string | null;
+  categoryId: string | null;
 }
 
 export interface ComputedExpenseClaim {
@@ -106,6 +109,7 @@ export function computeExpenseClaim(lines: ExpenseLineInput[], currency: string,
       netAmount: amount.minus(tax),
       taxAmount: tax,
       departmentId: l.departmentId ?? null,
+      categoryId: l.categoryId ?? null,
     });
   });
   if (issues.length) throw new DocumentValidationError(issues);

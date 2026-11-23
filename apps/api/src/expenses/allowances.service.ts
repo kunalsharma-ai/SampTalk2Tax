@@ -28,6 +28,7 @@ export interface ClaimLineInput {
   taxRateId?: string | null;
   allowance?: AllowanceInput | null;
   departmentId?: string | null;
+  categoryId?: string | null;
 }
 
 type Detail = Omit<ClaimAllowanceDoc, 'id' | 'orgId' | 'claimId' | 'createdAt'>;
@@ -116,7 +117,7 @@ export class AllowancesService {
       if (!l.allowance) {
         if (!l.accountId) issues.push(`Line ${n}: choose a category`);
         if (!l.amount) issues.push(`Line ${n}: enter the amount paid`);
-        return { date: l.date, accountId: l.accountId ?? '', merchant: l.merchant, description: l.description, amount: l.amount ?? '0', taxRateId: l.taxRateId, departmentId: l.departmentId ?? null };
+        return { date: l.date, accountId: l.accountId ?? '', merchant: l.merchant, description: l.description, amount: l.amount ?? '0', taxRateId: l.taxRateId, departmentId: l.departmentId ?? null, categoryId: l.categoryId ?? null };
       }
       const r = rates.get(l.allowance.rateId);
       if (!r || !r.isActive) {

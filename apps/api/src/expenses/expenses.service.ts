@@ -32,6 +32,7 @@ import { lockRow } from '../db/locks';
 import { AllowancesService, ClaimLineInput } from './allowances.service';
 import { ReceiptFilesService } from './receipt-files.service';
 import { ExpensePolicyService } from './expense-policy.service';
+import { ExpenseCategoriesService } from '../expense-categories/expense-categories.service';
 
 interface Actor {
   id: string;
@@ -91,6 +92,7 @@ export class ExpensesService {
     private readonly policy: ExpensePolicyService,
     private readonly rateVersions: TaxRateVersionsService,
     private readonly receiptFiles: ReceiptFilesService,
+    private readonly categories: ExpenseCategoriesService,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -104,7 +106,9 @@ export class ExpensesService {
     ]);
     const allowanceRates = await this.allowances.listRates(org, { activeOnly: true });
     const policy = (await this.policy.list(org, { activeOnly: true })).map((r) => ({ id: r.id, severity: r.severity, summary: r.summary }));
-    return { currency: org.functionalCurrency, accounts, taxRates: taxRates.map((t) => ({ ...t, rate: t.rate.toFixed() })), allowanceRates, policy };
+    const categories = (await this.categories.list(org)).categories.map((c) => ({ id: c.id, name: c.name, description: c.description, accountId: c.accountId, taxRateId: c.taxRateId, receipt: c.receipt }));
+    // Once there are categories, employees pick one; finance (expenses.read) may still pick any account.
+    return { currency: org.functionalCurrency, accounts, taxRates: taxRates.map((t) => ({ ...t, rate: t.rate.toFixed() })), allowanceRates, policy, categories, anyAccount: !categories.length || hasPermission(org.role, 'expenses.read') };
   }
 
   async list(org: OrgContext, actor: Actor, q: { status?: ExpenseClaimStatus; mine: boolean; limit: number; offset: number }) {
@@ -146,7 +150,7 @@ export class ExpensesService {
 
   async create(org: OrgContext, actor: Actor, input: ClaimInput) {
     this.require(org, 'expenses.submit', 'claim expenses');
-    const expanded = await this.allowances.expand(org, input.lines);
+    const expanded = await this.allowances.expand(org, await this.categories.resolveLines(org, input.lines));
     return this.prisma.$transaction(async (tx) => {
       const computed = await this.prepare(tx, org, expanded.lines);
       const n = await this.nextNumber(tx, org.id);
@@ -173,7 +177,7 @@ export class ExpensesService {
 
   /** The claimant edits a draft or a rejected claim; a rejected claim becomes a draft again. */
   async update(org: OrgContext, actor: Actor, id: string, input: ClaimInput) {
-    const expanded = await this.allowances.expand(org, input.lines);
+    const expanded = await this.allowances.expand(org, await this.categories.resolveLines(org, input.lines));
     return this.prisma.$transaction(async (tx) => {
       const c = await this.lockOwn(tx, org, actor, id);
       if (!EDITABLE.includes(c.status)) throw new DomainError('NOT_EDITABLE', `A ${c.status.toLowerCase()} claim cannot be edited${c.status === 'SUBMITTED' ? '; withdraw it first' : ''}`, HttpStatus.CONFLICT);
@@ -370,11 +374,14 @@ export class ExpensesService {
       : [];
     const allowanceLines = new Set((await this.allowances.forClaim(c.id)).keys());
     const receiptCount = await db.attachment.count({ where: { orgId: org.id, entityType: 'EXPENSE_CLAIM', entityId: c.id, removedAt: null } });
-    return this.policy.violations(
+    const found = await this.policy.violations(
       org,
       { lines: c.lines.map((l) => ({ lineNo: l.lineNo, date: fromDbDate(l.date), accountId: l.accountId, amount: l.amount.toFixed(), isAllowance: allowanceLines.has(l.lineNo) })), receiptCount, asOf },
       others.map((o) => ({ date: fromDbDate(o.date), accountId: o.accountId, amount: o.amount.toFixed() })),
     );
+    // The categories' own rules (EXP-005): a receipt always required, the category's account.
+    const fromCategories = await this.categories.violations(c.lines.map((l) => ({ lineNo: l.lineNo, categoryId: l.categoryId ?? null, accountId: l.accountId, isAllowance: allowanceLines.has(l.lineNo) })), receiptCount);
+    return [...found, ...fromCategories];
   }
 
   /**
@@ -493,6 +500,7 @@ export class ExpensesService {
     const allowanceByLine = await this.allowances.forClaim(c.id);
     const deptIds = [...new Set(c.lines.map((l) => l.departmentId).filter((x): x is string => !!x))];
     const deptNames = new Map((deptIds.length ? await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, id: { in: deptIds } }, select: { id: true, code: true, name: true } }) : []).map((d) => [d.id, `${d.code} · ${d.name}`]));
+    const categoryNames = await this.categories.names(c.lines.map((l) => l.categoryId));
     const own = c.claimantId === actor.id;
     // Checked while the claim can still change or be decided; afterwards the audit trail keeps what was found.
     const policy = ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) ? await this.policyCheck(org, db, c, c.status === 'SUBMITTED' ? c.submittedAt!.toISOString().slice(0, 10) : todayIso()) : null;
@@ -547,6 +555,8 @@ export class ExpensesService {
         taxAmount: l.taxAmount.toFixed(scale),
         departmentId: l.departmentId ?? null,
         department: l.departmentId ? (deptNames.get(l.departmentId) ?? null) : null,
+        categoryId: l.categoryId ?? null,
+        category: l.categoryId ? (categoryNames.get(l.categoryId)?.name ?? null) : null,
         possibleDuplicateOf: dupes.get(l.lineNo) ?? [],
         /** Set on a mileage or per diem line: what the amount was worked out from. */
         allowance: allowanceByLine.get(l.lineNo) ?? null,
@@ -580,6 +590,7 @@ function lineRows(computed: ReturnType<typeof computeExpenseClaim>) {
     netAmount: l.netAmount.toFixed(),
     taxAmount: l.taxAmount.toFixed(),
     departmentId: l.departmentId,
+    categoryId: l.categoryId,
   }));
 }
 

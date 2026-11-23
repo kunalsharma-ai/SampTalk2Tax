@@ -635,6 +635,27 @@ export interface ExpenseOptions {
   allowanceRates: AllowanceRate[];
   /** Active expense policy rules, as sentences. */
   policy: { id: string; severity: PolicySeverity; summary: string }[];
+  /** Active expense categories (EXP-005). */
+  categories: { id: string; name: string; description: string | null; accountId: string; taxRateId: string | null; receipt: ExpenseCategoryReceipt }[];
+  /** Whether this person may also claim straight to an expense account. */
+  anyAccount: boolean;
+}
+export type ExpenseCategoryReceipt = 'POLICY' | 'ALWAYS';
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  accountId: string;
+  account: string | null;
+  taxRateId: string | null;
+  taxRate: string | null;
+  receipt: ExpenseCategoryReceipt;
+  isActive: boolean;
+  updatedAt: string;
+  /** Lines claimed in the category lately; only for those who see every claim. */
+  usage?: { lines: number; total: string };
+  /** Expense policy rules on the category's account. */
+  limits?: { id: string; severity: PolicySeverity; summary: string }[];
 }
 export type PolicySeverity = 'WARN' | 'BLOCK';
 export type ExpensePolicyKind = 'LINE_MAX' | 'DAILY_MAX' | 'MONTHLY_MAX' | 'CLAIM_MAX' | 'RECEIPT_ABOVE' | 'MAX_AGE_DAYS';
@@ -652,7 +673,7 @@ export interface ExpensePolicyRule {
 }
 export interface PolicyViolation {
   ruleId: string;
-  kind: ExpensePolicyKind;
+  kind: ExpensePolicyKind | 'CATEGORY_RECEIPT' | 'CATEGORY_ACCOUNT';
   severity: PolicySeverity;
   lineNo: number | null;
   message: string;
@@ -710,6 +731,9 @@ export interface ExpenseClaimLine {
   /** The department the cost belongs to (EXP-014). */
   departmentId: string | null;
   department: string | null;
+  /** The expense category picked (EXP-005). */
+  categoryId: string | null;
+  category: string | null;
   possibleDuplicateOf: string[];
   /** A mileage or per diem line: what the amount was worked out from. */
   allowance: ClaimLineAllowance | null;

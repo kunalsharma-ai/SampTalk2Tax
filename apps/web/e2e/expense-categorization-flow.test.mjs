@@ -89,9 +89,9 @@ test('claim and bill lines suggest the account used before', async () => {
   if (SHOTS) await employee.screenshot({ path: `${SHOTS}/expense-category-suggestion.png`, fullPage: true });
   await employee.getByRole('button', { name: 'Use the suggested account for line 1' }).click();
   await hint1.waitFor({ state: 'detached' });
-  assert.equal(await employee.getByLabel('Category for line 1').inputValue(), acc['6700']);
+  assert.equal(await employee.getByLabel('Category for line 1').inputValue(), `acc:${acc['6700']}`);
   await employee.getByRole('button', { name: 'Use the suggested account for line 2' }).click();
-  assert.equal(await employee.getByLabel('Category for line 2').inputValue(), acc['6300']);
+  assert.equal(await employee.getByLabel('Category for line 2').inputValue(), `acc:${acc['6300']}`);
   await employee.getByRole('button', { name: 'Save draft' }).click();
   await employee.waitForURL(/\/expenses\/[0-9a-f-]{36}$/);
 

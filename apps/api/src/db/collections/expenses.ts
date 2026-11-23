@@ -20,6 +20,8 @@ export interface ExpenseClaimLineDoc {
   taxAmount: string;
   /** The department (cost centre) the spending belongs to (EXP-014); absent on older lines. */
   departmentId?: string | null;
+  /** The expense category the claimant picked (EXP-005); absent on older lines. */
+  categoryId?: string | null;
 }
 
 export interface ExpenseClaimDoc {

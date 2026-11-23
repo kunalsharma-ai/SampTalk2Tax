@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 575 |
 | Designed | 0 |
 | Implementing | 38 |
-| Implemented | 26 |
-| Tested | 690 |
+| Implemented | 25 |
+| Tested | 691 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3110,10 +3110,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### EXP-005 — Expense categories
 
 - Module: Expense management
-- Status: **Implemented**
-- Notes: Categories are the organisation's active expense accounts; no separate category list or per-category limits.
+- Status: **Tested**
+- Notes: Category list with account, guidance, default tax and an always-required receipt rule; employees pick a category on claim lines; per-category limits are policy rules on the category's account, listed with it.
 - Evidence:
-  - apps/api/src/expenses/expenses.service.ts › options
+  - packages/accounting-engine/src/expense-categories.ts
+  - packages/accounting-engine/test/expense-categories.test.ts
+  - apps/api/src/expense-categories/expense-categories.service.ts
+  - apps/api/test/expense-categories.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/categories/page.tsx
+  - apps/web/e2e/expense-categories-flow.test.mjs
 
 ### EXP-006 — Mileage claims
 

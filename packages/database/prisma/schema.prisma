@@ -1019,6 +1019,8 @@ model ExpenseClaimLine {
   taxAmount   Decimal      @map("tax_amount") @db.Decimal(24, 6)
   /// The department (cost centre) the spending belongs to (EXP-014).
   departmentId String?     @map("department_id") @db.Uuid
+  /// The expense category the claimant picked (EXP-005).
+  categoryId  String?      @map("category_id") @db.Uuid
   claim       ExpenseClaim @relation(fields: [claimId, orgId], references: [id, orgId], onDelete: Cascade)
   account     Account      @relation(fields: [accountId, orgId], references: [id, orgId], onDelete: Restrict)
   tax         TaxRate?     @relation(fields: [taxRateId, orgId], references: [id, orgId], onDelete: Restrict)
