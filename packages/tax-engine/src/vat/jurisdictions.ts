@@ -1,4 +1,5 @@
 import { D } from '@talk2tax/accounting-engine';
+import { DE_STAGGERS, DE_TREATMENT_LABEL, DE_USTVA_LABEL, DE_USTVA_ORDER, DE_VAT_TREATMENTS, deCorrectionAllowance, deUstvaDueDate, deUstvaPeriodFor, deUstVoranmeldung, normaliseUstIdNr, recentDeUstvaPeriods, suggestDeTreatment } from '../de/ust-voranmeldung';
 import { AE_EMIRATES, AE_TREATMENT_LABEL, AE_VAT201_LABEL, AE_VAT201_ORDER, AE_VAT_TREATMENTS, aeCorrectionAllowance, aeVat201, aeVatDueDate, aeVatPeriodFor, normaliseTrn, recentAeVatPeriods, suggestAeTreatment } from '../ae/vat-201';
 import { CA_GST_TREATMENTS, CA_ITC_MONTHS, CA_RETURN_LABEL, CA_TREATMENT_LABEL, caCorrectionAllowance, caGstHstDueDate, caGstHstPeriodFor, caGstHstReturn, normaliseCaBusinessNumber, recentCaGstHstPeriods, suggestCaTreatment } from '../ca/gst-hst';
 import { AU_BAS_LABEL, AU_GST_TREATMENTS, AU_STAGGERS, AU_TREATMENT_LABEL, auBasDueDate, auBasPeriodFor, auCorrectionAllowance, auGstBas, normaliseAbn, recentAuBasPeriods, suggestAuTreatment } from '../au/gst-bas';
@@ -24,7 +25,8 @@ import {
 /**
  * Countries whose VAT or GST return Talk2Tax prepares (TAX-041: supported jurisdictions added one
  * at a time): the United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035, the GST on the BAS)
- * Canada (TAX-034, the GST/HST return) and the United Arab Emirates (TAX-033, VAT 201). Each says what its return is
+ * Canada (TAX-034, the GST/HST return), the United Arab Emirates (TAX-033, VAT 201) and Germany
+ * (TAX-031 EU VAT, the Umsatzsteuer-Voranmeldung). Each says what its return is
  * called, its registration number, the treatments it has, its periods and due dates, its boxes,
  * how to work them out and how much of an earlier error may be corrected on the next return.
  * Output and input tax are the common figures: changes to submitted periods are found from them.
@@ -294,7 +296,46 @@ const AE: VatJurisdiction = {
   cardTitles: { registration: 'UAE VAT registration', periods: 'UAE VAT tax periods', boxes: 'VAT 201 boxes', treatment: 'Figures by UAE VAT treatment', other: 'Other entries on the UAE VAT accounts' },
 };
 
-export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG, AU, CA, AE];
+const DE: VatJurisdiction = {
+  country: 'DE',
+  countryName: 'Germany',
+  currency: 'EUR',
+  taxName: 'VAT',
+  returnName: 'VAT advance return (UStVA)',
+  authority: 'Finanzamt',
+  authorityThe: 'the Finanzamt',
+  unitsNote: 'Kz 81, 86, 43 and 48 in whole euros, cents left off; the tax and Kz 66 and 83 in euros and cents.',
+  numberName: 'USt-IdNr.',
+  numberShort: 'USt-IdNr.',
+  numberHint: 'DE and 9 digits, such as DE136695976',
+  normaliseNumber: normaliseUstIdNr,
+  invalidNumber: 'That is not a valid German VAT identification number (DE and 9 digits that pass the check)',
+  treatments: DE_VAT_TREATMENTS,
+  treatmentLabel: DE_TREATMENT_LABEL,
+  suggest: suggestDeTreatment,
+  periodFor: deUstvaPeriodFor,
+  recentPeriods: recentDeUstvaPeriods,
+  staggers: DE_STAGGERS,
+  dueDate: (end) => deUstvaDueDate(end),
+  dueRule: 'An advance return and its payment are due on the 10th day after the period ends (a month later with a permanent extension, which is not modelled).',
+  boxLabels: DE_USTVA_LABEL,
+  boxOrder: DE_USTVA_ORDER,
+  netBox: '83',
+  outputBox: 'output',
+  inputBox: '66',
+  wholeBoxes: ['81', '86', '43', '48'],
+  needsRevenue: false,
+  compute: (entries, rates, opts) => deUstVoranmeldung(entries, rates, { untaxed: opts.untaxed }),
+  correctionAllowance: (corrections) => deCorrectionAllowance(corrections),
+  overLimit: 'file corrected advance returns for those periods with the Finanzamt',
+  correctionRule: 'a change to an advance return already filed goes on a corrected return for that period (berichtigte Voranmeldung), not on a later one',
+  correctionMonths: 48,
+  intro: 'The Kennzahlen of your VAT advance return (Umsatzsteuer-Voranmeldung) for each period, prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims on the accruals basis (Soll-Versteuerung). Enter them in ELSTER, then record the submission here; nothing is sent to the Finanzamt from Talk2Tax.',
+  treatmentNote: 'Sales and purchases in the period by how their tax rate counts. Tax-free supplies with input tax deduction (such as exports) count in Kz 43 and those without it in Kz 48; only purchases at 19% or 7% give input tax at Kz 66; not-taxable lines are not on the return.',
+  cardTitles: { registration: 'German VAT registration', periods: 'Advance return periods', boxes: 'Advance return Kennzahlen', treatment: 'Figures by German VAT treatment', other: 'Other entries on the German VAT accounts' },
+};
+
+export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG, AU, CA, AE, DE];
 
 /** The country's VAT or GST return, or null where Talk2Tax prepares none (India has its own GST returns). */
 export function vatJurisdiction(country: string): VatJurisdiction | null {

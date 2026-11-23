@@ -7114,9 +7114,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/de/ust-voranmeldung.ts",
+        "packages/tax-engine/src/vat/jurisdictions.ts",
+        "packages/tax-engine/test/de-ust-voranmeldung.test.ts",
+        "apps/api/src/vat-return/vat-return.service.ts",
+        "apps/api/test/de-ust-voranmeldung.e2e.test.ts",
+        "apps/web/e2e/de-ust-voranmeldung-flow.test.mjs",
+        "docs/DE_UST_VORANMELDUNG.md"
+      ],
+      "notes": "EU VAT starting with Germany: the Umsatzsteuer-Voranmeldung Kennzahlen 81 and 86 (whole-euro bases with the tax worked out at 19% and 7%), 43, 48, 66 and 83 from posted invoices, credit notes, bills, vendor credits and approved expense claims on the accruals basis; standard/reduced/tax-free with and without input tax deduction/not taxable treatments, USt-IdNr. check digit, monthly or quarterly periods due on the 10th, submissions recorded, changes to filed periods flagged for a corrected return (never carried). Not sent through ELSTER; intra-EU trade, reverse charge, § 19, cash accounting, permanent extension, annual return, OSS and ZM not modelled. Other member states not prepared yet."
     },
     {
       "id": "TAX-032",
@@ -7422,10 +7430,11 @@
         "docs/AE_VAT_201.md",
         "docs/AU_GST_BAS.md",
         "docs/CA_GST_HST_RETURN.md",
+        "docs/DE_UST_VORANMELDUNG.md",
         "docs/SG_GST_RETURN.md",
         "packages/tax-engine/src/vat/jurisdictions.ts"
       ],
-      "notes": "Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035), Canada (TAX-034) and the UAE (TAX-033) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested."
+      "notes": "Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035), Canada (TAX-034), the UAE (TAX-033) and Germany (TAX-031) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested."
     },
     {
       "id": "TAX-042",
