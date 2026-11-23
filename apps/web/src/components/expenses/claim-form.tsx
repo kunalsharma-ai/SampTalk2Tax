@@ -27,6 +27,8 @@ interface LineState {
   purpose: string;
   /** The department the cost belongs to (EXP-014); optional. */
   departmentId: string;
+  /** The expense category picked (EXP-005); its account is in accountId. Empty when finance picked an account. */
+  categoryId: string;
 }
 const KIND_LABEL = { RECEIPT: 'Receipt', MILEAGE: 'Mileage', PER_DIEM: 'Per diem' } as const;
 const QTY = /^\d{0,4}(\.\d{0,1})?$/;
@@ -48,14 +50,14 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
   const router = useRouter();
   const qc = useQueryClient();
   const nextKey = useRef(100);
-  const blank = (key: number, kind: LineState['kind'] = 'RECEIPT'): LineState => ({ key, kind, date: today(), accountId: '', merchant: '', description: '', amount: '', taxRateId: '', rateId: '', quantity: '', from: '', to: '', purpose: '', departmentId: '' });
+  const blank = (key: number, kind: LineState['kind'] = 'RECEIPT'): LineState => ({ key, kind, date: today(), accountId: '', merchant: '', description: '', amount: '', taxRateId: '', rateId: '', quantity: '', from: '', to: '', purpose: '', departmentId: '', categoryId: '' });
   const [title, setTitle] = useState(existing?.title ?? '');
   const [lines, setLines] = useState<LineState[]>(
     existing
       ? existing.lines.map((x, i) =>
           x.allowance
             ? { ...blank(i + 1, x.allowance.kind), date: x.date, rateId: x.allowance.rateId, quantity: x.allowance.quantity, from: x.allowance.from ?? '', to: x.allowance.to ?? '', purpose: x.allowance.purpose ?? '', departmentId: x.departmentId ?? '' }
-            : { ...blank(i + 1), date: x.date, accountId: x.accountId, merchant: x.merchant ?? '', description: x.description ?? '', amount: x.amount, taxRateId: x.taxRateId ?? '', departmentId: x.departmentId ?? '' },
+            : { ...blank(i + 1), date: x.date, accountId: x.accountId, merchant: x.merchant ?? '', description: x.description ?? '', amount: x.amount, taxRateId: x.taxRateId ?? '', departmentId: x.departmentId ?? '', categoryId: x.categoryId ?? '' },
         )
       : [blank(1)],
   );
@@ -67,7 +69,7 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
   // What goes to the server: an allowance line sends its rate and quantity; the server works out the amount.
   const payload = filled.map((x) =>
     x.kind === 'RECEIPT'
-      ? { date: x.date, accountId: x.accountId, merchant: x.merchant || null, description: x.description || null, amount: x.amount || '0', taxRateId: x.taxRateId || null, departmentId: x.departmentId || null }
+      ? { date: x.date, ...(x.categoryId ? { categoryId: x.categoryId, accountId: null } : { accountId: x.accountId }), merchant: x.merchant || null, description: x.description || null, amount: x.amount || '0', taxRateId: x.taxRateId || null, departmentId: x.departmentId || null }
       : { date: x.date, departmentId: x.departmentId || null, allowance: { rateId: x.rateId, quantity: x.quantity || '0', from: x.kind === 'MILEAGE' ? x.from || null : null, to: x.to || null, purpose: x.purpose || null } },
   );
   const calc = useMemo(() => {
@@ -116,6 +118,20 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
   });
   const update = (key: number, patch: Partial<LineState>) => setLines((ls) => ls.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const accounts = options.data?.accounts ?? [];
+  // With categories set up, people pick one; finance may also claim straight to an account.
+  const cats = options.data?.categories ?? [];
+  const anyAccount = options.data?.anyAccount ?? true;
+  const pick = (key: number, value: string) => {
+    if (value.startsWith('cat:')) {
+      const k = cats.find((y) => y.id === value.slice(4));
+      if (k) update(key, { categoryId: k.id, accountId: k.accountId, ...(k.taxRateId ? { taxRateId: k.taxRateId } : {}) });
+    } else update(key, { categoryId: '', accountId: value.startsWith('acc:') ? value.slice(4) : '' });
+  };
+  const applySuggestion = (key: number, accountId: string) => {
+    const k = cats.find((y) => y.accountId === accountId);
+    if (k) pick(key, `cat:${k.id}`);
+    else if (anyAccount) pick(key, `acc:${accountId}`);
+  };
   const taxes = options.data?.taxRates ?? [];
   return (
     <form className="flex flex-col gap-6" onSubmit={(e) => { e.preventDefault(); if (calc.ok) save.mutate(); }}>
@@ -164,11 +180,30 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
                   {x.kind === 'RECEIPT' ? (
                     <>
                       <Td>
-                        <Select aria-label={`Category for line ${n}`} value={x.accountId} onChange={(e) => update(x.key, { accountId: e.target.value })}>
+                        <Select aria-label={`Category for line ${n}`} value={x.categoryId ? `cat:${x.categoryId}` : x.accountId ? `acc:${x.accountId}` : ''} onChange={(e) => pick(x.key, e.target.value)}>
                           <option value="">Choose…</option>
-                          {accounts.map((a) => <option key={a.id} value={a.id}>{a.code} · {a.name}</option>)}
+                          {x.categoryId && !cats.some((y) => y.id === x.categoryId) ? <option value={`cat:${x.categoryId}`}>{existing?.lines.find((l) => l.categoryId === x.categoryId)?.category ?? 'A category'} (no longer in use)</option> : null}
+                          {cats.length ? (
+                            <optgroup label="Categories">{cats.map((k) => <option key={k.id} value={`cat:${k.id}`}>{k.name}</option>)}</optgroup>
+                          ) : null}
+                          {anyAccount || (x.accountId && !x.categoryId) ? (
+                            cats.length ? (
+                              <optgroup label="Expense accounts">{accounts.map((a) => <option key={a.id} value={`acc:${a.id}`}>{a.code} · {a.name}</option>)}</optgroup>
+                            ) : (
+                              accounts.map((a) => <option key={a.id} value={`acc:${a.id}`}>{a.code} · {a.name}</option>)
+                            )
+                          ) : null}
                         </Select>
-                        <CategorySuggestionHint orgId={orgId} kind="claim-line" line={n} merchant={x.merchant} description={x.description} current={x.accountId} onUse={(accountId) => update(x.key, { accountId })} />
+                        {(() => {
+                          const k = cats.find((y) => y.id === x.categoryId);
+                          return k && (k.description || k.receipt === 'ALWAYS') ? (
+                            <p className="mt-1 text-xs text-fg-muted" data-testid={`category-guidance-${n}`}>
+                              {k.description}
+                              {k.receipt === 'ALWAYS' ? <span className="block font-medium text-fg">A receipt is always needed.</span> : null}
+                            </p>
+                          ) : null;
+                        })()}
+                        <CategorySuggestionHint orgId={orgId} kind="claim-line" line={n} merchant={x.merchant} description={x.description} current={x.accountId} onUse={(accountId) => applySuggestion(x.key, accountId)} />
                       </Td>
                       <Td><Input aria-label={`Merchant for line ${n}`} maxLength={200} value={x.merchant} onChange={(e) => update(x.key, { merchant: e.target.value })} /></Td>
                       <Td><Input aria-label={`Description for line ${n}`} maxLength={500} value={x.description} onChange={(e) => update(x.key, { description: e.target.value })} /></Td>

@@ -1270,11 +1270,16 @@
       "notes": "Employees (new EMPLOYEE role) and other staff create, edit, submit and withdraw their own claims; tax-inclusive amounts with tax split out."
     },
     "EXP-005": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/api/src/expenses/expenses.service.ts › options"
+        "packages/accounting-engine/src/expense-categories.ts",
+        "packages/accounting-engine/test/expense-categories.test.ts",
+        "apps/api/src/expense-categories/expense-categories.service.ts",
+        "apps/api/test/expense-categories.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/categories/page.tsx",
+        "apps/web/e2e/expense-categories-flow.test.mjs"
       ],
-      "notes": "Categories are the organisation's active expense accounts; no separate category list or per-category limits."
+      "notes": "Category list with account, guidance, default tax and an always-required receipt rule; employees pick a category on claim lines; per-category limits are policy rules on the category's account, listed with it."
     },
     "EXP-009": {
       "status": "Tested",

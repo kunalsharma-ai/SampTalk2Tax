@@ -228,7 +228,7 @@ export function ClaimDetail() {
               <Tr key={l.lineNo}>
                 <Td className="text-fg-muted">{l.lineNo}</Td>
                 <Td>{date(l.date)}</Td>
-                <Td className="text-fg-muted"><span className="num">{l.accountCode}</span> {l.accountName}{l.department ? <p className="text-xs">Department: {l.department}</p> : null}</Td>
+                <Td className="text-fg-muted">{l.category ? <p className="font-medium text-fg">{l.category}</p> : null}<span className="num">{l.accountCode}</span> {l.accountName}{l.department ? <p className="text-xs">Department: {l.department}</p> : null}</Td>
                 <Td>{l.allowance ? <Badge tone="violet">{l.allowance.kind === 'MILEAGE' ? 'Mileage' : 'Per diem'}</Badge> : null} {[l.merchant, l.description].filter(Boolean).join(' · ') || <span className="text-fg-faint">—</span>}{l.possibleDuplicateOf.length ? <p className="text-xs text-warning">Same date and amount as {l.possibleDuplicateOf.join(', ')}</p> : null}</Td>
                 <Td className="text-fg-muted">{l.taxName ?? '—'}</Td>
                 <Td numeric><Money value={l.taxAmount} currency={cur} /></Td>
