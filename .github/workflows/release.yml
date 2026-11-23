@@ -57,7 +57,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       # Tags: the commit (sha-xxxxxxx) always; the version for a v tag; "main" for the main branch.
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/talk2tax-${{ matrix.name }}
           tags: |
