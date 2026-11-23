@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 564 |
+| Not started | 559 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 703 |
+| Tested | 708 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 58 | 10 |
+| Dashboard design | M1 | 68 | 53 | 15 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6649,6 +6649,76 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/design-system/src/tokens.ts
   - packages/design-system/test/contrast.test.mjs
+
+### DASH-028 — Animated waterfall charts
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Profit and loss waterfall on Reports → Financial visuals: revenue, cost of sales, gross profit, people, operating costs, depreciation, operating profit, other income, interest and exchange, other expenses, profit before tax, income tax, net profit, from posted journals over a chosen range of months; animated floating bars (no animation under reduced motion) with the same figures in a table.
+- Evidence:
+  - packages/accounting-engine/src/financial-visuals.ts
+  - packages/accounting-engine/test/financial-visuals.test.ts
+  - apps/api/src/financial-visuals/financial-visuals.service.ts
+  - apps/api/test/financial-visuals.e2e.test.ts
+  - apps/web/src/components/reports/financial-visuals.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx
+  - apps/web/e2e/financial-visuals-flow.test.mjs
+
+### DASH-029 — Sankey diagrams
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Sankey of where income goes: revenue accounts flow into income, then to each expense group and its largest accounts and to profit; a loss flows in as a source so both sides balance; accounts running against their nature are named as left out. The flows are also a table.
+- Evidence:
+  - packages/accounting-engine/src/financial-visuals.ts
+  - packages/accounting-engine/test/financial-visuals.test.ts
+  - apps/api/src/financial-visuals/financial-visuals.service.ts
+  - apps/api/test/financial-visuals.e2e.test.ts
+  - apps/web/src/components/reports/financial-visuals.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx
+  - apps/web/e2e/financial-visuals-flow.test.mjs
+
+### DASH-030 — Financial heatmaps
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Spending heatmap: the 12 largest expense accounts by month, cells shaded by amount against the largest cell, each cell a link to that account's general ledger for that month.
+- Evidence:
+  - packages/accounting-engine/src/financial-visuals.ts
+  - packages/accounting-engine/test/financial-visuals.test.ts
+  - apps/api/src/financial-visuals/financial-visuals.service.ts
+  - apps/api/test/financial-visuals.e2e.test.ts
+  - apps/web/src/components/reports/financial-visuals.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx
+  - apps/web/e2e/financial-visuals-flow.test.mjs
+
+### DASH-031 — Treemaps
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Spending treemap by expense group and account, sized by amount with each share of all spending, plus a table of the groups.
+- Evidence:
+  - packages/accounting-engine/src/financial-visuals.ts
+  - packages/accounting-engine/test/financial-visuals.test.ts
+  - apps/api/src/financial-visuals/financial-visuals.service.ts
+  - apps/api/test/financial-visuals.e2e.test.ts
+  - apps/web/src/components/reports/financial-visuals.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx
+  - apps/web/e2e/financial-visuals-flow.test.mjs
+
+### DASH-034 — Drill-down financial charts
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Drill-down: choosing a waterfall step, a Sankey group or a spending group lists the accounts behind it with amounts; choosing an account, a Sankey account node, a heatmap cell or a treemap block opens its general ledger for the same months.
+- Evidence:
+  - packages/accounting-engine/src/financial-visuals.ts
+  - packages/accounting-engine/test/financial-visuals.test.ts
+  - apps/api/src/financial-visuals/financial-visuals.service.ts
+  - apps/api/test/financial-visuals.e2e.test.ts
+  - apps/web/src/components/reports/financial-visuals.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx
+  - apps/web/e2e/financial-visuals-flow.test.mjs
 
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 

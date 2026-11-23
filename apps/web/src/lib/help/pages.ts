@@ -884,6 +884,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the month, usually before filing GSTR-3B. When the books differ, open each item: correct a manual journal, or amend the return of the month a document belongs to. Fix high-severity mistakes before filing; low ones are worth a look.',
     where: 'Tax. Needs the reports permission and a GST registration. GST payments settle the accounts and are shown apart. Reads posted journals and documents only; nothing is changed or filed, and no AI model is used.',
   },
+  'reports/visuals': {
+    what: 'The profit and loss of the months you choose, drawn four ways: a waterfall from revenue down to net profit, a Sankey of where income came from and where it went, a heatmap of the largest expense accounts month by month, and a treemap of what spending is made of.',
+    how: 'Choose the months (up to 24). Choose a waterfall bar, a Sankey group or a spending group to list the accounts behind it; choose an account, a heatmap cell or a treemap block to open its general ledger for the same months.',
+    where: 'Reports. Needs reports.read. Built from posted journals, leaving out year-end closing entries and drafts; nothing is changed and no AI model is used. Charts respect reduced motion, and each has its figures in a list or table beside it.',
+  },
   'expenses/cards': {
     what: "Company cards from any card provider: corporate cards people already hold and virtual cards made for one use, each with a holder, a monthly limit and this month's spending; the spending the provider sends; and the card programmes that let it send it. Spending that the same person also put on an expense claim (same amount, within three days) is marked as possibly claimed twice.",
     how: 'An owner sets up a card programme for the provider and gives it the token shown once. Finance adds corporate cards by their last four digits or asks for virtual cards, and freezes, unfreezes, cancels or changes limits; the provider reads these controls. Cardholders choose Explain on their spending to say which account it belongs to; finance posts settled spending to the books or excludes it with a reason.',
