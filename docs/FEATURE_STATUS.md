@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 557 |
+| Not started | 556 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 710 |
+| Tested | 711 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 51 | 17 |
+| Dashboard design | M1 | 68 | 50 | 18 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6719,6 +6719,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/revenue-forecast/forecast-chart.tsx
   - apps/web/src/app/orgs/[orgId]/sales/revenue-forecast/page.tsx
   - apps/web/e2e/revenue-forecast-flow.test.mjs
+
+### DASH-033 — Interactive timelines
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Financial timeline: posted entries (closing entries left out) bucketed by day, week or month (best fit or chosen) with cash in and out through cash and bank accounts (own transfers netted out), the cash balance carried from before the range, and compliance deadlines. Zoom with a brush, filter by kind of entry, choose a bar or period to list its entries and deadlines, open the journal. Up to 400 days.
+- Evidence:
+  - packages/accounting-engine/src/financial-timeline.ts
+  - packages/accounting-engine/test/financial-timeline.test.ts
+  - apps/api/src/financial-visuals/financial-timeline.service.ts
+  - apps/api/test/financial-timeline.e2e.test.ts
+  - apps/web/src/components/reports/financial-timeline.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/timeline/page.tsx
+  - apps/web/e2e/financial-timeline-flow.test.mjs
 
 ### DASH-034 — Drill-down financial charts
 

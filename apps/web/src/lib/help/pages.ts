@@ -889,6 +889,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: "Choose the months (up to 24). Compare departments in the bar chart, follow each one's profit in the line chart, and open a department in the ranking to see its own profit and loss for the same months. Spending that carries no department is shown as Not assigned.",
     where: 'Reports. Needs reports.read. Built from posted journal lines booked to departments, leaving out year-end closing entries. Budgets come from Expenses → Department budgets. Nothing is changed and no AI model is used.',
   },
+  'reports/timeline': {
+    what: 'A timeline of the books: every posted entry, the cash it moved through cash and bank accounts, the cash balance as it went, and the compliance deadlines in the same days.',
+    how: 'Choose the days (up to 400) or a preset. The timeline groups them by day, week or month to fit, or as you choose. Drag the handles under the chart to zoom, untick kinds of entries to hide them, and choose a bar or a period to list its entries and deadlines. Open an entry to see the journal.',
+    where: 'Reports. Needs reports.read. Built from posted journals (year-end closing entries left out) and the compliance calendar. Transfers between your own cash and bank accounts are not counted as cash in or out. Nothing is changed and no AI model is used.',
+  },
   'reports/visuals': {
     what: 'The profit and loss of the months you choose, drawn four ways: a waterfall from revenue down to net profit, a Sankey of where income came from and where it went, a heatmap of the largest expense accounts month by month, and a treemap of what spending is made of.',
     how: 'Choose the months (up to 24). Choose a waterfall bar, a Sankey group or a spending group to list the accounts behind it; choose an account, a heatmap cell or a treemap block to open its general ledger for the same months.',
