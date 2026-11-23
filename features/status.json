@@ -9599,6 +9599,19 @@
         "apps/web/e2e/dashboard-arrange-flow.test.mjs"
       ],
       "notes": "Arrange mode on a dashboard: drag approved metrics into gaps (new figure) or onto figures, charts and tables, drag widgets to reorder, remove; each drop saved as a new version for the whole organisation, checked by the engine (charts never mix units), audited. Keyboard alternative: pick a metric and Add here / Add to this widget, Move earlier/later buttons."
+    },
+    "AP-025": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/pdf-text.ts",
+        "packages/accounting-engine/src/bill-extraction.ts",
+        "packages/accounting-engine/test/bill-extraction.test.ts",
+        "apps/api/src/bill-reader/bill-reader.service.ts",
+        "apps/api/test/bill-reader.e2e.test.ts",
+        "apps/web/e2e/bill-reader-flow.test.mjs",
+        "docs/BILL_READER.md"
+      ],
+      "notes": "Bill reader: text read from the supplier's PDF (Flate, object streams, ToUnicode fonts, positioned text) or pasted text; deterministic parser finds supplier (by GSTIN or name), bill number, dates, currency, items (qty x rate = amount, HSN), taxes, rounding and total, with field sources and checks in words; suggests accounts and tax rate; reviewed in the bill form, saved with the PDF attached and the person's corrections audited. Scans and photos are refused in words (OCR / AI image reading not built)."
     }
   }
 }

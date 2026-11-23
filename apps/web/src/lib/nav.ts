@@ -77,6 +77,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/purchases/international-payments', label: 'International payments' },
       { href: '/purchases/ageing', label: 'Payables ageing' },
       { href: '/purchases/supplier-statements', label: 'Supplier statements', perm: 'purchases.read' },
+      { href: '/purchases/bill-reader', label: 'Bill reader', perm: 'purchases.read' },
     ],
   },
   {

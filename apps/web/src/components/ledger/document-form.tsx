@@ -44,7 +44,17 @@ export interface DebitNoteOf {
   placeOfSupply?: string | null;
 }
 
-export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string; debitNoteFor?: DebitNoteOf }) {
+/** Values to start a new document with, such as a bill read from the supplier's PDF (AP-025). */
+export interface DocumentPrefill {
+  contactId?: string | null;
+  issueDate?: string | null;
+  dueDate?: string | null;
+  reference?: string | null;
+  currency?: string | null;
+  lines: { accountId?: string | null; description?: string | null; quantity: string; unitPrice: string; taxRateId?: string | null; hsnCode?: string | null }[];
+}
+
+export function DocumentForm({ l, kind, existing, contactId, debitNoteFor, prefill, afterSave }: { l: LedgerConfig; kind: DocumentKind; existing?: FinancialDocument; contactId?: string; debitNoteFor?: DebitNoteOf; prefill?: DocumentPrefill; afterSave?: (d: FinancialDocument) => Promise<void> }) {
   const { org, orgId } = useOrg();
   const accounts = useAccounts();
   const dims = useDimensions();
@@ -57,20 +67,22 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
   const router = useRouter();
   const qc = useQueryClient();
   const c = org?.functionalCurrency ?? 'INR';
-  const nextKey = useRef(2);
+  const nextKey = useRef(Math.max(existing?.lines.length ?? 0, prefill?.lines.length ?? 0, 1) + 1);
   const blank = (key: number): LineState => ({ key, accountId: '', description: '', quantity: '1', unitPrice: '', taxRateId: '', hsnCode: '', departmentId: '', projectId: '', purchaseOrderLineId: '' });
   const isCharge = kind === l.charge.kind;
   const label = debitNoteFor ? 'Debit note' : isCharge ? l.charge.label : l.credit.label;
 
-  const [contact, setContact] = useState(existing?.contact.id ?? contactId ?? '');
-  const [issueDate, setIssueDate] = useState(existing?.issueDate ?? today());
-  const [dueDate, setDueDate] = useState(existing && isCharge ? existing.dueDate : '');
-  const [reference, setReference] = useState(existing?.reference ?? '');
+  const [contact, setContact] = useState(existing?.contact.id ?? contactId ?? prefill?.contactId ?? '');
+  const [issueDate, setIssueDate] = useState(existing?.issueDate ?? prefill?.issueDate ?? today());
+  const [dueDate, setDueDate] = useState(existing && isCharge ? existing.dueDate : (prefill?.dueDate ?? ''));
+  const [reference, setReference] = useState(existing?.reference ?? prefill?.reference ?? '');
   const [memo, setMemo] = useState(existing?.memo ?? '');
   const [lines, setLines] = useState<LineState[]>(
     existing
       ? existing.lines.map((x, i) => ({ key: i + 1, accountId: x.accountId, description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '', departmentId: x.departmentId ?? '', projectId: x.projectId ?? '', purchaseOrderLineId: x.purchaseOrderLineId ?? '' }))
-      : [blank(1)],
+      : prefill?.lines.length
+        ? prefill.lines.map((x, i) => ({ ...blank(i + 1), accountId: x.accountId ?? '', description: x.description ?? '', quantity: x.quantity, unitPrice: x.unitPrice, taxRateId: x.taxRateId ?? '', hsnCode: x.hsnCode ?? '' }))
+        : [blank(1)],
   );
   const [placeOfSupply, setPlaceOfSupply] = useState(existing?.gst?.placeOfSupply ?? debitNoteFor?.placeOfSupply ?? '');
   const [reverseCharge, setReverseCharge] = useState(existing?.reverseCharge ?? false);
@@ -78,7 +90,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
   const [sectionTouched, setSectionTouched] = useState(!!existing);
   const [newContact, setNewContact] = useState<ContactDraft | null>(null);
   const [override, setOverride] = useState(false);
-  const [chosenCurrency, setCurrency] = useState(existing?.currency ?? debitNoteFor?.currency ?? '');
+  const [chosenCurrency, setCurrency] = useState(existing?.currency ?? debitNoteFor?.currency ?? prefill?.currency ?? '');
   const currency = chosenCurrency || c;
   const [rate, setRate] = useState(existing && existing.currency !== existing.functionalCurrency ? existing.exchangeRate : '');
   // In another currency: no TDS/TCS or reverse charge yet, and GST only at zero (exports, nil-rated, exempt).
@@ -187,6 +199,7 @@ export function DocumentForm({ l, kind, existing, contactId, debitNoteFor }: { l
         : api<FinancialDocument>(base, { method: 'POST', body: { ...body, post, overrideCreditLimit: override || undefined } });
     },
     onSuccess: async (d) => {
+      if (afterSave) await afterSave(d);
       await qc.invalidateQueries({ queryKey: ['documents', orgId] });
       await qc.invalidateQueries({ queryKey: ['document', orgId] });
       await qc.invalidateQueries({ queryKey: ['contacts', orgId] });

@@ -5,7 +5,7 @@ import { DomainError } from '../common/errors';
 import { AppConfig, CONFIG } from '../config';
 import { SecretBox, secretBoxFor } from '../integrations/secret-box';
 
-type StoredBytes = Buffer | Uint8Array | Binary;
+export type StoredBytes = Buffer | Uint8Array | Binary;
 
 /** A stored file's bytes as a Buffer, whether the driver gave a Buffer, a Uint8Array or a BSON Binary. */
 export function storedBytes(c: StoredBytes): Buffer {

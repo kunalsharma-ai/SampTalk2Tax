@@ -36,6 +36,8 @@ import { ReceiptFilesService } from './expenses/receipt-files.service';
 import { BankFeedsService } from './bank-feeds/bank-feeds.service';
 import { SupplierStatementsController } from './supplier-statements/supplier-statements.controller';
 import { SupplierStatementsService } from './supplier-statements/supplier-statements.service';
+import { BillReaderController } from './bill-reader/bill-reader.controller';
+import { BillReaderService } from './bill-reader/bill-reader.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
 import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
@@ -468,6 +470,7 @@ export class AppModule {
         ReverseChargeController,
         TaxExplanationController,
         SupplierStatementsController,
+        BillReaderController,
         BankFeedsController,
         BankFeedDeliveryController,
         FinancialTagsController,
@@ -654,6 +657,7 @@ export class AppModule {
         TaxRateVersionsService,
         FxService,
         CountryModulesService,
+        BillReaderService,
         DocumentsService,
         BankingService,
         AttachmentsService,

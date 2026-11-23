@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 567 |
+| Not started | 566 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 700 |
+| Tested | 701 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -26,7 +26,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Competitive benchmarking | M0 | 49 | 0 | 49 |
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 0 | 43 |
-| Accounts payable | M2 | 36 | 1 | 35 |
+| Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
 | Global taxation engine | M3 | 54 | 8 | 46 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
@@ -2023,6 +2023,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/vendor-risk/risk-card.tsx
   - apps/web/e2e/vendor-risk-flow.test.mjs
   - docs/VENDOR_RISK.md
+
+### AP-025 — Invoice document extraction
+
+- Module: Accounts payable
+- Status: **Tested**
+- Notes: Bill reader: text read from the supplier's PDF (Flate, object streams, ToUnicode fonts, positioned text) or pasted text; deterministic parser finds supplier (by GSTIN or name), bill number, dates, currency, items (qty x rate = amount, HSN), taxes, rounding and total, with field sources and checks in words; suggests accounts and tax rate; reviewed in the bill form, saved with the PDF attached and the person's corrections audited. Scans and photos are refused in words (OCR / AI image reading not built).
+- Evidence:
+  - packages/accounting-engine/src/pdf-text.ts
+  - packages/accounting-engine/src/bill-extraction.ts
+  - packages/accounting-engine/test/bill-extraction.test.ts
+  - apps/api/src/bill-reader/bill-reader.service.ts
+  - apps/api/test/bill-reader.e2e.test.ts
+  - apps/web/e2e/bill-reader-flow.test.mjs
+  - docs/BILL_READER.md
 
 ### AP-026 — AI invoice coding
 
