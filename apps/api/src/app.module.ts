@@ -38,6 +38,8 @@ import { SupplierStatementsController } from './supplier-statements/supplier-sta
 import { SupplierStatementsService } from './supplier-statements/supplier-statements.service';
 import { BillReaderController } from './bill-reader/bill-reader.controller';
 import { BillReaderService } from './bill-reader/bill-reader.service';
+import { CardFeedController, CompanyCardsController } from './company-cards/company-cards.controller';
+import { CompanyCardsService } from './company-cards/company-cards.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
 import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
@@ -471,6 +473,8 @@ export class AppModule {
         TaxExplanationController,
         SupplierStatementsController,
         BillReaderController,
+        CompanyCardsController,
+        CardFeedController,
         BankFeedsController,
         BankFeedDeliveryController,
         FinancialTagsController,
@@ -658,6 +662,7 @@ export class AppModule {
         FxService,
         CountryModulesService,
         BillReaderService,
+        CompanyCardsService,
         DocumentsService,
         BankingService,
         AttachmentsService,

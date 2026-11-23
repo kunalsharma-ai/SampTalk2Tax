@@ -19,7 +19,7 @@ describe('navigation by country', () => {
   });
 
   it('keeps role rules', () => {
-    expect(hrefs({ role: 'EMPLOYEE', countryCode: 'IN' })).toEqual(['/expenses', '/expenses/report', '/expenses/trips', '/guide', '/support']);
+    expect(hrefs({ role: 'EMPLOYEE', countryCode: 'IN' })).toEqual(['/expenses', '/expenses/report', '/expenses/trips', '/expenses/cards', '/guide', '/support']);
     expect(hrefs({ role: 'VIEWER', countryCode: 'IN' })).not.toContain('/automations');
   });
 });
