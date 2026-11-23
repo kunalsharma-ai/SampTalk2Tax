@@ -291,9 +291,7 @@ export function dropMetric(widgets: readonly Widget[], metric: string, target: M
   } else {
     return { ...same, error: `${at} lists customers; drop the metric between widgets to add it as a figure` };
   }
-  const out = [...widgets];
-  out[target.index] = next;
-  return { widgets: out, error: null };
+  return { widgets: widgets.map((x, k) => (k === target.index ? next : x)), error: null };
 }
 
 /**
