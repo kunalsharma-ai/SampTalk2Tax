@@ -3,8 +3,8 @@
 Banking → Unusual bank activity lists lines on imported bank statements that carry warning signs,
 and the alert check **Unusual bank activity** (`UNUSUAL_BANK_ACTIVITY`, Alerts → Settings) raises an
 alert for each serious or medium one. Statement lines show every movement on the account, including
-ones nobody has booked, which is why the checks run on them. Talk2Tax has no live bank feed, so the
-checks are only as fresh as the latest imported statement. Nothing changes the books and no AI model
+ones nobody has booked, which is why the checks run on them. The checks are only as fresh as the
+latest statement lines, imported or from a bank feed (BANK-004). Nothing changes the books and no AI model
 is used; the logic is in `packages/accounting-engine/src/bank-activity.ts`.
 
 Each line in the period (30 days on the page by default) is compared with the year before on the

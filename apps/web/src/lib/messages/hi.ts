@@ -81,6 +81,7 @@ export const hi: Record<string, string> = {
   'Unusual bank activity': 'असामान्य बैंक गतिविधि',
   'Reconciliation exceptions': 'मिलान अपवाद',
   'Bank cash forecast': 'बैंक नकदी पूर्वानुमान',
+  'Bank feeds': 'बैंक फ़ीड',
   Treasury: 'ट्रेज़री',
   Loans: 'ऋण',
   'Fixed deposits': 'सावधि जमा',

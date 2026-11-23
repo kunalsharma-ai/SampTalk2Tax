@@ -31,6 +31,8 @@ import { ReverseChargeController } from './gst/reverse-charge.controller';
 import { ReverseChargeService } from './gst/reverse-charge.service';
 import { TaxExplanationController } from './gst/tax-explanation.controller';
 import { TaxExplanationService } from './gst/tax-explanation.service';
+import { BankFeedDeliveryController, BankFeedsController } from './bank-feeds/bank-feeds.controller';
+import { BankFeedsService } from './bank-feeds/bank-feeds.service';
 import { SupplierStatementsController } from './supplier-statements/supplier-statements.controller';
 import { SupplierStatementsService } from './supplier-statements/supplier-statements.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
@@ -454,6 +456,8 @@ export class AppModule {
         ReverseChargeController,
         TaxExplanationController,
         SupplierStatementsController,
+        BankFeedsController,
+        BankFeedDeliveryController,
         FinancialTagsController,
         AccountReconciliationsController,
         CostAllocationsController,
@@ -650,6 +654,7 @@ export class AppModule {
         ReverseChargeService,
         TaxExplanationService,
         SupplierStatementsService,
+        BankFeedsService,
         FinancialTagsService,
         AccountReconciliationsService,
         CostAllocationsService,

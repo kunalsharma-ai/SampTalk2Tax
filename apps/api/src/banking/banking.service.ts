@@ -250,6 +250,84 @@ export class BankingService {
     });
   }
 
+  /**
+   * Adds lines that arrived through a bank feed (BANK-004), in one transaction with the account
+   * locked. A line whose key is already on the account is skipped as a duplicate; a line on or
+   * before the last completed reconciliation is refused (the sender cannot undo a reconciliation);
+   * the rest become one import, like an uploaded file. Positions in the result are 0-based indexes
+   * into input.lines.
+   */
+  async importFedLines(
+    org: BankOrg,
+    input: { accountId: string; importedById: string; fileName: string; fileHash: string; lines: { key: string; date: string; description: string; reference: string | null; amount: Dec; balance?: Dec | null }[]; audit: Record<string, unknown> },
+  ): Promise<{ importId: string | null; imported: number[]; duplicates: number[]; blocked: number[]; reconciledUntil: string | null }> {
+    return this.prisma.$transaction(async (tx) => {
+      const account = await this.lockAccount(tx, org.id, input.accountId);
+      const book = this.bookOf(org, account);
+      const fingerprints = input.lines.map((l) => sha(l.key));
+      const existing = new Set(
+        fingerprints.length ? (await tx.bankStatementLine.findMany({ where: { orgId: org.id, accountId: input.accountId, fingerprint: { in: fingerprints } }, select: { fingerprint: true } })).map((x) => x.fingerprint) : [],
+      );
+      const last = await tx.bankReconciliation.findFirst({ where: { orgId: org.id, accountId: input.accountId, status: 'COMPLETED' }, orderBy: { statementDate: 'desc' } });
+      const reconciledUntil = last ? fromDbDate(last.statementDate) : null;
+      const imported: number[] = [];
+      const duplicates: number[] = [];
+      const blocked: number[] = [];
+      input.lines.forEach((l, i) => {
+        if (existing.has(fingerprints[i]!)) duplicates.push(i);
+        else if (reconciledUntil && l.date <= reconciledUntil) blocked.push(i);
+        else {
+          existing.add(fingerprints[i]!);
+          imported.push(i);
+        }
+      });
+      if (!imported.length) return { importId: null, imported, duplicates, blocked, reconciledUntil };
+      const fresh = imported.map((i) => ({ ...input.lines[i]!, fingerprint: fingerprints[i]! }));
+      const dates = fresh.map((x) => x.date).sort();
+      const imp = await this.moved.create<Prisma.BankStatementImportGetPayload<object>>(tx, BANK_IMPORTS, org.id, {
+        accountId: input.accountId,
+        fileName: input.fileName.slice(0, 200),
+        fileHash: input.fileHash,
+        lineCount: fresh.length,
+        skippedCount: duplicates.length + blocked.length,
+        firstDate: toDbDate(dates[0]!),
+        lastDate: toDbDate(dates[dates.length - 1]!),
+        importedById: input.importedById,
+        createdAt: new Date(),
+        balanceBreaks: null,
+      });
+      await this.moved.createMany(tx, BANK_LINES, org.id, fresh.map((x) => ({
+        accountId: input.accountId,
+        importId: imp.id,
+        date: toDbDate(x.date),
+        description: x.description.slice(0, 500),
+        reference: x.reference,
+        amount: x.amount.toFixed(),
+        balance: x.balance ? x.balance.toFixed() : null,
+        fingerprint: x.fingerprint,
+        status: 'UNMATCHED',
+        excludedReason: null,
+        reconciliationId: null,
+        createdAt: new Date(),
+      })));
+      await this.audit.append(tx, {
+        orgId: org.id,
+        actorId: null,
+        action: 'bank.feed_lines_imported',
+        entityType: 'bank_statement_import',
+        entityId: imp.id,
+        data: { ...input.audit, accountId: input.accountId, currency: book.currency, lines: fresh.length, duplicates: duplicates.length, refusedAsReconciled: blocked.length },
+      });
+      return { importId: imp.id, imported, duplicates, blocked, reconciledUntil };
+    }, { timeout: 20_000 });
+  }
+
+  /** The currency of a bank account's statements, for checking what a feed sends. */
+  async accountCurrency(org: BankOrg, accountId: string) {
+    const a = await this.bankAccount(this.prisma, org.id, accountId);
+    return { code: a.code, name: a.name, currency: this.bookOf(org, a).currency, isActive: a.isActive };
+  }
+
   async listImports(org: BankOrg, accountId: string) {
     await this.bankAccount(this.prisma, org.id, accountId);
     const rows = await this.prisma.bankStatementImport.findMany({ where: { orgId: org.id, accountId }, orderBy: { createdAt: 'desc' }, take: 100 });

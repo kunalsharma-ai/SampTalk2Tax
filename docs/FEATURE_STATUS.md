@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 576 |
+| Not started | 575 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 30 |
-| Tested | 685 |
+| Tested | 686 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -27,7 +27,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | General ledger and accounting engine | M1 | 44 | 0 | 44 |
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
-| Banking and reconciliation | M2 | 24 | 1 | 23 |
+| Banking and reconciliation | M2 | 24 | 0 | 24 |
 | Global taxation engine | M3 | 54 | 15 | 39 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
@@ -2207,6 +2207,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/bank-formats-flow.test.mjs
   - apps/web/src/components/banking/import-page.tsx
   - docs/STATEMENT_FORMATS.md
+
+### BANK-004 — Bank feed integration framework
+
+- Module: Banking and reconciliation
+- Status: **Tested**
+- Notes: Token-authenticated feed per bank account: a sender posts JSON transactions (deduplicated by its own id) or OFX/QIF/MT940 files (deduplicated like uploads). Deliveries are recorded with reasons for refusals; lines on or before the last reconciliation are refused; health shows late or failing feeds. No built-in connection to a particular bank or aggregator.
+- Evidence:
+  - packages/accounting-engine/src/bank-feeds.ts
+  - packages/accounting-engine/test/bank-feeds.test.ts
+  - apps/api/src/bank-feeds/bank-feeds.service.ts
+  - apps/api/test/bank-feeds.e2e.test.ts
+  - apps/web/e2e/bank-feeds-flow.test.mjs
+  - apps/web/src/app/orgs/[orgId]/banking/feeds/page.tsx
+  - docs/BANK_FEEDS.md
 
 ### BANK-005 — Bank reconciliation
 
