@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 579 |
+| Not started | 578 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 681 |
+| Tested | 682 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 18 | 36 |
+| Global taxation engine | M3 | 54 | 17 | 37 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2853,6 +2853,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/scenarios/page.tsx
   - apps/web/e2e/tax-scenarios-flow.test.mjs
   - docs/TAX_SCENARIOS.md
+
+### TAX-050 — Tax notice analysis
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Each tax notice is analysed from its authority and section/form against a source-cited table (GST s.46/61/73/74/74A, IT 139(9)/143(1)(a)/142(1)/143(2)/148A/148/156/245, TDS 200A): type, what it asks, usual reply period, deadline (entered date wins, else from receipt with a warning), how to reply, checklist with saved ticks, interest at 1% per month or part under s.220(2) on an unpaid IT demand, related notices for the same period. Unknown sections are not guessed; the user can choose the type. Audited. Not built: reading notice PDFs, GST s.50 interest and penalties, Income-tax Act 2025 section numbers.
+- Evidence:
+  - packages/accounting-engine/src/tax-notice-analysis.ts
+  - packages/accounting-engine/test/tax-notice-analysis.test.ts
+  - apps/api/src/tax-notices/tax-notice-analysis.service.ts
+  - apps/api/test/tax-notice-analysis.e2e.test.ts
+  - apps/web/src/components/tax-notices/notice-analysis.tsx
+  - apps/web/e2e/tax-notice-analysis-flow.test.mjs
+  - docs/TAX_NOTICE_ANALYSIS.md
 
 ### TAX-051 — Audit preparation assistance
 

@@ -9415,6 +9415,19 @@
         "docs/TAX_RATE_VERSIONS.md"
       ],
       "notes": "Tax rates are effective-dated and version-controlled: original rate = version 1, later versions with effective date, reason and who (tax_rate_versions, append-only). Documents use the rate in force on their issue date (incl. GST split), expense claim lines on the line date; list shows rate today and next change. Versions only in date order, never behind posted documents/approved claims; scheduled versions withdrawable with reason before they take effect. Audited. Not built: central rate publishing, dated withholding section versions beyond validFrom, date-aware line-editor previews."
+    },
+    "TAX-050": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/tax-notice-analysis.ts",
+        "packages/accounting-engine/test/tax-notice-analysis.test.ts",
+        "apps/api/src/tax-notices/tax-notice-analysis.service.ts",
+        "apps/api/test/tax-notice-analysis.e2e.test.ts",
+        "apps/web/src/components/tax-notices/notice-analysis.tsx",
+        "apps/web/e2e/tax-notice-analysis-flow.test.mjs",
+        "docs/TAX_NOTICE_ANALYSIS.md"
+      ],
+      "notes": "Each tax notice is analysed from its authority and section/form against a source-cited table (GST s.46/61/73/74/74A, IT 139(9)/143(1)(a)/142(1)/143(2)/148A/148/156/245, TDS 200A): type, what it asks, usual reply period, deadline (entered date wins, else from receipt with a warning), how to reply, checklist with saved ticks, interest at 1% per month or part under s.220(2) on an unpaid IT demand, related notices for the same period. Unknown sections are not guessed; the user can choose the type. Audited. Not built: reading notice PDFs, GST s.50 interest and penalties, Income-tax Act 2025 section numbers."
     }
   }
 }

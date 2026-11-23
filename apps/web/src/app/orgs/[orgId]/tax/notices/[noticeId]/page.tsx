@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { NoticeUrgency } from '@/components/tax-notice-bits';
+import { NoticeAnalysis } from '@/components/tax-notices/notice-analysis';
 import { api, ApiError, uploadFile } from '@/lib/api';
 import { date, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
@@ -35,6 +36,7 @@ export default function TaxNoticePage() {
     setText('');
     await qc.invalidateQueries({ queryKey: ['tax-notice', orgId, noticeId] });
     await qc.invalidateQueries({ queryKey: ['tax-notices', orgId] });
+    await qc.invalidateQueries({ queryKey: ['tax-notice-analysis', orgId, noticeId] });
   };
   const run = useMutation({
     mutationFn: (s: Step) => api<TaxNotice>(`${base}/${s === 'note' ? 'notes' : s}`, { method: 'POST', body: s === 'respond' ? { on, text } : s === 'close' ? { outcome, text } : { text } }),
@@ -93,6 +95,7 @@ export default function TaxNoticePage() {
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-fg-muted">Amount demanded</p><p className="mt-2 text-sm">{n.demand ? <Money value={n.demand} currency={org.functionalCurrency} /> : 'None'}</p></Card>
         <Card className="p-4"><p className="text-xs uppercase tracking-wide text-fg-muted">Details</p><p className="mt-2 text-sm">{[n.section, n.period].filter(Boolean).join(' · ') || '—'}</p><p className="text-xs text-fg-muted">{n.assignee ? `With ${n.assignee}` : 'Not given to anyone'}</p></Card>
       </div>
+      <NoticeAnalysis orgId={orgId} noticeId={noticeId} canManage={manage} />
       <Card className="mt-6">
         <CardHeader
           title="Notice files"

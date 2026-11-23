@@ -25,6 +25,8 @@ import { AllowanceRatesController, ExpensePolicyController, ExpensesController }
 import { ExpensePolicyService } from './expenses/expense-policy.service';
 import { TaxNoticesController } from './tax-notices/tax-notices.controller';
 import { TaxNoticesService } from './tax-notices/tax-notices.service';
+import { TaxNoticeAnalysisController } from './tax-notices/tax-notice-analysis.controller';
+import { TaxNoticeAnalysisService } from './tax-notices/tax-notice-analysis.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
 import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
@@ -442,6 +444,7 @@ export class AppModule {
         AllowanceRatesController,
         ExpensePolicyController,
         TaxNoticesController,
+        TaxNoticeAnalysisController,
         FinancialTagsController,
         AccountReconciliationsController,
         CostAllocationsController,
@@ -634,6 +637,7 @@ export class AppModule {
         AllowancesService,
         ExpensePolicyService,
         TaxNoticesService,
+        TaxNoticeAnalysisService,
         FinancialTagsService,
         AccountReconciliationsService,
         CostAllocationsService,

@@ -703,6 +703,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Record a notice from the letter, add the letter as a file, note what is done, record the reply when it is sent, and close it with the outcome. Overdue and due-soon notices are listed first.',
     where: 'Tax. Anyone who reads reports sees notices; those who manage the accounts (accounts.manage) record and work them. Every step is kept in the notice history and the audit trail.',
   },
+  'tax/notices/[id]': {
+    what: 'One tax notice: its status and reply date, the amount demanded, the analysis of what kind of notice it is and how to reply, its files and its history.',
+    how: 'Use the analysis to see the usual deadline, how to reply and what to gather; tick the checklist as you go. Add the letter and your reply as files, record the reply when it is sent, and close the notice with its outcome.',
+    where: 'Tax → Notices. Anyone who reads reports sees it; those who manage the accounts work it. Every step is kept in the history and the audit trail.',
+  },
   'reports/income-statement': {
     what: 'Profit and loss: revenue less expenses for a period.',
     how: 'Choose the period and the basis. Accrual (the default) counts income and expenses when invoiced or billed; Cash counts them when money is received or paid, in the share of each invoice, bill, expense claim or pay run settled in the period, and shows the accrual result beside it. Open a line to see its entries. Export to Excel or PDF.',
