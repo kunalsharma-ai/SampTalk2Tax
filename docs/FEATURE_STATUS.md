@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 583 |
+| Not started | 581 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 677 |
+| Tested | 679 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 22 | 32 |
+| Global taxation engine | M3 | 54 | 20 | 34 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2625,6 +2625,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/tax-engine/test/withholding.test.ts
   - apps/api/test/withholding.e2e.test.ts
   - apps/web/src/app/orgs/[orgId]/tax/tds-tcs
+
+### TAX-019 — Income tax preparation support
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Computation of total income for a financial year (India): book profit before tax excluding income tax expense, add back book depreciation, deduct section 32 depreciation entered by the preparer, 40A(3) cash payments from the tax audit working, preparer adjustments with sections, brought forward business loss set-off and carry forward; tax on income rounded under 288A, credits from the advance tax plan's TDS and advance tax accounts; saved per year, finalised (immutable) with later-posting note. Not built: MAT, other heads, Chapter VI-A, 234A-C interest, ITR filing.
+- Evidence:
+  - packages/tax-engine/src/india/income-computation.ts
+  - packages/tax-engine/test/income-computation.test.ts
+  - apps/api/src/income-tax/income-tax.service.ts
+  - apps/api/test/income-tax.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/income-computation/page.tsx
+  - apps/web/e2e/income-tax-computation-flow.test.mjs
+  - docs/INCOME_TAX_COMPUTATION.md
+
+### TAX-020 — Corporate tax support
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Corporate tax on the computation: 22% (115BAA), 25% (turnover up to 400 crore), 30% companies and firms with surcharge, marginal relief and 4% cess, less TDS, advance tax and other tax paid, giving self-assessment tax or refund. Not built: MAT (115JB), dividend/buyback tax, 234A-C interest.
+- Evidence:
+  - packages/tax-engine/src/india/income-computation.ts
+  - packages/tax-engine/test/income-computation.test.ts
+  - apps/api/src/income-tax/income-tax.service.ts
+  - apps/api/test/income-tax.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/income-computation/page.tsx
+  - apps/web/e2e/income-tax-computation-flow.test.mjs
+  - docs/INCOME_TAX_COMPUTATION.md
 
 ### TAX-021 — Advance tax calculations
 

@@ -6699,9 +6699,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/income-computation.ts",
+        "packages/tax-engine/test/income-computation.test.ts",
+        "apps/api/src/income-tax/income-tax.service.ts",
+        "apps/api/test/income-tax.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/income-computation/page.tsx",
+        "apps/web/e2e/income-tax-computation-flow.test.mjs",
+        "docs/INCOME_TAX_COMPUTATION.md"
+      ],
+      "notes": "Computation of total income for a financial year (India): book profit before tax excluding income tax expense, add back book depreciation, deduct section 32 depreciation entered by the preparer, 40A(3) cash payments from the tax audit working, preparer adjustments with sections, brought forward business loss set-off and carry forward; tax on income rounded under 288A, credits from the advance tax plan's TDS and advance tax accounts; saved per year, finalised (immutable) with later-posting note. Not built: MAT, other heads, Chapter VI-A, 234A-C interest, ITR filing."
     },
     {
       "id": "TAX-020",
@@ -6725,9 +6733,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/income-computation.ts",
+        "packages/tax-engine/test/income-computation.test.ts",
+        "apps/api/src/income-tax/income-tax.service.ts",
+        "apps/api/test/income-tax.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/income-computation/page.tsx",
+        "apps/web/e2e/income-tax-computation-flow.test.mjs",
+        "docs/INCOME_TAX_COMPUTATION.md"
+      ],
+      "notes": "Corporate tax on the computation: 22% (115BAA), 25% (turnover up to 400 crore), 30% companies and firms with surcharge, marginal relief and 4% cess, less TDS, advance tax and other tax paid, giving self-assessment tax or refund. Not built: MAT (115JB), dividend/buyback tax, 234A-C interest."
     },
     {
       "id": "TAX-021",
