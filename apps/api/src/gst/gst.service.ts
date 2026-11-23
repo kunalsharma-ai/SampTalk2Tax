@@ -209,6 +209,17 @@ export class GstService {
     return [...inPeriod, ...linked.filter((d) => !seen.has(d.id) && (seen.add(d.id), true))];
   }
 
+  /** Bills and vendor credits issued in the period, for the reverse-charge register (TAX-032). */
+  purchaseDocuments(orgId: string, from: string, to: string) {
+    return this.returnDocuments(orgId, ['BILL', 'VENDOR_CREDIT'], from, to);
+  }
+
+  /** One bill or vendor credit as GST sees it, or null (TAX-032 self-invoices). */
+  async purchaseDocument(orgId: string, id: string) {
+    const [d] = await this.gstDocuments({ orgId, id, kind: { in: ['BILL', 'VENDOR_CREDIT'] }, status: { in: ['POSTED', 'VOID'] }, placeOfSupply: { not: null } });
+    return d ?? null;
+  }
+
   private async gstDocuments(where: Prisma.DocumentWhereInput) {
     const docs = await this.prisma.document.findMany({
       where,

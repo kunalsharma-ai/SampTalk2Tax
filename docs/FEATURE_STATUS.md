@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 578 |
+| Not started | 577 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 682 |
+| Tested | 683 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 17 | 37 |
+| Global taxation engine | M3 | 54 | 16 | 38 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2760,6 +2760,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/E_INVOICING_INDIA.md
   - docs/COMPLIANCE_CALENDAR_INDIA.md
   - apps/api/src/e-invoicing/e-invoicing.service.ts
+
+### TAX-032 — Reverse-charge mechanisms
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Builds on reverse-charge bills: Tax -> Reverse charge shows the month's register of RCM bills and vendor credits with tax by head (to pay in cash), notified categories matched by HSN/SAC with source (Notifications 13/2017 and 4/2017-CT(Rate)), posted bills that may have missed reverse charge, and self-invoices for unregistered/foreign suppliers (s.31(3)(f), due in 30 days under rule 47A) numbered RCM/FY/seq, one per bill, immutable, audited. Not built: payment voucher (s.31(3)(g)), foreign-currency RCM, s.9(4) promoters, suggestion while entering a bill.
+- Evidence:
+  - packages/tax-engine/src/india/reverse-charge.ts
+  - packages/tax-engine/test/reverse-charge.test.ts
+  - apps/api/src/gst/reverse-charge.service.ts
+  - apps/api/test/reverse-charge.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/reverse-charge/page.tsx
+  - apps/web/e2e/reverse-charge-flow.test.mjs
+  - docs/REVERSE_CHARGE.md
 
 ### TAX-037 — Withholding taxes
 

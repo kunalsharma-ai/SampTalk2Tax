@@ -27,6 +27,8 @@ import { TaxNoticesController } from './tax-notices/tax-notices.controller';
 import { TaxNoticesService } from './tax-notices/tax-notices.service';
 import { TaxNoticeAnalysisController } from './tax-notices/tax-notice-analysis.controller';
 import { TaxNoticeAnalysisService } from './tax-notices/tax-notice-analysis.service';
+import { ReverseChargeController } from './gst/reverse-charge.controller';
+import { ReverseChargeService } from './gst/reverse-charge.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
 import { CostAllocationsController } from './cost-allocations/cost-allocations.controller';
@@ -445,6 +447,7 @@ export class AppModule {
         ExpensePolicyController,
         TaxNoticesController,
         TaxNoticeAnalysisController,
+        ReverseChargeController,
         FinancialTagsController,
         AccountReconciliationsController,
         CostAllocationsController,
@@ -638,6 +641,7 @@ export class AppModule {
         ExpensePolicyService,
         TaxNoticesService,
         TaxNoticeAnalysisService,
+        ReverseChargeService,
         FinancialTagsService,
         AccountReconciliationsService,
         CostAllocationsService,

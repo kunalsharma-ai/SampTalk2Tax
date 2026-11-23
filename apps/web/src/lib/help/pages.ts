@@ -854,6 +854,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the month, usually before filing GSTR-3B. When the books differ, open each item: correct a manual journal, or amend the return of the month a document belongs to. Fix high-severity mistakes before filing; low ones are worth a look.',
     where: 'Tax. Needs the reports permission and a GST registration. GST payments settle the accounts and are shown apart. Reads posted journals and documents only; nothing is changed or filed, and no AI model is used.',
   },
+  'tax/reverse-charge': {
+    what: "A month's reverse-charge register: posted bills and vendor credits where you pay the GST instead of the supplier, on notified goods and services (CGST Act s.9(3)) and services from abroad (IGST Act s.5(3)). It shows the tax by head to pay in cash, which bills need a self-invoice and by when, and bills that were not recorded under reverse charge although their HSN/SAC is a notified category, such as security services, legal services by an advocate, a goods transport agency or metal scrap from an unregistered dealer.",
+    how: 'Choose the month. Issue the self-invoice for each bill from a supplier with no GSTIN or outside India within 30 days of the bill. Check each bill under "may need reverse charge" against its condition; if it applies, void the bill and record it again with Reverse charge ticked. Then pay the month on GST payments: reverse-charge tax is paid in cash.',
+    where: 'Tax. Needs the reports permission and a GST registration; issuing a self-invoice needs accounts.manage and is audited. Reverse charge is ticked on the bill itself (Purchases → Bills). The category list is a guide matched by HSN/SAC; the notifications decide. No AI model is used.',
+  },
+  'tax/reverse-charge/[id]': {
+    what: 'The self-invoice for one reverse-charge bill from a supplier who is not registered: you, the recipient, issue the tax invoice (CGST Act s.31(3)(f)), with your GSTIN, the supplier, place of supply, HSN/SAC, taxable value and tax by head, marked tax payable on reverse charge.',
+    how: 'Choose the date and issue it within 30 days of receiving the supply (rule 47A). The number comes from its own series for the financial year (RCM/2026-27/0001) and cannot be changed. Print the page for your records.',
+    where: 'Tax → Reverse charge. Issuing needs accounts.manage and is audited. Not needed when the supplier is registered: their own invoice is the document. The payment voucher (s.31(3)(g)) is not produced yet.',
+  },
   'tax/gst-payments': {
     what: 'Settling a month\'s GST: the tax payable and input tax credit in your books, the credit set off in the order the CGST Act requires, and the cash paid by PMT-06 challan.',
     how: 'Choose the month, check the set-off, pay the cash on the GST portal, then record the payment with the CPIN and CIN. Interest and late fee go to an expense account you choose.',
