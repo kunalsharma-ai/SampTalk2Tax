@@ -6208,9 +6208,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/tax-rate-versions.ts",
+        "packages/accounting-engine/test/tax-rate-versions.test.ts",
+        "apps/api/src/tax-rates/tax-rate-versions.service.ts",
+        "apps/api/test/tax-rate-versions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/tax-rates/[taxRateId]/page.tsx",
+        "apps/web/e2e/tax-rate-versions-flow.test.mjs",
+        "docs/TAX_RATE_VERSIONS.md"
+      ],
+      "notes": "Tax rates are effective-dated and version-controlled: original rate = version 1, later versions with effective date, reason and who (tax_rate_versions, append-only). Documents use the rate in force on their issue date (incl. GST split), expense claim lines on the line date; list shows rate today and next change. Versions only in date order, never behind posted documents/approved claims; scheduled versions withdrawable with reason before they take effect. Audited. Not built: central rate publishing, dated withholding section versions beyond validFrom, date-aware line-editor previews."
     },
     {
       "id": "TAX-004",

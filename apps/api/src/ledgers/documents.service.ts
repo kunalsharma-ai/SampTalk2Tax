@@ -41,6 +41,7 @@ import { CustomerOnboardingService } from '../customer-onboarding/customer-onboa
 import { DomainError } from '../common/errors';
 import { nextCounter } from '../db/counters';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { TaxRateVersionsService } from '../tax-rates/tax-rate-versions.service';
 import { GstService, SupplyFacts } from '../gst/gst.service';
 import { JournalsService } from '../journals/journals.service';
 import { WithholdingFacts, WithholdingService } from '../withholding/withholding.service';
@@ -144,6 +145,7 @@ export class DocumentsService {
     private readonly withholding: WithholdingService,
     private readonly moved: MovedTables,
     private readonly recognition: RevenueRecognitionService,
+    private readonly rateVersions: TaxRateVersionsService,
   ) {}
 
   // ------------------------------------------------------------------ reads
@@ -686,7 +688,10 @@ export class DocumentsService {
     if (issues.length) throw new DomainError('DOCUMENT_INVALID', 'Document is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
     await checkLineDimensions(tx, org.id, input.lines, { code: 'DOCUMENT_INVALID' });
     const taxIds = [...new Set(input.lines.map((l) => l.taxRateId).filter((x): x is string => !!x))];
-    const taxes = await tx.taxRate.findMany({ where: { orgId: org.id, id: { in: taxIds }, isActive: true } });
+    // The rate in force on the issue date (TAX-003): later versions of a rate never alter earlier documents.
+    const found = await tx.taxRate.findMany({ where: { orgId: org.id, id: { in: taxIds }, isActive: true } });
+    const inForce = await this.rateVersions.ratesOn(found, input.issueDate);
+    const taxes = found.map((t) => ({ ...t, rate: new Prisma.Decimal(inForce.get(t.id)!.rate) }));
     const taxMap = new Map<string, TaxRateInfo>(
       taxes.map((t) => [t.id, { id: t.id, name: t.name, rate: t.rate.toFixed(), accountId: ledger === 'SALES' ? t.salesAccountId : t.purchaseAccountId, kind: t.kind }]),
     );

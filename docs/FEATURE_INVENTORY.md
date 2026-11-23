@@ -245,7 +245,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 |---|---|---|---|---|
 | TAX-001 |  | rule | Create a modular, jurisdiction-aware taxation architecture | Implementing |
 | TAX-002 |  | rule | Do not hard-code global tax rates | Tested |
-| TAX-003 |  | rule | Use effective-dated, version-controlled rules | Not started |
+| TAX-003 |  | rule | Use effective-dated, version-controlled rules | Tested |
 | TAX-004 |  | rule | Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements | Tested |
 | TAX-005 | India Module | capability | GST | Tested |
 | TAX-006 | India Module | capability | CGST | Tested |

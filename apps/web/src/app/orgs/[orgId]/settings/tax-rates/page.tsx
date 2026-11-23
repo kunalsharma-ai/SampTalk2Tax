@@ -7,6 +7,7 @@ import { api, ApiError } from '@/lib/api';
 import Link from 'next/link';
 import { useAccounts, useGstRegistration, useOrg, useTaxRates } from '@/lib/org';
 import { GST_CATEGORY_LABEL } from '@/lib/gst';
+import { date } from '@/lib/format';
 import { can, type GstCategory, type TaxRate } from '@/lib/types';
 
 interface Draft {
@@ -53,7 +54,7 @@ export default function TaxRatesPage() {
     <>
       <PageHeader
         title="Tax rates"
-        description="Rates you apply to invoice and bill lines. GST rates split into CGST and SGST/UTGST, or IGST, by place of supply and post to the GST accounts. Simple rates post one percentage to the accounts you choose. Talk2Tax does not decide which rate applies to an item; you choose it."
+        description="Rates you apply to invoice and bill lines. GST rates split into CGST and SGST/UTGST, or IGST, by place of supply and post to the GST accounts. Simple rates post one percentage to the accounts you choose. Each rate keeps its history: schedule a change from a date and documents dated from then use the new percentage, while earlier ones keep theirs. Talk2Tax does not decide which rate applies to an item; you choose it."
         actions={canManage ? <Button disabled={!accounts.data || !gst.data} onClick={() => { save.reset(); setDraft({ name: '', rate: '', kind: registered ? 'GST' : 'SIMPLE', gstCategory: 'TAXABLE', salesAccountId: liability.find((a) => a.subtype === 'TAX_PAYABLE')?.id ?? '', purchaseAccountId: asset.find((a) => a.subtype === 'TAX_RECEIVABLE')?.id ?? '', isActive: true }); }}>New tax rate</Button> : null}
       />
       {gst.data && !registered && org.countryCode === 'IN' ? (
@@ -64,13 +65,14 @@ export default function TaxRatesPage() {
           <EmptyState title="No tax rates yet">Add the rates you charge or pay so invoice and bill lines can use them.</EmptyState>
         ) : (
           <Table>
-            <thead><tr><Th>Name</Th><Th>Type</Th><Th numeric>Rate</Th><Th>Tax on sales posts to</Th><Th>Tax on purchases posts to</Th><Th>Status</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
+            <thead><tr><Th>Name</Th><Th>Type</Th><Th numeric>Rate today</Th><Th>Scheduled change</Th><Th>Tax on sales posts to</Th><Th>Tax on purchases posts to</Th><Th>Status</Th><Th><span className="sr-only">Actions</span></Th></tr></thead>
             <tbody>
               {(rates.data ?? []).map((t) => (
                 <Tr key={t.id}>
                   <Td>{t.name}</Td>
                   <Td>{t.kind === 'GST' ? <Badge tone="violet">GST · {GST_CATEGORY_LABEL[t.gstCategory!]}</Badge> : <span className="text-sm text-fg-muted">Simple</span>}</Td>
                   <Td numeric className="num">{t.rate}%</Td>
+                  <Td className="text-sm">{t.nextChange ? <span>{t.nextChange.rate}% from {date(t.nextChange.effectiveFrom)}</span> : <span className="text-fg-muted">—</span>}</Td>
                   {t.kind === 'GST' ? (
                     <Td colSpan={2} className="text-fg-muted">{t.gstCategory === 'TAXABLE' ? 'Output or input CGST, SGST/UTGST or IGST, by place of supply' : 'No tax; reported separately in GST returns'}</Td>
                   ) : (
@@ -80,7 +82,7 @@ export default function TaxRatesPage() {
                     </>
                   )}
                   <Td>{t.isActive ? <Badge tone="positive">Active</Badge> : <Badge>Inactive</Badge>}</Td>
-                  <Td className="text-right">{canManage ? <Button size="sm" variant="ghost" onClick={() => { save.reset(); setDraft({ id: t.id, name: t.name, rate: t.rate, kind: t.kind, gstCategory: t.gstCategory ?? 'TAXABLE', salesAccountId: t.salesAccountId ?? '', purchaseAccountId: t.purchaseAccountId ?? '', isActive: t.isActive }); }}>Edit</Button> : null}</Td>
+                  <Td className="text-right whitespace-nowrap"><Link className="mr-2 text-sm underline" aria-label={`History of ${t.name}`} href={`/orgs/${orgId}/settings/tax-rates/${t.id}`}>History</Link>{canManage ? <Button size="sm" variant="ghost" onClick={() => { save.reset(); setDraft({ id: t.id, name: t.name, rate: t.rate, kind: t.kind, gstCategory: t.gstCategory ?? 'TAXABLE', salesAccountId: t.salesAccountId ?? '', purchaseAccountId: t.purchaseAccountId ?? '', isActive: t.isActive }); }}>Edit</Button> : null}</Td>
                 </Tr>
               ))}
             </tbody>
@@ -111,7 +113,7 @@ export default function TaxRatesPage() {
               </Field>
             ) : null}
             <Field label="Name">{(p) => <Input {...p} required maxLength={100} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />}</Field>
-            <Field label="Rate (%)" hint={draft.id ? 'A rate cannot change once created; add a new one instead.' : draft.kind === 'GST' ? 'The full GST rate. Inside your state it is charged as half CGST and half SGST/UTGST.' : undefined}>
+            <Field label="Rate (%)" hint={draft.id ? 'To change the percentage from a date, schedule a change on the rate\'s history page.' : draft.kind === 'GST' ? 'The full GST rate. Inside your state it is charged as half CGST and half SGST/UTGST.' : undefined}>
               {(p) => <Input {...p} required disabled={!!draft.id || (draft.kind === 'GST' && draft.gstCategory !== 'TAXABLE')} inputMode="decimal" value={draft.kind === 'GST' && draft.gstCategory !== 'TAXABLE' ? '0' : draft.rate} onChange={(e) => /^\d{0,3}(\.\d{0,6})?$/.test(e.target.value) && setDraft({ ...draft, rate: e.target.value })} />}
             </Field>
             {draft.kind === 'SIMPLE' ? (<>

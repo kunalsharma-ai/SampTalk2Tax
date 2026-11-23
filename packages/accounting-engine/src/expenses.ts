@@ -2,6 +2,7 @@ import { JournalLineInput } from './journal';
 import { D, Dec, MoneyError, assertCurrencyPrecision, dec, roundToCurrency, sum } from './money';
 import { assertIsoDate } from './periods';
 import { DocumentValidationError, TaxRateInfo } from './documents';
+import { rateEffectiveOn } from './tax-rate-versions';
 
 /**
  * Employee expense claims (Directive Part 13). An employee spends their own money and
@@ -87,7 +88,7 @@ export function computeExpenseClaim(lines: ExpenseLineInput[], currency: string,
         issues.push(`Line ${n}: tax rate not found`);
         return;
       }
-      rate = dec(t.rate);
+      rate = dec(rateEffectiveOn(t.rate, t.versions ?? [], l.date));
       taxAccountId = t.accountId;
       if (rate.gt(0) && !taxAccountId) issues.push(`Line ${n}: tax rate ${t.name} has no account for purchases tax`);
     }
