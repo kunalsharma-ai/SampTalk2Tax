@@ -160,6 +160,25 @@ export function reconcileSupplierStatement(s: StatementInput): StatementReconcil
 
 const KIND_WORDS: Record<string, SupplierStatementLineKind> = { INVOICE: 'INVOICE', BILL: 'INVOICE', INV: 'INVOICE', 'DEBIT NOTE': 'DEBIT_NOTE', DEBIT_NOTE: 'DEBIT_NOTE', DN: 'DEBIT_NOTE', 'CREDIT NOTE': 'CREDIT_NOTE', CREDIT_NOTE: 'CREDIT_NOTE', CN: 'CREDIT_NOTE', PAYMENT: 'PAYMENT', RECEIPT: 'PAYMENT', PMT: 'PAYMENT' };
 
+/** Splits one CSV row into trimmed cells, honouring "quoted, cells" and "" escapes, in one pass. */
+function splitCsvRow(row: string): string[] {
+  const cells: string[] = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < row.length; i += 1) { // not money
+    const ch = row[i];
+    if (quoted) {
+      if (ch === '"' && row[i + 1] === '"') { cell += '"'; i += 1; } // not money
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') { cells.push(cell.trim()); cell = ''; }
+    else cell += ch;
+  }
+  cells.push(cell.trim());
+  return cells;
+}
+
 /**
  * Lines pasted from a statement as CSV: date, reference, type, amount (a header row is skipped).
  * Dates as YYYY-MM-DD or DD/MM/YYYY; type as invoice, debit note, credit note or payment
@@ -170,7 +189,7 @@ export function parseStatementCsv(text: string): { lines: SupplierStatementLine[
   const errors: string[] = [];
   const rows = text.split(/\r?\n/).map((r) => r.trim()).filter(Boolean);
   rows.forEach((row, i) => {
-    const cells = (row.match(/("([^"]|"")*"|[^,]*)(,|$)/g) ?? []).map((c) => c.replace(/,$/, '').trim().replace(/^"|"$/g, '').replace(/""/g, '"')).slice(0, 5);
+    const cells = splitCsvRow(row).slice(0, 5);
     if (i === 0 && /date/i.test(cells[0] ?? '')) return;
     const n = i + 1; // not money
     const [dateRaw = '', reference = '', typeRaw = '', amountRaw = ''] = cells;
