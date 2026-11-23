@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import {
+  applyLayoutOps,
   checkDashboard,
   COMPARISONS,
   DASHBOARD_METRICS,
@@ -14,6 +15,7 @@ import {
   WIDGET_SIZES,
   WIDGET_TYPES,
   type DashboardConfig,
+  type LayoutOp,
   type Widget,
 } from '@talk2tax/accounting-engine';
 import { Prisma, type Dashboard } from '@talk2tax/database';
@@ -183,6 +185,25 @@ export class DashboardsService {
       await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'dashboard.updated', entityType: 'dashboard', entityId: id, data: { version: d.version + 1, before: { name: d.name, description: d.description, config: d.config }, after: { name: input.name.trim(), description: input.description?.trim() || null, config: config as unknown as Prisma.InputJsonValue } } });
     });
     return this.get(org, id);
+  }
+
+  /**
+   * Saves changes made by arranging the dashboard: widgets dragged to a new place, metrics
+   * dropped in as figures or onto charts and tables, and widgets taken off. The layout belongs
+   * to the dashboard, so everyone in the organisation sees it; each save is a new version.
+   */
+  async arrange(org: OrgContext, actor: Actor, id: string, input: { ops: LayoutOp[]; baseVersion: number; month?: string }) {
+    await this.prisma.$transaction(async (tx) => {
+      await lockRow(tx, 'dashboards', id, org.id);
+      const d = await tx.dashboard.findFirst({ where: { id, orgId: org.id } });
+      if (!d) throw new DomainError('NOT_FOUND', 'Dashboard not found', HttpStatus.NOT_FOUND);
+      if (d.version !== input.baseVersion) throw new DomainError('DASHBOARD_CHANGED', 'Someone changed this dashboard while you were arranging it. Reload it and make your change again.', HttpStatus.CONFLICT);
+      const { config, issues } = applyLayoutOps(d.config as unknown as DashboardConfig, input.ops);
+      if (issues.length) throw new DomainError('INVALID_LAYOUT', issues.length === 1 ? issues[0]! : `${issues.length} problems in the dashboard`, HttpStatus.UNPROCESSABLE_ENTITY, { issues });
+      await tx.dashboard.update({ where: { id }, data: { config: config as unknown as Prisma.InputJsonValue, version: d.version + 1, updatedById: actor.id } });
+      await this.audit.append(tx, { orgId: org.id, actorId: actor.id, action: 'dashboard.arranged', entityType: 'dashboard', entityId: id, data: { version: d.version + 1, ops: input.ops as unknown as Prisma.InputJsonValue, before: d.config, after: config as unknown as Prisma.InputJsonValue } });
+    });
+    return this.get(org, id, input.month);
   }
 
   async remove(orgId: string, actor: Actor, id: string) {

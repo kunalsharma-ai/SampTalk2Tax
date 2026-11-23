@@ -713,6 +713,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Create a dashboard, add widgets, or describe what you want and check the AI\'s draft before saving.',
     where: 'Reports. Widgets read the same figures as the reports.',
   },
+  'reports/dashboards/[id]': {
+    what: 'One dashboard, with its figures worked out from the posted books for the month you choose.',
+    how: 'Pick a month to see its figures. Those who manage dashboards can press Arrange to drag metrics onto the dashboard and reorder widgets (or use the buttons without a mouse), or Edit to change titles, sizes and periods.',
+    where: 'Reports → Dashboards. Everyone in the organisation sees the same layout; every change is a new version in the audit trail.',
+  },
   'reports/trial-balance': {
     what: 'Every account\'s debit or credit balance on a date. Debits always equal credits.',
     how: 'Pick the date. Open an account to see the entries behind its balance.',

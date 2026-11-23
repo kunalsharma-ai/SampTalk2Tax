@@ -22089,9 +22089,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/dashboard-layout.test.ts",
+        "apps/api/test/dashboard-layout.e2e.test.ts",
+        "apps/web/e2e/dashboard-arrange-flow.test.mjs"
+      ],
+      "notes": "Arrange mode on a dashboard: drag approved metrics into gaps (new figure) or onto figures, charts and tables, drag widgets to reorder, remove; each drop saved as a new version for the whole organisation, checked by the engine (charts never mix units), audited. Keyboard alternative: pick a metric and Add here / Add to this widget, Move earlier/later buttons."
     },
     {
       "id": "RPT-027",

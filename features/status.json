@@ -9590,6 +9590,15 @@
         "docs/DE_UST_VORANMELDUNG.md"
       ],
       "notes": "EU VAT starting with Germany: the Umsatzsteuer-Voranmeldung Kennzahlen 81 and 86 (whole-euro bases with the tax worked out at 19% and 7%), 43, 48, 66 and 83 from posted invoices, credit notes, bills, vendor credits and approved expense claims on the accruals basis; standard/reduced/tax-free with and without input tax deduction/not taxable treatments, USt-IdNr. check digit, monthly or quarterly periods due on the 10th, submissions recorded, changes to filed periods flagged for a corrected return (never carried). Not sent through ELSTER; intra-EU trade, reverse charge, § 19, cash accounting, permanent extension, annual return, OSS and ZM not modelled. Other member states not prepared yet."
+    },
+    "RPT-026": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/test/dashboard-layout.test.ts",
+        "apps/api/test/dashboard-layout.e2e.test.ts",
+        "apps/web/e2e/dashboard-arrange-flow.test.mjs"
+      ],
+      "notes": "Arrange mode on a dashboard: drag approved metrics into gaps (new figure) or onto figures, charts and tables, drag widgets to reorder, remove; each drop saved as a new version for the whole organisation, checked by the engine (charts never mix units), audited. Keyboard alternative: pick a metric and Add here / Add to this widget, Move earlier/later buttons."
     }
   }
 }

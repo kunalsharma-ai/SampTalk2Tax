@@ -912,7 +912,7 @@ Part 26 · M6 · priority P1 · depends on: GL
 | RPT-023 |  | capability | Investor reports | Tested |
 | RPT-024 |  | capability | Board reports | Tested |
 | RPT-025 | Reporting Features | capability | Custom report builder | Tested |
-| RPT-026 | Reporting Features | capability | Drag-and-drop metrics | Not started |
+| RPT-026 | Reporting Features | capability | Drag-and-drop metrics | Tested |
 | RPT-027 | Reporting Features | capability | Financial dimensions | Tested |
 | RPT-028 | Reporting Features | capability | Filters | Tested |
 | RPT-029 | Reporting Features | capability | Saved views | Tested |
