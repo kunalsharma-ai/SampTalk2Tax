@@ -346,6 +346,8 @@ import { PayrollReportService } from './payroll-report/payroll-report.service';
 import { TaxReportController } from './tax-report/tax-report.controller';
 import { TaxReportService } from './tax-report/tax-report.service';
 import { TaxScenariosController } from './tax-scenarios/tax-scenarios.controller';
+import { VatReturnController } from './vat-return/vat-return.controller';
+import { VatReturnService } from './vat-return/vat-return.service';
 import { TaxScenariosService } from './tax-scenarios/tax-scenarios.service';
 import { VendorContractsController } from './vendor-contracts/vendor-contracts.controller';
 import { VendorContractsService } from './vendor-contracts/vendor-contracts.service';
@@ -540,6 +542,7 @@ export class AppModule {
     SupplierNegotiationController,
     VendorContractsController,
     TaxScenariosController,
+    VatReturnController,
     TaxReportController,
     PayrollReportController,
     AuditReportController,
@@ -747,6 +750,7 @@ export class AppModule {
     SupplierNegotiationService,
     VendorContractsService,
     TaxScenariosService,
+    VatReturnService,
     TaxReportService,
     PayrollReportService,
     AuditReportService,

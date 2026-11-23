@@ -31,7 +31,7 @@ test('a UK organisation sees its country module and adds the starter VAT rates',
   await summary.getByText('Full tax module').waitFor();
   await page.getByLabel('Country').selectOption('GB');
   await summary.getByText('Starter module').waitFor();
-  assert.match(await summary.innerText(), /No VAT return/);
+  assert.match(await summary.innerText(), /VAT return prepared from the books/);
   assert.equal(await page.getByLabel('Functional currency').inputValue(), 'GBP');
   await page.getByLabel('Organisation name').fill('E2E Country UK Ltd');
   await page.getByRole('button', { name: 'Create organisation' }).click();
@@ -50,7 +50,7 @@ test('a UK organisation sees its country module and adds the starter VAT rates',
   await nav.getByRole('link', { name: 'Country module', exact: true }).click();
   await page.getByRole('heading', { name: /United Kingdom/ }).waitFor();
   const covered = page.locator('[aria-label="What is covered"]');
-  await covered.getByRole('row', { name: /Sales tax returns.*Not supported/ }).waitFor();
+  await covered.getByRole('row', { name: /Sales tax returns.*Partly/ }).waitFor();
   const starter = page.locator('[aria-label="Starter tax rates"]');
   await starter.getByRole('cell', { name: 'VAT 20% (standard)' }).waitFor();
   await page.locator('[aria-label="Sources"]').getByRole('link', { name: 'GOV.UK: VAT rates' }).waitFor();

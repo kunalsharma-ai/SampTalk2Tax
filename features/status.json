@@ -1418,7 +1418,7 @@
         "packages/tax-engine (pure rules, no framework)",
         "TaxRate.kind SIMPLE | GST; TaxSplitter hook in packages/accounting-engine computeDocument"
       ],
-      "notes": "India GST is the first jurisdiction module. Other countries are not started."
+      "notes": "India GST is the first jurisdiction module. The UK VAT return (TAX-030) is the second jurisdiction module; other countries are not started."
     },
     "TAX-005": {
       "status": "Tested",
@@ -9500,6 +9500,19 @@
         "docs/BANK_FEEDS.md"
       ],
       "notes": "Token-authenticated feed per bank account: a sender posts JSON transactions (deduplicated by its own id) or OFX/QIF/MT940 files (deduplicated like uploads). Deliveries are recorded with reasons for refusals; lines on or before the last reconciliation are refused; health shows late or failing feeds. No built-in connection to a particular bank or aggregator."
+    },
+    "TAX-030": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/uk/vat-return.ts",
+        "packages/tax-engine/test/uk-vat-return.test.ts",
+        "apps/api/src/vat-return/vat-return.service.ts",
+        "apps/api/test/vat-return.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/vat-return/page.tsx",
+        "apps/web/e2e/vat-return-flow.test.mjs",
+        "docs/UK_VAT_RETURN.md"
+      ],
+      "notes": "UK nine-box VAT return on the invoice basis from posted invoices, credit notes, bills, vendor credits and approved expense claims; voids taken off in the void period; VRN modulus 97 check; monthly or quarterly staggers with due dates; per-rate VAT treatments (standard/reduced/zero/exempt/outside scope); other entries on the VAT accounts listed; submissions recorded (vat_returns, immutable); later changes to submitted periods carried as corrections within HMRC's £10,000 / 1% of box 6 up to £50,000 limit. Not submitted to HMRC (no MTD connection); no cash/flat-rate/margin schemes, domestic reverse charge, PIVA, partial exemption or NI EU trade."
     }
   }
 }

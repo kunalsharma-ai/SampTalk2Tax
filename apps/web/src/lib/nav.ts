@@ -5,11 +5,14 @@ import { can, type Org } from './types';
 /**
  * perm: shown only to roles that have it (a hint; the API enforces the real check).
  * needs: shown only where the organisation's country module supports it (the API refuses too).
+ * countries: shown only to organisations in one of these countries (for pages one country's tax module owns).
  * flag: shown once the organisation's flags are known and this one is on (the API refuses it when off).
  */
 export type PlanFeature = 'AI' | 'PAYROLL' | 'MULTI_CURRENCY' | 'CONSOLIDATION';
 /** plan: a module the organisation's plan must include to use it (shown with "Upgrade" otherwise; past records stay readable). */
-export interface NavItem { href: string; label: string; perm?: string; needs?: CapabilityKey; plan?: PlanFeature; locked?: boolean; flag?: string }
+export interface NavItem { href: string; label: string; perm?: string; needs?: CapabilityKey; plan?: PlanFeature; locked?: boolean; flag?: string; countries?: readonly string[] }
+const IN = ['IN'] as const;
+const GB = ['GB'] as const;
 export const NAV: { group: string; items: NavItem[] }[] = [
   { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot', plan: 'AI' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }, { href: '/tasks', label: 'My tasks' }] },
   {
@@ -155,14 +158,15 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/tax/forecast', label: 'Tax forecast', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/scenarios', label: 'Tax scenarios', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/compliance-predictions', label: 'Deadline risk', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
-      { href: '/tax/gst-returns', label: 'GST returns', needs: 'SALES_TAX_RETURNS' },
-      { href: '/tax/gst-payments', label: 'GST payments', needs: 'SALES_TAX_RETURNS', perm: 'reports.read' },
-      { href: '/tax/gst-reconciliation', label: 'GST reconciliation', needs: 'SALES_TAX_RETURNS', perm: 'reports.read' },
-      { href: '/tax/reverse-charge', label: 'Reverse charge', needs: 'SALES_TAX_RETURNS', perm: 'reports.read' },
+      { href: '/tax/gst-returns', label: 'GST returns', needs: 'SALES_TAX_RETURNS', countries: IN },
+      { href: '/tax/gst-payments', label: 'GST payments', needs: 'SALES_TAX_RETURNS', countries: IN, perm: 'reports.read' },
+      { href: '/tax/gst-reconciliation', label: 'GST reconciliation', needs: 'SALES_TAX_RETURNS', countries: IN, perm: 'reports.read' },
+      { href: '/tax/reverse-charge', label: 'Reverse charge', needs: 'SALES_TAX_RETURNS', countries: IN, perm: 'reports.read' },
+      { href: '/tax/vat-return', label: 'VAT return', needs: 'SALES_TAX_RETURNS', countries: GB, perm: 'reports.read' },
       { href: '/tax/e-invoices', label: 'E-invoices', needs: 'E_INVOICING' },
       { href: '/tax/e-way-bills', label: 'E-way bills', needs: 'TRANSPORT_DOCUMENTS' },
       { href: '/tax/tds-tcs', label: 'TDS and TCS', needs: 'WITHHOLDING' },
-      { href: '/settings/gst', label: 'GST settings', needs: 'SALES_TAX_RETURNS' },
+      { href: '/settings/gst', label: 'GST settings', needs: 'SALES_TAX_RETURNS', countries: IN },
       { href: '/settings/e-invoicing', label: 'E-invoicing settings', needs: 'E_INVOICING' },
       { href: '/settings/e-way-bills', label: 'E-way bill settings', needs: 'TRANSPORT_DOCUMENTS' },
       { href: '/settings/tds-tcs', label: 'TDS/TCS settings', needs: 'WITHHOLDING' },
@@ -186,7 +190,7 @@ export function navFor(org: (Pick<Org, 'role' | 'countryCode'> & { subscription?
     .map((g) => ({
       ...g,
       items: g.items
-        .filter((i) => (!i.perm || can(org?.role, i.perm)) && (!i.needs || (!!org && countrySupports(org.countryCode, i.needs))) && (!i.flag || flags?.[i.flag] === true))
+        .filter((i) => (!i.perm || can(org?.role, i.perm)) && (!i.needs || (!!org && countrySupports(org.countryCode, i.needs))) && (!i.countries || (!!org && i.countries.includes(org.countryCode))) && (!i.flag || flags?.[i.flag] === true))
         .map((i) => (i.plan && features && !features.includes(i.plan) ? { ...i, locked: true } : i)),
     }))
     .filter((g) => g.items.length > 0);

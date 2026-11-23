@@ -26,8 +26,9 @@ describe('country modules', () => {
   it('shows India-only pages only in India', () => {
     expect(countrySupports('IN', 'E_INVOICING')).toBe(true);
     expect(countrySupports('IN', 'PAYROLL')).toBe(true);
+    expect(countrySupports('GB', 'SALES_TAX_RETURNS')).toBe(true);
     for (const c of ['AE', 'GB', 'US', 'FR']) {
-      expect(countrySupports(c, 'SALES_TAX_RETURNS')).toBe(false);
+      if (c !== 'GB') expect(countrySupports(c, 'SALES_TAX_RETURNS')).toBe(false);
       expect(countrySupports(c, 'PAYROLL')).toBe(false);
       expect(countrySupports(c, 'ACCOUNTING')).toBe(true);
     }

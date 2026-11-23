@@ -9,7 +9,9 @@ describe('navigation by country', () => {
     expect(india).toEqual(expect.arrayContaining(['/tax/gst-returns', '/tax/e-invoices', '/tax/tds-tcs', '/payroll/runs', '/settings/country-module']));
     const uk = hrefs({ role: 'OWNER', countryCode: 'GB' });
     for (const h of ['/tax/gst-returns', '/tax/e-invoices', '/tax/e-way-bills', '/tax/tds-tcs', '/tax/compliance', '/settings/gst', '/payroll/runs']) expect(uk).not.toContain(h);
-    expect(uk).toEqual(expect.arrayContaining(['/settings/tax-rates', '/settings/country-module', '/sales/invoices']));
+    expect(uk).toEqual(expect.arrayContaining(['/settings/tax-rates', '/settings/country-module', '/sales/invoices', '/tax/vat-return']));
+    expect(india).not.toContain('/tax/vat-return');
+    for (const h of ['/tax/gst-payments', '/tax/gst-reconciliation', '/tax/reverse-charge']) expect(uk).not.toContain(h);
     expect(navFor({ role: 'OWNER', countryCode: 'GB' }).map((g) => g.group)).not.toContain('Payroll');
   });
 
