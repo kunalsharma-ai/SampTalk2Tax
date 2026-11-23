@@ -6,6 +6,7 @@ import { ZodPipe } from '../common/zod';
 import { DepartmentPerformanceService } from './department-performance.service';
 import { FinancialTimelineService } from './financial-timeline.service';
 import { FinancialVisualsService } from './financial-visuals.service';
+import { RiskMonitorService } from './risk-monitor.service';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM');
 const Period = z.object({ from: month.optional(), to: month.optional() }).strict();
@@ -52,5 +53,19 @@ export class FinancialTimelineController {
   @RequirePermission('reports.read')
   timeline(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Range)) q: z.infer<typeof Range>) {
     return this.s.timeline(org, q);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/risk-monitor')
+export class RiskMonitorController {
+  constructor(private readonly s: RiskMonitorService) {}
+
+  /** Risk across alerts, payments, expenses, bank activity, compliance deadlines and vendors, scored, with the last 90 days of daily readings. */
+  @Get()
+  @RequirePermission('reports.read')
+  monitor(@CurrentOrg() org: OrgContext) {
+    return this.s.monitor(org);
   }
 }

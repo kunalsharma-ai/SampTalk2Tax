@@ -144,6 +144,7 @@ export const hi: Record<string, string> = {
   'Financial visuals': 'वित्तीय चित्र',
   'Department performance': 'विभाग का प्रदर्शन',
   'Financial timeline': 'वित्तीय समयरेखा',
+  'Risk monitor': 'जोखिम निगरानी',
   'Income tax computation': 'आयकर गणना',
   'Tax audit preparation': 'टैक्स ऑडिट की तैयारी',
   'Investor report': 'निवेशक रिपोर्ट',

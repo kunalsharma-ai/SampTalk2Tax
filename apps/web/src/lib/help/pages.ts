@@ -894,6 +894,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the days (up to 400) or a preset. The timeline groups them by day, week or month to fit, or as you choose. Drag the handles under the chart to zoom, untick kinds of entries to hide them, and choose a bar or a period to list its entries and deadlines. Open an entry to see the journal.',
     where: 'Reports. Needs reports.read. Built from posted journals (year-end closing entries left out) and the compliance calendar. Transfers between your own cash and bank accounts are not counted as cash in or out. Nothing is changed and no AI model is used.',
   },
+  'reports/risk-monitor': {
+    what: "Where risk sits today across alerts, payment fraud checks, expense risk, unusual bank activity, compliance deadlines and vendor risk, each scored 0 to 100, with an overall score, the findings that drive each area and the trend of daily readings.",
+    how: 'Each high finding adds 25 points to its area, each medium 10 and each low 3, up to 100. The overall score is 60% the worst area and 40% the average of the areas that have something to check. Look first at the areas named at the top, and open an area to act on its findings.',
+    where: 'Reports. Needs reports.read; an area your role cannot read is left out. It reads the same checks as Alerts, Payment fraud checks, Expense risk, Unusual bank activity, Deadline risk and Vendor risk. One reading a day is kept when the monitor is opened, for the trend. No AI model is used.',
+  },
   'reports/visuals': {
     what: 'The profit and loss of the months you choose, drawn four ways: a waterfall from revenue down to net profit, a Sankey of where income came from and where it went, a heatmap of the largest expense accounts month by month, and a treemap of what spending is made of.',
     how: 'Choose the months (up to 24). Choose a waterfall bar, a Sankey group or a spending group to list the accounts behind it; choose an account, a heatmap cell or a treemap block to open its general ledger for the same months.',

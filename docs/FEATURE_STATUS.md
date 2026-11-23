@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 556 |
+| Not started | 555 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 711 |
+| Tested | 712 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 50 | 18 |
+| Dashboard design | M1 | 68 | 49 | 19 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6761,6 +6761,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/department-performance.tsx
   - apps/web/src/app/orgs/[orgId]/reports/department-performance/page.tsx
   - apps/web/e2e/department-performance-flow.test.mjs
+
+### DASH-036 — Risk monitoring displays
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Risk monitor: alerts, payment fraud checks, expense risk, unusual bank activity, compliance deadline risk and vendor risk read from their own checks, each scored 0–100 (25/10/3 per high/medium/low finding) with an overall score of 60% worst + 40% mean of active areas; level gauge, areas to look at first, top findings and links to act; one reading a day kept in risk_readings for a 90-day trend and change since the last reading. Areas a role cannot read are left out and the reading is not kept.
+- Evidence:
+  - packages/accounting-engine/src/risk-monitor.ts
+  - packages/accounting-engine/test/risk-monitor.test.ts
+  - apps/api/src/financial-visuals/risk-monitor.service.ts
+  - apps/api/src/db/collections/risk-readings.ts
+  - apps/api/test/risk-monitor.e2e.test.ts
+  - apps/web/src/components/reports/risk-monitor.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/risk-monitor/page.tsx
+  - apps/web/e2e/risk-monitor-flow.test.mjs
 
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 
