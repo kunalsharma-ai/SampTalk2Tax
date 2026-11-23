@@ -156,7 +156,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'sales/revenue-forecast': {
     what: 'Revenue still to come, month by month, from contracts, open orders, deals and recent sales.',
-    how: 'Choose how many months to see. Read committed (contracts and orders), expected (plus weighted deals and other sales) and best case. Save the forecast to compare it with what is invoiced later.',
+    how: 'Choose how many months to see. Read committed (contracts and orders), expected (plus weighted deals and other sales) and best case. Save the forecast to compare it with what is invoiced later. The shaded 80% range shows how far each month could land, from how far your saved forecasts were off; save one each month to make it sharper.',
     where: 'Sales. It reads Contracts, Sales orders, the Pipeline and posted invoices; nothing here changes the books.',
   },
   'sales/revenue-forecast/[id]': {

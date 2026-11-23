@@ -1,8 +1,8 @@
 'use client';
 import { chartSeries } from '@talk2tax/design-system';
-import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
-import type { ForecastMonth } from '@/lib/revenue-forecast';
+import type { ForecastBand, ForecastMonth } from '@/lib/revenue-forecast';
 
 const KEYS = [
   ['contracts', 'Contracts'],
@@ -14,7 +14,8 @@ const KEYS = [
 const COLOURS: Record<(typeof KEYS)[number][0], string> = { contracts: chartSeries[0], orders: chartSeries[4], pipelineWeighted: chartSeries[2], otherSales: chartSeries[3] };
 
 /** Stacked expected revenue by stream with the best case as a line. Floats only place the marks; tooltips show the API's strings. */
-export function ForecastChart({ months, currency, actualSoFar }: { months: ForecastMonth[]; currency: string; actualSoFar?: string }) {
+export function ForecastChart({ months, currency, actualSoFar, bands, level }: { months: ForecastMonth[]; currency: string; actualSoFar?: string; bands?: ForecastBand[]; level?: number }) {
+  const bandName = `${level ?? 80}% range`;
   const rows = months.map((m, i) => ({
     label: new Date(`${m.month}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' }),
     invoiced: i === 0 && actualSoFar ? Number(actualSoFar) : 0,
@@ -23,12 +24,14 @@ export function ForecastChart({ months, currency, actualSoFar }: { months: Forec
     pipelineWeighted: Number(m.pipelineWeighted),
     otherSales: Number(m.otherSales),
     best: Number(m.best) + (i === 0 && actualSoFar ? Number(actualSoFar) : 0),
+    range: bands?.[i] ? [Number(bands[i].low), Number(bands[i].high)] : undefined,
+    band: bands?.[i],
     raw: m,
   }));
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   return (
-    <div className="h-72 w-full" role="img" aria-label="Expected revenue by month and stream, with the best case. The same figures are in the table below.">
+    <div className="h-72 w-full" role="img" aria-label={`Expected revenue by month and stream, with the best case${bands ? ` and the ${bandName} around each month` : ''}. The same figures are in the table below.`}>
       <ResponsiveContainer>
         <ComposedChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="var(--t2t-border)" strokeDasharray="3 3" vertical={false} />
@@ -39,6 +42,8 @@ export function ForecastChart({ months, currency, actualSoFar }: { months: Forec
             contentStyle={{ background: 'var(--t2t-surface-raised)', border: '1px solid var(--t2t-border)', borderRadius: 10, fontSize: 12 }}
             formatter={(v, name, item) => {
               const raw = (item.payload as { raw: ForecastMonth }).raw;
+              const band = (item.payload as { band?: ForecastBand }).band;
+              if (name === bandName && band) return [`${money(band.low, currency)} to ${money(band.high, currency)}`, name];
               const k = KEYS.find(([, l]) => l === name)?.[0];
               return [k ? money(raw[k], currency) : money(String(v), currency), name];
             }}
@@ -46,6 +51,7 @@ export function ForecastChart({ months, currency, actualSoFar }: { months: Forec
           <Legend wrapperStyle={{ fontSize: 12, color: 'var(--t2t-text-muted)' }} />
           {actualSoFar ? <Bar dataKey="invoiced" name="Invoiced so far" stackId="a" fill="var(--t2t-text-faint)" isAnimationActive={!reducedMotion} maxBarSize={32} /> : null}
           {KEYS.map(([k, label]) => <Bar key={k} dataKey={k} name={label} stackId="a" fill={COLOURS[k]} maxBarSize={32} isAnimationActive={!reducedMotion} />)}
+          {bands ? <Area dataKey="range" name={bandName} type="monotone" stroke="none" fill={chartSeries[1]} fillOpacity={0.18} isAnimationActive={!reducedMotion} /> : null}
           <Line dataKey="best" name="Best case" stroke={chartSeries[1]} strokeDasharray="4 3" strokeWidth={2} dot={false} type="monotone" isAnimationActive={!reducedMotion} />
         </ComposedChart>
       </ResponsiveContainer>

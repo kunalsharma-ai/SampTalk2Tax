@@ -9718,6 +9718,19 @@
         "apps/web/e2e/department-performance-flow.test.mjs"
       ],
       "notes": "Reports → Department performance: revenue, spending, profit and margin per department over a range of months from journal lines booked to departments (closing entries left out), compared as bars, profit month by month as lines and a table, and ranked with share of spending, spending trend (last month against the average before it) and spending in the fiscal year against the EXP-014 department budget (within, near at 85%, over). Unassigned spending is shown apart with its share. Each department opens its own profit and loss for the same months."
+    },
+    "DASH-032": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/revenue-forecast.ts",
+        "packages/accounting-engine/test/forecast-bands.test.ts",
+        "apps/api/src/crm/revenue-forecast.service.ts",
+        "apps/api/test/forecast-bands.e2e.test.ts",
+        "apps/web/src/components/revenue-forecast/forecast-chart.tsx",
+        "apps/web/src/app/orgs/[orgId]/sales/revenue-forecast/page.tsx",
+        "apps/web/e2e/revenue-forecast-flow.test.mjs"
+      ],
+      "notes": "Revenue forecast carries an 80% range per month: expected ± the 80th percentile of how far earlier saved forecasts missed at the same months ahead (all errors when fewer than three at that distance; one saved forecast per month counts). With fewer than three judged months the range runs from committed to best case and says so. Drawn as a shaded band on the forecast chart with a 'How sure the forecast is' table."
     }
   }
 }

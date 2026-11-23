@@ -181,3 +181,54 @@ export function revenueForecastAccuracy(saved: { month: string; expected: string
   const err = rows.reduce((t, r) => t.plus(new D(r.variance).abs()), new D(0));
   return { months: rows, wape: act.gt(0) ? err.div(act).toDecimalPlaces(4).toFixed() : null };
 }
+
+/** How far off one past forecast month was: months ahead it was made for (0 = its own month) and |actual − forecast| ÷ forecast. */
+export interface ForecastError {
+  horizon: number;
+  absPct: string;
+}
+export interface ForecastBand {
+  month: string;
+  low: string;
+  high: string;
+}
+export const FORECAST_BAND_LEVEL = 80;
+const MIN_ERRORS = 3;
+
+/**
+ * Confidence bands for the expected revenue (DASH-032), from how far this organisation's saved
+ * forecasts were from what happened. For each month ahead, the band is the expected figure plus or
+ * minus the 80th percentile (nearest rank) of past absolute errors made that many months ahead, or
+ * of all past errors when there are fewer than three at that distance. With fewer than three past
+ * errors in all, there is no history to judge by, so the band runs from what is committed to the
+ * best case instead, and says so.
+ */
+export function forecastConfidenceBands(months: readonly ForecastMonth[], errors: readonly ForecastError[], scale: number): { method: 'HISTORY' | 'SCENARIOS'; level: number; samples: number; bands: (ForecastBand & { errorPct: string | null; basis: number })[] } {
+  const clean = errors.filter((e) => new D(e.absPct).gte(0));
+  const p = (xs: InstanceType<typeof D>[]) => {
+    const sorted = [...xs].sort((a, b) => a.comparedTo(b));
+    return sorted[Math.max(0, Math.ceil((FORECAST_BAND_LEVEL / 100) * sorted.length) - 1)]!; // not money: a rank
+  };
+  if (clean.length < MIN_ERRORS) {
+    return { method: 'SCENARIOS', level: FORECAST_BAND_LEVEL, samples: clean.length, bands: months.map((m) => ({ month: m.month, low: new D(m.committed).toFixed(scale), high: new D(m.best).toFixed(scale), errorPct: null, basis: 0 })) };
+  }
+  const all = clean.map((e) => new D(e.absPct));
+  return {
+    method: 'HISTORY',
+    level: FORECAST_BAND_LEVEL,
+    samples: clean.length,
+    bands: months.map((m, h) => {
+      const here = clean.filter((e) => e.horizon === h).map((e) => new D(e.absPct));
+      const pool = here.length >= MIN_ERRORS ? here : all;
+      const e = p(pool);
+      const expected = new D(m.expected);
+      return { month: m.month, low: D.max(0, expected.times(new D(1).minus(e))).toFixed(scale), high: expected.times(new D(1).plus(e)).toFixed(scale), errorPct: e.times(100).toDecimalPlaces(1).toFixed(), basis: pool.length };
+    }),
+  };
+}
+
+/** The errors of saved forecasts for months that are over, by how many months ahead each was made. */
+export function forecastErrors(saved: readonly { asOf: string; accuracy: { months: { month: string; variancePct: string | null }[] } }[]): ForecastError[] {
+  const index = (m: string) => Number(m.slice(0, 4)) * 12 + Number(m.slice(5, 7)); // not money: month arithmetic
+  return saved.flatMap((s) => s.accuracy.months.filter((m) => m.variancePct !== null).map((m) => ({ horizon: index(m.month) - index(s.asOf.slice(0, 7)), absPct: new D(m.variancePct!).abs().toFixed() })));
+}

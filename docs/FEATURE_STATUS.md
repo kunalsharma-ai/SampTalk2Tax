@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 558 |
+| Not started | 557 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 709 |
+| Tested | 710 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 52 | 16 |
+| Dashboard design | M1 | 68 | 51 | 17 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6705,6 +6705,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/financial-visuals.tsx
   - apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx
   - apps/web/e2e/financial-visuals-flow.test.mjs
+
+### DASH-032 — Forecast confidence bands
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Revenue forecast carries an 80% range per month: expected ± the 80th percentile of how far earlier saved forecasts missed at the same months ahead (all errors when fewer than three at that distance; one saved forecast per month counts). With fewer than three judged months the range runs from committed to best case and says so. Drawn as a shaded band on the forecast chart with a 'How sure the forecast is' table.
+- Evidence:
+  - packages/accounting-engine/src/revenue-forecast.ts
+  - packages/accounting-engine/test/forecast-bands.test.ts
+  - apps/api/src/crm/revenue-forecast.service.ts
+  - apps/api/test/forecast-bands.e2e.test.ts
+  - apps/web/src/components/revenue-forecast/forecast-chart.tsx
+  - apps/web/src/app/orgs/[orgId]/sales/revenue-forecast/page.tsx
+  - apps/web/e2e/revenue-forecast-flow.test.mjs
 
 ### DASH-034 — Drill-down financial charts
 

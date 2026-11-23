@@ -1,8 +1,9 @@
 /**
  * Browser end-to-end test for the revenue forecast: an owner with an active contract, an open
  * order, a deal and recent sales reads the forecast by month and what it is made of, changes the
- * horizon, saves it with a note and opens the saved forecast. Real Next.js app → real API → real
- * MongoDB.
+ * horizon, saves it with a note and opens the saved forecast. With no saved forecasts to judge by
+ * yet, the 80% range (DASH-032) runs from committed to the best case. Real Next.js app → real API →
+ * real MongoDB.
  */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +11,7 @@ import { after, before, test } from 'node:test';
 import { chromium } from 'playwright';
 
 const WEB = process.env.WEB_URL ?? 'http://localhost:3000';
+const SHOTS = process.env.E2E_SCREENSHOTS;
 let browser, page;
 const consoleErrors = [];
 const T = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
@@ -29,7 +31,7 @@ const must = async (p) => { const r = await p; assert.ok(r.status < 300, JSON.st
 
 before(async () => {
   browser = await chromium.launch();
-  page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  page = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
   page.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()));
 });
 after(async () => browser?.close());
@@ -72,6 +74,19 @@ test('the revenue forecast adds contracts, orders, deals and other sales, and is
   await items.getByRole('link', { name: 'SO-0001' }).waitFor();
   await items.getByRole('link', { name: 'DL-0001' }).waitFor();
   assert.equal(await items.getByRole('link', { name: 'CT-0001' }).count(), 3);
+
+  // How sure the forecast is: no saved forecast can be checked yet, so committed to best case.
+  const range = page.getByRole('table', { name: 'Likely range by month' });
+  await page.getByText('Too few saved forecasts can be checked against what was invoiced yet (0 months').waitFor();
+  const r0 = range.locator('tbody tr').nth(0);
+  await r0.getByText('₹15,000.00').waitFor();
+  await r0.getByText('₹45,000.00').first().waitFor();
+  const r2 = range.locator('tbody tr').nth(2);
+  await r2.getByText('₹10,000.00').waitFor();
+  await r2.getByText('₹1,40,000.00').waitFor();
+  await r2.getByText('Committed to best case').waitFor();
+  await page.getByRole('img', { name: /with the best case and the 80% range around each month/ }).locator('.recharts-area-area').waitFor();
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/revenue-forecast-bands.png`, fullPage: true });
 
   await page.getByLabel('Months').selectOption('3');
   await table.locator('tbody tr').nth(2).waitFor();
