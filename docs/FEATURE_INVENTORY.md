@@ -392,8 +392,8 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-008 |  | capability | Per diem | Tested |
 | EXP-009 |  | capability | Reimbursements | Tested |
 | EXP-010 |  | capability | Expense approval workflows | Tested |
-| EXP-011 |  | capability | Corporate card integration architecture | Not started |
-| EXP-012 |  | capability | Virtual card integration architecture | Not started |
+| EXP-011 |  | capability | Corporate card integration architecture | Tested |
+| EXP-012 |  | capability | Virtual card integration architecture | Tested |
 | EXP-013 |  | capability | Spending limits | Tested |
 | EXP-014 |  | capability | Department budgets | Tested |
 | EXP-015 |  | capability | Policy enforcement | Tested |

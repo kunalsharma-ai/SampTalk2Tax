@@ -101,6 +101,7 @@ export const hi: Record<string, string> = {
   'My expense report': 'मेरी ख़र्च रिपोर्ट',
   'My expense claims': 'मेरे ख़र्च के दावे',
   'My business trips': 'मेरी व्यावसायिक यात्राएँ',
+  'My company cards': 'मेरे कंपनी कार्ड',
   // Payroll
   'Pay runs': 'वेतन भुगतान',
   'Statutory bonus': 'वैधानिक बोनस',
@@ -139,6 +140,7 @@ export const hi: Record<string, string> = {
   'Audit report': 'ऑडिट रिपोर्ट',
   'Executive report': 'कार्यकारी रिपोर्ट',
   'Business trips': 'व्यावसायिक यात्राएँ',
+  'Company cards': 'कंपनी कार्ड',
   'Income tax computation': 'आयकर गणना',
   'Tax audit preparation': 'टैक्स ऑडिट की तैयारी',
   'Investor report': 'निवेशक रिपोर्ट',

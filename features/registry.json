@@ -9874,9 +9874,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/company-cards.ts",
+        "packages/accounting-engine/test/company-cards.test.ts",
+        "apps/api/src/company-cards/company-cards.service.ts",
+        "apps/api/src/company-cards/company-cards.controller.ts",
+        "apps/api/test/company-cards.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/cards/page.tsx",
+        "apps/web/e2e/company-cards-flow.test.mjs",
+        "docs/COMPANY_CARDS.md"
+      ],
+      "notes": "Provider-agnostic corporate cards: card programmes (one provider, one liability account, t2tc_ token shown once, hash only), corporate cards added by last four digits with holder and monthly limit, freeze/unfreeze/cancel controls the provider reads from the card feed, transactions sent with the token (idempotent by id, settled replaces authorised, refusals with reasons), cardholders explain spending, finance posts it (Dr expense, Cr card account) or excludes it, and spending also on an expense claim by the same person (same amount, within 3 days) is flagged. Full card numbers never reach Talk2Tax. A real provider connection needs that provider's credentials and an adapter calling the card feed."
     },
     {
       "id": "EXP-012",
@@ -9900,9 +9909,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/company-cards.ts",
+        "packages/accounting-engine/test/company-cards.test.ts",
+        "apps/api/src/company-cards/company-cards.service.ts",
+        "apps/api/src/company-cards/company-cards.controller.ts",
+        "apps/api/test/company-cards.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/cards/page.tsx",
+        "apps/web/e2e/company-cards-flow.test.mjs",
+        "docs/COMPANY_CARDS.md"
+      ],
+      "notes": "Virtual cards on the same card programmes: finance asks for a virtual card (holder, purpose, monthly limit, optional supplier); it waits until the provider confirms it through POST /v1/card-feed/cards/:id/issued with its reference, last four digits and expiry, then its spending flows like a corporate card's. A real provider connection needs that provider's credentials and an adapter calling the card feed."
     },
     {
       "id": "EXP-013",

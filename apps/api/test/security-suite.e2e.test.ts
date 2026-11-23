@@ -64,6 +64,8 @@ const PUBLIC_ROUTES = [
   'GET /v1/auditor-portal/:token',
   'GET /v1/auditor-portal/:token/files/:attachmentId',
   'GET /v1/bank-feed/me',
+  'GET /v1/card-feed/cards',
+  'GET /v1/card-feed/me',
   'GET /v1/crm-api/customers',
   'GET /v1/crm-api/customers/:id',
   'GET /v1/crm-api/deals',
@@ -88,6 +90,8 @@ const PUBLIC_ROUTES = [
   'POST /v1/bank-feed/statement',
   'POST /v1/bank-feed/transactions',
   'POST /v1/billing/webhooks/:provider',
+  'POST /v1/card-feed/cards/:cardId/issued',
+  'POST /v1/card-feed/transactions',
   'POST /v1/crm-api/deals',
   'POST /v1/crm-api/deals/:id/stage',
   'POST /v1/crm-api/leads',
@@ -144,8 +148,8 @@ describe('every route', () => {
 
   it('refuses the public routes that need a secret, without it', async () => {
     const failures: string[] = [];
-    const secretRoutes = routes.filter((x) => x.public && /crm-api|portal|webhooks|bank-feed/.test(x.path));
-    expect(secretRoutes.length).toBe(28);
+    const secretRoutes = routes.filter((x) => x.public && /crm-api|portal|webhooks|bank-feed|card-feed/.test(x.path));
+    expect(secretRoutes.length).toBe(32);
     for (const r of secretRoutes) {
       const req = (ctx.http() as unknown as Record<string, (u: string) => { send: (b: unknown) => Promise<{ status: number; text: string }> }>)[r.method](urlOf(r, org.orgId));
       const res = await req.send({ event: 'payment.captured', payload: {} });

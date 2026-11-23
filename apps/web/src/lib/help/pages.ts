@@ -884,6 +884,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the month, usually before filing GSTR-3B. When the books differ, open each item: correct a manual journal, or amend the return of the month a document belongs to. Fix high-severity mistakes before filing; low ones are worth a look.',
     where: 'Tax. Needs the reports permission and a GST registration. GST payments settle the accounts and are shown apart. Reads posted journals and documents only; nothing is changed or filed, and no AI model is used.',
   },
+  'expenses/cards': {
+    what: "Company cards from any card provider: corporate cards people already hold and virtual cards made for one use, each with a holder, a monthly limit and this month's spending; the spending the provider sends; and the card programmes that let it send it. Spending that the same person also put on an expense claim (same amount, within three days) is marked as possibly claimed twice.",
+    how: 'An owner sets up a card programme for the provider and gives it the token shown once. Finance adds corporate cards by their last four digits or asks for virtual cards, and freezes, unfreezes, cancels or changes limits; the provider reads these controls. Cardholders choose Explain on their spending to say which account it belongs to; finance posts settled spending to the books or excludes it with a reason.',
+    where: 'Expenses. Everyone sees the cards they hold and their own spending; finance (expenses.read) sees all. Adding and controlling cards needs banking.manage, programmes need org.manage, and posting needs journals.post: the journal debits the account and credits the programme\'s card account. Full card numbers never reach Talk2Tax. Connecting a real provider needs that provider to send to the card feed with the token.',
+  },
   'purchases/bill-reader': {
     what: "Reads a supplier's bill from the PDF they sent, or from its pasted text: the supplier, bill number, dates, items, taxes and total.",
     how: 'Upload the PDF or paste the text, then open the reading to check what was found and save it as a bill. Scans and photos have no text to read; enter those by hand.',

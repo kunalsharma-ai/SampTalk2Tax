@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 566 |
+| Not started | 564 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 701 |
+| Tested | 703 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 8 | 46 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 4 | 23 |
+| Expense management | M2 | 27 | 2 | 25 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -3289,6 +3289,36 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/expenses.e2e.test.ts
   - apps/web/e2e/expenses-flow.test.mjs
+
+### EXP-011 — Corporate card integration architecture
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Provider-agnostic corporate cards: card programmes (one provider, one liability account, t2tc_ token shown once, hash only), corporate cards added by last four digits with holder and monthly limit, freeze/unfreeze/cancel controls the provider reads from the card feed, transactions sent with the token (idempotent by id, settled replaces authorised, refusals with reasons), cardholders explain spending, finance posts it (Dr expense, Cr card account) or excludes it, and spending also on an expense claim by the same person (same amount, within 3 days) is flagged. Full card numbers never reach Talk2Tax. A real provider connection needs that provider's credentials and an adapter calling the card feed.
+- Evidence:
+  - packages/accounting-engine/src/company-cards.ts
+  - packages/accounting-engine/test/company-cards.test.ts
+  - apps/api/src/company-cards/company-cards.service.ts
+  - apps/api/src/company-cards/company-cards.controller.ts
+  - apps/api/test/company-cards.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/cards/page.tsx
+  - apps/web/e2e/company-cards-flow.test.mjs
+  - docs/COMPANY_CARDS.md
+
+### EXP-012 — Virtual card integration architecture
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: Virtual cards on the same card programmes: finance asks for a virtual card (holder, purpose, monthly limit, optional supplier); it waits until the provider confirms it through POST /v1/card-feed/cards/:id/issued with its reference, last four digits and expiry, then its spending flows like a corporate card's. A real provider connection needs that provider's credentials and an adapter calling the card feed.
+- Evidence:
+  - packages/accounting-engine/src/company-cards.ts
+  - packages/accounting-engine/test/company-cards.test.ts
+  - apps/api/src/company-cards/company-cards.service.ts
+  - apps/api/src/company-cards/company-cards.controller.ts
+  - apps/api/test/company-cards.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/cards/page.tsx
+  - apps/web/e2e/company-cards-flow.test.mjs
+  - docs/COMPANY_CARDS.md
 
 ### EXP-013 — Spending limits
 
