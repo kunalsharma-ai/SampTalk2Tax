@@ -5503,9 +5503,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bank-feeds.ts",
+        "packages/accounting-engine/test/bank-feeds.test.ts",
+        "apps/api/src/bank-feeds/bank-feeds.service.ts",
+        "apps/api/test/bank-feeds.e2e.test.ts",
+        "apps/web/e2e/bank-feeds-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/banking/feeds/page.tsx",
+        "docs/BANK_FEEDS.md"
+      ],
+      "notes": "Token-authenticated feed per bank account: a sender posts JSON transactions (deduplicated by its own id) or OFX/QIF/MT940 files (deduplicated like uploads). Deliveries are recorded with reasons for refusals; lines on or before the last reconciliation are refused; health shows late or failing feeds. No built-in connection to a particular bank or aggregator."
     },
     {
       "id": "BANK-005",

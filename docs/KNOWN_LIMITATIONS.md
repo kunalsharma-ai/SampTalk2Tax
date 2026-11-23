@@ -26,7 +26,7 @@ Honest list of what does not exist or is incomplete. Kept current with each mile
 * Ageing buckets are fixed (current, 1–30, 31–60, 61–90, over 90).
 
 ## Banking (M2, slice 2)
-* Statements come from CSV files only. There is no live bank feed, no OFX/QIF/MT940/PDF import and no connection to any bank; none is claimed.
+* Statements come from CSV, OFX, QIF or MT940 files, or from a bank feed (BANK-004) that a bank channel, aggregator partner or script posts to with a token. Talk2Tax has no built-in connection to any particular bank or aggregator; none is claimed. No PDF import.
 * Statement lines are in the organisation's functional currency; foreign-currency bank accounts are not supported yet.
 * Matching is one statement line to one or more ledger lines. Several statement lines cannot yet be matched to one ledger line (for example a deposit the bank splits in two).
 * Suggestions are rules (same amount, within 14 days, shared words). They do not learn from past matches, and no AI is involved.

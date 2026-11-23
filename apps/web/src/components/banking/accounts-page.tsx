@@ -27,7 +27,7 @@ export function BankAccountsPage() {
     <>
       <PageHeader
         title="Bank accounts"
-        description="Import statements, match each line to the books and reconcile. A bank account here is a bank or cash account in your chart of accounts. There is no live bank feed: statements come from CSV files you download from your bank."
+        description="Import statements, match each line to the books and reconcile. A bank account here is a bank or cash account in your chart of accounts. Statements come from files you download from your bank, or from a bank feed set up under Bank feeds."
         actions={can(org.role, 'accounts.manage') ? <Button onClick={() => setOpen(true)}>New bank account</Button> : null}
       />
       {q.error ? <Alert title="Could not load">{(q.error as Error).message}</Alert> : null}

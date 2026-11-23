@@ -3,7 +3,7 @@ import { D, type Dec } from './money';
 /**
  * Bank account watch (BANK-014): bank and cash accounts whose balance in the books is low or
  * overdrawn, and accounts not reconciled to a statement for too long while they have activity.
- * Talk2Tax has no live bank feed, so the balance is the ledger balance.
+ * The balance is the ledger balance, not one reported by the bank.
  */
 
 export interface WatchedAccount {

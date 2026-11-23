@@ -9460,6 +9460,19 @@
         "docs/TAX_EXPLANATIONS.md"
       ],
       "notes": "Each invoice, credit note, bill and vendor credit with tax explains how its tax was worked out (place of supply, intra/inter-state, export, reverse charge, input tax credit, notes, foreign currency, each line's tax and rate version, TDS/TCS) with every point citing its source: a record in the books or the provision of law (IGST/CGST Acts, CGST Rules, rate notifications, Income-tax Act 2025 s.393). Things to check are flagged. Built from the posted figures and fixed rules; no AI model. Not built: Hindi text, journals/claims/payroll, links to provision text."
+    },
+    "BANK-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/bank-feeds.ts",
+        "packages/accounting-engine/test/bank-feeds.test.ts",
+        "apps/api/src/bank-feeds/bank-feeds.service.ts",
+        "apps/api/test/bank-feeds.e2e.test.ts",
+        "apps/web/e2e/bank-feeds-flow.test.mjs",
+        "apps/web/src/app/orgs/[orgId]/banking/feeds/page.tsx",
+        "docs/BANK_FEEDS.md"
+      ],
+      "notes": "Token-authenticated feed per bank account: a sender posts JSON transactions (deduplicated by its own id) or OFX/QIF/MT940 files (deduplicated like uploads). Deliveries are recorded with reasons for refusals; lines on or before the last reconciliation are refused; health shows late or failing feeds. No built-in connection to a particular bank or aggregator."
     }
   }
 }

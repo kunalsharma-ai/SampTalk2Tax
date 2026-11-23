@@ -215,7 +215,7 @@ Part 8 · M2 · priority P1 · depends on: GL, INTG
 | BANK-001 |  | capability | Multiple bank account management | Tested |
 | BANK-002 |  | capability | Bank statement import | Tested |
 | BANK-003 |  | capability | CSV, OFX, QIF and applicable banking formats | Tested |
-| BANK-004 |  | capability | Bank feed integration framework | Not started |
+| BANK-004 |  | capability | Bank feed integration framework | Tested |
 | BANK-005 |  | capability | Bank reconciliation | Tested |
 | BANK-006 |  | capability | Transaction matching | Tested |
 | BANK-007 |  | capability | Transfer detection | Tested |
