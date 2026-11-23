@@ -158,3 +158,4 @@ export * from './pdf-text';
 export * from './bill-extraction';
 export * from './company-cards';
 export * from './financial-visuals';
+export * from './department-performance';

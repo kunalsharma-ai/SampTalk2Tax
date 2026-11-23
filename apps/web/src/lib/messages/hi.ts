@@ -142,6 +142,7 @@ export const hi: Record<string, string> = {
   'Business trips': 'व्यावसायिक यात्राएँ',
   'Company cards': 'कंपनी कार्ड',
   'Financial visuals': 'वित्तीय चित्र',
+  'Department performance': 'विभाग का प्रदर्शन',
   'Income tax computation': 'आयकर गणना',
   'Tax audit preparation': 'टैक्स ऑडिट की तैयारी',
   'Investor report': 'निवेशक रिपोर्ट',

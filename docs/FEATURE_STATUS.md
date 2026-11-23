@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 559 |
+| Not started | 558 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 708 |
+| Tested | 709 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 53 | 15 |
+| Dashboard design | M1 | 68 | 52 | 16 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6719,6 +6719,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/financial-visuals.tsx
   - apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx
   - apps/web/e2e/financial-visuals-flow.test.mjs
+
+### DASH-035 — Department performance visualizations
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Department performance: revenue, spending, profit and margin per department over a range of months from journal lines booked to departments (closing entries left out), compared as bars, profit month by month as lines and a table, and ranked with share of spending, spending trend (last month against the average before it) and spending in the fiscal year against the EXP-014 department budget (within, near at 85%, over). Unassigned spending is shown apart with its share. Each department opens its own profit and loss for the same months.
+- Evidence:
+  - packages/accounting-engine/src/department-performance.ts
+  - packages/accounting-engine/test/department-performance.test.ts
+  - apps/api/src/financial-visuals/department-performance.service.ts
+  - apps/api/test/department-performance.e2e.test.ts
+  - apps/web/src/components/reports/department-performance.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/department-performance/page.tsx
+  - apps/web/e2e/department-performance-flow.test.mjs
 
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 

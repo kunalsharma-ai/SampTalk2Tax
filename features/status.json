@@ -9705,6 +9705,19 @@
         "apps/web/e2e/financial-visuals-flow.test.mjs"
       ],
       "notes": "Drill-down: choosing a waterfall step, a Sankey group or a spending group lists the accounts behind it with amounts; choosing an account, a Sankey account node, a heatmap cell or a treemap block opens its general ledger for the same months."
+    },
+    "DASH-035": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/department-performance.ts",
+        "packages/accounting-engine/test/department-performance.test.ts",
+        "apps/api/src/financial-visuals/department-performance.service.ts",
+        "apps/api/test/department-performance.e2e.test.ts",
+        "apps/web/src/components/reports/department-performance.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/department-performance/page.tsx",
+        "apps/web/e2e/department-performance-flow.test.mjs"
+      ],
+      "notes": "Reports → Department performance: revenue, spending, profit and margin per department over a range of months from journal lines booked to departments (closing entries left out), compared as bars, profit month by month as lines and a table, and ranked with share of spending, spending trend (last month against the average before it) and spending in the fiscal year against the EXP-014 department budget (within, near at 85%, over). Unassigned spending is shown apart with its share. Each department opens its own profit and loss for the same months."
     }
   }
 }

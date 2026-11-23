@@ -884,6 +884,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the month, usually before filing GSTR-3B. When the books differ, open each item: correct a manual journal, or amend the return of the month a document belongs to. Fix high-severity mistakes before filing; low ones are worth a look.',
     where: 'Tax. Needs the reports permission and a GST registration. GST payments settle the accounts and are shown apart. Reads posted journals and documents only; nothing is changed or filed, and no AI model is used.',
   },
+  'reports/department-performance': {
+    what: "Each department's revenue, spending, profit and margin over the months you choose, month by month, ranked by profit, with its share of all spending, whether its spending is rising, and its spending in this fiscal year against its budget.",
+    how: "Choose the months (up to 24). Compare departments in the bar chart, follow each one's profit in the line chart, and open a department in the ranking to see its own profit and loss for the same months. Spending that carries no department is shown as Not assigned.",
+    where: 'Reports. Needs reports.read. Built from posted journal lines booked to departments, leaving out year-end closing entries. Budgets come from Expenses → Department budgets. Nothing is changed and no AI model is used.',
+  },
   'reports/visuals': {
     what: 'The profit and loss of the months you choose, drawn four ways: a waterfall from revenue down to net profit, a Sankey of where income came from and where it went, a heatmap of the largest expense accounts month by month, and a treemap of what spending is made of.',
     how: 'Choose the months (up to 24). Choose a waterfall bar, a Sankey group or a spending group to list the accounts behind it; choose an account, a heatmap cell or a treemap block to open its general ledger for the same months.',

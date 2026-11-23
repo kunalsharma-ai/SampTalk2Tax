@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
+import { DepartmentPerformanceService } from './department-performance.service';
 import { FinancialVisualsService } from './financial-visuals.service';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM');
@@ -19,5 +20,19 @@ export class FinancialVisualsController {
   @RequirePermission('reports.read')
   visuals(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
     return this.s.visuals(org, q);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/department-performance')
+export class DepartmentPerformanceController {
+  constructor(private readonly s: DepartmentPerformanceService) {}
+
+  /** Revenue, spending, profit and budget use per department over a range of months (the last 6 by default). */
+  @Get()
+  @RequirePermission('reports.read')
+  report(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
+    return this.s.report(org, q);
   }
 }
