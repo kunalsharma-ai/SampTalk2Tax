@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 575 |
 | Designed | 0 |
 | Implementing | 38 |
-| Implemented | 30 |
-| Tested | 686 |
+| Implemented | 29 |
+| Tested | 687 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3241,11 +3241,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### EXP-018 — Duplicate expense detection
 
 - Module: Expense management
-- Status: **Implemented**
-- Notes: Warns when another live claim by the same person has a line with the same date and amount. Does not block; no receipt-image comparison.
+- Status: **Tested**
+- Notes: Same date and amount on another claim warns on the claim; the exact same receipt file (SHA-256) on another submitted claim or a posted supplier bill is shown to approvers, needs a note to approve and is a serious indicator in Unusual expenses. A new photo of the same receipt is caught only by date and amount.
 - Evidence:
   - packages/accounting-engine/test/expenses.test.ts
+  - packages/accounting-engine/test/expense-receipt-files.test.ts
   - apps/api/test/expenses.e2e.test.ts › flags a receipt that looks claimed twice
+  - apps/api/test/receipt-files.e2e.test.ts
+  - apps/api/test/expense-risk.e2e.test.ts
+  - apps/web/e2e/same-receipt-file-flow.test.mjs
+  - docs/SAME_RECEIPT_FILE.md
 
 ### EXP-019 — Receipt-to-transaction matching
 

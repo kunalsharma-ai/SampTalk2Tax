@@ -70,6 +70,7 @@ export function ClaimDetail() {
     setDialog(d);
   };
   const dupes = c.lines.filter((l) => l.possibleDuplicateOf.length);
+  const sameFiles = c.status === 'VOID' ? [] : (c.sameReceiptFiles ?? []);
   const policy = c.policy ?? [];
   const blocking = policy.filter((v) => v.severity === 'BLOCK');
   const finance = org.role !== 'EMPLOYEE';
@@ -121,6 +122,27 @@ export function ClaimDetail() {
             {dupes.map((l) => `Line ${l.lineNo} has the same date and amount as ${l.possibleDuplicateOf.join(', ')}`).join('. ')}. Check it is not the same receipt.
           </Alert>
         </div>
+      ) : null}
+      {sameFiles.length ? (
+        <Card className="mb-4" role="region" aria-label="Same receipt file elsewhere">
+          <CardHeader title="Same receipt file elsewhere" description={c.status === 'SUBMITTED' ? 'The exact file is also on another claim or a supplier bill: the same receipt may be paid twice. The approver must say why they approve it anyway.' : 'The exact file is also on another claim or a supplier bill.'} />
+          <ul className="divide-y divide-line px-5 pb-4 text-sm">
+            {sameFiles.map((f) => (
+              <li key={f.fileName} className="flex flex-wrap items-start gap-2 py-2">
+                <Badge tone="negative">Same file</Badge>
+                <span>
+                  {f.fileName} is also on{' '}
+                  {f.on.map((h, i) => (
+                    <span key={`${h.kind}-${h.id}`}>
+                      {i ? (i === f.on.length - 1 ? ' and ' : ', ') : ''}
+                      <Link className="underline" href={`/orgs/${orgId}/${h.kind === 'BILL' ? 'purchases/bills' : 'expenses'}/${h.id}`}>{h.label}</Link>
+                    </span>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
       ) : null}
       {c.status === 'SUBMITTED' && impact.data?.departments.length ? (
         <div className="mb-4" role="region" aria-label="Department budgets">
@@ -267,11 +289,12 @@ export function ClaimDetail() {
           {dialog === 'approve' && policy.length ? <Alert tone="warning" title="Outside the expense policy">{policy.map((v) => v.message).join(' ')}</Alert> : null}
           {dialog === 'submit' && c.receiptCount === 0 ? <Alert tone="warning" title="No receipts attached">You can still submit, but the approver may ask for them.</Alert> : null}
           {dialog === 'approve' && c.receiptCount === 0 ? <Alert tone="warning" title="No receipts attached">This claim has no receipts.</Alert> : null}
+          {dialog === 'approve' && sameFiles.length ? <Alert tone="negative" title="Same receipt file elsewhere">{sameFiles.map((f) => f.message).join('. ')}.</Alert> : null}
           {dialog === 'approve' && dupes.length ? <Alert tone="warning" title="Possibly claimed before">{dupes.length} line(s) match an earlier claim by date and amount.</Alert> : null}
           {dialog === 'approve' ? (
             <>
-              {policy.length ? (
-                <Field label="Why approve it anyway" hint="Required for a claim outside the expense policy. Kept with the approval.">{(p) => <Input {...p} required maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
+              {policy.length || sameFiles.length ? (
+                <Field label="Why approve it anyway" hint={policy.length ? 'Required for a claim outside the expense policy. Kept with the approval.' : 'Required when a receipt file is also elsewhere. Kept with the approval.'}>{(p) => <Input {...p} required maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
               ) : (
                 <Field label="Note (optional)">{(p) => <Input {...p} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
               )}

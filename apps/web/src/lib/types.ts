@@ -745,6 +745,8 @@ export interface ExpenseClaim {
   policy: PolicyViolation[] | null;
   /** Signs worth a second look that no policy rule catches (null once decided). */
   anomalies: { code: 'UNUSUAL_AMOUNT' | 'JUST_UNDER_LIMIT' | 'SPLIT_UNDER_LIMIT'; lineNo: number; lineNos: number[]; message: string }[] | null;
+  /** Files also on another claim or a posted bill (EXP-018); null for those who cannot see every claim. */
+  sameReceiptFiles: { fileName: string; message: string; on: { kind: 'EXPENSE_CLAIM' | 'BILL'; id: string; label: string }[] }[] | null;
   lines: ExpenseClaimLine[];
   actions: { edit: boolean; submit: boolean; withdraw: boolean; delete: boolean; decide: boolean; reimburse: boolean; void: boolean; attach: boolean };
 }

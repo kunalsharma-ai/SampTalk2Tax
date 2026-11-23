@@ -15,6 +15,7 @@ import {
   computeExpenseClaim,
   minorUnits,
   possibleDuplicateLines,
+  describeSharedReceiptFile,
   addDays,
   expenseAnomalies,
 } from '@talk2tax/accounting-engine';
@@ -29,6 +30,7 @@ import { JournalsService } from '../journals/journals.service';
 import { nextCounter } from '../db/counters';
 import { lockRow } from '../db/locks';
 import { AllowancesService, ClaimLineInput } from './allowances.service';
+import { ReceiptFilesService } from './receipt-files.service';
 import { ExpensePolicyService } from './expense-policy.service';
 
 interface Actor {
@@ -88,6 +90,7 @@ export class ExpensesService {
     private readonly allowances: AllowancesService,
     private readonly policy: ExpensePolicyService,
     private readonly rateVersions: TaxRateVersionsService,
+    private readonly receiptFiles: ReceiptFilesService,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -232,6 +235,9 @@ export class ExpensesService {
       const blocked = found.filter((v) => v.severity === 'BLOCK');
       if (blocked.length) throw new DomainError('POLICY_BLOCKED', 'This claim now breaks a blocking expense policy rule. Reject it so the claimant can change it.', HttpStatus.CONFLICT, { issues: blocked.map((v) => v.message) });
       if (found.length && !input.note?.trim()) throw new DomainError('POLICY_NOTE_REQUIRED', 'This claim is outside the expense policy. Add a note saying why you approve it anyway.', HttpStatus.UNPROCESSABLE_ENTITY, { issues: found.map((v) => v.message) });
+      // The exact receipt file is also on another claim or a bill (EXP-018): approving needs a reason.
+      const sameFiles = ((await this.receiptFiles.forClaims(org.id, [c.id])).get(c.id) ?? []).map(describeSharedReceiptFile);
+      if (sameFiles.length && !input.note?.trim()) throw new DomainError('SAME_RECEIPT_FILE_NOTE_REQUIRED', 'A receipt file on this claim is also on another claim or a bill. Add a note saying why you approve it anyway.', HttpStatus.UNPROCESSABLE_ENTITY, { issues: sameFiles });
       const date = input.date ?? todayIso();
       // Recompute with the current tax rates and accounts: what posts is what is valid now.
       const computed = await this.prepare(
@@ -252,7 +258,7 @@ export class ExpensesService {
         lines: buildExpenseClaimJournal(computed, payable, org.functionalCurrency),
       });
       await this.moved.update(tx, EXPENSE_CLAIMS, org.id, id, { ...{ status: 'APPROVED', decidedById: actor.id, decidedAt: new Date(), decisionNote: input.note || null, journalEntryId: je.id, postingDate: toDbDate(date) }, updatedAt: new Date() });
-      return { action: 'expense_claim.approved', data: { journalEntryId: je.id, date, total: c.total.toFixed(), note: input.note ?? null, ...(found.length ? { policyExceptions: found.map((v) => v.message) } : {}) } };
+      return { action: 'expense_claim.approved', data: { journalEntryId: je.id, date, total: c.total.toFixed(), note: input.note ?? null, ...(found.length ? { policyExceptions: found.map((v) => v.message) } : {}), ...(sameFiles.length ? { sameReceiptFiles: sameFiles } : {}) } };
     });
   }
 
@@ -481,6 +487,8 @@ export class ExpensesService {
       others.map((o) => ({ claimLabel: o.claim.number, date: fromDbDate(o.date), amount: new D(o.amount.toFixed()) })),
     );
     const receipts = await db.attachment.count({ where: { orgId: org.id, entityType: 'EXPENSE_CLAIM', entityId: c.id, removedAt: null } });
+    // Names other people's claims, so only for those who may see every claim.
+    const sameFiles = receipts && c.status !== 'VOID' && hasPermission(org.role, 'expenses.read') ? ((await this.receiptFiles.forClaims(org.id, [c.id])).get(c.id) ?? []) : null;
     const bank = c.bankAccountId ? await db.account.findUnique({ where: { id: c.bankAccountId }, select: { code: true, name: true } }) : null;
     const allowanceByLine = await this.allowances.forClaim(c.id);
     const deptIds = [...new Set(c.lines.map((l) => l.departmentId).filter((x): x is string => !!x))];
@@ -521,6 +529,8 @@ export class ExpensesService {
       policy,
       /** Signs worth a second look that no rule catches (EXP-022; null once decided). */
       anomalies,
+      /** Its files that are also on another claim or a posted bill (EXP-018); null for those who cannot see every claim. */
+      sameReceiptFiles: sameFiles ? sameFiles.map((f) => ({ fileName: f.fileName, message: describeSharedReceiptFile(f), on: f.on.map((h) => ({ kind: h.kind, id: h.id, label: h.label })) })) : null,
       lines: c.lines.map((l) => ({
         lineNo: l.lineNo,
         date: fromDbDate(l.date),

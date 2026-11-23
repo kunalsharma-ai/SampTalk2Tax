@@ -32,6 +32,7 @@ import { ReverseChargeService } from './gst/reverse-charge.service';
 import { TaxExplanationController } from './gst/tax-explanation.controller';
 import { TaxExplanationService } from './gst/tax-explanation.service';
 import { BankFeedDeliveryController, BankFeedsController } from './bank-feeds/bank-feeds.controller';
+import { ReceiptFilesService } from './expenses/receipt-files.service';
 import { BankFeedsService } from './bank-feeds/bank-feeds.service';
 import { SupplierStatementsController } from './supplier-statements/supplier-statements.controller';
 import { SupplierStatementsService } from './supplier-statements/supplier-statements.service';
@@ -649,6 +650,7 @@ export class AppModule {
         ExpenseEvidenceService,
         AllowancesService,
         ExpensePolicyService,
+        ReceiptFilesService,
         TaxNoticesService,
         TaxNoticeAnalysisService,
         ReverseChargeService,

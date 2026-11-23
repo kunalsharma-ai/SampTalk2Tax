@@ -6,6 +6,7 @@ import { runInOrg } from '../common/tenant-context';
 import { DocumentStoreService } from '../common/document-store.service';
 import { claimAllowances } from '../db/collections/allowances';
 import { expensePolicyRules } from '../db/collections/expense-policy';
+import { ReceiptFilesService } from '../expenses/receipt-files.service';
 
 export interface ExpenseRiskQuery {
   days: number;
@@ -14,7 +15,7 @@ export interface ExpenseRiskQuery {
 
 /**
  * Unusual expenses and fraud risk indicators (EXP-023, EXP-024): expense claims submitted in the
- * last `days` with warning signs (the same receipt on two claims, receipts split around a limit,
+ * last `days` with warning signs (the exact receipt file on another claim or a bill, the same receipt on two claims, receipts split around a limit,
  * unusually large amounts, lines just under a limit and people who keep landing there, old
  * receipts, missing receipts, Sundays, round amounts), compared with the year before, and the
  * people with the most of them. Read-only. The alert check of the same name uses the same findings.
@@ -24,6 +25,7 @@ export class ExpenseRiskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly store: DocumentStoreService,
+    private readonly receiptFiles: ReceiptFilesService,
   ) {}
 
   async findings(org: { id: string }, q: ExpenseRiskQuery, today = todayIso()) {
@@ -33,11 +35,12 @@ export class ExpenseRiskService {
       include: { lines: { include: { account: { select: { code: true, name: true } } }, orderBy: { lineNo: 'asc' } } },
     });
     const ids = rows.map((r) => r.id);
-    const [users, files, allowances, limits] = await Promise.all([
+    const [users, files, allowances, limits, shared] = await Promise.all([
       this.prisma.user.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.claimantId))] } }, select: { id: true, name: true } }),
       ids.length ? this.prisma.attachment.findMany({ where: { orgId: org.id, entityType: 'EXPENSE_CLAIM', entityId: { in: ids }, removedAt: null }, select: { entityId: true } }) : [],
       runInOrg(org.id, () => this.store.collection(claimAllowances).find({ claimId: { $in: ids } })),
       runInOrg(org.id, () => this.store.collection(expensePolicyRules).find({ isActive: true, kind: 'LINE_MAX' })),
+      runInOrg(org.id, () => this.receiptFiles.forClaims(org.id, ids)),
     ]);
     const names = new Map(users.map((u) => [u.id, u.name]));
     const fileCount = new Map<string, number>();
@@ -56,6 +59,7 @@ export class ExpenseRiskService {
         currency: c.currency,
         total: c.total.toFixed(minorUnits(c.currency)),
         receiptCount: fileCount.get(c.id) ?? 0,
+        sharedFiles: shared.get(c.id),
         lines: c.lines.map((l) => ({
           lineNo: l.lineNo,
           date: fromDbDate(l.date),

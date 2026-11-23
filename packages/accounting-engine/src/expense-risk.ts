@@ -6,7 +6,8 @@
  * EXP-022 (`expenseAnomalies`) are reused and compared with the organisation's approved claims.
  *
  * Indicators, most serious first (draft, rejected and void claims are left out):
- * - HIGH: DUPLICATE_RECEIPT, a receipt line with the same date and amount as a line on another
+ * - HIGH: SAME_RECEIPT_FILE, the exact file attached to this claim is also on another claim or on
+ *   a supplier bill (EXP-018); DUPLICATE_RECEIPT, a receipt line with the same date and amount as a line on another
  *   claim, at the same merchant (or in the same category when a merchant is missing): claimed
  *   twice, by the same person or by two; SPLIT_UNDER_LIMIT, receipts on one day and category each
  *   under a per-receipt limit that together go over it.
@@ -20,13 +21,15 @@
 import { addDays, daysBetween } from './documents';
 import { expenseAnomalies, JUST_UNDER_SHARE, type LineLimit } from './expense-anomalies';
 import { D, minorUnits } from './money';
+import { describeSharedReceiptFile, type SharedReceiptFile } from './expense-receipt-files';
 import { formatDateText } from './workflows';
 
 export const EXPENSE_RISK_LEVELS = ['HIGH', 'MEDIUM', 'LOW'] as const;
 export type ExpenseRiskLevel = (typeof EXPENSE_RISK_LEVELS)[number];
-export const EXPENSE_RISK_INDICATORS = ['DUPLICATE_RECEIPT', 'SPLIT_UNDER_LIMIT', 'UNUSUAL_AMOUNT', 'JUST_UNDER_LIMIT', 'REPEATED_JUST_UNDER', 'LATE_RECEIPT', 'NO_RECEIPTS', 'SUNDAY', 'ROUND_AMOUNT'] as const;
+export const EXPENSE_RISK_INDICATORS = ['SAME_RECEIPT_FILE', 'DUPLICATE_RECEIPT', 'SPLIT_UNDER_LIMIT', 'UNUSUAL_AMOUNT', 'JUST_UNDER_LIMIT', 'REPEATED_JUST_UNDER', 'LATE_RECEIPT', 'NO_RECEIPTS', 'SUNDAY', 'ROUND_AMOUNT'] as const;
 export type ExpenseRiskCode = (typeof EXPENSE_RISK_INDICATORS)[number];
 export const EXPENSE_RISK_LEVEL: Record<ExpenseRiskCode, ExpenseRiskLevel> = {
+  SAME_RECEIPT_FILE: 'HIGH',
   DUPLICATE_RECEIPT: 'HIGH',
   SPLIT_UNDER_LIMIT: 'HIGH',
   UNUSUAL_AMOUNT: 'MEDIUM',
@@ -38,6 +41,7 @@ export const EXPENSE_RISK_LEVEL: Record<ExpenseRiskCode, ExpenseRiskLevel> = {
   ROUND_AMOUNT: 'LOW',
 };
 export const EXPENSE_RISK_LABEL: Record<ExpenseRiskCode, string> = {
+  SAME_RECEIPT_FILE: 'Same receipt file elsewhere',
   DUPLICATE_RECEIPT: 'Possible duplicate receipt',
   SPLIT_UNDER_LIMIT: 'Split around a limit',
   UNUSUAL_AMOUNT: 'Unusually large',
@@ -85,6 +89,8 @@ export interface ExpenseRiskClaim {
   total: string;
   /** Files attached to the claim. */
   receiptCount: number;
+  /** Its files that are also on another claim or a supplier bill (EXP-018). */
+  sharedFiles?: SharedReceiptFile[];
   lines: ExpenseRiskLine[];
 }
 
@@ -100,7 +106,7 @@ export interface ExpenseRiskIndicator {
 }
 
 export interface ExpenseRiskFinding {
-  claim: Omit<ExpenseRiskClaim, 'lines'>;
+  claim: Omit<ExpenseRiskClaim, 'lines' | 'sharedFiles'>;
   level: ExpenseRiskLevel;
   /** 3 for each high indicator, 2 for each medium and 1 for each low. */
   score: number;
@@ -166,6 +172,13 @@ export function expenseRisk(
     const receipts = c.lines.filter((l) => !l.isAllowance);
     const fmt = (x: InstanceType<typeof D> | string) => opts.money(new D(x).toFixed(), c.currency);
 
+    // The exact same file on another claim or a bill.
+    for (const f of c.sharedFiles ?? []) {
+      const claim = f.on.find((h) => h.kind === 'EXPENSE_CLAIM');
+      const other = claim ? counted.find((o) => o.id === claim.id) : undefined;
+      add('SAME_RECEIPT_FILE', describeSharedReceiptFile(f), [], other ? { id: other.id, number: other.number, claimantName: other.claimantName } : null);
+    }
+
     // The same receipt on another claim.
     for (const l of receipts) {
       const m = normaliseMerchant(l.merchant);
@@ -219,8 +232,8 @@ export function expenseRisk(
     if (round.length) add('ROUND_AMOUNT', `${round.length === 1 ? `Line ${round[0]!.lineNo} is` : `Lines ${round.map((l) => l.lineNo).join(', ')} are`} a round amount (${round.map((l) => fmt(l.amount)).join(', ')}), unusual for a real bill`, round.map((l) => l.lineNo));
 
     if (!indicators.length) continue;
-    indicators.sort((a, b) => ORDER[a.level] - ORDER[b.level] || EXPENSE_RISK_INDICATORS.indexOf(a.code) - EXPENSE_RISK_INDICATORS.indexOf(b.code) || a.lineNos[0]! - b.lineNos[0]!);
-    const { lines: _lines, ...claim } = c;
+    indicators.sort((a, b) => ORDER[a.level] - ORDER[b.level] || EXPENSE_RISK_INDICATORS.indexOf(a.code) - EXPENSE_RISK_INDICATORS.indexOf(b.code) || (a.lineNos[0] ?? 0) - (b.lineNos[0] ?? 0));
+    const { lines: _lines, sharedFiles: _shared, ...claim } = c;
     findings.push({ claim, level: indicators[0]!.level, score: indicators.reduce((s, i) => s + WEIGHT[i.level], 0), indicators });
   }
   findings.sort((a, b) => ORDER[a.level] - ORDER[b.level] || b.score - a.score || b.claim.submittedOn.localeCompare(a.claim.submittedOn) || a.claim.number.localeCompare(b.claim.number));
