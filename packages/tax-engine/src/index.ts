@@ -25,4 +25,5 @@ export * from './uk/vat-return';
 export * from './sg/gst-f5';
 export * from './au/gst-bas';
 export * from './ca/gst-hst';
+export * from './ae/vat-201';
 export * from './vat/jurisdictions';

@@ -9530,12 +9530,13 @@
     "TAX-041": {
       "status": "Implementing",
       "evidence": [
+        "docs/AE_VAT_201.md",
         "docs/AU_GST_BAS.md",
         "docs/CA_GST_HST_RETURN.md",
         "docs/SG_GST_RETURN.md",
         "packages/tax-engine/src/vat/jurisdictions.ts"
       ],
-      "notes": "Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035) and Canada (TAX-034) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested."
+      "notes": "Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035), Canada (TAX-034) and the UAE (TAX-033) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested."
     },
     "TAX-035": {
       "status": "Tested",
@@ -9562,6 +9563,19 @@
         "docs/CA_GST_HST_RETURN.md"
       ],
       "notes": "Canadian GST/HST return (regular method) lines 101 and 103-109 from posted invoices, credit notes, bills, vendor credits and approved expense claims, line 101 from ledger revenue in whole dollars; GST 5% and HST 13/14/15% taxable, zero-rated, exempt, out of scope; business number Luhn + RT account check; monthly or quarterly periods due one month after; filings recorded; input tax credits missed earlier claimed on the next return within four years, other changes sent back to the earlier return. Starter HST rates added. Not filed with the CRA; PST/QST, place of supply, Quick Method, line 104/107 adjustments, instalments and the annual period not modelled."
+    },
+    "TAX-033": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/ae/vat-201.ts",
+        "packages/tax-engine/src/vat/jurisdictions.ts",
+        "packages/tax-engine/test/ae-vat-201.test.ts",
+        "apps/api/src/vat-return/vat-return.service.ts",
+        "apps/api/test/ae-vat-201.e2e.test.ts",
+        "apps/web/e2e/ae-vat-201-flow.test.mjs",
+        "docs/AE_VAT_201.md"
+      ],
+      "notes": "UAE VAT 201 (first GCC country): boxes 1a-1g by emirate (all supplies in the business's own emirate, chosen at registration), 4, 5, 8, 9, 11-14 from posted invoices, credit notes, bills, vendor credits and approved expense claims; standard 5%/zero/exempt/out-of-scope treatments, TRN format check, monthly or quarterly periods due 28 days after, submissions recorded, errors up to AED 10,000 carried to the next return (above: voluntary disclosure, Form 211). Not submitted to the FTA; tourist refunds, reverse charge, imports, profit margin scheme, partial exemption and blocked input VAT not modelled. Saudi Arabia, Bahrain and Oman returns not prepared yet."
     }
   }
 }

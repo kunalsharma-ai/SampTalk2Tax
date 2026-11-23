@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 570 |
+| Not started | 569 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 697 |
+| Tested | 698 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 10 | 44 |
+| Global taxation engine | M3 | 54 | 9 | 45 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2816,6 +2816,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/reverse-charge-flow.test.mjs
   - docs/REVERSE_CHARGE.md
 
+### TAX-033 — GCC VAT
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: UAE VAT 201 (first GCC country): boxes 1a-1g by emirate (all supplies in the business's own emirate, chosen at registration), 4, 5, 8, 9, 11-14 from posted invoices, credit notes, bills, vendor credits and approved expense claims; standard 5%/zero/exempt/out-of-scope treatments, TRN format check, monthly or quarterly periods due 28 days after, submissions recorded, errors up to AED 10,000 carried to the next return (above: voluntary disclosure, Form 211). Not submitted to the FTA; tourist refunds, reverse charge, imports, profit margin scheme, partial exemption and blocked input VAT not modelled. Saudi Arabia, Bahrain and Oman returns not prepared yet.
+- Evidence:
+  - packages/tax-engine/src/ae/vat-201.ts
+  - packages/tax-engine/src/vat/jurisdictions.ts
+  - packages/tax-engine/test/ae-vat-201.test.ts
+  - apps/api/src/vat-return/vat-return.service.ts
+  - apps/api/test/ae-vat-201.e2e.test.ts
+  - apps/web/e2e/ae-vat-201-flow.test.mjs
+  - docs/AE_VAT_201.md
+
 ### TAX-034 — Canadian GST/HST
 
 - Module: Global taxation engine
@@ -2871,8 +2885,9 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Global taxation engine
 - Status: **Implementing**
-- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035) and Canada (TAX-034) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
+- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035), Canada (TAX-034) and the UAE (TAX-033) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
 - Evidence:
+  - docs/AE_VAT_201.md
   - docs/AU_GST_BAS.md
   - docs/CA_GST_HST_RETURN.md
   - docs/SG_GST_RETURN.md

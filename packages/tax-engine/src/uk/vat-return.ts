@@ -328,11 +328,11 @@ export const VAT_BOX_LABEL: Record<keyof VatBoxes, string> = {
 const csvCell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
 /** The boxes and the entries behind them as CSV text (UK box names unless others are given). */
-export function vatReturnCsv(period: { start: string; end: string }, boxes: VatBoxes | Record<string, string>, entries: readonly (VatEntry & { treatment: string })[], opts: { title?: string; labels?: Record<string, string>; taxName?: string } = {}) {
+export function vatReturnCsv(period: { start: string; end: string }, boxes: VatBoxes | Record<string, string>, entries: readonly (VatEntry & { treatment: string })[], opts: { title?: string; labels?: Record<string, string>; taxName?: string; order?: readonly string[] } = {}) {
   const labels: Record<string, string> = opts.labels ?? VAT_BOX_LABEL;
   const values = boxes as Record<string, string>;
   const rows: string[][] = [[opts.title ?? 'VAT return', `${period.start} to ${period.end}`], [], ['Box', 'Description', 'Value']];
-  for (const k of Object.keys(labels)) rows.push([k.replace('box', ''), labels[k]!, values[k] ?? '']);
+  for (const k of opts.order ?? Object.keys(labels)) rows.push([k.replace('box', ''), labels[k] ?? '', values[k] ?? '']);
   rows.push([], ['Source', 'Number', 'Date', 'Reversal', 'Treatment', 'Rate', 'Net', opts.taxName ?? 'VAT']);
   for (const e of entries) rows.push([e.source, e.number, e.date, e.reversal ? 'yes' : '', e.treatment, e.rate, e.net, e.vat]);
   return rows.map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
