@@ -274,7 +274,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-029 | Global Tax Modules | capability | US federal and state tax-related reporting | Not started |
 | TAX-030 | Global Tax Modules | capability | UK VAT | Not started |
 | TAX-031 | Global Tax Modules | capability | EU VAT | Not started |
-| TAX-032 | Global Tax Modules | capability | Reverse-charge mechanisms | Not started |
+| TAX-032 | Global Tax Modules | capability | Reverse-charge mechanisms | Tested |
 | TAX-033 | Global Tax Modules | capability | GCC VAT | Not started |
 | TAX-034 | Global Tax Modules | capability | Canadian GST/HST | Not started |
 | TAX-035 | Global Tax Modules | capability | Australian GST | Not started |
