@@ -9758,6 +9758,19 @@
         "apps/web/e2e/risk-monitor-flow.test.mjs"
       ],
       "notes": "Reports → Risk monitor: alerts, payment fraud checks, expense risk, unusual bank activity, compliance deadline risk and vendor risk read from their own checks, each scored 0–100 (25/10/3 per high/medium/low finding) with an overall score of 60% worst + 40% mean of active areas; level gauge, areas to look at first, top findings and links to act; one reading a day kept in risk_readings for a 90-day trend and change since the last reading. Areas a role cannot read are left out and the reading is not kept."
+    },
+    "DASH-037": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-dependencies.ts",
+        "packages/accounting-engine/test/financial-dependencies.test.ts",
+        "apps/api/src/financial-visuals/financial-dependencies.service.ts",
+        "apps/api/test/financial-dependencies.e2e.test.ts",
+        "apps/web/src/components/reports/dependency-graph.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/dependencies/page.tsx",
+        "apps/web/e2e/financial-dependencies-flow.test.mjs"
+      ],
+      "notes": "Reports → Financial dependencies: an interactive network of the business and the parties its money depends on: customers (revenue from posted invoices less credit notes), vendors (posted bills less vendor credits, before tax), cash and bank accounts and loan/card accounts (balances at the end of the range); shares, Herfindahl–Hirschman concentration per group, dependencies to watch by thresholds (and borrowing above cash), keyboard-operable nodes with details, links to the customer/vendor/ledger and the relationship explorer, group toggles and tables."
     }
   }
 }

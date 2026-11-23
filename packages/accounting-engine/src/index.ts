@@ -161,3 +161,4 @@ export * from './financial-visuals';
 export * from './department-performance';
 export * from './financial-timeline';
 export * from './risk-monitor';
+export * from './financial-dependencies';

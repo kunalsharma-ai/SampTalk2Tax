@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 555 |
+| Not started | 554 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 712 |
+| Tested | 713 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 49 | 19 |
+| Dashboard design | M1 | 68 | 48 | 20 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6776,6 +6776,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/risk-monitor.tsx
   - apps/web/src/app/orgs/[orgId]/reports/risk-monitor/page.tsx
   - apps/web/e2e/risk-monitor-flow.test.mjs
+
+### DASH-037 — Financial dependency graphs
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Financial dependencies: an interactive network of the business and the parties its money depends on: customers (revenue from posted invoices less credit notes), vendors (posted bills less vendor credits, before tax), cash and bank accounts and loan/card accounts (balances at the end of the range); shares, Herfindahl–Hirschman concentration per group, dependencies to watch by thresholds (and borrowing above cash), keyboard-operable nodes with details, links to the customer/vendor/ledger and the relationship explorer, group toggles and tables.
+- Evidence:
+  - packages/accounting-engine/src/financial-dependencies.ts
+  - packages/accounting-engine/test/financial-dependencies.test.ts
+  - apps/api/src/financial-visuals/financial-dependencies.service.ts
+  - apps/api/test/financial-dependencies.e2e.test.ts
+  - apps/web/src/components/reports/dependency-graph.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/dependencies/page.tsx
+  - apps/web/e2e/financial-dependencies-flow.test.mjs
 
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 

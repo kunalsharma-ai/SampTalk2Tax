@@ -23608,9 +23608,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-dependencies.ts",
+        "packages/accounting-engine/test/financial-dependencies.test.ts",
+        "apps/api/src/financial-visuals/financial-dependencies.service.ts",
+        "apps/api/test/financial-dependencies.e2e.test.ts",
+        "apps/web/src/components/reports/dependency-graph.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/dependencies/page.tsx",
+        "apps/web/e2e/financial-dependencies-flow.test.mjs"
+      ],
+      "notes": "Reports → Financial dependencies: an interactive network of the business and the parties its money depends on: customers (revenue from posted invoices less credit notes), vendors (posted bills less vendor credits, before tax), cash and bank accounts and loan/card accounts (balances at the end of the range); shares, Herfindahl–Hirschman concentration per group, dependencies to watch by thresholds (and borrowing above cash), keyboard-operable nodes with details, links to the customer/vendor/ledger and the relationship explorer, group toggles and tables."
     },
     {
       "id": "DASH-038",
