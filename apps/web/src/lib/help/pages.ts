@@ -884,6 +884,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the month, usually before filing GSTR-3B. When the books differ, open each item: correct a manual journal, or amend the return of the month a document belongs to. Fix high-severity mistakes before filing; low ones are worth a look.',
     where: 'Tax. Needs the reports permission and a GST registration. GST payments settle the accounts and are shown apart. Reads posted journals and documents only; nothing is changed or filed, and no AI model is used.',
   },
+  'purchases/bill-reader': {
+    what: "Reads a supplier's bill from the PDF they sent, or from its pasted text: the supplier, bill number, dates, items, taxes and total.",
+    how: 'Upload the PDF or paste the text, then open the reading to check what was found and save it as a bill. Scans and photos have no text to read; enter those by hand.',
+    where: 'Purchases. Nothing reaches the books until a person reviews the bill in the bill form and saves it; the PDF is then attached to the bill.',
+  },
+  'purchases/bill-reader/[id]': {
+    what: 'One bill read by the bill reader: each field with whether it was printed on the bill, worked out from it or not found, the amounts, and the checks.',
+    how: 'Read the checks, correct the bill form (supplier, accounts, tax), then save it as a draft or post it. Discard the reading if it is not a bill you owe.',
+    where: 'Purchases → Bill reader. Saving links the reading to the bill, attaches the PDF and records in the audit trail what you changed from what was read.',
+  },
   'purchases/supplier-statements': {
     what: 'Statements of account your suppliers send, each matched to the bills, vendor credits and payments in your books for its period, with the difference between their balance and yours traced to the lines and items that cause it.',
     how: 'Choose Reconcile a statement, pick the supplier, enter the period and their balances, and paste the lines from their statement. Open a statement to see what is only on theirs, what is only in your books and which amounts differ.',

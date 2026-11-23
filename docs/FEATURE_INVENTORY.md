@@ -193,7 +193,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-022 |  | capability | Payment reconciliation | Tested |
 | AP-023 |  | capability | International payment preparation | Tested |
 | AP-024 |  | capability | Vendor risk monitoring | Tested |
-| AP-025 | Advanced AP AI | capability | Invoice document extraction | Not started |
+| AP-025 | Advanced AP AI | capability | Invoice document extraction | Tested |
 | AP-026 | Advanced AP AI | capability | AI invoice coding | Tested |
 | AP-027 | Advanced AP AI | capability | Supplier bank-detail change detection | Tested |
 | AP-028 | Advanced AP AI | capability | Payment fraud indicators | Tested |

@@ -76,6 +76,7 @@ export const hi: Record<string, string> = {
   'Vendor invoices': 'विक्रेता चालान',
   'Payables ageing': 'देय राशि की आयु',
   'Supplier statements': 'सप्लायर स्टेटमेंट मिलान',
+  'Bill reader': 'बिल रीडर',
   // Banking
   'Bank accounts': 'बैंक खाते',
   'Unusual bank activity': 'असामान्य बैंक गतिविधि',

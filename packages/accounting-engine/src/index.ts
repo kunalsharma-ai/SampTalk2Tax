@@ -154,3 +154,5 @@ export * from './expense-receipt-files';
 export * from './expense-categories';
 export * from './missing-receipts';
 export * from './transaction-history';
+export * from './pdf-text';
+export * from './bill-extraction';
