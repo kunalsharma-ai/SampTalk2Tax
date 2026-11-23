@@ -132,6 +132,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/reports/dashboards', label: 'Dashboards' },
       { href: '/reports/trial-balance', label: 'Trial balance' },
       { href: '/reports/income-statement', label: 'Profit and loss' },
+      { href: '/reports/visuals', label: 'Financial visuals' },
       { href: '/reports/profit-by-dimension', label: 'Profit by department' },
       { href: '/reports/balance-sheet', label: 'Balance sheet' },
       { href: '/reports/cash-flow-statement', label: 'Cash flow statement' },

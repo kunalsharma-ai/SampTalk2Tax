@@ -962,13 +962,13 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-025 | Advanced Visualization | capability | Revenue distribution globes | Not started |
 | DASH-026 | Advanced Visualization | capability | Financial relationship graphs | Not started |
 | DASH-027 | Advanced Visualization | capability | Interactive financial scenario surfaces | Not started |
-| DASH-028 | Advanced Visualization | capability | Animated waterfall charts | Not started |
-| DASH-029 | Advanced Visualization | capability | Sankey diagrams | Not started |
-| DASH-030 | Advanced Visualization | capability | Financial heatmaps | Not started |
-| DASH-031 | Advanced Visualization | capability | Treemaps | Not started |
+| DASH-028 | Advanced Visualization | capability | Animated waterfall charts | Tested |
+| DASH-029 | Advanced Visualization | capability | Sankey diagrams | Tested |
+| DASH-030 | Advanced Visualization | capability | Financial heatmaps | Tested |
+| DASH-031 | Advanced Visualization | capability | Treemaps | Tested |
 | DASH-032 | Advanced Visualization | capability | Forecast confidence bands | Not started |
 | DASH-033 | Advanced Visualization | capability | Interactive timelines | Not started |
-| DASH-034 | Advanced Visualization | capability | Drill-down financial charts | Not started |
+| DASH-034 | Advanced Visualization | capability | Drill-down financial charts | Tested |
 | DASH-035 | Advanced Visualization | capability | Department performance visualizations | Not started |
 | DASH-036 | Advanced Visualization | capability | Risk monitoring displays | Not started |
 | DASH-037 | Advanced Visualization | capability | Financial dependency graphs | Not started |

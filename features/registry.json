@@ -23310,9 +23310,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Profit and loss waterfall on Reports → Financial visuals: revenue, cost of sales, gross profit, people, operating costs, depreciation, operating profit, other income, interest and exchange, other expenses, profit before tax, income tax, net profit, from posted journals over a chosen range of months; animated floating bars (no animation under reduced motion) with the same figures in a table."
     },
     {
       "id": "DASH-029",
@@ -23335,9 +23343,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Sankey of where income goes: revenue accounts flow into income, then to each expense group and its largest accounts and to profit; a loss flows in as a source so both sides balance; accounts running against their nature are named as left out. The flows are also a table."
     },
     {
       "id": "DASH-030",
@@ -23360,9 +23376,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Spending heatmap: the 12 largest expense accounts by month, cells shaded by amount against the largest cell, each cell a link to that account's general ledger for that month."
     },
     {
       "id": "DASH-031",
@@ -23385,9 +23409,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Spending treemap by expense group and account, sized by amount with each share of all spending, plus a table of the groups."
     },
     {
       "id": "DASH-032",
@@ -23460,9 +23492,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Drill-down: choosing a waterfall step, a Sankey group or a spending group lists the accounts behind it with amounts; choosing an account, a Sankey account node, a heatmap cell or a treemap block opens its general ledger for the same months."
     },
     {
       "id": "DASH-035",

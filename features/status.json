@@ -9640,6 +9640,71 @@
         "docs/COMPANY_CARDS.md"
       ],
       "notes": "Virtual cards on the same card programmes: finance asks for a virtual card (holder, purpose, monthly limit, optional supplier); it waits until the provider confirms it through POST /v1/card-feed/cards/:id/issued with its reference, last four digits and expiry, then its spending flows like a corporate card's. A real provider connection needs that provider's credentials and an adapter calling the card feed."
+    },
+    "DASH-028": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Profit and loss waterfall on Reports → Financial visuals: revenue, cost of sales, gross profit, people, operating costs, depreciation, operating profit, other income, interest and exchange, other expenses, profit before tax, income tax, net profit, from posted journals over a chosen range of months; animated floating bars (no animation under reduced motion) with the same figures in a table."
+    },
+    "DASH-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Sankey of where income goes: revenue accounts flow into income, then to each expense group and its largest accounts and to profit; a loss flows in as a source so both sides balance; accounts running against their nature are named as left out. The flows are also a table."
+    },
+    "DASH-030": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Spending heatmap: the 12 largest expense accounts by month, cells shaded by amount against the largest cell, each cell a link to that account's general ledger for that month."
+    },
+    "DASH-031": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Spending treemap by expense group and account, sized by amount with each share of all spending, plus a table of the groups."
+    },
+    "DASH-034": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-visuals.ts",
+        "packages/accounting-engine/test/financial-visuals.test.ts",
+        "apps/api/src/financial-visuals/financial-visuals.service.ts",
+        "apps/api/test/financial-visuals.e2e.test.ts",
+        "apps/web/src/components/reports/financial-visuals.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/visuals/page.tsx",
+        "apps/web/e2e/financial-visuals-flow.test.mjs"
+      ],
+      "notes": "Drill-down: choosing a waterfall step, a Sankey group or a spending group lists the accounts behind it with amounts; choosing an account, a Sankey account node, a heatmap cell or a treemap block opens its general ledger for the same months."
     }
   }
 }
