@@ -9,6 +9,7 @@ export * from './bank';
 export * from './bank-formats';
 export * from './expenses';
 export * from './tax-rate-versions';
+export * from './tax-notice-analysis';
 export * from './allowances';
 export * from './budgets';
 export * from './cashflow';
