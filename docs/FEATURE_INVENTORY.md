@@ -969,7 +969,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-032 | Advanced Visualization | capability | Forecast confidence bands | Not started |
 | DASH-033 | Advanced Visualization | capability | Interactive timelines | Not started |
 | DASH-034 | Advanced Visualization | capability | Drill-down financial charts | Tested |
-| DASH-035 | Advanced Visualization | capability | Department performance visualizations | Not started |
+| DASH-035 | Advanced Visualization | capability | Department performance visualizations | Tested |
 | DASH-036 | Advanced Visualization | capability | Risk monitoring displays | Not started |
 | DASH-037 | Advanced Visualization | capability | Financial dependency graphs | Not started |
 | DASH-038 | Advanced Visualization | rule | Support animated transitions and motion-responsive interactions | Not started |

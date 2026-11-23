@@ -62,7 +62,7 @@ test('missing receipts: finance finds a claim without one and asks; the claimant
   await must(call(employee, `${B}/expense-claims/${small.id}/submit`, {}));
 
   await owner.goto(`${base}/expenses/missing-receipts`);
-  await owner.getByRole('heading', { name: 'Missing receipts' }).waitFor();
+  await owner.getByRole('heading', { name: 'Missing receipts', exact: true }).waitFor();
   const table = owner.getByRole('table', { name: 'Claims without receipts' });
   const row = table.getByRole('row').filter({ hasText: big.number });
   await row.getByText('Required by policy').waitFor();

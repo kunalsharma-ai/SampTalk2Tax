@@ -40,7 +40,8 @@ import { BillReaderController } from './bill-reader/bill-reader.controller';
 import { BillReaderService } from './bill-reader/bill-reader.service';
 import { CardFeedController, CompanyCardsController } from './company-cards/company-cards.controller';
 import { CompanyCardsService } from './company-cards/company-cards.service';
-import { FinancialVisualsController } from './financial-visuals/financial-visuals.controller';
+import { DepartmentPerformanceService } from './financial-visuals/department-performance.service';
+import { DepartmentPerformanceController, FinancialVisualsController } from './financial-visuals/financial-visuals.controller';
 import { FinancialVisualsService } from './financial-visuals/financial-visuals.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
@@ -478,6 +479,7 @@ export class AppModule {
         CompanyCardsController,
         CardFeedController,
         FinancialVisualsController,
+        DepartmentPerformanceController,
         BankFeedsController,
         BankFeedDeliveryController,
         FinancialTagsController,
@@ -667,6 +669,7 @@ export class AppModule {
         BillReaderService,
         CompanyCardsService,
         FinancialVisualsService,
+        DepartmentPerformanceService,
         DocumentsService,
         BankingService,
         AttachmentsService,

@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Card, CardHeader, Select, Table, Td, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Money } from '@/components/money';
 import { DateInput, fyStartFor } from '@/components/report-bits';
@@ -18,9 +19,12 @@ interface IS { basis: 'ACCRUAL' | 'CASH'; revenue: Line[]; expenses: Line[]; tot
 
 export default function IncomeStatementPage() {
   const { org, orgId } = useOrg();
-  const [to, setTo] = useState(today());
-  const [from, setFrom] = useState(() => fyStartFor(today(), org?.fiscalYearStartMonth ?? 4));
-  const [departmentId, setDepartment] = useState('');
+  // A link may open the statement for a period and department (from Department performance).
+  const params = useSearchParams();
+  const iso = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+  const [to, setTo] = useState(() => iso(params.get('to')) ?? today());
+  const [from, setFrom] = useState(() => iso(params.get('from')) ?? fyStartFor(iso(params.get('to')) ?? today(), org?.fiscalYearStartMonth ?? 4));
+  const [departmentId, setDepartment] = useState(() => (/^[0-9a-f-]{36}$/.test(params.get('departmentId') ?? '') ? params.get('departmentId')! : ''));
   const [projectId, setProject] = useState('');
   const [basis, setBasis] = useState<'ACCRUAL' | 'CASH'>('ACCRUAL');
   const dims = useDimensions();
