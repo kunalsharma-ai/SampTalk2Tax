@@ -70,7 +70,7 @@ describe('ABN and BAS cycle', () => {
     const put = (b: object) => ctx.http().put(`${au.base}/tax/vat/settings`).set(owner.auth).send({ ...body, ...b });
     expect((await put({ vrn: '51 824 753 557' }).expect(422)).body).toMatchObject({ error: 'INVALID_VRN', message: expect.stringContaining('Australian Business Number') });
     expect((await put({ treatments: [{ taxRateId: rate['GST 10%'], treatment: 'REDUCED' }] }).expect(422)).body.message).toBe('Reduced rate is not a treatment in Australia');
-    expect((await put({ stagger: 'QUARTERLY_APR' }).expect(422)).body.message).toBe('Quarterly, ending April, July, October and January returns are not a return cycle ATO uses');
+    expect((await put({ stagger: 'QUARTERLY_APR' }).expect(422)).body.message).toBe('Quarterly, ending April, July, October and January returns are not a return cycle the ATO uses');
     await ctx.http().put(`${au.base}/tax/vat/settings`).set(viewer.auth).send(body).expect(403);
     expect((await put({}).expect(200)).body.settings).toMatchObject({ vrn: '51824753556', stagger: 'MONTHLY' });
   });

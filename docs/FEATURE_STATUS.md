@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 569 |
+| Not started | 568 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 698 |
+| Tested | 699 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 9 | 45 |
+| Global taxation engine | M3 | 54 | 8 | 46 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2802,6 +2802,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/vat-return-flow.test.mjs
   - docs/UK_VAT_RETURN.md
 
+### TAX-031 — EU VAT
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: EU VAT starting with Germany: the Umsatzsteuer-Voranmeldung Kennzahlen 81 and 86 (whole-euro bases with the tax worked out at 19% and 7%), 43, 48, 66 and 83 from posted invoices, credit notes, bills, vendor credits and approved expense claims on the accruals basis; standard/reduced/tax-free with and without input tax deduction/not taxable treatments, USt-IdNr. check digit, monthly or quarterly periods due on the 10th, submissions recorded, changes to filed periods flagged for a corrected return (never carried). Not sent through ELSTER; intra-EU trade, reverse charge, § 19, cash accounting, permanent extension, annual return, OSS and ZM not modelled. Other member states not prepared yet.
+- Evidence:
+  - packages/tax-engine/src/de/ust-voranmeldung.ts
+  - packages/tax-engine/src/vat/jurisdictions.ts
+  - packages/tax-engine/test/de-ust-voranmeldung.test.ts
+  - apps/api/src/vat-return/vat-return.service.ts
+  - apps/api/test/de-ust-voranmeldung.e2e.test.ts
+  - apps/web/e2e/de-ust-voranmeldung-flow.test.mjs
+  - docs/DE_UST_VORANMELDUNG.md
+
 ### TAX-032 — Reverse-charge mechanisms
 
 - Module: Global taxation engine
@@ -2885,11 +2899,12 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Global taxation engine
 - Status: **Implementing**
-- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035), Canada (TAX-034) and the UAE (TAX-033) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
+- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035), Canada (TAX-034), the UAE (TAX-033) and Germany (TAX-031) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
 - Evidence:
   - docs/AE_VAT_201.md
   - docs/AU_GST_BAS.md
   - docs/CA_GST_HST_RETURN.md
+  - docs/DE_UST_VORANMELDUNG.md
   - docs/SG_GST_RETURN.md
   - packages/tax-engine/src/vat/jurisdictions.ts
 

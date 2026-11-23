@@ -258,7 +258,7 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
         </Card>
       ) : manage ? (
         <Card className="mb-4">
-          <CardHeader title="Record the submission" description={`Once you have submitted these figures to ${j.authorityThe}, record it here. The boxes are then kept as submitted, and later changes to this period go on a later return.`} />
+          <CardHeader title="Record the submission" description={`Once you have submitted these figures to ${j.authorityThe}, record it here. The boxes are then kept as submitted, and later changes to this period ${j.correctionRule ? 'are flagged on later returns' : 'go on a later return'}.`} />
           <form
             className="grid gap-4 p-4 sm:grid-cols-[12rem_16rem_auto]"
             onSubmit={(e) => {

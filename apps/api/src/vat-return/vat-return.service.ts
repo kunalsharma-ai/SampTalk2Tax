@@ -37,12 +37,12 @@ const PERIODS_SHOWN = 8;
 
 /**
  * VAT and GST returns (TAX-030 United Kingdom, TAX-036 Singapore, TAX-035 Australia, TAX-034 Canada,
- * TAX-033 United Arab Emirates, TAX-041 one jurisdiction at a time): the boxes for a period, prepared from posted invoices, credit notes, bills, vendor
+ * TAX-033 United Arab Emirates, TAX-031 Germany, TAX-041 one jurisdiction at a time): the boxes for a period, prepared from posted invoices, credit notes, bills, vendor
  * credits and approved expense claims with the country's rules (vatJurisdiction); changes to
  * periods already submitted carried as corrections when within the authority's limit; entries on
  * the tax accounts that are not on the return listed for checking; and a record of each return
  * the business submitted. Books kept in the country's currency only. reports.read reads;
- * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC, IRAS, the ATO, the CRA or the FTA.
+ * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC, IRAS, the ATO, the CRA, the FTA or the Finanzamt.
  */
 const direction = (output = '0', input = '0'): 'PAY' | 'RECLAIM' | 'NIL' => (new D(output).gt(input) ? 'PAY' : new D(output).lt(input) ? 'RECLAIM' : 'NIL');
 
@@ -58,7 +58,7 @@ export class VatReturnService {
   private async jurisdiction(org: OrgContext): Promise<VatJurisdiction> {
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { countryCode: true } });
     const j = vatJurisdiction(o.countryCode);
-    if (!j) throw new DomainError('NO_VAT_RETURN', 'A VAT or GST return is prepared here for organisations in the United Kingdom, Singapore, Australia, Canada and the United Arab Emirates', HttpStatus.UNPROCESSABLE_ENTITY);
+    if (!j) throw new DomainError('NO_VAT_RETURN', 'A VAT or GST return is prepared here for organisations in the United Kingdom, Singapore, Australia, Canada, the United Arab Emirates and Germany', HttpStatus.UNPROCESSABLE_ENTITY);
     if (org.functionalCurrency !== j.currency) throw new DomainError('WRONG_CURRENCY', `The ${j.returnName} is prepared from books kept in ${j.currency}`, HttpStatus.UNPROCESSABLE_ENTITY);
     return j;
   }
@@ -106,7 +106,7 @@ export class VatReturnService {
     if (!vrn) throw new DomainError('INVALID_VRN', j.invalidNumber, HttpStatus.UNPROCESSABLE_ENTITY);
     const wrong = body.treatments.find((t) => !j.treatments.includes(t.treatment)) ?? (j.treatments.includes(body.untaxedTreatment) ? null : { treatment: body.untaxedTreatment });
     if (wrong) throw new DomainError('VALIDATION_FAILED', `${j.treatmentLabel[wrong.treatment]} is not a treatment in ${j.countryName}`, HttpStatus.UNPROCESSABLE_ENTITY);
-    if (!j.staggers.includes(body.stagger)) throw new DomainError('VALIDATION_FAILED', `${VAT_STAGGER_LABEL[body.stagger]} returns are not a return cycle ${j.authority} uses`, HttpStatus.UNPROCESSABLE_ENTITY);
+    if (!j.staggers.includes(body.stagger)) throw new DomainError('VALIDATION_FAILED', `${VAT_STAGGER_LABEL[body.stagger]} returns are not a return cycle ${j.authorityThe} uses`, HttpStatus.UNPROCESSABLE_ENTITY);
     const region = j.region ? (body.region ?? null) : null;
     if (j.region && !j.region.options.some((o) => o.key === region)) throw new DomainError('VALIDATION_FAILED', `Choose the ${j.region.name.toLowerCase()} your business is established in`, HttpStatus.UNPROCESSABLE_ENTITY);
     const known = new Set((await this.prisma.taxRate.findMany({ where: { orgId: org.id }, select: { id: true } })).map((r) => r.id));

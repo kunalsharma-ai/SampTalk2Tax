@@ -223,16 +223,22 @@ export const COUNTRY_MODULES: readonly CountryModule[] = Object.freeze([
     level: 'STARTER',
     salesTaxName: 'VAT (Umsatzsteuer)',
     taxIdName: 'USt-IdNr.',
-    summary: 'Accounting, an EU VAT invoice layout, and starter VAT rates. No VAT return, ELSTER or XRechnung.',
-    capabilities: starterCaps('VAT', [{ key: 'INVOICE_PRESET', status: 'PARTLY', note: 'Generic EU VAT invoice layout; not checked against German invoice requirements.' }]),
+    summary: 'Accounting, an EU VAT invoice layout, starter VAT rates and the VAT advance return (Umsatzsteuer-Voranmeldung) prepared from the books. Nothing is sent through ELSTER from here, and no XRechnung.',
+    capabilities: starterCaps('VAT', [{ key: 'INVOICE_PRESET', status: 'PARTLY', note: 'Generic EU VAT invoice layout; not checked against German invoice requirements.' }]).map((c) =>
+      c.key === 'SALES_TAX_RETURNS' ? { key: c.key, status: 'PARTLY' as const, note: 'The VAT advance return (UStVA) Kennzahlen 81, 86, 43, 48, 66 and 83, monthly or quarterly, on the accruals basis; changes to filed periods are flagged for a corrected return. You submit it through ELSTER and record the submission here.' } : c,
+    ),
     starterRates: [
       { name: 'USt 19% (standard)', rate: '19', note: 'Standard rate.' },
       { name: 'USt 7% (reduced)', rate: '7', note: 'Reduced rate for some goods and services; which ones qualify is not checked.' },
-      { name: 'USt 0%', rate: '0', note: 'Tax-free or reverse-charge supplies; which ones qualify is not checked.' },
+      { name: 'USt 0%', rate: '0', note: 'Tax-free supplies with input tax deduction, such as exports (Kz 43); which ones qualify is not checked. Reverse-charge supplies are not on the advance return here.' },
     ],
-    limitations: ['No VAT return (UStVA) or ELSTER submission.', 'No EU reverse charge, OSS or recapitulative statement.', 'No XRechnung or ZUGFeRD e-invoices.', 'No German payroll.'],
-    sources: [{ title: 'Bundesministerium der Finanzen: Umsatzsteuer', url: 'https://www.bundesfinanzministerium.de' }],
-    reviewedOn: '2026-11-05',
+    limitations: ['The advance return is not sent through ELSTER, and no annual VAT return. Intra-EU supplies and acquisitions (Kz 41, 89), the reverse charge (§ 13b), the small-business rule (§ 19), cash accounting and the permanent extension are not modelled.', 'No OSS or recapitulative statement (ZM).', 'No XRechnung or ZUGFeRD e-invoices.', 'No German payroll.'],
+    sources: [
+      { title: 'Bundesministerium der Finanzen: Umsatzsteuer', url: 'https://www.bundesfinanzministerium.de' },
+      { title: 'ELSTER: Umsatzsteuer-Voranmeldung', url: 'https://www.elster.de' },
+      { title: 'Umsatzsteuergesetz § 18 (Besteuerungsverfahren)', url: 'https://www.gesetze-im-internet.de/ustg_1980/__18.html' },
+    ],
+    reviewedOn: '2026-11-23',
   },
   {
     code: 'CA',
