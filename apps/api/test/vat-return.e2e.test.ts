@@ -66,7 +66,7 @@ afterAll(async () => ctx?.app.close());
 describe('VAT registration', () => {
   it('is for UK organisations keeping books in pounds', async () => {
     const india = await createOrg(ctx, owner, { name: 'Not UK Pvt Ltd' });
-    expect((await ctx.http().get(`${india.base}/tax/vat/settings`).set(owner.auth).expect(422)).body.error).toBe('NOT_UK');
+    expect((await ctx.http().get(`${india.base}/tax/vat/settings`).set(owner.auth).expect(422)).body.error).toBe('NO_VAT_RETURN');
     expect((await vat(E1).expect(422)).body.error).toBe('VAT_NOT_SET_UP');
     const s = (await ctx.http().get(`${uk.base}/tax/vat/settings`).set(viewer.auth).expect(200)).body;
     expect(s.settings).toBeNull();
@@ -131,13 +131,13 @@ describe('the return', () => {
     await send({ submittedOn: T }, viewer.auth).expect(403);
     await send({ submittedOn: E1 }).expect(422);
     await send({ submittedOn: addDays(T, 1) }).expect(422);
-    expect((await send({ submittedOn: T, box5: '91.00' }).expect(409)).body.error).toBe('FIGURES_CHANGED');
-    const r = (await send({ submittedOn: T, reference: 'SYN-HMRC-1', box5: '90.00' }).expect(201)).body;
+    expect((await send({ submittedOn: T, net: '91.00' }).expect(409)).body.error).toBe('FIGURES_CHANGED');
+    const r = (await send({ submittedOn: T, reference: 'SYN-HMRC-1', net: '90.00' }).expect(201)).body;
     expect(r.status).toBe('SUBMITTED');
     expect(r.submitted).toMatchObject({ submittedOn: T, reference: 'SYN-HMRC-1', recordedBy: 'VAT Owner', changedSince: null });
     expect((await send({ submittedOn: T }).expect(409)).body.error).toBe('ALREADY_RECORDED');
     const p = (await ctx.http().get(`${uk.base}/tax/vat/periods`).set(viewer.auth).expect(200)).body;
-    expect(p.periods.find((x: { end: string }) => x.end === E1)).toMatchObject({ status: 'SUBMITTED', box5: '90.00', direction: 'PAY' });
+    expect(p.periods.find((x: { end: string }) => x.end === E1)).toMatchObject({ status: 'SUBMITTED', net: '90.00', direction: 'PAY' });
     expect(p.periods.find((x: { end: string }) => x.end === E3)).toMatchObject({ status: 'OPEN' });
     // Nothing before the registration.
     expect(p.periods.map((x: { end: string }) => x.end)).toEqual([E3, E2, E1]);
@@ -151,12 +151,12 @@ describe('the return', () => {
     const first = (await vat(E1).expect(200)).body;
     expect(first.boxes.box1).toBe('190.00');
     expect(first.prepared.box1).toBe('210.00');
-    expect(first.submitted.changedSince).toEqual({ box1: '20.00', box4: '0.00', net: '20.00' });
+    expect(first.submitted.changedSince).toEqual({ output: '20.00', input: '0.00', net: '20.00' });
 
     const next = (await vat(E2).expect(200)).body;
-    expect(next.corrections).toMatchObject({ included: true, pending: [{ periodEnd: E1, box1: '20.00', box4: '0.00', net: '20.00' }], allowance: { net: '20.00', limit: '10000.00', allowed: true } });
+    expect(next.corrections).toMatchObject({ included: true, pending: [{ periodEnd: E1, output: '20.00', input: '0.00', net: '20.00' }], allowance: { net: '20.00', limit: '10000.00', allowed: true } });
     expect(next.boxes).toMatchObject({ box1: '20.00', box4: '12.50', box5: '7.50' });
-    await ctx.http().post(`${uk.base}/tax/vat/returns`).set(owner.auth).send({ periodEnd: E2, submittedOn: T, box5: '7.50' }).expect(201);
+    await ctx.http().post(`${uk.base}/tax/vat/returns`).set(owner.auth).send({ periodEnd: E2, submittedOn: T, net: '7.50' }).expect(201);
     // Corrected once: not offered again, and the first return no longer shows a change.
     expect((await vat(E3).expect(200)).body.corrections.pending).toEqual([]);
     expect((await vat(E1).expect(200)).body.submitted.changedSince).toBeNull();

@@ -11,6 +11,9 @@ describe('navigation by country', () => {
     for (const h of ['/tax/gst-returns', '/tax/e-invoices', '/tax/e-way-bills', '/tax/tds-tcs', '/tax/compliance', '/settings/gst', '/payroll/runs']) expect(uk).not.toContain(h);
     expect(uk).toEqual(expect.arrayContaining(['/settings/tax-rates', '/settings/country-module', '/sales/invoices', '/tax/vat-return']));
     expect(india).not.toContain('/tax/vat-return');
+    const singapore = navFor({ role: 'OWNER', countryCode: 'SG' }).flatMap((g) => g.items);
+    expect(singapore.filter((i) => i.href === '/tax/vat-return').map((i) => i.label)).toEqual(['GST return']);
+    expect(singapore.map((i) => i.href)).not.toContain('/tax/gst-returns');
     for (const h of ['/tax/gst-payments', '/tax/gst-reconciliation', '/tax/reverse-charge']) expect(uk).not.toContain(h);
     expect(navFor({ role: 'OWNER', countryCode: 'GB' }).map((g) => g.group)).not.toContain('Payroll');
   });

@@ -7252,9 +7252,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/sg/gst-f5.ts",
+        "packages/tax-engine/src/vat/jurisdictions.ts",
+        "packages/tax-engine/test/sg-gst-f5.test.ts",
+        "apps/api/src/vat-return/vat-return.service.ts",
+        "apps/api/test/sg-gst-return.e2e.test.ts",
+        "apps/web/e2e/sg-gst-return-flow.test.mjs",
+        "docs/SG_GST_RETURN.md"
+      ],
+      "notes": "Singapore GST F5 boxes 1-8 and 13 (revenue from the ledger) from posted invoices, credit notes, bills, vendor credits and approved expense claims; standard/zero/exempt/out-of-scope treatments (no reduced rate; 7/8/9% standard), UEN/M-number format check, monthly or quarterly periods due one month after the end, submissions recorded, back-dated errors up to S$1,500 net GST carried to the next return (above: GST F7). Not filed with IRAS; boxes 9-12 and 14+ (import schemes, tourist refunds, bad debt relief, pre-registration claims, reverse charge), blocked input tax and partial exemption not modelled."
     },
     {
       "id": "TAX-037",
@@ -7385,9 +7393,12 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Implementing",
+      "evidence": [
+        "packages/tax-engine/src/vat/jurisdictions.ts",
+        "docs/SG_GST_RETURN.md"
+      ],
+      "notes": "Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030) and Singapore (TAX-036) so far, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested."
     },
     {
       "id": "TAX-042",

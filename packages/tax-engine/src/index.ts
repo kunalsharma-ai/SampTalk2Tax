@@ -22,3 +22,5 @@ export * from './india/audit-preparation';
 export * from './india/reverse-charge';
 export * from './india/tax-explanations';
 export * from './uk/vat-return';
+export * from './sg/gst-f5';
+export * from './vat/jurisdictions';

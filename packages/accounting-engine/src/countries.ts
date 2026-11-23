@@ -169,15 +169,21 @@ export const COUNTRY_MODULES: readonly CountryModule[] = Object.freeze([
     level: 'STARTER',
     salesTaxName: 'GST',
     taxIdName: 'GST registration number',
-    summary: 'Accounting, a Singapore GST tax invoice layout, and starter GST rates. No GST return or InvoiceNow.',
-    capabilities: starterCaps('GST', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'GST tax invoice layout with GST registration number.' }]),
+    summary: 'Accounting, a Singapore GST tax invoice layout, starter GST rates and the GST F5 return prepared from the books. Nothing is filed with IRAS from here, and no InvoiceNow.',
+    capabilities: starterCaps('GST', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'GST tax invoice layout with GST registration number.' }]).map((c) =>
+      c.key === 'SALES_TAX_RETURNS' ? { key: c.key, status: 'PARTLY' as const, note: 'The GST F5 boxes 1 to 8 and 13, monthly or quarterly, with corrections of earlier returns up to S$1,500 net GST; you file it in myTax Portal and record the submission here.' } : c,
+    ),
     starterRates: [
       { name: 'GST 9% (standard)', rate: '9', note: 'Standard rate.' },
       { name: 'GST 0% (zero-rated)', rate: '0', note: 'Zero-rated supplies such as exports; which supplies qualify is not checked.' },
     ],
-    limitations: ['No GST F5 return, reverse charge or InvoiceNow (Peppol).', 'No CPF payroll.'],
-    sources: [{ title: 'IRAS: GST rate', url: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)' }],
-    reviewedOn: '2026-11-05',
+    limitations: ['The GST F5 is not filed with IRAS from here. Boxes 9 to 12 and 14 onwards (import schemes, tourist refunds, bad debt relief, pre-registration claims, reverse charge) stay 0.', 'Blocked input tax and partial exemption are not applied; no GST F7, F8 or InvoiceNow (Peppol).', 'No CPF payroll.'],
+    sources: [
+      { title: 'IRAS: GST rate', url: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)' },
+      { title: 'IRAS: completing the GST F5 return', url: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/filing-gst-returns' },
+      { title: 'IRAS: correcting errors in GST returns', url: 'https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/correcting-errors-made-in-gst-return' },
+    ],
+    reviewedOn: '2026-11-23',
   },
   {
     code: 'AU',

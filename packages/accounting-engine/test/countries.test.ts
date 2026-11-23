@@ -29,6 +29,9 @@ describe('country modules', () => {
     expect(countrySupports('GB', 'SALES_TAX_RETURNS')).toBe(true);
     for (const c of ['AE', 'GB', 'US', 'FR']) {
       if (c !== 'GB') expect(countrySupports(c, 'SALES_TAX_RETURNS')).toBe(false);
+    }
+    expect(countrySupports('SG', 'SALES_TAX_RETURNS')).toBe(true);
+    for (const c of ['AE', 'GB', 'US', 'FR']) {
       expect(countrySupports(c, 'PAYROLL')).toBe(false);
       expect(countrySupports(c, 'ACCOUNTING')).toBe(true);
     }

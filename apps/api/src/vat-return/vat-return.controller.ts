@@ -21,8 +21,8 @@ const Record_ = z
     periodEnd: isoDate,
     submittedOn: isoDate,
     reference: z.string().trim().max(100).nullish(),
-    /** Box 5 as the person saw it; refused if the return has changed since. */
-    box5: z.string().trim().regex(/^\d{1,13}(\.\d{1,2})?$/, 'An amount with up to 2 decimals').optional(),
+    /** The net tax as the person saw it (UK box 5, Singapore box 8); refused if the return has changed since. */
+    net: z.string().trim().regex(/^\d{1,13}(\.\d{1,2})?$/, 'An amount with up to 2 decimals').optional(),
   })
   .strict();
 
@@ -32,7 +32,7 @@ const Record_ = z
 export class VatReturnController {
   constructor(private readonly s: VatReturnService) {}
 
-  /** The VAT registration, return stagger and the treatment of each tax rate. */
+  /** The VAT or GST registration, return cycle and the treatment of each tax rate. */
   @Get('settings')
   @RequirePermission('reports.read')
   settings(@CurrentOrg() org: OrgContext) {
@@ -67,7 +67,7 @@ export class VatReturnController {
     return this.s.exportCsv(org, user, q.periodEnd);
   }
 
-  /** Records that the period's return was submitted to HMRC; its figures are then kept as submitted. */
+  /** Records that the period's return was submitted to the tax authority; its figures are then kept as submitted. */
   @Post('returns')
   @RequirePermission('accounts.manage')
   @ApiBody({ schema: openApi(Record_) })

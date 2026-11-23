@@ -1,7 +1,7 @@
 import { defineCollection, GuardViolation } from '@talk2tax/document-db';
 
 /**
- * UK VAT (TAX-030). `vat_settings` holds one organisation's VAT registration: its number, its
+ * VAT and GST returns (TAX-030 UK, TAX-036 Singapore). `vat_settings` holds one organisation's VAT registration: its number, its
  * return stagger, the treatment of lines with no tax rate and the VAT treatment of each tax rate.
  * `vat_returns` records each return the business has submitted to HMRC: the nine boxes as
  * submitted, the period's own figures (to find later changes) and the corrections of earlier
@@ -30,7 +30,7 @@ export const vatSettings = defineCollection<VatSettingsDoc>({
     bsonType: 'object',
     required: ['orgId', 'vrn', 'registeredFrom', 'stagger', 'untaxedTreatment', 'treatments', 'updatedById', 'updatedAt'],
     properties: {
-      vrn: { bsonType: 'string', pattern: '^GB[0-9]{9}([0-9]{3})?$' },
+      vrn: { bsonType: 'string', pattern: '^[A-Z0-9]{9,14}$' },
       registeredFrom: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
       stagger: { enum: ['MONTHLY', 'QUARTERLY_MAR', 'QUARTERLY_APR', 'QUARTERLY_MAY'] },
       untaxedTreatment: TREATMENT,
@@ -58,9 +58,12 @@ export interface VatReturnDoc {
   periodStart: string;
   periodEnd: string;
   vrn: string;
-  boxes: VatBoxesDoc;
-  own: { box1: string; box4: string; box6: string; box7: string };
-  corrections: { periodEnd: string; box1: string; box4: string }[];
+  /** The boxes as submitted, keyed box1, box2, ... as the country numbers them. */
+  boxes: Record<string, string>;
+  /** The period's own output and input tax, supplies and purchases before corrections (returns recorded before Singapore was added keep UK box names). */
+  own: { output: string; input: string; supplies: string; purchases: string };
+  /** Corrections of earlier periods carried, as output and input tax. */
+  corrections: { periodEnd: string; output: string; input: string }[];
   /** The day it was submitted to HMRC, and HMRC's reference for it, as the business records them. */
   submittedOn: string;
   reference: string | null;
@@ -78,9 +81,9 @@ export const vatReturns = defineCollection<VatReturnDoc>({
       periodStart: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
       periodEnd: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
       submittedOn: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-      boxes: { bsonType: 'object', required: ['box1', 'box2', 'box3', 'box4', 'box5', 'box6', 'box7', 'box8', 'box9'], properties: { box1: MONEY, box4: MONEY, box5: MONEY, box6: MONEY, box7: MONEY } },
-      own: { bsonType: 'object', required: ['box1', 'box4', 'box6', 'box7'] },
-      corrections: { bsonType: 'array', items: { bsonType: 'object', required: ['periodEnd', 'box1', 'box4'], properties: { box1: MONEY, box4: MONEY } } },
+      boxes: { bsonType: 'object', required: ['box1'], additionalProperties: MONEY },
+      own: { bsonType: 'object' },
+      corrections: { bsonType: 'array', items: { bsonType: 'object', required: ['periodEnd'] } },
       reference: { bsonType: ['string', 'null'], maxLength: 100 },
     },
   },

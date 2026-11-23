@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 574 |
+| Not started | 572 |
 | Designed | 0 |
-| Implementing | 38 |
+| Implementing | 39 |
 | Implemented | 23 |
-| Tested | 694 |
+| Tested | 695 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 14 | 40 |
+| Global taxation engine | M3 | 54 | 12 | 42 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2816,6 +2816,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/reverse-charge-flow.test.mjs
   - docs/REVERSE_CHARGE.md
 
+### TAX-036 — Singapore GST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Singapore GST F5 boxes 1-8 and 13 (revenue from the ledger) from posted invoices, credit notes, bills, vendor credits and approved expense claims; standard/zero/exempt/out-of-scope treatments (no reduced rate; 7/8/9% standard), UEN/M-number format check, monthly or quarterly periods due one month after the end, submissions recorded, back-dated errors up to S$1,500 net GST carried to the next return (above: GST F7). Not filed with IRAS; boxes 9-12 and 14+ (import schemes, tourist refunds, bad debt relief, pre-registration claims, reverse charge), blocked input tax and partial exemption not modelled.
+- Evidence:
+  - packages/tax-engine/src/sg/gst-f5.ts
+  - packages/tax-engine/src/vat/jurisdictions.ts
+  - packages/tax-engine/test/sg-gst-f5.test.ts
+  - apps/api/src/vat-return/vat-return.service.ts
+  - apps/api/test/sg-gst-return.e2e.test.ts
+  - apps/web/e2e/sg-gst-return-flow.test.mjs
+  - docs/SG_GST_RETURN.md
+
 ### TAX-037 — Withholding taxes
 
 - Module: Global taxation engine
@@ -2824,6 +2838,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/tax-engine/src/india/withholding.ts
   - packages/accounting-engine/src/documents.ts
+
+### TAX-041 — Implement supported jurisdictions incrementally
+
+- Module: Global taxation engine
+- Status: **Implementing**
+- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030) and Singapore (TAX-036) so far, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
+- Evidence:
+  - packages/tax-engine/src/vat/jurisdictions.ts
+  - docs/SG_GST_RETURN.md
 
 ### TAX-042 — Do not claim worldwide compliance without verified, maintained country modules
 
