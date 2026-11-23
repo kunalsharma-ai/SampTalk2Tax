@@ -33,6 +33,7 @@ import { AllowancesService, ClaimLineInput } from './allowances.service';
 import { ReceiptFilesService } from './receipt-files.service';
 import { ExpensePolicyService } from './expense-policy.service';
 import { ExpenseCategoriesService } from '../expense-categories/expense-categories.service';
+import { receiptRequests } from '../db/collections/receipt-requests';
 
 interface Actor {
   id: string;
@@ -320,6 +321,12 @@ export class ExpensesService {
     // Claimants add receipts until the claim is approved; finance can add evidence at any time.
     if (own && ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) && hasPermission(org.role, 'expenses.submit')) return;
     if (hasPermission(org.role, 'expenses.reimburse')) return;
+    // Finance asked for the missing receipt (EXP-021): the claimant may add it until one is attached.
+    if (own && ['APPROVED', 'REIMBURSED'].includes(c.status) && hasPermission(org.role, 'expenses.submit')) {
+      const asked = await this.store.collection(receiptRequests).count({ claimId: id });
+      const receipts = asked ? await this.prisma.attachment.count({ where: { orgId: org.id, entityType: 'EXPENSE_CLAIM', entityId: id, removedAt: null } }) : 0;
+      if (asked && !receipts) return;
+    }
     throw new DomainError('FORBIDDEN', own ? `Receipts can no longer be changed on a ${c.status.toLowerCase()} claim` : 'Only the claimant or finance can change files on this claim', HttpStatus.FORBIDDEN);
   }
 
@@ -501,6 +508,8 @@ export class ExpensesService {
     const deptIds = [...new Set(c.lines.map((l) => l.departmentId).filter((x): x is string => !!x))];
     const deptNames = new Map((deptIds.length ? await this.prisma.dimensionValue.findMany({ where: { orgId: org.id, id: { in: deptIds } }, select: { id: true, code: true, name: true } }) : []).map((d) => [d.id, `${d.code} · ${d.name}`]));
     const categoryNames = await this.categories.names(c.lines.map((l) => l.categoryId));
+    // Finance asked for the missing receipt on a decided claim (EXP-021): the claimant may still add it.
+    const receiptAsked = c.claimantId === actor.id && ['APPROVED', 'REIMBURSED'].includes(c.status) && !receipts && hasPermission(org.role, 'expenses.submit') && (await this.store.collection(receiptRequests).count({ claimId: c.id })) > 0;
     const own = c.claimantId === actor.id;
     // Checked while the claim can still change or be decided; afterwards the audit trail keeps what was found.
     const policy = ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) ? await this.policyCheck(org, db, c, c.status === 'SUBMITTED' ? c.submittedAt!.toISOString().slice(0, 10) : todayIso()) : null;
@@ -570,7 +579,7 @@ export class ExpensesService {
         decide: !own && c.status === 'SUBMITTED' && decide,
         reimburse: c.status === 'APPROVED' && hasPermission(org.role, 'expenses.reimburse'),
         void: c.status === 'APPROVED' && hasPermission(org.role, 'journals.reverse'),
-        attach: (own && ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) && hasPermission(org.role, 'expenses.submit')) || hasPermission(org.role, 'expenses.reimburse'),
+        attach: (own && ['DRAFT', 'REJECTED', 'SUBMITTED'].includes(c.status) && hasPermission(org.role, 'expenses.submit')) || hasPermission(org.role, 'expenses.reimburse') || receiptAsked,
       },
     };
   }

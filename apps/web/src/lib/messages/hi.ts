@@ -93,6 +93,7 @@ export const hi: Record<string, string> = {
   'Receipt matching': 'रसीद मिलान',
   'Department budgets': 'विभाग बजट',
   'Expense categories': 'व्यय श्रेणियाँ',
+  'Missing receipts': 'गायब रसीदें',
   'Expense reconciliation': 'ख़र्च मिलान',
   'Reimbursement routing': 'प्रतिपूर्ति भुगतान मार्ग',
   'Expense audit evidence': 'ख़र्च ऑडिट साक्ष्य',

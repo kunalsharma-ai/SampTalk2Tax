@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 575 |
 | Designed | 0 |
 | Implementing | 38 |
-| Implemented | 25 |
-| Tested | 691 |
+| Implemented | 24 |
+| Tested | 692 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -3296,10 +3296,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### EXP-021 — Missing receipt detection
 
 - Module: Expense management
-- Status: **Implemented**
-- Notes: Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy.
+- Status: **Tested**
+- Notes: Claims without receipts with the reason (policy receipt amount, category that always needs one, none); finance asks the claimant (recorded, emailed when set up), who can attach it even after approval. Bank spending without receipts is EXP-019.
 - Evidence:
-  - apps/web/src/components/expenses/claim-detail.tsx
+  - packages/accounting-engine/src/missing-receipts.ts
+  - packages/accounting-engine/test/missing-receipts.test.ts
+  - apps/api/src/missing-receipts/missing-receipts.service.ts
+  - apps/api/test/missing-receipts.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/expenses/missing-receipts/page.tsx
+  - apps/web/e2e/missing-receipts-flow.test.mjs
 
 ### EXP-022 — Policy violation detection
 

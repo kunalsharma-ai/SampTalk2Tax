@@ -1318,11 +1318,16 @@
       "notes": "Same date and amount on another claim warns on the claim; the exact same receipt file (SHA-256) on another submitted claim or a posted supplier bill is shown to approvers, needs a note to approve and is a serious indicator in Unusual expenses. A new photo of the same receipt is caught only by date and amount."
     },
     "EXP-021": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src/components/expenses/claim-detail.tsx"
+        "packages/accounting-engine/src/missing-receipts.ts",
+        "packages/accounting-engine/test/missing-receipts.test.ts",
+        "apps/api/src/missing-receipts/missing-receipts.service.ts",
+        "apps/api/test/missing-receipts.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/expenses/missing-receipts/page.tsx",
+        "apps/web/e2e/missing-receipts-flow.test.mjs"
       ],
-      "notes": "Shows when a claim has no receipts, at submission and approval. Receipts are not required by a policy."
+      "notes": "Claims without receipts with the reason (policy receipt amount, category that always needs one, none); finance asks the claimant (recorded, emailed when set up), who can attach it even after approval. Bank spending without receipts is EXP-019."
     },
     "EXP-003": {
       "status": "Tested",
