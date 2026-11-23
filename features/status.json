@@ -9441,6 +9441,19 @@
         "docs/REVERSE_CHARGE.md"
       ],
       "notes": "Builds on reverse-charge bills: Tax -> Reverse charge shows the month's register of RCM bills and vendor credits with tax by head (to pay in cash), notified categories matched by HSN/SAC with source (Notifications 13/2017 and 4/2017-CT(Rate)), posted bills that may have missed reverse charge, and self-invoices for unregistered/foreign suppliers (s.31(3)(f), due in 30 days under rule 47A) numbered RCM/FY/seq, one per bill, immutable, audited. Not built: payment voucher (s.31(3)(g)), foreign-currency RCM, s.9(4) promoters, suggestion while entering a bill."
+    },
+    "TAX-052": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/tax-explanations.ts",
+        "packages/tax-engine/test/tax-explanations.test.ts",
+        "apps/api/src/gst/tax-explanation.service.ts",
+        "apps/api/test/tax-explanation.e2e.test.ts",
+        "apps/web/src/components/ledger/tax-explanation.tsx",
+        "apps/web/e2e/tax-explanation-flow.test.mjs",
+        "docs/TAX_EXPLANATIONS.md"
+      ],
+      "notes": "Each invoice, credit note, bill and vendor credit with tax explains how its tax was worked out (place of supply, intra/inter-state, export, reverse charge, input tax credit, notes, foreign currency, each line's tax and rate version, TDS/TCS) with every point citing its source: a record in the books or the provision of law (IGST/CGST Acts, CGST Rules, rate notifications, Income-tax Act 2025 s.393). Things to check are flagged. Built from the posted figures and fixed rules; no AI model. Not built: Hindi text, journals/claims/payroll, links to provision text."
     }
   }
 }

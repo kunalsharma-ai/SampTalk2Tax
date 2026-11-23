@@ -7707,9 +7707,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/tax-explanations.ts",
+        "packages/tax-engine/test/tax-explanations.test.ts",
+        "apps/api/src/gst/tax-explanation.service.ts",
+        "apps/api/test/tax-explanation.e2e.test.ts",
+        "apps/web/src/components/ledger/tax-explanation.tsx",
+        "apps/web/e2e/tax-explanation-flow.test.mjs",
+        "docs/TAX_EXPLANATIONS.md"
+      ],
+      "notes": "Each invoice, credit note, bill and vendor credit with tax explains how its tax was worked out (place of supply, intra/inter-state, export, reverse charge, input tax credit, notes, foreign currency, each line's tax and rate version, TDS/TCS) with every point citing its source: a record in the books or the provision of law (IGST/CGST Acts, CGST Rules, rate notifications, Income-tax Act 2025 s.393). Things to check are flagged. Built from the posted figures and fixed rules; no AI model. Not built: Hindi text, journals/claims/payroll, links to provision text."
     },
     {
       "id": "TAX-053",

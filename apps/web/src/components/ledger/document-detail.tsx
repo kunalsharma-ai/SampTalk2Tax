@@ -25,6 +25,7 @@ import { PaymentLinksPanel } from '@/components/payment-links/payment-links-pane
 import { RecognitionCard } from '@/components/revenue-recognition/recognition-card';
 import { can, type DocumentSummary, type FinancialDocument } from '@/lib/types';
 import { DocumentForm } from './document-form';
+import { TaxExplanationCard } from './tax-explanation';
 import { DocStatus } from './documents-table';
 
 export function DocumentDetail({ l }: { l: LedgerConfig }) {
@@ -284,6 +285,8 @@ export function DocumentDetail({ l }: { l: LedgerConfig }) {
           </tfoot>
         </Table>
       </Card>
+
+      {d.taxTotal !== '0.00' || d.gst || d.withholding || d.reverseCharge ? <TaxExplanationCard orgId={orgId} ledger={l.ledger} documentId={d.id} /> : null}
 
       {l.ledger === 'SALES' && d.kind === 'INVOICE' ? <RecognitionCard orgId={orgId} documentId={d.id} status={d.status} issueDate={d.issueDate} currency={c} functionalCurrency={d.functionalCurrency} onChange={refresh} /> : null}
 
