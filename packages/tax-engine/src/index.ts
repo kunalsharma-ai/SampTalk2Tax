@@ -18,3 +18,4 @@ export * from './india/tax-audit';
 export * from './india/compliance-documents';
 export * from './india/tax-scenarios';
 export * from './india/income-computation';
+export * from './india/audit-preparation';

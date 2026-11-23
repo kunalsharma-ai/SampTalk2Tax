@@ -148,6 +148,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/tax/advance-tax', label: 'Advance tax', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/tax-audit', label: 'Tax audit', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/income-computation', label: 'Income tax computation', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
+      { href: '/tax/audit-preparation', label: 'Tax audit preparation', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/compliance-documents', label: 'Compliance documents', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/forecast', label: 'Tax forecast', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },
       { href: '/tax/scenarios', label: 'Tax scenarios', needs: 'COMPLIANCE_CALENDAR', perm: 'reports.read' },

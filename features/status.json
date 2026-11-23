@@ -9389,6 +9389,19 @@
         "docs/INCOME_TAX_COMPUTATION.md"
       ],
       "notes": "Corporate tax on the computation: 22% (115BAA), 25% (turnover up to 400 crore), 30% companies and firms with surcharge, marginal relief and 4% cess, less TDS, advance tax and other tax paid, giving self-assessment tax or refund. Not built: MAT (115JB), dividend/buyback tax, 234A-C interest."
+    },
+    "TAX-051": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/audit-preparation.ts",
+        "packages/tax-engine/test/audit-preparation.test.ts",
+        "apps/api/src/tax-audit-preparation/tax-audit-preparation.service.ts",
+        "apps/api/test/tax-audit-preparation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/audit-preparation/page.tsx",
+        "apps/web/e2e/tax-audit-preparation-flow.test.mjs",
+        "docs/TAX_AUDIT_PREPARATION.md"
+      ],
+      "notes": "Tax audit readiness for a financial year (India), from the books: months locked, year closed, no drafts, banks reconciled to year end, returns/payments for the year done and on time, acknowledgements/challans on file, 40A(3) cash payments, 269ST cash receipts, TDS late, depreciation posted, income tax computation final. Notes to the auditor per check; mark ready only when nothing missing and attention points explained (snapshot, frozen notes, changed-since list); reopen with reason; CSV checklist export. No AI. Not built: auditor portal sharing, auditor sign-off, filing."
     }
   }
 }

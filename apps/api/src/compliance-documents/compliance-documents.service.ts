@@ -150,13 +150,19 @@ export class ComplianceDocumentsService {
     await this.india(org);
     const cal = await this.compliance.calendar(org.id, addDays(today, -days), today);
     const done = cal.items.filter((i) => i.status === 'DONE' && i.dueDate >= addDays(today, -days));
+    const gaps = await this.missingProof(done);
+    return { configured: cal.configured, days, done: done.length, complete: done.length - gaps.length, items: gaps };
+  }
+
+  /** Of these done returns and payments, the ones without their acknowledgement or challan (with a file). */
+  async missingProof(done: readonly { key: string; name: string; periodLabel: string; dueDate: string; nature: Parameters<typeof expectedComplianceDocument>[0] }[]) {
     const docs = done.length ? await this.store.collection(complianceDocuments).find({ status: 'ACTIVE', obligationKey: { $in: done.map((i) => i.key) } }) : [];
     const files = await this.files(docs.map((d) => d.id));
     const gaps = complianceDocumentGaps(
       done.map((i) => ({ key: i.key, name: i.name, periodLabel: i.periodLabel, dueDate: i.dueDate, nature: i.nature })),
       docs.map((d) => ({ obligationKey: d.obligationKey, kind: d.kind, files: files.get(d.id)?.length ?? 0 })),
     );
-    return { configured: cal.configured, days, done: done.length, complete: done.length - gaps.length, items: gaps.map((g) => ({ ...g, needsLabel: COMPLIANCE_DOC_KIND_LABEL[g.needs] })) };
+    return gaps.map((g) => ({ ...g, needsLabel: COMPLIANCE_DOC_KIND_LABEL[g.needs] }));
   }
 
   /** Who may see or change the files on a compliance document; see AttachmentsService. */
