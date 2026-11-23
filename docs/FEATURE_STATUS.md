@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 577 |
+| Not started | 576 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 683 |
+| Tested | 684 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 16 | 38 |
+| Global taxation engine | M3 | 54 | 15 | 39 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2895,6 +2895,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/audit-preparation/page.tsx
   - apps/web/e2e/tax-audit-preparation-flow.test.mjs
   - docs/TAX_AUDIT_PREPARATION.md
+
+### TAX-052 — Source-backed tax explanations
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Each invoice, credit note, bill and vendor credit with tax explains how its tax was worked out (place of supply, intra/inter-state, export, reverse charge, input tax credit, notes, foreign currency, each line's tax and rate version, TDS/TCS) with every point citing its source: a record in the books or the provision of law (IGST/CGST Acts, CGST Rules, rate notifications, Income-tax Act 2025 s.393). Things to check are flagged. Built from the posted figures and fixed rules; no AI model. Not built: Hindi text, journals/claims/payroll, links to provision text.
+- Evidence:
+  - packages/tax-engine/src/india/tax-explanations.ts
+  - packages/tax-engine/test/tax-explanations.test.ts
+  - apps/api/src/gst/tax-explanation.service.ts
+  - apps/api/test/tax-explanation.e2e.test.ts
+  - apps/web/src/components/ledger/tax-explanation.tsx
+  - apps/web/e2e/tax-explanation-flow.test.mjs
+  - docs/TAX_EXPLANATIONS.md
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 
