@@ -12,6 +12,7 @@ import { bootApp, createOrg, Ctx, registerUser, TestUser, today } from './helper
 const T = today();
 const d = (n: number) => addDays(T, -n);
 const dmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+// Each claim's receipt is its own file: the same file on two claims needs an approver's note (EXP-018).
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n');
 let ctx: Ctx;
 let owner: TestUser;
@@ -26,7 +27,7 @@ const c: Record<string, { id: string; number: string; reimbursementJournalEntryI
 const E = () => `${org.base}/expense-evidence`;
 async function claim(key: string, amount: string, approvedAgo: number, opts: { receipt?: boolean; note?: string } = {}) {
   const x = (await ctx.http().post(`${org.base}/expense-claims`).set(ravi.auth).send({ title: `Trip ${key}`, lines: [{ date: d(approvedAgo + 1), accountId: org.acc['6600'], merchant: 'Synthetic Travels', amount }] }).expect(201)).body;
-  if (opts.receipt) await ctx.http().post(`${org.base}/attachments?entityType=EXPENSE_CLAIM&entityId=${x.id}&fileName=receipt-${key}.pdf`).set(ravi.auth).set('Content-Type', 'application/pdf').send(PDF).expect(201);
+  if (opts.receipt) await ctx.http().post(`${org.base}/attachments?entityType=EXPENSE_CLAIM&entityId=${x.id}&fileName=receipt-${key}.pdf`).set(ravi.auth).set('Content-Type', 'application/pdf').send(Buffer.concat([PDF, Buffer.from(`% receipt ${key}\n`)])).expect(201);
   await ctx.http().post(`${org.base}/expense-claims/${x.id}/submit`).set(ravi.auth).send({}).expect(200);
   c[key] = (await ctx.http().post(`${org.base}/expense-claims/${x.id}/approve`).set(approver.auth).send({ date: d(approvedAgo), ...(opts.note ? { note: opts.note } : {}) }).expect(200)).body;
 }
