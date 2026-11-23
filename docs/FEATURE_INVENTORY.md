@@ -179,7 +179,7 @@ Part 7 · M2 · priority P1 · depends on: GL, DOC, WFLOW, PROC
 | AP-008 |  | capability | Partial payments | Implemented |
 | AP-009 |  | capability | Advance payments | Implemented |
 | AP-010 |  | capability | Credit notes | Implemented |
-| AP-011 |  | capability | Supplier statements | Implemented |
+| AP-011 |  | capability | Supplier statements | Tested |
 | AP-012 |  | capability | Payables aging | Tested |
 | AP-013 |  | capability | Vendor portals | Tested |
 | AP-014 |  | capability | Payment batches | Tested |

@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 576 |
 | Designed | 0 |
 | Implementing | 38 |
-| Implemented | 31 |
-| Tested | 684 |
+| Implemented | 30 |
+| Tested | 685 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -1809,10 +1809,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### AP-011 — Supplier statements
 
 - Module: Accounts payable
-- Status: **Implemented**
+- Status: **Tested**
+- Notes: Vendor statement in the purchases ledger (GET /contacts/:id/statement?ledger=PURCHASES) plus supplier statement reconciliation: a supplier's statement (period, their balances, lines pasted as CSV) is matched to bills, vendor credits and payments by normalised reference, then amount and date (payments 10 days, documents 7); the difference is split into opening, lines only on theirs, items only in the books, amount differences and statement arithmetic, which always add up. Reconciled with a note (only when the statement adds up), then fixed. supplier_statements collection, audited. Not built: PDF/email import, multi-currency statements, creating missing items from a line.
 - Evidence:
-  - GET /v1/orgs/:orgId/contacts/:id/statement?ledger=PURCHASES
-  - apps/web/src/components/ledger/contact-detail.tsx
+  - packages/accounting-engine/src/supplier-statements.ts
+  - packages/accounting-engine/test/supplier-statements.test.ts
+  - apps/api/src/supplier-statements/supplier-statements.service.ts
+  - apps/api/test/supplier-statements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/purchases/supplier-statements/[statementId]/page.tsx
+  - apps/web/e2e/supplier-statements-flow.test.mjs
+  - docs/SUPPLIER_STATEMENTS.md
 
 ### AP-012 — Payables aging
 

@@ -854,6 +854,21 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the month, usually before filing GSTR-3B. When the books differ, open each item: correct a manual journal, or amend the return of the month a document belongs to. Fix high-severity mistakes before filing; low ones are worth a look.',
     where: 'Tax. Needs the reports permission and a GST registration. GST payments settle the accounts and are shown apart. Reads posted journals and documents only; nothing is changed or filed, and no AI model is used.',
   },
+  'purchases/supplier-statements': {
+    what: 'Statements of account your suppliers send, each matched to the bills, vendor credits and payments in your books for its period, with the difference between their balance and yours traced to the lines and items that cause it.',
+    how: 'Choose Reconcile a statement, pick the supplier, enter the period and their balances, and paste the lines from their statement. Open a statement to see what is only on theirs, what is only in your books and which amounts differ.',
+    where: 'Purchases. Reading needs purchases.read; entering and reconciling needs purchases.manage and is audited. Amounts are in one currency; the books side is the supplier\'s statement in the purchases ledger. No AI model is used.',
+  },
+  'purchases/supplier-statements/new': {
+    what: "Entering a supplier's statement of account to check it against your books.",
+    how: 'Choose the supplier and the period, type their opening and closing balances, and paste the lines as CSV (date, reference, type, amount). Rows that cannot be read are listed before you save. Copy their figures as they are, even ones you think are wrong.',
+    where: 'Purchases → Supplier statements. Needs purchases.manage. Dates may be YYYY-MM-DD or DD/MM/YYYY; types are invoice, debit note, credit note or payment.',
+  },
+  'purchases/supplier-statements/[id]': {
+    what: "One supplier statement reconciled: their balance against your books, the parts that make up the difference (a different opening, lines only on theirs, items only in your books, amounts that differ, a statement that does not add up), and each line matched to a bill, vendor credit or payment by their reference or by amount and date.",
+    how: 'Work through the lists: enter missing bills, record missing payments, send them details of items they have not recorded. If you typed something wrong, correct the statement as entered. Then mark it reconciled with a note saying how the remaining differences will be settled.',
+    where: 'Purchases → Supplier statements. A statement that does not add up cannot be reconciled; once reconciled it is fixed. Matching ignores separators and leading zeros in references; payments match within 10 days, bills within 7.',
+  },
   'tax/reverse-charge': {
     what: "A month's reverse-charge register: posted bills and vendor credits where you pay the GST instead of the supplier, on notified goods and services (CGST Act s.9(3)) and services from abroad (IGST Act s.5(3)). It shows the tax by head to pay in cash, which bills need a self-invoice and by when, and bills that were not recorded under reverse charge although their HSN/SAC is a notified category, such as security services, legal services by an advocate, a goods transport agency or metal scrap from an unregistered dealer.",
     how: 'Choose the month. Issue the self-invoice for each bill from a supplier with no GSTIN or outside India within 30 days of the bill. Check each bill under "may need reverse charge" against its condition; if it applies, void the bill and record it again with Reverse charge ticked. Then pay the month on GST payments: reverse-charge tax is paid in cash.',
