@@ -162,6 +162,9 @@ export interface TaxRate {
   salesAccountId: string | null;
   purchaseAccountId: string | null;
   isActive: boolean;
+  /** The percentage the rate was created with; `rate` is the one in force today (TAX-003). */
+  originalRate?: string;
+  nextChange?: { effectiveFrom: string; rate: string } | null;
 }
 
 export type GstCategory = 'TAXABLE' | 'NIL_RATED' | 'EXEMPT' | 'NON_GST';

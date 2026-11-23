@@ -895,9 +895,14 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Tax. Used on bills, invoices and contacts.',
   },
   'settings/tax-rates': {
-    what: 'The tax rates you can choose on lines, such as GST 18%.',
-    how: 'Add a rate with its percentage and accounts. Deactivate rates you no longer use.',
+    what: 'The tax rates you can choose on lines, such as GST 18%, with the percentage in force today and any change scheduled.',
+    how: 'Add a rate with its percentage and accounts. Open a rate\'s history to schedule a change from a date. Deactivate rates you no longer use.',
     where: 'Tax. Used on quotations, orders, contracts, invoices and bills.',
+  },
+  'settings/tax-rates/[id]': {
+    what: 'Every percentage one tax rate has had and will have: the rate as created, each later version with the date it took effect and why, and changes withdrawn before they took effect. Invoices and bills use the rate in force on their issue date, and expense claim lines the rate on the line\'s date, so a change never alters what is already recorded.',
+    how: 'To change the rate, enter the new percentage, the date it takes effect and the notification or reason, and schedule it. Changes are added in date order; one cannot reach back past posted documents or approved claims that use the rate. Withdraw a scheduled change, with a reason, any time before it takes effect.',
+    where: 'Settings → Tax rates → History. Scheduling and withdrawing need the accounts permission and are kept in the audit trail. Nil-rated, exempt and non-GST rates stay at 0%.',
   },
   'settings/country-module': {
     what: 'Which country\'s rules your organisation follows, and what that module supports.',

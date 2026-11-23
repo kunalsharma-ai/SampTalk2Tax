@@ -74,6 +74,7 @@ import { FxService } from './fx/fx.service';
 import { CountryModuleController, CountryModulesCatalogueController } from './country-modules/country-modules.controller';
 import { CountryModulesService } from './country-modules/country-modules.service';
 import { TaxRatesService } from './tax-rates/tax-rates.service';
+import { TaxRateVersionsService } from './tax-rates/tax-rate-versions.service';
 import { prismaProvider } from './common/prisma.service';
 import { documentStoreProvider } from './common/document-store.service';
 import { MovedTables } from './db/moved-table';
@@ -618,6 +619,7 @@ export class AppModule {
         SubledgerService,
         ContactsService,
         TaxRatesService,
+        TaxRateVersionsService,
         FxService,
         CountryModulesService,
         DocumentsService,

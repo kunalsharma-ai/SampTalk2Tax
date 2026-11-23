@@ -2,8 +2,10 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { dec } from '@talk2tax/accounting-engine';
 import { GstCategory, TaxRate, TaxRateKind } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
+import { todayIso } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { PrismaService, Tx } from '../common/prisma.service';
+import { TaxRateVersionsService } from './tax-rate-versions.service';
 
 /**
  * Tenant-configured tax rates. SIMPLE rates are a calculation aid: one percentage
@@ -16,11 +18,14 @@ export class TaxRatesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly versions: TaxRateVersionsService,
   ) {}
 
   async list(orgId: string, includeInactive: boolean) {
     const rows = await this.prisma.taxRate.findMany({ where: { orgId, ...(includeInactive ? {} : { isActive: true }) }, orderBy: [{ rate: 'asc' }, { name: 'asc' }] });
-    return rows.map(serialize);
+    // `rate` is the rate in force today (TAX-003); `originalRate` is version 1.
+    const inForce = await this.versions.ratesOn(rows, todayIso());
+    return rows.map((t) => ({ ...serialize(t), rate: inForce.get(t.id)!.rate, originalRate: t.rate.toFixed(), nextChange: inForce.get(t.id)!.next }));
   }
 
   async create(

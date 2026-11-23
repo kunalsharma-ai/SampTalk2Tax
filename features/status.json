@@ -9402,6 +9402,19 @@
         "docs/TAX_AUDIT_PREPARATION.md"
       ],
       "notes": "Tax audit readiness for a financial year (India), from the books: months locked, year closed, no drafts, banks reconciled to year end, returns/payments for the year done and on time, acknowledgements/challans on file, 40A(3) cash payments, 269ST cash receipts, TDS late, depreciation posted, income tax computation final. Notes to the auditor per check; mark ready only when nothing missing and attention points explained (snapshot, frozen notes, changed-since list); reopen with reason; CSV checklist export. No AI. Not built: auditor portal sharing, auditor sign-off, filing."
+    },
+    "TAX-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/tax-rate-versions.ts",
+        "packages/accounting-engine/test/tax-rate-versions.test.ts",
+        "apps/api/src/tax-rates/tax-rate-versions.service.ts",
+        "apps/api/test/tax-rate-versions.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/settings/tax-rates/[taxRateId]/page.tsx",
+        "apps/web/e2e/tax-rate-versions-flow.test.mjs",
+        "docs/TAX_RATE_VERSIONS.md"
+      ],
+      "notes": "Tax rates are effective-dated and version-controlled: original rate = version 1, later versions with effective date, reason and who (tax_rate_versions, append-only). Documents use the rate in force on their issue date (incl. GST split), expense claim lines on the line date; list shows rate today and next change. Versions only in date order, never behind posted documents/approved claims; scheduled versions withdrawable with reason before they take effect. Audited. Not built: central rate publishing, dated withholding section versions beyond validFrom, date-aware line-editor previews."
     }
   }
 }

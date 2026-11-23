@@ -1,5 +1,6 @@
 import { ChartService } from '../accounts/chart.service';
 import { DocumentStoreService } from '../common/document-store.service';
+import { TaxRateVersionsService } from '../tax-rates/tax-rate-versions.service';
 import { organizations } from '../db/collections/tenancy';
 import { EXPENSE_CLAIMS } from '../db/collections/expenses';
 import { MovedTables } from '../db/moved-table';
@@ -86,6 +87,7 @@ export class ExpensesService {
     private readonly moved: MovedTables,
     private readonly allowances: AllowancesService,
     private readonly policy: ExpensePolicyService,
+    private readonly rateVersions: TaxRateVersionsService,
   ) {}
 
   /** What a claimant may choose from without reading the whole chart of accounts. */
@@ -425,7 +427,9 @@ export class ExpensesService {
       if (l.date > today) issues.push(`Line ${i + 1}: the date is in the future`);
     });
     if (issues.length) throw new DomainError('CLAIM_INVALID', 'The claim is invalid', HttpStatus.UNPROCESSABLE_ENTITY, { issues });
-    const rates = new Map<string, TaxRateInfo>(taxes.map((t) => [t.id, { id: t.id, name: t.name, rate: t.rate.toFixed(), accountId: t.purchaseAccountId }]));
+    // Each line at the rate in force on its date (TAX-003).
+    const versions = await this.rateVersions.versionsFor(taxes.map((t) => t.id));
+    const rates = new Map<string, TaxRateInfo>(taxes.map((t) => [t.id, { id: t.id, name: t.name, rate: t.rate.toFixed(), accountId: t.purchaseAccountId, versions: versions.get(t.id) ?? [] }]));
     return computeExpenseClaim(lines, org.functionalCurrency, rates);
   }
 

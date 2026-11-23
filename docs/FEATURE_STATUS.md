@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 580 |
+| Not started | 579 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 680 |
+| Tested | 681 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 19 | 35 |
+| Global taxation engine | M3 | 54 | 18 | 36 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2460,6 +2460,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/src/tax-rates
   - apps/web/e2e/sales-flow.test.mjs
+
+### TAX-003 — Use effective-dated, version-controlled rules
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Tax rates are effective-dated and version-controlled: original rate = version 1, later versions with effective date, reason and who (tax_rate_versions, append-only). Documents use the rate in force on their issue date (incl. GST split), expense claim lines on the line date; list shows rate today and next change. Versions only in date order, never behind posted documents/approved claims; scheduled versions withdrawable with reason before they take effect. Audited. Not built: central rate publishing, dated withholding section versions beyond validFrom, date-aware line-editor previews.
+- Evidence:
+  - packages/accounting-engine/src/tax-rate-versions.ts
+  - packages/accounting-engine/test/tax-rate-versions.test.ts
+  - apps/api/src/tax-rates/tax-rate-versions.service.ts
+  - apps/api/test/tax-rate-versions.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/settings/tax-rates/[taxRateId]/page.tsx
+  - apps/web/e2e/tax-rate-versions-flow.test.mjs
+  - docs/TAX_RATE_VERSIONS.md
 
 ### TAX-004 — Each country module must include its supported rules, limitations, sources, test cases and maintenance requirements
 

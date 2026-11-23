@@ -1,6 +1,7 @@
 import { JournalLineInput } from './journal';
 import { D, Dec, MoneyError, assertCurrencyPrecision, dec, roundToCurrency, sum } from './money';
 import { assertIsoDate } from './periods';
+import type { RateVersion } from './tax-rate-versions';
 
 /**
  * Sales and purchase documents (Directive Parts 6 and 7).
@@ -95,6 +96,8 @@ export interface TaxRateInfo {
    * supply) is split by the TaxSplitter passed to computeDocument.
    */
   kind?: 'SIMPLE' | 'GST';
+  /** Later versions of the rate (TAX-003); where a line carries its own date, the rate in force on that date applies. */
+  versions?: readonly RateVersion[];
 }
 
 /** One part of a line's tax, posted to its own account. */
