@@ -1,7 +1,7 @@
 import { defineCollection, GuardViolation } from '@talk2tax/document-db';
 
 /**
- * VAT and GST returns (TAX-030 UK, TAX-036 Singapore). `vat_settings` holds one organisation's VAT registration: its number, its
+ * VAT and GST returns (TAX-030 UK, TAX-036 Singapore, TAX-035 Australia's BAS). `vat_settings` holds one organisation's VAT registration: its number, its
  * return stagger, the treatment of lines with no tax rate and the VAT treatment of each tax rate.
  * `vat_returns` records each return the business has submitted to HMRC: the nine boxes as
  * submitted, the period's own figures (to find later changes) and the corrections of earlier
@@ -81,7 +81,7 @@ export const vatReturns = defineCollection<VatReturnDoc>({
       periodStart: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
       periodEnd: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
       submittedOn: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
-      boxes: { bsonType: 'object', required: ['box1'], additionalProperties: MONEY },
+      boxes: { bsonType: 'object', minProperties: 1, additionalProperties: MONEY },
       own: { bsonType: 'object' },
       corrections: { bsonType: 'array', items: { bsonType: 'object', required: ['periodEnd'] } },
       reference: { bsonType: ['string', 'null'], maxLength: 100 },
