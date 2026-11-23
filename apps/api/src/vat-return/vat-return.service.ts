@@ -41,7 +41,7 @@ const PERIODS_SHOWN = 8;
  * periods already submitted carried as corrections when within the authority's limit; entries on
  * the tax accounts that are not on the return listed for checking; and a record of each return
  * the business submitted. Books kept in the country's currency only. reports.read reads;
- * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC, IRAS or the ATO.
+ * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC, IRAS, the ATO or the CRA.
  */
 const direction = (output = '0', input = '0'): 'PAY' | 'RECLAIM' | 'NIL' => (new D(output).gt(input) ? 'PAY' : new D(output).lt(input) ? 'RECLAIM' : 'NIL');
 
@@ -57,7 +57,7 @@ export class VatReturnService {
   private async jurisdiction(org: OrgContext): Promise<VatJurisdiction> {
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { countryCode: true } });
     const j = vatJurisdiction(o.countryCode);
-    if (!j) throw new DomainError('NO_VAT_RETURN', 'A VAT or GST return is prepared here for organisations in the United Kingdom, Singapore and Australia', HttpStatus.UNPROCESSABLE_ENTITY);
+    if (!j) throw new DomainError('NO_VAT_RETURN', 'A VAT or GST return is prepared here for organisations in the United Kingdom, Singapore, Australia and Canada', HttpStatus.UNPROCESSABLE_ENTITY);
     if (org.functionalCurrency !== j.currency) throw new DomainError('WRONG_CURRENCY', `The ${j.returnName} is prepared from books kept in ${j.currency}`, HttpStatus.UNPROCESSABLE_ENTITY);
     return j;
   }
@@ -82,7 +82,7 @@ export class VatReturnService {
 
   /** What the page says for this country. */
   private describe(j: VatJurisdiction) {
-    return { country: j.country, currency: j.currency, taxName: j.taxName, returnName: j.returnName, authority: j.authority, authorityThe: j.authorityThe, unitsNote: j.unitsNote, numberName: j.numberName, numberShort: j.numberShort, numberHint: j.numberHint, dueRule: j.dueRule, netBox: j.netBox, wholeBoxes: j.wholeBoxes, intro: j.intro, treatmentNote: j.treatmentNote, overLimit: j.overLimit, cardTitles: j.cardTitles };
+    return { country: j.country, currency: j.currency, taxName: j.taxName, returnName: j.returnName, authority: j.authority, authorityThe: j.authorityThe, unitsNote: j.unitsNote, numberName: j.numberName, numberShort: j.numberShort, numberHint: j.numberHint, dueRule: j.dueRule, netBox: j.netBox, wholeBoxes: j.wholeBoxes, intro: j.intro, treatmentNote: j.treatmentNote, overLimit: j.overLimit, correctionRule: j.correctionRule ?? null, cardTitles: j.cardTitles };
   }
 
   async settings(org: OrgContext) {
@@ -299,7 +299,7 @@ export class VatReturnService {
       corrections: { pending, included: !mine && included.length > 0, allowance },
       unclassified: r.unclassified,
       issues,
-      warnings: [...r.warnings, ...(pending.length && !allowance.allowed ? [`The corrections of earlier returns come to ${j.currency} ${allowance.net}, over the ${j.currency} ${allowance.limit} that may go on this return: ${j.overLimit}`] : [])],
+      warnings: [...r.warnings, ...(pending.length && !allowance.allowed ? [j.correctionRule ? `The changes to earlier returns cannot go on this return (${j.correctionRule}): ${j.overLimit}` : `The corrections of earlier returns come to ${j.currency} ${allowance.net}, over the ${j.currency} ${allowance.limit} that may go on this return: ${j.overLimit}`] : [])],
       otherVatEntries: other,
       entries: entries.map((e) => ({ ...e, treatment: treatmentOf(e) })),
       submitted,
@@ -310,7 +310,7 @@ export class VatReturnService {
     const v = await this.vatReturn(org, periodEnd);
     const csv = vatReturnCsv(v.period, v.boxes, v.entries, { title: v.jurisdiction.returnName, labels: v.labels, taxName: v.jurisdiction.taxName });
     await this.prisma.$transaction((tx) => this.audit.append(tx, { orgId: org.id, actorId: user.id, action: 'vat_return.exported', entityType: 'vat_return', entityId: `vat:${v.period.end}`, data: { periodStart: v.period.start, periodEnd: v.period.end, net: v.net } }));
-    return { fileName: `${v.jurisdiction.taxName.toLowerCase()}-return-${v.period.start}-to-${v.period.end}.csv`, csv };
+    return { fileName: `${v.jurisdiction.taxName.toLowerCase().replace(/[^a-z]+/g, '-')}-return-${v.period.start}-to-${v.period.end}.csv`, csv };
   }
 
   /** Records that the business submitted the period's return to the tax authority: the boxes as prepared now are kept and never change. */
