@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 568 |
+| Not started | 567 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 699 |
+| Tested | 700 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 2 | 39 |
+| Advanced financial reporting | M6 | 41 | 1 | 40 |
 | Dashboard design | M1 | 68 | 58 | 10 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -6326,6 +6326,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/api/test/report-designer.e2e.test.ts
   - apps/web/e2e/report-designer-flow.test.mjs
+
+### RPT-026 — Drag-and-drop metrics
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Arrange mode on a dashboard: drag approved metrics into gaps (new figure) or onto figures, charts and tables, drag widgets to reorder, remove; each drop saved as a new version for the whole organisation, checked by the engine (charts never mix units), audited. Keyboard alternative: pick a metric and Add here / Add to this widget, Move earlier/later buttons.
+- Evidence:
+  - packages/accounting-engine/test/dashboard-layout.test.ts
+  - apps/api/test/dashboard-layout.e2e.test.ts
+  - apps/web/e2e/dashboard-arrange-flow.test.mjs
 
 ### RPT-027 — Financial dimensions
 

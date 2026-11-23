@@ -229,3 +229,92 @@ export function describeDashboard(config: DashboardConfig): string[] {
     }
   });
 }
+
+// ------------------------------------------------------------------ arranging by drag and drop
+
+/** Where a dragged metric is dropped: as a new figure at a position, or onto an existing widget. */
+export type MetricDropTarget = { kind: 'new'; at: number } | { kind: 'into'; index: number };
+
+/** One change made while arranging a dashboard by dragging (or with the keyboard alternative). */
+export type LayoutOp = { op: 'move'; from: number; to: number } | { op: 'dropMetric'; metric: MetricKey; target: MetricDropTarget } | { op: 'remove'; index: number };
+
+const MAX_LAYOUT_OPS = 50;
+
+/** Moves the widget at `from` so that it ends up at position `to` (both counted from 0). */
+export function moveWidget(widgets: readonly Widget[], from: number, to: number): { widgets: Widget[]; error: string | null } {
+  const n = widgets.length;
+  if (!Number.isInteger(from) || from < 0 || from >= n) return { widgets: [...widgets], error: `There is no widget ${from + 1} to move` };
+  if (!Number.isInteger(to) || to < 0 || to >= n) return { widgets: [...widgets], error: `A widget can only move to a position from 1 to ${n}` };
+  const out = [...widgets];
+  const [w] = out.splice(from, 1);
+  out.splice(to, 0, w!);
+  return { widgets: out, error: null };
+}
+
+/**
+ * Drops an approved metric onto the dashboard. Dropped between widgets it becomes a new figure
+ * compared with the month before; dropped onto a figure it replaces the figure's metric; onto a
+ * chart it joins the chart only when it is measured the same way; onto a table it adds a column.
+ * Nothing is changed when the drop does not make sense, and the reason comes back in words.
+ */
+export function dropMetric(widgets: readonly Widget[], metric: string, target: MetricDropTarget): { widgets: Widget[]; error: string | null } {
+  const def = metricDef(metric);
+  const same = { widgets: [...widgets] };
+  if (!def) return { ...same, error: `"${metric}" is not an approved metric` };
+  const key = def.key;
+  if (target.kind === 'new') {
+    if (widgets.length >= MAX_WIDGETS) return { ...same, error: `A dashboard holds at most ${MAX_WIDGETS} widgets; remove one first` };
+    if (!Number.isInteger(target.at) || target.at < 0 || target.at > widgets.length) return { ...same, error: `A new figure can only go at a position from 1 to ${widgets.length + 1}` };
+    const out = [...widgets];
+    out.splice(target.at, 0, { type: 'STAT', title: def.label, size: 'SMALL', metric: key, compare: 'PREVIOUS_MONTH' });
+    return { widgets: out, error: null };
+  }
+  const w = Number.isInteger(target.index) ? widgets[target.index] : undefined;
+  if (!w) return { ...same, error: `There is no widget ${target.index + 1} to drop onto` };
+  const at = `${w.title || `Widget ${target.index + 1}`}`;
+  let next: Widget;
+  if (w.type === 'STAT') {
+    if (w.metric === key) return { ...same, error: `${at} already shows ${def.label}` };
+    const old = metricDef(w.metric);
+    // A title that only named the old metric follows the new one; a title someone wrote stays.
+    next = { ...w, metric: key, title: !w.title || (old && w.title === old.label) ? def.label : w.title };
+  } else if (w.type === 'LINE' || w.type === 'BAR') {
+    if (w.metrics.includes(key)) return { ...same, error: `${at} already shows ${def.label}` };
+    if (w.metrics.length >= LIMITS.chartMetrics) return { ...same, error: `${at} already shows ${LIMITS.chartMetrics} metrics, the most a chart can show` };
+    const unit = w.metrics.length ? metricDef(w.metrics[0]!)?.unit : def.unit;
+    if (unit && unit !== def.unit) return { ...same, error: `${at} shows ${UNIT_WORDS[unit]}; ${def.label} is measured in ${UNIT_WORDS[def.unit]}, so it needs its own chart` };
+    next = { ...w, metrics: [...w.metrics, key] };
+  } else if (w.type === 'TABLE') {
+    if (w.metrics.includes(key)) return { ...same, error: `${at} already shows ${def.label}` };
+    if (w.metrics.length >= LIMITS.tableMetrics) return { ...same, error: `${at} already shows ${LIMITS.tableMetrics} metrics, the most a table can show` };
+    next = { ...w, metrics: [...w.metrics, key] };
+  } else {
+    return { ...same, error: `${at} lists customers; drop the metric between widgets to add it as a figure` };
+  }
+  const out = [...widgets];
+  out[target.index] = next;
+  return { widgets: out, error: null };
+}
+
+/**
+ * Applies the changes made while arranging, in order. Stops at the first change that does not
+ * make sense and says which one; the result is then checked like any dashboard.
+ */
+export function applyLayoutOps(config: DashboardConfig, ops: readonly LayoutOp[]): { config: DashboardConfig; issues: string[] } {
+  if (!Array.isArray(ops) || !ops.length) return { config, issues: ['Nothing was changed'] };
+  if (ops.length > MAX_LAYOUT_OPS) return { config, issues: [`At most ${MAX_LAYOUT_OPS} changes at a time`] };
+  let widgets = [...config.widgets];
+  for (const [i, op] of ops.entries()) {
+    let r: { widgets: Widget[]; error: string | null };
+    if (op?.op === 'move') r = moveWidget(widgets, op.from, op.to);
+    else if (op?.op === 'dropMetric') r = dropMetric(widgets, op.metric, op.target);
+    else if (op?.op === 'remove') {
+      if (!Number.isInteger(op.index) || !widgets[op.index]) r = { widgets, error: `There is no widget ${op.index + 1} to remove` };
+      else if (widgets.length === 1) r = { widgets, error: 'A dashboard needs at least one widget' };
+      else r = { widgets: widgets.filter((_, k) => k !== op.index), error: null };
+    } else r = { widgets, error: 'Unknown change' };
+    if (r.error) return { config, issues: [ops.length > 1 ? `Change ${i + 1}: ${r.error}` : r.error] };
+    widgets = r.widgets;
+  }
+  return checkDashboard({ widgets });
+}

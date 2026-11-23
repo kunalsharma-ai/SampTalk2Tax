@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
+import type { LayoutOp } from '@talk2tax/accounting-engine';
 import { DashboardsService } from './dashboards.service';
 
 // Field formats only; the engine checks what the widgets mean and explains problems in words.
@@ -35,6 +36,13 @@ const DraftBody = z
     month,
   })
   .strict();
+const Target = z.discriminatedUnion('kind', [z.object({ kind: z.literal('new'), at: z.number().int().min(0).max(20) }).strict(), z.object({ kind: z.literal('into'), index: z.number().int().min(0).max(20) }).strict()]);
+const LayoutChange = z.discriminatedUnion('op', [
+  z.object({ op: z.literal('move'), from: z.number().int().min(0).max(20), to: z.number().int().min(0).max(20) }).strict(),
+  z.object({ op: z.literal('dropMetric'), metric: z.string().max(40), target: Target }).strict(),
+  z.object({ op: z.literal('remove'), index: z.number().int().min(0).max(20) }).strict(),
+]);
+const LayoutBody = z.object({ ops: z.array(LayoutChange).min(1, 'Nothing was changed').max(50, 'At most 50 changes at a time'), baseVersion: z.number().int().min(1), month }).strict();
 const MonthQuery = z.object({ month }).strict();
 
 /**
@@ -103,6 +111,15 @@ export class DashboardsController {
   @ApiBody({ schema: openApi(UpdateBody) })
   update(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body(new ZodPipe(UpdateBody)) b: z.infer<typeof UpdateBody>) {
     return this.svc.update(org, user, id, b);
+  }
+
+  /** Saves a rearranged layout (drag and drop or the keyboard buttons), checked like any change. */
+  @Post(':id/layout')
+  @HttpCode(200)
+  @RequirePermission('dashboards.manage')
+  @ApiBody({ schema: openApi(LayoutBody) })
+  arrange(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('id', ParseUUIDPipe) id: string, @Body(new ZodPipe(LayoutBody)) b: z.infer<typeof LayoutBody>) {
+    return this.svc.arrange(org, user, id, { ...b, ops: b.ops as LayoutOp[] });
   }
 
   @Delete(':id')

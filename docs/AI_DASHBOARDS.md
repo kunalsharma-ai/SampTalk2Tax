@@ -82,6 +82,19 @@ Building, changing and deleting dashboards needs `dashboards.manage` (owners, ad
 
 Only the configuration is stored. The figures are worked out from the books each time a dashboard is opened. A change that started from an older version is refused, so two people cannot overwrite each other. Changes are audited as `dashboard.created`, `dashboard.updated` (with before and after) and `dashboard.deleted`.
 
+## Arranging by drag and drop (RPT-026)
+
+Those with `dashboards.manage` press **Arrange** on a dashboard:
+
+* **Metrics to drag** lists every approved metric by group. Drag one into a gap between widgets to add it as a figure (compared with the month before), or onto a widget:
+  * a figure switches to the metric (a title that only named the old metric follows it);
+  * a line or bar chart takes it only when it is measured the same way, up to 4 metrics;
+  * a table adds a column, up to 8;
+  * a top-customers list refuses it.
+* **Dashboard layout** lists the widgets in order. Drag a widget to a gap to move it, or use the up and down buttons; Remove takes one off (a dashboard keeps at least one).
+* Without a mouse, press a metric to pick it, then **Add {metric} here** in a gap or **Add to this widget**.
+* Each change is saved straight away as a new version of the dashboard, so the layout is shared by the whole organisation. The engine (`applyLayoutOps`, `moveWidget`, `dropMetric` in `packages/accounting-engine/src/dashboards.ts`) applies the change and checks the result like any dashboard; a drop that makes no sense is refused in words and nothing changes. A stale version is refused so two people cannot overwrite each other.
+
 ## API
 
 | Route | Permission | |
@@ -90,6 +103,7 @@ Only the configuration is stored. The figures are worked out from the books each
 | `GET …/dashboards/catalogue`, `GET …/dashboards/ai-status` | `reports.read` | Approved metrics, kinds of widget and limits; whether drafting with AI is available |
 | `POST …/dashboards/preview` `{ config, month? }` | `reports.read` | Checks a configuration and works out its figures without saving. 422 `INVALID_DASHBOARD` with `details.issues` |
 | `POST …/dashboards`, `PUT …/dashboards/:id` `{ …, baseVersion }`, `DELETE …/dashboards/:id` | `dashboards.manage` | Save, change (409 `DASHBOARD_CHANGED` for a stale change) and delete |
+| `POST …/dashboards/:id/layout` `{ ops, baseVersion, month? }` | `dashboards.manage` | Arranging (RPT-026): `move {from,to}`, `dropMetric {metric, target: {kind:'new',at} \| {kind:'into',index}}`, `remove {index}`, applied in order and checked; 422 `INVALID_LAYOUT` in words, 409 `DASHBOARD_CHANGED`; audited as `dashboard.arranged` |
 | `POST …/dashboards/ai-draft` `{ request, conversation, month? }` | `dashboards.manage` | 503 `AI_NOT_CONFIGURED`, 409 when AI is off, 422 `REFUSED` or `NO_PROPOSAL` |
 
 ## Tests
@@ -105,6 +119,9 @@ Only the configuration is stored. The figures are worked out from the books each
   * AI drafts with a scripted model, including notes, an invalid draft, a conversation and a refusal, counted in the AI control center;
   * permissions and tenant isolation.
 * `apps/web/e2e/dashboards-flow.test.mjs` runs in the browser: it builds, previews, saves, views another month, reorders, removes and deletes a dashboard.
+* `packages/accounting-engine/test/dashboard-layout.test.ts` (4) covers moving widgets, every kind of drop and its refusals, and a series of changes.
+* `apps/api/test/dashboard-layout.e2e.test.ts` (4) covers saving drops and moves with figures and the audit event, refusals, versions, permissions and tenant isolation.
+* `apps/web/e2e/dashboard-arrange-flow.test.mjs` drags metrics and widgets in the browser (Playwright drag and drop), sees a mixed-unit drop refused, uses the keyboard alternative and reloads to find the layout saved.
 
 ## Limitations
 
