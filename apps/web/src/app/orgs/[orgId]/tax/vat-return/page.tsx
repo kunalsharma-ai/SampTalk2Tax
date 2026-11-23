@@ -11,7 +11,7 @@ import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
 type Treatment = 'STANDARD' | 'REDUCED' | 'ZERO' | 'EXEMPT' | 'OUTSIDE_SCOPE';
-interface J { country: string; currency: string; taxName: string; returnName: string; authority: string; numberName: string; numberHint: string; dueRule: string; netBox: string; wholeBoxes: string[] }
+interface J { country: string; currency: string; taxName: string; returnName: string; authority: string; authorityThe: string; unitsNote: string; numberName: string; numberShort: string; numberHint: string; dueRule: string; netBox: string; wholeBoxes: string[]; intro: string; treatmentNote: string; overLimit: string; cardTitles: { registration: string; periods: string; boxes: string; treatment: string; other: string } }
 interface Settings {
   jurisdiction: J;
   settings: { vrn: string; registeredFrom: string; stagger: string; untaxedTreatment: Treatment; updatedAt: string; updatedBy: string } | null;
@@ -51,7 +51,7 @@ const SOURCE: Record<string, string> = { INVOICE: 'Invoice', CREDIT_NOTE: 'Credi
 /** Credit notes, vendor credits and voids take off: shown with a minus sign. */
 const signed = (e: { source: string; reversal?: boolean }, x: string) => ((e.source === 'CREDIT_NOTE' || e.source === 'VENDOR_CREDIT') !== !!e.reversal && !/^0(\.0+)?$/.test(x) ? `-${x}` : x);
 
-/** VAT and GST returns (TAX-030 UK, TAX-036 Singapore): the boxes for a period, prepared from the books, and the record of each submission to the tax authority. */
+/** VAT and GST returns (TAX-030 UK, TAX-036 Singapore, TAX-035 Australia's BAS): the boxes for a period, prepared from the books, and the record of each submission to the tax authority. */
 export default function VatReturnPage() {
   const { org, orgId } = useOrg();
   const qc = useQueryClient();
@@ -95,16 +95,16 @@ export default function VatReturnPage() {
     <>
       <PageHeader
         title={j.returnName}
-        description={j.country === 'GB' ? "The nine boxes of your UK VAT return for each VAT period, prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims on the invoice basis. Enter them in your Making Tax Digital software or HMRC's service, then record the submission here; nothing is sent to HMRC from Talk2Tax." : `The boxes of your ${j.returnName} for each accounting period, prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims, with revenue from the ledger. Enter them in myTax Portal, then record the submission here; nothing is sent to ${j.authority} from Talk2Tax.`}
-        actions={r ? <Button variant="secondary" size="sm" loading={busy} onClick={() => void download()}>Download {j.taxName} return (CSV)</Button> : null}
+        description={j.intro}
+        actions={r ? <Button variant="secondary" size="sm" loading={busy} onClick={() => void download()}>Download {j.cardTitles.boxes} (CSV)</Button> : null}
       />
       <ErrorAlert title={`Could not load the ${j.taxName} settings`} error={settings.error} />
       {settings.data ? <SettingsCard data={settings.data} j={j} manage={manage} orgId={orgId} onSaved={refresh} /> : null}
 
       {periods.data?.setUp ? (
         <Card className="mb-4">
-          <CardHeader title={`${j.taxName} periods`} description={`Your recent ${j.taxName} periods. ${j.dueRule}`} />
-          <Table aria-label={`${j.taxName} periods`}>
+          <CardHeader title={j.cardTitles.periods} description={`Your recent ${j.taxName} periods. ${j.dueRule}`} />
+          <Table aria-label={j.cardTitles.periods}>
             <thead><Tr><Th>Period</Th><Th>Due</Th><Th>Status</Th><Th numeric>Net {j.taxName}</Th><Th /></Tr></thead>
             <tbody>
               {periods.data.periods.map((p) => (
@@ -146,8 +146,8 @@ function SettingsCard({ data, j, manage, orgId, onSaved }: { data: Settings; j: 
   return (
     <Card className="mb-4">
       <CardHeader
-        title={`${j.taxName} registration`}
-        description={s ? `${j.taxName} number ${s.vrn}, registered from ${date(s.registeredFrom)} · ${data.staggers.find((x) => x.key === s.stagger)?.label ?? s.stagger}. Last changed by ${s.updatedBy}, ${date(s.updatedAt.slice(0, 10))}.` : `Add your ${j.numberName}, how often you make returns and how each tax rate counts on the return.`}
+        title={j.cardTitles.registration}
+        description={s ? `${j.numberShort} ${s.vrn}, registered from ${date(s.registeredFrom)} · ${data.staggers.find((x) => x.key === s.stagger)?.label ?? s.stagger}. Last changed by ${s.updatedBy}, ${date(s.updatedAt.slice(0, 10))}.` : `Add your ${j.numberName}, how often you make returns and how each tax rate counts on the return.`}
         actions={s && manage && !open ? <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Change</Button> : null}
       />
       {open || !s ? (
@@ -210,8 +210,8 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
     <>
       <Card className="mb-4">
         <CardHeader
-          title={`${j.taxName} return boxes`}
-          description={`${date(r.period.start)} to ${date(r.period.end)} · ${j.taxName} number ${r.vrn} · due ${date(r.period.due)}.${j.wholeBoxes.length ? ' Boxes 1 to 5 in pounds and pence; boxes 6 to 9 in whole pounds.' : ` Amounts in ${j.currency}.`}`}
+          title={j.cardTitles.boxes}
+          description={`${date(r.period.start)} to ${date(r.period.end)} · ${j.numberShort} ${r.vrn} · due ${date(r.period.due)}. ${j.unitsNote}`}
           actions={<Badge tone={st.tone}>{st.label}</Badge>}
         />
         <div className="space-y-3 px-4 pt-4">
@@ -219,16 +219,16 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
           {r.warnings.map((w) => <Alert key={w} tone="warning">{w}</Alert>)}
           {r.submitted?.changedSince ? (
             <Alert tone="warning" title="The books for this period changed after it was submitted">
-              Output tax is {cash(r.submitted.changedSince.output)} different and input tax {cash(r.submitted.changedSince.input)}. The difference goes on your next return as a correction when it is within {j.authority}&apos;s limit.
+              Output tax is {cash(r.submitted.changedSince.output)} different and input tax {cash(r.submitted.changedSince.input)}. The difference goes on your next return as a correction when it is within {j.authorityThe}&apos;s limit.
             </Alert>
           ) : null}
         </div>
-        <Table aria-label={`${j.taxName} return boxes`}>
+        <Table aria-label={j.cardTitles.boxes}>
           <thead><Tr><Th>Box</Th><Th>Description</Th><Th numeric>Value</Th></Tr></thead>
           <tbody>
             {Object.keys(r.labels).map((k) => (
               <Tr key={k} className={k === j.netBox ? 'font-semibold' : undefined}>
-                <Td>{k.replace('box', '')}</Td>
+                <Td>{k === 'net' ? '' : k.replace('box', '')}</Td>
                 <Td>{r.labels[k]}</Td>
                 <Td numeric>{j.wholeBoxes.includes(k) ? money(r.boxes[k] ?? '0', j.currency).replace(/\.00$/, '') : cash(r.boxes[k] ?? '0')}</Td>
               </Tr>
@@ -236,18 +236,18 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
           </tbody>
         </Table>
         <p className="px-4 pb-4 pt-2 text-sm" data-testid="vat-direction">
-          {r.direction === 'PAY' ? `You pay ${j.authority} ${money(r.net, j.currency)}.` : r.direction === 'RECLAIM' ? `${j.authority} repays you ${money(r.net, j.currency)}.` : 'Nothing to pay or reclaim.'}
+          {r.direction === 'PAY' ? `You pay ${j.authorityThe} ${money(r.net, j.currency)}.` : r.direction === 'RECLAIM' ? `${j.authorityThe.charAt(0).toUpperCase()}${j.authorityThe.slice(1)} repays you ${money(r.net, j.currency)}.` : 'Nothing to pay or reclaim.'}
           {r.corrections.included ? ' Includes corrections of earlier returns.' : ''}
         </p>
       </Card>
 
       {r.submitted ? (
         <Card className="mb-4">
-          <CardHeader title="Submission recorded" description={`Submitted to ${j.authority} on ${date(r.submitted.submittedOn)}${r.submitted.reference ? `, reference ${r.submitted.reference}` : ''}. Recorded by ${r.submitted.recordedBy}. The boxes above are kept as submitted.`} />
+          <CardHeader title="Submission recorded" description={`Submitted to ${j.authorityThe} on ${date(r.submitted.submittedOn)}${r.submitted.reference ? `, reference ${r.submitted.reference}` : ''}. Recorded by ${r.submitted.recordedBy}. The boxes above are kept as submitted.`} />
         </Card>
       ) : manage ? (
         <Card className="mb-4">
-          <CardHeader title="Record the submission" description={`Once you have submitted these figures to ${j.authority}, record it here. The boxes are then kept as submitted, and later changes to this period go on a later return.`} />
+          <CardHeader title="Record the submission" description={`Once you have submitted these figures to ${j.authorityThe}, record it here. The boxes are then kept as submitted, and later changes to this period go on a later return.`} />
           <form
             className="grid gap-4 p-4 sm:grid-cols-[12rem_16rem_auto]"
             onSubmit={(e) => {
@@ -267,7 +267,7 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
         <Card className="mb-4">
           <CardHeader
             title="Corrections of earlier returns"
-            description={r.corrections.allowance.allowed ? `Changes to periods already submitted, added to the output and input tax of this return. Their net value of ${money(r.corrections.allowance.net, j.currency)} is within the ${money(r.corrections.allowance.limit, j.currency)} ${j.authority} allows on a return.` : `Changes to periods already submitted. Their net value of ${money(r.corrections.allowance.net, j.currency)} is over the ${money(r.corrections.allowance.limit, j.currency)} ${j.authority} allows on a return, so they are left off: ${j.country === 'GB' ? 'tell HMRC separately (form VAT652)' : 'correct the earlier returns with IRAS (GST F7)'}.`}
+            description={r.corrections.allowance.allowed ? `Changes to periods already submitted, added to the output and input tax of this return. Their net value of ${money(r.corrections.allowance.net, j.currency)} is within the ${money(r.corrections.allowance.limit, j.currency)} ${j.authorityThe} allows on a return.` : `Changes to periods already submitted. Their net value of ${money(r.corrections.allowance.net, j.currency)} is over the ${money(r.corrections.allowance.limit, j.currency)} ${j.authorityThe} allows on a return, so they are left off: ${j.overLimit}.`}
           />
           <Table aria-label="Corrections of earlier returns">
             <thead><Tr><Th>Period</Th><Th numeric>Output tax</Th><Th numeric>Input tax</Th><Th numeric>Net</Th></Tr></thead>
@@ -281,9 +281,9 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
       ) : null}
 
       <Card className="mb-4">
-        <CardHeader title={`Figures by ${j.taxName} treatment`} description={j.country === 'GB' ? 'Sales and purchases in the period by how their tax rate counts. Exempt supplies count in boxes 6 and 7 without VAT; supplies outside the scope of VAT are not on the return.' : 'Supplies and purchases in the period by how their tax rate counts. Exempt supplies count in box 3; exempt and out-of-scope purchases and out-of-scope supplies are not on the return.'} />
+        <CardHeader title={j.cardTitles.treatment} description={j.treatmentNote} />
         {r.breakdown.length ? (
-          <Table aria-label={`Figures by ${j.taxName} treatment`}>
+          <Table aria-label={j.cardTitles.treatment}>
             <thead><Tr><Th>Side</Th><Th>Treatment</Th><Th numeric>Lines</Th><Th numeric>Net</Th><Th numeric>{j.taxName}</Th></Tr></thead>
             <tbody>
               {[...sales, ...purchases].map((b) => (
@@ -303,9 +303,9 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
       </Card>
 
       <Card className="mb-4">
-        <CardHeader title={`Other entries on the ${j.taxName} accounts`} description={`Posted entries in the period on the ${j.taxName} accounts that no invoice, bill or claim on the return made, such as ${j.taxName} paid to ${j.authority} or a journal. Check none is ${j.taxName} that belongs on the return.`} />
+        <CardHeader title={j.cardTitles.other} description={`Posted entries in the period on the ${j.taxName} accounts that no invoice, bill or claim on the return made, such as ${j.taxName} paid to ${j.authorityThe} or a journal. Check none is ${j.taxName} that belongs on the return.`} />
         {r.otherVatEntries.length ? (
-          <Table aria-label={`Other entries on the ${j.taxName} accounts`}>
+          <Table aria-label={j.cardTitles.other}>
             <thead><Tr><Th>Date</Th><Th>Entry</Th><Th>Accounts</Th><Th numeric>Debit</Th><Th numeric>Credit</Th></Tr></thead>
             <tbody>
               {r.otherVatEntries.map((e) => (

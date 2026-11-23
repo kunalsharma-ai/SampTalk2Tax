@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 572 |
+| Not started | 571 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 695 |
+| Tested | 696 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 12 | 42 |
+| Global taxation engine | M3 | 54 | 11 | 43 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2816,6 +2816,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/reverse-charge-flow.test.mjs
   - docs/REVERSE_CHARGE.md
 
+### TAX-035 — Australian GST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Australian BAS GST items (Simpler BAS) G1, 1A and 1B in whole dollars on the accruals basis from posted invoices, credit notes, bills, vendor credits and approved expense claims; taxable/GST-free/input-taxed/out-of-scope treatments (no reduced rate), ABN check digits, monthly or quarterly BAS with ATO due dates (21st; 28th, December quarter 28 February), lodgments recorded, back-dated errors up to A$10,000 within 18 months carried to the next BAS (above: revise the earlier BAS). Not lodged with the ATO; G2-G20, cash basis, PAYG, fuel tax credits, WET/LCT and tax-invoice checks not modelled.
+- Evidence:
+  - packages/tax-engine/src/au/gst-bas.ts
+  - packages/tax-engine/src/vat/jurisdictions.ts
+  - packages/tax-engine/test/au-gst-bas.test.ts
+  - apps/api/src/vat-return/vat-return.service.ts
+  - apps/api/test/au-gst-bas.e2e.test.ts
+  - apps/web/e2e/au-gst-bas-flow.test.mjs
+  - docs/AU_GST_BAS.md
+
 ### TAX-036 — Singapore GST
 
 - Module: Global taxation engine
@@ -2843,10 +2857,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Global taxation engine
 - Status: **Implementing**
-- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030) and Singapore (TAX-036) so far, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
+- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036) and Australia (TAX-035) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
 - Evidence:
-  - packages/tax-engine/src/vat/jurisdictions.ts
+  - docs/AU_GST_BAS.md
   - docs/SG_GST_RETURN.md
+  - packages/tax-engine/src/vat/jurisdictions.ts
 
 ### TAX-042 — Do not claim worldwide compliance without verified, maintained country modules
 

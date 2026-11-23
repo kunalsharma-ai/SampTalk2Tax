@@ -23,4 +23,5 @@ export * from './india/reverse-charge';
 export * from './india/tax-explanations';
 export * from './uk/vat-return';
 export * from './sg/gst-f5';
+export * from './au/gst-bas';
 export * from './vat/jurisdictions';

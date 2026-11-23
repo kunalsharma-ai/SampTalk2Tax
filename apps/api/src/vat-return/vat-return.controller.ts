@@ -21,7 +21,7 @@ const Record_ = z
     periodEnd: isoDate,
     submittedOn: isoDate,
     reference: z.string().trim().max(100).nullish(),
-    /** The net tax as the person saw it (UK box 5, Singapore box 8); refused if the return has changed since. */
+    /** The net tax as the person saw it (UK box 5, Singapore box 8, the BAS net GST); refused if the return has changed since. */
     net: z.string().trim().regex(/^\d{1,13}(\.\d{1,2})?$/, 'An amount with up to 2 decimals').optional(),
   })
   .strict();

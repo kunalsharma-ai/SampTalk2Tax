@@ -193,15 +193,23 @@ export const COUNTRY_MODULES: readonly CountryModule[] = Object.freeze([
     level: 'STARTER',
     salesTaxName: 'GST',
     taxIdName: 'ABN',
-    summary: 'Accounting, an Australian tax invoice layout, and starter GST rates. No BAS or Single Touch Payroll.',
-    capabilities: starterCaps('GST', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'Tax invoice layout with ABN.' }]),
+    summary: 'Accounting, an Australian tax invoice layout, starter GST rates and the GST items of the BAS prepared from the books. Nothing is lodged with the ATO from here, and no Single Touch Payroll.',
+    capabilities: starterCaps('GST', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'Tax invoice layout with ABN.' }]).map((c) =>
+      c.key === 'SALES_TAX_RETURNS' ? { key: c.key, status: 'PARTLY' as const, note: 'The Simpler BAS GST items G1, 1A and 1B on the accruals basis, monthly or quarterly, with corrections of earlier periods up to A$10,000; you lodge the BAS with the ATO and record the lodgment here.' } : c,
+    ),
     starterRates: [
       { name: 'GST 10%', rate: '10', note: 'Standard rate.' },
       { name: 'GST-free 0%', rate: '0', note: 'GST-free supplies; which ones qualify is not checked.' },
     ],
-    limitations: ['No BAS, PAYG withholding or Single Touch Payroll.', 'No Peppol e-invoicing.'],
-    sources: [{ title: 'Australian Taxation Office: GST', url: 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst' }],
-    reviewedOn: '2026-11-05',
+    limitations: ['The BAS is not lodged with the ATO from here; only its GST items (G1, 1A, 1B) are prepared, on the accruals basis.', 'No full GST reporting (G2 to G20), cash basis, GST instalments, PAYG withholding or instalments, fuel tax credits, wine equalisation or luxury car tax, deferred import GST or Single Touch Payroll.', 'Input tax credits are claimed on every taxable purchase; whether you hold a tax invoice is not checked.', 'No Peppol e-invoicing.'],
+    sources: [
+      { title: 'Australian Taxation Office: GST', url: 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst' },
+      { title: 'ATO: Simpler BAS', url: 'https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/goods-and-services-tax-gst/simpler-bas-gst-bookkeeping-guide' },
+      { title: 'ATO: due dates for lodging and paying your BAS', url: 'https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas/due-dates-for-lodging-and-paying-your-bas' },
+      { title: 'ATO: correcting GST errors', url: 'https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/correcting-gst-errors' },
+      { title: 'ABR: format of the ABN', url: 'https://abr.business.gov.au/Help/AbnFormat' },
+    ],
+    reviewedOn: '2026-11-23',
   },
   {
     code: 'DE',

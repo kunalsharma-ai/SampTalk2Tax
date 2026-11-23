@@ -1,4 +1,5 @@
 import { D } from '@talk2tax/accounting-engine';
+import { AU_BAS_LABEL, AU_GST_TREATMENTS, AU_STAGGERS, AU_TREATMENT_LABEL, auBasDueDate, auBasPeriodFor, auCorrectionAllowance, auGstBas, normaliseAbn, recentAuBasPeriods, suggestAuTreatment } from '../au/gst-bas';
 import { recentSgGstPeriods, normaliseSgGstNumber, SG_F5_BOX_LABEL, SG_GST_TREATMENTS, SG_TREATMENT_LABEL, sgCorrectionAllowance, sgGstDueDate, sgGstPeriodFor, sgGstReturn, suggestSgTreatment } from '../sg/gst-f5';
 import {
   normaliseVrn,
@@ -7,6 +8,7 @@ import {
   ukVatReturn,
   VAT_BOX_LABEL,
   VAT_TREATMENT_LABEL,
+  VAT_STAGGERS,
   VAT_TREATMENTS,
   vatCorrectionAllowance,
   vatDueDate,
@@ -19,7 +21,7 @@ import {
 
 /**
  * Countries whose VAT or GST return Talk2Tax prepares (TAX-041: supported jurisdictions added one
- * at a time): the United Kingdom (TAX-030) and Singapore (TAX-036). Each says what its return is
+ * at a time): the United Kingdom (TAX-030), Singapore (TAX-036) and Australia (TAX-035, the GST on the BAS). Each says what its return is
  * called, its registration number, the treatments it has, its periods and due dates, its boxes,
  * how to work them out and how much of an earlier error may be corrected on the next return.
  * Output and input tax are the common figures: changes to submitted periods are found from them.
@@ -43,12 +45,20 @@ export interface TaxReturnCorrection {
 
 export interface VatJurisdiction {
   country: string;
+  /** As it reads in a sentence: the United Kingdom, Singapore, Australia. */
+  countryName: string;
   currency: string;
   /** VAT or GST. */
   taxName: string;
   returnName: string;
   authority: string;
+  /** The authority as it reads inside a sentence: HMRC, IRAS, the ATO. */
+  authorityThe: string;
+  /** How the boxes' amounts are given. */
+  unitsNote: string;
   numberName: string;
+  /** The number as a short label: VAT number, GST number, ABN. */
+  numberShort: string;
   numberHint: string;
   normaliseNumber(input: string): string | null;
   invalidNumber: string;
@@ -57,7 +67,9 @@ export interface VatJurisdiction {
   suggest(rate: string, name: string): VatTreatment | null;
   periodFor(stagger: VatStagger, end: string): { start: string; end: string; due: string } | null;
   recentPeriods(stagger: VatStagger, today: string, count: number): { start: string; end: string; due: string }[];
-  dueDate(end: string): string;
+  /** The return cycles the authority uses. */
+  staggers: readonly VatStagger[];
+  dueDate(end: string, stagger: VatStagger): string;
   dueRule: string;
   boxLabels: Record<string, string>;
   /** The box with the net tax to pay or reclaim. */
@@ -72,16 +84,27 @@ export interface VatJurisdiction {
   correctionAllowance(corrections: readonly TaxReturnCorrection[], own: TaxReturnFigures['own']): { net: string; limit: string; allowed: boolean };
   /** What to do when the corrections are over the limit. */
   overLimit: string;
-  correctionYears: number;
+  /** How far back a submitted period's changes may still be corrected on a later return. */
+  correctionMonths: number;
+  /** What the return covers and where the business files it. */
+  intro: string;
+  /** How each treatment counts on the return. */
+  treatmentNote: string;
+  /** The page's card titles, each unique so its help can say what this country's return does. */
+  cardTitles: { registration: string; periods: string; boxes: string; treatment: string; other: string };
 }
 
 const UK: VatJurisdiction = {
   country: 'GB',
+  countryName: 'the United Kingdom',
   currency: 'GBP',
   taxName: 'VAT',
   returnName: 'VAT return',
   authority: 'HMRC',
+  authorityThe: 'HMRC',
+  unitsNote: 'Boxes 1 to 5 in pounds and pence; boxes 6 to 9 in whole pounds.',
   numberName: 'VAT registration number',
+  numberShort: 'VAT number',
   numberHint: '9 digits, with or without GB',
   normaliseNumber: normaliseVrn,
   invalidNumber: 'That is not a valid UK VAT registration number (9 digits, or 12 for a branch)',
@@ -90,6 +113,7 @@ const UK: VatJurisdiction = {
   suggest: suggestVatTreatment,
   periodFor: vatPeriodFor,
   recentPeriods: recentVatPeriods,
+  staggers: VAT_STAGGERS,
   dueDate: vatDueDate,
   dueRule: 'A return and payment are due one calendar month and seven days after the period ends.',
   boxLabels: VAT_BOX_LABEL,
@@ -104,16 +128,23 @@ const UK: VatJurisdiction = {
   },
   correctionAllowance: (corrections, own) => vatCorrectionAllowance(corrections.map((c) => ({ box1: c.output, box4: c.input })), own.supplies),
   overLimit: 'tell HMRC about them separately (form VAT652)',
-  correctionYears: 4,
+  correctionMonths: 48,
+  intro: "The nine boxes of your UK VAT return for each VAT period, prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims on the invoice basis. Enter them in your Making Tax Digital software or HMRC's service, then record the submission here; nothing is sent to HMRC from Talk2Tax.",
+  treatmentNote: 'Sales and purchases in the period by how their tax rate counts. Exempt supplies count in boxes 6 and 7 without VAT; supplies outside the scope of VAT are not on the return.',
+  cardTitles: { registration: 'VAT registration', periods: 'VAT periods', boxes: 'VAT return boxes', treatment: 'Figures by VAT treatment', other: 'Other entries on the VAT accounts' },
 };
 
 const SG: VatJurisdiction = {
   country: 'SG',
+  countryName: 'Singapore',
   currency: 'SGD',
   taxName: 'GST',
   returnName: 'GST return (F5)',
   authority: 'IRAS',
+  authorityThe: 'IRAS',
+  unitsNote: 'Amounts in Singapore dollars.',
   numberName: 'GST registration number',
+  numberShort: 'GST number',
   numberHint: 'Your UEN or M-number, such as 201912345K',
   normaliseNumber: normaliseSgGstNumber,
   invalidNumber: 'That is not a Singapore GST registration number (a UEN such as 201912345K, or an M-number such as M90312345A)',
@@ -122,6 +153,7 @@ const SG: VatJurisdiction = {
   suggest: suggestSgTreatment,
   periodFor: sgGstPeriodFor,
   recentPeriods: recentSgGstPeriods,
+  staggers: VAT_STAGGERS,
   dueDate: sgGstDueDate,
   dueRule: 'A return and payment are due one month after the period ends.',
   boxLabels: SG_F5_BOX_LABEL,
@@ -133,10 +165,50 @@ const SG: VatJurisdiction = {
   compute: (entries, rates, opts) => sgGstReturn(entries, rates, opts),
   correctionAllowance: (corrections) => sgCorrectionAllowance(corrections),
   overLimit: 'correct the earlier returns with IRAS instead (GST F7)',
-  correctionYears: 5,
+  correctionMonths: 60,
+  intro: 'The boxes of your GST return (F5) for each accounting period, prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims, with revenue from the ledger. Enter them in myTax Portal, then record the submission here; nothing is sent to IRAS from Talk2Tax.',
+  treatmentNote: 'Supplies and purchases in the period by how their tax rate counts. Exempt supplies count in box 3; exempt and out-of-scope purchases and out-of-scope supplies are not on the return.',
+  cardTitles: { registration: 'GST registration', periods: 'GST periods', boxes: 'GST return boxes', treatment: 'Figures by GST treatment', other: 'Other entries on the GST accounts' },
 };
 
-export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG];
+const AU: VatJurisdiction = {
+  country: 'AU',
+  countryName: 'Australia',
+  currency: 'AUD',
+  taxName: 'GST',
+  returnName: 'Business activity statement (GST)',
+  authority: 'ATO',
+  authorityThe: 'the ATO',
+  unitsNote: 'In whole dollars, cents left off.',
+  numberName: 'ABN',
+  numberShort: 'ABN',
+  numberHint: '11 digits, such as 51 824 753 556',
+  normaliseNumber: normaliseAbn,
+  invalidNumber: 'That is not a valid Australian Business Number (11 digits that pass the ATO check)',
+  treatments: AU_GST_TREATMENTS,
+  treatmentLabel: AU_TREATMENT_LABEL,
+  suggest: suggestAuTreatment,
+  periodFor: auBasPeriodFor,
+  recentPeriods: recentAuBasPeriods,
+  staggers: AU_STAGGERS,
+  dueDate: (end, stagger) => auBasDueDate(end, stagger === 'MONTHLY'),
+  dueRule: 'A monthly BAS is due on the 21st of the next month; a quarterly BAS on the 28th of the month after the quarter, and the October to December quarter on 28 February.',
+  boxLabels: AU_BAS_LABEL,
+  netBox: 'net',
+  outputBox: '1A',
+  inputBox: '1B',
+  wholeBoxes: ['G1', '1A', '1B', 'net'],
+  needsRevenue: false,
+  compute: (entries, rates, opts) => auGstBas(entries, rates, { untaxed: opts.untaxed, corrections: opts.corrections }),
+  correctionAllowance: (corrections) => auCorrectionAllowance(corrections),
+  overLimit: 'revise the earlier BAS with the ATO instead',
+  correctionMonths: 18,
+  intro: 'The GST items of your business activity statement (G1, 1A and 1B on Simpler BAS) for each tax period, prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims on the accruals basis, in whole dollars. Enter them in ATO Online services or Online services for business, then record the lodgment here; nothing is sent to the ATO from Talk2Tax.',
+  treatmentNote: 'Sales and purchases in the period by how their tax rate counts. GST-free and input-taxed sales count in G1 without GST; only taxable purchases give GST credits at 1B; out-of-scope lines are not on the BAS.',
+  cardTitles: { registration: 'ABN and BAS cycle', periods: 'BAS periods', boxes: 'BAS GST items', treatment: 'Sales and purchases by GST treatment', other: 'Other entries on the GST accounts (BAS)' },
+};
+
+export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG, AU];
 
 /** The country's VAT or GST return, or null where Talk2Tax prepares none (India has its own GST returns). */
 export function vatJurisdiction(country: string): VatJurisdiction | null {

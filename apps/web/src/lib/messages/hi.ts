@@ -158,6 +158,7 @@ export const hi: Record<string, string> = {
   'Reverse charge': 'रिवर्स चार्ज',
   'VAT return': 'वैट रिटर्न',
   'GST return': 'जीएसटी रिटर्न',
+  'BAS (GST)': 'बीएएस (जीएसटी)',
   'Tax forecast': 'कर पूर्वानुमान',
   'Tax scenarios': 'कर परिदृश्य',
   'Deadline risk': 'समय-सीमा जोखिम',
