@@ -31,7 +31,27 @@ export interface RevenueForecast {
   months: ForecastMonth[];
   totals: Omit<ForecastMonth, 'month'>;
   items: ForecastItem[];
+  /** DASH-032: an 80% range around each month's whole-month revenue, from how far past saved forecasts were off. */
+  confidence: ForecastConfidence;
   can: { save: boolean };
+}
+
+export interface ForecastBand {
+  month: string;
+  /** Expected revenue for the whole month (this month includes what is already invoiced). */
+  expected: string;
+  low: string;
+  high: string;
+  /** The miss allowed either side, in per cent; null when the range is committed to best case. */
+  errorPct: string | null;
+  /** How many past forecast months the miss was taken from. */
+  basis: number;
+}
+export interface ForecastConfidence {
+  method: 'HISTORY' | 'SCENARIOS';
+  level: number;
+  samples: number;
+  bands: ForecastBand[];
 }
 
 export interface SavedForecastSummary {

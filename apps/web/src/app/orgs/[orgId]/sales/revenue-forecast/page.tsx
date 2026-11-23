@@ -65,8 +65,33 @@ export default function RevenueForecastPage() {
           </div>
           <Card className="mt-6">
             <CardHeader title="By month" description={`Other sales run at ${money(f.otherRunRate, c)} a month: the average of the last three complete months from invoices not made from a contract or an order. This month's figures are what is still to come.`} />
-            <div className="px-5 pt-2"><ForecastChart months={f.months} currency={c} actualSoFar={f.actualSoFar} /></div>
+            <div className="px-5 pt-2"><ForecastChart months={f.months} currency={c} actualSoFar={f.actualSoFar} bands={f.confidence.bands} level={f.confidence.level} /></div>
             <ForecastTable months={f.months} totals={f.totals} currency={c} />
+          </Card>
+          <Card className="mt-6" role="region" aria-label="How sure the forecast is">
+            <CardHeader
+              title="How sure the forecast is"
+              description={
+                f.confidence.method === 'HISTORY'
+                  ? `Each month's revenue should land in this range ${f.confidence.level} times out of 100, judging by ${f.confidence.samples} months that earlier saved forecasts can be checked against. The miss allowed is how far off forecasts made that many months ahead were, or all of them where there are fewer than three.`
+                  : `Too few saved forecasts can be checked against what was invoiced yet (${f.confidence.samples} months, at least 3 needed), so the range runs from what is committed to the best case. Save a forecast each month and the range will come from how far off they were.`
+              }
+            />
+            <Table aria-label="Likely range by month">
+              <thead><tr><Th>Month</Th><Th numeric>Expected for the month</Th><Th numeric>Low</Th><Th numeric>High</Th><Th numeric>Miss allowed</Th><Th numeric>Based on</Th></tr></thead>
+              <tbody>
+                {f.confidence.bands.map((b) => (
+                  <Tr key={b.month}>
+                    <Td>{monthLabel(b.month)}</Td>
+                    <Td numeric><Money value={b.expected} currency={c} /></Td>
+                    <Td numeric><Money value={b.low} currency={c} /></Td>
+                    <Td numeric><Money value={b.high} currency={c} /></Td>
+                    <Td numeric>{b.errorPct === null ? 'Committed to best case' : `± ${b.errorPct}%`}</Td>
+                    <Td numeric>{b.basis ? `${b.basis} month${b.basis === 1 ? '' : 's'}` : '—'}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
           </Card>
           <Card className="mt-6">
             <CardHeader title="What the forecast is made of" description="Contract periods by invoice date (late ones this month), what is left on open orders (this month), and open deals in their expected close month (overdue ones this month)." />

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { D, forecastMonths, minorUnits, revenueForecast, revenueForecastAccuracy, type ContractFrequency, type ForecastItem, type ForecastMonth } from '@talk2tax/accounting-engine';
+import { D, forecastConfidenceBands, forecastErrors, forecastMonths, minorUnits, revenueForecast, revenueForecastAccuracy, type ContractFrequency, type ForecastItem, type ForecastMonth } from '@talk2tax/accounting-engine';
 import { Prisma } from '@talk2tax/database';
 import { hasPermission, RoleName } from '@talk2tax/security';
 import { AuditService } from '../audit/audit.service';
@@ -80,7 +80,28 @@ export class RevenueForecastService {
       actualSoFar: thisMonth.reduce((t, r) => t.plus(r.revenue.toString()), new D(0)).toFixed(),
       scale: s,
     });
-    return { asOf: today, currency: org.functionalCurrency, horizon: months, otherRunRate: runRate.toFixed(s), ...result, can: { save: hasPermission(org.role, 'sales.manage') } };
+    // The band is for the whole month, so this month's range includes what is already invoiced, as past forecasts were judged.
+    const sofar = new D(result.actualSoFar);
+    const whole = result.months.map((m, i) => (i === 0 ? { ...m, committed: sofar.plus(m.committed).toFixed(s), expected: sofar.plus(m.expected).toFixed(s), best: sofar.plus(m.best).toFixed(s) } : m));
+    const bands = forecastConfidenceBands(whole, await this.pastErrors(org, today), s);
+    const confidence = { ...bands, bands: bands.bands.map((b, i) => ({ ...b, expected: whole[i]!.expected })) };
+    return { asOf: today, currency: org.functionalCurrency, horizon: months, otherRunRate: runRate.toFixed(s), ...result, confidence, can: { save: hasPermission(org.role, 'sales.manage') } };
+  }
+
+  /**
+   * How far each past saved forecast was from what was invoiced, by how many months ahead it was
+   * made (DASH-032). Only the latest forecast saved in each month counts, so saving the same
+   * forecast several times does not weigh it more.
+   */
+  private async pastErrors(org: ForecastOrg, today: string) {
+    const rows = await this.prisma.revenueForecast.findMany({ where: { orgId: org.id, asOf: { lt: toDbDate(`${today.slice(0, 7)}-01`) } }, orderBy: { number: 'desc' }, take: 60 });
+    const latest = new Map<string, (typeof rows)[number]>();
+    for (const r of rows) if (!latest.has(fromDbDate(r.asOf).slice(0, 7))) latest.set(fromDbDate(r.asOf).slice(0, 7), r);
+    const kept = [...latest.values()];
+    if (!kept.length) return [];
+    const oldest = kept.reduce((a, r) => (fromDbDate(r.asOf) < a ? fromDbDate(r.asOf) : a), today);
+    const actual = await this.actualByMonth(org, oldest, today);
+    return forecastErrors(kept.map((r) => ({ asOf: fromDbDate(r.asOf), accuracy: this.accuracy(org, r, actual, today) })));
   }
 
   async save(org: ForecastOrg, actor: { id: string }, body: { months: number; note?: string | null }, today = todayIso()) {
