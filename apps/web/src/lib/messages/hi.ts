@@ -75,6 +75,7 @@ export const hi: Record<string, string> = {
   'Payment priorities': 'भुगतान प्राथमिकताएँ',
   'Vendor invoices': 'विक्रेता चालान',
   'Payables ageing': 'देय राशि की आयु',
+  'Supplier statements': 'सप्लायर स्टेटमेंट मिलान',
   // Banking
   'Bank accounts': 'बैंक खाते',
   'Unusual bank activity': 'असामान्य बैंक गतिविधि',

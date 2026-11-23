@@ -148,3 +148,4 @@ export * from './payroll-report';
 export * from './audit-report';
 export * from './stakeholder-report';
 export * from './trip-costs';
+export * from './supplier-statements';
