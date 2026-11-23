@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 575 |
+| Not started | 574 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 23 |
-| Tested | 693 |
+| Tested | 694 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 15 | 39 |
+| Global taxation engine | M3 | 54 | 14 | 40 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2474,7 +2474,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Global taxation engine
 - Status: **Implementing**
-- Notes: India GST is the first jurisdiction module. Other countries are not started.
+- Notes: India GST is the first jurisdiction module. The UK VAT return (TAX-030) is the second jurisdiction module; other countries are not started.
 - Evidence:
   - packages/tax-engine (pure rules, no framework)
   - TaxRate.kind SIMPLE | GST; TaxSplitter hook in packages/accounting-engine computeDocument
@@ -2787,6 +2787,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/E_INVOICING_INDIA.md
   - docs/COMPLIANCE_CALENDAR_INDIA.md
   - apps/api/src/e-invoicing/e-invoicing.service.ts
+
+### TAX-030 — UK VAT
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: UK nine-box VAT return on the invoice basis from posted invoices, credit notes, bills, vendor credits and approved expense claims; voids taken off in the void period; VRN modulus 97 check; monthly or quarterly staggers with due dates; per-rate VAT treatments (standard/reduced/zero/exempt/outside scope); other entries on the VAT accounts listed; submissions recorded (vat_returns, immutable); later changes to submitted periods carried as corrections within HMRC's £10,000 / 1% of box 6 up to £50,000 limit. Not submitted to HMRC (no MTD connection); no cash/flat-rate/margin schemes, domestic reverse charge, PIVA, partial exemption or NI EU trade.
+- Evidence:
+  - packages/tax-engine/src/uk/vat-return.ts
+  - packages/tax-engine/test/uk-vat-return.test.ts
+  - apps/api/src/vat-return/vat-return.service.ts
+  - apps/api/test/vat-return.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/vat-return/page.tsx
+  - apps/web/e2e/vat-return-flow.test.mjs
+  - docs/UK_VAT_RETURN.md
 
 ### TAX-032 — Reverse-charge mechanisms
 

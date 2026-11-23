@@ -144,16 +144,22 @@ export const COUNTRY_MODULES: readonly CountryModule[] = Object.freeze([
     level: 'STARTER',
     salesTaxName: 'VAT',
     taxIdName: 'VAT number',
-    summary: 'Accounting, a UK VAT invoice layout, and starter VAT rates. No VAT return or Making Tax Digital submission.',
-    capabilities: starterCaps('VAT', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'VAT invoice layout with VAT number.' }]),
+    summary: 'Accounting, a UK VAT invoice layout, starter VAT rates and the VAT return prepared from the books. Nothing is submitted to HMRC from here.',
+    capabilities: starterCaps('VAT', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'VAT invoice layout with VAT number.' }]).map((c) =>
+      c.key === 'SALES_TAX_RETURNS' ? { key: c.key, status: 'PARTLY' as const, note: 'The nine-box VAT return on the invoice basis, monthly or quarterly, with corrections of earlier returns; you submit it through Making Tax Digital software or HMRC and record the submission here.' } : c,
+    ),
     starterRates: [
       { name: 'VAT 20% (standard)', rate: '20', note: 'Standard rate.' },
       { name: 'VAT 5% (reduced)', rate: '5', note: 'Reduced rate for some goods and services; which ones qualify is not checked.' },
       { name: 'VAT 0% (zero-rated)', rate: '0', note: 'Zero-rated goods and services; which ones qualify is not checked.' },
     ],
-    limitations: ['No VAT return or Making Tax Digital submission.', 'No flat-rate, cash or margin schemes, and no domestic reverse charge.', 'No PAYE payroll.'],
-    sources: [{ title: 'GOV.UK: VAT rates', url: 'https://www.gov.uk/vat-rates' }],
-    reviewedOn: '2026-11-05',
+    limitations: ['The VAT return is not submitted to HMRC: Making Tax Digital submission is not connected.', 'No flat-rate, cash, annual accounting or margin schemes, no domestic reverse charge, postponed import VAT or partial exemption, and no Northern Ireland EU trade (boxes 2, 8 and 9).', 'No PAYE payroll.'],
+    sources: [
+      { title: 'GOV.UK: VAT rates', url: 'https://www.gov.uk/vat-rates' },
+      { title: 'HMRC: VAT Notice 700/12, how to fill in and submit your VAT return', url: 'https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012' },
+      { title: 'HMRC: VAT Notice 700/45, how to correct VAT errors', url: 'https://www.gov.uk/guidance/how-to-correct-vat-errors-and-make-adjustments-or-claims-vat-notice-70045' },
+    ],
+    reviewedOn: '2026-11-23',
   },
   {
     code: 'SG',
