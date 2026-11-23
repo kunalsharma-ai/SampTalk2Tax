@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 571 |
+| Not started | 570 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 696 |
+| Tested | 697 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 11 | 43 |
+| Global taxation engine | M3 | 54 | 10 | 44 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2816,6 +2816,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/reverse-charge-flow.test.mjs
   - docs/REVERSE_CHARGE.md
 
+### TAX-034 — Canadian GST/HST
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Canadian GST/HST return (regular method) lines 101 and 103-109 from posted invoices, credit notes, bills, vendor credits and approved expense claims, line 101 from ledger revenue in whole dollars; GST 5% and HST 13/14/15% taxable, zero-rated, exempt, out of scope; business number Luhn + RT account check; monthly or quarterly periods due one month after; filings recorded; input tax credits missed earlier claimed on the next return within four years, other changes sent back to the earlier return. Starter HST rates added. Not filed with the CRA; PST/QST, place of supply, Quick Method, line 104/107 adjustments, instalments and the annual period not modelled.
+- Evidence:
+  - packages/tax-engine/src/ca/gst-hst.ts
+  - packages/tax-engine/src/vat/jurisdictions.ts
+  - packages/tax-engine/test/ca-gst-hst.test.ts
+  - apps/api/src/vat-return/vat-return.service.ts
+  - apps/api/test/ca-gst-hst.e2e.test.ts
+  - apps/web/e2e/ca-gst-hst-flow.test.mjs
+  - docs/CA_GST_HST_RETURN.md
+
 ### TAX-035 — Australian GST
 
 - Module: Global taxation engine
@@ -2857,9 +2871,10 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Global taxation engine
 - Status: **Implementing**
-- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036) and Australia (TAX-035) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
+- Notes: Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035) and Canada (TAX-034) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested.
 - Evidence:
   - docs/AU_GST_BAS.md
+  - docs/CA_GST_HST_RETURN.md
   - docs/SG_GST_RETURN.md
   - packages/tax-engine/src/vat/jurisdictions.ts
 

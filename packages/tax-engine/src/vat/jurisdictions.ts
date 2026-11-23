@@ -1,4 +1,5 @@
 import { D } from '@talk2tax/accounting-engine';
+import { CA_GST_TREATMENTS, CA_ITC_MONTHS, CA_RETURN_LABEL, CA_TREATMENT_LABEL, caCorrectionAllowance, caGstHstDueDate, caGstHstPeriodFor, caGstHstReturn, normaliseCaBusinessNumber, recentCaGstHstPeriods, suggestCaTreatment } from '../ca/gst-hst';
 import { AU_BAS_LABEL, AU_GST_TREATMENTS, AU_STAGGERS, AU_TREATMENT_LABEL, auBasDueDate, auBasPeriodFor, auCorrectionAllowance, auGstBas, normaliseAbn, recentAuBasPeriods, suggestAuTreatment } from '../au/gst-bas';
 import { recentSgGstPeriods, normaliseSgGstNumber, SG_F5_BOX_LABEL, SG_GST_TREATMENTS, SG_TREATMENT_LABEL, sgCorrectionAllowance, sgGstDueDate, sgGstPeriodFor, sgGstReturn, suggestSgTreatment } from '../sg/gst-f5';
 import {
@@ -21,7 +22,8 @@ import {
 
 /**
  * Countries whose VAT or GST return Talk2Tax prepares (TAX-041: supported jurisdictions added one
- * at a time): the United Kingdom (TAX-030), Singapore (TAX-036) and Australia (TAX-035, the GST on the BAS). Each says what its return is
+ * at a time): the United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035, the GST on the BAS)
+ * and Canada (TAX-034, the GST/HST return). Each says what its return is
  * called, its registration number, the treatments it has, its periods and due dates, its boxes,
  * how to work them out and how much of an earlier error may be corrected on the next return.
  * Output and input tax are the common figures: changes to submitted periods are found from them.
@@ -84,6 +86,8 @@ export interface VatJurisdiction {
   correctionAllowance(corrections: readonly TaxReturnCorrection[], own: TaxReturnFigures['own']): { net: string; limit: string; allowed: boolean };
   /** What to do when the corrections are over the limit. */
   overLimit: string;
+  /** Where the rule is not an amount: which changes to earlier returns may go on a later one. */
+  correctionRule?: string;
   /** How far back a submitted period's changes may still be corrected on a later return. */
   correctionMonths: number;
   /** What the return covers and where the business files it. */
@@ -208,7 +212,45 @@ const AU: VatJurisdiction = {
   cardTitles: { registration: 'ABN and BAS cycle', periods: 'BAS periods', boxes: 'BAS GST items', treatment: 'Sales and purchases by GST treatment', other: 'Other entries on the GST accounts (BAS)' },
 };
 
-export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG, AU];
+const CA: VatJurisdiction = {
+  country: 'CA',
+  countryName: 'Canada',
+  currency: 'CAD',
+  taxName: 'GST/HST',
+  returnName: 'GST/HST return',
+  authority: 'CRA',
+  authorityThe: 'the CRA',
+  unitsNote: 'Line 101 in whole dollars; the other lines in dollars and cents.',
+  numberName: 'Business number (GST/HST account)',
+  numberShort: 'BN',
+  numberHint: '9 digits, RT and 4 digits, such as 123456782 RT0001',
+  normaliseNumber: normaliseCaBusinessNumber,
+  invalidNumber: 'That is not a valid business number with a GST/HST account (9 digits that pass the check, then RT and 4 digits)',
+  treatments: CA_GST_TREATMENTS,
+  treatmentLabel: CA_TREATMENT_LABEL,
+  suggest: suggestCaTreatment,
+  periodFor: caGstHstPeriodFor,
+  recentPeriods: recentCaGstHstPeriods,
+  staggers: VAT_STAGGERS,
+  dueDate: (end) => caGstHstDueDate(end),
+  dueRule: 'A monthly or quarterly return and payment are due one month after the reporting period ends.',
+  boxLabels: CA_RETURN_LABEL,
+  netBox: '109',
+  outputBox: '105',
+  inputBox: '108',
+  wholeBoxes: ['101'],
+  needsRevenue: true,
+  compute: (entries, rates, opts) => caGstHstReturn(entries, rates, { untaxed: opts.untaxed, revenue: opts.revenue, corrections: opts.corrections }),
+  correctionAllowance: (corrections) => caCorrectionAllowance(corrections),
+  overLimit: 'ask the CRA to adjust the earlier returns instead',
+  correctionRule: 'only input tax credits missed on an earlier return may be claimed on a later one (within four years); GST/HST reported wrongly, or ITCs over-claimed, are corrected on the earlier return',
+  correctionMonths: CA_ITC_MONTHS,
+  intro: 'Lines 101 and 103 to 109 of your GST/HST return for each reporting period (regular method), prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims, with revenue from the ledger. Enter them in My Business Account or GST/HST NETFILE, then record the filing here; nothing is sent to the CRA from Talk2Tax.',
+  treatmentNote: 'Sales and purchases in the period by how their tax rate counts. Zero-rated and exempt sales are in the revenue on line 101 without GST/HST; only taxable purchases give input tax credits at line 106; out-of-scope lines are not on the return.',
+  cardTitles: { registration: 'GST/HST registration', periods: 'GST/HST reporting periods', boxes: 'GST/HST return lines', treatment: 'Figures by GST/HST treatment', other: 'Other entries on the GST/HST accounts' },
+};
+
+export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG, AU, CA];
 
 /** The country's VAT or GST return, or null where Talk2Tax prepares none (India has its own GST returns). */
 export function vatJurisdiction(country: string): VatJurisdiction | null {

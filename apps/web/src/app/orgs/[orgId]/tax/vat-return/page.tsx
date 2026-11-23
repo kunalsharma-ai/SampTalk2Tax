@@ -11,7 +11,7 @@ import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
 type Treatment = 'STANDARD' | 'REDUCED' | 'ZERO' | 'EXEMPT' | 'OUTSIDE_SCOPE';
-interface J { country: string; currency: string; taxName: string; returnName: string; authority: string; authorityThe: string; unitsNote: string; numberName: string; numberShort: string; numberHint: string; dueRule: string; netBox: string; wholeBoxes: string[]; intro: string; treatmentNote: string; overLimit: string; cardTitles: { registration: string; periods: string; boxes: string; treatment: string; other: string } }
+interface J { country: string; currency: string; taxName: string; returnName: string; authority: string; authorityThe: string; unitsNote: string; numberName: string; numberShort: string; numberHint: string; dueRule: string; netBox: string; wholeBoxes: string[]; intro: string; treatmentNote: string; overLimit: string; correctionRule: string | null; cardTitles: { registration: string; periods: string; boxes: string; treatment: string; other: string } }
 interface Settings {
   jurisdiction: J;
   settings: { vrn: string; registeredFrom: string; stagger: string; untaxedTreatment: Treatment; updatedAt: string; updatedBy: string } | null;
@@ -267,7 +267,7 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
         <Card className="mb-4">
           <CardHeader
             title="Corrections of earlier returns"
-            description={r.corrections.allowance.allowed ? `Changes to periods already submitted, added to the output and input tax of this return. Their net value of ${money(r.corrections.allowance.net, j.currency)} is within the ${money(r.corrections.allowance.limit, j.currency)} ${j.authorityThe} allows on a return.` : `Changes to periods already submitted. Their net value of ${money(r.corrections.allowance.net, j.currency)} is over the ${money(r.corrections.allowance.limit, j.currency)} ${j.authorityThe} allows on a return, so they are left off: ${j.overLimit}.`}
+            description={j.correctionRule ? (r.corrections.allowance.allowed ? `Changes to periods already submitted, added to this return: ${j.correctionRule}.` : `Changes to periods already submitted, left off this return: ${j.correctionRule}. So ${j.overLimit}.`) : r.corrections.allowance.allowed ? `Changes to periods already submitted, added to the output and input tax of this return. Their net value of ${money(r.corrections.allowance.net, j.currency)} is within the ${money(r.corrections.allowance.limit, j.currency)} ${j.authorityThe} allows on a return.` : `Changes to periods already submitted. Their net value of ${money(r.corrections.allowance.net, j.currency)} is over the ${money(r.corrections.allowance.limit, j.currency)} ${j.authorityThe} allows on a return, so they are left off: ${j.overLimit}.`}
           />
           <Table aria-label="Corrections of earlier returns">
             <thead><Tr><Th>Period</Th><Th numeric>Output tax</Th><Th numeric>Input tax</Th><Th numeric>Net</Th></Tr></thead>

@@ -7200,9 +7200,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/ca/gst-hst.ts",
+        "packages/tax-engine/src/vat/jurisdictions.ts",
+        "packages/tax-engine/test/ca-gst-hst.test.ts",
+        "apps/api/src/vat-return/vat-return.service.ts",
+        "apps/api/test/ca-gst-hst.e2e.test.ts",
+        "apps/web/e2e/ca-gst-hst-flow.test.mjs",
+        "docs/CA_GST_HST_RETURN.md"
+      ],
+      "notes": "Canadian GST/HST return (regular method) lines 101 and 103-109 from posted invoices, credit notes, bills, vendor credits and approved expense claims, line 101 from ledger revenue in whole dollars; GST 5% and HST 13/14/15% taxable, zero-rated, exempt, out of scope; business number Luhn + RT account check; monthly or quarterly periods due one month after; filings recorded; input tax credits missed earlier claimed on the next return within four years, other changes sent back to the earlier return. Starter HST rates added. Not filed with the CRA; PST/QST, place of supply, Quick Method, line 104/107 adjustments, instalments and the annual period not modelled."
     },
     {
       "id": "TAX-035",
@@ -7404,10 +7412,11 @@
       "status": "Implementing",
       "evidence": [
         "docs/AU_GST_BAS.md",
+        "docs/CA_GST_HST_RETURN.md",
         "docs/SG_GST_RETURN.md",
         "packages/tax-engine/src/vat/jurisdictions.ts"
       ],
-      "notes": "Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036) and Australia (TAX-035) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested."
+      "notes": "Jurisdictions are added one at a time behind a common VAT/GST return layer (registration number, treatments, periods, due dates, boxes, correction limits): United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035) and Canada (TAX-034) so far, each with its own return cycles, card titles and correction window, India with its own GST engine. Other countries stay at starter or accounting-only level until their module is built and tested."
     },
     {
       "id": "TAX-042",
