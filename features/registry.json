@@ -7649,9 +7649,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/india/audit-preparation.ts",
+        "packages/tax-engine/test/audit-preparation.test.ts",
+        "apps/api/src/tax-audit-preparation/tax-audit-preparation.service.ts",
+        "apps/api/test/tax-audit-preparation.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/audit-preparation/page.tsx",
+        "apps/web/e2e/tax-audit-preparation-flow.test.mjs",
+        "docs/TAX_AUDIT_PREPARATION.md"
+      ],
+      "notes": "Tax audit readiness for a financial year (India), from the books: months locked, year closed, no drafts, banks reconciled to year end, returns/payments for the year done and on time, acknowledgements/challans on file, 40A(3) cash payments, 269ST cash receipts, TDS late, depreciation posted, income tax computation final. Notes to the auditor per check; mark ready only when nothing missing and attention points explained (snapshot, frozen notes, changed-since list); reopen with reason; CSV checklist export. No AI. Not built: auditor portal sharing, auditor sign-off, filing."
     },
     {
       "id": "TAX-052",

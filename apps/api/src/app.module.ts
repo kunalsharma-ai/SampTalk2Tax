@@ -321,6 +321,8 @@ import { ExpenseTripsController } from './expense-trips/expense-trips.controller
 import { ExpenseTripsService } from './expense-trips/expense-trips.service';
 import { IncomeTaxController } from './income-tax/income-tax.controller';
 import { IncomeTaxService } from './income-tax/income-tax.service';
+import { TaxAuditPreparationController } from './tax-audit-preparation/tax-audit-preparation.controller';
+import { TaxAuditPreparationService } from './tax-audit-preparation/tax-audit-preparation.service';
 import { PayrollReportController } from './payroll-report/payroll-report.controller';
 import { PayrollReportService } from './payroll-report/payroll-report.service';
 import { TaxReportController } from './tax-report/tax-report.controller';
@@ -517,6 +519,7 @@ export class AppModule {
     StakeholderReportsController,
     ExpenseTripsController,
     IncomeTaxController,
+    TaxAuditPreparationController,
     VendorRiskController,
     UnbilledRevenueController,
     InternationalPaymentsController,
@@ -713,6 +716,7 @@ export class AppModule {
     StakeholderReportsService,
     ExpenseTripsService,
     IncomeTaxService,
+    TaxAuditPreparationService,
     VendorRiskService,
     UnbilledRevenueService,
     InternationalPaymentsService,

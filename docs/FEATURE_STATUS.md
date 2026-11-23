@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 581 |
+| Not started | 580 |
 | Designed | 0 |
 | Implementing | 38 |
 | Implemented | 31 |
-| Tested | 679 |
+| Tested | 680 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 1 | 35 |
 | Banking and reconciliation | M2 | 24 | 1 | 23 |
-| Global taxation engine | M3 | 54 | 20 | 34 |
+| Global taxation engine | M3 | 54 | 19 | 35 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 4 | 23 |
@@ -2839,6 +2839,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/scenarios/page.tsx
   - apps/web/e2e/tax-scenarios-flow.test.mjs
   - docs/TAX_SCENARIOS.md
+
+### TAX-051 — Audit preparation assistance
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Tax audit readiness for a financial year (India), from the books: months locked, year closed, no drafts, banks reconciled to year end, returns/payments for the year done and on time, acknowledgements/challans on file, 40A(3) cash payments, 269ST cash receipts, TDS late, depreciation posted, income tax computation final. Notes to the auditor per check; mark ready only when nothing missing and attention points explained (snapshot, frozen notes, changed-since list); reopen with reason; CSV checklist export. No AI. Not built: auditor portal sharing, auditor sign-off, filing.
+- Evidence:
+  - packages/tax-engine/src/india/audit-preparation.ts
+  - packages/tax-engine/test/audit-preparation.test.ts
+  - apps/api/src/tax-audit-preparation/tax-audit-preparation.service.ts
+  - apps/api/test/tax-audit-preparation.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/audit-preparation/page.tsx
+  - apps/web/e2e/tax-audit-preparation-flow.test.mjs
+  - docs/TAX_AUDIT_PREPARATION.md
 
 ### TAX-053 — Tax calculations must be performed by deterministic, tested rules
 

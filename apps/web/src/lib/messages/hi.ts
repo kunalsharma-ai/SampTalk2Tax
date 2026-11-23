@@ -135,6 +135,7 @@ export const hi: Record<string, string> = {
   'Executive report': 'कार्यकारी रिपोर्ट',
   'Business trips': 'व्यावसायिक यात्राएँ',
   'Income tax computation': 'आयकर गणना',
+  'Tax audit preparation': 'टैक्स ऑडिट की तैयारी',
   'Investor report': 'निवेशक रिपोर्ट',
   'Scheduled reports': 'निर्धारित रिपोर्ट',
   'Cash flow statement': 'नकदी प्रवाह विवरण',

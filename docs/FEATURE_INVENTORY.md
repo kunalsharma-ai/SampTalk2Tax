@@ -293,7 +293,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-048 | AI Tax Intelligence | capability | Tax liability forecasting | Tested |
 | TAX-049 | AI Tax Intelligence | capability | Tax scenario simulations | Tested |
 | TAX-050 | AI Tax Intelligence | capability | Tax notice analysis | Not started |
-| TAX-051 | AI Tax Intelligence | capability | Audit preparation assistance | Not started |
+| TAX-051 | AI Tax Intelligence | capability | Audit preparation assistance | Tested |
 | TAX-052 | AI Tax Intelligence | capability | Source-backed tax explanations | Not started |
 | TAX-053 | AI Tax Intelligence | rule | Tax calculations must be performed by deterministic, tested rules | Tested |
 | TAX-054 | AI Tax Intelligence | rule | AI should explain and assist, not invent tax rates or legal requirements | Not started |
