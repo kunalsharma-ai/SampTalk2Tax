@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { JournalForm } from '@/components/journal-form';
 import { AttachmentsPanel } from '@/components/attachments';
+import { TransactionHistoryCard } from '@/components/transaction-history';
 import { JournalApprovalCard } from '@/components/journals/journal-approval';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
@@ -212,6 +213,7 @@ export default function JournalDetailPage() {
 
       {j.source === 'MANUAL' ? <JournalApprovalCard orgId={orgId} entryId={j.id} role={org.role} isDraft={j.status === 'DRAFT'} currency={c} /> : null}
       <AttachmentsPanel entityType="JOURNAL_ENTRY" entityId={j.id} canManage={can(org.role, 'journals.create')} />
+      <TransactionHistoryCard kind="journal_entry" id={j.id} />
 
       <Dialog open={reverseOpen} onOpenChange={setReverseOpen} title="Reverse this journal" description="Posts a new entry that swaps every debit and credit at the original rates. The original stays unchanged.">
         <div className="flex flex-col gap-4">

@@ -11,8 +11,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Not started | 575 |
 | Designed | 0 |
 | Implementing | 38 |
-| Implemented | 24 |
-| Tested | 692 |
+| Implemented | 23 |
+| Tested | 693 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -5548,10 +5548,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### AUDIT-005 — Transaction history
 
 - Module: Continuous audit and governance
-- Status: **Implemented**
+- Status: **Tested**
+- Notes: Per-transaction history on documents, payments, journals and expense claims: own events plus allocations, files and journal entries, in words, each checked against its hash.
 - Evidence:
-  - apps/api/test/ledger.e2e.test.ts
-  - apps/web/src
+  - packages/accounting-engine/src/transaction-history.ts
+  - packages/accounting-engine/test/transaction-history.test.ts
+  - apps/api/src/transaction-history/transaction-history.service.ts
+  - apps/api/test/transaction-history.e2e.test.ts
+  - apps/web/src/components/transaction-history.tsx
+  - apps/web/e2e/transaction-history-flow.test.mjs
 
 ### AUDIT-006 — Approval history
 

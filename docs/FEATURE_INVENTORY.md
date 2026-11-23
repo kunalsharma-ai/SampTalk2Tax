@@ -820,7 +820,7 @@ Part 24 · M6 · priority P1 · depends on: GL, SEC
 | AUDIT-002 |  | capability | External auditor portal | Tested |
 | AUDIT-003 |  | capability | Audit evidence management | Tested |
 | AUDIT-004 |  | capability | Audit trails | Tested |
-| AUDIT-005 |  | capability | Transaction history | Implemented |
+| AUDIT-005 |  | capability | Transaction history | Tested |
 | AUDIT-006 |  | capability | Approval history | Tested |
 | AUDIT-007 |  | capability | Document versioning | Tested |
 | AUDIT-008 |  | capability | Financial control testing | Tested |
