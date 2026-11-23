@@ -16,6 +16,7 @@ const GB = ['GB'] as const;
 const SG = ['SG'] as const;
 const AU = ['AU'] as const;
 const CA = ['CA'] as const;
+const AE = ['AE'] as const;
 export const NAV: { group: string; items: NavItem[] }[] = [
   { group: 'Overview', items: [{ href: '', label: 'Dashboard' }, { href: '/copilot', label: 'Copilot', plan: 'AI' }, { href: '/alerts', label: 'Alerts' }, { href: '/approvals', label: 'Approvals' }, { href: '/tasks', label: 'My tasks' }] },
   {
@@ -169,6 +170,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/tax/vat-return', label: 'GST return', needs: 'SALES_TAX_RETURNS', countries: SG, perm: 'reports.read' },
       { href: '/tax/vat-return', label: 'BAS (GST)', needs: 'SALES_TAX_RETURNS', countries: AU, perm: 'reports.read' },
       { href: '/tax/vat-return', label: 'GST/HST return', needs: 'SALES_TAX_RETURNS', countries: CA, perm: 'reports.read' },
+      { href: '/tax/vat-return', label: 'VAT return (VAT 201)', needs: 'SALES_TAX_RETURNS', countries: AE, perm: 'reports.read' },
       { href: '/tax/e-invoices', label: 'E-invoices', needs: 'E_INVOICING' },
       { href: '/tax/e-way-bills', label: 'E-way bills', needs: 'TRANSPORT_DOCUMENTS' },
       { href: '/tax/tds-tcs', label: 'TDS and TCS', needs: 'WITHHOLDING' },

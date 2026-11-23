@@ -126,15 +126,19 @@ export const COUNTRY_MODULES: readonly CountryModule[] = Object.freeze([
     level: 'STARTER',
     salesTaxName: 'VAT',
     taxIdName: 'TRN',
-    summary: 'Accounting, a UAE tax invoice layout, and starter VAT rates. No VAT return or e-invoicing.',
-    capabilities: starterCaps('VAT', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'Tax invoice layout with TRN.' }]),
+    summary: 'Accounting, a UAE tax invoice layout, starter VAT rates and the VAT return (VAT 201) prepared from the books. Nothing is submitted to the FTA from here, and no e-invoicing.',
+    capabilities: starterCaps('VAT', [{ key: 'INVOICE_PRESET', status: 'SUPPORTED', note: 'Tax invoice layout with TRN.' }]).map((c) =>
+      c.key === 'SALES_TAX_RETURNS' ? { key: c.key, status: 'PARTLY' as const, note: 'The VAT 201 boxes 1a to 1g (in the emirate the business is established in), 4, 5, 8, 9 and 11 to 14, monthly or quarterly, with corrections of earlier returns up to AED 10,000; you submit it in EmaraTax and record the submission here.' } : c,
+    ),
     starterRates: [
       { name: 'VAT 5%', rate: '5', note: 'Standard rate.' },
       { name: 'VAT 0% (zero-rated)', rate: '0', note: 'Zero-rated supplies such as exports; which supplies qualify is not checked.' },
     ],
-    limitations: ['No VAT return, reverse charge, designated zones or excise tax.', 'Corporate tax is not modelled.', 'Not connected to the UAE e-invoicing programme.'],
-    sources: [{ title: 'Federal Tax Authority: VAT', url: 'https://tax.gov.ae' }],
-    reviewedOn: '2026-11-05',
+    limitations: ['The VAT 201 is not submitted to the FTA from here. Every standard-rated supply counts in the emirate the business is established in; tourist refunds, the reverse charge, imports, designated zones, the profit margin scheme, partial exemption, blocked input VAT and excise tax are not modelled.', 'Corporate tax is not modelled.', 'Not connected to the UAE e-invoicing programme.'],
+    sources: [
+      { title: 'Federal Tax Authority: VAT', url: 'https://tax.gov.ae' },
+    ],
+    reviewedOn: '2026-11-23',
   },
   {
     code: 'GB',

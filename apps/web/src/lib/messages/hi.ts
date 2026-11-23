@@ -160,6 +160,7 @@ export const hi: Record<string, string> = {
   'GST return': 'जीएसटी रिटर्न',
   'BAS (GST)': 'बीएएस (जीएसटी)',
   'GST/HST return': 'जीएसटी/एचएसटी रिटर्न',
+  'VAT return (VAT 201)': 'वैट रिटर्न (वैट 201)',
   'Tax forecast': 'कर पूर्वानुमान',
   'Tax scenarios': 'कर परिदृश्य',
   'Deadline risk': 'समय-सीमा जोखिम',

@@ -1,4 +1,5 @@
 import { D } from '@talk2tax/accounting-engine';
+import { AE_EMIRATES, AE_TREATMENT_LABEL, AE_VAT201_LABEL, AE_VAT201_ORDER, AE_VAT_TREATMENTS, aeCorrectionAllowance, aeVat201, aeVatDueDate, aeVatPeriodFor, normaliseTrn, recentAeVatPeriods, suggestAeTreatment } from '../ae/vat-201';
 import { CA_GST_TREATMENTS, CA_ITC_MONTHS, CA_RETURN_LABEL, CA_TREATMENT_LABEL, caCorrectionAllowance, caGstHstDueDate, caGstHstPeriodFor, caGstHstReturn, normaliseCaBusinessNumber, recentCaGstHstPeriods, suggestCaTreatment } from '../ca/gst-hst';
 import { AU_BAS_LABEL, AU_GST_TREATMENTS, AU_STAGGERS, AU_TREATMENT_LABEL, auBasDueDate, auBasPeriodFor, auCorrectionAllowance, auGstBas, normaliseAbn, recentAuBasPeriods, suggestAuTreatment } from '../au/gst-bas';
 import { recentSgGstPeriods, normaliseSgGstNumber, SG_F5_BOX_LABEL, SG_GST_TREATMENTS, SG_TREATMENT_LABEL, sgCorrectionAllowance, sgGstDueDate, sgGstPeriodFor, sgGstReturn, suggestSgTreatment } from '../sg/gst-f5';
@@ -23,7 +24,7 @@ import {
 /**
  * Countries whose VAT or GST return Talk2Tax prepares (TAX-041: supported jurisdictions added one
  * at a time): the United Kingdom (TAX-030), Singapore (TAX-036), Australia (TAX-035, the GST on the BAS)
- * and Canada (TAX-034, the GST/HST return). Each says what its return is
+ * Canada (TAX-034, the GST/HST return) and the United Arab Emirates (TAX-033, VAT 201). Each says what its return is
  * called, its registration number, the treatments it has, its periods and due dates, its boxes,
  * how to work them out and how much of an earlier error may be corrected on the next return.
  * Output and input tax are the common figures: changes to submitted periods are found from them.
@@ -74,6 +75,8 @@ export interface VatJurisdiction {
   dueDate(end: string, stagger: VatStagger): string;
   dueRule: string;
   boxLabels: Record<string, string>;
+  /** The boxes in the form's order, where the labels' key order is not it. */
+  boxOrder?: readonly string[];
   /** The box with the net tax to pay or reclaim. */
   netBox: string;
   outputBox: string;
@@ -82,7 +85,9 @@ export interface VatJurisdiction {
   wholeBoxes: readonly string[];
   /** Box 13 of the Singapore F5: revenue from the ledger. */
   needsRevenue: boolean;
-  compute(entries: readonly VatEntry[], rates: readonly VatRateInfo[], opts: { untaxed: VatTreatment; revenue: string; corrections: readonly TaxReturnCorrection[] }): TaxReturnFigures;
+  /** Where the return splits figures by a part of the country (the UAE's emirates): what it is called and the choices. The registration names the business's own. */
+  region?: { name: string; options: readonly { key: string; label: string }[] };
+  compute(entries: readonly VatEntry[], rates: readonly VatRateInfo[], opts: { untaxed: VatTreatment; revenue: string; region?: string | null; corrections: readonly TaxReturnCorrection[] }): TaxReturnFigures;
   correctionAllowance(corrections: readonly TaxReturnCorrection[], own: TaxReturnFigures['own']): { net: string; limit: string; allowed: boolean };
   /** What to do when the corrections are over the limit. */
   overLimit: string;
@@ -250,7 +255,46 @@ const CA: VatJurisdiction = {
   cardTitles: { registration: 'GST/HST registration', periods: 'GST/HST reporting periods', boxes: 'GST/HST return lines', treatment: 'Figures by GST/HST treatment', other: 'Other entries on the GST/HST accounts' },
 };
 
-export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG, AU, CA];
+const AE: VatJurisdiction = {
+  country: 'AE',
+  countryName: 'the United Arab Emirates',
+  currency: 'AED',
+  taxName: 'VAT',
+  returnName: 'VAT return (VAT 201)',
+  authority: 'FTA',
+  authorityThe: 'the FTA',
+  unitsNote: 'Amounts in UAE dirhams. Boxes 2, 3, 6, 7 and 10 (tourist refunds, reverse charge and imports) are not prepared.',
+  numberName: 'Tax registration number (TRN)',
+  numberShort: 'TRN',
+  numberHint: '15 digits beginning 100',
+  normaliseNumber: normaliseTrn,
+  invalidNumber: 'That is not a UAE tax registration number (15 digits beginning 100)',
+  treatments: AE_VAT_TREATMENTS,
+  treatmentLabel: AE_TREATMENT_LABEL,
+  suggest: suggestAeTreatment,
+  periodFor: aeVatPeriodFor,
+  recentPeriods: recentAeVatPeriods,
+  staggers: VAT_STAGGERS,
+  dueDate: (end) => aeVatDueDate(end),
+  dueRule: 'A return and payment are due 28 days after the tax period ends.',
+  boxLabels: AE_VAT201_LABEL,
+  boxOrder: AE_VAT201_ORDER,
+  netBox: '14',
+  outputBox: '12',
+  inputBox: '13',
+  wholeBoxes: [],
+  needsRevenue: false,
+  region: { name: 'Emirate', options: AE_EMIRATES.map((e) => ({ key: e.key, label: e.label })) },
+  compute: (entries, rates, opts) => aeVat201(entries, rates, { untaxed: opts.untaxed, emirate: opts.region ?? null, corrections: opts.corrections }),
+  correctionAllowance: (corrections) => aeCorrectionAllowance(corrections),
+  overLimit: 'submit a voluntary disclosure to the FTA instead (Form 211)',
+  correctionMonths: 60,
+  intro: 'The boxes of your VAT return (VAT 201) for each tax period, prepared from posted invoices, credit notes, bills, vendor credits and approved expense claims, with standard-rated supplies in the emirate your business is established in. Enter them in EmaraTax, then record the submission here; nothing is sent to the FTA from Talk2Tax.',
+  treatmentNote: 'Supplies and expenses in the period by how their tax rate counts. Zero-rated supplies count in box 4 and exempt supplies in box 5; only standard-rated expenses give recoverable VAT; out-of-scope lines are not on the return.',
+  cardTitles: { registration: 'UAE VAT registration', periods: 'UAE VAT tax periods', boxes: 'VAT 201 boxes', treatment: 'Figures by UAE VAT treatment', other: 'Other entries on the UAE VAT accounts' },
+};
+
+export const VAT_JURISDICTIONS: readonly VatJurisdiction[] = [UK, SG, AU, CA, AE];
 
 /** The country's VAT or GST return, or null where Talk2Tax prepares none (India has its own GST returns). */
 export function vatJurisdiction(country: string): VatJurisdiction | null {

@@ -11,6 +11,8 @@ const Settings = z
     vrn: z.string().trim().min(9, 'Enter the VAT registration number').max(20),
     registeredFrom: isoDate,
     stagger: z.enum(VAT_STAGGERS),
+    /** The emirate, for the UAE. */
+    region: z.string().trim().max(10).nullish(),
     untaxedTreatment: z.enum(VAT_TREATMENTS).default('OUTSIDE_SCOPE'),
     treatments: z.array(z.object({ taxRateId: z.string().uuid('Not a valid tax rate'), treatment: z.enum(VAT_TREATMENTS) }).strict()).max(200).default([]),
   })

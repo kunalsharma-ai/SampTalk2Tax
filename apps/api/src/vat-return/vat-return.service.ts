@@ -28,6 +28,7 @@ export interface VatSettingsBody {
   vrn: string;
   registeredFrom: string;
   stagger: VatStagger;
+  region?: string | null;
   untaxedTreatment: VatTreatment;
   treatments: { taxRateId: string; treatment: VatTreatment }[];
 }
@@ -35,13 +36,13 @@ export interface VatSettingsBody {
 const PERIODS_SHOWN = 8;
 
 /**
- * VAT and GST returns (TAX-030 United Kingdom, TAX-036 Singapore, TAX-041 one jurisdiction at a
- * time): the boxes for a period, prepared from posted invoices, credit notes, bills, vendor
+ * VAT and GST returns (TAX-030 United Kingdom, TAX-036 Singapore, TAX-035 Australia, TAX-034 Canada,
+ * TAX-033 United Arab Emirates, TAX-041 one jurisdiction at a time): the boxes for a period, prepared from posted invoices, credit notes, bills, vendor
  * credits and approved expense claims with the country's rules (vatJurisdiction); changes to
  * periods already submitted carried as corrections when within the authority's limit; entries on
  * the tax accounts that are not on the return listed for checking; and a record of each return
  * the business submitted. Books kept in the country's currency only. reports.read reads;
- * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC, IRAS, the ATO or the CRA.
+ * accounts.manage sets the registration up and records submissions. Nothing is sent to HMRC, IRAS, the ATO, the CRA or the FTA.
  */
 const direction = (output = '0', input = '0'): 'PAY' | 'RECLAIM' | 'NIL' => (new D(output).gt(input) ? 'PAY' : new D(output).lt(input) ? 'RECLAIM' : 'NIL');
 
@@ -57,7 +58,7 @@ export class VatReturnService {
   private async jurisdiction(org: OrgContext): Promise<VatJurisdiction> {
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { countryCode: true } });
     const j = vatJurisdiction(o.countryCode);
-    if (!j) throw new DomainError('NO_VAT_RETURN', 'A VAT or GST return is prepared here for organisations in the United Kingdom, Singapore, Australia and Canada', HttpStatus.UNPROCESSABLE_ENTITY);
+    if (!j) throw new DomainError('NO_VAT_RETURN', 'A VAT or GST return is prepared here for organisations in the United Kingdom, Singapore, Australia, Canada and the United Arab Emirates', HttpStatus.UNPROCESSABLE_ENTITY);
     if (org.functionalCurrency !== j.currency) throw new DomainError('WRONG_CURRENCY', `The ${j.returnName} is prepared from books kept in ${j.currency}`, HttpStatus.UNPROCESSABLE_ENTITY);
     return j;
   }
@@ -82,7 +83,7 @@ export class VatReturnService {
 
   /** What the page says for this country. */
   private describe(j: VatJurisdiction) {
-    return { country: j.country, currency: j.currency, taxName: j.taxName, returnName: j.returnName, authority: j.authority, authorityThe: j.authorityThe, unitsNote: j.unitsNote, numberName: j.numberName, numberShort: j.numberShort, numberHint: j.numberHint, dueRule: j.dueRule, netBox: j.netBox, wholeBoxes: j.wholeBoxes, intro: j.intro, treatmentNote: j.treatmentNote, overLimit: j.overLimit, correctionRule: j.correctionRule ?? null, cardTitles: j.cardTitles };
+    return { country: j.country, currency: j.currency, taxName: j.taxName, returnName: j.returnName, authority: j.authority, authorityThe: j.authorityThe, unitsNote: j.unitsNote, numberName: j.numberName, numberShort: j.numberShort, numberHint: j.numberHint, dueRule: j.dueRule, netBox: j.netBox, wholeBoxes: j.wholeBoxes, intro: j.intro, treatmentNote: j.treatmentNote, overLimit: j.overLimit, correctionRule: j.correctionRule ?? null, cardTitles: j.cardTitles, region: j.region ?? null, boxOrder: j.boxOrder ?? Object.keys(j.boxLabels) };
   }
 
   async settings(org: OrgContext) {
@@ -91,7 +92,7 @@ export class VatReturnService {
     const rates = await this.rates(org, j, s);
     const by = s ? await this.store.collection(users).findById(s.updatedById) : null;
     return {
-      settings: s ? { vrn: s.vrn, registeredFrom: s.registeredFrom, stagger: s.stagger, untaxedTreatment: s.untaxedTreatment, updatedAt: s.updatedAt.toISOString(), updatedBy: by?.name ?? 'Former member' } : null,
+      settings: s ? { vrn: s.vrn, registeredFrom: s.registeredFrom, stagger: s.stagger, region: s.region ?? null, untaxedTreatment: s.untaxedTreatment, updatedAt: s.updatedAt.toISOString(), updatedBy: by?.name ?? 'Former member' } : null,
       rates: rates.map(({ salesAccountId: _s, purchaseAccountId: _p, ...r }) => r),
       staggers: j.staggers.map((k) => ({ key: k, label: VAT_STAGGER_LABEL[k] })),
       treatments: j.treatments.map((k) => ({ key: k, label: j.treatmentLabel[k] })),
@@ -106,6 +107,8 @@ export class VatReturnService {
     const wrong = body.treatments.find((t) => !j.treatments.includes(t.treatment)) ?? (j.treatments.includes(body.untaxedTreatment) ? null : { treatment: body.untaxedTreatment });
     if (wrong) throw new DomainError('VALIDATION_FAILED', `${j.treatmentLabel[wrong.treatment]} is not a treatment in ${j.countryName}`, HttpStatus.UNPROCESSABLE_ENTITY);
     if (!j.staggers.includes(body.stagger)) throw new DomainError('VALIDATION_FAILED', `${VAT_STAGGER_LABEL[body.stagger]} returns are not a return cycle ${j.authority} uses`, HttpStatus.UNPROCESSABLE_ENTITY);
+    const region = j.region ? (body.region ?? null) : null;
+    if (j.region && !j.region.options.some((o) => o.key === region)) throw new DomainError('VALIDATION_FAILED', `Choose the ${j.region.name.toLowerCase()} your business is established in`, HttpStatus.UNPROCESSABLE_ENTITY);
     const known = new Set((await this.prisma.taxRate.findMany({ where: { orgId: org.id }, select: { id: true } })).map((r) => r.id));
     const unknown = body.treatments.filter((t) => !known.has(t.taxRateId));
     if (unknown.length) throw new DomainError('UNKNOWN_TAX_RATE', 'A tax rate in the list is not one of this organisation’s', HttpStatus.UNPROCESSABLE_ENTITY);
@@ -113,12 +116,12 @@ export class VatReturnService {
     const col = this.store.collection(vatSettings);
     const before = await col.findOne({});
     if (body.registeredFrom > todayIso()) throw new DomainError('VALIDATION_FAILED', 'The registration date cannot be in the future', HttpStatus.UNPROCESSABLE_ENTITY);
-    const fields = { vrn, registeredFrom: body.registeredFrom, stagger: body.stagger, untaxedTreatment: body.untaxedTreatment, treatments, updatedById: user.id, updatedAt: new Date() };
+    const fields = { vrn, registeredFrom: body.registeredFrom, stagger: body.stagger, region, untaxedTreatment: body.untaxedTreatment, treatments, updatedById: user.id, updatedAt: new Date() };
     if (before) await col.updateOne({ id: before.id }, { $set: fields });
     else await col.insertOne(fields);
-    const changed = (k: 'vrn' | 'registeredFrom' | 'stagger' | 'untaxedTreatment') => (before?.[k] !== fields[k] ? { [k]: { from: before?.[k] ?? null, to: fields[k] } } : {});
+    const changed = (k: 'vrn' | 'registeredFrom' | 'stagger' | 'region' | 'untaxedTreatment') => ((before?.[k] ?? null) !== fields[k] ? { [k]: { from: before?.[k] ?? null, to: fields[k] } } : {});
     await this.prisma.$transaction((tx) =>
-      this.audit.append(tx, { orgId: org.id, actorId: user.id, action: 'vat_settings.updated', entityType: 'vat_settings', entityId: org.id, data: { ...changed('vrn'), ...changed('registeredFrom'), ...changed('stagger'), ...changed('untaxedTreatment'), treatments: treatments.length } }),
+      this.audit.append(tx, { orgId: org.id, actorId: user.id, action: 'vat_settings.updated', entityType: 'vat_settings', entityId: org.id, data: { ...changed('vrn'), ...changed('registeredFrom'), ...changed('stagger'), ...changed('region'), ...changed('untaxedTreatment'), treatments: treatments.length } }),
     );
     return this.settings(org);
   }
@@ -197,7 +200,7 @@ export class VatReturnService {
     const rates = await this.rates(org, j, s);
     const { entries, journals } = await this.entries(org, from, to);
     const revenue = j.needsRevenue ? await this.revenue(org, from, to) : '0';
-    const r = j.compute(entries, rates, { untaxed: s.untaxedTreatment as VatTreatment, revenue, corrections });
+    const r = j.compute(entries, rates, { untaxed: s.untaxedTreatment as VatTreatment, revenue, region: s.region ?? null, corrections });
     return { rates, entries, journals, r };
   }
 
@@ -308,7 +311,7 @@ export class VatReturnService {
 
   async exportCsv(org: OrgContext, user: AuthUser, periodEnd: string) {
     const v = await this.vatReturn(org, periodEnd);
-    const csv = vatReturnCsv(v.period, v.boxes, v.entries, { title: v.jurisdiction.returnName, labels: v.labels, taxName: v.jurisdiction.taxName });
+    const csv = vatReturnCsv(v.period, v.boxes, v.entries, { title: v.jurisdiction.returnName, labels: v.labels, taxName: v.jurisdiction.taxName, order: v.jurisdiction.boxOrder });
     await this.prisma.$transaction((tx) => this.audit.append(tx, { orgId: org.id, actorId: user.id, action: 'vat_return.exported', entityType: 'vat_return', entityId: `vat:${v.period.end}`, data: { periodStart: v.period.start, periodEnd: v.period.end, net: v.net } }));
     return { fileName: `${v.jurisdiction.taxName.toLowerCase().replace(/[^a-z]+/g, '-')}-return-${v.period.start}-to-${v.period.end}.csv`, csv };
   }

@@ -11,10 +11,10 @@ import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
 type Treatment = 'STANDARD' | 'REDUCED' | 'ZERO' | 'EXEMPT' | 'OUTSIDE_SCOPE';
-interface J { country: string; currency: string; taxName: string; returnName: string; authority: string; authorityThe: string; unitsNote: string; numberName: string; numberShort: string; numberHint: string; dueRule: string; netBox: string; wholeBoxes: string[]; intro: string; treatmentNote: string; overLimit: string; correctionRule: string | null; cardTitles: { registration: string; periods: string; boxes: string; treatment: string; other: string } }
+interface J { country: string; currency: string; taxName: string; returnName: string; authority: string; authorityThe: string; unitsNote: string; numberName: string; numberShort: string; numberHint: string; dueRule: string; netBox: string; wholeBoxes: string[]; intro: string; treatmentNote: string; overLimit: string; correctionRule: string | null; cardTitles: { registration: string; periods: string; boxes: string; treatment: string; other: string }; region: { name: string; options: { key: string; label: string }[] } | null; boxOrder: string[] }
 interface Settings {
   jurisdiction: J;
-  settings: { vrn: string; registeredFrom: string; stagger: string; untaxedTreatment: Treatment; updatedAt: string; updatedBy: string } | null;
+  settings: { vrn: string; registeredFrom: string; stagger: string; region: string | null; untaxedTreatment: Treatment; updatedAt: string; updatedBy: string } | null;
   rates: { id: string; name: string; rate: string; isActive: boolean; treatment: Treatment | null; suggested: Treatment | null }[];
   staggers: { key: string; label: string }[];
   treatments: { key: Treatment; label: string }[];
@@ -130,12 +130,13 @@ function SettingsCard({ data, j, manage, orgId, onSaved }: { data: Settings; j: 
   const [vrn, setVrn] = useState(data.settings?.vrn ?? '');
   const [registeredFrom, setRegisteredFrom] = useState(data.settings?.registeredFrom ?? '');
   const [stagger, setStagger] = useState(data.settings?.stagger ?? 'QUARTERLY_MAR');
+  const [region, setRegion] = useState(data.settings?.region ?? '');
   const [untaxed, setUntaxed] = useState<Treatment>(data.settings?.untaxedTreatment ?? 'OUTSIDE_SCOPE');
   const [set, setSet] = useState<Record<string, Treatment | ''>>(Object.fromEntries(data.rates.map((r) => [r.id, r.treatment ?? ''])));
   const [open, setOpen] = useState(!data.settings);
   const save = useMutation({
     mutationFn: () =>
-      api(`/v1/orgs/${orgId}/tax/vat/settings`, { method: 'PUT', body: { vrn, registeredFrom, stagger, untaxedTreatment: untaxed, treatments: Object.entries(set).filter(([, t]) => t).map(([taxRateId, treatment]) => ({ taxRateId, treatment })) } }),
+      api(`/v1/orgs/${orgId}/tax/vat/settings`, { method: 'PUT', body: { vrn, registeredFrom, stagger, ...(j.region ? { region: region || null } : {}), untaxedTreatment: untaxed, treatments: Object.entries(set).filter(([, t]) => t).map(([taxRateId, treatment]) => ({ taxRateId, treatment })) } }),
     onSuccess: async () => {
       setOpen(false);
       await onSaved();
@@ -147,7 +148,7 @@ function SettingsCard({ data, j, manage, orgId, onSaved }: { data: Settings; j: 
     <Card className="mb-4">
       <CardHeader
         title={j.cardTitles.registration}
-        description={s ? `${j.numberShort} ${s.vrn}, registered from ${date(s.registeredFrom)} · ${data.staggers.find((x) => x.key === s.stagger)?.label ?? s.stagger}. Last changed by ${s.updatedBy}, ${date(s.updatedAt.slice(0, 10))}.` : `Add your ${j.numberName}, how often you make returns and how each tax rate counts on the return.`}
+        description={s ? `${j.numberShort} ${s.vrn}, registered from ${date(s.registeredFrom)} · ${data.staggers.find((x) => x.key === s.stagger)?.label ?? s.stagger}${j.region && s.region ? ` · ${j.region.options.find((o) => o.key === s.region)?.label ?? s.region}` : ''}. Last changed by ${s.updatedBy}, ${date(s.updatedAt.slice(0, 10))}.` : `Add your ${j.numberName}, how often you make returns and how each tax rate counts on the return.`}
         actions={s && manage && !open ? <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>Change</Button> : null}
       />
       {open || !s ? (
@@ -163,6 +164,16 @@ function SettingsCard({ data, j, manage, orgId, onSaved }: { data: Settings; j: 
               <Field label={j.numberName} hint={j.numberHint}>{(p) => <Input {...p} value={vrn} maxLength={20} onChange={(e) => setVrn(e.target.value)} />}</Field>
               <Field label="Registered from" hint={`The effective date of your ${j.taxName} registration`}>{(p) => <Input {...p} type="date" value={registeredFrom} max={today()} onChange={(e) => setRegisteredFrom(e.target.value)} />}</Field>
               <Field label="Return periods">{(p) => <Select {...p} value={stagger} onChange={(e) => setStagger(e.target.value)}>{data.staggers.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}</Select>}</Field>
+              {j.region ? (
+                <Field label={j.region.name} hint="Where your business is established">
+                  {(p) => (
+                    <Select {...p} value={region} onChange={(e) => setRegion(e.target.value)}>
+                      <option value="">Choose</option>
+                      {j.region!.options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                    </Select>
+                  )}
+                </Field>
+              ) : null}
               <Field label="Lines with no tax rate" hint="How they count on the return">{(p) => <Select {...p} value={untaxed} onChange={(e) => setUntaxed(e.target.value as Treatment)}>{data.treatments.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}</Select>}</Field>
             </div>
             <Table aria-label={`${j.taxName} treatment of tax rates`}>
@@ -226,9 +237,9 @@ function ReturnView({ r, j, cash, treatments, manage, orgId, onRecorded }: { r: 
         <Table aria-label={j.cardTitles.boxes}>
           <thead><Tr><Th>Box</Th><Th>Description</Th><Th numeric>Value</Th></Tr></thead>
           <tbody>
-            {Object.keys(r.labels).map((k) => (
+            {j.boxOrder.map((k) => (
               <Tr key={k} className={k === j.netBox ? 'font-semibold' : undefined}>
-                <Td>{k === 'net' ? '' : k.replace('box', '')}</Td>
+                <Td>{k === 'net' ? '' : k.replace('box', '').replace('-vat', '')}</Td>
                 <Td>{r.labels[k]}</Td>
                 <Td numeric>{j.wholeBoxes.includes(k) ? money(r.boxes[k] ?? '0', j.currency).replace(/\.00$/, '') : cash(r.boxes[k] ?? '0')}</Td>
               </Tr>

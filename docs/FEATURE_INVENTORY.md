@@ -275,7 +275,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-030 | Global Tax Modules | capability | UK VAT | Tested |
 | TAX-031 | Global Tax Modules | capability | EU VAT | Not started |
 | TAX-032 | Global Tax Modules | capability | Reverse-charge mechanisms | Tested |
-| TAX-033 | Global Tax Modules | capability | GCC VAT | Not started |
+| TAX-033 | Global Tax Modules | capability | GCC VAT | Tested |
 | TAX-034 | Global Tax Modules | capability | Canadian GST/HST | Tested |
 | TAX-035 | Global Tax Modules | capability | Australian GST | Tested |
 | TAX-036 | Global Tax Modules | capability | Singapore GST | Tested |
