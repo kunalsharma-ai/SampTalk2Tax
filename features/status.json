@@ -9869,9 +9869,11 @@
         "apps/api/test/role-dashboards-directors.e2e.test.ts",
         "apps/web/e2e/role-dashboards-directors-flow.test.mjs",
         "apps/api/test/role-dashboards-admin.e2e.test.ts",
-        "apps/web/e2e/role-dashboards-admin-flow.test.mjs"
+        "apps/web/e2e/role-dashboards-admin-flow.test.mjs",
+        "apps/api/test/platform-dashboard.e2e.test.ts",
+        "apps/web/e2e/platform-dashboard-flow.test.mjs"
       ],
-      "notes": "The twenty-two role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform admin, and the vendor and customer views."
+      "notes": "The twenty-two role dashboards and the global super admin dashboard built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The global super admin dashboard is the platform overview (DASH-042). Still to build in DASH-042..065: the vendor and customer views."
     },
     "DASH-068": {
       "status": "Implementing",
@@ -9892,9 +9894,11 @@
         "apps/api/test/role-dashboards-directors.e2e.test.ts",
         "apps/web/e2e/role-dashboards-directors-flow.test.mjs",
         "apps/api/test/role-dashboards-admin.e2e.test.ts",
-        "apps/web/e2e/role-dashboards-admin-flow.test.mjs"
+        "apps/web/e2e/role-dashboards-admin-flow.test.mjs",
+        "apps/api/test/platform-dashboard.e2e.test.ts",
+        "apps/web/e2e/platform-dashboard-flow.test.mjs"
       ],
-      "notes": "The twenty-two role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform admin, and the vendor and customer views."
+      "notes": "The twenty-two role dashboards and the global super admin dashboard built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The global super admin dashboard is the platform overview (DASH-042). Still to build in DASH-042..065: the vendor and customer views."
     },
     "DASH-049": {
       "status": "Tested",
@@ -10103,6 +10107,20 @@
         "apps/web/e2e/role-dashboards-admin-flow.test.mjs"
       ],
       "notes": "Reports → Role dashboards → Organisation admin: members by role and how many sign in without two-step sign-in, owners or admins without it, whether two-step is required, invitations open, expired, accepted and revoked, the newest members, single sign-on set-up and verified domains, the AI and email integrations and their last test, this month's AI requests and uploads against the plan, and a to-do ranked by urgency that links to where each is fixed. No secret, key or token is shown. Needs org.manage (owners and admins)."
+    },
+    "DASH-042": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/platform-dashboard.ts",
+        "packages/accounting-engine/test/platform-dashboard.test.ts",
+        "apps/api/src/admin/platform-dashboard.service.ts",
+        "apps/api/src/admin/admin.controller.ts",
+        "apps/api/test/platform-dashboard.e2e.test.ts",
+        "apps/web/src/components/admin/platform-dashboard.tsx",
+        "apps/web/src/app/admin/page.tsx",
+        "apps/web/e2e/platform-dashboard-flow.test.mjs"
+      ],
+      "notes": "Platform administration → Overview is the global super admin dashboard (GET /v1/admin/dashboard, platform.read): a to-do ranked by urgency (security alerts, backup problems, late support tickets, server errors, plan requests, organisations at a limit, trials ending, read-only and suspended organisations) linking to each admin page; new organisations and people by month (chart and table); monthly and yearly run-rate by currency from paid active subscriptions of real organisations (annual price as a twelfth a month) and subscriptions by state, plan requests and trials ending; the fullest organisations this month; organisations by country; the most urgent support tickets; errors, security and backups. Organisation metadata and counts only, never an organisation's books."
     }
   }
 }

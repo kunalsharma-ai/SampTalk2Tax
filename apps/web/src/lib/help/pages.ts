@@ -1246,8 +1246,8 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   paid: { what: 'Where a customer lands after paying a payment link: a thank-you with the link reference.', how: 'Nothing to do here. The invoice is marked paid from the gateway\'s own signed notice, not from this page.', where: 'Open to anyone; it shows nothing from the books.' },
   // ---------------------------------------------------------------- platform administration
   admin: {
-    what: 'Platform administration: organisations, people, plans, payments, support and system health.',
-    how: 'Pick an area from the menu. Every action here is logged.',
+    what: 'Platform administration: organisations, people, plans, payments, support and system health. The overview is the global super admin dashboard: growth by month, subscriptions and their run-rate, the fullest organisations, organisations by country, tickets to answer, errors, security and backups, and a to-do ranked by urgency.',
+    how: 'Pick an area from the menu, or follow a to-do item to the page where it is handled. Every action here is logged. The dashboard shows organisation metadata and counts only, never an organisation\'s books.',
     where: 'Only for platform staff; organisations never see these pages.',
   },
   'admin/organisations': { what: 'Every organisation on the platform.', how: 'Search, open one to see its plan, usage and status, and suspend it if needed.', where: 'Platform administration.' },

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { AuthUser, CurrentUser, RequirePlatform } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { AdminService } from './admin.service';
+import { PlatformDashboardService } from './platform-dashboard.service';
 
 const Reason = z.object({ reason: z.string().max(500) }).strict();
 const Note = z.object({ note: z.string().max(500).optional() }).strict();
@@ -24,12 +25,22 @@ const PeopleQuery = z.object({ q: z.string().max(200).optional() });
 @ApiBearerAuth()
 @Controller('v1/admin')
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly platform: PlatformDashboardService,
+  ) {}
 
   @Get('overview')
   @RequirePlatform('platform.read')
   overview() {
     return this.admin.overview();
+  }
+
+  /** The global super admin's dashboard (DASH-042): growth, subscriptions, usage, support and operations, and what to look at first. */
+  @Get('dashboard')
+  @RequirePlatform('platform.read')
+  dashboard(@CurrentUser() user: AuthUser) {
+    return this.platform.dashboard(user);
   }
 
   @Get('organisations')
