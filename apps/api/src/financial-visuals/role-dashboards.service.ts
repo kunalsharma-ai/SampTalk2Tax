@@ -14,8 +14,21 @@ import {
   type AttentionItemInput,
   type DashboardRole,
 } from '@talk2tax/accounting-engine';
-import { hasPermission } from '@talk2tax/security';
-import type { OrgContext } from '../auth/decorators';
+import { hasPermission, type Permission } from '@talk2tax/security';
+import type { AuthUser, OrgContext } from '../auth/decorators';
+import { AuditEngagementsService } from '../audit-engagements/audit-engagements.service';
+import { AuditEvidenceService } from '../audit-evidence/audit-evidence.service';
+import { AuditFindingsService } from '../audit-findings/audit-findings.service';
+import { ReconciliationExceptionsService } from '../bank-activity/reconciliation-exceptions.service';
+import { CloseService } from '../close/close.service';
+import { DocumentStoreService } from '../common/document-store.service';
+import { journalEntries } from '../db/collections/ledger';
+import { InternalControlsService } from '../internal-controls/internal-controls.service';
+import { JournalApprovalsService } from '../journal-approvals/journal-approvals.service';
+import { PurchaseOrdersService } from '../purchase-orders/purchase-orders.service';
+import { SegregationOfDutiesService } from '../segregation-of-duties/segregation-of-duties.service';
+import { VendorContractsService } from '../vendor-contracts/vendor-contracts.service';
+import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
 import { CashFlowService } from '../cash-flow/cash-flow.service';
 import { istDate, todayIso } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
@@ -82,10 +95,38 @@ export class RoleDashboardsService {
     private readonly expenseRisk: ExpenseRiskService,
     private readonly receipts: ExpenseReceiptsService,
     private readonly budgets: DepartmentBudgetsService,
+    private readonly store: DocumentStoreService,
+    private readonly recon: ReconciliationExceptionsService,
+    private readonly close: CloseService,
+    private readonly journalApprovals: JournalApprovalsService,
+    private readonly sod: SegregationOfDutiesService,
+    private readonly controls: InternalControlsService,
+    private readonly findings: AuditFindingsService,
+    private readonly engagements: AuditEngagementsService,
+    private readonly evidence: AuditEvidenceService,
+    private readonly orders: PurchaseOrdersService,
+    private readonly contracts: VendorContractsService,
+    private readonly vendorRisk: VendorRiskService,
   ) {}
 
-  async brief(org: OrgContext, role: DashboardRole) {
+  /** Dashboards that show more than reports: each needs its own permission as well as reports.read. */
+  static readonly EXTRA: Partial<Record<DashboardRole, { permission: Permission; what: string }>> = {
+    EXPENSE_MANAGER: { permission: 'expenses.read', what: 'expenses' },
+    CONTROLLER: { permission: 'audit.read', what: 'audit and controls' },
+    INTERNAL_AUDITOR: { permission: 'audit.read', what: 'audit and controls' },
+    PROCUREMENT: { permission: 'purchases.read', what: 'purchases' },
+  };
+
+  /** Whether the member's role may open a dashboard. */
+  static available(org: Pick<OrgContext, 'role'>, role: DashboardRole) {
+    const extra = RoleDashboardsService.EXTRA[role];
+    return !extra || hasPermission(org.role, extra.permission);
+  }
+
+  async brief(org: OrgContext, user: AuthUser, role: DashboardRole) {
     const today = todayIso();
+    const extra = RoleDashboardsService.EXTRA[role];
+    if (extra && !hasPermission(org.role, extra.permission)) throw new ForbiddenException({ error: 'FORBIDDEN', message: `This dashboard needs access to ${extra.what}` });
     const head = { role, ...ROLE_DASHBOARDS[role], asOf: today, currency: org.functionalCurrency };
     switch (role) {
       case 'CEO':
@@ -107,9 +148,15 @@ export class RoleDashboardsService {
       case 'TAX_MANAGER':
         return { ...head, tax: await this.taxManager(org, today) };
       case 'EXPENSE_MANAGER':
-        // Claims carry people's names and spending: the expense dashboard needs expense access too.
-        if (!hasPermission(org.role, 'expenses.read')) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'The expense dashboard needs access to expenses' });
         return { ...head, expenses: await this.expenseManager(org, today) };
+      case 'ACCOUNTANT':
+        return { ...head, accountant: await this.accountant(org, user, today) };
+      case 'CONTROLLER':
+        return { ...head, controller: await this.controller(org, user, today) };
+      case 'INTERNAL_AUDITOR':
+        return { ...head, audit: await this.internalAuditor(org, user, today) };
+      case 'PROCUREMENT':
+        return { ...head, procurement: await this.procurement(org, today) };
     }
   }
 
@@ -381,6 +428,113 @@ export class RoleDashboardsService {
       risk: { summary: risk.summary, items: risk.items.slice(0, 5).map((i) => ({ claimId: i.claim.id, title: i.claim.title, claimant: i.claim.claimantName, total: i.claim.total, currency: i.claim.currency, level: i.level, indicators: i.indicators.map((x) => x.detail) })) },
       receipts: { days: missing.days, lines: missing.lines, withReceipt: missing.withReceipt, missing: missing.items.length, totals: missing.totals },
       budgets: { fiscalYear: budgets.fiscalYear, totals: budgets.totals, rows: budgets.rows.map((r) => ({ departmentId: r.departmentId, name: r.name, budget: r.budget, actual: r.actual, committed: r.committed, status: r.status, usedPercent: r.usedPercent, reason: r.reason })) },
+    };
+  }
+
+  /** Close status of the months up to today, newest first. */
+  private async closes(org: OrgContext, months: number) {
+    const l = await this.close.list(org);
+    return l.periods.slice(0, months).map((p) => ({ id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, periodStatus: p.periodStatus, closeStatus: p.closeStatus, closedBy: p.closedBy, closedAt: p.closedAt, current: p.current }));
+  }
+
+  private async pendingApprovals(org: OrgContext, user: AuthUser) {
+    const rows = await this.journalApprovals.list(org, user.id, 'PENDING');
+    return { count: rows.length, mine: rows.filter((r) => r.canDecide).length, items: rows.slice(0, 8).map((r) => ({ id: r.id, entryId: r.entryId, date: r.date, memo: r.memo, total: r.total, requestedBy: r.requestedBy, requestedAt: r.requestedAt, canDecide: r.canDecide })) };
+  }
+
+  private async accountant(org: OrgContext, user: AuthUser, today: string) {
+    const [drafts, documents, approvals, recon, closes] = await Promise.all([
+      this.store.collection(journalEntries).find({ status: 'DRAFT' }, { sort: { date: 1 }, projection: { id: 1, date: 1, memo: 1, entryNumber: 1, createdAt: 1 } }),
+      this.prisma.document.findMany({ where: { orgId: org.id, status: 'DRAFT' }, select: { kind: true, issueDate: true } }),
+      this.pendingApprovals(org, user),
+      this.recon.analyse(org, {}, today),
+      this.closes(org, 3),
+    ]);
+    const kinds = new Map<string, number>();
+    for (const d of documents) kinds.set(d.kind, (kinds.get(d.kind) ?? 0) + 1);
+    return {
+      queue: {
+        draftJournals: drafts.length,
+        draftDocuments: documents.length,
+        approvals: approvals.count,
+        reconciliation: recon.summary.needsAction,
+      },
+      draftJournals: drafts.slice(0, 8).map((e) => ({ id: e.id, date: istDate(e.date), memo: e.memo ?? null })),
+      draftDocuments: [...kinds].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([kind, count]) => ({ kind, count })),
+      approvals,
+      reconciliation: {
+        summary: recon.summary,
+        accounts: recon.accounts.slice(0, 6).map((a) => ({ id: a.account.id, code: a.account.code, name: a.account.name, lastReconciled: a.lastReconciled, exceptions: a.exceptions.length, unmatchedStatement: a.unmatched.statement, unmatchedBook: a.unmatched.book })),
+      },
+      close: closes,
+    };
+  }
+
+  private async controller(org: OrgContext, user: AuthUser, today: string) {
+    const [closes, approvals, sod, controls, findings] = await Promise.all([
+      this.closes(org, 6),
+      this.pendingApprovals(org, user),
+      this.sod.overview(org, user, {}),
+      this.controls.list(org, user),
+      this.findings.list(org, user, {}),
+    ]);
+    const openSod = sod.findings.filter((f) => !f.review);
+    return {
+      closes,
+      lateCloses: closes.filter((c) => !c.current && c.closeStatus !== 'CLOSED').length,
+      approvals,
+      separation: {
+        from: sod.from,
+        to: sod.to,
+        open: openSod.length,
+        reviewed: sod.findings.length - openSod.length,
+        rules: sod.rules.map((r) => ({ id: r.id, title: r.title, open: r.open, reviewed: r.reviewed })),
+        membersWithConflicts: sod.members.filter((m) => m.conflicts.length).length,
+      },
+      controls: {
+        summary: controls.summary,
+        total: controls.controls.length,
+        attention: controls.controls.filter((c) => c.status === 'FAILED' || c.status === 'OVERDUE').slice(0, 8).map((c) => ({ id: c.id, title: c.title, area: c.area, status: c.status, owner: c.owner.name, period: c.duePeriod.label })),
+      },
+      findings: findings.summary,
+      asOf: today,
+    };
+  }
+
+  private async internalAuditor(org: OrgContext, user: AuthUser, today: string) {
+    const [engagements, findings, evidence, controls] = await Promise.all([this.engagements.list(user), this.findings.list(org, user, {}), this.evidence.list(user, {}), this.controls.list(org, user)]);
+    return {
+      asOf: today,
+      engagements: engagements.engagements.filter((e) => e.status !== 'CLOSED').slice(0, 8).map((e) => ({ id: e.id, reference: e.reference, name: e.name, status: e.status, scopeFrom: e.scopeFrom, scopeTo: e.scopeTo, lead: e.lead.name, progress: e.progress, mine: e.mine })),
+      engagementCount: engagements.engagements.length,
+      findings: {
+        summary: findings.summary,
+        open: findings.findings.filter((f) => f.status !== 'CLOSED').slice(0, 10).map((f) => ({ id: f.id, reference: f.reference, title: f.title, severity: f.severity, status: f.status, dueDate: f.dueDate, overdue: f.overdue })),
+      },
+      evidence: {
+        summary: evidence.summary,
+        outstanding: evidence.requests.filter((r) => r.status !== 'ACCEPTED').slice(0, 8).map((r) => ({ id: r.id, reference: r.reference, title: r.title, status: r.status, dueDate: r.dueDate })),
+      },
+      controls: { summary: controls.summary, total: controls.controls.length, failed: controls.controls.filter((c) => c.status === 'FAILED').map((c) => ({ id: c.id, title: c.title, owner: c.owner.name, lastTest: c.lastTest ? { result: c.lastTest.result, testedAt: c.lastTest.testedAt } : null })) },
+    };
+  }
+
+  private async procurement(org: OrgContext, today: string) {
+    const until = addDays(today, 60);
+    const [po, contracts, risk, held] = await Promise.all([this.orders.list(org, { view: 'open' }), this.contracts.list(org, today), this.vendorRisk.list(org.id), this.billExceptions.list(org)]);
+    return {
+      orders: {
+        totals: po.totals,
+        late: po.orders.filter((o) => o.late).slice(0, 8).map((o) => ({ id: o.id, reference: o.reference, vendor: o.contact?.name ?? '', expectedDate: o.expectedDate, toReceive: o.toReceive, total: o.total })),
+        open: po.orders.slice(0, 8).map((o) => ({ id: o.id, reference: o.reference, vendor: o.contact?.name ?? '', state: o.state, orderDate: o.orderDate, expectedDate: o.expectedDate, toReceive: o.toReceive, toBill: o.toBill, total: o.total, late: o.late })),
+      },
+      contracts: {
+        summary: contracts.summary,
+        ending: contracts.contracts.filter((c) => c.state === 'IN_FORCE' && c.endDate && c.endDate <= until).map((c) => ({ id: c.id, reference: c.reference, vendor: c.vendor, title: c.title, endDate: c.endDate })),
+        issues: contracts.issues.slice(0, 6).map((i) => ({ contract: i.contract.reference, vendor: i.vendor, severity: i.severity, date: i.date, billNumber: i.billNumber, detail: i.detail })),
+      },
+      vendors: { totals: risk.totals, risky: risk.vendors.filter((v) => v.level === 'HIGH' || v.level === 'MEDIUM').slice(0, 8).map((v) => ({ id: v.id, name: v.name, level: v.level, factors: v.factors.map((f) => f.title) })) },
+      heldBills: { bills: held.summary.bills, atStake: held.summary.atStake },
     };
   }
 }

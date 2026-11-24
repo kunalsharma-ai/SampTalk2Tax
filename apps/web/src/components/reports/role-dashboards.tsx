@@ -5,7 +5,7 @@ import type { KpiUnit } from '@/lib/kpis';
 import { money } from '@/lib/format';
 import type { RiskLevel } from './risk-monitor';
 
-export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER';
+export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER' | 'ACCOUNTANT' | 'CONTROLLER' | 'INTERNAL_AUDITOR' | 'PROCUREMENT';
 export interface RoleKpi {
   key: string;
   label: string;
@@ -107,6 +107,46 @@ export interface RoleDashboard {
   payables?: PayablesView;
   tax?: TaxManagerView;
   expenses?: ExpenseManagerView;
+  accountant?: AccountantView;
+  controller?: ControllerView;
+  audit?: InternalAuditorView;
+  procurement?: ProcurementView;
+}
+
+export interface CloseRow { id: string; name: string; startDate: string; endDate: string; periodStatus: string; closeStatus: string; closedBy: string | null; closedAt: string | null; current: boolean }
+export interface PendingApprovals { count: number; mine: number; items: { id: string; entryId: string; date: string | null; memo: string | null; total: string; requestedBy: string | null; requestedAt: string; canDecide: boolean }[] }
+export interface AccountantView {
+  queue: { draftJournals: number; draftDocuments: number; approvals: number; reconciliation: number };
+  draftJournals: { id: string; date: string; memo: string | null }[];
+  draftDocuments: { kind: string; count: number }[];
+  approvals: PendingApprovals;
+  reconciliation: { summary: { accounts: number; accountsWithExceptions: number; exceptions: number; needsAction: number }; accounts: { id: string; code: string; name: string; lastReconciled: string | null; exceptions: number; unmatchedStatement: number; unmatchedBook: number }[] };
+  close: CloseRow[];
+}
+export interface ControllerView {
+  closes: CloseRow[];
+  lateCloses: number;
+  approvals: PendingApprovals;
+  separation: { from: string; to: string; open: number; reviewed: number; rules: { id: string; title: string; open: number; reviewed: number }[]; membersWithConflicts: number };
+  controls: { summary: { passed: number; failed: number; due: number; overdue: number }; total: number; attention: { id: string; title: string; area: string; status: string; owner: string; period: string }[] };
+  findings: { open: number; overdue: number; high: number; readyForReview: number };
+}
+export interface InternalAuditorView {
+  engagements: { id: string; reference: string; name: string; status: string; scopeFrom: string; scopeTo: string; lead: string; progress: { steps: number; done: number; signedOff: number }; mine: boolean }[];
+  engagementCount: number;
+  findings: { summary: { open: number; overdue: number; high: number; readyForReview: number }; open: { id: string; reference: string; title: string; severity: 'HIGH' | 'MEDIUM' | 'LOW'; status: string; dueDate: string; overdue: boolean }[] };
+  evidence: { summary: { requested: number; submitted: number; accepted: number; overdue: number; mine: number }; outstanding: { id: string; reference: string; title: string; status: string; dueDate: string }[] };
+  controls: { summary: { passed: number; failed: number; due: number; overdue: number }; total: number; failed: { id: string; title: string; owner: string; lastTest: { result: string; testedAt: string } | null }[] };
+}
+export interface ProcurementView {
+  orders: {
+    totals: { open: number; drafts: number; late: number; toReceive: string; toBill: string };
+    late: { id: string; reference: string; vendor: string; expectedDate: string | null; toReceive: string; total: string }[];
+    open: { id: string; reference: string; vendor: string; state: string; orderDate: string; expectedDate: string | null; toReceive: string; toBill: string; total: string; late: boolean }[];
+  };
+  contracts: { summary: { contracts: number; inForce: number; withIssues: number; issues: number; high: number; overcharge: string }; ending: { id: string; reference: string; vendor: string; title: string; endDate: string }[]; issues: { contract: string; vendor: string; severity: 'HIGH' | 'MEDIUM' | 'LOW'; date: string; billNumber: string; detail: string }[] };
+  vendors: { totals: { vendors: number; high: number; medium: number; low: number }; risky: { id: string; name: string; level: 'HIGH' | 'MEDIUM'; factors: string[] }[] };
+  heldBills: { bills: number; atStake: string };
 }
 
 export type AgingBucket = 'CURRENT' | 'DAYS_1_30' | 'DAYS_31_60' | 'DAYS_61_90' | 'OVER_90';

@@ -2,7 +2,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { DASHBOARD_ROLES, ROLE_DASHBOARDS, type DashboardRole } from '@talk2tax/accounting-engine';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
-import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
+import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
 import { DepartmentPerformanceService } from './department-performance.service';
 import { FinancialDependenciesService } from './financial-dependencies.service';
@@ -98,14 +98,14 @@ export class RoleDashboardsController {
   /** The dashboards there are, one per role, and the question each answers. */
   @Get()
   @RequirePermission('reports.read')
-  list() {
-    return { roles: DASHBOARD_ROLES.map((role) => ({ role, ...ROLE_DASHBOARDS[role] })) };
+  list(@CurrentOrg() org: OrgContext) {
+    return { roles: DASHBOARD_ROLES.map((role) => ({ role, ...ROLE_DASHBOARDS[role], available: RoleDashboardsService.available(org, role) })) };
   }
 
   /** One role's dashboard: CEO, CFO, TREASURY, RISK, COMPLIANCE or BOARD, each with its own figures and layout. */
   @Get(':role')
   @RequirePermission('reports.read')
-  brief(@CurrentOrg() org: OrgContext, @Param('role', new ZodPipe(RoleParam)) role: DashboardRole) {
-    return this.s.brief(org, role);
+  brief(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('role', new ZodPipe(RoleParam)) role: DashboardRole) {
+    return this.s.brief(org, user, role);
   }
 }

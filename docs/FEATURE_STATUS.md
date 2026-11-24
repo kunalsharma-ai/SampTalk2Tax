@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 542 |
+| Not started | 538 |
 | Designed | 0 |
 | Implementing | 41 |
 | Implemented | 23 |
-| Tested | 723 |
+| Tested | 727 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 36 | 32 |
+| Dashboard design | M1 | 68 | 32 | 36 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6837,6 +6837,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
   - apps/web/e2e/role-dashboards-flow.test.mjs
 
+### DASH-047 — Financial Controller
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Controller: the last six months and whether each was closed and certified (with who closed it), past months not closed, duties held apart (segregation-of-duties rules with conflicts to review and reviewed, members whose role allows conflicting steps), controls failed or overdue from the internal controls register, open audit findings, and journals waiting for a second person. Needs audit access (VIEWER sees the tab disabled; API 403).
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-books.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-books-flow.test.mjs
+
+### DASH-048 — Accountant
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Accountant: work waiting (draft journals, draft invoices and bills, journals awaiting approval, bank lines to sort out), unposted journals oldest first with links, journal approvals waiting (and which are yours to decide), bank accounts with reconciliation exceptions and unmatched statement lines and book entries, and the close status of this month and the two before it.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-books.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-books-flow.test.mjs
+
 ### DASH-049 — Accounts Payable Manager
 
 - Module: Dashboard design
@@ -6893,6 +6921,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
   - apps/web/e2e/role-dashboards-flow.test.mjs
 
+### DASH-054 — Procurement Manager
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Procurement: open purchase orders (issued and draft) with what is still to receive and to bill, late deliveries past their expected date, vendor contracts ending in the next 60 days or breached by bills (overcharges, bills held against orders), and vendors at high or medium risk with the reasons. Needs purchases access.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-books.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-books-flow.test.mjs
+
 ### DASH-055 — Expense Manager
 
 - Module: Dashboard design
@@ -6906,6 +6948,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/role-dashboards.tsx
   - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
   - apps/web/e2e/role-dashboards-managers-flow.test.mjs
+
+### DASH-056 — Internal Auditor
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Internal audit: findings at a glance (open, late, by severity), findings to follow up with owners and due dates, audits in progress, audit evidence still outstanding, and controls that failed. Needs audit access (VIEWER sees the tab disabled; API 403).
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-books.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-books-flow.test.mjs
 
 ### DASH-063 — Financial Risk Officer
 
@@ -6953,7 +7009,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The ten role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. The other roles in DASH-042..065 do not have dashboards yet.
+- Notes: The fourteen role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The other roles in DASH-042..065 do not have dashboards yet.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -6964,12 +7020,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/role-dashboards.tsx
   - packages/accounting-engine/src/role-dashboards.ts
   - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/test/role-dashboards-books.e2e.test.ts
+  - apps/web/e2e/role-dashboards-books-flow.test.mjs
 
 ### DASH-068 — Do not simply reuse the same dashboard with different headings
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The ten role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. The other roles in DASH-042..065 do not have dashboards yet.
+- Notes: The fourteen role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The other roles in DASH-042..065 do not have dashboards yet.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -6980,6 +7038,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/role-dashboards.tsx
   - packages/accounting-engine/src/role-dashboards.ts
   - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/test/role-dashboards-books.e2e.test.ts
+  - apps/web/e2e/role-dashboards-books-flow.test.mjs
 
 ### WAR-001 — Create an immersive collaborative financial planning environment
 
