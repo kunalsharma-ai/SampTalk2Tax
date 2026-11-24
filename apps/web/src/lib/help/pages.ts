@@ -899,6 +899,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Each high finding adds 25 points to its area, each medium 10 and each low 3, up to 100. The overall score is 60% the worst area and 40% the average of the areas that have something to check. Look first at the areas named at the top, and open an area to act on its findings.',
     where: 'Reports. Needs reports.read; an area your role cannot read is left out. It reads the same checks as Alerts, Payment fraud checks, Expense risk, Unusual bank activity, Deadline risk and Vendor risk. One reading a day is kept when the monitor is opened, for the trend. No AI model is used.',
   },
+  'reports/dependencies': {
+    what: 'Who the business depends on for its money, as a network: customers for revenue and vendors for spending over the months you choose, and the cash and bank accounts and lenders at their end, with how concentrated each group is and the single dependencies worth watching.',
+    how: 'Choose the months (up to 24) and the groups to show. Wider lines are larger shares; red and orange lines are critical and high dependencies. Choose a party in the network, the list or a table to see its share and open the customer, vendor or ledger, or explore its connections.',
+    where: 'Reports. Needs reports.read. Revenue comes from posted invoices less credit notes, spending from posted bills less vendor credits (before tax), cash and borrowing from account balances. The concentration index is the Herfindahl–Hirschman index of the shares: under 1,500 spread out, above 2,500 highly concentrated. Nothing is changed and no AI model is used.',
+  },
   'reports/visuals': {
     what: 'The profit and loss of the months you choose, drawn four ways: a waterfall from revenue down to net profit, a Sankey of where income came from and where it went, a heatmap of the largest expense accounts month by month, and a treemap of what spending is made of.',
     how: 'Choose the months (up to 24). Choose a waterfall bar, a Sankey group or a spending group to list the accounts behind it; choose an account, a heatmap cell or a treemap block to open its general ledger for the same months.',

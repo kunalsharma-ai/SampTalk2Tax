@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
 import { DepartmentPerformanceService } from './department-performance.service';
+import { FinancialDependenciesService } from './financial-dependencies.service';
 import { FinancialTimelineService } from './financial-timeline.service';
 import { FinancialVisualsService } from './financial-visuals.service';
 import { RiskMonitorService } from './risk-monitor.service';
@@ -67,5 +68,19 @@ export class RiskMonitorController {
   @RequirePermission('reports.read')
   monitor(@CurrentOrg() org: OrgContext) {
     return this.s.monitor(org);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/dependencies')
+export class FinancialDependenciesController {
+  constructor(private readonly s: FinancialDependenciesService) {}
+
+  /** Who the business depends on: revenue by customer and spending by vendor over a range of months (the last 12 by default), and cash and borrowing by account at its end. */
+  @Get()
+  @RequirePermission('reports.read')
+  dependencies(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
+    return this.s.dependencies(org, q);
   }
 }

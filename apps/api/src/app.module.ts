@@ -41,9 +41,10 @@ import { BillReaderService } from './bill-reader/bill-reader.service';
 import { CardFeedController, CompanyCardsController } from './company-cards/company-cards.controller';
 import { CompanyCardsService } from './company-cards/company-cards.service';
 import { DepartmentPerformanceService } from './financial-visuals/department-performance.service';
+import { FinancialDependenciesService } from './financial-visuals/financial-dependencies.service';
 import { FinancialTimelineService } from './financial-visuals/financial-timeline.service';
 import { RiskMonitorService } from './financial-visuals/risk-monitor.service';
-import { DepartmentPerformanceController, FinancialTimelineController, FinancialVisualsController, RiskMonitorController } from './financial-visuals/financial-visuals.controller';
+import { DepartmentPerformanceController, FinancialDependenciesController, FinancialTimelineController, FinancialVisualsController, RiskMonitorController } from './financial-visuals/financial-visuals.controller';
 import { FinancialVisualsService } from './financial-visuals/financial-visuals.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
@@ -483,6 +484,7 @@ export class AppModule {
         FinancialVisualsController,
         DepartmentPerformanceController,
         FinancialTimelineController,
+        FinancialDependenciesController,
         RiskMonitorController,
         BankFeedsController,
         BankFeedDeliveryController,
@@ -675,6 +677,7 @@ export class AppModule {
         FinancialVisualsService,
         DepartmentPerformanceService,
         FinancialTimelineService,
+        FinancialDependenciesService,
         RiskMonitorService,
         DocumentsService,
         BankingService,
