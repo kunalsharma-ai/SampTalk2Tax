@@ -887,7 +887,7 @@ Part 26 · M6 · priority P1 · depends on: GL
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| RPT-001 |  | rule | Build a professional reporting studio | Not started |
+| RPT-001 |  | rule | Build a professional reporting studio | Tested |
 | RPT-002 |  | capability | Profit and loss | Tested |
 | RPT-003 |  | capability | Balance sheet | Tested |
 | RPT-004 |  | capability | Cash-flow statement | Tested |

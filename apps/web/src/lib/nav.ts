@@ -129,6 +129,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
   {
     group: 'Reports',
     items: [
+      { href: '/reports', label: 'Reporting studio' },
       { href: '/reports/dashboards', label: 'Dashboards' },
       { href: '/reports/role-dashboards', label: 'Role dashboards' },
       { href: '/reports/trial-balance', label: 'Trial balance' },

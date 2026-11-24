@@ -10155,6 +10155,21 @@
         "apps/web/src/app/portal/[token]/page.tsx"
       ],
       "notes": "The customer portal (private link, no sign-in) opens with a dashboard: what the customer owes by how late it is as a chart and table, the next payment due and what falls due within 30 days, and the last twelve months of invoices (less credit notes) and their payments by month, as a chart and table. Only that customer's posted invoices and receipts. In the currency with the most open, else the business's own."
+    },
+    "RPT-001": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/report-studio.ts",
+        "packages/accounting-engine/test/report-studio.test.ts",
+        "apps/api/src/report-studio/report-studio.service.ts",
+        "apps/api/src/report-studio/report-studio.controller.ts",
+        "apps/api/src/db/collections/report-favourites.ts",
+        "apps/api/src/db/migrations/20270309100000_report_favourites.ts",
+        "apps/api/test/report-studio.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/reports/page.tsx",
+        "apps/web/e2e/report-studio-flow.test.mjs"
+      ],
+      "notes": "Reports → Reporting studio (/reports, GET /reports/studio, reports.read): every report in one catalogue grouped by purpose (statements, ledgers, management, dashboards, tax, payroll and expenses, audit, stakeholders, build your own) with the question it answers, its exports (PDF, Excel, CSV), saved views visible to the member and active schedules; reports the member's role cannot open are listed but closed. Word search across name, question and category. Pins per person (report_favourites, PUT/DELETE /reports/studio/favourites/:report). Totals, the latest exports from the audit trail (report, format, who, when) and the designs built in the report designer. Builds on RPT-002..041."
     }
   }
 }

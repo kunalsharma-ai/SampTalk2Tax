@@ -157,6 +157,7 @@ export const hi: Record<string, string> = {
   KPIs: 'KPI',
   'Management reports': 'प्रबंधन रिपोर्ट',
   'Report designer': 'रिपोर्ट डिज़ाइनर',
+  'Reporting studio': 'रिपोर्टिंग स्टूडियो',
   'Group consolidation': 'समूह समेकन',
   // Tax
   'Compliance calendar': 'अनुपालन कैलेंडर',

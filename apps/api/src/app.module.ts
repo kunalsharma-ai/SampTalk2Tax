@@ -118,6 +118,8 @@ import { HealthController } from './health/health.controller';
 import { RegionsController } from './regions/regions.controller';
 import { AdminController, AnnouncementsController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
+import { ReportStudioController } from './report-studio/report-studio.controller';
+import { ReportStudioService } from './report-studio/report-studio.service';
 import { PlatformDashboardService } from './admin/platform-dashboard.service';
 import { PlatformSupportController, SupportController } from './support/support.controller';
 import { SupportService } from './support/support.service';
@@ -407,6 +409,7 @@ export class AppModule {
         HealthController,
         RegionsController,
         AdminController,
+        ReportStudioController,
         StatusController,
         OrgFlagsController,
         OperationsController,
@@ -609,6 +612,7 @@ export class AppModule {
       providers: [
         RegionsService,
         AdminService,
+        ReportStudioService,
         PlatformDashboardService,
         SupportService,
         SupportAccessService,
