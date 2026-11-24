@@ -5,7 +5,7 @@ import type { KpiUnit } from '@/lib/kpis';
 import { money } from '@/lib/format';
 import type { RiskLevel } from './risk-monitor';
 
-export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER' | 'ACCOUNTANT' | 'CONTROLLER' | 'INTERNAL_AUDITOR' | 'PROCUREMENT' | 'PAYROLL_MANAGER' | 'AI_ADMIN' | 'ANALYST' | 'FINANCE_DIRECTOR' | 'DEPARTMENT_MANAGER' | 'EXTERNAL_AUDITOR';
+export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER' | 'ACCOUNTANT' | 'CONTROLLER' | 'INTERNAL_AUDITOR' | 'PROCUREMENT' | 'PAYROLL_MANAGER' | 'AI_ADMIN' | 'ANALYST' | 'FINANCE_DIRECTOR' | 'DEPARTMENT_MANAGER' | 'EXTERNAL_AUDITOR' | 'PROJECT_FINANCE' | 'ORG_ADMIN';
 export interface RoleKpi {
   key: string;
   label: string;
@@ -117,6 +117,8 @@ export interface RoleDashboard {
   director?: FinanceDirectorView;
   department?: DepartmentManagerView;
   externalAudit?: ExternalAuditorView;
+  projects?: ProjectFinanceView;
+  admin?: OrgAdminView;
 }
 
 export interface CloseRow { id: string; name: string; startDate: string; endDate: string; periodStatus: string; closeStatus: string; closedBy: string | null; closedAt: string | null; current: boolean }
@@ -296,6 +298,44 @@ export interface ExternalAuditorView {
   findings: { summary: { open: number } & Record<string, number>; open: { id: string; reference: string; title: string; severity: string; status: string; dueDate: string | null; overdue: boolean }[] };
 }
 
+export type ProjectHealth = 'LOSS' | 'THIN' | 'HEALTHY' | 'NO_REVENUE' | 'NO_ACTIVITY';
+export interface ProjectRow {
+  id: string;
+  code: string;
+  name: string;
+  customer: string | null;
+  isActive: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  revenue: string;
+  cost: string;
+  profit: string;
+  margin: string | null;
+  health: ProjectHealth;
+  elapsedPercent: number | null;
+  daysLeft: number | null;
+  ended: boolean;
+  topCost: { code: string; name: string; amount: string; share: string | null } | null;
+}
+export interface ProjectMonth { month: string; projectRevenue: string; projectCost: string; otherRevenue: string; otherCost: string }
+export interface ProjectFinanceView {
+  asOf: string;
+  projects: ProjectRow[];
+  totals: { revenue: string; cost: string; profit: string };
+  counts: { loss: number; thin: number; healthy: number; noRevenue: number; noActivity: number; endingSoon: number };
+  unassigned: { revenue: string; cost: string; revenueShare: string | null; costShare: string | null };
+  months: ProjectMonth[];
+}
+export interface OrgAdminView {
+  members: { total: number; roles: { role: string; members: number; withoutTwoStep: number }[]; withoutTwoStep: number; adminsWithoutTwoStep: { userId: string; name: string; role: string }[]; newest: { userId: string; name: string; role: string; since: string }[] };
+  security: { requireTwoStep: boolean; updatedAt: string | null };
+  invitations: { pending: number; expired: number; accepted: number; revoked: number };
+  sso: { configured: boolean; enabled: boolean; enforced: boolean; protocol: string | null; domains: number; verifiedDomains: number };
+  integrations: { name: string; configured: boolean; enabled: boolean; testStatus: string; testedAt: string | null; inUse: string }[];
+  usage: { month: string; plan: string | null; items: { name: string; used: number; limit: number | null; percent: number | null; state: 'OK' | 'NEAR' | 'REACHED' | 'UNLIMITED' }[] };
+  attention: { title: string; detail: string; level: 'HIGH' | 'MEDIUM' | 'LOW'; href: string }[];
+}
+
 const n = (v: string | null) => (v === null ? null : Number(v)); // not money: only to draw
 const short = (currency: string) => (v: number) => money(String(Math.round(v)), currency).replace(/\.00$/, ''); // not money: axis ticks
 const monthTick = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
@@ -457,6 +497,26 @@ export function PlanQuarterBars({ quarters, currency }: { quarters: PlanQuarter[
           <Legend />
           <Bar dataKey="plan" name="Planned net income" fill={s[4]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
           <Bar dataKey="actual" name="Actual net income" fill={s[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Revenue and cost of each project as bars (the project finance view); the table under it has the figures. */
+export function ProjectBars({ projects, currency }: { projects: ProjectRow[]; currency: string }) {
+  const s = chartSeries;
+  return (
+    <div className="h-64 w-full px-2" role="img" aria-label="Revenue and cost of each project as bars; the same figures are in the table below">
+      <ResponsiveContainer>
+        <BarChart data={projects.map((p) => ({ project: p.code, revenue: n(p.revenue), cost: n(p.cost) }))} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--t2t-border)" vertical={false} />
+          <XAxis dataKey="project" tick={{ fontSize: 11 }} />
+          <YAxis tickFormatter={short(currency)} tick={{ fontSize: 11 }} width={88} />
+          <Tooltip formatter={(v) => money(String(v), currency)} />
+          <Legend />
+          <Bar dataKey="revenue" name="Revenue" fill={s[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="cost" name="Cost" fill={s[4]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>

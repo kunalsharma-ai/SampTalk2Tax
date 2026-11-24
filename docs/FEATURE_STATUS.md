@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 532 |
+| Not started | 530 |
 | Designed | 0 |
 | Implementing | 41 |
 | Implemented | 23 |
-| Tested | 733 |
+| Tested | 735 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 26 | 42 |
+| Dashboard design | M1 | 68 | 24 | 44 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6809,6 +6809,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src
 
+### DASH-043 — Tenant Organization Admin
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Organisation admin: members by role and how many sign in without two-step sign-in, owners or admins without it, whether two-step is required, invitations open, expired, accepted and revoked, the newest members, single sign-on set-up and verified domains, the AI and email integrations and their last test, this month's AI requests and uploads against the plan, and a to-do ranked by urgency that links to where each is fixed. No secret, key or token is shown. Needs org.manage (owners and admins).
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-admin.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-admin-flow.test.mjs
+
 ### DASH-044 — CEO
 
 - Module: Dashboard design
@@ -7005,6 +7019,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
   - apps/web/e2e/role-dashboards-directors-flow.test.mjs
 
+### DASH-058 — Project Finance Manager
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Project finance: every project's revenue, cost, profit and margin from everything posted, its health (losing money, thin margin under 10%, healthy, cost with no revenue, nothing posted), how far through its start and end dates it is and days left, and its largest cost account; losses first, with a chart and table. The last six months split into project and other revenue and cost, and the revenue and cost posted to no project with its share. Needs reports.read.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-admin.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-admin-flow.test.mjs
+
 ### DASH-059 — Department Manager
 
 - Module: Dashboard design
@@ -7093,7 +7121,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The twenty role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform and organisation admins, project finance, and the vendor and customer views.
+- Notes: The twenty-two role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform admin, and the vendor and customer views.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -7110,12 +7138,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/role-dashboards-people-flow.test.mjs
   - apps/api/test/role-dashboards-directors.e2e.test.ts
   - apps/web/e2e/role-dashboards-directors-flow.test.mjs
+  - apps/api/test/role-dashboards-admin.e2e.test.ts
+  - apps/web/e2e/role-dashboards-admin-flow.test.mjs
 
 ### DASH-068 — Do not simply reuse the same dashboard with different headings
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The twenty role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform and organisation admins, project finance, and the vendor and customer views.
+- Notes: The twenty-two role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform admin, and the vendor and customer views.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -7132,6 +7162,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/role-dashboards-people-flow.test.mjs
   - apps/api/test/role-dashboards-directors.e2e.test.ts
   - apps/web/e2e/role-dashboards-directors-flow.test.mjs
+  - apps/api/test/role-dashboards-admin.e2e.test.ts
+  - apps/web/e2e/role-dashboards-admin-flow.test.mjs
 
 ### WAR-001 — Create an immersive collaborative financial planning environment
 

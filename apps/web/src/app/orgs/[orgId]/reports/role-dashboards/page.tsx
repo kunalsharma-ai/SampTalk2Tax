@@ -19,6 +19,9 @@ import {
   type DepartmentManagerView,
   DepartmentSpendChart,
   type ExternalAuditorView,
+  type OrgAdminView,
+  ProjectBars,
+  type ProjectFinanceView,
   type FinanceDirectorView,
   type PlanFigure,
   PlanQuarterBars,
@@ -76,6 +79,8 @@ const ROLES: { role: DashboardRole; label: string }[] = [
   { role: 'FINANCE_DIRECTOR', label: 'Finance director' },
   { role: 'DEPARTMENT_MANAGER', label: 'Department manager' },
   { role: 'EXTERNAL_AUDITOR', label: 'External auditor' },
+  { role: 'PROJECT_FINANCE', label: 'Project finance' },
+  { role: 'ORG_ADMIN', label: 'Organisation admin' },
 ];
 const TONE = { HIGH: 'negative', MEDIUM: 'warning', LOW: 'neutral' } as const;
 const SEVERITY = { CRITICAL: 'negative', HIGH: 'warning', WATCH: 'neutral' } as const;
@@ -111,7 +116,7 @@ function RoleDashboards() {
     <>
       <PageHeader
         title="Role dashboards"
-        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, the receivables, payables, tax and expense managers, the accountant, the controller, internal audit, procurement, payroll, the AI agent administrator, the financial analyst, the finance director, a department manager and the external auditor. Every figure comes from your posted books and Talk2Tax's own checks."
+        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, the receivables, payables, tax and expense managers, the accountant, the controller, internal audit, procurement, payroll, the AI agent administrator, the financial analyst, the finance director, a department manager, the external auditor, project finance and the organisation admin. Every figure comes from your posted books and Talk2Tax's own checks."
       />
       <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Dashboard for">
         {ROLES.map((x) => (
@@ -147,6 +152,8 @@ function RoleDashboards() {
           {r.director ? <FinanceDirector v={r.director} c={c} orgId={orgId} /> : null}
           {r.department ? <DepartmentManager v={r.department} c={c} orgId={orgId} onChoose={(id) => router.replace(`?role=DEPARTMENT_MANAGER&department=${encodeURIComponent(id)}`)} /> : null}
           {r.externalAudit ? <ExternalAuditor v={r.externalAudit} c={c} orgId={orgId} /> : null}
+          {r.projects ? <ProjectFinance v={r.projects} c={c} orgId={orgId} /> : null}
+          {r.admin ? <OrgAdmin v={r.admin} orgId={orgId} /> : null}
         </div>
       ) : !q.error && !closed.has(role) ? <p className="text-sm text-fg-muted">Reading the dashboard…</p> : null}
     </>
@@ -1361,6 +1368,119 @@ function ExternalAuditor({ v, c, orgId }: { v: ExternalAuditorView; c: string; o
           ) : <p className="px-5 py-4 text-sm text-fg-muted">No finding is open.</p>}
         </Card>
       </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Project finance
+
+const HEALTH: Record<string, { label: string; tone: 'positive' | 'warning' | 'negative' | 'neutral' }> = { LOSS: { label: 'losing money', tone: 'negative' }, THIN: { label: 'thin margin', tone: 'warning' }, HEALTHY: { label: 'healthy', tone: 'positive' }, NO_REVENUE: { label: 'cost, no revenue', tone: 'warning' }, NO_ACTIVITY: { label: 'nothing posted', tone: 'neutral' } };
+
+function ProjectFinance({ v, c, orgId }: { v: ProjectFinanceView; c: string; orgId: string }) {
+  if (!v.projects.length) return <p className="text-sm text-fg-muted">No projects yet. Add them under Dimensions and tag journal lines, invoices and bills with them to see each project&apos;s profit.</p>;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Counter label="Profit on projects" value={money(v.totals.profit, c)} warn={Number(v.totals.profit) < 0} />
+        <Counter label="Projects losing money" value={v.counts.loss} warn={v.counts.loss > 0} />
+        <Counter label="Thin margins" value={v.counts.thin} warn={v.counts.thin > 0} />
+        <Counter label="Ending within 30 days" value={v.counts.endingSoon} />
+      </div>
+      <Card role="region" aria-label="Project margins">
+        <CardHeader title="Project margins" description={`Revenue, cost and profit of each project from everything posted up to ${date(v.asOf)}, losses first. A margin under 10% is thin.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/reports/profit-by-dimension`}>Profit by department or project</Link>} />
+        <ProjectBars projects={v.projects} currency={c} />
+        <Table aria-label="Projects">
+          <thead><Tr><Th>Project</Th><Th numeric>Revenue</Th><Th numeric>Cost</Th><Th numeric>Profit</Th><Th numeric>Margin</Th><Th>Health</Th><Th>Progress</Th><Th>Largest cost</Th></Tr></thead>
+          <tbody>
+            {v.projects.map((p) => {
+              const h = HEALTH[p.health] ?? { label: p.health.toLowerCase(), tone: 'neutral' as const };
+              return (
+                <Tr key={p.id}>
+                  <Td>{p.code} · {p.name}<span className="block text-xs text-fg-muted">{p.customer ?? 'No customer'}{p.isActive ? '' : ', inactive'}</span></Td>
+                  <Td numeric><Money value={p.revenue} currency={c} /></Td>
+                  <Td numeric><Money value={p.cost} currency={c} /></Td>
+                  <Td numeric><Money value={p.profit} currency={c} /></Td>
+                  <Td numeric>{p.margin === null ? '—' : `${p.margin}%`}</Td>
+                  <Td><Badge tone={h.tone}>{h.label}</Badge></Td>
+                  <Td>{p.elapsedPercent === null ? 'No dates' : p.ended ? `Ended ${date(p.endDate!)}` : `${p.elapsedPercent}% through, ${p.daysLeft} days left`}</Td>
+                  <Td>{p.topCost ? `${p.topCost.code} · ${p.topCost.name} (${p.topCost.share ?? '—'}%)` : '—'}</Td>
+                </Tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Project revenue and cost">
+          <CardHeader title="Project revenue and cost" description="The last six months: what was posted to a project and what was not." />
+          <Table aria-label="Project months">
+            <thead><Tr><Th>Month</Th><Th numeric>Project revenue</Th><Th numeric>Project cost</Th><Th numeric>Other revenue</Th><Th numeric>Other cost</Th></Tr></thead>
+            <tbody>{v.months.map((m) => <Tr key={m.month}><Td>{monthLabel(m.month)}</Td><Td numeric><Money value={m.projectRevenue} currency={c} /></Td><Td numeric><Money value={m.projectCost} currency={c} /></Td><Td numeric><Money value={m.otherRevenue} currency={c} /></Td><Td numeric><Money value={m.otherCost} currency={c} /></Td></Tr>)}</tbody>
+          </Table>
+        </Card>
+        <Card role="region" aria-label="Not tied to a project">
+          <CardHeader title="Not tied to a project" description="Revenue and cost posted without a project. A large share means project margins leave out part of the business." actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/dimensions`}>Dimensions</Link>} />
+          <div className="grid gap-3 px-5 pb-4 sm:grid-cols-2">
+            <Counter label="Revenue without a project" value={`${money(v.unassigned.revenue, c)}${v.unassigned.revenueShare === null ? '' : ` (${v.unassigned.revenueShare}%)`}`} />
+            <Counter label="Cost without a project" value={`${money(v.unassigned.cost, c)}${v.unassigned.costShare === null ? '' : ` (${v.unassigned.costShare}%)`}`} />
+          </div>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Organisation admin
+
+const ROLE_LABEL: Record<string, string> = { OWNER: 'Owners', ADMIN: 'Admins', ACCOUNTANT: 'Accountants', APPROVER: 'Approvers', VIEWER: 'Viewers', EMPLOYEE: 'Employees' };
+const TEST_STATUS: Record<string, { label: string; tone: 'positive' | 'negative' | 'neutral' }> = { OK: { label: 'test passed', tone: 'positive' }, FAILED: { label: 'test failed', tone: 'negative' }, NOT_TESTED: { label: 'not tested', tone: 'neutral' } };
+
+function OrgAdmin({ v, orgId }: { v: OrgAdminView; orgId: string }) {
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Counter label="Members" value={v.members.total} />
+        <Counter label="Without two-step sign-in" value={v.members.withoutTwoStep} warn={v.members.withoutTwoStep > 0} />
+        <Counter label="Invitations open" value={v.invitations.pending} />
+        <Counter label="Single sign-on" value={v.sso.configured ? (v.sso.enabled ? (v.sso.enforced ? 'On, required' : 'On') : 'Set up, off') : 'Not set up'} />
+      </div>
+      <Card role="region" aria-label="Admin to-do">
+        <CardHeader title="Admin to-do" description="Settings that weaken sign-in, broken connections and limits nearly reached, most urgent first." />
+        {v.attention.length ? (
+          <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Admin items">
+            {v.attention.map((a) => <li key={a.title} className="flex items-start gap-2 px-5 py-2.5"><Badge tone={TONE[a.level]}>{a.level.toLowerCase()}</Badge><span><Link className="text-accent hover:underline" href={`/orgs/${orgId}${a.href}`}>{a.title}</Link><span className="block text-xs text-fg-muted">{a.detail}</span></span></li>)}
+          </ul>
+        ) : <p className="px-5 py-4 text-sm text-fg-muted">Nothing needs an admin right now.</p>}
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Who has access">
+          <CardHeader title="Who has access" description={`Members by role and how many of them sign in without two-step sign-in. ${v.security.requireTwoStep ? 'Two-step sign-in is required for everyone.' : 'Two-step sign-in is not required.'}`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/members`}>Members</Link>} />
+          <Table aria-label="Members by role">
+            <thead><Tr><Th>Role</Th><Th numeric>Members</Th><Th numeric>Without two-step</Th></Tr></thead>
+            <tbody>{v.members.roles.map((r) => <Tr key={r.role}><Td>{ROLE_LABEL[r.role] ?? r.role}</Td><Td numeric>{r.members}</Td><Td numeric>{r.withoutTwoStep}</Td></Tr>)}</tbody>
+          </Table>
+          {v.members.adminsWithoutTwoStep.length ? <p className="px-5 py-3 text-sm text-negative">Can change settings but has no two-step sign-in: {v.members.adminsWithoutTwoStep.map((m) => m.name).join(', ')}.</p> : null}
+        </Card>
+        <Card role="region" aria-label="Sign-in and invitations">
+          <CardHeader title="Sign-in and invitations" description={`${v.invitations.pending} open, ${v.invitations.expired} expired, ${v.invitations.accepted} accepted and ${v.invitations.revoked} revoked invitations. Single sign-on: ${v.sso.configured ? `${v.sso.protocol ?? ''} ${v.sso.enabled ? 'on' : 'off'}, ${v.sso.verifiedDomains} of ${v.sso.domains} domains verified` : 'not set up'}.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/settings/sso`}>Single sign-on</Link>} />
+          <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Newest members">
+            {v.members.newest.map((m) => <li key={m.userId} className="flex justify-between gap-2 px-5 py-2.5"><span>{m.name}</span><span className="text-fg-muted">{(ROLE_LABEL[m.role] ?? m.role).replace(/s$/, '').toLowerCase()}, since {date(m.since.slice(0, 10))}</span></li>)}
+          </ul>
+        </Card>
+      </div>
+      <Card role="region" aria-label="Connections and plan use">
+        <CardHeader title="Connections and plan use" description={`Integrations and what this month's plan${v.usage.plan ? ` (${v.usage.plan})` : ''} allows.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/settings/usage`}>Usage</Link>} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Table aria-label="Integrations">
+            <thead><Tr><Th>Integration</Th><Th>Set up</Th><Th>Last test</Th></Tr></thead>
+            <tbody>{v.integrations.map((i) => { const t = TEST_STATUS[i.testStatus] ?? { label: i.testStatus.toLowerCase(), tone: 'neutral' as const }; return <Tr key={i.name}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/settings/integrations`}>{i.name}</Link></Td><Td>{i.configured ? (i.enabled ? 'On' : 'Off') : 'Not set up'}</Td><Td><Badge tone={t.tone}>{t.label}</Badge></Td></Tr>; })}</tbody>
+          </Table>
+          <Table aria-label="Plan use this month">
+            <thead><Tr><Th>Use</Th><Th numeric>Used</Th><Th numeric>Limit</Th><Th numeric>Share</Th></Tr></thead>
+            <tbody>{v.usage.items.map((u) => <Tr key={u.name}><Td>{u.name}</Td><Td numeric>{u.used}</Td><Td numeric>{u.limit === null ? 'No limit' : u.limit}</Td><Td numeric className={cn(u.state === 'REACHED' ? 'text-negative' : u.state === 'NEAR' ? 'text-warning' : undefined)}>{u.percent === null ? '—' : `${u.percent}%`}</Td></Tr>)}</tbody>
+          </Table>
+        </div>
+      </Card>
     </>
   );
 }

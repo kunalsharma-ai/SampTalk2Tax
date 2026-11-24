@@ -977,7 +977,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Tested |
 | DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Implemented |
 | DASH-042 | Required Dashboards | capability | Global Super Admin | Not started |
-| DASH-043 | Required Dashboards | capability | Tenant Organization Admin | Not started |
+| DASH-043 | Required Dashboards | capability | Tenant Organization Admin | Tested |
 | DASH-044 | Required Dashboards | capability | CEO | Tested |
 | DASH-045 | Required Dashboards | capability | CFO | Tested |
 | DASH-046 | Required Dashboards | capability | Finance Director | Tested |
@@ -992,7 +992,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-055 | Required Dashboards | capability | Expense Manager | Tested |
 | DASH-056 | Required Dashboards | capability | Internal Auditor | Tested |
 | DASH-057 | Required Dashboards | capability | External Auditor | Tested |
-| DASH-058 | Required Dashboards | capability | Project Finance Manager | Not started |
+| DASH-058 | Required Dashboards | capability | Project Finance Manager | Tested |
 | DASH-059 | Required Dashboards | capability | Department Manager | Tested |
 | DASH-060 | Required Dashboards | capability | Vendor | Not started |
 | DASH-061 | Required Dashboards | capability | Customer | Not started |

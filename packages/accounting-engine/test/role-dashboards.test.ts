@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agingByDueDate, biggestMovements, furthestOffPlan, sharePercent, cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
+import { adminAttention, agingByDueDate, biggestMovements, furthestOffPlan, projectHealth, sharePercent, cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
 
 describe('role dashboards', () => {
   it('ranks what needs attention by level, then amount, then title', () => {
@@ -105,5 +105,34 @@ describe('role dashboards', () => {
       { code: '6500', yearToDate: f('80', false) },
     ]);
     expect(r.map((x) => x.code)).toEqual(['6100', '6500', '4100', '6200']);
+  });
+
+  it('judges a project from its revenue, costs and dates', () => {
+    expect(projectHealth({ revenue: '100000', cost: '70000', startDate: '2026-01-01', endDate: '2026-01-10', asOf: '2026-01-05' })).toEqual({ profit: '30000', margin: '30.0', health: 'HEALTHY', elapsedPercent: 50, daysLeft: 5, ended: false });
+    expect(projectHealth({ revenue: '100000', cost: '95000', startDate: null, endDate: null, asOf: '2026-01-05' })).toMatchObject({ margin: '5.0', health: 'THIN', elapsedPercent: null });
+    expect(projectHealth({ revenue: '100', cost: '150', startDate: '2025-01-01', endDate: '2025-12-31', asOf: '2026-01-05' })).toMatchObject({ profit: '-50', health: 'LOSS', elapsedPercent: 100, ended: true });
+    expect(projectHealth({ revenue: '0', cost: '10', startDate: '2026-02-01', endDate: '2026-02-28', asOf: '2026-01-05' })).toMatchObject({ health: 'NO_REVENUE', margin: null, elapsedPercent: 0 });
+    expect(projectHealth({ revenue: '0', cost: '0', startDate: null, endDate: null, asOf: '2026-01-05' }).health).toBe('NO_ACTIVITY');
+  });
+
+  it('lists what an administrator should look at, most urgent first', () => {
+    const a = adminAttention({
+      requireTwoStep: false,
+      membersWithoutTwoStep: 3,
+      adminsWithoutTwoStep: 1,
+      expiredInvitations: 2,
+      sso: { configured: true, enabled: true, verifiedDomains: 0 },
+      integrations: [{ name: 'Email', configured: true, enabled: true, testStatus: 'FAILED' }, { name: 'AI', configured: false, enabled: false, testStatus: 'NOT_TESTED' }],
+      usage: [{ name: 'AI requests', state: 'NEAR', percent: 85 }, { name: 'Uploads', state: 'OK', percent: 10 }],
+    });
+    expect(a.map((x) => [x.level, x.title])).toEqual([
+      ['HIGH', 'Email connection failed its last test'],
+      ['HIGH', 'Owners or admins without two-step sign-in'],
+      ['MEDIUM', 'AI requests nearly used up'],
+      ['MEDIUM', 'Single sign-on has no verified domain'],
+      ['MEDIUM', 'Two-step sign-in is not required'],
+      ['LOW', 'Invitations expired'],
+    ]);
+    expect(adminAttention({ requireTwoStep: true, membersWithoutTwoStep: 0, adminsWithoutTwoStep: 0, expiredInvitations: 0, sso: { configured: false, enabled: false, verifiedDomains: 0 }, integrations: [], usage: [] })).toEqual([]);
   });
 });

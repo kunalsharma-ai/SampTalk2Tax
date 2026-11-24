@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   addDays,
+  adminAttention,
   agingByDueDate,
   biggestMovements,
   cashHeadroom,
@@ -10,6 +11,7 @@ import {
   furthestOffPlan,
   minorUnits,
   plFigures,
+  projectHealth,
   quarterChange,
   quarterlyTotals,
   rankAttentionItems,
@@ -46,6 +48,12 @@ import { fiscalYearDates } from '../department-budgets/department-budgets.servic
 import { ReportsService } from '../reports/reports.service';
 import { YearEndService } from '../year-end/year-end.service';
 import { PrismaService } from '../common/prisma.service';
+import { IntegrationsService } from '../integrations/integrations.service';
+import { InvitationsService } from '../organizations/invitations.service';
+import { OrganizationsService } from '../organizations/organizations.service';
+import { OrgSecurityService } from '../organizations/org-security.service';
+import { SsoService } from '../sso/sso.service';
+import { UsageService } from '../usage/usage.service';
 import { CompliancePredictionsService } from '../compliance/compliance-predictions.service';
 import { DepartmentBudgetsService } from '../department-budgets/department-budgets.service';
 import { ExpenseReceiptsService } from '../expense-receipts/expense-receipts.service';
@@ -128,6 +136,12 @@ export class RoleDashboardsService {
     private readonly plans: BudgetsService,
     private readonly yearEnd: YearEndService,
     private readonly reports: ReportsService,
+    private readonly organizations: OrganizationsService,
+    private readonly invitations: InvitationsService,
+    private readonly orgSecurity: OrgSecurityService,
+    private readonly sso: SsoService,
+    private readonly integrations: IntegrationsService,
+    private readonly usage: UsageService,
   ) {}
 
   /** Dashboards that show more than reports: each needs its own permission as well as reports.read. */
@@ -140,6 +154,7 @@ export class RoleDashboardsService {
     AI_ADMIN: { permission: 'audit.read', what: 'audit and AI controls' },
     DEPARTMENT_MANAGER: { permission: 'expenses.read', what: 'expenses' },
     EXTERNAL_AUDITOR: { permission: 'audit.read', what: 'audit and controls' },
+    ORG_ADMIN: { permission: 'org.manage', what: 'organisation settings' },
   };
 
   /** Whether the member's role may open a dashboard. */
@@ -194,6 +209,10 @@ export class RoleDashboardsService {
         return { ...head, department: await this.departmentManager(org, today, opts.departmentId) };
       case 'EXTERNAL_AUDITOR':
         return { ...head, externalAudit: await this.externalAuditor(org, user, today) };
+      case 'PROJECT_FINANCE':
+        return { ...head, projects: await this.projectFinance(org, today) };
+      case 'ORG_ADMIN':
+        return { ...head, admin: await this.orgAdmin(org, user) };
     }
   }
 
@@ -809,6 +828,137 @@ export class RoleDashboardsService {
       },
       evidence: { summary: evidence.summary, outstanding: evidence.requests.filter((r) => r.status !== 'ACCEPTED').slice(0, 8).map((r) => ({ id: r.id, reference: r.reference, title: r.title, status: r.status, dueDate: r.dueDate })) },
       findings: { summary: findings.summary, open: findings.findings.filter((f) => f.status !== 'CLOSED').slice(0, 6).map((f) => ({ id: f.id, reference: f.reference, title: f.title, severity: f.severity, status: f.status, dueDate: f.dueDate, overdue: f.overdue })) },
+    };
+  }
+
+  /** Project finance: every project's revenue, cost and margin to date, how far through it is, the last six months, and what no project carries. */
+  private async projectFinance(org: OrgContext, today: string) {
+    const s = minorUnits(org.functionalCurrency);
+    const [values, accounts] = await Promise.all([
+      this.prisma.dimensionValue.findMany({ where: { orgId: org.id, type: 'PROJECT' }, include: { contact: { select: { name: true } } }, orderBy: { code: 'asc' } }),
+      this.prisma.account.findMany({ where: { orgId: org.id, type: { in: ['REVENUE', 'EXPENSE'] } }, select: { id: true, code: true, name: true, type: true } }),
+    ]);
+    const typeOf = new Map(accounts.map((a) => [a.id, a]));
+    const firstMonth = addDays(`${today.slice(0, 7)}-01`, -150).slice(0, 7); // six months including this one
+    const recentFrom = `${firstMonth}-01`;
+    const [lifetime, recent] = accounts.length
+      ? await Promise.all([
+          lineSums(this.store, org.id, { entry: postedBetween(null, toDbDate(today), { excludeClosing: true }), line: { accountId: { $in: [...typeOf.keys()] } }, by: { accountId: 'lines.accountId', projectId: 'lines.projectId' } }),
+          lineSums(this.store, org.id, { entry: postedBetween(toDbDate(recentFrom), toDbDate(today), { excludeClosing: true }), line: { accountId: { $in: [...typeOf.keys()] } }, by: { month: { $dateToString: { date: '$date', format: '%Y-%m' } }, accountId: 'lines.accountId', projectId: 'lines.projectId' } }),
+        ])
+      : [[], []];
+    type Tally = { revenue: InstanceType<typeof D>; cost: InstanceType<typeof D>; byCost: Map<string, InstanceType<typeof D>> };
+    const blank = (): Tally => ({ revenue: new D(0), cost: new D(0), byCost: new Map() });
+    const tally = new Map<string, Tally>();
+    const unassigned = blank();
+    for (const r of lifetime) {
+      const a = typeOf.get(r.key.accountId as string);
+      if (!a) continue;
+      const pid = typeof r.key.projectId === 'string' ? r.key.projectId : null;
+      const t = pid ? (tally.get(pid) ?? tally.set(pid, blank()).get(pid)!) : unassigned;
+      if (a.type === 'REVENUE') t.revenue = t.revenue.plus(r.credit.minus(r.debit));
+      else {
+        const amount = r.debit.minus(r.credit);
+        t.cost = t.cost.plus(amount);
+        t.byCost.set(a.id, (t.byCost.get(a.id) ?? new D(0)).plus(amount));
+      }
+    }
+    const months: string[] = [];
+    for (let m = firstMonth; m <= today.slice(0, 7); m = addDays(`${m}-28`, 5).slice(0, 7)) months.push(m);
+    const monthly = new Map(months.map((m) => [m, { projectRevenue: new D(0), projectCost: new D(0), otherRevenue: new D(0), otherCost: new D(0) }]));
+    for (const r of recent) {
+      const a = typeOf.get(r.key.accountId as string);
+      const m = monthly.get(r.key.month as string);
+      if (!a || !m) continue;
+      const tagged = typeof r.key.projectId === 'string';
+      if (a.type === 'REVENUE') {
+        const v = r.credit.minus(r.debit);
+        if (tagged) m.projectRevenue = m.projectRevenue.plus(v);
+        else m.otherRevenue = m.otherRevenue.plus(v);
+      } else {
+        const v = r.debit.minus(r.credit);
+        if (tagged) m.projectCost = m.projectCost.plus(v);
+        else m.otherCost = m.otherCost.plus(v);
+      }
+    }
+    const shown = values.filter((v) => v.isActive || tally.has(v.id));
+    const projects = shown.map((v) => {
+      const t = tally.get(v.id) ?? blank();
+      const start = v.startDate ? fromDbDate(v.startDate) : null;
+      const end = v.endDate ? fromDbDate(v.endDate) : null;
+      const h = projectHealth({ revenue: t.revenue.toFixed(), cost: t.cost.toFixed(), startDate: start, endDate: end, asOf: today });
+      const top = [...t.byCost.entries()].filter(([, x]) => !x.isZero()).sort((a, b) => b[1].comparedTo(a[1]) || typeOf.get(a[0])!.code.localeCompare(typeOf.get(b[0])!.code))[0];
+      return {
+        id: v.id,
+        code: v.code,
+        name: v.name,
+        customer: v.contact?.name ?? v.customer ?? null,
+        isActive: v.isActive,
+        startDate: start,
+        endDate: end,
+        revenue: t.revenue.toFixed(s),
+        cost: t.cost.toFixed(s),
+        profit: new D(h.profit).toFixed(s),
+        margin: h.margin,
+        health: h.health,
+        elapsedPercent: h.elapsedPercent,
+        daysLeft: h.daysLeft,
+        ended: h.ended,
+        topCost: top ? { code: typeOf.get(top[0])!.code, name: typeOf.get(top[0])!.name, amount: top[1].toFixed(s), share: sharePercent(top[1].toFixed(), t.cost.toFixed()) } : null,
+      };
+    });
+    const sum = (k: 'revenue' | 'cost') => projects.reduce((a, p) => a.plus(p[k]), new D(0));
+    const totalRevenue = sum('revenue').plus(unassigned.revenue);
+    const totalCost = sum('cost').plus(unassigned.cost);
+    const count = (h: string) => projects.filter((p) => p.health === h).length;
+    return {
+      asOf: today,
+      projects: projects.sort((a, b) => new D(a.profit).comparedTo(b.profit) || a.code.localeCompare(b.code)),
+      totals: { revenue: sum('revenue').toFixed(s), cost: sum('cost').toFixed(s), profit: sum('revenue').minus(sum('cost')).toFixed(s) },
+      counts: { loss: count('LOSS'), thin: count('THIN'), healthy: count('HEALTHY'), noRevenue: count('NO_REVENUE'), noActivity: count('NO_ACTIVITY'), endingSoon: projects.filter((p) => !p.ended && p.daysLeft !== null && p.daysLeft <= 30).length },
+      unassigned: {
+        revenue: unassigned.revenue.toFixed(s),
+        cost: unassigned.cost.toFixed(s),
+        revenueShare: sharePercent(unassigned.revenue.toFixed(), totalRevenue.toFixed()),
+        costShare: sharePercent(unassigned.cost.toFixed(), totalCost.toFixed()),
+      },
+      months: months.map((m) => {
+        const x = monthly.get(m)!;
+        return { month: m, projectRevenue: x.projectRevenue.toFixed(s), projectCost: x.projectCost.toFixed(s), otherRevenue: x.otherRevenue.toFixed(s), otherCost: x.otherCost.toFixed(s) };
+      }),
+    };
+  }
+
+  /** Organisation admin: members and roles, two-step sign-in, invitations, single sign-on, integrations and the plan's use. */
+  private async orgAdmin(org: OrgContext, user: AuthUser) {
+    const [members, invites, security, sso, integrations, usage] = await Promise.all([
+      this.organizations.listMembers(org.id),
+      this.invitations.list(org.id),
+      this.orgSecurity.get(org.id, user.id),
+      this.sso.overview({ orgId: org.id, role: org.role }),
+      this.integrations.view(org.id),
+      this.usage.summary(org.id),
+    ]);
+    const roles = ['OWNER', 'ADMIN', 'ACCOUNTANT', 'APPROVER', 'VIEWER', 'EMPLOYEE'].map((role) => ({ role, members: members.filter((m) => m.role === role).length, withoutTwoStep: members.filter((m) => m.role === role && !m.twoStepOn).length }));
+    const admins = members.filter((m) => m.role === 'OWNER' || m.role === 'ADMIN');
+    const status = (k: string) => invites.filter((i) => i.status === k).length;
+    const ssoFacts = { configured: !!sso.connection, enabled: sso.connection?.enabled ?? false, enforced: sso.connection?.enforced ?? false, protocol: sso.connection?.protocol ?? null, domains: sso.domains.length, verifiedDomains: sso.domains.filter((d) => d.verifiedAt).length };
+    const links = [
+      { name: 'AI assistant', ...integrations.ai },
+      { name: 'Email', ...integrations.email },
+    ].map((i) => ({ name: i.name, configured: i.configured, enabled: i.enabled, testStatus: i.testStatus, testedAt: i.testedAt, inUse: i.inUse }));
+    const plan = [
+      { name: 'AI requests', used: usage.ai.used, limit: usage.ai.limit, percent: usage.ai.percent, state: usage.ai.state },
+      { name: 'Document uploads', used: usage.uploads.used, limit: usage.uploads.limit, percent: usage.uploads.percent, state: usage.uploads.state },
+    ];
+    return {
+      members: { total: members.length, roles, withoutTwoStep: members.filter((m) => !m.twoStepOn).length, adminsWithoutTwoStep: admins.filter((m) => !m.twoStepOn).map((m) => ({ userId: m.userId, name: m.name, role: m.role })), newest: [...members].sort((a, b) => b.since.localeCompare(a.since)).slice(0, 5).map((m) => ({ userId: m.userId, name: m.name, role: m.role, since: m.since })) },
+      security: { requireTwoStep: security.requireTwoStep, updatedAt: security.updatedAt },
+      invitations: { pending: status('PENDING'), expired: status('EXPIRED'), accepted: status('ACCEPTED'), revoked: status('REVOKED') },
+      sso: ssoFacts,
+      integrations: links,
+      usage: { month: usage.month, plan: usage.plan, items: plan },
+      attention: adminAttention({ requireTwoStep: security.requireTwoStep, membersWithoutTwoStep: security.membersWithoutTwoStep, adminsWithoutTwoStep: admins.filter((m) => !m.twoStepOn).length, expiredInvitations: status('EXPIRED'), sso: ssoFacts, integrations: links, usage: plan }),
     };
   }
 }
