@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
   addDays,
+  agingByDueDate,
   cashHeadroom,
   concentrationBand,
   D,
@@ -13,10 +14,19 @@ import {
   type AttentionItemInput,
   type DashboardRole,
 } from '@talk2tax/accounting-engine';
+import { hasPermission } from '@talk2tax/security';
 import type { OrgContext } from '../auth/decorators';
 import { CashFlowService } from '../cash-flow/cash-flow.service';
-import { todayIso } from '../common/dates';
+import { istDate, todayIso } from '../common/dates';
+import { PrismaService } from '../common/prisma.service';
 import { CompliancePredictionsService } from '../compliance/compliance-predictions.service';
+import { DepartmentBudgetsService } from '../department-budgets/department-budgets.service';
+import { ExpenseReceiptsService } from '../expense-receipts/expense-receipts.service';
+import { ExpenseRiskService } from '../expense-risk/expense-risk.service';
+import { GstReconciliationService } from '../gst/gst-reconciliation.service';
+import { PaymentFraudService } from '../payment-fraud/payment-fraud.service';
+import { PaymentPredictionsService } from '../payment-predictions/payment-predictions.service';
+import { BillExceptionsService } from '../purchase-orders/bill-exceptions.service';
 import { KpisService } from '../kpis/kpis.service';
 import { CollectionPrioritiesService } from '../payment-predictions/collection-priorities.service';
 import { PaymentPrioritiesService } from '../payment-priorities/payment-priorities.service';
@@ -64,6 +74,14 @@ export class RoleDashboardsService {
     private readonly dependencies: FinancialDependenciesService,
     private readonly deadlines: CompliancePredictionsService,
     private readonly taxes: TaxForecastService,
+    private readonly prisma: PrismaService,
+    private readonly predictions: PaymentPredictionsService,
+    private readonly billExceptions: BillExceptionsService,
+    private readonly fraud: PaymentFraudService,
+    private readonly gstRecon: GstReconciliationService,
+    private readonly expenseRisk: ExpenseRiskService,
+    private readonly receipts: ExpenseReceiptsService,
+    private readonly budgets: DepartmentBudgetsService,
   ) {}
 
   async brief(org: OrgContext, role: DashboardRole) {
@@ -82,6 +100,16 @@ export class RoleDashboardsService {
         return { ...head, compliance: await this.compliance(org, today) };
       case 'BOARD':
         return { ...head, board: await this.board(org) };
+      case 'AR_MANAGER':
+        return { ...head, receivables: await this.receivablesManager(org, today) };
+      case 'AP_MANAGER':
+        return { ...head, payables: await this.payablesManager(org, today) };
+      case 'TAX_MANAGER':
+        return { ...head, tax: await this.taxManager(org, today) };
+      case 'EXPENSE_MANAGER':
+        // Claims carry people's names and spending: the expense dashboard needs expense access too.
+        if (!hasPermission(org.role, 'expenses.read')) throw new ForbiddenException({ error: 'FORBIDDEN', message: 'The expense dashboard needs access to expenses' });
+        return { ...head, expenses: await this.expenseManager(org, today) };
     }
   }
 
@@ -234,6 +262,125 @@ export class RoleDashboardsService {
       position: pick(k, ['grossMargin', 'netMargin', 'currentRatio', 'debtToEquity', 'runway']),
       // Concentration only as shares and a band: a board pack never names customers.
       concentration: { band: concentrationBand(k.customers.largestShare), largestShare: k.customers.largestShare, topFiveShare: k.customers.topFiveShare, customers: k.customers.top.length + k.customers.others.count },
+    };
+  }
+
+  private async receivablesManager(org: OrgContext, today: string) {
+    const s = minorUnits(org.functionalCurrency);
+    const [k, fc, collections, forecast] = await Promise.all([
+      this.kpis.kpis(org.id, {}),
+      this.cash.forecast(org.id, { horizonDays: 30 }),
+      this.collections.priorities(org, today),
+      this.predictions.forecast(org, { weeks: 8 }, today),
+    ]);
+    const open = fc.receivables.map((r) => ({ open: r.open, dueDate: r.dueDate }));
+    // Everyone with an overdue balance, whether or not there is enough payment history to score them.
+    const late = new Map<string, { contactId: string; name: string; overdue: InstanceType<typeof D>; invoices: number; oldestDue: string }>();
+    for (const r of fc.receivables.filter((x) => x.dueDate < today)) {
+      const row = late.get(r.contactId) ?? { contactId: r.contactId, name: r.contactName, overdue: new D(0), invoices: 0, oldestDue: r.dueDate };
+      row.overdue = row.overdue.plus(r.open);
+      row.invoices += 1; // not money
+      if (r.dueDate < row.oldestDue) row.oldestDue = r.dueDate;
+      late.set(r.contactId, row);
+    }
+    const daysLate = (due: string) => Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${due}T00:00:00Z`)) / 86_400_000); // not money
+    return {
+      month: k.month,
+      dso: pick(k, ['dso'])[0] ?? null,
+      aging: agingByDueDate(open, today, s),
+      doubtful: { count: fc.receivables.filter((r) => r.doubtful).length },
+      overdueCustomers: [...late.values()]
+        .sort((a, b) => b.overdue.comparedTo(a.overdue) || a.name.localeCompare(b.name))
+        .slice(0, 10)
+        .map((x) => ({ contactId: x.contactId, name: x.name, overdue: x.overdue.toFixed(s), invoices: x.invoices, oldestDaysLate: daysLate(x.oldestDue) })),
+      collections: {
+        summary: collections.summary,
+        customers: collections.customers.slice(0, 10).map((c) => ({ contactId: c.contactId, name: c.name, open: c.open, overdue: c.overdue, disputed: c.disputed, toChase: c.toChase, oldestOverdueDays: c.oldestOverdueDays, overdueInvoices: c.overdueInvoices, action: c.action, actionLabel: c.actionLabel, lastReminderOn: c.lastReminderOn })),
+      },
+      forecast: { weeks: forecast.weeks, later: forecast.later, doubtful: forecast.doubtful, total: forecast.total, inHorizon: forecast.inHorizon },
+    };
+  }
+
+  private async payablesManager(org: OrgContext, today: string) {
+    const s = minorUnits(org.functionalCurrency);
+    const [k, fc, payments, held, fraud] = await Promise.all([
+      this.kpis.kpis(org.id, {}),
+      this.cash.forecast(org.id, { horizonDays: 30 }),
+      this.payments.priorities(org, { buffer: '0', rate: '12' }),
+      this.billExceptions.list(org),
+      this.fraud.report(org, today),
+    ]);
+    return {
+      month: k.month,
+      dpo: pick(k, ['dpo'])[0] ?? null,
+      aging: agingByDueDate(fc.payables.map((r) => ({ open: r.open, dueDate: r.dueDate })), today, s),
+      payments: {
+        summary: payments.summary,
+        bills: payments.bills.slice(0, 10).map((b) => ({ id: b.id, vendor: b.vendor, number: b.number, dueDate: b.dueDate, due: b.due, action: b.action, actionLabel: b.actionLabel })),
+      },
+      exceptions: {
+        summary: { bills: held.summary.bills, atStake: held.summary.atStake, withVendor: held.summary.withVendor, awaitingGoods: held.summary.awaitingGoods, oldestDays: held.summary.oldestDays },
+        items: held.items.slice(0, 5).map((i) => ({ id: i.id, vendor: i.vendor.name, reference: i.reference, order: i.order.reference, atStake: i.atStakeBase, daysHeld: i.daysHeld, nextActionLabel: i.nextActionLabel })),
+      },
+      fraud: {
+        windowDays: fraud.windowDays,
+        summary: fraud.summary,
+        payments: fraud.payments.slice(0, 5).map((p) => ({ vendor: p.vendor, date: p.date, amount: p.amount, currency: p.currency, level: p.level })),
+      },
+    };
+  }
+
+  private async taxManager(org: OrgContext, today: string) {
+    const lastMonth = (() => {
+      const [y, m] = today.split('-').map(Number) as [number, number];
+      return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+    })();
+    const [t, p, gst] = await Promise.all([
+      this.taxes.forecast(org, 3, today),
+      this.deadlines.predict(org, 60, today),
+      // Not every organisation is GST-registered: then there is nothing to reconcile.
+      this.gstRecon.month(org, lastMonth).catch(() => null),
+    ]);
+    const byArea = new Map<string, { area: string; amount: InstanceType<typeof D>; payments: number }>();
+    for (const i of t.items) {
+      const row = byArea.get(i.area) ?? { area: i.area, amount: new D(0), payments: 0 };
+      row.amount = row.amount.plus(i.amount);
+      row.payments += 1; // not money
+      byArea.set(i.area, row);
+    }
+    const s = minorUnits(org.functionalCurrency);
+    return {
+      configured: t.configured,
+      payments: { totals: t.totals, overdue: t.overdue, items: t.items.map((i) => ({ key: i.key, name: i.name, area: i.area, periodLabel: i.periodLabel, dueDate: i.dueDate, method: i.method, amount: i.amount, low: i.low, high: i.high })) },
+      byArea: [...byArea.values()].sort((a, b) => b.amount.comparedTo(a.amount) || a.area.localeCompare(b.area)).map((a) => ({ area: a.area, amount: a.amount.toFixed(s), payments: a.payments })),
+      returns: p.items.map((i) => ({ key: i.key, name: i.name, periodLabel: i.periodLabel, dueDate: i.dueDate, daysLeft: i.daysLeft, risk: i.risk, predictedDate: i.predictedDate, signals: i.signals.map((x) => x.message) })),
+      gst: gst
+        ? { registered: true as const, period: gst.period, agrees: gst.agrees, difference: gst.difference, unexplained: gst.unexplained, documentsChecked: gst.documentsChecked, discrepancies: gst.discrepancyCounts, items: gst.items.length }
+        : { registered: false as const, period: lastMonth },
+    };
+  }
+
+  private async expenseManager(org: OrgContext, today: string) {
+    const [waiting, risk, missing, budgets] = await Promise.all([
+      this.prisma.expenseClaim.findMany({ where: { orgId: org.id, status: 'SUBMITTED' }, orderBy: { submittedAt: 'asc' }, select: { id: true, number: true, title: true, currency: true, total: true, submittedAt: true, claimantId: true } }),
+      this.expenseRisk.findings(org, { days: 90 }, today),
+      this.receipts.missing(org, 30, today),
+      this.budgets.report(org, undefined, today),
+    ]);
+    const people = waiting.length ? await this.prisma.user.findMany({ where: { id: { in: [...new Set(waiting.map((w) => w.claimantId))] } }, select: { id: true, name: true } }) : [];
+    const nameOf = new Map(people.map((u) => [u.id, u.name]));
+    const totals = new Map<string, InstanceType<typeof D>>();
+    for (const w of waiting) totals.set(w.currency, (totals.get(w.currency) ?? new D(0)).plus(w.total.toString()));
+    return {
+      approvals: {
+        count: waiting.length,
+        totals: [...totals].sort((a, b) => a[0].localeCompare(b[0])).map(([currency, amount]) => ({ currency, amount: amount.toFixed(minorUnits(currency)) })),
+        oldestDays: waiting.length && waiting[0]!.submittedAt ? Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${istDate(waiting[0]!.submittedAt)}T00:00:00Z`)) / 86_400_000)) : 0, // not money: days
+        claims: waiting.slice(0, 8).map((w) => ({ id: w.id, number: w.number, title: w.title, claimant: nameOf.get(w.claimantId) ?? '', currency: w.currency, total: new D(w.total.toString()).toFixed(minorUnits(w.currency)), submittedOn: w.submittedAt ? istDate(w.submittedAt) : null })),
+      },
+      risk: { summary: risk.summary, items: risk.items.slice(0, 5).map((i) => ({ claimId: i.claim.id, title: i.claim.title, claimant: i.claim.claimantName, total: i.claim.total, currency: i.claim.currency, level: i.level, indicators: i.indicators.map((x) => x.detail) })) },
+      receipts: { days: missing.days, lines: missing.lines, withReceipt: missing.withReceipt, missing: missing.items.length, totals: missing.totals },
+      budgets: { fiscalYear: budgets.fiscalYear, totals: budgets.totals, rows: budgets.rows.map((r) => ({ departmentId: r.departmentId, name: r.name, budget: r.budget, actual: r.actual, committed: r.committed, status: r.status, usedPercent: r.usedPercent, reason: r.reason })) },
     };
   }
 }

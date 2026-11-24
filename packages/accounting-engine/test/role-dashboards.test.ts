@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
+import { agingByDueDate, cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
 
 describe('role dashboards', () => {
   it('ranks what needs attention by level, then amount, then title', () => {
@@ -48,5 +48,22 @@ describe('role dashboards', () => {
   it('measures headroom above the cash buffer', () => {
     expect(cashHeadroom({ asOf: '2026-11-01', lowest: { date: '2026-11-21', amount: '4000' }, buffer: '5000' })).toEqual({ headroom: '-1000.00', breaks: true, lowestOn: '2026-11-21', daysToLowest: 20 });
     expect(cashHeadroom({ asOf: '2026-11-01', lowest: { date: '2026-11-01', amount: '6000' }, buffer: '0', scale: 0 }).headroom).toBe('6000');
+  });
+
+  it('ages open amounts by days past due', () => {
+    const r = agingByDueDate(
+      [
+        { open: '100', dueDate: '2026-11-30' },
+        { open: '50', dueDate: '2026-11-01' },
+        { open: '25', dueDate: '2026-10-15' },
+        { open: '15', dueDate: '2026-09-15' },
+        { open: '10', dueDate: '2026-01-01' },
+      ],
+      '2026-11-01',
+    );
+    expect(r.total).toBe('200.00');
+    expect(r.overdue).toBe('50.00');
+    expect(r.buckets.map((b) => `${b.bucket} ${b.amount} ${b.count} ${b.share}`)).toEqual(['CURRENT 150.00 2 75.0', 'DAYS_1_30 25.00 1 12.5', 'DAYS_31_60 15.00 1 7.5', 'DAYS_61_90 0.00 0 0.0', 'OVER_90 10.00 1 5.0']);
+    expect(agingByDueDate([], '2026-11-01').buckets[0]!.share).toBeNull();
   });
 });

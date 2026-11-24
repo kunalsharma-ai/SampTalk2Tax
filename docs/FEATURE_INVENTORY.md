@@ -983,13 +983,13 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-046 | Required Dashboards | capability | Finance Director | Not started |
 | DASH-047 | Required Dashboards | capability | Financial Controller | Not started |
 | DASH-048 | Required Dashboards | capability | Accountant | Not started |
-| DASH-049 | Required Dashboards | capability | Accounts Payable Manager | Not started |
-| DASH-050 | Required Dashboards | capability | Accounts Receivable Manager | Not started |
-| DASH-051 | Required Dashboards | capability | Tax Manager | Not started |
+| DASH-049 | Required Dashboards | capability | Accounts Payable Manager | Tested |
+| DASH-050 | Required Dashboards | capability | Accounts Receivable Manager | Tested |
+| DASH-051 | Required Dashboards | capability | Tax Manager | Tested |
 | DASH-052 | Required Dashboards | capability | Payroll Manager | Not started |
 | DASH-053 | Required Dashboards | capability | Treasury Manager | Tested |
 | DASH-054 | Required Dashboards | capability | Procurement Manager | Not started |
-| DASH-055 | Required Dashboards | capability | Expense Manager | Not started |
+| DASH-055 | Required Dashboards | capability | Expense Manager | Tested |
 | DASH-056 | Required Dashboards | capability | Internal Auditor | Not started |
 | DASH-057 | Required Dashboards | capability | External Auditor | Not started |
 | DASH-058 | Required Dashboards | capability | Project Finance Manager | Not started |
