@@ -1,12 +1,12 @@
 import { D } from './money';
 
 /**
- * Role dashboards (DASH-044, 045, 053, 063, 064, 066): the question each role brings to the
+ * Role dashboards (DASH-044 to 066): the question each role brings to the
  * books, and the small pure helpers their dashboards share. Each role has its own layout; these
  * helpers only rank what needs attention, roll months into quarters and band a share so a board
  * can see concentration without names. Pure.
  */
-export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT'] as const;
+export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT', 'PAYROLL_MANAGER', 'AI_ADMIN', 'ANALYST'] as const;
 export type DashboardRole = (typeof DASHBOARD_ROLES)[number];
 
 export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: string }> = {
@@ -23,6 +23,9 @@ export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: st
   CONTROLLER: { name: 'Financial controller', question: 'Are the months closing on time, and are the controls, approvals and separation of duties holding?' },
   INTERNAL_AUDITOR: { name: 'Internal auditor', question: 'How far are the audits, which findings are open or late, what evidence is outstanding, and which controls failed?' },
   PROCUREMENT: { name: 'Procurement manager', question: 'Which orders are open or late, which contracts are breached or ending, and which vendors carry risk?' },
+  PAYROLL_MANAGER: { name: 'Payroll manager', question: 'Is this month\'s payroll run and posted, what does the team cost, and which salaries and statutory dues are still unpaid?' },
+  AI_ADMIN: { name: 'AI agent administrator', question: 'Which AI agents are on, how much are they used and what do they cost, how often are their suggestions accepted, and what failed?' },
+  ANALYST: { name: 'Financial analyst', question: 'How are the key ratios trending month by month and against last year, which moved most, and where does profit come from?' },
   EXPENSE_MANAGER: { name: 'Expense manager', question: 'Which claims wait for a decision, which look risky, which lack receipts, and how departments stand against their budgets?' },
 };
 
@@ -122,4 +125,39 @@ export function agingByDueDate(items: readonly { open: string; dueDate: string }
     overdue: total.minus(acc[0]!.amount).toFixed(scale),
     buckets: acc.map((r) => ({ bucket: r.bucket, amount: r.amount.toFixed(scale), count: r.count, share: total.isZero() ? null : r.amount.dividedBy(total).times(100).toDecimalPlaces(1, D.ROUND_HALF_EVEN).toFixed(1) })),
   };
+}
+
+export interface MetricMovementInput {
+  key: string;
+  label: string;
+  value: string | null;
+  previous: string | null;
+  /** Whether a higher value is better; decides if a move is an improvement. */
+  better: 'HIGHER' | 'LOWER';
+}
+
+/**
+ * Which figures moved most from one period to the next, by the size of the relative change
+ * (percent of the earlier value, to 1 place). Figures without both values or with a zero base
+ * are left out: a change from nothing has no size.
+ */
+export function biggestMovements(items: readonly MetricMovementInput[], max = 5) {
+  const out: { key: string; label: string; value: string; previous: string; changePercent: string; improved: boolean | null }[] = [];
+  for (const i of items) {
+    if (i.value === null || i.previous === null) continue;
+    const p = new D(i.previous);
+    if (p.isZero()) continue;
+    const c = new D(i.value).minus(p);
+    const pct = c.dividedBy(p.abs()).times(100).toDecimalPlaces(1, D.ROUND_HALF_EVEN);
+    out.push({ key: i.key, label: i.label, value: i.value, previous: i.previous, changePercent: pct.toFixed(1), improved: c.isZero() ? null : i.better === 'HIGHER' ? c.greaterThan(0) : c.lessThan(0) });
+  }
+  return out.sort((a, b) => new D(b.changePercent).abs().comparedTo(new D(a.changePercent).abs()) || a.label.localeCompare(b.label)).slice(0, max);
+}
+
+/** One figure as a share of another, in percent to 1 place; null when the base is zero or missing. */
+export function sharePercent(part: string | null, whole: string | null): string | null {
+  if (part === null || whole === null) return null;
+  const w = new D(whole);
+  if (w.isZero()) return null;
+  return new D(part).dividedBy(w).times(100).toDecimalPlaces(1, D.ROUND_HALF_EVEN).toFixed(1);
 }

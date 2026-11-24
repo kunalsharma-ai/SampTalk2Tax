@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
   addDays,
   agingByDueDate,
+  biggestMovements,
   cashHeadroom,
   concentrationBand,
   D,
@@ -10,12 +11,17 @@ import {
   quarterChange,
   quarterlyTotals,
   rankAttentionItems,
+  sharePercent,
   ROLE_DASHBOARDS,
   type AttentionItemInput,
   type DashboardRole,
 } from '@talk2tax/accounting-engine';
 import { hasPermission, type Permission } from '@talk2tax/security';
 import type { AuthUser, OrgContext } from '../auth/decorators';
+import { AiControlService } from '../ai-control/ai-control.service';
+import { AiDecisionsService } from '../ai-decisions/ai-decisions.service';
+import { PayrollService } from '../payroll/payroll.service';
+import { PayrollReportService } from '../payroll-report/payroll-report.service';
 import { AuditEngagementsService } from '../audit-engagements/audit-engagements.service';
 import { AuditEvidenceService } from '../audit-evidence/audit-evidence.service';
 import { AuditFindingsService } from '../audit-findings/audit-findings.service';
@@ -30,7 +36,7 @@ import { SegregationOfDutiesService } from '../segregation-of-duties/segregation
 import { VendorContractsService } from '../vendor-contracts/vendor-contracts.service';
 import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
 import { CashFlowService } from '../cash-flow/cash-flow.service';
-import { istDate, todayIso } from '../common/dates';
+import { fromDbDate, istDate, todayIso } from '../common/dates';
 import { PrismaService } from '../common/prisma.service';
 import { CompliancePredictionsService } from '../compliance/compliance-predictions.service';
 import { DepartmentBudgetsService } from '../department-budgets/department-budgets.service';
@@ -107,6 +113,10 @@ export class RoleDashboardsService {
     private readonly orders: PurchaseOrdersService,
     private readonly contracts: VendorContractsService,
     private readonly vendorRisk: VendorRiskService,
+    private readonly payroll: PayrollService,
+    private readonly payrollReport: PayrollReportService,
+    private readonly ai: AiControlService,
+    private readonly aiDecisions: AiDecisionsService,
   ) {}
 
   /** Dashboards that show more than reports: each needs its own permission as well as reports.read. */
@@ -115,6 +125,8 @@ export class RoleDashboardsService {
     CONTROLLER: { permission: 'audit.read', what: 'audit and controls' },
     INTERNAL_AUDITOR: { permission: 'audit.read', what: 'audit and controls' },
     PROCUREMENT: { permission: 'purchases.read', what: 'purchases' },
+    PAYROLL_MANAGER: { permission: 'payroll.read', what: 'payroll' },
+    AI_ADMIN: { permission: 'audit.read', what: 'audit and AI controls' },
   };
 
   /** Whether the member's role may open a dashboard. */
@@ -157,6 +169,12 @@ export class RoleDashboardsService {
         return { ...head, audit: await this.internalAuditor(org, user, today) };
       case 'PROCUREMENT':
         return { ...head, procurement: await this.procurement(org, today) };
+      case 'PAYROLL_MANAGER':
+        return { ...head, payroll: await this.payrollManager(org, today) };
+      case 'AI_ADMIN':
+        return { ...head, ai: await this.aiAdmin(org) };
+      case 'ANALYST':
+        return { ...head, analyst: await this.analyst(org) };
     }
   }
 
@@ -535,6 +553,132 @@ export class RoleDashboardsService {
       },
       vendors: { totals: risk.totals, risky: risk.vendors.filter((v) => v.level === 'HIGH' || v.level === 'MEDIUM').slice(0, 8).map((v) => ({ id: v.id, name: v.name, level: v.level, factors: v.factors.map((f) => f.title) })) },
       heldBills: { bills: held.summary.bills, atStake: held.summary.atStake },
+    };
+  }
+
+  /** Payroll manager: this month's run, the team, what payroll costs month by month, and dues not yet paid. */
+  private async payrollManager(org: OrgContext, today: string) {
+    const month = today.slice(0, 7);
+    const from = `${addDays(`${month}-01`, -320).slice(0, 7)}`; // about eleven months back
+    const [runs, people, report] = await Promise.all([
+      this.payroll.listRuns(org),
+      this.prisma.employee.findMany({ where: { orgId: org.id }, select: { id: true, code: true, name: true, dateOfJoining: true, dateOfLeaving: true }, orderBy: { code: 'asc' } }),
+      this.payrollReport.report(org, { from, to: month }),
+    ]);
+    const day = (d: Date | null) => (d ? fromDbDate(d) : null);
+    const staff = people.map((e) => ({ id: e.id, code: e.code, name: e.name, joined: day(e.dateOfJoining)!, left: day(e.dateOfLeaving) }));
+    const active = staff.filter((e) => e.joined <= today && (!e.left || e.left >= today));
+    const live = runs.filter((r) => r.status !== 'VOID');
+    // Dues of recent posted runs that are not paid yet.
+    const posted = live.filter((r) => r.status === 'POSTED').slice(0, 6);
+    const details = await Promise.all(posted.map((r) => this.payroll.getRun(org, r.id)));
+    const unpaid = details
+      .flatMap((r) => r.liabilities.filter((l) => !l.payment && new D(l.amount).greaterThan(0)).map((l) => ({ runId: r.id, number: r.number, period: r.period, liability: l.liability, label: l.label, amount: l.amount, dueDate: l.dueDate ?? null, overdue: !!l.dueDate && l.dueDate < today })))
+      .sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999') || a.number.localeCompare(b.number));
+    const drafts = await Promise.all(live.filter((r) => r.status === 'DRAFT').slice(0, 3).map((r) => this.payroll.getRun(org, r.id)));
+    const current = live.find((r) => r.period === month) ?? null;
+    return {
+      month,
+      thisMonth: current ? { id: current.id, number: current.number, status: current.status, payDate: current.payDate, employees: current.employees, gross: current.gross, net: current.net, employerCost: current.employerCost } : null,
+      team: {
+        active: active.length,
+        joining: staff.filter((e) => e.joined > today).map((e) => ({ id: e.id, name: e.name, date: e.joined })),
+        joinedThisMonth: staff.filter((e) => e.joined.slice(0, 7) === month && e.joined <= today).map((e) => ({ id: e.id, name: e.name, date: e.joined })),
+        leavingThisMonth: staff.filter((e) => e.left && e.left.slice(0, 7) === month).map((e) => ({ id: e.id, name: e.name, date: e.left! })),
+      },
+      runs: live.slice(0, 6).map((r) => ({ id: r.id, number: r.number, period: r.period, status: r.status, payDate: r.payDate, employees: r.employees, gross: r.gross, net: r.net, employerCost: r.employerCost })),
+      drafts: drafts.map((r) => ({ id: r.id, number: r.number, period: r.period, missing: r.missing.length })),
+      unpaid: { items: unpaid.slice(0, 10), total: unpaid.reduce((t, u) => t.plus(u.amount), new D(0)).toFixed(2), overdue: unpaid.filter((u) => u.overdue).length },
+      cost: { from: report.from, to: report.to, totals: report.totals, statutory: report.statutory, byMonth: report.byMonth.map((m) => ({ period: m.period, employees: m.employees, gross: m.gross, net: m.net, employerCost: m.employerCost, grossChange: m.grossChange, flagged: m.flagged })) },
+    };
+  }
+
+  /** AI agent administrator: which agents are on, their use, cost and acceptance, and recent failures. */
+  private async aiAdmin(org: OrgContext) {
+    const [o, failed] = await Promise.all([this.ai.overview({ orgId: org.id, role: org.role }), this.aiDecisions.list({ outcome: 'FAILED', limit: 6 })]);
+    const near = (p: number | null) => p !== null && p >= 80; // not money: percent of the token budget
+    return {
+      month: o.month,
+      accuracyDays: o.accuracyDays,
+      configured: o.configured,
+      provider: o.provider,
+      model: o.model,
+      enabled: o.enabled,
+      stopped: o.stopped,
+      offReason: o.offReason,
+      platformStopped: !!o.platformShutdown,
+      totals: o.totals,
+      currency: o.currency,
+      agents: o.agents.map((a) => ({
+        key: a.key,
+        name: a.name,
+        levelLabel: a.levelLabel,
+        enabled: a.enabled,
+        link: a.link,
+        calls: a.usage.calls,
+        tokens: a.usage.tokens,
+        failed: a.usage.failed,
+        monthlyTokenLimit: a.monthlyTokenLimit,
+        percentOfBudget: a.usage.percentOfBudget,
+        budgetReached: a.budgetReached,
+        nearBudget: near(a.usage.percentOfBudget),
+        cost: a.cost.amount,
+        unpricedTokens: a.cost.unpricedTokens,
+        accuracy: a.accuracy,
+        running: a.running,
+        lastUsedAt: a.lastUsedAt,
+      })),
+      failures: failed.records.map((r) => ({ id: r.id, agent: r.agent.name, startedAt: r.startedAt, errorName: r.errorName, stopReason: r.stopReason, model: r.servedModel ?? r.modelRequested })),
+    };
+  }
+
+  /** Financial analyst: every key figure with its trend, the biggest moves, monthly profit and margins, and quarters. */
+  private async analyst(org: OrgContext) {
+    const s = minorUnits(org.functionalCurrency);
+    const k = await this.kpis.kpis(org.id, {});
+    const figures = await this.kpis.monthFigures(org.id, k.month, k.to, 12);
+    const monthly = figures.map((m) => {
+      const pl = plFigures(m);
+      const revenue = pl.operatingRevenue.toFixed(s);
+      return {
+        month: m.month,
+        revenue,
+        grossProfit: pl.grossProfit.toFixed(s),
+        operatingProfit: pl.operatingProfit.toFixed(s),
+        netIncome: pl.netIncome.toFixed(s),
+        grossMargin: sharePercent(pl.grossProfit.toFixed(), pl.operatingRevenue.toFixed()),
+        operatingMargin: sharePercent(pl.operatingProfit.toFixed(), pl.operatingRevenue.toFixed()),
+        costOfSales: pl.costOfSales.toFixed(s),
+        operatingExpenses: pl.operatingExpenses.toFixed(s),
+      };
+    });
+    const total = (key: 'revenue' | 'costOfSales' | 'operatingExpenses' | 'grossProfit' | 'operatingProfit' | 'netIncome') => monthly.reduce((t, m) => t.plus(m[key]), new D(0)).toFixed(s);
+    const revenue = total('revenue');
+    const revQ = quarterlyTotals(monthly.map((m) => ({ month: m.month, value: m.revenue })), s);
+    const netQ = quarterlyTotals(monthly.map((m) => ({ month: m.month, value: m.netIncome })), s);
+    const metrics = k.kpis.map((x) => ({ key: x.key, label: x.label, unit: x.unit, group: x.group, better: x.better, formula: x.formula, value: x.value, previous: x.previous, lastYear: x.lastYear, change: x.change, improved: x.improved, series: x.series }));
+    return {
+      month: k.month,
+      inProgress: k.inProgress,
+      previousMonth: k.previousMonth,
+      sameMonthLastYear: k.sameMonthLastYear,
+      metrics,
+      movers: biggestMovements(k.kpis.map((x) => ({ key: x.key, label: x.label, value: x.value, previous: x.previous, better: x.better }))),
+      versusLastYear: biggestMovements(k.kpis.map((x) => ({ key: x.key, label: x.label, value: x.value, previous: x.lastYear, better: x.better }))),
+      monthly,
+      twelveMonths: {
+        revenue,
+        costOfSales: total('costOfSales'),
+        operatingExpenses: total('operatingExpenses'),
+        grossProfit: total('grossProfit'),
+        operatingProfit: total('operatingProfit'),
+        netIncome: total('netIncome'),
+        costOfSalesShare: sharePercent(total('costOfSales'), revenue),
+        operatingExpensesShare: sharePercent(total('operatingExpenses'), revenue),
+        netMargin: sharePercent(total('netIncome'), revenue),
+      },
+      quarters: revQ.map((q, i) => ({ quarter: q.quarter, months: q.months, revenue: q.value, netIncome: netQ[i]!.value, revenueGrowth: i > 0 ? quarterChange(revQ[i - 1]!.value, q.value) : null })),
+      customers: { largestShare: k.customers.largestShare, topFiveShare: k.customers.topFiveShare, band: concentrationBand(k.customers.largestShare), top: k.customers.top.map((c) => ({ name: c.name, revenue: c.revenue, share: c.share })) },
     };
   }
 }

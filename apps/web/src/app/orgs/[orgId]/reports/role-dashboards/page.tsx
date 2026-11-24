@@ -15,6 +15,12 @@ import {
   type InternalAuditorView,
   type PendingApprovals,
   type ProcurementView,
+  type AiAdminView,
+  type AnalystView,
+  type Movement,
+  MarginChart,
+  PayrollCostBars,
+  type PayrollManagerView,
   type Aging,
   AgingBars,
   type Attention,
@@ -58,6 +64,9 @@ const ROLES: { role: DashboardRole; label: string }[] = [
   { role: 'CONTROLLER', label: 'Controller' },
   { role: 'INTERNAL_AUDITOR', label: 'Internal audit' },
   { role: 'PROCUREMENT', label: 'Procurement' },
+  { role: 'PAYROLL_MANAGER', label: 'Payroll' },
+  { role: 'AI_ADMIN', label: 'AI agents' },
+  { role: 'ANALYST', label: 'Financial analyst' },
 ];
 const TONE = { HIGH: 'negative', MEDIUM: 'warning', LOW: 'neutral' } as const;
 const SEVERITY = { CRITICAL: 'negative', HIGH: 'warning', WATCH: 'neutral' } as const;
@@ -88,7 +97,7 @@ function RoleDashboards() {
     <>
       <PageHeader
         title="Role dashboards"
-        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, the receivables, payables, tax and expense managers, the accountant, the controller, internal audit and procurement. Every figure comes from your posted books and Talk2Tax's own checks."
+        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, the receivables, payables, tax and expense managers, the accountant, the controller, internal audit, procurement, payroll, the AI agent administrator and the financial analyst. Every figure comes from your posted books and Talk2Tax's own checks."
       />
       <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Dashboard for">
         {ROLES.map((x) => (
@@ -118,6 +127,9 @@ function RoleDashboards() {
           {r.controller ? <Controller v={r.controller} c={c} orgId={orgId} /> : null}
           {r.audit ? <InternalAuditor v={r.audit} orgId={orgId} /> : null}
           {r.procurement ? <Procurement v={r.procurement} c={c} orgId={orgId} /> : null}
+          {r.payroll ? <PayrollManager v={r.payroll} c={c} orgId={orgId} /> : null}
+          {r.ai ? <AiAdmin v={r.ai} orgId={orgId} /> : null}
+          {r.analyst ? <Analyst v={r.analyst} c={c} /> : null}
         </div>
       ) : !q.error && !closed.has(role) ? <p className="text-sm text-fg-muted">Reading the dashboard…</p> : null}
     </>
@@ -950,6 +962,221 @@ function Procurement({ v, c, orgId }: { v: ProcurementView; c: string; orgId: st
               {v.vendors.risky.map((x) => <li key={x.id} className="flex items-start gap-2 px-5 py-2.5"><Badge tone={TONE[x.level]}>{x.level.toLowerCase()}</Badge><span>{x.name}<span className="block text-xs text-fg-muted">{x.factors.join(', ')}</span></span></li>)}
             </ul>
           ) : <p className="px-5 py-4 text-sm text-fg-muted">No vendor carries high or medium risk.</p>}
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Payroll manager
+
+const RUN_TONE: Record<string, 'positive' | 'warning' | 'neutral'> = { POSTED: 'positive', DRAFT: 'warning' };
+
+function PayrollManager({ v, c, orgId }: { v: PayrollManagerView; c: string; orgId: string }) {
+  const t = v.thisMonth;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Counter label={`Pay run for ${monthLabel(v.month)}`} value={t ? (t.status === 'POSTED' ? 'Posted' : 'Draft') : 'Not started'} warn={!t || t.status !== 'POSTED'} />
+        <Counter label="People on payroll" value={v.team.active} />
+        <Counter label="Dues not yet paid" value={v.unpaid.items.length} warn={v.unpaid.overdue > 0} />
+        <Counter label="Payroll cost, last 12 months" value={money(v.cost.totals.employerCost, c)} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Latest pay runs">
+          <CardHeader title="Latest pay runs" description={t ? `${t.number} for ${monthLabel(v.month)} is ${t.status === 'POSTED' ? 'posted' : 'a draft'}: ${t.employees} people, ${money(t.net, c)} net pay on ${date(t.payDate)}.` : `No pay run for ${monthLabel(v.month)} yet.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/payroll/runs`}>All pay runs</Link>} />
+          {v.runs.length ? (
+            <Table aria-label="Pay runs, newest first">
+              <thead><Tr><Th>Run</Th><Th>Month</Th><Th>Status</Th><Th numeric>People</Th><Th numeric>Gross</Th><Th numeric>Net</Th></Tr></thead>
+              <tbody>{v.runs.map((r) => <Tr key={r.id}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/payroll/runs/${r.id}`}>{r.number}</Link></Td><Td>{monthLabel(r.period)}</Td><Td><Badge tone={RUN_TONE[r.status] ?? 'neutral'}>{r.status.toLowerCase()}</Badge></Td><Td numeric>{r.employees}</Td><Td numeric><Money value={r.gross} currency={c} /></Td><Td numeric><Money value={r.net} currency={c} /></Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No pay runs yet.</p>}
+          {v.drafts.some((d) => d.missing > 0) ? <p className="px-5 py-3 text-sm text-warning">{v.drafts.filter((d) => d.missing > 0).map((d) => `${d.number}: ${d.missing} ${d.missing === 1 ? 'person has' : 'people have'} no salary set up`).join('; ')}.</p> : null}
+        </Card>
+        <Card role="region" aria-label="Salaries and dues to pay">
+          <CardHeader title="Salaries and dues to pay" description={v.unpaid.items.length ? `${money(v.unpaid.total, c)} from posted runs is not yet paid${v.unpaid.overdue ? `; ${v.unpaid.overdue} past the due date` : ''}.` : 'Net pay and statutory dues of the latest posted runs.'} />
+          {v.unpaid.items.length ? (
+            <Table aria-label="Unpaid salaries and dues">
+              <thead><Tr><Th>Run</Th><Th>What</Th><Th>Due</Th><Th numeric>Amount</Th></Tr></thead>
+              <tbody>{v.unpaid.items.map((u) => <Tr key={`${u.runId}-${u.liability}`}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/payroll/runs/${u.runId}`}>{u.number}</Link> <span className="text-xs text-fg-muted">{monthLabel(u.period)}</span></Td><Td>{u.label}</Td><Td className={cn('whitespace-nowrap', u.overdue && 'text-negative')}>{u.dueDate ? date(u.dueDate) : '—'}{u.overdue ? ' (late)' : ''}</Td><Td numeric><Money value={u.amount} currency={c} /></Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">Every salary and due of the posted runs is paid.</p>}
+        </Card>
+      </div>
+      <Card role="region" aria-label="Payroll cost by month">
+        <CardHeader title="Payroll cost by month" description={`Posted pay runs from ${monthLabel(v.cost.from)} to ${monthLabel(v.cost.to)}: ${money(v.cost.totals.gross, c)} gross and ${money(v.cost.totals.employerContributions, c)} employer contributions. A change in gross of a fifth or more from the month before is flagged.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/reports/payroll`}>Payroll report</Link>} />
+        {v.cost.byMonth.length ? (
+          <>
+            <PayrollCostBars months={v.cost.byMonth} currency={c} />
+            <Table aria-label="Payroll by month">
+              <thead><Tr><Th>Month</Th><Th numeric>People</Th><Th numeric>Gross</Th><Th numeric>Net</Th><Th numeric>Employer cost</Th><Th numeric>Change in gross</Th></Tr></thead>
+              <tbody>{v.cost.byMonth.map((m) => <Tr key={m.period}><Td>{monthLabel(m.period)}</Td><Td numeric>{m.employees}</Td><Td numeric><Money value={m.gross} currency={c} /></Td><Td numeric><Money value={m.net} currency={c} /></Td><Td numeric><Money value={m.employerCost} currency={c} /></Td><Td numeric className={cn(m.flagged && 'text-warning')}>{m.grossChange === null ? '—' : `${m.grossChange}%`}{m.flagged ? ' (check)' : ''}</Td></Tr>)}</tbody>
+            </Table>
+          </>
+        ) : <p className="px-5 py-4 text-sm text-fg-muted">No posted pay runs in these months.</p>}
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Statutory contributions">
+          <CardHeader title="Statutory contributions" description={`Provident fund, ESI, professional tax and TDS withheld from salaries and paid by the employer, ${monthLabel(v.cost.from)} to ${monthLabel(v.cost.to)}.`} />
+          <Table aria-label="Contributions by kind">
+            <thead><Tr><Th>Contribution</Th><Th numeric>From employees</Th><Th numeric>From employer</Th><Th numeric>Total</Th></Tr></thead>
+            <tbody>{v.cost.statutory.map((x) => <Tr key={x.key}><Td>{x.label}</Td><Td numeric><Money value={x.employee} currency={c} /></Td><Td numeric><Money value={x.employer} currency={c} /></Td><Td numeric><Money value={x.total} currency={c} /></Td></Tr>)}</tbody>
+          </Table>
+        </Card>
+        <Card role="region" aria-label="Joiners and leavers">
+          <CardHeader title="Joiners and leavers" description={`Who joined or leaves in ${monthLabel(v.month)}, and who is yet to join.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/payroll/employees`}>Employees</Link>} />
+          <ul className="flex flex-col gap-1.5 px-5 py-3 text-sm" aria-label="People joining and leaving">
+            {v.team.joinedThisMonth.map((p) => <li key={`j${p.id}`}>{p.name}: joined {date(p.date)}</li>)}
+            {v.team.joining.map((p) => <li key={`f${p.id}`}>{p.name}: joins {date(p.date)}</li>)}
+            {v.team.leavingThisMonth.map((p) => <li key={`l${p.id}`}>{p.name}: leaves {date(p.date)}</li>)}
+            {!v.team.joinedThisMonth.length && !v.team.joining.length && !v.team.leavingThisMonth.length ? <li className="text-fg-muted">Nobody joins or leaves this month.</li> : null}
+          </ul>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- AI agent administrator
+
+const tokens = (x: number) => x.toLocaleString('en-IN');
+
+function AiAdmin({ v, orgId }: { v: AiAdminView; orgId: string }) {
+  const state = v.platformStopped ? 'Stopped for everyone' : v.stopped ? 'Stopped' : !v.configured ? 'No AI key' : v.enabled ? 'On' : 'Off';
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Counter label="AI for this organisation" value={state} warn={state !== 'On'} />
+        <Counter label="AI calls this month" value={v.totals.calls} />
+        <Counter label="Failed calls this month" value={v.totals.failed} warn={v.totals.failed > 0} />
+        <Counter label="Suggestions waiting" value={v.totals.waiting} />
+      </div>
+      <Card role="region" aria-label="Agents and budgets">
+        <CardHeader title="Agents and budgets" description={`Each agent's calls and tokens in ${monthLabel(v.month)} against its monthly budget, and what it cost at the prices you set (${v.totals.cost} ${v.currency}${v.totals.unpricedTokens ? `; ${tokens(v.totals.unpricedTokens)} tokens have no price` : ''}). Model: ${v.model ?? 'none'} from ${v.provider}.${v.offReason ? ` Stopped: ${v.offReason}.` : ''}`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/ai-control`}>AI control</Link>} />
+        <div className="overflow-x-auto">
+          <Table aria-label="AI agents">
+            <thead><Tr><Th>Agent</Th><Th>State</Th><Th numeric>Calls</Th><Th numeric>Failed</Th><Th numeric>Tokens</Th><Th numeric>Budget used</Th><Th numeric>Cost ({v.currency})</Th><Th>Last used</Th></Tr></thead>
+            <tbody>
+              {v.agents.map((a) => (
+                <Tr key={a.key}>
+                  <Td>{a.name}<span className="block text-xs text-fg-muted">{a.levelLabel}</span></Td>
+                  <Td><Badge tone={a.enabled ? (a.budgetReached ? 'negative' : 'positive') : 'neutral'}>{a.enabled ? (a.budgetReached ? 'budget reached' : 'on') : 'off'}</Badge></Td>
+                  <Td numeric>{a.calls}</Td>
+                  <Td numeric className={cn(a.failed > 0 && 'text-negative')}>{a.failed}</Td>
+                  <Td numeric>{tokens(a.tokens)}</Td>
+                  <Td numeric className={cn(a.nearBudget && 'text-warning')}>{a.percentOfBudget === null ? 'No limit' : `${a.percentOfBudget}% of ${tokens(a.monthlyTokenLimit ?? 0)}`}</Td>
+                  <Td numeric>{a.cost}</Td>
+                  <Td className="whitespace-nowrap">{a.lastUsedAt ? date(a.lastUsedAt.slice(0, 10)) : 'Never'}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="How often suggestions are accepted">
+          <CardHeader title="How often suggestions are accepted" description={`Suggestions people accepted or rejected in the last ${v.accuracyDays} days, for agents whose work a person decides on.`} />
+          <Table aria-label="Acceptance by agent">
+            <thead><Tr><Th>Agent</Th><Th numeric>Accepted</Th><Th numeric>Edited first</Th><Th numeric>Rejected</Th><Th numeric>Waiting</Th><Th numeric>Accepted share</Th></Tr></thead>
+            <tbody>{v.agents.filter((a) => a.accuracy).map((a) => <Tr key={a.key}><Td>{a.name}</Td><Td numeric>{a.accuracy!.accepted}</Td><Td numeric>{a.accuracy!.acceptedWithEdits}</Td><Td numeric>{a.accuracy!.rejected}</Td><Td numeric>{a.accuracy!.waiting}</Td><Td numeric>{a.accuracy!.rate === null ? '—' : `${a.accuracy!.rate}%`}</Td></Tr>)}</tbody>
+          </Table>
+        </Card>
+        <Card role="region" aria-label="Recent failed AI calls">
+          <CardHeader title="Recent failed AI calls" description="The latest calls to the AI model that did not return an answer, from the AI decision records." actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/ai-activity`}>AI activity</Link>} />
+          {v.failures.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Failed calls">
+              {v.failures.map((f) => <li key={f.id} className="px-5 py-2.5">{f.agent}: {f.errorName ?? f.stopReason ?? 'failed'}<span className="block text-xs text-fg-muted">{date(f.startedAt.slice(0, 10))} · {f.model}</span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No AI call has failed.</p>}
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Financial analyst
+
+const GROUPS: { key: string; label: string }[] = [
+  { key: 'GROWTH', label: 'Growth' },
+  { key: 'PROFITABILITY', label: 'Profitability' },
+  { key: 'LIQUIDITY', label: 'Liquidity' },
+  { key: 'EFFICIENCY', label: 'Efficiency' },
+  { key: 'CASH', label: 'Cash' },
+];
+
+function MovementList({ items, label, empty }: { items: Movement[]; label: string; empty: string }) {
+  return items.length ? (
+    <ul className="flex flex-col divide-y divide-line text-sm" aria-label={label}>
+      {items.map((m) => <li key={m.key} className="flex justify-between gap-2 px-5 py-2.5"><span>{m.label}</span><span className={cn('num', m.improved === true ? 'text-positive' : m.improved === false ? 'text-negative' : 'text-fg-muted')}>{Number(m.changePercent) > 0 ? '+' : ''}{m.changePercent}%</span></li>)}
+    </ul>
+  ) : <p className="px-5 py-4 text-sm text-fg-muted">{empty}</p>;
+}
+
+function Analyst({ v, c }: { v: AnalystView; c: string }) {
+  const t = v.twelveMonths;
+  return (
+    <>
+      <Card role="region" aria-label="Key figures and trends">
+        <CardHeader title="Key figures and trends" description={`${monthLabel(v.month)}${v.inProgress ? ' so far' : ''} against ${monthLabel(v.previousMonth)} and ${monthLabel(v.sameMonthLastYear)}, with the last 13 months as a line. Hover a figure for how it is worked out.`} />
+        <div className="overflow-x-auto">
+          <Table aria-label="Key figures">
+            <thead><Tr><Th>Figure</Th><Th numeric>This month</Th><Th numeric>Month before</Th><Th numeric>A year ago</Th><Th>Trend</Th></Tr></thead>
+            {GROUPS.map((g) => (
+              <tbody key={g.key}>
+                <Tr><Td colSpan={5} className="pt-4 text-xs uppercase tracking-wide text-fg-muted">{g.label}</Td></Tr>
+                {v.metrics.filter((m) => m.group === g.key).map((m) => (
+                  <Tr key={m.key}>
+                    <Td title={m.formula}>{m.label}</Td>
+                    <Td numeric className={cn(m.improved === true && 'text-positive', m.improved === false && 'text-negative')}>{formatKpi(m.value, m.unit, c)}</Td>
+                    <Td numeric>{formatKpi(m.previous, m.unit, c)}</Td>
+                    <Td numeric>{formatKpi(m.lastYear, m.unit, c)}</Td>
+                    <Td className="w-32"><Sparkline values={m.series.map((s) => s.value)} tone="var(--t2t-accent)" /></Td>
+                  </Tr>
+                ))}
+              </tbody>
+            ))}
+          </Table>
+        </div>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Biggest moves this month">
+          <CardHeader title="Biggest moves this month" description={`Figures that changed most from ${monthLabel(v.previousMonth)}, as a share of where they were; green is better, red worse.`} />
+          <MovementList items={v.movers} label="Moves from the month before" empty="Nothing to compare with the month before." />
+        </Card>
+        <Card role="region" aria-label="Biggest moves on last year">
+          <CardHeader title="Biggest moves on last year" description={`Figures that changed most from ${monthLabel(v.sameMonthLastYear)}.`} />
+          <MovementList items={v.versusLastYear} label="Moves from a year ago" empty="No figures from a year ago to compare with." />
+        </Card>
+      </div>
+      <Card role="region" aria-label="Profit and margins by month">
+        <CardHeader title="Profit and margins by month" description={`The last 12 months: ${money(t.revenue, c)} revenue, cost of sales ${t.costOfSalesShare ?? '—'}% and operating expenses ${t.operatingExpensesShare ?? '—'}% of it, net margin ${t.netMargin ?? '—'}%.`} />
+        <MarginChart months={v.monthly} currency={c} />
+        <div className="overflow-x-auto">
+          <Table aria-label="Profit by month">
+            <thead><Tr><Th>Month</Th><Th numeric>Revenue</Th><Th numeric>Gross profit</Th><Th numeric>Gross margin</Th><Th numeric>Operating profit</Th><Th numeric>Operating margin</Th><Th numeric>Net income</Th></Tr></thead>
+            <tbody>
+              {v.monthly.map((m) => <Tr key={m.month}><Td>{monthLabel(m.month)}</Td><Td numeric><Money value={m.revenue} currency={c} /></Td><Td numeric><Money value={m.grossProfit} currency={c} /></Td><Td numeric>{m.grossMargin === null ? '—' : `${m.grossMargin}%`}</Td><Td numeric><Money value={m.operatingProfit} currency={c} /></Td><Td numeric>{m.operatingMargin === null ? '—' : `${m.operatingMargin}%`}</Td><Td numeric><Money value={m.netIncome} currency={c} /></Td></Tr>)}
+              <Tr><Td className="font-medium">12 months</Td><Td numeric className="font-medium"><Money value={t.revenue} currency={c} /></Td><Td numeric className="font-medium"><Money value={t.grossProfit} currency={c} /></Td><Td /><Td numeric className="font-medium"><Money value={t.operatingProfit} currency={c} /></Td><Td /><Td numeric className="font-medium"><Money value={t.netIncome} currency={c} /></Td></Tr>
+            </tbody>
+          </Table>
+        </div>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Growth by quarter">
+          <CardHeader title="Growth by quarter" description="Revenue and net income of each calendar quarter, and revenue growth on the quarter before. A quarter with fewer than three months is still in progress or began before the books." />
+          <Table aria-label="Quarters">
+            <thead><Tr><Th>Quarter</Th><Th numeric>Revenue</Th><Th numeric>Growth</Th><Th numeric>Net income</Th></Tr></thead>
+            <tbody>{v.quarters.map((q) => <Tr key={q.quarter}><Td>{q.quarter}{q.months < 3 ? <span className="text-xs text-fg-muted"> ({q.months} mo)</span> : null}</Td><Td numeric>{q.revenue === null ? '—' : <Money value={q.revenue} currency={c} />}</Td><Td numeric>{q.revenueGrowth === null ? '—' : `${q.revenueGrowth}%`}</Td><Td numeric>{q.netIncome === null ? '—' : <Money value={q.netIncome} currency={c} />}</Td></Tr>)}</tbody>
+          </Table>
+        </Card>
+        <Card role="region" aria-label="Where revenue comes from">
+          <CardHeader title="Where revenue comes from" description={`${BAND[v.customers.band]}: the largest customer brings ${v.customers.largestShare ?? '—'}% of the last 12 months' revenue, the top five ${v.customers.topFiveShare ?? '—'}%.`} />
+          {v.customers.top.length ? (
+            <Table aria-label="Largest customers">
+              <thead><Tr><Th>Customer</Th><Th numeric>Revenue</Th><Th numeric>Share</Th></Tr></thead>
+              <tbody>{v.customers.top.map((x) => <Tr key={x.name}><Td>{x.name}</Td><Td numeric><Money value={x.revenue} currency={c} /></Td><Td numeric>{x.share === null ? '—' : `${x.share}%`}</Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No revenue in the last 12 months.</p>}
         </Card>
       </div>
     </>

@@ -57,7 +57,7 @@ describe('books and audit dashboards', () => {
     const forOwner = (await ctx.http().get(`${org.base}/reports/role-dashboards`).set(owner.auth).expect(200)).body.roles;
     expect(forOwner.filter((r: { available: boolean }) => !r.available)).toEqual([]);
     const forViewer = (await ctx.http().get(`${org.base}/reports/role-dashboards`).set(viewer.auth).expect(200)).body.roles;
-    expect(forViewer.filter((r: { available: boolean }) => !r.available).map((r: { role: string }) => r.role)).toEqual(['CONTROLLER', 'INTERNAL_AUDITOR']);
+    expect(forViewer.filter((r: { available: boolean }) => !r.available).map((r: { role: string }) => r.role)).toEqual(['CONTROLLER', 'INTERNAL_AUDITOR', 'PAYROLL_MANAGER', 'AI_ADMIN']);
   });
 
   it("gives the accountant the work queue and the month's close", async () => {
