@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { checkGstin, checkPan, COUNTRY_NAMES, placeOfSupplyName } from '@talk2tax/tax-engine';
+import { checkGstin, checkPan, COUNTRY_NAMES, placeOfSupplyName, US_STATES } from '@talk2tax/tax-engine';
 import { Alert, Badge, Button, Card, Dialog, EmptyState, Field, Input, Textarea, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -25,6 +25,7 @@ export interface ContactDraft {
   city: string;
   pincode: string;
   countryCode: string;
+  regionCode: string;
   isCustomer: boolean;
   isVendor: boolean;
   paymentTermsDays: string;
@@ -36,8 +37,8 @@ const COUNTRY_OPTIONS = Object.entries(COUNTRY_NAMES).sort((a, b) => a[1].locale
 
 export function draftFrom(c: Contact | null, l: LedgerConfig): ContactDraft {
   return c
-    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', gstin: c.gstin ?? '', stateCode: c.stateCode ?? '', pan: c.pan ?? '', withholdingSectionId: c.withholdingSectionId ?? '', address: c.address ?? '', city: c.city ?? '', pincode: c.pincode ?? '', countryCode: c.countryCode ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
-    : { name: '', email: '', phone: '', taxId: '', gstin: '', stateCode: '', pan: '', withholdingSectionId: '', address: '', city: '', pincode: '', countryCode: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
+    ? { id: c.id, name: c.name, email: c.email ?? '', phone: c.phone ?? '', taxId: c.taxId ?? '', gstin: c.gstin ?? '', stateCode: c.stateCode ?? '', pan: c.pan ?? '', withholdingSectionId: c.withholdingSectionId ?? '', address: c.address ?? '', city: c.city ?? '', pincode: c.pincode ?? '', countryCode: c.countryCode ?? '', regionCode: c.regionCode ?? '', isCustomer: c.isCustomer, isVendor: c.isVendor, paymentTermsDays: String(c.paymentTermsDays), creditLimit: c.creditLimit ?? '', isActive: c.isActive }
+    : { name: '', email: '', phone: '', taxId: '', gstin: '', stateCode: '', pan: '', withholdingSectionId: '', address: '', city: '', pincode: '', countryCode: '', regionCode: '', isCustomer: l.ledger === 'SALES', isVendor: l.ledger === 'PURCHASES', paymentTermsDays: '30', creditLimit: '', isActive: true };
 }
 
 export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig; draft: ContactDraft | null; setDraft: (d: ContactDraft | null) => void; onSaved?: (c: Contact) => void }) {
@@ -65,6 +66,7 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
         city: d.city.trim() || null,
         pincode: d.pincode || null,
         countryCode: d.countryCode || null,
+        ...(org?.countryCode === 'US' ? { regionCode: d.regionCode || null } : {}),
         isCustomer: d.isCustomer,
         isVendor: d.isVendor,
         paymentTermsDays: Number(d.paymentTermsDays || '0'),
@@ -140,6 +142,16 @@ export function ContactDialog({ l, draft, setDraft, onSaved }: { l: LedgerConfig
               </Select>
             )}
           </Field>
+          {org?.countryCode === 'US' ? (
+            <Field label="State" hint="The state the customer is in or you deliver to. Used for US sales tax by state.">
+              {(p) => (
+                <Select {...p} value={draft.regionCode} onChange={(e) => setDraft({ ...draft, regionCode: e.target.value })}>
+                  <option value="">Not set</option>
+                  {US_STATES.map((st) => <option key={st.code} value={st.code}>{st.name}</option>)}
+                </Select>
+              )}
+            </Field>
+          ) : null}
           {india ? (
             <Field label="PIN code" error={draft.pincode && !/^[1-9][0-9]{5}$/.test(draft.pincode) ? 'A PIN code is six digits and does not start with 0' : undefined}>
               {(p) => <Input {...p} className="num" inputMode="numeric" maxLength={6} value={draft.pincode} onChange={(e) => /^\d{0,6}$/.test(e.target.value) && setDraft({ ...draft, pincode: e.target.value })} />}

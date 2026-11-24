@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 523 |
+| Not started | 522 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 744 |
+| Tested | 745 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 5 | 49 |
+| Global taxation engine | M3 | 54 | 4 | 50 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 2 | 25 |
@@ -2801,6 +2801,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - docs/E_INVOICING_INDIA.md
   - docs/COMPLIANCE_CALENDAR_INDIA.md
   - apps/api/src/e-invoicing/e-invoicing.service.ts
+
+### TAX-028 — US sales tax
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: State permits with the rate charged, economic nexus by state against each state's threshold (this year and last), sales tax by state for a filing period and sales to check (untaxed in a registered state, taxed in an unregistered one, rate differs, no state). Customers carry their state. Local rates, use tax, exemption certificates and filing are not modelled; thresholds need adviser review.
+- Evidence:
+  - packages/tax-engine/src/us/sales-tax.ts
+  - packages/tax-engine/test/us-sales-tax.test.ts
+  - apps/api/src/us-sales-tax/us-sales-tax.service.ts
+  - apps/api/test/us-sales-tax.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/us-sales-tax/page.tsx
+  - apps/web/e2e/us-sales-tax-flow.test.mjs
+  - docs/US_SALES_TAX.md
 
 ### TAX-030 — UK VAT
 

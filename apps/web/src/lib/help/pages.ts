@@ -874,6 +874,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the financial year (the last one by default). Share the figures with your auditor, fix what can still be fixed (deposit TDS still owed), and keep the lists as support for the clauses. Cash means payments and receipts from or into an account with the Cash subtype.',
     where: "Tax. Needs the reports permission; Indian organisations only. Reads posted invoices, bills, payments and the TDS register; expense claims and journals are not counted as cash. Section and clause numbers are those of the Income-tax Act, 1961 and Form 3CD. Nothing is filed, and no AI model is used; it does not replace the auditor's judgement.",
   },
+  'tax/us-sales-tax': {
+    what: 'US sales tax by state: the states you hold a permit in, your sales into every state watched against its economic nexus threshold, the tax charged by state for a filing period, and the sales whose tax looks wrong for the state.',
+    how: "Set the state on each customer. Add a tax rate for the combined rate you charge in each state, then record the permit and link the rate. Register in any state marked over the threshold, and check the flagged sales before you file.",
+    where: 'Tax, for organisations in the United States. Needs the reports permission; recording permits needs accounts.manage. Local rates, sourcing rules, use tax and exemption certificates are not modelled, and nothing is filed with any state. Thresholds need review by a US sales tax adviser.',
+  },
   'tax/cross-border': {
     what: "Cross-border tax reporting: posted invoices, credit notes, bills and vendor credits with contacts in other countries, grouped by the contact's country, with the tax charged and the reverse charge recorded. EU businesses also see their intra-EU supplies by customer VAT ID for the recapitulative statement, and every business sees the documents whose treatment usually needs a second look.",
     how: 'Choose the period (the financial year to date by default). Set the country on contacts that have none, add missing VAT IDs, and check each flagged document with your adviser. Download the CSV to share it.',

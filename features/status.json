@@ -10210,6 +10210,19 @@
         "docs/CROSS_BORDER_REPORTING.md"
       ],
       "notes": "Contacts carry an ISO country; the cross-border report groups posted sales and purchases with contacts abroad by country, lists intra-EU supplies by customer VAT ID for the recapitulative statement, flags taxed exports, untaxed imports, missing VAT IDs and foreign documents without a country, and exports CSV with an audit record."
+    },
+    "TAX-028": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/us/sales-tax.ts",
+        "packages/tax-engine/test/us-sales-tax.test.ts",
+        "apps/api/src/us-sales-tax/us-sales-tax.service.ts",
+        "apps/api/test/us-sales-tax.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/us-sales-tax/page.tsx",
+        "apps/web/e2e/us-sales-tax-flow.test.mjs",
+        "docs/US_SALES_TAX.md"
+      ],
+      "notes": "State permits with the rate charged, economic nexus by state against each state's threshold (this year and last), sales tax by state for a filing period and sales to check (untaxed in a registered state, taxed in an unregistered one, rate differs, no state). Customers carry their state. Local rates, use tax, exemption certificates and filing are not modelled; thresholds need adviser review."
     }
   }
 }

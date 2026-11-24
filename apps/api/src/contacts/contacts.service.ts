@@ -24,6 +24,7 @@ export interface ContactInput {
   city?: string | null;
   pincode?: string | null;
   countryCode?: string | null;
+  regionCode?: string | null;
   isCustomer?: boolean;
   isVendor?: boolean;
   paymentTermsDays?: number;
@@ -92,6 +93,7 @@ export class ContactsService {
           city: input.city ?? null,
           pincode: input.pincode ?? null,
           countryCode: input.countryCode ?? null,
+          regionCode: input.regionCode ?? null,
           isCustomer: input.isCustomer ?? false,
           isVendor: input.isVendor ?? false,
           paymentTermsDays: input.paymentTermsDays ?? 30,
@@ -143,6 +145,7 @@ export class ContactsService {
           city: input.city,
           pincode: input.pincode,
           countryCode: input.countryCode,
+          regionCode: input.regionCode,
           isCustomer: input.isCustomer,
           isVendor: input.isVendor,
           paymentTermsDays: input.paymentTermsDays,
@@ -208,6 +211,7 @@ export class ContactsService {
       city: c.city,
       pincode: c.pincode,
       countryCode: c.countryCode ?? null,
+      regionCode: c.regionCode ?? null,
       isCustomer: c.isCustomer,
       isVendor: c.isVendor,
       paymentTermsDays: c.paymentTermsDays,
