@@ -164,3 +164,4 @@ export * from './risk-monitor';
 export * from './financial-dependencies';
 export * from './role-dashboards';
 export * from './platform-dashboard';
+export * from './portal-dashboard';

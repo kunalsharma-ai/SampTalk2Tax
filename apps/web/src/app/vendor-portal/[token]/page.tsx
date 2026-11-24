@@ -5,6 +5,7 @@ import { Alert, Badge, Button, Card, Field, Input, Select, Table, Td, Textarea, 
 import { useParams } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { Money } from '@/components/money';
+import { PortalDashboard, type PortalDashboardData } from '@/components/portal/portal-dashboard';
 import { date, dateTime } from '@/lib/format';
 
 /**
@@ -19,6 +20,7 @@ interface Portal {
   link: { expiresAt: string | null };
   today: string;
   currency: string;
+  dashboard: PortalDashboardData;
   balances: { currency: string; owed: string; due: string; credits: string; balance: string }[];
   bills: { id: string; kind: 'BILL' | 'VENDOR_CREDIT'; number: string | null; yourReference: string | null; issueDate: string; dueDate: string | null; currency: string; total: string; tdsDeducted: string | null; open: string; state: BillState }[];
   payments: { id: string; number: string; date: string; amount: string; currency: string; status: string; reference: string | null }[];
@@ -92,6 +94,8 @@ export default function VendorPortalPage() {
           <BalanceCards key={b.currency} b={b} multi={p.balances.length > 1} />
         ))}
       </section>
+
+      <PortalDashboard d={p.dashboard} side="VENDOR" />
 
       <Card className="mt-6" role="region" aria-label="Your bills">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">

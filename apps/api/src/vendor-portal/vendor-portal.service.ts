@@ -21,6 +21,7 @@ import { cleanFileName, MAX_ATTACHMENT_BYTES, sniffContentType } from '../attach
 import { FileScannerService } from '../files/file-scanner.service';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate, toDbDate } from '../common/dates';
+import { portalDashboardFor } from '../ledgers/portal-dashboard';
 import { DomainError } from '../common/errors';
 import { ATTACHMENTS } from '../db/collections/sales';
 import { MovedTables } from '../db/moved-table';
@@ -376,6 +377,7 @@ export class VendorPortalService {
       today,
       currency: org.functionalCurrency,
       balances,
+      dashboard: await portalDashboardFor(this.prisma, { orgId: org.id, contactId: contact.id, side: 'PURCHASES', today, functionalCurrency: org.functionalCurrency, items }),
       bills,
       payments: payments.map((p) => ({ id: p.id, number: p.number, date: fromDbDate(p.date), amount: p.amount.toFixed(minorUnits(p.currency)), currency: p.currency, status: p.status, reference: p.reference })),
       orders,
