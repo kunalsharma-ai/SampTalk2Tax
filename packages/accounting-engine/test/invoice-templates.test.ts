@@ -305,3 +305,13 @@ describe('section text is plain text', () => {
     expect(html).not.toContain('<b onclick');
   });
 });
+
+describe('tax in the books currency (TAX-039)', () => {
+  it('prints the tax in the local currency when the invoice is in another one', () => {
+    const src = { ...sampleInvoiceSource('GB_VAT'), currency: 'USD', localTax: { currency: 'GBP', exchangeRate: '0.79', taxTotal: '158.00' } };
+    const html = renderInvoiceDocument({ engine: 'LAYOUT', layout: layoutFromPreset('GB_VAT'), html: null }, src);
+    expect(html).toContain('VAT in GBP at 1 USD = 0.79 GBP: 158.00');
+    const plain = renderInvoiceDocument({ engine: 'LAYOUT', layout: layoutFromPreset('GB_VAT'), html: null }, sampleInvoiceSource('GB_VAT'));
+    expect(plain).not.toContain(' at 1 ');
+  });
+});

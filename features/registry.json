@@ -7381,9 +7381,18 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/invoice-rules.ts",
+        "packages/tax-engine/test/invoice-rules.test.ts",
+        "apps/api/src/invoice-requirements/invoice-requirements.service.ts",
+        "apps/api/test/invoice-requirements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/invoice-requirements/page.tsx",
+        "apps/web/e2e/invoice-requirements-flow.test.mjs",
+        "docs/INVOICE_REQUIREMENTS.md",
+        "packages/accounting-engine/src/invoice-templates.ts"
+      ],
+      "notes": "Invoice content rules for India, the UK, Germany, the UAE, Singapore, Australia and Canada with simplified and stepped tiers, each sourced and dated; every sales invoice and credit note is checked for missing details with the fix; invoices print the seller's VAT number and the tax in the books' currency for foreign-currency invoices. Other countries are reported as not covered."
     },
     {
       "id": "TAX-040",
@@ -7407,9 +7416,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/invoice-rules.ts",
+        "packages/tax-engine/test/invoice-rules.test.ts",
+        "apps/api/src/invoice-requirements/invoice-requirements.service.ts",
+        "apps/api/test/invoice-requirements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/invoice-requirements/page.tsx",
+        "apps/web/e2e/invoice-requirements-flow.test.mjs",
+        "docs/INVOICE_REQUIREMENTS.md"
+      ],
+      "notes": "E-invoicing requirements for India (IRN), Germany (receive 2025, issue 2027/2028), the UAE (2026 pilot, 2027 phases), Singapore (InvoiceNow), the UK (announced April 2029), Australia and Canada (not required), with turnover thresholds tested against completed years in the books or a typed figure. Nothing is sent to any network."
     },
     {
       "id": "TAX-041",

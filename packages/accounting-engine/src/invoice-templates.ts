@@ -811,6 +811,7 @@ export const INVOICE_PLACEHOLDERS: readonly { path: string; description: string;
   { path: 'totals.total', description: 'Invoice total' },
   { path: 'totals.paid', description: 'Amount received so far' },
   { path: 'totals.due', description: 'Amount still due' },
+  { path: 'totals.localTax', description: 'The tax in your books’ currency, when the invoice is in another one' },
   { path: 'amountInWords', description: 'The total in words' },
   { path: 'signature', description: 'Present once signed: {{#signature}}…{{/signature}}' },
   { path: 'signature.image', description: 'Signature image as a data: URL' },
@@ -1106,6 +1107,8 @@ export interface InvoicePrintSource {
   eInvoice: { irn: string; ackNo: string; ackDate: string } | null;
   signature: InvoiceSignatureInfo | null;
   logoDataUrl: string | null;
+  /** The tax in the books' currency when the invoice is in another one (UK, EU, UAE and Singapore rules ask for it, TAX-039). */
+  localTax?: { currency: string; exchangeRate: string; taxTotal: string } | null;
 }
 
 export const INDIAN_STATES: Readonly<Record<string, string>> = {
@@ -1130,7 +1133,7 @@ export interface InvoiceView {
   taxes: Record<string, string>[];
   hasGst: boolean;
   hasWithholding: boolean;
-  totals: { subtotal: string; tax: string; withholding: string; total: string; paid: string; due: string };
+  totals: { subtotal: string; tax: string; withholding: string; total: string; paid: string; due: string; localTax: string };
   amountInWords: string;
   signature: { image: string; name: string; designation: string; signedAt: string; hash: string } | null;
 }
@@ -1227,6 +1230,7 @@ export function buildInvoiceView(
       total: money(src.total),
       paid: money(src.paid),
       due: money(due),
+      localTax: src.localTax ? `${opts.taxLabel || 'Tax'} in ${src.localTax.currency} at 1 ${src.currency} = ${src.localTax.exchangeRate} ${src.localTax.currency}: ${formatAmount(src.localTax.taxTotal, src.localTax.currency, opts.numberStyle)}` : '',
     },
     amountInWords: amountInWords(src.total, src.currency, opts.numberStyle),
     signature: src.signature
@@ -1489,6 +1493,7 @@ function renderSection(section: SectionConfig, view: InvoiceView, layout: Layout
         t.paid !== formatAmount('0', String(v.doc.currency), layout.numberStyle)
           ? `<tr><td>Received</td><td class="n">${escapeHtml(t.paid)}</td></tr><tr><td><strong>Balance due</strong></td><td class="n"><strong>${escapeHtml(t.due)}</strong></td></tr>`
           : '',
+        t.localTax ? `<tr><td colspan="2" class="muted">${escapeHtml(t.localTax)}</td></tr>` : '',
       ].join('');
       return `${heading(section)}<table class="totals">${rows}</table>${sectionText(section, v)}`;
     }

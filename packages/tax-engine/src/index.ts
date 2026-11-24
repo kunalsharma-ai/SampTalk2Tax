@@ -28,3 +28,4 @@ export * from './ca/gst-hst';
 export * from './ae/vat-201';
 export * from './de/ust-voranmeldung';
 export * from './vat/jurisdictions';
+export * from './invoice-rules';
