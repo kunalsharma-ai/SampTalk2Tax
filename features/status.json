@@ -10236,6 +10236,19 @@
         "docs/US_REPORTING.md"
       ],
       "notes": "Federal: 1099-NEC and 1099-MISC due for a calendar year's vendor payments from W-9 details (last four TIN digits only), with a reason for every vendor, due dates and CSV export. State: the sales tax returns each permit calls for in the year with tax charged per period. Rules written from memory need US tax adviser review; nothing is filed."
+    },
+    "TAX-043": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/tax-document-reading.ts",
+        "packages/tax-engine/test/tax-document-reading.test.ts",
+        "apps/api/src/tax-documents/tax-documents.service.ts",
+        "apps/api/test/tax-documents.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/documents/page.tsx",
+        "apps/web/e2e/tax-documents-flow.test.mjs",
+        "docs/TAX_DOCUMENTS.md"
+      ],
+      "notes": "TDS certificates (16A), annual tax statements (26AS/AIS), GST challans (PMT-06) and US 1099s read from PDF or text: recognised, explained, every field with its source line, checked against own PAN/GSTIN and the TDS receivable account; reviewed with a note. Deterministic, no AI; explanations need adviser review."
     }
   }
 }

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 521 |
+| Not started | 520 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 746 |
+| Tested | 747 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 3 | 51 |
+| Global taxation engine | M3 | 54 | 2 | 52 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 2 | 25 |
@@ -3006,6 +3006,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/settings/country-module/page.tsx
   - apps/web/e2e/country-modules-flow.test.mjs
   - docs/COUNTRY_MODULES.md
+
+### TAX-043 — Tax document interpretation
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: TDS certificates (16A), annual tax statements (26AS/AIS), GST challans (PMT-06) and US 1099s read from PDF or text: recognised, explained, every field with its source line, checked against own PAN/GSTIN and the TDS receivable account; reviewed with a note. Deterministic, no AI; explanations need adviser review.
+- Evidence:
+  - packages/tax-engine/src/tax-document-reading.ts
+  - packages/tax-engine/test/tax-document-reading.test.ts
+  - apps/api/src/tax-documents/tax-documents.service.ts
+  - apps/api/test/tax-documents.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/documents/page.tsx
+  - apps/web/e2e/tax-documents-flow.test.mjs
+  - docs/TAX_DOCUMENTS.md
 
 ### TAX-044 — Tax discrepancy detection
 

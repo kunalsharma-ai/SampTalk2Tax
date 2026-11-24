@@ -884,6 +884,16 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Record the W-9 for each vendor you pay for services or rent, get one from every vendor marked as needing it, then export the 1099 CSV for your filing software. Use the state table for each sales tax return.',
     where: 'Tax, for organisations in the United States. Needs the reports permission; recording W-9 details needs accounts.manage. Only the last four digits of a taxpayer number are kept. Backup withholding, Form 1042-S, state 1099 filing and state due dates are not modelled, and nothing is filed with the IRS or any state. The rules need review by a US tax adviser.',
   },
+  'tax/documents': {
+    what: 'Tax document interpretation: a TDS certificate (Form 16A), the annual tax statement (Form 26AS or AIS), a GST challan (PMT-06) or a US Form 1099 you received, read from its PDF or text, explained in plain words and checked.',
+    how: 'Upload the PDF or paste the text, open the reading, act on the checks and mark it reviewed.',
+    where: 'Tax, for organisations in India and the United States. Needs the reports permission to see readings and accounts.manage to read one. Reading is deterministic: no AI model is used and nothing is guessed. Explanations need review by a tax adviser.',
+  },
+  'tax/documents/[id]': {
+    what: 'One tax document read: what it is and what to do, the checks on it, every field with the line it came from, the deductor rows of an annual statement, and whether it has been reviewed.',
+    how: 'Work through the checks, then mark the document reviewed with a note of what you did.',
+    where: "Tax → Tax documents. The text that was read is at the bottom. The PAN check uses your GSTIN's PAN; the TDS comparison needs the TDS receivable account chosen on the Advance tax page.",
+  },
   'tax/cross-border': {
     what: "Cross-border tax reporting: posted invoices, credit notes, bills and vendor credits with contacts in other countries, grouped by the contact's country, with the tax charged and the reverse charge recorded. EU businesses also see their intra-EU supplies by customer VAT ID for the recapitulative statement, and every business sees the documents whose treatment usually needs a second look.",
     how: 'Choose the period (the financial year to date by default). Set the country on contacts that have none, add missing VAT IDs, and check each flagged document with your adviser. Download the CSV to share it.',
