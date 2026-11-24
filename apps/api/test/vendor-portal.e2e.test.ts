@@ -86,7 +86,9 @@ describe('vendor portal', () => {
     expect(p.payments[0]).toMatchObject({ amount: '15000.00', reference: 'UTR 99812' });
     expect(p.orders.map((o: { id: string }) => o.id)).toEqual([ids.po]);
     expect(p.orders[0]).toMatchObject({ reference: expect.stringMatching(/^PO-/), yourReference: 'VQ-77', total: '4000.00' });
-    expect(JSON.stringify(p)).not.toContain('7777');
+    expect(JSON.stringify(p)).not.toContain('7777.00');
+    expect(JSON.stringify(p)).not.toContain(ids.others);
+    expect(JSON.stringify(p)).not.toContain('HP/1');
     expect(JSON.stringify(p)).not.toContain('KP/DRAFT');
     const s = (await portal(token, `/statement?from=${addDays(T, -60)}&to=${T}`).expect(200)).body;
     expect(s.closingBalance).toBe('13000.00');
