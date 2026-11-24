@@ -182,6 +182,7 @@ export const hi: Record<string, string> = {
   'Invoice requirements': 'इनवॉइस आवश्यकताएँ',
   'Cross-border report': 'सीमा-पार रिपोर्ट',
   'US sales tax': 'अमेरिकी बिक्री कर',
+  'US 1099s and state returns': 'अमेरिकी 1099 और राज्य रिटर्न',
   'E-way bills': 'ई-वे बिल',
   'TDS and TCS': 'TDS और TCS',
   'GST settings': 'GST सेटिंग',
