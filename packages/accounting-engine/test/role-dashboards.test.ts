@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agingByDueDate, cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
+import { agingByDueDate, biggestMovements, sharePercent, cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
 
 describe('role dashboards', () => {
   it('ranks what needs attention by level, then amount, then title', () => {
@@ -65,5 +65,32 @@ describe('role dashboards', () => {
     expect(r.overdue).toBe('50.00');
     expect(r.buckets.map((b) => `${b.bucket} ${b.amount} ${b.count} ${b.share}`)).toEqual(['CURRENT 150.00 2 75.0', 'DAYS_1_30 25.00 1 12.5', 'DAYS_31_60 15.00 1 7.5', 'DAYS_61_90 0.00 0 0.0', 'OVER_90 10.00 1 5.0']);
     expect(agingByDueDate([], '2026-11-01').buckets[0]!.share).toBeNull();
+  });
+
+  it('finds the figures that moved most, and whether each move is an improvement', () => {
+    const r = biggestMovements(
+      [
+        { key: 'revenue', label: 'Revenue', value: '1100', previous: '1000', better: 'HIGHER' },
+        { key: 'dso', label: 'DSO', value: '60', previous: '40', better: 'LOWER' },
+        { key: 'margin', label: 'Margin', value: '-5', previous: '-10', better: 'HIGHER' },
+        { key: 'flat', label: 'Flat', value: '7', previous: '7', better: 'HIGHER' },
+        { key: 'none', label: 'None', value: '7', previous: null, better: 'HIGHER' },
+        { key: 'zero', label: 'Zero', value: '7', previous: '0', better: 'HIGHER' },
+      ],
+      3,
+    );
+    expect(r).toEqual([
+      { key: 'dso', label: 'DSO', value: '60', previous: '40', changePercent: '50.0', improved: false },
+      { key: 'margin', label: 'Margin', value: '-5', previous: '-10', changePercent: '50.0', improved: true },
+      { key: 'revenue', label: 'Revenue', value: '1100', previous: '1000', changePercent: '10.0', improved: true },
+    ]);
+    expect(biggestMovements([{ key: 'f', label: 'F', value: '7', previous: '7', better: 'LOWER' }])[0]).toMatchObject({ changePercent: '0.0', improved: null });
+  });
+
+  it('works out a share in percent', () => {
+    expect(sharePercent('25', '200')).toBe('12.5');
+    expect(sharePercent('1', '3')).toBe('33.3');
+    expect(sharePercent('1', '0')).toBeNull();
+    expect(sharePercent(null, '10')).toBeNull();
   });
 });

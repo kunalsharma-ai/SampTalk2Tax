@@ -5,7 +5,7 @@ import type { KpiUnit } from '@/lib/kpis';
 import { money } from '@/lib/format';
 import type { RiskLevel } from './risk-monitor';
 
-export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER' | 'ACCOUNTANT' | 'CONTROLLER' | 'INTERNAL_AUDITOR' | 'PROCUREMENT';
+export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER' | 'ACCOUNTANT' | 'CONTROLLER' | 'INTERNAL_AUDITOR' | 'PROCUREMENT' | 'PAYROLL_MANAGER' | 'AI_ADMIN' | 'ANALYST';
 export interface RoleKpi {
   key: string;
   label: string;
@@ -111,6 +111,9 @@ export interface RoleDashboard {
   controller?: ControllerView;
   audit?: InternalAuditorView;
   procurement?: ProcurementView;
+  payroll?: PayrollManagerView;
+  ai?: AiAdminView;
+  analyst?: AnalystView;
 }
 
 export interface CloseRow { id: string; name: string; startDate: string; endDate: string; periodStatus: string; closeStatus: string; closedBy: string | null; closedAt: string | null; current: boolean }
@@ -184,6 +187,67 @@ export interface ExpenseManagerView {
   risk: { summary: { claims: number; flagged: number; high: number; medium: number; low: number }; items: { claimId: string; title: string; claimant: string; total: string; currency: string; level: 'HIGH' | 'MEDIUM' | 'LOW'; indicators: string[] }[] };
   receipts: { days: number; lines: number; withReceipt: number; missing: number; totals: { currency: string; amount: string }[] };
   budgets: { fiscalYear: number; totals: { budget: string; actual: string; committed: string }; rows: { departmentId: string; name: string; budget: string | null; actual: string; committed: string; status: 'OVER' | 'AT_RISK' | 'ON_TRACK' | 'NO_BUDGET' | string; usedPercent: string | null; reason: string }[] };
+}
+
+export interface PayrollMonth { period: string; employees: number; gross: string; net: string; employerCost: string; grossChange: string | null; flagged: boolean }
+export interface PayrollManagerView {
+  month: string;
+  thisMonth: { id: string; number: string; status: string; payDate: string; employees: number; gross: string; net: string; employerCost: string } | null;
+  team: { active: number; joining: { id: string; name: string; date: string }[]; joinedThisMonth: { id: string; name: string; date: string }[]; leavingThisMonth: { id: string; name: string; date: string }[] };
+  runs: { id: string; number: string; period: string; status: string; payDate: string; employees: number; gross: string; net: string; employerCost: string }[];
+  drafts: { id: string; number: string; period: string; missing: number }[];
+  unpaid: { items: { runId: string; number: string; period: string; liability: string; label: string; amount: string; dueDate: string | null; overdue: boolean }[]; total: string; overdue: number };
+  cost: { from: string; to: string; totals: { employees: number; payslips: number; months: number; gross: string; deductions: string; net: string; employerCost: string; employerContributions: string }; statutory: { key: string; label: string; employee: string; employer: string; total: string }[]; byMonth: PayrollMonth[] };
+}
+export interface AiAgentRow {
+  key: string;
+  name: string;
+  levelLabel: string;
+  enabled: boolean;
+  link: string;
+  calls: number;
+  tokens: number;
+  failed: number;
+  monthlyTokenLimit: number | null;
+  percentOfBudget: number | null;
+  budgetReached: boolean;
+  nearBudget: boolean;
+  cost: string;
+  unpricedTokens: number;
+  accuracy: { accepted: number; acceptedWithEdits: number; rejected: number; waiting: number; rate: number | null } | null;
+  running: number;
+  lastUsedAt: string | null;
+}
+export interface AiAdminView {
+  month: string;
+  accuracyDays: number;
+  configured: boolean;
+  provider: string;
+  model: string | null;
+  enabled: boolean;
+  stopped: boolean;
+  offReason: string | null;
+  platformStopped: boolean;
+  totals: { calls: number; tokens: number; failed: number; running: number; waiting: number; cost: string; unpricedTokens: number };
+  currency: string;
+  agents: AiAgentRow[];
+  failures: { id: string; agent: string; startedAt: string; errorName: string | null; stopReason: string | null; model: string }[];
+}
+export interface AnalystMetric { key: string; label: string; unit: KpiUnit; group: string; better: 'HIGHER' | 'LOWER'; formula: string; value: string | null; previous: string | null; lastYear: string | null; change: string | null; improved: boolean | null; series: { month: string; value: string | null }[] }
+export interface Movement { key: string; label: string; value: string; previous: string; changePercent: string; improved: boolean | null }
+export interface AnalystMonth { month: string; revenue: string; grossProfit: string; operatingProfit: string; netIncome: string; grossMargin: string | null; operatingMargin: string | null; costOfSales: string; operatingExpenses: string }
+export interface AnalystView {
+  month: string;
+  inProgress: boolean;
+  previousMonth: string;
+  sameMonthLastYear: string;
+  metrics: AnalystMetric[];
+  movers: Movement[];
+  versusLastYear: Movement[];
+  monthly: AnalystMonth[];
+  twelveMonths: { revenue: string; costOfSales: string; operatingExpenses: string; grossProfit: string; operatingProfit: string; netIncome: string; costOfSalesShare: string | null; operatingExpensesShare: string | null; netMargin: string | null };
+  quarters: { quarter: string; months: number; revenue: string | null; netIncome: string | null; revenueGrowth: string | null }[];
+  customers: { largestShare: string | null; topFiveShare: string | null; band: 'NONE' | 'LOW' | 'MODERATE' | 'HIGH'; top: { name: string; revenue: string; share: string | null }[] };
 }
 
 const n = (v: string | null) => (v === null ? null : Number(v)); // not money: only to draw
@@ -265,6 +329,48 @@ export function AgingBars({ aging, currency, colour }: { aging: Aging; currency:
           <Tooltip formatter={(v) => money(String(v), currency)} />
           <Bar dataKey="amount" name="Open" fill={s[colour]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
         </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Gross pay and what the employer pays in all, month by month (the payroll manager's cost view). */
+export function PayrollCostBars({ months, currency }: { months: PayrollMonth[]; currency: string }) {
+  const s = chartSeries;
+  return (
+    <div className="h-60 w-full px-2" role="img" aria-label="Gross pay and employer cost by month as bars; the same figures are in the table below">
+      <ResponsiveContainer>
+        <BarChart data={months.map((m) => ({ month: m.period, gross: n(m.gross), cost: n(m.employerCost) }))} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--t2t-border)" vertical={false} />
+          <XAxis dataKey="month" tickFormatter={monthTick} tick={{ fontSize: 11 }} />
+          <YAxis tickFormatter={short(currency)} tick={{ fontSize: 11 }} width={88} />
+          <Tooltip formatter={(v) => money(String(v), currency)} labelFormatter={(l) => monthTick(String(l))} />
+          <Legend />
+          <Bar dataKey="gross" name="Gross pay" fill={s[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="cost" name="Employer cost" fill={s[1]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Revenue as bars with gross and operating margin as lines, month by month (the analyst's profit view). */
+export function MarginChart({ months, currency }: { months: AnalystMonth[]; currency: string }) {
+  const s = chartSeries;
+  return (
+    <div className="h-72 w-full px-2" role="img" aria-label="Revenue by month as bars with gross and operating margin as lines; the same figures are in the table below">
+      <ResponsiveContainer>
+        <ComposedChart data={months.map((m) => ({ month: m.month, revenue: n(m.revenue), gross: n(m.grossMargin), operating: n(m.operatingMargin) }))} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--t2t-border)" vertical={false} />
+          <XAxis dataKey="month" tickFormatter={monthTick} tick={{ fontSize: 11 }} />
+          <YAxis yAxisId="money" tickFormatter={short(currency)} tick={{ fontSize: 11 }} width={88} />
+          <YAxis yAxisId="pct" orientation="right" tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 11 }} width={48} />
+          <Tooltip formatter={(v, name) => (name === 'Revenue' ? money(String(v), currency) : `${v}%`)} labelFormatter={(l) => monthTick(String(l))} />
+          <Legend />
+          <Bar yAxisId="money" dataKey="revenue" name="Revenue" fill={s[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Line yAxisId="pct" dataKey="gross" name="Gross margin" stroke={s[2]} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
+          <Line yAxisId="pct" dataKey="operating" name="Operating margin" stroke={s[3]} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

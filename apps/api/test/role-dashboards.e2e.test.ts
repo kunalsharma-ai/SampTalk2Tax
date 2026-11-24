@@ -62,7 +62,7 @@ const NAMES = ['Asha Traders', 'Banyan Retail', 'Cedar Foods', 'Deodar Stores', 
 describe('role dashboards', () => {
   it('lists one dashboard per role with the question it answers', async () => {
     const r = (await ctx.http().get(`${org.base}/reports/role-dashboards`).set(viewer.auth).expect(200)).body;
-    expect(r.roles.map((x: { role: string }) => x.role)).toEqual(['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT']);
+    expect(r.roles.map((x: { role: string }) => x.role)).toEqual(['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT', 'PAYROLL_MANAGER', 'AI_ADMIN', 'ANALYST']);
     expect(r.roles[0].question).toMatch(/growing/);
   });
 

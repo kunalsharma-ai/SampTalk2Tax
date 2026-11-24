@@ -986,7 +986,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-049 | Required Dashboards | capability | Accounts Payable Manager | Tested |
 | DASH-050 | Required Dashboards | capability | Accounts Receivable Manager | Tested |
 | DASH-051 | Required Dashboards | capability | Tax Manager | Tested |
-| DASH-052 | Required Dashboards | capability | Payroll Manager | Not started |
+| DASH-052 | Required Dashboards | capability | Payroll Manager | Tested |
 | DASH-053 | Required Dashboards | capability | Treasury Manager | Tested |
 | DASH-054 | Required Dashboards | capability | Procurement Manager | Tested |
 | DASH-055 | Required Dashboards | capability | Expense Manager | Tested |
@@ -996,10 +996,10 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-059 | Required Dashboards | capability | Department Manager | Not started |
 | DASH-060 | Required Dashboards | capability | Vendor | Not started |
 | DASH-061 | Required Dashboards | capability | Customer | Not started |
-| DASH-062 | Required Dashboards | capability | AI Agent Administrator | Not started |
+| DASH-062 | Required Dashboards | capability | AI Agent Administrator | Tested |
 | DASH-063 | Required Dashboards | capability | Financial Risk Officer | Tested |
 | DASH-064 | Required Dashboards | capability | Compliance Officer | Tested |
-| DASH-065 | Required Dashboards | capability | Financial Analyst | Not started |
+| DASH-065 | Required Dashboards | capability | Financial Analyst | Tested |
 | DASH-066 | Required Dashboards | capability | Investor / Board Viewer | Tested |
 | DASH-067 | Required Dashboards | rule | Each dashboard must have a unique role-appropriate layout | Implementing |
 | DASH-068 | Required Dashboards | rule | Do not simply reuse the same dashboard with different headings | Implementing |
