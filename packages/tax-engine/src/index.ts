@@ -32,3 +32,4 @@ export * from './invoice-rules';
 export * from './cross-border';
 export * from './us/sales-tax';
 export * from './us/information-returns';
+export * from './tax-document-reading';

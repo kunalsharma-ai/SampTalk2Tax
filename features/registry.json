@@ -7541,9 +7541,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/tax-document-reading.ts",
+        "packages/tax-engine/test/tax-document-reading.test.ts",
+        "apps/api/src/tax-documents/tax-documents.service.ts",
+        "apps/api/test/tax-documents.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/documents/page.tsx",
+        "apps/web/e2e/tax-documents-flow.test.mjs",
+        "docs/TAX_DOCUMENTS.md"
+      ],
+      "notes": "TDS certificates (16A), annual tax statements (26AS/AIS), GST challans (PMT-06) and US 1099s read from PDF or text: recognised, explained, every field with its source line, checked against own PAN/GSTIN and the TDS receivable account; reviewed with a note. Deterministic, no AI; explanations need adviser review."
     },
     {
       "id": "TAX-044",
