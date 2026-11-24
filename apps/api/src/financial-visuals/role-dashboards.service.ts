@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   addDays,
   agingByDueDate,
@@ -6,6 +6,8 @@ import {
   cashHeadroom,
   concentrationBand,
   D,
+  fiscalYearForDate,
+  furthestOffPlan,
   minorUnits,
   plFigures,
   quarterChange,
@@ -36,7 +38,13 @@ import { SegregationOfDutiesService } from '../segregation-of-duties/segregation
 import { VendorContractsService } from '../vendor-contracts/vendor-contracts.service';
 import { VendorRiskService } from '../vendor-risk/vendor-risk.service';
 import { CashFlowService } from '../cash-flow/cash-flow.service';
-import { fromDbDate, istDate, todayIso } from '../common/dates';
+import { fromDbDate, istDate, todayIso, toDbDate } from '../common/dates';
+import { lineSums, postedBetween } from '../db/ledger-queries';
+import { auditorPortalLinks } from '../db/collections/auditor-portal';
+import { BudgetsService } from '../budgets/budgets.service';
+import { fiscalYearDates } from '../department-budgets/department-budgets.service';
+import { ReportsService } from '../reports/reports.service';
+import { YearEndService } from '../year-end/year-end.service';
 import { PrismaService } from '../common/prisma.service';
 import { CompliancePredictionsService } from '../compliance/compliance-predictions.service';
 import { DepartmentBudgetsService } from '../department-budgets/department-budgets.service';
@@ -117,6 +125,9 @@ export class RoleDashboardsService {
     private readonly payrollReport: PayrollReportService,
     private readonly ai: AiControlService,
     private readonly aiDecisions: AiDecisionsService,
+    private readonly plans: BudgetsService,
+    private readonly yearEnd: YearEndService,
+    private readonly reports: ReportsService,
   ) {}
 
   /** Dashboards that show more than reports: each needs its own permission as well as reports.read. */
@@ -127,6 +138,8 @@ export class RoleDashboardsService {
     PROCUREMENT: { permission: 'purchases.read', what: 'purchases' },
     PAYROLL_MANAGER: { permission: 'payroll.read', what: 'payroll' },
     AI_ADMIN: { permission: 'audit.read', what: 'audit and AI controls' },
+    DEPARTMENT_MANAGER: { permission: 'expenses.read', what: 'expenses' },
+    EXTERNAL_AUDITOR: { permission: 'audit.read', what: 'audit and controls' },
   };
 
   /** Whether the member's role may open a dashboard. */
@@ -135,7 +148,7 @@ export class RoleDashboardsService {
     return !extra || hasPermission(org.role, extra.permission);
   }
 
-  async brief(org: OrgContext, user: AuthUser, role: DashboardRole) {
+  async brief(org: OrgContext, user: AuthUser, role: DashboardRole, opts: { departmentId?: string } = {}) {
     const today = todayIso();
     const extra = RoleDashboardsService.EXTRA[role];
     if (extra && !hasPermission(org.role, extra.permission)) throw new ForbiddenException({ error: 'FORBIDDEN', message: `This dashboard needs access to ${extra.what}` });
@@ -175,6 +188,12 @@ export class RoleDashboardsService {
         return { ...head, ai: await this.aiAdmin(org) };
       case 'ANALYST':
         return { ...head, analyst: await this.analyst(org) };
+      case 'FINANCE_DIRECTOR':
+        return { ...head, director: await this.financeDirector(org, today) };
+      case 'DEPARTMENT_MANAGER':
+        return { ...head, department: await this.departmentManager(org, today, opts.departmentId) };
+      case 'EXTERNAL_AUDITOR':
+        return { ...head, externalAudit: await this.externalAuditor(org, user, today) };
     }
   }
 
@@ -679,6 +698,117 @@ export class RoleDashboardsService {
       },
       quarters: revQ.map((q, i) => ({ quarter: q.quarter, months: q.months, revenue: q.value, netIncome: netQ[i]!.value, revenueGrowth: i > 0 ? quarterChange(revQ[i - 1]!.value, q.value) : null })),
       customers: { largestShare: k.customers.largestShare, topFiveShare: k.customers.topFiveShare, band: concentrationBand(k.customers.largestShare), top: k.customers.top.map((c) => ({ name: c.name, revenue: c.revenue, share: c.share })) },
+    };
+  }
+
+  /** Finance director: this year's plan against actual, the accounts furthest off it, department budgets and the closes. */
+  private async financeDirector(org: OrgContext, today: string) {
+    const fiscalYear = fiscalYearForDate(today, org.fiscalYearStartMonth);
+    const [approved, departments, closes] = await Promise.all([
+      this.prisma.budget.findFirst({ where: { orgId: org.id, fiscalYear, status: 'APPROVED' }, orderBy: { version: 'desc' }, select: { id: true, name: true, version: true } }),
+      this.budgets.report(org, fiscalYear, today),
+      this.closes(org, 6),
+    ]);
+    const v = approved ? await this.plans.variance(org.id, approved.id, { granularity: 'QUARTER', asOf: today }) : null;
+    const count = (status: string) => departments.rows.filter((r) => r.status === status).length;
+    return {
+      fiscalYear,
+      plan: v
+        ? {
+            budget: { id: approved!.id, name: approved!.name, version: approved!.version },
+            actualsThrough: v.actualsThrough,
+            periodsStarted: v.periodsStarted,
+            quarters: v.buckets.map((b, i) => ({ key: b.key, label: b.label, started: b.started, inProgress: b.inProgress, revenue: v.revenue.buckets[i]!, expenses: v.expenses.buckets[i]!, netIncome: v.netIncome.buckets[i]! })),
+            yearToDate: { revenue: v.revenue.yearToDate, expenses: v.expenses.yearToDate, netIncome: v.netIncome.yearToDate },
+            fullYear: { revenue: v.revenue.fullYearBudget, expenses: v.expenses.fullYearBudget, netIncome: v.netIncome.fullYearBudget },
+            offPlan: furthestOffPlan(v.rows).map((r) => ({ accountId: r.accountId, code: r.code, name: r.name, type: r.type, budgeted: r.budgeted, yearToDate: r.yearToDate })),
+          }
+        : null,
+      departments: { totals: departments.totals, over: count('OVER'), atRisk: count('AT_RISK'), onTrack: count('ON_TRACK'), noBudget: count('NO_BUDGET'), watch: departments.rows.filter((r) => r.status === 'OVER' || r.status === 'AT_RISK').slice(0, 6).map((r) => ({ departmentId: r.departmentId, name: r.name, budget: r.budget, actual: r.actual, usedPercent: r.usedPercent, status: r.status, reason: r.reason })) },
+      closes,
+      lateCloses: closes.filter((c) => !c.current && c.closeStatus !== 'CLOSED').length,
+    };
+  }
+
+  /** Department manager: one department's budget, spending month by month and by account, and claims waiting. */
+  private async departmentManager(org: OrgContext, today: string, departmentId?: string) {
+    const fiscalYear = fiscalYearForDate(today, org.fiscalYearStartMonth);
+    const [list, report] = await Promise.all([
+      this.prisma.dimensionValue.findMany({ where: { orgId: org.id, type: 'DEPARTMENT' }, orderBy: { code: 'asc' }, select: { id: true, code: true, name: true, isActive: true } }),
+      this.budgets.report(org, fiscalYear, today),
+    ]);
+    const shown = list.filter((d) => d.isActive || report.rows.some((r) => r.departmentId === d.id));
+    if (departmentId && !shown.some((d) => d.id === departmentId)) throw new NotFoundException({ error: 'NOT_FOUND', message: 'Department not found' });
+    const chosen = shown.find((d) => d.id === departmentId) ?? shown.find((d) => report.rows.some((r) => r.departmentId === d.id && (r.budget !== null || !new D(r.actual).isZero()))) ?? shown[0] ?? null;
+    const departments = shown.map((d) => ({ id: d.id, code: d.code, name: d.name }));
+    if (!chosen) return { fiscalYear, departments, department: null };
+    const s = minorUnits(org.functionalCurrency);
+    const { start, end } = fiscalYearDates(fiscalYear, org.fiscalYearStartMonth);
+    const upTo = today < end ? today : end;
+    const expense = await this.prisma.account.findMany({ where: { orgId: org.id, type: 'EXPENSE' }, select: { id: true, code: true, name: true } });
+    const sums = expense.length
+      ? await lineSums(this.store, org.id, { entry: postedBetween(toDbDate(start), toDbDate(upTo), { excludeClosing: true }), line: { accountId: { $in: expense.map((a) => a.id) }, departmentId: chosen.id }, by: { month: { $dateToString: { date: '$date', format: '%Y-%m' } }, accountId: 'lines.accountId' } })
+      : [];
+    const byMonth = new Map<string, InstanceType<typeof D>>();
+    const byAccount = new Map<string, InstanceType<typeof D>>();
+    for (const x of sums) {
+      const amount = x.debit.minus(x.credit);
+      byMonth.set(x.key.month as string, (byMonth.get(x.key.month as string) ?? new D(0)).plus(amount));
+      byAccount.set(x.key.accountId as string, (byAccount.get(x.key.accountId as string) ?? new D(0)).plus(amount));
+    }
+    const months: string[] = [];
+    for (let m = start.slice(0, 7); m <= upTo.slice(0, 7); m = addDays(`${m}-28`, 5).slice(0, 7)) months.push(m);
+    const row = report.rows.find((r) => r.departmentId === chosen.id) ?? null;
+    const perMonth = row?.budget ? new D(row.budget).dividedBy(12) : null; // an even share of the year's budget
+    const spent = [...byAccount.values()].reduce((t, a) => t.plus(a), new D(0));
+    const lines = await this.prisma.expenseClaimLine.findMany({ where: { orgId: org.id, departmentId: chosen.id, claim: { status: 'SUBMITTED' } }, select: { claimId: true, netAmount: true } });
+    const claimIds = [...new Set(lines.map((l) => l.claimId))];
+    const claims = claimIds.length ? await this.prisma.expenseClaim.findMany({ where: { orgId: org.id, id: { in: claimIds } }, orderBy: { submittedAt: 'asc' }, select: { id: true, number: true, title: true, currency: true, submittedAt: true, claimantId: true } }) : [];
+    const people = claims.length ? await this.prisma.user.findMany({ where: { id: { in: [...new Set(claims.map((c) => c.claimantId))] } }, select: { id: true, name: true } }) : [];
+    const nameOf = new Map(people.map((u) => [u.id, u.name]));
+    const forDept = new Map<string, InstanceType<typeof D>>();
+    for (const l of lines) forDept.set(l.claimId, (forDept.get(l.claimId) ?? new D(0)).plus(l.netAmount.toString()));
+    return {
+      fiscalYear,
+      departments,
+      department: {
+        id: chosen.id,
+        code: chosen.code,
+        name: chosen.name,
+        from: start,
+        to: upTo,
+        budget: row ? { amount: row.budget, actual: row.actual, committed: row.committed, remaining: row.remaining, usedPercent: row.usedPercent, expectedByNow: row.expectedByNow, projected: row.projected, status: row.status, reason: row.reason } : null,
+        spent: spent.toFixed(s),
+        months: months.map((m) => ({ month: m, spent: (byMonth.get(m) ?? new D(0)).toFixed(s), budget: perMonth ? perMonth.toFixed(s) : null })),
+        accounts: expense
+          .filter((a) => byAccount.has(a.id) && !byAccount.get(a.id)!.isZero())
+          .map((a) => ({ id: a.id, code: a.code, name: a.name, spent: byAccount.get(a.id)!.toFixed(s), share: sharePercent(byAccount.get(a.id)!.toFixed(), spent.toFixed()) }))
+          .sort((a, b) => new D(b.spent).comparedTo(a.spent) || a.code.localeCompare(b.code)),
+        claims: claims.map((c) => ({ id: c.id, number: c.number, title: c.title, claimant: nameOf.get(c.claimantId) ?? '', currency: c.currency, forDepartment: forDept.get(c.id)!.toFixed(minorUnits(c.currency)), submittedOn: c.submittedAt ? istDate(c.submittedAt) : null })),
+      },
+    };
+  }
+
+  /** External auditor: year-end and trial balance, what auditors were given and asked for, and open findings. */
+  private async externalAuditor(org: OrgContext, user: AuthUser, today: string) {
+    const [ye, engagements, evidence, findings, links] = await Promise.all([this.yearEnd.overview(org), this.engagements.list(user), this.evidence.list(user, {}), this.findings.list(org, user, {}), this.store.collection(auditorPortalLinks).find({}, { sort: { createdAt: -1 } })]);
+    const years = ye.years.slice(0, 3);
+    const lastEnded = years.find((y) => y.ended) ?? null;
+    const tb = lastEnded ? await this.reports.trialBalance(org.id, { asOf: lastEnded.endDate }) : null;
+    const names = new Map(engagements.engagements.map((e) => [e.id, `${e.reference} · ${e.name}`]));
+    const now = new Date();
+    const live = links.filter((l) => !l.revokedAt && l.expiresAt.getTime() > now.getTime());
+    return {
+      asOf: today,
+      years: years.map((y) => ({ fiscalYear: y.fiscalYear, label: y.label, startDate: y.startDate, endDate: y.endDate, ended: y.ended, periods: y.periods, status: y.status, profit: y.profit, accountsLeft: y.accountsLeft })),
+      trialBalance: tb && lastEnded ? { asOf: lastEnded.endDate, label: lastEnded.label, balanced: tb.balanced, debit: tb.totals.debit, credit: tb.totals.credit, accounts: tb.rows.length } : null,
+      openPeriodsInEndedYears: years.filter((y) => y.ended).reduce((n, y) => n + y.periods.open, 0),
+      portal: {
+        active: live.length,
+        links: live.slice(0, 8).map((l) => ({ id: l.id, engagementId: l.engagementId, engagement: names.get(l.engagementId) ?? '', auditorName: l.auditorName, firm: l.firm, expiresAt: l.expiresAt.toISOString(), lastSeenAt: l.lastSeenAt?.toISOString() ?? null, viewCount: l.viewCount, filesOpened: l.filesOpened })),
+      },
+      evidence: { summary: evidence.summary, outstanding: evidence.requests.filter((r) => r.status !== 'ACCEPTED').slice(0, 8).map((r) => ({ id: r.id, reference: r.reference, title: r.title, status: r.status, dueDate: r.dueDate })) },
+      findings: { summary: findings.summary, open: findings.findings.filter((f) => f.status !== 'CLOSED').slice(0, 6).map((f) => ({ id: f.id, reference: f.reference, title: f.title, severity: f.severity, status: f.status, dueDate: f.dueDate, overdue: f.overdue })) },
     };
   }
 }

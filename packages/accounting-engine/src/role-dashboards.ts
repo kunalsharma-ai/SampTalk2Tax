@@ -6,7 +6,7 @@ import { D } from './money';
  * helpers only rank what needs attention, roll months into quarters and band a share so a board
  * can see concentration without names. Pure.
  */
-export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT', 'PAYROLL_MANAGER', 'AI_ADMIN', 'ANALYST'] as const;
+export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT', 'PAYROLL_MANAGER', 'AI_ADMIN', 'ANALYST', 'FINANCE_DIRECTOR', 'DEPARTMENT_MANAGER', 'EXTERNAL_AUDITOR'] as const;
 export type DashboardRole = (typeof DASHBOARD_ROLES)[number];
 
 export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: string }> = {
@@ -26,6 +26,9 @@ export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: st
   PAYROLL_MANAGER: { name: 'Payroll manager', question: 'Is this month\'s payroll run and posted, what does the team cost, and which salaries and statutory dues are still unpaid?' },
   AI_ADMIN: { name: 'AI agent administrator', question: 'Which AI agents are on, how much are they used and what do they cost, how often are their suggestions accepted, and what failed?' },
   ANALYST: { name: 'Financial analyst', question: 'How are the key ratios trending month by month and against last year, which moved most, and where does profit come from?' },
+  FINANCE_DIRECTOR: { name: 'Finance director', question: 'Are we on plan this year, which accounts are furthest off budget, which departments are overspending, and are the months closed?' },
+  DEPARTMENT_MANAGER: { name: 'Department manager', question: 'How much has my department spent against its budget, month by month and on what, and which claims wait for approval?' },
+  EXTERNAL_AUDITOR: { name: 'External auditor', question: 'Is the year closed and the trial balance in balance, what have the auditors been given and asked for, and which findings are open?' },
   EXPENSE_MANAGER: { name: 'Expense manager', question: 'Which claims wait for a decision, which look risky, which lack receipts, and how departments stand against their budgets?' },
 };
 
@@ -160,4 +163,24 @@ export function sharePercent(part: string | null, whole: string | null): string 
   const w = new D(whole);
   if (w.isZero()) return null;
   return new D(part).dividedBy(w).times(100).toDecimalPlaces(1, D.ROUND_HALF_EVEN).toFixed(1);
+}
+
+export interface PlanFigure {
+  budget: string;
+  actual: string | null;
+  variance: string | null;
+  percent: string | null;
+  favourable: boolean | null;
+}
+
+/**
+ * Accounts furthest off plan so far: those with an actual and a variance, worst first (spending
+ * above budget and revenue below it before favourable ones), then by the size of the variance,
+ * then by code.
+ */
+export function furthestOffPlan<T extends { code: string; yearToDate: PlanFigure }>(rows: readonly T[], max = 8): T[] {
+  return rows
+    .filter((r) => r.yearToDate.variance !== null && !new D(r.yearToDate.variance).isZero())
+    .sort((a, b) => Number(a.yearToDate.favourable) - Number(b.yearToDate.favourable) || new D(b.yearToDate.variance!).abs().comparedTo(new D(a.yearToDate.variance!).abs()) || a.code.localeCompare(b.code))
+    .slice(0, max);
 }

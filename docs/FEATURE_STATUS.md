@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 535 |
+| Not started | 532 |
 | Designed | 0 |
 | Implementing | 41 |
 | Implemented | 23 |
-| Tested | 730 |
+| Tested | 733 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 29 | 39 |
+| Dashboard design | M1 | 68 | 26 | 42 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6837,6 +6837,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
   - apps/web/e2e/role-dashboards-flow.test.mjs
 
+### DASH-046 — Finance Director
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Finance director: this fiscal year's approved budget against actual by quarter and year to date (revenue and net income; planned and actual net income as bars and a table, green better than plan, red worse) with the full-year plan; the accounts furthest off plan, worse-than-plan first (engine furthestOffPlan), including spending not in the plan; departments over budget or at risk with counts by status; the last six closes and past months not closed. Says so when no budget is approved yet.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-directors.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-directors-flow.test.mjs
+
 ### DASH-047 — Financial Controller
 
 - Module: Dashboard design
@@ -6977,6 +6991,34 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
   - apps/web/e2e/role-dashboards-books-flow.test.mjs
 
+### DASH-057 — External Auditor
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → External auditor: each fiscal year with its year-end status, open, locked and closed periods and profit; the trial balance at the end of the last year that ended (balanced, debits and credits); open periods in ended years; auditor portal links in use with the audit, when they end and how much they were used (never the token); evidence asked for and not yet accepted; audit findings still open. Needs audit.read.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-directors.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-directors-flow.test.mjs
+
+### DASH-059 — Department Manager
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Department manager: choose a department (kept in the address as ?department=); its spending this fiscal year, budget left, claims waiting and budget status; spending month by month against an even monthly share of the yearly budget (chart and table); spending by expense account with shares; expense claims waiting for approval with lines charged to it and how much of each is for it. Needs expenses.read; an unknown department is 404.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards-directors.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-directors-flow.test.mjs
+
 ### DASH-062 — AI Agent Administrator
 
 - Module: Dashboard design
@@ -7051,7 +7093,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The seventeen role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The other roles in DASH-042..065 do not have dashboards yet.
+- Notes: The twenty role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform and organisation admins, project finance, and the vendor and customer views.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -7066,12 +7108,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/role-dashboards-books-flow.test.mjs
   - apps/api/test/role-dashboards-people.e2e.test.ts
   - apps/web/e2e/role-dashboards-people-flow.test.mjs
+  - apps/api/test/role-dashboards-directors.e2e.test.ts
+  - apps/web/e2e/role-dashboards-directors-flow.test.mjs
 
 ### DASH-068 — Do not simply reuse the same dashboard with different headings
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The seventeen role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The other roles in DASH-042..065 do not have dashboards yet.
+- Notes: The twenty role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform and organisation admins, project finance, and the vendor and customer views.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -7086,6 +7130,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/role-dashboards-books-flow.test.mjs
   - apps/api/test/role-dashboards-people.e2e.test.ts
   - apps/web/e2e/role-dashboards-people-flow.test.mjs
+  - apps/api/test/role-dashboards-directors.e2e.test.ts
+  - apps/web/e2e/role-dashboards-directors-flow.test.mjs
 
 ### WAR-001 — Create an immersive collaborative financial planning environment
 

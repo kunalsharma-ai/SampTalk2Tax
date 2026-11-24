@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agingByDueDate, biggestMovements, sharePercent, cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
+import { agingByDueDate, biggestMovements, furthestOffPlan, sharePercent, cashHeadroom, concentrationBand, quarterChange, quarterlyTotals, rankAttentionItems } from '../src/role-dashboards';
 
 describe('role dashboards', () => {
   it('ranks what needs attention by level, then amount, then title', () => {
@@ -92,5 +92,18 @@ describe('role dashboards', () => {
     expect(sharePercent('1', '3')).toBe('33.3');
     expect(sharePercent('1', '0')).toBeNull();
     expect(sharePercent(null, '10')).toBeNull();
+  });
+
+  it('puts the accounts furthest off plan first, unfavourable before favourable', () => {
+    const f = (variance: string | null, favourable: boolean | null) => ({ budget: '100', actual: variance === null ? null : '1', variance, percent: null, favourable });
+    const r = furthestOffPlan([
+      { code: '4100', yearToDate: f('-50', false) },
+      { code: '6100', yearToDate: f('80', false) },
+      { code: '6200', yearToDate: f('-200', true) },
+      { code: '6300', yearToDate: f('0', true) },
+      { code: '6400', yearToDate: f(null, null) },
+      { code: '6500', yearToDate: f('80', false) },
+    ]);
+    expect(r.map((x) => x.code)).toEqual(['6100', '6500', '4100', '6200']);
   });
 });
