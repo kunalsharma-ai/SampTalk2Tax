@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 554 |
+| Not started | 546 |
 | Designed | 0 |
-| Implementing | 39 |
+| Implementing | 41 |
 | Implemented | 23 |
-| Tested | 713 |
+| Tested | 719 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 48 | 20 |
+| Dashboard design | M1 | 68 | 40 | 28 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6808,6 +6808,118 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Chart animation and CSS transitions are disabled under prefers-reduced-motion.
 - Evidence:
   - apps/web/src
+
+### DASH-044 — CEO
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → CEO: the headline (revenue, net margin, net cash flow, runway for the last complete month against the month before), revenue by month (13 months, chart and table), cash today and in 90 days with the lowest point (cash-flow forecast), the risk monitor's score and focus areas, the few things needing attention (risk findings, customers to call, cash short for bills, late-risk deadlines) and the largest customers with shares.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
+
+### DASH-045 — CFO
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → CFO: margins with 13-month trends and targets, liquidity and leverage, what is owed both ways (open and overdue receivables and payables, to chase, disputed, to pay now, shortfall, early-payment savings), DSO/DPO, and tax expected over the next 3 months by month.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
+
+### DASH-053 — Treasury Manager
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Treasury: cash by cash/bank account, headroom at the lowest expected point above the minimum balance, expected cash by week for 90 days with range and money in/out (chart and table), bills in payment-priority order and invoices customers are expected to pay in the next 30 days.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
+
+### DASH-063 — Financial Risk Officer
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Risk officer: overall risk score with its daily trend, risk by area (scores and findings, linking to each area), concentration of customers, vendors, cash accounts and lenders (largest share, HHI, level), single dependencies by severity and the most serious finding per area.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
+
+### DASH-064 — Compliance Officer
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Compliance: counts of overdue, due in 7 days and high/medium late-risk filings and payments, the next deadline, every deadline open over 60 days with risk and reasons (deadline predictions), and tax due over the next 3 months by month.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
+
+### DASH-066 — Investor / Board Viewer
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Role dashboards → Board and investors: revenue, gross profit, net income and closing cash by calendar quarter of the last 12 months with revenue growth (chart and table), financial position KPIs and customer concentration as a band and shares only; the API and page never name customers, vendors or people (checked in API and browser tests).
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
+
+### DASH-067 — Each dashboard must have a unique role-appropriate layout
+
+- Module: Dashboard design
+- Status: **Implementing**
+- Notes: The six role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser test checks each role's own sections. The other roles in DASH-042..065 do not have dashboards yet.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
+
+### DASH-068 — Do not simply reuse the same dashboard with different headings
+
+- Module: Dashboard design
+- Status: **Implementing**
+- Notes: The six role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser test checks each role's own sections. The other roles in DASH-042..065 do not have dashboards yet.
+- Evidence:
+  - packages/accounting-engine/src/role-dashboards.ts
+  - packages/accounting-engine/test/role-dashboards.test.ts
+  - apps/api/src/financial-visuals/role-dashboards.service.ts
+  - apps/api/test/role-dashboards.e2e.test.ts
+  - apps/web/src/components/reports/role-dashboards.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx
+  - apps/web/e2e/role-dashboards-flow.test.mjs
 
 ### WAR-001 — Create an immersive collaborative financial planning environment
 
