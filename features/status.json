@@ -10170,6 +10170,33 @@
         "apps/web/e2e/report-studio-flow.test.mjs"
       ],
       "notes": "Reports → Reporting studio (/reports, GET /reports/studio, reports.read): every report in one catalogue grouped by purpose (statements, ledgers, management, dashboards, tax, payroll and expenses, audit, stakeholders, build your own) with the question it answers, its exports (PDF, Excel, CSV), saved views visible to the member and active schedules; reports the member's role cannot open are listed but closed. Word search across name, question and category. Pins per person (report_favourites, PUT/DELETE /reports/studio/favourites/:report). Totals, the latest exports from the audit trail (report, format, who, when) and the designs built in the report designer. Builds on RPT-002..041."
+    },
+    "TAX-039": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/invoice-rules.ts",
+        "packages/tax-engine/test/invoice-rules.test.ts",
+        "apps/api/src/invoice-requirements/invoice-requirements.service.ts",
+        "apps/api/test/invoice-requirements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/invoice-requirements/page.tsx",
+        "apps/web/e2e/invoice-requirements-flow.test.mjs",
+        "docs/INVOICE_REQUIREMENTS.md",
+        "packages/accounting-engine/src/invoice-templates.ts"
+      ],
+      "notes": "Invoice content rules for India, the UK, Germany, the UAE, Singapore, Australia and Canada with simplified and stepped tiers, each sourced and dated; every sales invoice and credit note is checked for missing details with the fix; invoices print the seller's VAT number and the tax in the books' currency for foreign-currency invoices. Other countries are reported as not covered."
+    },
+    "TAX-040": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/invoice-rules.ts",
+        "packages/tax-engine/test/invoice-rules.test.ts",
+        "apps/api/src/invoice-requirements/invoice-requirements.service.ts",
+        "apps/api/test/invoice-requirements.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/invoice-requirements/page.tsx",
+        "apps/web/e2e/invoice-requirements-flow.test.mjs",
+        "docs/INVOICE_REQUIREMENTS.md"
+      ],
+      "notes": "E-invoicing requirements for India (IRN), Germany (receive 2025, issue 2027/2028), the UAE (2026 pilot, 2027 phases), Singapore (InvoiceNow), the UK (announced April 2029), Australia and Canada (not required), with turnover thresholds tested against completed years in the books or a typed figure. Nothing is sent to any network."
     }
   }
 }

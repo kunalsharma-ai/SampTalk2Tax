@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 526 |
+| Not started | 524 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 741 |
+| Tested | 743 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 8 | 46 |
+| Global taxation engine | M3 | 54 | 6 | 48 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 2 | 25 |
@@ -2908,6 +2908,35 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/tax-engine/src/india/withholding.ts
   - packages/accounting-engine/src/documents.ts
+
+### TAX-039 — Country-specific invoice formats
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Invoice content rules for India, the UK, Germany, the UAE, Singapore, Australia and Canada with simplified and stepped tiers, each sourced and dated; every sales invoice and credit note is checked for missing details with the fix; invoices print the seller's VAT number and the tax in the books' currency for foreign-currency invoices. Other countries are reported as not covered.
+- Evidence:
+  - packages/tax-engine/src/invoice-rules.ts
+  - packages/tax-engine/test/invoice-rules.test.ts
+  - apps/api/src/invoice-requirements/invoice-requirements.service.ts
+  - apps/api/test/invoice-requirements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/invoice-requirements/page.tsx
+  - apps/web/e2e/invoice-requirements-flow.test.mjs
+  - docs/INVOICE_REQUIREMENTS.md
+  - packages/accounting-engine/src/invoice-templates.ts
+
+### TAX-040 — Electronic invoicing requirements
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: E-invoicing requirements for India (IRN), Germany (receive 2025, issue 2027/2028), the UAE (2026 pilot, 2027 phases), Singapore (InvoiceNow), the UK (announced April 2029), Australia and Canada (not required), with turnover thresholds tested against completed years in the books or a typed figure. Nothing is sent to any network.
+- Evidence:
+  - packages/tax-engine/src/invoice-rules.ts
+  - packages/tax-engine/test/invoice-rules.test.ts
+  - apps/api/src/invoice-requirements/invoice-requirements.service.ts
+  - apps/api/test/invoice-requirements.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/invoice-requirements/page.tsx
+  - apps/web/e2e/invoice-requirements-flow.test.mjs
+  - docs/INVOICE_REQUIREMENTS.md
 
 ### TAX-041 — Implement supported jurisdictions incrementally
 

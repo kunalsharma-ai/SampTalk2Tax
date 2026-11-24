@@ -179,6 +179,7 @@ export const hi: Record<string, string> = {
   'Compliance documents': 'अनुपालन दस्तावेज़',
   'GST returns': 'GST रिटर्न',
   'E-invoices': 'ई-इनवॉइस',
+  'Invoice requirements': 'इनवॉइस आवश्यकताएँ',
   'E-way bills': 'ई-वे बिल',
   'TDS and TCS': 'TDS और TCS',
   'GST settings': 'GST सेटिंग',

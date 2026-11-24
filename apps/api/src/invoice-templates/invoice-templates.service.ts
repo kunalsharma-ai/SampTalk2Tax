@@ -28,6 +28,9 @@ import { AuditService } from '../audit/audit.service';
 import { fromDbDate } from '../common/dates';
 import { DomainError } from '../common/errors';
 import { DOCUMENTS } from '../db/collections/sales';
+import { vatSettings } from '../db/collections/vat-returns';
+import { DocumentStoreService } from '../common/document-store.service';
+import { runInOrg } from '../common/tenant-context';
 import { MovedTables } from '../db/moved-table';
 import { PrismaService, Tx } from '../common/prisma.service';
 import { lockRow } from '../db/locks';
@@ -75,6 +78,7 @@ export class InvoiceTemplatesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly moved: MovedTables,
+    private readonly store: DocumentStoreService,
   ) {}
 
   private invalid(message: string, details?: unknown): never {
@@ -388,12 +392,14 @@ export class InvoiceTemplatesService {
   async printData(org: TemplateOrg, documentId: string, templateId?: string | null) {
     const d = await this.salesDocument(this.prisma, org, documentId);
     const [o, gst, templates] = await Promise.all([
-      this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true, legalName: true, countryCode: true } }),
+      this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { name: true, legalName: true, countryCode: true, functionalCurrency: true } }),
       this.prisma.gstRegistration.findUnique({ where: { orgId: org.id } }),
       this.prisma.invoiceTemplate.findMany({ where: { orgId: org.id, archivedAt: null }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }], select: { id: true, name: true, isDefault: true, engine: true } }),
     ]);
     const template = await this.resolveTemplate(org.id, o.countryCode, templateId, d.templateId);
     const signature = await this.signatureState(org.id, d);
+    // Outside India the seller's number is the VAT or GST number on the return settings (TAX-039).
+    const vrn = gst ? null : ((await runInOrg(org.id, () => this.store.collection(vatSettings).findOne({})))?.vrn ?? null);
     const scale = minorUnits(d.currency);
     const paid = (d.kind === 'INVOICE' ? d.allocationsIn : d.allocationsOut).reduce((s, a) => s.plus(a.amount), new Prisma.Decimal(0));
     const ein = d.eInvoices[0];
@@ -409,7 +415,7 @@ export class InvoiceTemplatesService {
       currency: d.currency,
       placeOfSupply: d.placeOfSupply,
       reverseCharge: d.reverseCharge,
-      seller: { name: o.name, legalName: gst?.legalName ?? o.legalName, taxId: gst?.gstin ?? null },
+      seller: { name: o.name, legalName: gst?.legalName ?? o.legalName, taxId: gst?.gstin ?? vrn },
       buyer: {
         name: d.contact.name,
         taxId: d.counterpartyGstin ?? d.contact.gstin ?? d.contact.taxId,
@@ -442,6 +448,7 @@ export class InvoiceTemplatesService {
         ? { imageDataUrl: signature.current.imageDataUrl, signerName: signature.current.signerName, designation: signature.current.designation, signedAt: signature.current.signedAt, contentHash: signature.current.contentHash }
         : null,
       logoDataUrl: template.logoDataUrl,
+      localTax: d.currency !== o.functionalCurrency ? { currency: o.functionalCurrency, exchangeRate: d.exchangeRate.toFixed(), taxTotal: d.taxTotal.times(d.exchangeRate).toFixed(minorUnits(o.functionalCurrency)) } : null,
     };
     return {
       document: { id: d.id, kind: d.debitNoteForId ? ('DEBIT_NOTE' as const) : d.kind, status: d.status, number: d.number, templateId: d.templateId, contactName: d.contact.name },
