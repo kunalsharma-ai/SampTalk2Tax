@@ -44,7 +44,8 @@ import { DepartmentPerformanceService } from './financial-visuals/department-per
 import { FinancialDependenciesService } from './financial-visuals/financial-dependencies.service';
 import { FinancialTimelineService } from './financial-visuals/financial-timeline.service';
 import { RiskMonitorService } from './financial-visuals/risk-monitor.service';
-import { DepartmentPerformanceController, FinancialDependenciesController, FinancialTimelineController, FinancialVisualsController, RiskMonitorController } from './financial-visuals/financial-visuals.controller';
+import { DepartmentPerformanceController, FinancialDependenciesController, FinancialTimelineController, FinancialVisualsController, RiskMonitorController, RoleDashboardsController } from './financial-visuals/financial-visuals.controller';
+import { RoleDashboardsService } from './financial-visuals/role-dashboards.service';
 import { FinancialVisualsService } from './financial-visuals/financial-visuals.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
 import { AccountReconciliationsService } from './account-reconciliations/account-reconciliations.service';
@@ -485,6 +486,7 @@ export class AppModule {
         DepartmentPerformanceController,
         FinancialTimelineController,
         FinancialDependenciesController,
+        RoleDashboardsController,
         RiskMonitorController,
         BankFeedsController,
         BankFeedDeliveryController,
@@ -678,6 +680,7 @@ export class AppModule {
         DepartmentPerformanceService,
         FinancialTimelineService,
         FinancialDependenciesService,
+        RoleDashboardsService,
         RiskMonitorService,
         DocumentsService,
         BankingService,

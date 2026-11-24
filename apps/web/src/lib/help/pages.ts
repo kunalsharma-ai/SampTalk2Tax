@@ -904,6 +904,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose the months (up to 24) and the groups to show. Wider lines are larger shares; red and orange lines are critical and high dependencies. Choose a party in the network, the list or a table to see its share and open the customer, vendor or ledger, or explore its connections.',
     where: 'Reports. Needs reports.read. Revenue comes from posted invoices less credit notes, spending from posted bills less vendor credits (before tax), cash and borrowing from account balances. The concentration index is the Herfindahl–Hirschman index of the shares: under 1,500 spread out, above 2,500 highly concentrated. Nothing is changed and no AI model is used.',
   },
+  'reports/role-dashboards': {
+    what: 'A dashboard for each role that reads the books, each laid out for its own questions: the CEO (headline, revenue, cash, risk, biggest customers), the CFO (margins, liquidity, what is owed both ways, tax going out), treasury (cash by account, the next 90 days, bills to pay and money coming in), the risk officer (scores by area and concentration), compliance (deadlines and tax due) and the board or investors (quarters and position, with no customer or vendor named).',
+    how: 'Choose a role at the top; the choice stays in the address so it can be bookmarked or shared. Each figure links to the page it comes from, where you can act on it. KPIs are for the last complete month, as on the KPIs page.',
+    where: 'Reports. Needs reports.read. It reads the same figures as KPIs, the cash-flow forecast, payment and collection priorities, the risk monitor, financial dependencies, deadline risk and the tax forecast; nothing is stored and no AI model is used.',
+  },
   'reports/visuals': {
     what: 'The profit and loss of the months you choose, drawn four ways: a waterfall from revenue down to net profit, a Sankey of where income came from and where it went, a heatmap of the largest expense accounts month by month, and a treemap of what spending is made of.',
     how: 'Choose the months (up to 24). Choose a waterfall bar, a Sankey group or a spending group to list the accounts behind it; choose an account, a heatmap cell or a treemap block to open its general ledger for the same months.',

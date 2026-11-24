@@ -1,4 +1,5 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { DASHBOARD_ROLES, ROLE_DASHBOARDS, type DashboardRole } from '@talk2tax/accounting-engine';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { CurrentOrg, OrgContext, RequirePermission } from '../auth/decorators';
@@ -8,6 +9,7 @@ import { FinancialDependenciesService } from './financial-dependencies.service';
 import { FinancialTimelineService } from './financial-timeline.service';
 import { FinancialVisualsService } from './financial-visuals.service';
 import { RiskMonitorService } from './risk-monitor.service';
+import { RoleDashboardsService } from './role-dashboards.service';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM');
 const Period = z.object({ from: month.optional(), to: month.optional() }).strict();
@@ -82,5 +84,28 @@ export class FinancialDependenciesController {
   @RequirePermission('reports.read')
   dependencies(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
     return this.s.dependencies(org, q);
+  }
+}
+
+const RoleParam = z.enum(DASHBOARD_ROLES);
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/role-dashboards')
+export class RoleDashboardsController {
+  constructor(private readonly s: RoleDashboardsService) {}
+
+  /** The dashboards there are, one per role, and the question each answers. */
+  @Get()
+  @RequirePermission('reports.read')
+  list() {
+    return { roles: DASHBOARD_ROLES.map((role) => ({ role, ...ROLE_DASHBOARDS[role] })) };
+  }
+
+  /** One role's dashboard: CEO, CFO, TREASURY, RISK, COMPLIANCE or BOARD, each with its own figures and layout. */
+  @Get(':role')
+  @RequirePermission('reports.read')
+  brief(@CurrentOrg() org: OrgContext, @Param('role', new ZodPipe(RoleParam)) role: DashboardRole) {
+    return this.s.brief(org, role);
   }
 }

@@ -9771,6 +9771,110 @@
         "apps/web/e2e/financial-dependencies-flow.test.mjs"
       ],
       "notes": "Reports → Financial dependencies: an interactive network of the business and the parties its money depends on: customers (revenue from posted invoices less credit notes), vendors (posted bills less vendor credits, before tax), cash and bank accounts and loan/card accounts (balances at the end of the range); shares, Herfindahl–Hirschman concentration per group, dependencies to watch by thresholds (and borrowing above cash), keyboard-operable nodes with details, links to the customer/vendor/ledger and the relationship explorer, group toggles and tables."
+    },
+    "DASH-044": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "Reports → Role dashboards → CEO: the headline (revenue, net margin, net cash flow, runway for the last complete month against the month before), revenue by month (13 months, chart and table), cash today and in 90 days with the lowest point (cash-flow forecast), the risk monitor's score and focus areas, the few things needing attention (risk findings, customers to call, cash short for bills, late-risk deadlines) and the largest customers with shares."
+    },
+    "DASH-045": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "Reports → Role dashboards → CFO: margins with 13-month trends and targets, liquidity and leverage, what is owed both ways (open and overdue receivables and payables, to chase, disputed, to pay now, shortfall, early-payment savings), DSO/DPO, and tax expected over the next 3 months by month."
+    },
+    "DASH-053": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "Reports → Role dashboards → Treasury: cash by cash/bank account, headroom at the lowest expected point above the minimum balance, expected cash by week for 90 days with range and money in/out (chart and table), bills in payment-priority order and invoices customers are expected to pay in the next 30 days."
+    },
+    "DASH-063": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "Reports → Role dashboards → Risk officer: overall risk score with its daily trend, risk by area (scores and findings, linking to each area), concentration of customers, vendors, cash accounts and lenders (largest share, HHI, level), single dependencies by severity and the most serious finding per area."
+    },
+    "DASH-064": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "Reports → Role dashboards → Compliance: counts of overdue, due in 7 days and high/medium late-risk filings and payments, the next deadline, every deadline open over 60 days with risk and reasons (deadline predictions), and tax due over the next 3 months by month."
+    },
+    "DASH-066": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "Reports → Role dashboards → Board and investors: revenue, gross profit, net income and closing cash by calendar quarter of the last 12 months with revenue growth (chart and table), financial position KPIs and customer concentration as a band and shares only; the API and page never name customers, vendors or people (checked in API and browser tests)."
+    },
+    "DASH-067": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "The six role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser test checks each role's own sections. The other roles in DASH-042..065 do not have dashboards yet."
+    },
+    "DASH-068": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/role-dashboards.ts",
+        "packages/accounting-engine/test/role-dashboards.test.ts",
+        "apps/api/src/financial-visuals/role-dashboards.service.ts",
+        "apps/api/test/role-dashboards.e2e.test.ts",
+        "apps/web/src/components/reports/role-dashboards.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/role-dashboards/page.tsx",
+        "apps/web/e2e/role-dashboards-flow.test.mjs"
+      ],
+      "notes": "The six role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser test checks each role's own sections. The other roles in DASH-042..065 do not have dashboards yet."
     }
   }
 }

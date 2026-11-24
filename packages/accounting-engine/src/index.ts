@@ -162,3 +162,4 @@ export * from './department-performance';
 export * from './financial-timeline';
 export * from './risk-monitor';
 export * from './financial-dependencies';
+export * from './role-dashboards';

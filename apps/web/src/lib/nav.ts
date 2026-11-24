@@ -130,6 +130,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Reports',
     items: [
       { href: '/reports/dashboards', label: 'Dashboards' },
+      { href: '/reports/role-dashboards', label: 'Role dashboards' },
       { href: '/reports/trial-balance', label: 'Trial balance' },
       { href: '/reports/income-statement', label: 'Profit and loss' },
       { href: '/reports/visuals', label: 'Financial visuals' },

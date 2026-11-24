@@ -978,8 +978,8 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Implemented |
 | DASH-042 | Required Dashboards | capability | Global Super Admin | Not started |
 | DASH-043 | Required Dashboards | capability | Tenant Organization Admin | Not started |
-| DASH-044 | Required Dashboards | capability | CEO | Not started |
-| DASH-045 | Required Dashboards | capability | CFO | Not started |
+| DASH-044 | Required Dashboards | capability | CEO | Tested |
+| DASH-045 | Required Dashboards | capability | CFO | Tested |
 | DASH-046 | Required Dashboards | capability | Finance Director | Not started |
 | DASH-047 | Required Dashboards | capability | Financial Controller | Not started |
 | DASH-048 | Required Dashboards | capability | Accountant | Not started |
@@ -987,7 +987,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-050 | Required Dashboards | capability | Accounts Receivable Manager | Not started |
 | DASH-051 | Required Dashboards | capability | Tax Manager | Not started |
 | DASH-052 | Required Dashboards | capability | Payroll Manager | Not started |
-| DASH-053 | Required Dashboards | capability | Treasury Manager | Not started |
+| DASH-053 | Required Dashboards | capability | Treasury Manager | Tested |
 | DASH-054 | Required Dashboards | capability | Procurement Manager | Not started |
 | DASH-055 | Required Dashboards | capability | Expense Manager | Not started |
 | DASH-056 | Required Dashboards | capability | Internal Auditor | Not started |
@@ -997,12 +997,12 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-060 | Required Dashboards | capability | Vendor | Not started |
 | DASH-061 | Required Dashboards | capability | Customer | Not started |
 | DASH-062 | Required Dashboards | capability | AI Agent Administrator | Not started |
-| DASH-063 | Required Dashboards | capability | Financial Risk Officer | Not started |
-| DASH-064 | Required Dashboards | capability | Compliance Officer | Not started |
+| DASH-063 | Required Dashboards | capability | Financial Risk Officer | Tested |
+| DASH-064 | Required Dashboards | capability | Compliance Officer | Tested |
 | DASH-065 | Required Dashboards | capability | Financial Analyst | Not started |
-| DASH-066 | Required Dashboards | capability | Investor / Board Viewer | Not started |
-| DASH-067 | Required Dashboards | rule | Each dashboard must have a unique role-appropriate layout | Not started |
-| DASH-068 | Required Dashboards | rule | Do not simply reuse the same dashboard with different headings | Not started |
+| DASH-066 | Required Dashboards | capability | Investor / Board Viewer | Tested |
+| DASH-067 | Required Dashboards | rule | Each dashboard must have a unique role-appropriate layout | Implementing |
+| DASH-068 | Required Dashboards | rule | Do not simply reuse the same dashboard with different headings | Implementing |
 
 ## Executive financial command center
 
