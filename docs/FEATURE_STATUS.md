@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 520 |
+| Not started | 519 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 747 |
+| Tested | 748 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 2 | 52 |
+| Global taxation engine | M3 | 54 | 1 | 53 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 2 | 25 |
@@ -3048,6 +3048,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/gst-reconciliation/page.tsx
   - apps/web/e2e/gst-reconciliation-flow.test.mjs
   - docs/GST_RECONCILIATION.md
+
+### TAX-046 — Regulatory change monitoring
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Known law changes per country with effective dates, impact, what Talk2Tax does and the source; open until recorded as dealt with (audited, final). Built-in rule sets with last-checked dates, stale after 180 days. Scheduled tax rate changes. No live monitoring of government sites; list hand-written and needs adviser review.
+- Evidence:
+  - packages/tax-engine/src/regulatory-changes.ts
+  - packages/tax-engine/test/regulatory-changes.test.ts
+  - apps/api/src/regulatory-changes/regulatory-changes.service.ts
+  - apps/api/test/regulatory-changes.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/regulatory-changes/page.tsx
+  - apps/web/e2e/regulatory-changes-flow.test.mjs
+  - docs/REGULATORY_CHANGES.md
 
 ### TAX-047 — Compliance deadline predictions
 

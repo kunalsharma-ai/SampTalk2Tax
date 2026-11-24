@@ -7643,9 +7643,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/regulatory-changes.ts",
+        "packages/tax-engine/test/regulatory-changes.test.ts",
+        "apps/api/src/regulatory-changes/regulatory-changes.service.ts",
+        "apps/api/test/regulatory-changes.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/regulatory-changes/page.tsx",
+        "apps/web/e2e/regulatory-changes-flow.test.mjs",
+        "docs/REGULATORY_CHANGES.md"
+      ],
+      "notes": "Known law changes per country with effective dates, impact, what Talk2Tax does and the source; open until recorded as dealt with (audited, final). Built-in rule sets with last-checked dates, stale after 180 days. Scheduled tax rate changes. No live monitoring of government sites; list hand-written and needs adviser review."
     },
     {
       "id": "TAX-047",
