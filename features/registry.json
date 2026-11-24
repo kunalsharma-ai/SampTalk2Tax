@@ -7070,9 +7070,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/us/information-returns.ts",
+        "packages/tax-engine/test/us-information-returns.test.ts",
+        "apps/api/src/us-sales-tax/us-reporting.service.ts",
+        "apps/api/test/us-reporting.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/us-reporting/page.tsx",
+        "apps/web/e2e/us-reporting-flow.test.mjs",
+        "docs/US_REPORTING.md"
+      ],
+      "notes": "Federal: 1099-NEC and 1099-MISC due for a calendar year's vendor payments from W-9 details (last four TIN digits only), with a reason for every vendor, due dates and CSV export. State: the sales tax returns each permit calls for in the year with tax charged per period. Rules written from memory need US tax adviser review; nothing is filed."
     },
     {
       "id": "TAX-030",

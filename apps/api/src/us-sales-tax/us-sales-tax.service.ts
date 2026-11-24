@@ -31,12 +31,12 @@ export class UsSalesTaxService {
     private readonly audit: AuditService,
   ) {}
 
-  private async requireUs(org: OrgContext) {
+  async requireUs(org: OrgContext) {
     const o = await this.prisma.organization.findUniqueOrThrow({ where: { id: org.id }, select: { countryCode: true } });
     if (o.countryCode !== 'US') throw new DomainError('NOT_US', 'US sales tax is for organisations in the United States', HttpStatus.UNPROCESSABLE_ENTITY);
   }
 
-  private async sales(org: OrgContext, from: string, to: string) {
+  async sales(org: OrgContext, from: string, to: string) {
     const docs = await this.prisma.document.findMany({
       where: { orgId: org.id, kind: { in: ['INVOICE', 'CREDIT_NOTE'] }, status: 'POSTED', issueDate: { gte: toDbDate(from), lte: toDbDate(to) } },
       select: {
@@ -80,7 +80,7 @@ export class UsSalesTaxService {
     return [...m.entries()].map(([state, r]) => ({ state, sales: r.sales.toFixed(2), transactions: r.transactions }));
   }
 
-  private async registrations() {
+  async registrations() {
     return (await this.store.collection(usSalesTaxRegistrations).find({})).sort((a, b) => a.state.localeCompare(b.state));
   }
 

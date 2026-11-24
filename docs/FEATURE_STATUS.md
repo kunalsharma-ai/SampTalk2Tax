@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 522 |
+| Not started | 521 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 745 |
+| Tested | 746 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 4 | 50 |
+| Global taxation engine | M3 | 54 | 3 | 51 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 2 | 25 |
@@ -2815,6 +2815,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/tax/us-sales-tax/page.tsx
   - apps/web/e2e/us-sales-tax-flow.test.mjs
   - docs/US_SALES_TAX.md
+
+### TAX-029 — US federal and state tax-related reporting
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Federal: 1099-NEC and 1099-MISC due for a calendar year's vendor payments from W-9 details (last four TIN digits only), with a reason for every vendor, due dates and CSV export. State: the sales tax returns each permit calls for in the year with tax charged per period. Rules written from memory need US tax adviser review; nothing is filed.
+- Evidence:
+  - packages/tax-engine/src/us/information-returns.ts
+  - packages/tax-engine/test/us-information-returns.test.ts
+  - apps/api/src/us-sales-tax/us-reporting.service.ts
+  - apps/api/test/us-reporting.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/us-reporting/page.tsx
+  - apps/web/e2e/us-reporting-flow.test.mjs
+  - docs/US_REPORTING.md
 
 ### TAX-030 — UK VAT
 

@@ -10223,6 +10223,19 @@
         "docs/US_SALES_TAX.md"
       ],
       "notes": "State permits with the rate charged, economic nexus by state against each state's threshold (this year and last), sales tax by state for a filing period and sales to check (untaxed in a registered state, taxed in an unregistered one, rate differs, no state). Customers carry their state. Local rates, use tax, exemption certificates and filing are not modelled; thresholds need adviser review."
+    },
+    "TAX-029": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/us/information-returns.ts",
+        "packages/tax-engine/test/us-information-returns.test.ts",
+        "apps/api/src/us-sales-tax/us-reporting.service.ts",
+        "apps/api/test/us-reporting.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/us-reporting/page.tsx",
+        "apps/web/e2e/us-reporting-flow.test.mjs",
+        "docs/US_REPORTING.md"
+      ],
+      "notes": "Federal: 1099-NEC and 1099-MISC due for a calendar year's vendor payments from W-9 details (last four TIN digits only), with a reason for every vendor, due dates and CSV export. State: the sales tax returns each permit calls for in the year with tax charged per period. Rules written from memory need US tax adviser review; nothing is filed."
     }
   }
 }

@@ -879,6 +879,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: "Set the state on each customer. Add a tax rate for the combined rate you charge in each state, then record the permit and link the rate. Register in any state marked over the threshold, and check the flagged sales before you file.",
     where: 'Tax, for organisations in the United States. Needs the reports permission; recording permits needs accounts.manage. Local rates, sourcing rules, use tax and exemption certificates are not modelled, and nothing is filed with any state. Thresholds need review by a US sales tax adviser.',
   },
+  'tax/us-reporting': {
+    what: 'US federal and state tax reporting: the 1099-NEC and 1099-MISC forms due for what you paid vendors in a calendar year, from your vendor payments and their W-9s, and the sales tax returns your state permits call for with the tax charged in each period.',
+    how: 'Record the W-9 for each vendor you pay for services or rent, get one from every vendor marked as needing it, then export the 1099 CSV for your filing software. Use the state table for each sales tax return.',
+    where: 'Tax, for organisations in the United States. Needs the reports permission; recording W-9 details needs accounts.manage. Only the last four digits of a taxpayer number are kept. Backup withholding, Form 1042-S, state 1099 filing and state due dates are not modelled, and nothing is filed with the IRS or any state. The rules need review by a US tax adviser.',
+  },
   'tax/cross-border': {
     what: "Cross-border tax reporting: posted invoices, credit notes, bills and vendor credits with contacts in other countries, grouped by the contact's country, with the tax charged and the reverse charge recorded. EU businesses also see their intra-EU supplies by customer VAT ID for the recapitulative statement, and every business sees the documents whose treatment usually needs a second look.",
     how: 'Choose the period (the financial year to date by default). Set the country on contacts that have none, add missing VAT IDs, and check each flagged document with your adviser. Download the CSV to share it.',
