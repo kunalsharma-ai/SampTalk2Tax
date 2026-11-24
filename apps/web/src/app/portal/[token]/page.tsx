@@ -4,6 +4,7 @@ import { Badge, Card, Input, Select, Table, Td, Th, Tr } from '@talk2tax/ui';
 import { useParams } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { Money } from '@/components/money';
+import { PortalDashboard, type PortalDashboardData } from '@/components/portal/portal-dashboard';
 import { date } from '@/lib/format';
 
 /**
@@ -17,6 +18,7 @@ interface Portal {
   customer: { name: string; gstin: string | null };
   link: { expiresAt: string | null };
   today: string;
+  dashboard: PortalDashboardData;
   balances: { currency: string; owed: string; overdue: string; credits: string; balance: string }[];
   invoices: { id: string; kind: 'INVOICE' | 'CREDIT_NOTE'; number: string; reference: string | null; issueDate: string; dueDate: string | null; currency: string; total: string; open: string; state: State; daysOverdue: number; payLink: { reference: string; url: string; expiresAt: string | null } | null }[];
   receipts: { id: string; number: string; date: string; amount: string; currency: string; status: string; reference: string | null }[];
@@ -86,6 +88,8 @@ export default function CustomerPortalPage() {
           <BalanceCards key={b.currency} b={b} multi={p.balances.length > 1} />
         ))}
       </section>
+
+      <PortalDashboard d={p.dashboard} side="CUSTOMER" />
 
       <Card className="mt-6" role="region" aria-label="Your invoices">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">

@@ -24342,9 +24342,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/portal-dashboard.ts",
+        "packages/accounting-engine/test/portal-dashboard.test.ts",
+        "apps/api/src/ledgers/portal-dashboard.ts",
+        "apps/api/src/vendor-portal/vendor-portal.service.ts",
+        "apps/api/src/customer-portal/customer-portal.service.ts",
+        "apps/api/test/portal-dashboards.e2e.test.ts",
+        "apps/web/src/components/portal/portal-dashboard.tsx",
+        "apps/web/e2e/portal-dashboards-flow.test.mjs",
+        "apps/web/src/app/vendor-portal/[token]/page.tsx"
+      ],
+      "notes": "The vendor portal (private link, no sign-in) opens with a dashboard: what the vendor is owed by how late it is (not yet due, 1-30, 31-60, 61-90, over 90 days) as a chart and table, the next payment due to them and what falls due within 30 days, and the last twelve months of bills (less vendor credits) and payments made to them by month, as a chart and table. Only that vendor's posted bills and payments; no bank account numbers or tokens."
     },
     {
       "id": "DASH-061",
@@ -24367,9 +24377,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/portal-dashboard.ts",
+        "packages/accounting-engine/test/portal-dashboard.test.ts",
+        "apps/api/src/ledgers/portal-dashboard.ts",
+        "apps/api/src/vendor-portal/vendor-portal.service.ts",
+        "apps/api/src/customer-portal/customer-portal.service.ts",
+        "apps/api/test/portal-dashboards.e2e.test.ts",
+        "apps/web/src/components/portal/portal-dashboard.tsx",
+        "apps/web/e2e/portal-dashboards-flow.test.mjs",
+        "apps/web/src/app/portal/[token]/page.tsx"
+      ],
+      "notes": "The customer portal (private link, no sign-in) opens with a dashboard: what the customer owes by how late it is as a chart and table, the next payment due and what falls due within 30 days, and the last twelve months of invoices (less credit notes) and their payments by month, as a chart and table. Only that customer's posted invoices and receipts. In the currency with the most open, else the business's own."
     },
     {
       "id": "DASH-062",
@@ -24557,7 +24577,7 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/src/financial-visuals/role-dashboards.service.ts",
         "apps/api/test/role-dashboards-managers.e2e.test.ts",
@@ -24577,9 +24597,11 @@
         "apps/api/test/role-dashboards-admin.e2e.test.ts",
         "apps/web/e2e/role-dashboards-admin-flow.test.mjs",
         "apps/api/test/platform-dashboard.e2e.test.ts",
-        "apps/web/e2e/platform-dashboard-flow.test.mjs"
+        "apps/web/e2e/platform-dashboard-flow.test.mjs",
+        "apps/api/test/portal-dashboards.e2e.test.ts",
+        "apps/web/e2e/portal-dashboards-flow.test.mjs"
       ],
-      "notes": "The twenty-two role dashboards and the global super admin dashboard built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The global super admin dashboard is the platform overview (DASH-042). Still to build in DASH-042..065: the vendor and customer views."
+      "notes": "Every required dashboard is built and tested, each with its own sections, figures and layout from its own sources rather than one dashboard re-titled: twenty-two role dashboards under Reports → Role dashboards (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin), the global super admin dashboard on the platform overview (DASH-042), and the vendor and customer dashboards in their portals (DASH-060/061). The API returns a different shape per role and the browser tests check each one's own sections; tabs a member's role cannot open are shown disabled."
     },
     {
       "id": "DASH-068",
@@ -24602,7 +24624,7 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Automated test proving the rule is enforced (positive and negative case)."
       },
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
         "apps/api/src/financial-visuals/role-dashboards.service.ts",
         "apps/api/test/role-dashboards-managers.e2e.test.ts",
@@ -24622,9 +24644,11 @@
         "apps/api/test/role-dashboards-admin.e2e.test.ts",
         "apps/web/e2e/role-dashboards-admin-flow.test.mjs",
         "apps/api/test/platform-dashboard.e2e.test.ts",
-        "apps/web/e2e/platform-dashboard-flow.test.mjs"
+        "apps/web/e2e/platform-dashboard-flow.test.mjs",
+        "apps/api/test/portal-dashboards.e2e.test.ts",
+        "apps/web/e2e/portal-dashboards-flow.test.mjs"
       ],
-      "notes": "The twenty-two role dashboards and the global super admin dashboard built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The global super admin dashboard is the platform overview (DASH-042). Still to build in DASH-042..065: the vendor and customer views."
+      "notes": "Every required dashboard is built and tested, each with its own sections, figures and layout from its own sources rather than one dashboard re-titled: twenty-two role dashboards under Reports → Role dashboards (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin), the global super admin dashboard on the platform overview (DASH-042), and the vendor and customer dashboards in their portals (DASH-060/061). The API returns a different shape per role and the browser tests check each one's own sections; tabs a member's role cannot open are shown disabled."
     },
     {
       "id": "CMD-001",

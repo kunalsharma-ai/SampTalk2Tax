@@ -994,15 +994,15 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-057 | Required Dashboards | capability | External Auditor | Tested |
 | DASH-058 | Required Dashboards | capability | Project Finance Manager | Tested |
 | DASH-059 | Required Dashboards | capability | Department Manager | Tested |
-| DASH-060 | Required Dashboards | capability | Vendor | Not started |
-| DASH-061 | Required Dashboards | capability | Customer | Not started |
+| DASH-060 | Required Dashboards | capability | Vendor | Tested |
+| DASH-061 | Required Dashboards | capability | Customer | Tested |
 | DASH-062 | Required Dashboards | capability | AI Agent Administrator | Tested |
 | DASH-063 | Required Dashboards | capability | Financial Risk Officer | Tested |
 | DASH-064 | Required Dashboards | capability | Compliance Officer | Tested |
 | DASH-065 | Required Dashboards | capability | Financial Analyst | Tested |
 | DASH-066 | Required Dashboards | capability | Investor / Board Viewer | Tested |
-| DASH-067 | Required Dashboards | rule | Each dashboard must have a unique role-appropriate layout | Implementing |
-| DASH-068 | Required Dashboards | rule | Do not simply reuse the same dashboard with different headings | Implementing |
+| DASH-067 | Required Dashboards | rule | Each dashboard must have a unique role-appropriate layout | Tested |
+| DASH-068 | Required Dashboards | rule | Do not simply reuse the same dashboard with different headings | Tested |
 
 ## Executive financial command center
 

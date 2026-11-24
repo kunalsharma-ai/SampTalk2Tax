@@ -3,6 +3,7 @@ import { D, linkExpired, makePortalToken, minorUnits, paymentLinkRef, PORTAL_TOK
 import { createHash, randomBytes } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { fromDbDate } from '../common/dates';
+import { portalDashboardFor } from '../ledgers/portal-dashboard';
 import { DomainError } from '../common/errors';
 import { PrismaService, withSystemAccess } from '../common/prisma.service';
 import { enterOrg } from '../common/tenant-context';
@@ -181,6 +182,7 @@ export class CustomerPortalService {
       link: { expiresAt: link.expiresAt?.toISOString() ?? null },
       today,
       balances,
+      dashboard: await portalDashboardFor(this.prisma, { orgId: org.id, contactId: contact.id, side: 'SALES', today, functionalCurrency: org.functionalCurrency, items }),
       invoices,
       receipts: receipts.map((r) => ({ id: r.id, number: r.number, date: fromDbDate(r.date), amount: r.amount.toFixed(minorUnits(r.currency)), currency: r.currency, status: r.status, reference: r.reference })),
     };
