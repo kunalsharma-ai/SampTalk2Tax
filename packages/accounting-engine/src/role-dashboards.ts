@@ -6,7 +6,7 @@ import { D } from './money';
  * helpers only rank what needs attention, roll months into quarters and band a share so a board
  * can see concentration without names. Pure.
  */
-export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER'] as const;
+export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT'] as const;
 export type DashboardRole = (typeof DASHBOARD_ROLES)[number];
 
 export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: string }> = {
@@ -19,6 +19,10 @@ export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: st
   AR_MANAGER: { name: 'Accounts receivable manager', question: 'How old is what customers owe, whom to chase first, and how much will come in over the next weeks?' },
   AP_MANAGER: { name: 'Accounts payable manager', question: 'How old is what we owe, what to pay first, which bills are held, and which payments look wrong?' },
   TAX_MANAGER: { name: 'Tax manager', question: 'What tax is due and when, do the GST accounts agree with the documents, and which returns may be late?' },
+  ACCOUNTANT: { name: 'Accountant', question: 'What is waiting to be posted, approved or reconciled, and how far is this month\'s close?' },
+  CONTROLLER: { name: 'Financial controller', question: 'Are the months closing on time, and are the controls, approvals and separation of duties holding?' },
+  INTERNAL_AUDITOR: { name: 'Internal auditor', question: 'How far are the audits, which findings are open or late, what evidence is outstanding, and which controls failed?' },
+  PROCUREMENT: { name: 'Procurement manager', question: 'Which orders are open or late, which contracts are breached or ending, and which vendors carry risk?' },
   EXPENSE_MANAGER: { name: 'Expense manager', question: 'Which claims wait for a decision, which look risky, which lack receipts, and how departments stand against their budgets?' },
 };
 

@@ -8,7 +8,13 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Sparkline } from '@/components/kpis/sparkline';
 import { Money } from '@/components/money';
 import {
+  type AccountantView,
   AGING_LABEL,
+  type CloseRow,
+  type ControllerView,
+  type InternalAuditorView,
+  type PendingApprovals,
+  type ProcurementView,
   type Aging,
   AgingBars,
   type Attention,
@@ -48,6 +54,10 @@ const ROLES: { role: DashboardRole; label: string }[] = [
   { role: 'AP_MANAGER', label: 'Payables' },
   { role: 'TAX_MANAGER', label: 'Tax manager' },
   { role: 'EXPENSE_MANAGER', label: 'Expenses' },
+  { role: 'ACCOUNTANT', label: 'Accountant' },
+  { role: 'CONTROLLER', label: 'Controller' },
+  { role: 'INTERNAL_AUDITOR', label: 'Internal audit' },
+  { role: 'PROCUREMENT', label: 'Procurement' },
 ];
 const TONE = { HIGH: 'negative', MEDIUM: 'warning', LOW: 'neutral' } as const;
 const SEVERITY = { CRITICAL: 'negative', HIGH: 'warning', WATCH: 'neutral' } as const;
@@ -68,7 +78,9 @@ function RoleDashboards() {
   const router = useRouter();
   const raw = params.get('role');
   const role: DashboardRole = ROLES.some((r) => r.role === raw) ? (raw as DashboardRole) : 'CEO';
-  const q = useQuery({ queryKey: ['role-dashboard', orgId, role], queryFn: () => api<RoleDashboard>(`/v1/orgs/${orgId}/reports/role-dashboards/${role}`) });
+  const roles = useQuery({ queryKey: ['role-dashboards', orgId], queryFn: () => api<{ roles: { role: DashboardRole; available: boolean }[] }>(`/v1/orgs/${orgId}/reports/role-dashboards`) });
+  const closed = new Set((roles.data?.roles ?? []).filter((x) => !x.available).map((x) => x.role));
+  const q = useQuery({ enabled: !closed.has(role), queryKey: ['role-dashboard', orgId, role], queryFn: () => api<RoleDashboard>(`/v1/orgs/${orgId}/reports/role-dashboards/${role}`) });
   if (!org) return null;
   const r = q.data && q.data.role === role ? q.data : null;
   const c = r?.currency ?? org.functionalCurrency;
@@ -76,16 +88,17 @@ function RoleDashboards() {
     <>
       <PageHeader
         title="Role dashboards"
-        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, and the receivables, payables, tax and expense managers. Every figure comes from your posted books and Talk2Tax's own checks."
+        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, the receivables, payables, tax and expense managers, the accountant, the controller, internal audit and procurement. Every figure comes from your posted books and Talk2Tax's own checks."
       />
       <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Dashboard for">
         {ROLES.map((x) => (
-          <Button key={x.role} role="tab" aria-selected={x.role === role} size="sm" variant={x.role === role ? 'primary' : 'ghost'} onClick={() => router.replace(`?role=${x.role}`)}>
+          <Button key={x.role} role="tab" aria-selected={x.role === role} disabled={closed.has(x.role)} title={closed.has(x.role) ? 'Not open to your role' : undefined} size="sm" variant={x.role === role ? 'primary' : 'ghost'} onClick={() => router.replace(`?role=${x.role}`)}>
             {x.label}
           </Button>
         ))}
       </div>
       <ErrorAlert title="Could not read this dashboard" error={q.error} />
+      {closed.has(role) ? <p className="text-sm text-fg-muted" role="status">This dashboard is not open to your role. Ask an owner for access.</p> : null}
       {r ? (
         <div role="tabpanel" aria-label={`${r.name} dashboard`} className="grid gap-4">
           <p className="text-sm text-fg-muted">
@@ -101,8 +114,12 @@ function RoleDashboards() {
           {r.payables ? <Payables v={r.payables} c={c} orgId={orgId} /> : null}
           {r.tax ? <TaxManager v={r.tax} c={c} orgId={orgId} /> : null}
           {r.expenses ? <ExpenseManager v={r.expenses} c={c} orgId={orgId} /> : null}
+          {r.accountant ? <Accountant v={r.accountant} c={c} orgId={orgId} /> : null}
+          {r.controller ? <Controller v={r.controller} c={c} orgId={orgId} /> : null}
+          {r.audit ? <InternalAuditor v={r.audit} orgId={orgId} /> : null}
+          {r.procurement ? <Procurement v={r.procurement} c={c} orgId={orgId} /> : null}
         </div>
-      ) : !q.error ? <p className="text-sm text-fg-muted">Reading the dashboard…</p> : null}
+      ) : !q.error && !closed.has(role) ? <p className="text-sm text-fg-muted">Reading the dashboard…</p> : null}
     </>
   );
 }
@@ -704,6 +721,237 @@ function ExpenseManager({ v, c, orgId }: { v: ExpenseManagerView; c: string; org
           </div>
         ) : <p className="px-5 py-4 text-sm text-fg-muted">No departments yet. Add them under Dimensions and set budgets on Department budgets.</p>}
       </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Accountant and controller: the books and the close
+
+const CLOSE = { CLOSED: { label: 'Closed', tone: 'positive' }, IN_PROGRESS: { label: 'In progress', tone: 'warning' }, NOT_STARTED: { label: 'Not started', tone: 'neutral' } } as const;
+const KIND: Record<string, string> = { INVOICE: 'Invoices', BILL: 'Bills', CREDIT_NOTE: 'Credit notes', VENDOR_CREDIT: 'Vendor credits' };
+
+function CloseTable({ rows, label, orgId }: { rows: CloseRow[]; label: string; orgId: string }) {
+  return (
+    <Table aria-label={label}>
+      <thead><Tr><Th>Month</Th><Th>Close</Th><Th>Closed by</Th></Tr></thead>
+      <tbody>
+        {rows.map((p) => {
+          const st = CLOSE[p.closeStatus as keyof typeof CLOSE] ?? { label: p.closeStatus.toLowerCase(), tone: 'neutral' as const };
+          return <Tr key={p.id}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/close/${p.id}`}>{p.name}</Link>{p.current ? <span className="ml-2 text-xs text-fg-muted">this month</span> : null}</Td><Td><Badge tone={st.tone}>{st.label}</Badge></Td><Td>{p.closedBy ? `${p.closedBy}${p.closedAt ? `, ${date(p.closedAt.slice(0, 10))}` : ''}` : '—'}</Td></Tr>;
+        })}
+      </tbody>
+    </Table>
+  );
+}
+
+function ApprovalsList({ a, c, orgId }: { a: PendingApprovals; c: string; orgId: string }) {
+  if (!a.items.length) return <p className="px-5 py-4 text-sm text-fg-muted">No journals are waiting for approval.</p>;
+  return (
+    <Table aria-label="Journals waiting for approval">
+      <thead><Tr><Th>Journal</Th><Th>Asked by</Th><Th numeric>Total</Th><Th>You can decide</Th></Tr></thead>
+      <tbody>{a.items.map((x) => <Tr key={x.id}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/journals/${x.entryId}`}>{x.memo ?? 'Journal'}</Link>{x.date ? <span className="block text-xs text-fg-muted">{date(x.date)}</span> : null}</Td><Td>{x.requestedBy ?? '—'}</Td><Td numeric><Money value={x.total} currency={c} /></Td><Td>{x.canDecide ? 'Yes' : 'No'}</Td></Tr>)}</tbody>
+    </Table>
+  );
+}
+
+function Counter({ label, value, warn }: { label: string; value: number | string; warn?: boolean }) {
+  return (
+    <div className="rounded-[var(--t2t-radius-md)] border border-line p-4" role="group" aria-label={label}>
+      <p className="text-xs uppercase tracking-wide text-fg-muted">{label}</p>
+      <p className={cn('num text-3xl font-semibold', warn && 'text-warning')}>{value}</p>
+    </div>
+  );
+}
+
+function Accountant({ v, c, orgId }: { v: AccountantView; c: string; orgId: string }) {
+  return (
+    <>
+      <Card role="region" aria-label="Work waiting">
+        <CardHeader title="Work waiting" description="What is waiting to be posted, approved or reconciled before the books are up to date." />
+        <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+          <Counter label="Draft journals" value={v.queue.draftJournals} warn={v.queue.draftJournals > 0} />
+          <Counter label="Draft invoices and bills" value={v.queue.draftDocuments} warn={v.queue.draftDocuments > 0} />
+          <Counter label="Journals awaiting approval" value={v.queue.approvals} warn={v.queue.approvals > 0} />
+          <Counter label="Bank lines to sort out" value={v.queue.reconciliation} warn={v.queue.reconciliation > 0} />
+        </div>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Unposted journals">
+          <CardHeader title="Unposted journals" description={`Draft journals, oldest first.${v.draftDocuments.length ? ` Also in draft: ${v.draftDocuments.map((d) => `${d.count} ${(KIND[d.kind] ?? d.kind).toLowerCase()}`).join(', ')}.` : ''}`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/journals`}>Journals</Link>} />
+          {v.draftJournals.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Draft journals">
+              {v.draftJournals.map((j) => <li key={j.id} className="flex justify-between gap-2 px-5 py-2.5"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/journals/${j.id}`}>{j.memo ?? 'Journal without a memo'}</Link><span className="text-fg-muted">{date(j.date)}</span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No draft journals.</p>}
+        </Card>
+        <Card role="region" aria-label="Journal approvals waiting">
+          <CardHeader title="Journal approvals waiting" description={`${v.approvals.count} waiting, ${v.approvals.mine} of them for you to decide.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/approvals`}>Approvals</Link>} />
+          <ApprovalsList a={v.approvals} c={c} orgId={orgId} />
+        </Card>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Bank lines to reconcile">
+          <CardHeader title="Bank lines to reconcile" description={`${v.reconciliation.summary.needsAction} exception${v.reconciliation.summary.needsAction === 1 ? '' : 's'} to act on across ${v.reconciliation.summary.accountsWithExceptions} of ${v.reconciliation.summary.accounts} bank account${v.reconciliation.summary.accounts === 1 ? '' : 's'}.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/banking/reconciliation-exceptions`}>Reconciliation exceptions</Link>} />
+          {v.reconciliation.accounts.length ? (
+            <Table aria-label="Bank accounts to reconcile">
+              <thead><Tr><Th>Account</Th><Th numeric>Exceptions</Th><Th numeric>Statement lines</Th><Th numeric>Book entries</Th><Th>Last reconciled</Th></Tr></thead>
+              <tbody>{v.reconciliation.accounts.map((a) => <Tr key={a.id}><Td>{a.code} · {a.name}</Td><Td numeric>{a.exceptions}</Td><Td numeric>{a.unmatchedStatement}</Td><Td numeric>{a.unmatchedBook}</Td><Td>{a.lastReconciled ? date(a.lastReconciled) : 'Never'}</Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No bank accounts with statement lines yet.</p>}
+        </Card>
+        <Card role="region" aria-label="Recent closes">
+          <CardHeader title="Recent closes" description="This month and the two before it, and where each close stands." actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/close`}>Month-end close</Link>} />
+          <CloseTable rows={v.close} label="Closes for the accountant" orgId={orgId} />
+        </Card>
+      </div>
+    </>
+  );
+}
+
+function Controller({ v, c, orgId }: { v: ControllerView; c: string; orgId: string }) {
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="list" aria-label="Control figures">
+        <div role="listitem"><Counter label="Past months not closed" value={v.lateCloses} warn={v.lateCloses > 0} /></div>
+        <div role="listitem"><Counter label="Duty conflicts to review" value={v.separation.open} warn={v.separation.open > 0} /></div>
+        <div role="listitem"><Counter label="Controls failed or overdue" value={v.controls.summary.failed + v.controls.summary.overdue} warn={v.controls.summary.failed + v.controls.summary.overdue > 0} /></div>
+        <div role="listitem"><Counter label="Open audit findings" value={v.findings.open} warn={v.findings.high > 0} /></div>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Months closed">
+          <CardHeader title="Months closed" description="The last six months and whether each was closed and certified." actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/close`}>Month-end close</Link>} />
+          <CloseTable rows={v.closes} label="Closes for the controller" orgId={orgId} />
+        </Card>
+        <Card role="region" aria-label="Duties held apart">
+          <CardHeader title="Duties held apart" description={`Where one person did two steps that should be done by different people, ${date(v.separation.from)} to ${date(v.separation.to)}. ${v.separation.membersWithConflicts} member${v.separation.membersWithConflicts === 1 ? ' has' : 's have'} a role that allows conflicting steps.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/segregation-of-duties`}>Segregation of duties</Link>} />
+          <Table aria-label="Duty conflicts by rule">
+            <thead><Tr><Th>Rule</Th><Th numeric>To review</Th><Th numeric>Reviewed</Th></Tr></thead>
+            <tbody>{v.separation.rules.map((r) => <Tr key={r.id}><Td>{r.title}</Td><Td numeric className={r.open ? 'text-warning' : undefined}>{r.open}</Td><Td numeric>{r.reviewed}</Td></Tr>)}</tbody>
+          </Table>
+        </Card>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Controls to look at">
+          <CardHeader title="Controls to look at" description={`${v.controls.total} control${v.controls.total === 1 ? '' : 's'} on record: ${v.controls.summary.passed} passed, ${v.controls.summary.due} due, ${v.controls.summary.overdue} overdue, ${v.controls.summary.failed} failed. Audit findings: ${v.findings.open} open, ${v.findings.overdue} overdue, ${v.findings.readyForReview} ready to review.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/controls`}>Internal controls</Link>} />
+          {v.controls.attention.length ? (
+            <Table aria-label="Controls failed or overdue">
+              <thead><Tr><Th>Control</Th><Th>Owner</Th><Th>Period</Th><Th>Status</Th></Tr></thead>
+              <tbody>{v.controls.attention.map((x) => <Tr key={x.id}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/controls/${x.id}`}>{x.title}</Link></Td><Td>{x.owner}</Td><Td>{x.period}</Td><Td><Badge tone={x.status === 'FAILED' ? 'negative' : 'warning'}>{x.status.toLowerCase()}</Badge></Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No control has failed or is overdue.</p>}
+        </Card>
+        <Card role="region" aria-label="Approvals for the controller">
+          <CardHeader title="Approvals for the controller" description={`Journals waiting for a second person: ${v.approvals.count}, ${v.approvals.mine} of them yours to decide.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/approvals`}>Approvals</Link>} />
+          <ApprovalsList a={v.approvals} c={c} orgId={orgId} />
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Internal auditor
+
+function InternalAuditor({ v, orgId }: { v: InternalAuditorView; orgId: string }) {
+  return (
+    <>
+      <Card role="region" aria-label="Findings at a glance">
+        <CardHeader title="Findings at a glance" description="Audit findings, evidence requests and control tests across the organisation." />
+        <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+          <Counter label="Open findings" value={v.findings.summary.open} warn={v.findings.summary.open > 0} />
+          <Counter label="High findings" value={v.findings.summary.high} warn={v.findings.summary.high > 0} />
+          <Counter label="Evidence overdue" value={v.evidence.summary.overdue} warn={v.evidence.summary.overdue > 0} />
+          <Counter label="Controls failed" value={v.controls.summary.failed} warn={v.controls.summary.failed > 0} />
+        </div>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Findings to follow up">
+          <CardHeader title="Findings to follow up" description={`Ready for review first. ${v.findings.summary.overdue} overdue, ${v.findings.summary.readyForReview} ready for review.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/audit-findings`}>Audit findings</Link>} />
+          {v.findings.open.length ? (
+            <Table aria-label="Open audit findings">
+              <thead><Tr><Th>Finding</Th><Th>Severity</Th><Th>Status</Th><Th>Due</Th></Tr></thead>
+              <tbody>{v.findings.open.map((f) => <Tr key={f.id}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/audit-findings/${f.id}`}>{f.reference} · {f.title}</Link></Td><Td><Badge tone={TONE[f.severity]}>{f.severity.toLowerCase()}</Badge></Td><Td>{f.status.replace(/_/g, ' ').toLowerCase()}</Td><Td className={cn('whitespace-nowrap', f.overdue && 'text-negative')}>{date(f.dueDate)}</Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No open findings.</p>}
+        </Card>
+        <Card role="region" aria-label="Audits in progress">
+          <CardHeader title="Audits in progress" description={`${v.engagementCount} audit${v.engagementCount === 1 ? '' : 's'} on record; those not closed are below.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/audit-engagements`}>Internal audit</Link>} />
+          {v.engagements.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Audits by progress">
+              {v.engagements.map((e) => (
+                <li key={e.id} className="px-5 py-2.5">
+                  <div className="flex justify-between gap-2"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/audit-engagements/${e.id}`}>{e.reference} · {e.name}</Link><span className="text-xs text-fg-muted">{e.status.toLowerCase()}</span></div>
+                  <p className="text-xs text-fg-muted">Led by {e.lead}; {e.progress.done} of {e.progress.steps} steps done, {e.progress.signedOff} signed off</p>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No audit is in progress.</p>}
+        </Card>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Evidence outstanding">
+          <CardHeader title="Evidence outstanding" description={`${v.evidence.summary.requested} requested, ${v.evidence.summary.submitted} submitted for review, ${v.evidence.summary.accepted} accepted.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/audit-evidence`}>Audit evidence</Link>} />
+          {v.evidence.outstanding.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Evidence requests not accepted">
+              {v.evidence.outstanding.map((r) => <li key={r.id} className="flex justify-between gap-2 px-5 py-2.5"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/audit-evidence/${r.id}`}>{r.reference} · {r.title}</Link><span className="text-fg-muted">{r.status.toLowerCase()}, due {date(r.dueDate)}</span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No evidence is outstanding.</p>}
+        </Card>
+        <Card role="region" aria-label="Failed controls">
+          <CardHeader title="Failed controls" description={`Controls whose test for the current period failed, out of ${v.controls.total} on record.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/controls`}>Internal controls</Link>} />
+          {v.controls.failed.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Controls that failed">
+              {v.controls.failed.map((x) => <li key={x.id} className="px-5 py-2.5"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/controls/${x.id}`}>{x.title}</Link><span className="block text-xs text-fg-muted">Owner {x.owner}{x.lastTest ? `; tested ${date(x.lastTest.testedAt.slice(0, 10))}` : ''}</span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No control has failed.</p>}
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Procurement manager
+
+function Procurement({ v, c, orgId }: { v: ProcurementView; c: string; orgId: string }) {
+  const t = v.orders.totals;
+  return (
+    <>
+      <Card role="region" aria-label="Open purchase orders">
+        <CardHeader title="Open purchase orders" description={`${t.open} issued and open, ${t.drafts} in draft, ${t.late} late. Still to receive ${money(t.toReceive, c)}; still to bill ${money(t.toBill, c)}.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/purchases/orders`}>Purchase orders</Link>} />
+        {v.orders.open.length ? (
+          <div className="overflow-x-auto">
+            <Table aria-label="Open orders">
+              <thead><Tr><Th>Order</Th><Th>Vendor</Th><Th>Ordered</Th><Th>Expected</Th><Th numeric>To receive</Th><Th numeric>To bill</Th><Th numeric>Total</Th></Tr></thead>
+              <tbody>{v.orders.open.map((o) => <Tr key={o.id}><Td><Link className="text-accent hover:underline" href={`/orgs/${orgId}/purchases/orders/${o.id}`}>{o.reference}</Link></Td><Td>{o.vendor}</Td><Td className="whitespace-nowrap">{date(o.orderDate)}</Td><Td className={cn('whitespace-nowrap', o.late && 'text-negative')}>{o.expectedDate ? date(o.expectedDate) : '—'}{o.late ? ' (late)' : ''}</Td><Td numeric><Money value={o.toReceive} currency={c} /></Td><Td numeric><Money value={o.toBill} currency={c} /></Td><Td numeric><Money value={o.total} currency={c} /></Td></Tr>)}</tbody>
+            </Table>
+          </div>
+        ) : <p className="px-5 py-4 text-sm text-fg-muted">No open purchase orders.</p>}
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card role="region" aria-label="Late deliveries">
+          <CardHeader title="Late deliveries" description="Issued orders past their expected date with goods still to receive." />
+          {v.orders.late.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Orders delivered late">
+              {v.orders.late.map((o) => <li key={o.id} className="px-5 py-2.5"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/purchases/orders/${o.id}`}>{o.reference}</Link> · {o.vendor}<span className="block text-xs text-fg-muted">Expected {o.expectedDate ? date(o.expectedDate) : '—'}; <Money value={o.toReceive} currency={c} /> to receive</span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No deliveries are late.</p>}
+        </Card>
+        <Card role="region" aria-label="Contracts ending or breached">
+          <CardHeader title="Contracts ending or breached" description={`${v.contracts.summary.inForce} of ${v.contracts.summary.contracts} contracts in force; ${v.contracts.summary.issues} issue${v.contracts.summary.issues === 1 ? '' : 's'} on bills, ${money(v.contracts.summary.overcharge, c)} overcharged. ${v.heldBills.bills} bill${v.heldBills.bills === 1 ? '' : 's'} held against orders.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/purchases/vendor-contracts`}>Vendor contracts</Link>} />
+          <ul className="flex flex-col gap-1.5 px-5 py-3 text-sm" aria-label="Contracts to act on">
+            {v.contracts.ending.map((x) => <li key={x.id}>{x.reference} · {x.vendor}: ends {date(x.endDate)}</li>)}
+            {v.contracts.issues.map((x, i) => <li key={`i${i}`} className="flex items-start gap-2"><Badge tone={TONE[x.severity]}>{x.severity.toLowerCase()}</Badge><span>{x.contract} · {x.vendor}: {x.detail}</span></li>)}
+            {!v.contracts.ending.length && !v.contracts.issues.length ? <li className="text-fg-muted">No contract ends in the next 60 days and no bill breaks one.</li> : null}
+          </ul>
+        </Card>
+        <Card role="region" aria-label="Vendors at risk">
+          <CardHeader title="Vendors at risk" description={`${v.vendors.totals.high} high and ${v.vendors.totals.medium} medium risk out of ${v.vendors.totals.vendors} vendors.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/purchases/vendor-risk`}>Vendor risk</Link>} />
+          {v.vendors.risky.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Vendors by risk">
+              {v.vendors.risky.map((x) => <li key={x.id} className="flex items-start gap-2 px-5 py-2.5"><Badge tone={TONE[x.level]}>{x.level.toLowerCase()}</Badge><span>{x.name}<span className="block text-xs text-fg-muted">{x.factors.join(', ')}</span></span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No vendor carries high or medium risk.</p>}
+        </Card>
+      </div>
     </>
   );
 }
