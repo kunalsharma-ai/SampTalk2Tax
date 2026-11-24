@@ -165,3 +165,4 @@ export * from './financial-dependencies';
 export * from './role-dashboards';
 export * from './platform-dashboard';
 export * from './portal-dashboard';
+export * from './report-studio';

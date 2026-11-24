@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 527 |
+| Not started | 526 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 740 |
+| Tested | 741 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -45,7 +45,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Financial fraud and risk intelligence | M4 | 19 | 14 | 5 |
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
-| Advanced financial reporting | M6 | 41 | 1 | 40 |
+| Advanced financial reporting | M6 | 41 | 0 | 41 |
 | Dashboard design | M1 | 68 | 21 | 47 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
@@ -6087,6 +6087,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/duplicate-files/page.tsx
   - apps/web/e2e/duplicate-files-flow.test.mjs
   - docs/DUPLICATE_FILES.md
+
+### RPT-001 — Build a professional reporting studio
+
+- Module: Advanced financial reporting
+- Status: **Tested**
+- Notes: Reports → Reporting studio (/reports, GET /reports/studio, reports.read): every report in one catalogue grouped by purpose (statements, ledgers, management, dashboards, tax, payroll and expenses, audit, stakeholders, build your own) with the question it answers, its exports (PDF, Excel, CSV), saved views visible to the member and active schedules; reports the member's role cannot open are listed but closed. Word search across name, question and category. Pins per person (report_favourites, PUT/DELETE /reports/studio/favourites/:report). Totals, the latest exports from the audit trail (report, format, who, when) and the designs built in the report designer. Builds on RPT-002..041.
+- Evidence:
+  - packages/accounting-engine/src/report-studio.ts
+  - packages/accounting-engine/test/report-studio.test.ts
+  - apps/api/src/report-studio/report-studio.service.ts
+  - apps/api/src/report-studio/report-studio.controller.ts
+  - apps/api/src/db/collections/report-favourites.ts
+  - apps/api/src/db/migrations/20270309100000_report_favourites.ts
+  - apps/api/test/report-studio.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/reports/page.tsx
+  - apps/web/e2e/report-studio-flow.test.mjs
 
 ### RPT-002 — Profit and loss
 
