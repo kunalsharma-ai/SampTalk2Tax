@@ -980,7 +980,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-043 | Required Dashboards | capability | Tenant Organization Admin | Not started |
 | DASH-044 | Required Dashboards | capability | CEO | Tested |
 | DASH-045 | Required Dashboards | capability | CFO | Tested |
-| DASH-046 | Required Dashboards | capability | Finance Director | Not started |
+| DASH-046 | Required Dashboards | capability | Finance Director | Tested |
 | DASH-047 | Required Dashboards | capability | Financial Controller | Tested |
 | DASH-048 | Required Dashboards | capability | Accountant | Tested |
 | DASH-049 | Required Dashboards | capability | Accounts Payable Manager | Tested |
@@ -991,9 +991,9 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-054 | Required Dashboards | capability | Procurement Manager | Tested |
 | DASH-055 | Required Dashboards | capability | Expense Manager | Tested |
 | DASH-056 | Required Dashboards | capability | Internal Auditor | Tested |
-| DASH-057 | Required Dashboards | capability | External Auditor | Not started |
+| DASH-057 | Required Dashboards | capability | External Auditor | Tested |
 | DASH-058 | Required Dashboards | capability | Project Finance Manager | Not started |
-| DASH-059 | Required Dashboards | capability | Department Manager | Not started |
+| DASH-059 | Required Dashboards | capability | Department Manager | Tested |
 | DASH-060 | Required Dashboards | capability | Vendor | Not started |
 | DASH-061 | Required Dashboards | capability | Customer | Not started |
 | DASH-062 | Required Dashboards | capability | AI Agent Administrator | Tested |

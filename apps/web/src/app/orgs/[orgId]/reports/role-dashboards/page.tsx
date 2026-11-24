@@ -16,6 +16,12 @@ import {
   type PendingApprovals,
   type ProcurementView,
   type AiAdminView,
+  type DepartmentManagerView,
+  DepartmentSpendChart,
+  type ExternalAuditorView,
+  type FinanceDirectorView,
+  type PlanFigure,
+  PlanQuarterBars,
   type AnalystView,
   type Movement,
   MarginChart,
@@ -67,6 +73,9 @@ const ROLES: { role: DashboardRole; label: string }[] = [
   { role: 'PAYROLL_MANAGER', label: 'Payroll' },
   { role: 'AI_ADMIN', label: 'AI agents' },
   { role: 'ANALYST', label: 'Financial analyst' },
+  { role: 'FINANCE_DIRECTOR', label: 'Finance director' },
+  { role: 'DEPARTMENT_MANAGER', label: 'Department manager' },
+  { role: 'EXTERNAL_AUDITOR', label: 'External auditor' },
 ];
 const TONE = { HIGH: 'negative', MEDIUM: 'warning', LOW: 'neutral' } as const;
 const SEVERITY = { CRITICAL: 'negative', HIGH: 'warning', WATCH: 'neutral' } as const;
@@ -89,7 +98,12 @@ function RoleDashboards() {
   const role: DashboardRole = ROLES.some((r) => r.role === raw) ? (raw as DashboardRole) : 'CEO';
   const roles = useQuery({ queryKey: ['role-dashboards', orgId], queryFn: () => api<{ roles: { role: DashboardRole; available: boolean }[] }>(`/v1/orgs/${orgId}/reports/role-dashboards`) });
   const closed = new Set((roles.data?.roles ?? []).filter((x) => !x.available).map((x) => x.role));
-  const q = useQuery({ enabled: !closed.has(role), queryKey: ['role-dashboard', orgId, role], queryFn: () => api<RoleDashboard>(`/v1/orgs/${orgId}/reports/role-dashboards/${role}`) });
+  const departmentId = role === 'DEPARTMENT_MANAGER' ? params.get('department') : null;
+  const q = useQuery({
+    enabled: !closed.has(role),
+    queryKey: ['role-dashboard', orgId, role, departmentId],
+    queryFn: () => api<RoleDashboard>(`/v1/orgs/${orgId}/reports/role-dashboards/${role}${departmentId ? `?departmentId=${encodeURIComponent(departmentId)}` : ''}`),
+  });
   if (!org) return null;
   const r = q.data && q.data.role === role ? q.data : null;
   const c = r?.currency ?? org.functionalCurrency;
@@ -97,7 +111,7 @@ function RoleDashboards() {
     <>
       <PageHeader
         title="Role dashboards"
-        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, the receivables, payables, tax and expense managers, the accountant, the controller, internal audit, procurement, payroll, the AI agent administrator and the financial analyst. Every figure comes from your posted books and Talk2Tax's own checks."
+        description="One dashboard for each role that reads the books, each laid out around the questions that role asks: the CEO, the CFO, treasury, the risk officer, compliance, the board or investors, the receivables, payables, tax and expense managers, the accountant, the controller, internal audit, procurement, payroll, the AI agent administrator, the financial analyst, the finance director, a department manager and the external auditor. Every figure comes from your posted books and Talk2Tax's own checks."
       />
       <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Dashboard for">
         {ROLES.map((x) => (
@@ -130,6 +144,9 @@ function RoleDashboards() {
           {r.payroll ? <PayrollManager v={r.payroll} c={c} orgId={orgId} /> : null}
           {r.ai ? <AiAdmin v={r.ai} orgId={orgId} /> : null}
           {r.analyst ? <Analyst v={r.analyst} c={c} /> : null}
+          {r.director ? <FinanceDirector v={r.director} c={c} orgId={orgId} /> : null}
+          {r.department ? <DepartmentManager v={r.department} c={c} orgId={orgId} onChoose={(id) => router.replace(`?role=DEPARTMENT_MANAGER&department=${encodeURIComponent(id)}`)} /> : null}
+          {r.externalAudit ? <ExternalAuditor v={r.externalAudit} c={c} orgId={orgId} /> : null}
         </div>
       ) : !q.error && !closed.has(role) ? <p className="text-sm text-fg-muted">Reading the dashboard…</p> : null}
     </>
@@ -1177,6 +1194,171 @@ function Analyst({ v, c }: { v: AnalystView; c: string }) {
               <tbody>{v.customers.top.map((x) => <Tr key={x.name}><Td>{x.name}</Td><Td numeric><Money value={x.revenue} currency={c} /></Td><Td numeric>{x.share === null ? '—' : `${x.share}%`}</Td></Tr>)}</tbody>
             </Table>
           ) : <p className="px-5 py-4 text-sm text-fg-muted">No revenue in the last 12 months.</p>}
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Finance director
+
+function PlanCell({ f, c }: { f: PlanFigure; c: string }) {
+  return f.actual === null ? <span className="text-fg-muted">Not started</span> : <span className={cn(f.favourable === true && 'text-positive', f.favourable === false && 'text-negative')}><Money value={f.variance!} currency={c} />{f.percent !== null ? ` (${f.percent}%)` : ''}</span>;
+}
+
+function FinanceDirector({ v, c, orgId }: { v: FinanceDirectorView; c: string; orgId: string }) {
+  const p = v.plan;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Counter label="Net income against plan" value={p && p.yearToDate.netIncome.variance !== null ? money(p.yearToDate.netIncome.variance, c) : '—'} warn={p?.yearToDate.netIncome.favourable === false} />
+        <Counter label="Accounts off plan the wrong way" value={p ? p.offPlan.filter((x) => x.yearToDate.favourable === false).length : '—'} warn={!!p?.offPlan.some((x) => x.yearToDate.favourable === false)} />
+        <Counter label="Departments over or at risk" value={v.departments.over + v.departments.atRisk} warn={v.departments.over > 0} />
+        <Counter label="Past months not closed" value={v.lateCloses} warn={v.lateCloses > 0} />
+      </div>
+      <Card role="region" aria-label="Plan against actual">
+        <CardHeader title="Plan against actual" description={p ? `${p.budget.name} (version ${p.budget.version}) for FY${v.fiscalYear}, with actuals to ${p.actualsThrough ? date(p.actualsThrough) : 'the start of the year'}. The full-year plan is ${money(p.fullYear.revenue, c)} revenue and ${money(p.fullYear.netIncome, c)} net income. Green is better than plan, red worse.` : `No approved budget for FY${v.fiscalYear} yet.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/planning/budget-vs-actual`}>Budget vs actual</Link>} />
+        {p ? (
+          <>
+            <PlanQuarterBars quarters={p.quarters} currency={c} />
+            <div className="overflow-x-auto">
+              <Table aria-label="Plan by quarter">
+                <thead><Tr><Th>Quarter</Th><Th numeric>Planned revenue</Th><Th numeric>Revenue against plan</Th><Th numeric>Planned net income</Th><Th numeric>Actual net income</Th><Th numeric>Net income against plan</Th></Tr></thead>
+                <tbody>
+                  {p.quarters.map((q) => <Tr key={q.key}><Td>{q.label}{q.inProgress ? <span className="text-xs text-fg-muted"> (in progress)</span> : null}</Td><Td numeric><Money value={q.revenue.budget} currency={c} /></Td><Td numeric><PlanCell f={q.revenue} c={c} /></Td><Td numeric><Money value={q.netIncome.budget} currency={c} /></Td><Td numeric>{q.netIncome.actual === null ? '—' : <Money value={q.netIncome.actual} currency={c} />}</Td><Td numeric><PlanCell f={q.netIncome} c={c} /></Td></Tr>)}
+                  <Tr><Td className="font-medium">Year to date</Td><Td numeric className="font-medium"><Money value={p.yearToDate.revenue.budget} currency={c} /></Td><Td numeric><PlanCell f={p.yearToDate.revenue} c={c} /></Td><Td numeric className="font-medium"><Money value={p.yearToDate.netIncome.budget} currency={c} /></Td><Td numeric className="font-medium">{p.yearToDate.netIncome.actual === null ? '—' : <Money value={p.yearToDate.netIncome.actual} currency={c} />}</Td><Td numeric><PlanCell f={p.yearToDate.netIncome} c={c} /></Td></Tr>
+                </tbody>
+              </Table>
+            </div>
+          </>
+        ) : <p className="px-5 py-4 text-sm text-fg-muted">Approve a budget on Budgets to compare the year with its plan.</p>}
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Accounts furthest off plan">
+          <CardHeader title="Accounts furthest off plan" description="Year to date, the accounts worse than plan first (spending above it, revenue below it), then the largest differences." />
+          {p?.offPlan.length ? (
+            <Table aria-label="Accounts off plan">
+              <thead><Tr><Th>Account</Th><Th numeric>Plan</Th><Th numeric>Actual</Th><Th numeric>Difference</Th></Tr></thead>
+              <tbody>{p.offPlan.map((x) => <Tr key={x.accountId}><Td>{x.code} · {x.name}{x.budgeted ? null : <span className="block text-xs text-fg-muted">Not in the plan</span>}</Td><Td numeric><Money value={x.yearToDate.budget} currency={c} /></Td><Td numeric>{x.yearToDate.actual === null ? '—' : <Money value={x.yearToDate.actual} currency={c} />}</Td><Td numeric><PlanCell f={x.yearToDate} c={c} /></Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">{p ? 'Every account is on plan so far.' : 'No plan to compare with.'}</p>}
+        </Card>
+        <Card role="region" aria-label="Departments to watch">
+          <CardHeader title="Departments to watch" description={`${v.departments.over} over budget, ${v.departments.atRisk} at risk, ${v.departments.onTrack} on track and ${v.departments.noBudget} without a budget. In all ${money(v.departments.totals.actual, c)} spent of ${money(v.departments.totals.budget, c)} budgeted.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/expenses/department-budgets`}>Department budgets</Link>} />
+          {v.departments.watch.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Departments over or at risk">
+              {v.departments.watch.map((d) => { const st = BUDGET[d.status as keyof typeof BUDGET] ?? BUDGET.NO_BUDGET; return <li key={d.departmentId} className="flex items-start gap-2 px-5 py-2.5"><Badge tone={st.tone}>{st.label}</Badge><span>{d.name}<span className="block text-xs text-fg-muted">{d.reason}</span></span></li>; })}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No department is over budget or at risk.</p>}
+        </Card>
+      </div>
+      <Card role="region" aria-label="Closes for the director">
+        <CardHeader title="Closes for the director" description="The last six months and whether each was closed." actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/close`}>Month-end close</Link>} />
+        <CloseTable rows={v.closes} label="Months and their close" orgId={orgId} />
+      </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- Department manager
+
+function DepartmentManager({ v, c, orgId, onChoose }: { v: DepartmentManagerView; c: string; orgId: string; onChoose: (id: string) => void }) {
+  const d = v.department;
+  if (!d) return <p className="text-sm text-fg-muted">No departments yet. Add them under Dimensions to see a department's spending.</p>;
+  const b = d.budget;
+  const st = BUDGET[(b?.status ?? 'NO_BUDGET') as keyof typeof BUDGET] ?? BUDGET.NO_BUDGET;
+  return (
+    <>
+      <label className="flex max-w-sm flex-col gap-1 text-sm">
+        <span className="text-fg-muted">Department</span>
+        <select aria-label="Department to show" className="rounded-[var(--t2t-radius-sm)] border border-line bg-surface px-3 py-2" value={d.id} onChange={(e) => onChoose(e.target.value)}>
+          {v.departments.map((x) => <option key={x.id} value={x.id}>{x.code} · {x.name}</option>)}
+        </select>
+      </label>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Counter label="Spent this year" value={money(d.spent, c)} />
+        <Counter label="Budget left" value={b?.remaining ? money(b.remaining, c) : '—'} warn={!!b?.remaining && Number(b.remaining) < 0} />
+        <Counter label="Waiting for approval" value={money(b?.committed ?? '0', c)} />
+        <Counter label="Budget status" value={st.label} warn={b?.status === 'OVER' || b?.status === 'AT_RISK'} />
+      </div>
+      <Card role="region" aria-label="Department spending by month">
+        <CardHeader title="Department spending by month" description={`Posted spending of ${d.name} from ${date(d.from)} to ${date(d.to)}${b?.amount ? ` against a budget of ${money(b.amount, c)} for FY${v.fiscalYear}` : ''}. ${b?.reason ?? ''}`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/reports/department-performance`}>Department performance</Link>} />
+        <DepartmentSpendChart months={d.months} currency={c} />
+        <Table aria-label="Spending in each month">
+          <thead><Tr><Th>Month</Th><Th numeric>Spent</Th><Th numeric>Monthly share of budget</Th></Tr></thead>
+          <tbody>{d.months.map((m) => <Tr key={m.month}><Td>{monthLabel(m.month)}</Td><Td numeric><Money value={m.spent} currency={c} /></Td><Td numeric>{m.budget === null ? '—' : <Money value={m.budget} currency={c} />}</Td></Tr>)}</tbody>
+        </Table>
+      </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="What the money went on">
+          <CardHeader title="What the money went on" description="This year's posted spending by expense account, largest first." />
+          {d.accounts.length ? (
+            <Table aria-label="Spending by account">
+              <thead><Tr><Th>Account</Th><Th numeric>Spent</Th><Th numeric>Share</Th></Tr></thead>
+              <tbody>{d.accounts.map((a) => <Tr key={a.id}><Td>{a.code} · {a.name}</Td><Td numeric><Money value={a.spent} currency={c} /></Td><Td numeric>{a.share === null ? '—' : `${a.share}%`}</Td></Tr>)}</tbody>
+            </Table>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">Nothing posted to this department this year.</p>}
+        </Card>
+        <Card role="region" aria-label="Claims for this department">
+          <CardHeader title="Claims for this department" description="Expense claims waiting for approval with lines charged to this department, oldest first, and how much of each is for it." actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/expenses`}>Expense claims</Link>} />
+          {d.claims.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Claims waiting">
+              {d.claims.map((x) => <li key={x.id} className="flex justify-between gap-2 px-5 py-2.5"><span><Link className="text-accent hover:underline" href={`/orgs/${orgId}/expenses/${x.id}`}>{x.number} · {x.title}</Link><span className="block text-xs text-fg-muted">{x.claimant}{x.submittedOn ? `, sent ${date(x.submittedOn)}` : ''}</span></span><Money value={x.forDepartment} currency={x.currency} /></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No claim for this department is waiting.</p>}
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- External auditor
+
+const YEAR_STATUS: Record<string, { label: string; tone: 'positive' | 'warning' | 'neutral' }> = { CLOSED: { label: 'closed', tone: 'positive' }, OUT_OF_DATE: { label: 'needs closing again', tone: 'warning' }, NOT_CLOSED: { label: 'not closed', tone: 'neutral' }, NOTHING_TO_CLOSE: { label: 'nothing to close', tone: 'neutral' } };
+
+function ExternalAuditor({ v, c, orgId }: { v: ExternalAuditorView; c: string; orgId: string }) {
+  const tb = v.trialBalance;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Counter label="Trial balance" value={tb ? (tb.balanced ? 'Balanced' : 'Out of balance') : '—'} warn={!!tb && !tb.balanced} />
+        <Counter label="Open periods in ended years" value={v.openPeriodsInEndedYears} warn={v.openPeriodsInEndedYears > 0} />
+        <Counter label="Auditor links in use" value={v.portal.active} />
+        <Counter label="Evidence outstanding" value={v.evidence.outstanding.length} warn={v.evidence.outstanding.length > 0} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Years and their close">
+          <CardHeader title="Years and their close" description={tb ? `Trial balance at ${date(tb.asOf)} (${tb.label}): ${tb.accounts} accounts, debits ${money(tb.debit, c)} and credits ${money(tb.credit, c)}.` : 'No fiscal year has ended yet.'} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/year-end`}>Year-end close</Link>} />
+          <Table aria-label="Fiscal years">
+            <thead><Tr><Th>Year</Th><Th>Status</Th><Th numeric>Periods open / locked / closed</Th><Th numeric>Profit</Th></Tr></thead>
+            <tbody>{v.years.map((y) => { const st = YEAR_STATUS[y.status] ?? { label: y.status.toLowerCase(), tone: 'neutral' as const }; return <Tr key={y.fiscalYear}><Td>{y.label}<span className="block text-xs text-fg-muted">{date(y.startDate)} to {date(y.endDate)}{y.ended ? '' : ', running'}</span></Td><Td><Badge tone={st.tone}>{st.label}</Badge></Td><Td numeric>{y.periods.open} / {y.periods.locked} / {y.periods.closed}</Td><Td numeric><Money value={y.profit} currency={c} /></Td></Tr>; })}</tbody>
+          </Table>
+        </Card>
+        <Card role="region" aria-label="Auditor portal links">
+          <CardHeader title="Auditor portal links" description="Links in use that give external auditors read-only access to an audit, and how much they have used them." actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/audit-engagements`}>Internal audit</Link>} />
+          {v.portal.links.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Links for auditors">
+              {v.portal.links.map((l) => <li key={l.id} className="px-5 py-2.5"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/audit-engagements/${l.engagementId}`}>{l.engagement}</Link><span className="block">{l.auditorName}{l.firm ? `, ${l.firm}` : ''}</span><span className="block text-xs text-fg-muted">Ends {date(l.expiresAt.slice(0, 10))}; {l.lastSeenAt ? `last opened ${date(l.lastSeenAt.slice(0, 10))}, ${l.viewCount} visits, ${l.filesOpened} files opened` : 'not opened yet'}</span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No auditor link is in use.</p>}
+        </Card>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card role="region" aria-label="Evidence asked for">
+          <CardHeader title="Evidence asked for" description={`${v.evidence.summary.requested} requested, ${v.evidence.summary.submitted} submitted for review, ${v.evidence.summary.accepted} accepted.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/audit-evidence`}>Audit evidence</Link>} />
+          {v.evidence.outstanding.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Evidence not yet accepted">
+              {v.evidence.outstanding.map((r) => <li key={r.id} className="flex justify-between gap-2 px-5 py-2.5"><Link className="text-accent hover:underline" href={`/orgs/${orgId}/audit-evidence/${r.id}`}>{r.reference} · {r.title}</Link><span className="text-fg-muted">{r.status.toLowerCase()}, due {date(r.dueDate)}</span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">Every piece of evidence asked for is accepted.</p>}
+        </Card>
+        <Card role="region" aria-label="Findings still open">
+          <CardHeader title="Findings still open" description={`${v.findings.summary.open} open${v.findings.summary.overdue ? `, ${v.findings.summary.overdue} past their date` : ''}.`} actions={<Link className="text-sm text-accent hover:underline" href={`/orgs/${orgId}/audit-findings`}>Audit findings</Link>} />
+          {v.findings.open.length ? (
+            <ul className="flex flex-col divide-y divide-line text-sm" aria-label="Open findings">
+              {v.findings.open.map((f) => <li key={f.id} className="flex items-start gap-2 px-5 py-2.5"><Badge tone={f.severity === 'HIGH' ? 'negative' : f.severity === 'MEDIUM' ? 'warning' : 'neutral'}>{f.severity.toLowerCase()}</Badge><span><Link className="text-accent hover:underline" href={`/orgs/${orgId}/audit-findings/${f.id}`}>{f.reference} · {f.title}</Link><span className={cn('block text-xs', f.overdue ? 'text-negative' : 'text-fg-muted')}>{f.dueDate ? `Due ${date(f.dueDate)}` : 'No date'}</span></span></li>)}
+            </ul>
+          ) : <p className="px-5 py-4 text-sm text-fg-muted">No finding is open.</p>}
         </Card>
       </div>
     </>

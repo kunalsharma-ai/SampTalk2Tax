@@ -216,7 +216,7 @@ describe("payroll, AI and analyst dashboards", () => {
         .set(viewer.auth)
         .expect(200)
     ).body.roles as { role: string; available: boolean }[];
-    expect(forViewer.slice(-3).map((r) => [r.role, r.available])).toEqual([
+    expect(forViewer.filter((r) => ['PAYROLL_MANAGER', 'AI_ADMIN', 'ANALYST'].includes(r.role)).map((r) => [r.role, r.available])).toEqual([
       ["PAYROLL_MANAGER", false],
       ["AI_ADMIN", false],
       ["ANALYST", true],

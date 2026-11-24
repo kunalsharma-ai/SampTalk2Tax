@@ -88,6 +88,7 @@ export class FinancialDependenciesController {
 }
 
 const RoleParam = z.enum(DASHBOARD_ROLES);
+const BriefQuery = z.object({ departmentId: z.string().uuid().optional() }).strict();
 
 @ApiTags('reports')
 @ApiBearerAuth()
@@ -105,7 +106,7 @@ export class RoleDashboardsController {
   /** One role's dashboard: CEO, CFO, TREASURY, RISK, COMPLIANCE or BOARD, each with its own figures and layout. */
   @Get(':role')
   @RequirePermission('reports.read')
-  brief(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('role', new ZodPipe(RoleParam)) role: DashboardRole) {
-    return this.s.brief(org, user, role);
+  brief(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Param('role', new ZodPipe(RoleParam)) role: DashboardRole, @Query(new ZodPipe(BriefQuery)) q: z.infer<typeof BriefQuery>) {
+    return this.s.brief(org, user, role, q);
   }
 }

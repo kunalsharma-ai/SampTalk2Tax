@@ -5,7 +5,7 @@ import type { KpiUnit } from '@/lib/kpis';
 import { money } from '@/lib/format';
 import type { RiskLevel } from './risk-monitor';
 
-export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER' | 'ACCOUNTANT' | 'CONTROLLER' | 'INTERNAL_AUDITOR' | 'PROCUREMENT' | 'PAYROLL_MANAGER' | 'AI_ADMIN' | 'ANALYST';
+export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER' | 'ACCOUNTANT' | 'CONTROLLER' | 'INTERNAL_AUDITOR' | 'PROCUREMENT' | 'PAYROLL_MANAGER' | 'AI_ADMIN' | 'ANALYST' | 'FINANCE_DIRECTOR' | 'DEPARTMENT_MANAGER' | 'EXTERNAL_AUDITOR';
 export interface RoleKpi {
   key: string;
   label: string;
@@ -114,6 +114,9 @@ export interface RoleDashboard {
   payroll?: PayrollManagerView;
   ai?: AiAdminView;
   analyst?: AnalystView;
+  director?: FinanceDirectorView;
+  department?: DepartmentManagerView;
+  externalAudit?: ExternalAuditorView;
 }
 
 export interface CloseRow { id: string; name: string; startDate: string; endDate: string; periodStatus: string; closeStatus: string; closedBy: string | null; closedAt: string | null; current: boolean }
@@ -250,6 +253,49 @@ export interface AnalystView {
   customers: { largestShare: string | null; topFiveShare: string | null; band: 'NONE' | 'LOW' | 'MODERATE' | 'HIGH'; top: { name: string; revenue: string; share: string | null }[] };
 }
 
+export interface PlanFigure { budget: string; actual: string | null; variance: string | null; percent: string | null; favourable: boolean | null }
+export interface PlanQuarter { key: string; label: string; started: boolean; inProgress: boolean; revenue: PlanFigure; expenses: PlanFigure; netIncome: PlanFigure }
+export interface FinanceDirectorView {
+  fiscalYear: number;
+  plan: {
+    budget: { id: string; name: string; version: number };
+    actualsThrough: string | null;
+    periodsStarted: number;
+    quarters: PlanQuarter[];
+    yearToDate: { revenue: PlanFigure; expenses: PlanFigure; netIncome: PlanFigure };
+    fullYear: { revenue: string; expenses: string; netIncome: string };
+    offPlan: { accountId: string; code: string; name: string; type: 'REVENUE' | 'EXPENSE'; budgeted: boolean; yearToDate: PlanFigure }[];
+  } | null;
+  departments: { totals: { budget: string; actual: string; committed: string }; over: number; atRisk: number; onTrack: number; noBudget: number; watch: { departmentId: string; name: string; budget: string | null; actual: string; usedPercent: string | null; status: string; reason: string }[] };
+  closes: CloseRow[];
+  lateCloses: number;
+}
+export interface DepartmentManagerView {
+  fiscalYear: number;
+  departments: { id: string; code: string; name: string }[];
+  department: {
+    id: string;
+    code: string;
+    name: string;
+    from: string;
+    to: string;
+    budget: { amount: string | null; actual: string; committed: string; remaining: string | null; usedPercent: string | null; expectedByNow: string | null; projected: string; status: string; reason: string } | null;
+    spent: string;
+    months: { month: string; spent: string; budget: string | null }[];
+    accounts: { id: string; code: string; name: string; spent: string; share: string | null }[];
+    claims: { id: string; number: string; title: string; claimant: string; currency: string; forDepartment: string; submittedOn: string | null }[];
+  } | null;
+}
+export interface ExternalAuditorView {
+  asOf: string;
+  years: { fiscalYear: number; label: string; startDate: string; endDate: string; ended: boolean; periods: { open: number; locked: number; closed: number }; status: string; profit: string; accountsLeft: number }[];
+  trialBalance: { asOf: string; label: string; balanced: boolean; debit: string; credit: string; accounts: number } | null;
+  openPeriodsInEndedYears: number;
+  portal: { active: number; links: { id: string; engagementId: string; engagement: string; auditorName: string; firm: string | null; expiresAt: string; lastSeenAt: string | null; viewCount: number; filesOpened: number }[] };
+  evidence: { summary: { requested: number; submitted: number; accepted: number } & Record<string, number>; outstanding: { id: string; reference: string; title: string; status: string; dueDate: string }[] };
+  findings: { summary: { open: number } & Record<string, number>; open: { id: string; reference: string; title: string; severity: string; status: string; dueDate: string | null; overdue: boolean }[] };
+}
+
 const n = (v: string | null) => (v === null ? null : Number(v)); // not money: only to draw
 const short = (currency: string) => (v: number) => money(String(Math.round(v)), currency).replace(/\.00$/, ''); // not money: axis ticks
 const monthTick = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
@@ -371,6 +417,47 @@ export function MarginChart({ months, currency }: { months: AnalystMonth[]; curr
           <Line yAxisId="pct" dataKey="gross" name="Gross margin" stroke={s[2]} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
           <Line yAxisId="pct" dataKey="operating" name="Operating margin" stroke={s[3]} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
         </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** A department's spending each month against an even share of its yearly budget (the department manager's view). */
+export function DepartmentSpendChart({ months, currency }: { months: { month: string; spent: string; budget: string | null }[]; currency: string }) {
+  const s = chartSeries;
+  const withBudget = months.some((m) => m.budget !== null);
+  return (
+    <div className="h-60 w-full px-2" role="img" aria-label="Department spending by month as bars against a monthly share of its budget; the same figures are in the table below">
+      <ResponsiveContainer>
+        <ComposedChart data={months.map((m) => ({ month: m.month, spent: n(m.spent), budget: n(m.budget) }))} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--t2t-border)" vertical={false} />
+          <XAxis dataKey="month" tickFormatter={monthTick} tick={{ fontSize: 11 }} />
+          <YAxis tickFormatter={short(currency)} tick={{ fontSize: 11 }} width={88} />
+          <Tooltip formatter={(v) => money(String(v), currency)} labelFormatter={(l) => monthTick(String(l))} />
+          <Legend />
+          <Bar dataKey="spent" name="Spent" fill={s[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          {withBudget ? <Line dataKey="budget" name="Monthly share of budget" stroke={s[4]} strokeDasharray="4 4" dot={false} isAnimationActive={false} /> : null}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Net income of each quarter, planned against actual (the finance director's view). */
+export function PlanQuarterBars({ quarters, currency }: { quarters: PlanQuarter[]; currency: string }) {
+  const s = chartSeries;
+  return (
+    <div className="h-60 w-full px-2" role="img" aria-label="Planned and actual net income by quarter as bars; the same figures are in the table below">
+      <ResponsiveContainer>
+        <BarChart data={quarters.map((q) => ({ quarter: q.key, plan: n(q.netIncome.budget), actual: n(q.netIncome.actual) }))} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--t2t-border)" vertical={false} />
+          <XAxis dataKey="quarter" tick={{ fontSize: 11 }} />
+          <YAxis tickFormatter={short(currency)} tick={{ fontSize: 11 }} width={88} />
+          <Tooltip formatter={(v) => money(String(v), currency)} />
+          <Legend />
+          <Bar dataKey="plan" name="Planned net income" fill={s[4]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="actual" name="Actual net income" fill={s[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
