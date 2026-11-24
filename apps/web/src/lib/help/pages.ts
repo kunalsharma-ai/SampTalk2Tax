@@ -894,6 +894,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Work through the checks, then mark the document reviewed with a note of what you did.',
     where: "Tax → Tax documents. The text that was read is at the bottom. The PAN check uses your GSTIN's PAN; the TDS comparison needs the TDS receivable account chosen on the Advance tax page.",
   },
+  'tax/regulatory-changes': {
+    what: 'Regulatory change monitoring: known tax law changes for your country coming up or recent, the tax rules built into Talk2Tax with when each was last checked, and your scheduled tax rate changes.',
+    how: 'Work through the open changes and mark each dealt with, with a note. Check rules marked due for review with your adviser.',
+    where: 'Tax, for every country. Needs the reports permission; recording a change needs accounts.manage. Talk2Tax does not watch government websites: the list of changes was written by hand, is not complete and needs review by a tax adviser.',
+  },
   'tax/cross-border': {
     what: "Cross-border tax reporting: posted invoices, credit notes, bills and vendor credits with contacts in other countries, grouped by the contact's country, with the tax charged and the reverse charge recorded. EU businesses also see their intra-EU supplies by customer VAT ID for the recapitulative statement, and every business sees the documents whose treatment usually needs a second look.",
     how: 'Choose the period (the financial year to date by default). Set the country on contacts that have none, add missing VAT IDs, and check each flagged document with your adviser. Download the CSV to share it.',
