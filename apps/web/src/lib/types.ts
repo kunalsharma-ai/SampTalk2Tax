@@ -141,6 +141,7 @@ export interface Contact {
   city: string | null;
   /** India PIN code (six digits). */
   pincode: string | null;
+  countryCode?: string | null;
   isCustomer: boolean;
   isVendor: boolean;
   paymentTermsDays: number;

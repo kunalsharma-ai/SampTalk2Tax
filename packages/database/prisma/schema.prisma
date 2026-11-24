@@ -541,6 +541,8 @@ model Contact {
   gstin                String?
   /// India GST state code: from the GSTIN when registered; otherwise where the contact is (default place of supply).
   stateCode            String?           @map("state_code") @db.Char(2)
+  /// ISO 3166-1 alpha-2 country of the contact (cross-border reporting, TAX-038); null when unknown.
+  countryCode          String?           @map("country_code") @db.Char(2)
   /// India: the contact's PAN (from the GSTIN when registered). Decides TDS/TCS rates (no PAN, individual or HUF).
   pan                  String?           @db.Char(10)
   /// Default TDS (vendors) or TCS (customers) section for new documents.

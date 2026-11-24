@@ -105,6 +105,8 @@ import { GstController } from './gst/gst.controller';
 import { GstService } from './gst/gst.service';
 import { GstReconciliationService } from './gst/gst-reconciliation.service';
 import { TaxForecastController } from './tax-forecast/tax-forecast.controller';
+import { CrossBorderController } from './cross-border/cross-border.controller';
+import { CrossBorderService } from './cross-border/cross-border.service';
 import { InvoiceRequirementsController } from './invoice-requirements/invoice-requirements.controller';
 import { InvoiceRequirementsService } from './invoice-requirements/invoice-requirements.service';
 import { CompliancePredictionsController } from './compliance/compliance-predictions.controller';
@@ -503,6 +505,7 @@ export class AppModule {
         GstPaymentsController,
         TaxForecastController,
         InvoiceRequirementsController,
+        CrossBorderController,
         CompliancePredictionsController,
         ExpenseReceiptsController,
         ComplianceDocumentsController,
@@ -723,6 +726,7 @@ export class AppModule {
         GstReconciliationService,
         TaxForecastService,
         InvoiceRequirementsService,
+        CrossBorderService,
         CompliancePredictionsService,
         ExpenseReceiptsService,
         TaxAuditService,

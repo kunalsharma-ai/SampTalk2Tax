@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 524 |
+| Not started | 523 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 743 |
+| Tested | 744 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 6 | 48 |
+| Global taxation engine | M3 | 54 | 5 | 49 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 2 | 25 |
@@ -2908,6 +2908,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/tax-engine/src/india/withholding.ts
   - packages/accounting-engine/src/documents.ts
+
+### TAX-038 — Cross-border tax reporting
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Contacts carry an ISO country; the cross-border report groups posted sales and purchases with contacts abroad by country, lists intra-EU supplies by customer VAT ID for the recapitulative statement, flags taxed exports, untaxed imports, missing VAT IDs and foreign documents without a country, and exports CSV with an audit record.
+- Evidence:
+  - packages/tax-engine/src/cross-border.ts
+  - packages/tax-engine/test/cross-border.test.ts
+  - apps/api/src/cross-border/cross-border.service.ts
+  - apps/api/test/cross-border.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/tax/cross-border/page.tsx
+  - apps/web/e2e/cross-border-flow.test.mjs
+  - docs/CROSS_BORDER_REPORTING.md
 
 ### TAX-039 — Country-specific invoice formats
 

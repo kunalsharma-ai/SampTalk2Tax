@@ -1,3 +1,4 @@
+import { isCountryCode } from '@talk2tax/tax-engine';
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
@@ -23,6 +24,8 @@ const Fields = {
   /** City or locality, and the six-digit PIN code (needed for e-invoices). */
   city: optionalText(50),
   pincode: z.string().regex(/^[1-9][0-9]{5}$/, 'A PIN code is six digits').nullable().optional(),
+  /** ISO 3166-1 alpha-2 country, for cross-border reporting. */
+  countryCode: z.string().toUpperCase().refine(isCountryCode, 'Choose a country from the list').nullable().optional(),
   isCustomer: z.boolean().optional(),
   isVendor: z.boolean().optional(),
   paymentTermsDays: z.number().int().min(0).max(3650).optional(),
