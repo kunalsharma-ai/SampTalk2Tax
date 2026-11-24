@@ -5,7 +5,7 @@ import type { KpiUnit } from '@/lib/kpis';
 import { money } from '@/lib/format';
 import type { RiskLevel } from './risk-monitor';
 
-export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD';
+export type DashboardRole = 'CEO' | 'CFO' | 'TREASURY' | 'RISK' | 'COMPLIANCE' | 'BOARD' | 'AR_MANAGER' | 'AP_MANAGER' | 'TAX_MANAGER' | 'EXPENSE_MANAGER';
 export interface RoleKpi {
   key: string;
   label: string;
@@ -103,6 +103,47 @@ export interface RoleDashboard {
   risk?: RiskOfficerView;
   compliance?: ComplianceView;
   board?: BoardView;
+  receivables?: ReceivablesView;
+  payables?: PayablesView;
+  tax?: TaxManagerView;
+  expenses?: ExpenseManagerView;
+}
+
+export type AgingBucket = 'CURRENT' | 'DAYS_1_30' | 'DAYS_31_60' | 'DAYS_61_90' | 'OVER_90';
+export interface Aging { total: string; overdue: string; buckets: { bucket: AgingBucket; amount: string; count: number; share: string | null }[] }
+export const AGING_LABEL: Record<AgingBucket, string> = { CURRENT: 'Not yet due', DAYS_1_30: '1–30 days late', DAYS_31_60: '31–60 days late', DAYS_61_90: '61–90 days late', OVER_90: 'Over 90 days late' };
+export interface ReceivablesView {
+  month: string;
+  dso: RoleKpi | null;
+  aging: Aging;
+  doubtful: { count: number };
+  overdueCustomers: { contactId: string; name: string; overdue: string; invoices: number; oldestDaysLate: number }[];
+  collections: {
+    summary: { customers: number; toChase: string; disputed: string; callNow: number };
+    customers: { contactId: string; name: string; open: string; overdue: string; disputed: string; toChase: string; oldestOverdueDays: number; overdueInvoices: number; action: string; actionLabel: string; lastReminderOn: string | null }[];
+  };
+  forecast: { weeks: { from: string; to: string; expected: string; byDueDate: string; invoices: number; cumulative: string }[]; later: { expected: string; invoices: number }; doubtful: { amount: string; invoices: number }; total: string; inHorizon: string };
+}
+export interface PayablesView {
+  month: string;
+  dpo: RoleKpi | null;
+  aging: Aging;
+  payments: { summary: { cash: string; payNow: string; onDue: string; short: string; blocked: string; offerSavings: string; offers: number }; bills: { id: string; vendor: string; number: string; dueDate: string; due: string; action: string; actionLabel: string }[] };
+  exceptions: { summary: { bills: number; atStake: string; withVendor: number; awaitingGoods: number; oldestDays: number }; items: { id: string; vendor: string; reference: string | null; order: string; atStake: string; daysHeld: number; nextActionLabel: string }[] };
+  fraud: { windowDays: number; summary: { checked: number; flagged: number; high: number; medium: number; low: number }; payments: { vendor: string; date: string; amount: string; currency: string; level: 'HIGH' | 'MEDIUM' | 'LOW' | null }[] };
+}
+export interface TaxManagerView {
+  configured: boolean;
+  payments: { totals: TaxTotals; overdue: number; items: { key: string; name: string; area: string; periodLabel: string; dueDate: string; method: string; amount: string; low: string; high: string }[] };
+  byArea: { area: string; amount: string; payments: number }[];
+  returns: { key: string; name: string; periodLabel: string; dueDate: string; daysLeft: number; risk: 'HIGH' | 'MEDIUM' | 'LOW'; predictedDate: string | null; signals: string[] }[];
+  gst: { registered: true; period: string; agrees: boolean; difference: string; unexplained: string; documentsChecked: number; discrepancies: { high: number; medium: number; low: number }; items: number } | { registered: false; period: string };
+}
+export interface ExpenseManagerView {
+  approvals: { count: number; totals: { currency: string; amount: string }[]; oldestDays: number; claims: { id: string; number: string; title: string; claimant: string; currency: string; total: string; submittedOn: string | null }[] };
+  risk: { summary: { claims: number; flagged: number; high: number; medium: number; low: number }; items: { claimId: string; title: string; claimant: string; total: string; currency: string; level: 'HIGH' | 'MEDIUM' | 'LOW'; indicators: string[] }[] };
+  receipts: { days: number; lines: number; withReceipt: number; missing: number; totals: { currency: string; amount: string }[] };
+  budgets: { fiscalYear: number; totals: { budget: string; actual: string; committed: string }; rows: { departmentId: string; name: string; budget: string | null; actual: string; committed: string; status: 'OVER' | 'AT_RISK' | 'ON_TRACK' | 'NO_BUDGET' | string; usedPercent: string | null; reason: string }[] };
 }
 
 const n = (v: string | null) => (v === null ? null : Number(v)); // not money: only to draw
@@ -165,6 +206,24 @@ export function QuarterBars({ quarters, currency }: { quarters: BoardQuarter[]; 
           <Legend />
           <Bar dataKey="revenue" name="Revenue" fill={s[0]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
           <Bar dataKey="net" name="Net income" fill={s[1]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Open amounts by how late they are, oldest on the right (receivables and payables managers). */
+export function AgingBars({ aging, currency, colour }: { aging: Aging; currency: string; colour: number }) {
+  const s = chartSeries;
+  return (
+    <div className="h-56 w-full px-2" role="img" aria-label="Open amounts by how late they are, as bars; the same figures are in the table below">
+      <ResponsiveContainer>
+        <BarChart data={aging.buckets.map((b) => ({ bucket: AGING_LABEL[b.bucket], amount: n(b.amount) }))} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--t2t-border)" vertical={false} />
+          <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
+          <YAxis tickFormatter={short(currency)} tick={{ fontSize: 11 }} width={88} />
+          <Tooltip formatter={(v) => money(String(v), currency)} />
+          <Bar dataKey="amount" name="Open" fill={s[colour]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>
