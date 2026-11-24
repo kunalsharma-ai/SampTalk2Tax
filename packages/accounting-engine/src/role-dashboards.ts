@@ -6,7 +6,7 @@ import { D } from './money';
  * helpers only rank what needs attention, roll months into quarters and band a share so a board
  * can see concentration without names. Pure.
  */
-export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT', 'PAYROLL_MANAGER', 'AI_ADMIN', 'ANALYST', 'FINANCE_DIRECTOR', 'DEPARTMENT_MANAGER', 'EXTERNAL_AUDITOR'] as const;
+export const DASHBOARD_ROLES = ['CEO', 'CFO', 'TREASURY', 'RISK', 'COMPLIANCE', 'BOARD', 'AR_MANAGER', 'AP_MANAGER', 'TAX_MANAGER', 'EXPENSE_MANAGER', 'ACCOUNTANT', 'CONTROLLER', 'INTERNAL_AUDITOR', 'PROCUREMENT', 'PAYROLL_MANAGER', 'AI_ADMIN', 'ANALYST', 'FINANCE_DIRECTOR', 'DEPARTMENT_MANAGER', 'EXTERNAL_AUDITOR', 'PROJECT_FINANCE', 'ORG_ADMIN'] as const;
 export type DashboardRole = (typeof DASHBOARD_ROLES)[number];
 
 export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: string }> = {
@@ -29,6 +29,8 @@ export const ROLE_DASHBOARDS: Record<DashboardRole, { name: string; question: st
   FINANCE_DIRECTOR: { name: 'Finance director', question: 'Are we on plan this year, which accounts are furthest off budget, which departments are overspending, and are the months closed?' },
   DEPARTMENT_MANAGER: { name: 'Department manager', question: 'How much has my department spent against its budget, month by month and on what, and which claims wait for approval?' },
   EXTERNAL_AUDITOR: { name: 'External auditor', question: 'Is the year closed and the trial balance in balance, what have the auditors been given and asked for, and which findings are open?' },
+  PROJECT_FINANCE: { name: 'Project finance manager', question: 'Which projects make money, which are losing it or running thin, how far through is each, and how much is not tied to any project?' },
+  ORG_ADMIN: { name: 'Organisation administrator', question: 'Who has access and with what role, is sign-in secure, are the integrations working, and how much of the plan is used?' },
   EXPENSE_MANAGER: { name: 'Expense manager', question: 'Which claims wait for a decision, which look risky, which lack receipts, and how departments stand against their budgets?' },
 };
 
@@ -183,4 +185,51 @@ export function furthestOffPlan<T extends { code: string; yearToDate: PlanFigure
     .filter((r) => r.yearToDate.variance !== null && !new D(r.yearToDate.variance).isZero())
     .sort((a, b) => Number(a.yearToDate.favourable) - Number(b.yearToDate.favourable) || new D(b.yearToDate.variance!).abs().comparedTo(new D(a.yearToDate.variance!).abs()) || a.code.localeCompare(b.code))
     .slice(0, max);
+}
+
+export type ProjectHealth = 'LOSS' | 'THIN' | 'HEALTHY' | 'NO_REVENUE' | 'NO_ACTIVITY';
+export const THIN_MARGIN_PERCENT = 10; // not money: a margin below this is thin
+
+/**
+ * How a project stands from its revenue and costs to date, and how far through its dates it is:
+ * a loss, a thin margin (under 10%), healthy, costs with no revenue yet, or nothing posted.
+ */
+export function projectHealth(input: { revenue: string; cost: string; startDate: string | null; endDate: string | null; asOf: string }) {
+  const revenue = new D(input.revenue);
+  const cost = new D(input.cost);
+  const profit = revenue.minus(cost);
+  const margin = revenue.greaterThan(0) ? profit.dividedBy(revenue).times(100).toDecimalPlaces(1, D.ROUND_HALF_EVEN) : null;
+  const health: ProjectHealth = revenue.isZero() && cost.isZero() ? 'NO_ACTIVITY' : revenue.isZero() ? 'NO_REVENUE' : profit.isNegative() ? 'LOSS' : margin!.lessThan(THIN_MARGIN_PERCENT) ? 'THIN' : 'HEALTHY';
+  let elapsedPercent: number | null = null;
+  let daysLeft: number | null = null;
+  if (input.startDate && input.endDate && input.endDate >= input.startDate) {
+    const day = (d: string) => Date.parse(`${d}T00:00:00Z`) / 86_400_000; // not money: days
+    const total = day(input.endDate) - day(input.startDate) + 1;
+    const gone = Math.min(total, Math.max(0, day(input.asOf) - day(input.startDate) + 1));
+    elapsedPercent = Math.round((gone * 1000) / total) / 10; // not money
+    daysLeft = Math.round(day(input.endDate) - day(input.asOf)); // not money
+  }
+  return { profit: profit.toFixed(), margin: margin === null ? null : margin.toFixed(1), health, elapsedPercent, daysLeft, ended: !!input.endDate && input.endDate < input.asOf };
+}
+
+export interface AdminFacts {
+  requireTwoStep: boolean;
+  membersWithoutTwoStep: number;
+  adminsWithoutTwoStep: number;
+  expiredInvitations: number;
+  sso: { configured: boolean; enabled: boolean; verifiedDomains: number };
+  integrations: { name: string; configured: boolean; enabled: boolean; testStatus: string }[];
+  usage: { name: string; state: 'OK' | 'NEAR' | 'REACHED' | 'UNLIMITED'; percent: number | null }[];
+}
+
+/** What an organisation administrator should look at, most urgent first. */
+export function adminAttention(f: AdminFacts): { title: string; detail: string; level: AttentionLevel; href: string }[] {
+  const out: { title: string; detail: string; level: AttentionLevel; href: string }[] = [];
+  if (f.adminsWithoutTwoStep > 0) out.push({ title: 'Owners or admins without two-step sign-in', detail: `${f.adminsWithoutTwoStep} of the people who can change settings sign in with a password alone.`, level: 'HIGH', href: '/members' });
+  if (!f.requireTwoStep && f.membersWithoutTwoStep > 0) out.push({ title: 'Two-step sign-in is not required', detail: `${f.membersWithoutTwoStep} member${f.membersWithoutTwoStep === 1 ? ' signs' : 's sign'} in without it.`, level: 'MEDIUM', href: '/members' });
+  if (f.sso.configured && f.sso.enabled && f.sso.verifiedDomains === 0) out.push({ title: 'Single sign-on has no verified domain', detail: 'People cannot be sent to your identity provider until a domain is verified.', level: 'MEDIUM', href: '/settings/sso' });
+  for (const i of f.integrations) if (i.configured && i.enabled && i.testStatus === 'FAILED') out.push({ title: `${i.name} connection failed its last test`, detail: 'Fix the settings and test it again.', level: 'HIGH', href: '/settings/integrations' });
+  for (const u of f.usage) if (u.state === 'REACHED' || u.state === 'NEAR') out.push({ title: `${u.name} ${u.state === 'REACHED' ? 'limit reached' : 'nearly used up'}`, detail: `${u.percent ?? 100}% of this month's plan is used.`, level: u.state === 'REACHED' ? 'HIGH' : 'MEDIUM', href: '/settings/usage' });
+  if (f.expiredInvitations > 0) out.push({ title: 'Invitations expired', detail: `${f.expiredInvitations} invitation${f.expiredInvitations === 1 ? '' : 's'} ran out before being accepted; renew or revoke them.`, level: 'LOW', href: '/members' });
+  return out.sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] || a.title.localeCompare(b.title));
 }
