@@ -182,6 +182,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/tax/vat-return', label: 'VAT return (VAT 201)', needs: 'SALES_TAX_RETURNS', countries: AE, perm: 'reports.read' },
       { href: '/tax/vat-return', label: 'VAT advance return (UStVA)', needs: 'SALES_TAX_RETURNS', countries: DE, perm: 'reports.read' },
       { href: '/tax/invoice-requirements', label: 'Invoice requirements', perm: 'sales.read' },
+      { href: '/tax/cross-border', label: 'Cross-border report', perm: 'reports.read' },
       { href: '/tax/e-invoices', label: 'E-invoices', needs: 'E_INVOICING' },
       { href: '/tax/e-way-bills', label: 'E-way bills', needs: 'TRANSPORT_DOCUMENTS' },
       { href: '/tax/tds-tcs', label: 'TDS and TCS', needs: 'WITHHOLDING' },

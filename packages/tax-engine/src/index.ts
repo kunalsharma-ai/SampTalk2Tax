@@ -29,3 +29,4 @@ export * from './ae/vat-201';
 export * from './de/ust-voranmeldung';
 export * from './vat/jurisdictions';
 export * from './invoice-rules';
+export * from './cross-border';

@@ -10197,6 +10197,19 @@
         "docs/INVOICE_REQUIREMENTS.md"
       ],
       "notes": "E-invoicing requirements for India (IRN), Germany (receive 2025, issue 2027/2028), the UAE (2026 pilot, 2027 phases), Singapore (InvoiceNow), the UK (announced April 2029), Australia and Canada (not required), with turnover thresholds tested against completed years in the books or a typed figure. Nothing is sent to any network."
+    },
+    "TAX-038": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/cross-border.ts",
+        "packages/tax-engine/test/cross-border.test.ts",
+        "apps/api/src/cross-border/cross-border.service.ts",
+        "apps/api/test/cross-border.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/cross-border/page.tsx",
+        "apps/web/e2e/cross-border-flow.test.mjs",
+        "docs/CROSS_BORDER_REPORTING.md"
+      ],
+      "notes": "Contacts carry an ISO country; the cross-border report groups posted sales and purchases with contacts abroad by country, lists intra-EU supplies by customer VAT ID for the recapitulative statement, flags taxed exports, untaxed imports, missing VAT IDs and foreign documents without a country, and exports CSV with an audit record."
     }
   }
 }

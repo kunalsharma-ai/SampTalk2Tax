@@ -7355,9 +7355,17 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/cross-border.ts",
+        "packages/tax-engine/test/cross-border.test.ts",
+        "apps/api/src/cross-border/cross-border.service.ts",
+        "apps/api/test/cross-border.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/tax/cross-border/page.tsx",
+        "apps/web/e2e/cross-border-flow.test.mjs",
+        "docs/CROSS_BORDER_REPORTING.md"
+      ],
+      "notes": "Contacts carry an ISO country; the cross-border report groups posted sales and purchases with contacts abroad by country, lists intra-EU supplies by customer VAT ID for the recapitulative statement, flags taxed exports, untaxed imports, missing VAT IDs and foreign documents without a country, and exports CSV with an audit record."
     },
     {
       "id": "TAX-039",
