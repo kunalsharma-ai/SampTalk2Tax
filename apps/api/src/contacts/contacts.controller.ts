@@ -26,6 +26,8 @@ const Fields = {
   pincode: z.string().regex(/^[1-9][0-9]{5}$/, 'A PIN code is six digits').nullable().optional(),
   /** ISO 3166-1 alpha-2 country, for cross-border reporting. */
   countryCode: z.string().toUpperCase().refine(isCountryCode, 'Choose a country from the list').nullable().optional(),
+  /** State, province or region code within the country, such as TX (US sales tax). */
+  regionCode: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{1,3}$/, 'Use the state or region code, such as TX').nullable().optional(),
   isCustomer: z.boolean().optional(),
   isVendor: z.boolean().optional(),
   paymentTermsDays: z.number().int().min(0).max(3650).optional(),

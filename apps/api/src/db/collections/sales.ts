@@ -19,6 +19,8 @@ export interface ContactDoc {
   stateCode: string | null;
   /** ISO country (TAX-038); absent on contacts saved before it existed. */
   countryCode?: string | null;
+  /** State, province or region within the country (ISO 3166-2 subdivision, such as TX); TAX-028. */
+  regionCode?: string | null;
   pan: string | null;
   withholdingSectionId: string | null;
   address: string | null;
@@ -59,6 +61,7 @@ export const contacts = defineCollection<ContactDoc>({
       pan: { anyOf: [{ bsonType: 'null' }, { bsonType: 'string', pattern: '^[A-Z]{5}[0-9]{4}[A-Z]$' }] },
       pincode: { anyOf: [{ bsonType: 'null' }, { bsonType: 'string', pattern: '^[1-9][0-9]{5}$' }] },
       countryCode: { anyOf: [{ bsonType: 'null' }, { bsonType: 'string', pattern: '^[A-Z]{2}$' }] },
+      regionCode: { anyOf: [{ bsonType: 'null' }, { bsonType: 'string', pattern: '^[A-Z0-9]{1,3}$' }] },
       isCustomer: { bsonType: 'bool' },
       isVendor: { bsonType: 'bool' },
       paymentTermsDays: { bsonType: ['int', 'long'], minimum: 0, maximum: 3650 },
@@ -119,6 +122,7 @@ export function newContact(c: Partial<ContactDoc> & { name: string }, now = new 
     city: null,
     pincode: null,
     countryCode: null,
+    regionCode: null,
     isCustomer: false,
     isVendor: false,
     paymentTermsDays: 30,

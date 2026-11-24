@@ -181,6 +181,7 @@ export const hi: Record<string, string> = {
   'E-invoices': 'ई-इनवॉइस',
   'Invoice requirements': 'इनवॉइस आवश्यकताएँ',
   'Cross-border report': 'सीमा-पार रिपोर्ट',
+  'US sales tax': 'अमेरिकी बिक्री कर',
   'E-way bills': 'ई-वे बिल',
   'TDS and TCS': 'TDS और TCS',
   'GST settings': 'GST सेटिंग',

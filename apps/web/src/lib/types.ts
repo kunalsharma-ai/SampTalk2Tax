@@ -142,6 +142,7 @@ export interface Contact {
   /** India PIN code (six digits). */
   pincode: string | null;
   countryCode?: string | null;
+  regionCode?: string | null;
   isCustomer: boolean;
   isVendor: boolean;
   paymentTermsDays: number;

@@ -270,7 +270,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-025 | India Module | capability | Compliance document management | Tested |
 | TAX-026 | India Module | capability | Tax audit support | Tested |
 | TAX-027 | India Module | rule | External government submission must be implemented only through approved and authorized integrations | Implementing |
-| TAX-028 | Global Tax Modules | capability | US sales tax | Not started |
+| TAX-028 | Global Tax Modules | capability | US sales tax | Tested |
 | TAX-029 | Global Tax Modules | capability | US federal and state tax-related reporting | Not started |
 | TAX-030 | Global Tax Modules | capability | UK VAT | Tested |
 | TAX-031 | Global Tax Modules | capability | EU VAT | Tested |
