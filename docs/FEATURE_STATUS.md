@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 530 |
+| Not started | 529 |
 | Designed | 0 |
 | Implementing | 41 |
 | Implemented | 23 |
-| Tested | 735 |
+| Tested | 736 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 1 | 40 |
-| Dashboard design | M1 | 68 | 24 | 44 |
+| Dashboard design | M1 | 68 | 23 | 45 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6809,6 +6809,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src
 
+### DASH-042 — Global Super Admin
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Platform administration → Overview is the global super admin dashboard (GET /v1/admin/dashboard, platform.read): a to-do ranked by urgency (security alerts, backup problems, late support tickets, server errors, plan requests, organisations at a limit, trials ending, read-only and suspended organisations) linking to each admin page; new organisations and people by month (chart and table); monthly and yearly run-rate by currency from paid active subscriptions of real organisations (annual price as a twelfth a month) and subscriptions by state, plan requests and trials ending; the fullest organisations this month; organisations by country; the most urgent support tickets; errors, security and backups. Organisation metadata and counts only, never an organisation's books.
+- Evidence:
+  - packages/accounting-engine/src/platform-dashboard.ts
+  - packages/accounting-engine/test/platform-dashboard.test.ts
+  - apps/api/src/admin/platform-dashboard.service.ts
+  - apps/api/src/admin/admin.controller.ts
+  - apps/api/test/platform-dashboard.e2e.test.ts
+  - apps/web/src/components/admin/platform-dashboard.tsx
+  - apps/web/src/app/admin/page.tsx
+  - apps/web/e2e/platform-dashboard-flow.test.mjs
+
 ### DASH-043 — Tenant Organization Admin
 
 - Module: Dashboard design
@@ -7121,7 +7136,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The twenty-two role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform admin, and the vendor and customer views.
+- Notes: The twenty-two role dashboards and the global super admin dashboard built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The global super admin dashboard is the platform overview (DASH-042). Still to build in DASH-042..065: the vendor and customer views.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -7140,12 +7155,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/role-dashboards-directors-flow.test.mjs
   - apps/api/test/role-dashboards-admin.e2e.test.ts
   - apps/web/e2e/role-dashboards-admin-flow.test.mjs
+  - apps/api/test/platform-dashboard.e2e.test.ts
+  - apps/web/e2e/platform-dashboard-flow.test.mjs
 
 ### DASH-068 — Do not simply reuse the same dashboard with different headings
 
 - Module: Dashboard design
 - Status: **Implementing**
-- Notes: The twenty-two role dashboards built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. Still to build in DASH-042..065: the platform admin, and the vendor and customer views.
+- Notes: The twenty-two role dashboards and the global super admin dashboard built so far (CEO, CFO, treasury, risk officer, compliance, board, receivables, payables, tax and expense managers, accountant, controller, internal auditor, procurement, payroll manager, AI agent administrator, financial analyst, finance director, department manager, external auditor, project finance, organisation admin) each have their own sections, figures and layout from their own sources, not one dashboard re-titled; the API returns a different shape per role and the browser tests check each role's own sections. Tabs a member's role cannot open are shown disabled. The global super admin dashboard is the platform overview (DASH-042). Still to build in DASH-042..065: the vendor and customer views.
 - Evidence:
   - apps/api/src/financial-visuals/role-dashboards.service.ts
   - apps/api/test/role-dashboards-managers.e2e.test.ts
@@ -7164,6 +7181,8 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/role-dashboards-directors-flow.test.mjs
   - apps/api/test/role-dashboards-admin.e2e.test.ts
   - apps/web/e2e/role-dashboards-admin-flow.test.mjs
+  - apps/api/test/platform-dashboard.e2e.test.ts
+  - apps/web/e2e/platform-dashboard-flow.test.mjs
 
 ### WAR-001 — Create an immersive collaborative financial planning environment
 

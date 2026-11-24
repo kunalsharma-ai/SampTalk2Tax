@@ -118,6 +118,7 @@ import { HealthController } from './health/health.controller';
 import { RegionsController } from './regions/regions.controller';
 import { AdminController, AnnouncementsController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
+import { PlatformDashboardService } from './admin/platform-dashboard.service';
 import { PlatformSupportController, SupportController } from './support/support.controller';
 import { SupportService } from './support/support.service';
 import { PlatformUsageController, UsageController } from './usage/usage.controller';
@@ -608,6 +609,7 @@ export class AppModule {
       providers: [
         RegionsService,
         AdminService,
+        PlatformDashboardService,
         SupportService,
         SupportAccessService,
         UsageService,

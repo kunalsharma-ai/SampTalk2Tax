@@ -1,6 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
+import { PlatformDashboardView, type PlatformDashboard } from '@/components/admin/platform-dashboard';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
@@ -14,12 +15,13 @@ interface Overview {
 
 export default function AdminOverviewPage() {
   const q = useQuery({ queryKey: ['admin-overview'], queryFn: () => api<Overview>('/v1/admin/overview') });
+  const dash = useQuery({ queryKey: ['admin-dashboard'], queryFn: () => api<PlatformDashboard>('/v1/admin/dashboard') });
   const o = q.data;
   return (
     <>
       <PageHeader
         title="Platform overview"
-        description="Organisations, people and announcements across the service. Administrators see each organisation's name, country, region, members and status, never its books: accounts, journals, documents and amounts stay with its members."
+        description="The whole service at a glance: growth, subscriptions and their run-rate, usage, support, errors, security and backups, with what to look at first. Administrators see each organisation's name, country, region, members and status, never its books: accounts, journals, documents and amounts stay with its members."
       />
       <ErrorAlert title="Could not load the overview" error={q.error} />
       {o ? (
@@ -30,6 +32,7 @@ export default function AdminOverviewPage() {
             <Stat label="People" value={o.people.total} sub={`${o.people.joinedLast30Days} joined in the last 30 days · ${o.people.disabled} disabled`} />
             <Stat label="Signed in, last 30 days" value={o.people.signedInLast30Days} tone="positive" sub="People with a session used in 30 days" />
           </div>
+          {dash.data ? <div className="mb-6"><PlatformDashboardView d={dash.data} /></div> : <ErrorAlert title="Could not load the dashboard" error={dash.error} />}
           <Card aria-label="Administrators">
             <CardHeader title="Administrators" description="Super admins manage organisations, people and announcements; support looks things up. Roles are changed under People." />
             <Table>
