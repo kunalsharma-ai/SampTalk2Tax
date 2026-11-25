@@ -34,7 +34,9 @@ const NUMBER = /\d+(?:\.\d+)?/g;
 export function normaliseRate(n: string): string {
   if (!n.includes('.')) return String(Number(n));
   const [whole, frac] = n.split('.') as [string, string];
-  const f = frac.replace(/0+$/, '');
+  let end = frac.length;
+  while (end > 0 && frac[end - 1] === '0') end--;
+  const f = frac.slice(0, end);
   return f ? `${Number(whole)}.${f}` : String(Number(whole));
 }
 
