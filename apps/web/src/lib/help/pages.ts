@@ -502,7 +502,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   expenses: {
     what: 'Expense claims from employees for money they spent on the organisation\'s behalf.',
-    how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid. As you type a merchant or description, a suggested category appears from how earlier claims were booked; press Use to take it.',
+    how: 'Create a claim with receipts and lines, submit it, and an approver approves or rejects it. Approved claims are posted and paid. As you type a merchant or description, a suggested category appears from how earlier claims were booked; press Use to take it. Read a receipt into a line from its photo or PDF: Talk2Tax reads the merchant, date and total itself, marks each value Read clearly, Check or Guess, and lists anything to check before you save.',
     where: 'Expenses. Approved claims post to expense accounts and what is owed to the employee.',
   },
   'expenses/trips': {
@@ -522,7 +522,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   'expenses/receipts': {
     what: 'Receipts for spending paid from a company bank or card account, each matched to the money-out line of the bank statement it paid; and the bank payments that still have no receipt. Spending a person paid themselves goes on an expense claim instead.',
-    how: "Add a receipt with the merchant, date and amount, then attach the photo or PDF. Finance sees a suggested bank line for each receipt: Sure when the amount matches, the dates are close and the merchant's name is in the bank narration; Likely or Possible otherwise, with the reasons. Match one at a time, or all the sure ones together. Bank spending without a receipt shows who to ask.",
+    how: "Read the receipt's photo or PDF to fill in the merchant, date and amount (Talk2Tax reads it with OCR on its own servers and also reads GST lines and the GSTIN, checking they add up), or type them. Check each value, then add the receipt; a receipt that was read is attached for you. Finance sees a suggested bank line for each receipt: Sure when the amount matches, the dates are close and the merchant's name is in the bank narration; Likely or Possible otherwise, with the reasons. Match one at a time, or all the sure ones together. Bank spending without a receipt shows who to ask.",
     where: 'Expenses. Anyone who submits expenses adds receipts and sees their own; matching needs the banking manage permission, and the bank list needs banking read. Bank lines come from imported statements; matching changes nothing in the books, and no AI model is used.',
   },
   'expenses/receipts/[id]': {
