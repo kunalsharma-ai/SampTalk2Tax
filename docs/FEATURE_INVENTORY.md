@@ -1424,7 +1424,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-003 |  | capability | Concurrent users | Not started |
 | PERF-004 |  | capability | Complex reporting | Not started |
 | PERF-005 |  | capability | AI workload isolation | Not started |
-| PERF-006 |  | capability | Background processing | Not started |
+| PERF-006 |  | capability | Background processing | Tested |
 | PERF-007 |  | capability | Regional deployments | Implemented |
 | PERF-008 |  | capability | Horizontal scaling | Not started |
 | PERF-009 |  | capability | Database partitioning where justified | Not started |
@@ -1437,7 +1437,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-016 |  | capability | Common API reads under 300 milliseconds at the 95th percentile under defined load | Tested |
 | PERF-017 |  | capability | Financial posting with transactional consistency | Tested |
 | PERF-018 |  | capability | No cross-tenant data exposure | Tested |
-| PERF-019 |  | capability | Recoverable background jobs | Not started |
+| PERF-019 |  | capability | Recoverable background jobs | Tested |
 | PERF-020 |  | capability | Observable AI execution | Not started |
 | PERF-021 |  | rule | Benchmark before claiming these targets are achieved | Tested |
 

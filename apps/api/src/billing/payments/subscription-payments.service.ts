@@ -594,6 +594,10 @@ export class SubscriptionPaymentsService {
 
   /** Issues the renewal invoice for a subscription whose period ends soon (used by the runner). */
   async issueRenewal(tx: Tx, orgId: string, now: Date) {
+    // Write to the subscription first (PERF-019): when two servers renew at the same moment, the
+    // second transaction conflicts here, is retried once the first commits, and then finds the
+    // renewal already issued, instead of both checking "no invoice yet" and issuing two.
+    await tx.subscription.update({ where: { orgId }, data: { updatedAt: new Date() } });
     const s = await tx.subscription.findUniqueOrThrow({ where: { orgId }, include: { plan: true, requestedPlan: true } });
     if (s.status !== 'ACTIVE' || !s.currentPeriodEnd || !s.billingInterval) return null;
     const exists = await tx.subscriptionInvoice.findFirst({ where: { orgId, kind: { in: PLAN_KINDS }, status: { in: ['OPEN', 'PAID'] }, periodStart: { gte: s.currentPeriodEnd } } });

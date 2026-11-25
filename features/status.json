@@ -10315,6 +10315,26 @@
         "scripts/check-performance-claims.test.mjs"
       ],
       "notes": "CI fails when a PERF feature with a time target is claimed without a budget, or a budgeted feature is claimed without its benchmark as evidence, or a benchmark does not run in CI or hard-codes its limit."
+    },
+    "PERF-006": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/background-jobs.e2e.test.ts",
+        "apps/api/src/operations/heartbeats.service.ts",
+        "docs/BACKGROUND_JOBS.md"
+      ],
+      "notes": "Eleven background runners in each API process, each with an interval setting (0 = off), reporting every pass to system health (failing, late), paused during maintenance."
+    },
+    "PERF-019": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/background-jobs.e2e.test.ts",
+        "apps/api/test/workflow-recovery.e2e.test.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/src/security-monitor/security-monitor.service.ts",
+        "docs/BACKGROUND_JOBS.md"
+      ],
+      "notes": "Two API processes on one database run the same passes at once: recurring journals, recurring bills, renewals and reminders, security alerts and workflows each act once; transactions leave nothing half done. Fixed: duplicate subscription renewal and reminder, and a failing security scan, when two servers ran together. Emails sent just before a crash may repeat."
     }
   }
 }

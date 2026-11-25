@@ -3,6 +3,7 @@ import { DunningStage, dunningStage, RENEWAL_NOTICE_DAYS } from '@talk2tax/accou
 import { PrismaService, withSystemAccess } from '../../common/prisma.service';
 import { tenantStorage } from '../../common/tenant-context';
 import { AppConfig, CONFIG } from '../../config';
+import { withLease } from '../../db/counters';
 import { HeartbeatsService } from '../../operations/heartbeats.service';
 import { MailerService } from '../../workflows/email';
 import { BillingService } from '../billing.service';
@@ -92,8 +93,17 @@ export class RenewalsRunnerService implements OnApplicationBootstrap, OnModuleDe
     return { issued, reminded };
   }
 
-  /** Sends one reminder for an invoice and stage, once. Returns whether it was due now. */
-  private async remind(orgId: string, orgName: string, invoiceId: string, reference: string, total: string, currency: string, stage: DunningStage, periodEnd: Date) {
+  /**
+   * Sends one reminder for an invoice and stage, once. Returns whether it was due now. A lease on
+   * the organisation makes the check, the email and its record one step when two servers run the
+   * pass together (PERF-019); a server that dies after emailing but before recording it leaves the
+   * lease to run out, and the reminder may then be sent a second time, never skipped.
+   */
+  private remind(orgId: string, orgName: string, invoiceId: string, reference: string, total: string, currency: string, stage: DunningStage, periodEnd: Date) {
+    return withLease(`renewal-reminder:${orgId}`, 120, false, () => this.remindOnce(orgId, orgName, invoiceId, reference, total, currency, stage, periodEnd));
+  }
+
+  private async remindOnce(orgId: string, orgName: string, invoiceId: string, reference: string, total: string, currency: string, stage: DunningStage, periodEnd: Date) {
     const kind = `REMINDER_${stage}`;
     const sent = await tenantStorage.run({ bypass: true }, async () => await this.prisma.subscriptionEvent.findFirst({ where: { orgId, kind, data: { path: ['invoice'], equals: reference } } }));
     if (sent) return false;

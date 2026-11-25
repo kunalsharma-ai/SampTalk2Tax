@@ -1,5 +1,7 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { Prisma } from '@talk2tax/database';
+import { isDuplicateKeyError } from '@talk2tax/document-db';
 import { AuditService } from '../audit/audit.service';
 import { DomainError } from '../common/errors';
 import { PrismaService } from '../common/prisma.service';
@@ -126,7 +128,13 @@ export class SecurityMonitorService {
       const last = f.events.at(-1)!.createdAt;
       const existing = await runAsSystem(() => this.prisma.securityAlert.findUnique({ where: { rule_key: { rule: f.rule, key: f.key } } }));
       if (!existing) {
-        const a = await runAsSystem(() => this.prisma.securityAlert.create({ data: { rule: f.rule, key: f.key, severity: f.severity, title: f.title, detail: f.detail, orgId: f.orgId, userId: f.userId, eventIds: ids, count: f.events.length, firstSeenAt: first, lastSeenAt: last } }));
+        // Another server may open the same alert at the same moment (PERF-019): the unique rule and
+        // key let one of them win, and the other leaves it, so the alert and its email happen once.
+        const a = await runAsSystem(() => this.prisma.securityAlert.create({ data: { rule: f.rule, key: f.key, severity: f.severity, title: f.title, detail: f.detail, orgId: f.orgId, userId: f.userId, eventIds: ids, count: f.events.length, firstSeenAt: first, lastSeenAt: last } })).catch((e: unknown) => {
+          if (isDuplicateKeyError(e) || (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) return null;
+          throw e;
+        });
+        if (!a) continue;
         opened.push(a.id);
         await this.prisma.$transaction((tx) => this.audit.append(tx, { orgId: null, actorId: null, action: 'security.alert_opened', entityType: 'security_alert', entityId: a.id, data: { rule: f.rule, severity: f.severity, events: f.events.length } }));
       } else if (f.events.length > existing.count) {
