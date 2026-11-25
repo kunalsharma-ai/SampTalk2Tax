@@ -1,0 +1,50 @@
+{
+  "about": "Talk2Tax performance budgets (PERF-014). Each budget names the feature it backs, the benchmark that measures it in CI and the conditions it holds under. A budget is only claimed as met when its benchmark passes (PERF-021); scripts/check-performance-claims.mjs checks that.",
+  "budgets": [
+    {
+      "key": "api-read-p95",
+      "feature": "PERF-016",
+      "title": "Common API reads (dashboard, invoice list, accounts, trial balance, income statement)",
+      "percentile": 95,
+      "limitMs": 300,
+      "benchmark": "scripts/load-test.mjs",
+      "conditions": "CI runner: API and MongoDB replica set on one machine; 10 organisations x 2 people, 3 requests a second each for 20 seconds, one request in six posting an invoice."
+    },
+    {
+      "key": "api-post-invoice-p95",
+      "feature": "PERF-017",
+      "title": "Posting an invoice (with its journal) under the same load",
+      "percentile": 95,
+      "limitMs": 1000,
+      "benchmark": "scripts/load-test.mjs",
+      "conditions": "As for common API reads."
+    },
+    {
+      "key": "dashboard-open-p95",
+      "feature": "PERF-015",
+      "title": "Opening the dashboard until its balances and monthly chart show",
+      "percentile": 95,
+      "limitMs": 2000,
+      "benchmark": "apps/web/e2e/dashboard-performance.test.mjs",
+      "conditions": "Production build of the web app and API on the CI runner with MongoDB; Chromium at 1440x900, no throttling; one organisation with 120 posted invoices, 40 posted bills and 20 customers over the current fiscal year; 5 timed runs after one warm-up."
+    },
+    {
+      "key": "dashboard-drilldown-p95",
+      "feature": "PERF-015",
+      "title": "From the dashboard to the receivables ageing it links to, until the ageing rows show",
+      "percentile": 95,
+      "limitMs": 2000,
+      "benchmark": "apps/web/e2e/dashboard-performance.test.mjs",
+      "conditions": "As for opening the dashboard."
+    },
+    {
+      "key": "dashboard-back-p95",
+      "feature": "PERF-015",
+      "title": "Back from the ageing to the dashboard, until its balances show",
+      "percentile": 95,
+      "limitMs": 2000,
+      "benchmark": "apps/web/e2e/dashboard-performance.test.mjs",
+      "conditions": "As for opening the dashboard."
+    }
+  ]
+}
