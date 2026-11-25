@@ -4,8 +4,11 @@
  * and post at a steady rate at the same time, and the results are checked against the performance
  * budgets and the books.
  *
- *   node scripts/load-test.mjs [--api http://localhost:4000] [--orgs 20] [--users 2]
+ *   node scripts/load-test.mjs [--api http://localhost:4000] [--orgs 20] [--users 2] [--busy 0]
  *                              [--seconds 30] [--rate 4] [--seed 20] [--check] [--out report.json]
+ *
+ * `--busy N` adds one more organisation with N people working in it at once (PERF-003): they read
+ * and post into the same books, so their postings meet on its counters and audit trail.
  *
  * Each person makes `--rate` requests a second (inside the API's per-person rate limit): mostly the
  * common reads (dashboard, invoice list, accounts, trial balance, income statement), and one in
@@ -34,6 +37,7 @@ const args = Object.fromEntries(
 const API = args.api ?? process.env.API_URL ?? 'http://localhost:4000';
 const ORGS = Number(args.orgs ?? 20);
 const USERS = Number(args.users ?? 2);
+const BUSY = Number(args.busy ?? 0);
 const SECONDS = Number(args.seconds ?? 30);
 const RATE = Number(args.rate ?? 4);
 const SEED = Number(args.seed ?? 20);
@@ -82,20 +86,20 @@ async function register(name) {
   return { id: r.user.id, email, token: r.accessToken };
 }
 
-async function setUpOrg(i) {
+async function setUpOrg(i, users = USERS) {
   const owner = await register(`Load Owner ${i}`);
   const org = await must('POST', '/v1/orgs', owner.token, { name: `Load Test ${i} Pvt Ltd`, countryCode: 'IN', functionalCurrency: 'INR', fiscalYearStartMonth: 4 });
   const base = `/v1/orgs/${org.id}`;
   const accounts = await must('GET', `${base}/accounts`, owner.token);
   const acc = Object.fromEntries(accounts.map((a) => [a.code, a.id]));
   const people = [owner];
-  for (let u = 1; u < USERS; u++) {
+  for (let u = 1; u < users; u++) {
     const p = await register(`Load Accountant ${i}.${u}`);
     await must('POST', `${base}/members`, owner.token, { email: p.email, role: 'ACCOUNTANT' });
     people.push(p);
   }
   const customer = await must('POST', `${base}/contacts`, owner.token, { name: `Customer ${i}`, isCustomer: true });
-  const o = { base, acc, people, customer: customer.id, posted: [] };
+  const o = { base, acc, people, customer: customer.id, posted: [], busy: users !== USERS };
   for (let n = 0; n < SEED; n++) await postInvoice(o, owner.token, null);
   return o;
 }
@@ -136,6 +140,11 @@ const READS = [
   ['GET trial balance', (o) => `${o.base}/reports/trial-balance?asOf=${today}`],
   ['GET income statement', (o) => `${o.base}/reports/income-statement?from=${yearStart}&to=${today}`],
 ];
+
+/** Records each request in both sets of statistics. */
+function both(a, b) {
+  return { record: (name, r, expect) => (a.record(name, r, expect), b.record(name, r, expect)) };
+}
 
 async function person(o, p, until, stats) {
   const gap = 1000 / RATE;
@@ -185,11 +194,14 @@ if (health.status !== 200) {
 const t0 = performance.now();
 const orgs = [];
 for (let i = 0; i < ORGS; i += 5) orgs.push(...(await Promise.all(Array.from({ length: Math.min(5, ORGS - i) }, (_, k) => setUpOrg(i + k + 1)))));
+if (BUSY > 0) orgs.push(await setUpOrg(ORGS + 1, BUSY));
 const setupSeconds = Math.round((performance.now() - t0) / 100) / 10;
 
 const stats = new Stats();
+// The busy organisation's requests are also kept on their own, to show its people are not slower.
+const busyStats = new Stats();
 const until = performance.now() + SECONDS * 1000;
-await Promise.all(orgs.flatMap((o) => o.people.map((p) => person(o, p, until, stats))));
+await Promise.all(orgs.flatMap((o) => o.people.map((p) => person(o, p, until, o.busy ? both(stats, busyStats) : stats))));
 
 const books = await Promise.all(orgs.map(checkBooks));
 const endpoints = Object.fromEntries([...stats.by].map(([name, s]) => [name, { requests: s.count, failed: s.failed, p50: pct(s.ms, 50), p95: pct(s.ms, 95), p99: pct(s.ms, 99), max: pct(s.ms, 100) }]));
@@ -197,9 +209,16 @@ const reads = [...stats.by].filter(([n]) => n.startsWith('GET')).flatMap(([, s])
 const writes = stats.by.get('POST invoice')?.ms ?? [];
 const total = [...stats.by.values()].reduce((s, x) => s + x.count, 0);
 const failed = [...stats.by.values()].reduce((s, x) => s + x.failed, 0);
+/** The busy organisation's own figures (PERF-003). */
+function busyReport() {
+  const busyReads = [...busyStats.by].filter(([n]) => n.startsWith('GET')).flatMap(([, s]) => s.ms);
+  const posts = busyStats.by.get('POST invoice');
+  return { people: BUSY, readsP95: pct(busyReads, 95), writesP95: pct(posts?.ms ?? [], 95), invoicesPosted: posts?.count ?? 0, failed: [...busyStats.by.values()].reduce((s, x) => s + x.failed, 0) };
+}
 const report = {
-  conditions: { api: API, organisations: ORGS, peoplePerOrganisation: USERS, people: ORGS * USERS, requestsPerPersonPerSecond: RATE, seconds: SECONDS, invoicesSeededPerOrganisation: SEED, setupSeconds },
+  conditions: { api: API, organisations: ORGS, peoplePerOrganisation: USERS, busyOrganisationPeople: BUSY, people: ORGS * USERS + BUSY, requestsPerPersonPerSecond: RATE, seconds: SECONDS, invoicesSeededPerOrganisation: SEED, setupSeconds },
   results: { requests: total, perSecond: Math.round(total / SECONDS), failed, readsP95: pct(reads, 95), writesP95: pct(writes, 95), endpoints },
+  busyOrganisation: BUSY > 0 ? busyReport() : null,
   budgets: { readsP95Ms: BUDGET.readP95, writesP95Ms: BUDGET.writeP95 },
   books: { organisationsChecked: books.length, problems: books.flatMap((b) => b.problems) },
   failures: stats.failures,
@@ -208,6 +227,8 @@ const missed = [];
 if (report.results.readsP95 !== null && report.results.readsP95 > BUDGET.readP95) missed.push(`reads p95 ${report.results.readsP95} ms > ${BUDGET.readP95} ms`);
 if (report.results.writesP95 !== null && report.results.writesP95 > BUDGET.writeP95) missed.push(`posting p95 ${report.results.writesP95} ms > ${BUDGET.writeP95} ms`);
 if (failed) missed.push(`${failed} failed requests`);
+if (report.busyOrganisation?.readsP95 > BUDGET.readP95) missed.push(`busy organisation reads p95 ${report.busyOrganisation.readsP95} ms > ${BUDGET.readP95} ms`);
+if (report.busyOrganisation?.writesP95 > BUDGET.writeP95) missed.push(`busy organisation posting p95 ${report.busyOrganisation.writesP95} ms > ${BUDGET.writeP95} ms`);
 if (report.books.problems.length) missed.push(...report.books.problems);
 if (books.some((b) => !b.hasReceivables)) missed.push('the trial balance has no receivables row to check');
 report.passed = missed.length === 0;

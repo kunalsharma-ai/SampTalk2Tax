@@ -112,9 +112,10 @@ jobs:
         run: pnpm e2e
       # QA-017: organisations read and post at once against the running API; fails when a
       # performance budget (reads p95 < 300 ms, posting p95 < 1 s) is missed, any request fails,
-      # or the books disagree afterwards. Sized for a shared CI runner.
+      # or the books disagree afterwards. Sized for a shared CI runner. PERF-003: one more organisation
+      # has 8 people reading and posting into the same books at once.
       - name: Load test
-        run: node scripts/load-test.mjs --orgs 10 --users 2 --rate 3 --seconds 20 --seed 10 --check --out /tmp/load-test.json
+        run: node scripts/load-test.mjs --orgs 10 --users 2 --busy 8 --rate 3 --seconds 20 --seed 10 --check --out /tmp/load-test.json
       # PERF-002: one organisation with a year of invoices and bills; the reports people open most
       # must answer within the "reports at volume" budget, and the books must still agree.
       - name: Volume test
