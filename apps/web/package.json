@@ -12,7 +12,7 @@
     "e2e": "node --test --test-concurrency=1 e2e/*.test.mjs"
   },
   "dependencies": {
-    "@hookform/resolvers": "5.9.2",
+    "@hookform/resolvers": "7.0.7",
     "@talk2tax/accounting-engine": "workspace:*",
     "@talk2tax/design-system": "workspace:*",
     "@talk2tax/tax-engine": "workspace:*",
