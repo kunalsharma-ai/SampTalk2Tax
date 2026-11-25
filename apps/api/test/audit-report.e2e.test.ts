@@ -84,7 +84,7 @@ describe('audit report', () => {
     const rows = (x.csv as string).trim().split('\n');
     expect(rows[0]).toMatch(new RegExp(`^Audit report,${addDays(T, -1)} to ${T},Audit trail intact \\(\\d+ events checked\\)$`));
     expect(rows.some((l) => l.startsWith(`Posted long after its date,HIGH,${num('backdated')},`))).toBe(true);
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'audit_report.exported' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'audit_report.exported' }).sort({ idNumber: 1 }).toArray();
     expect(events).toHaveLength(1);
     expect(events[0]!.data).toMatchObject({ from: addDays(T, -1), to: T, exceptions: 4 });
     // The export itself shows up as a sensitive action next time.

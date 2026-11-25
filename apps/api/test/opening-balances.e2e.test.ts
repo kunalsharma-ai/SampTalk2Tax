@@ -95,7 +95,7 @@ describe('opening balances (GL-010)', () => {
     expect(opening.total).toBe(2);
     const reversing = (await ctx.http().get(`${org.base}/journals?type=REVERSING`).set(owner.auth).expect(200)).body;
     expect(reversing.items.map((e: { reference: string }) => e.reference)).toEqual(['OPENING-BALANCES']);
-    const audit = (await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'opening_balances.set' }).toArray()) as unknown as { data: { replaced: string | null } }[];
+    const audit = (await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'opening_balances.set' }).sort({ idNumber: 1 }).toArray()) as unknown as { data: { replaced: string | null } }[];
     expect(audit.map((a) => a.data.replaced)).toEqual([null, before.current.journalId]);
   });
 

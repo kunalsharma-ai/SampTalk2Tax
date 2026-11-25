@@ -112,7 +112,7 @@ describe('executive and investor reports', () => {
 
     expect((await ctx.http().put(`${R('executive')}/narrative`).set(owner.auth).send(NARRATIVE).expect(409)).body.error).toBe('REPORT_FINAL');
     expect((await ctx.http().post(`${R('executive')}/finalise`).set(owner.auth).expect(409)).body.error).toBe('REPORT_FINAL');
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'stakeholder_report' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'stakeholder_report' }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => e.action).sort()).toEqual(['stakeholder_report.finalised', 'stakeholder_report.narrative_saved']);
     expect(events.find((e) => e.action === 'stakeholder_report.finalised')!.data).toMatchObject({ audience: 'EXECUTIVE', period: Q.key, revenue: '200000.00', netIncome: '-60000.00' });
   });

@@ -84,7 +84,7 @@ describe('payroll report', () => {
     expect(rows.some((l) => l.startsWith(`${M1},2,45000.00,`) && l.endsWith(',50.0'))).toBe(true);
     expect(rows.some((l) => l.startsWith('E002,Ravi Shetty,1,15000.00,'))).toBe(true);
     expect(x.csv).not.toContain('50100012345678');
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'payroll_report.exported' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'payroll_report.exported' }).sort({ idNumber: 1 }).toArray();
     expect(events).toHaveLength(1);
     expect(events[0]!.data).toMatchObject({ from: M2, to: M0, payslips: 3, gross: '75000.00' });
   });

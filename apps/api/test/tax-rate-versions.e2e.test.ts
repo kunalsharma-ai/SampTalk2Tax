@@ -105,7 +105,7 @@ describe('tax rate versions', () => {
   });
 
   it('keeps every change in the audit trail and each organisation to its own rates', async () => {
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: { $regex: '^tax_rate\\.version' } }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: { $regex: '^tax_rate\\.version' } }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => e.action)).toEqual(['tax_rate.version_added', 'tax_rate.version_added', 'tax_rate.version_withdrawn', 'tax_rate.version_added']);
     expect(events[0]!.data).toMatchObject({ from: '10', to: '12.5', effectiveFrom: F, backdated: false });
     expect(events[3]!.data).toMatchObject({ from: '5', to: '8', backdated: true });

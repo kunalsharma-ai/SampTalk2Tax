@@ -118,7 +118,7 @@ describe('tax audit preparation', () => {
     expect(r).toMatchObject({ status: 'OPEN', ready: null, reopened: { by: 'Preparation Owner', reason: 'Auditor asked for a depreciation note' } });
     expect((await ctx.http().post(`${R()}/${LAST.label}/reopen`).set(owner.auth).send({ reason: 'Again please' }).expect(409)).body.error).toBe('NOT_MARKED_READY');
     await ctx.http().put(`${R()}/${LAST.label}/notes/DEPRECIATION`).set(accountant.auth).send({ note: 'Book rates follow the Companies Act schedule II.' }).expect(200);
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: { $regex: '^tax_audit_preparation\\.' } }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: { $regex: '^tax_audit_preparation\\.' } }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => e.action)).toEqual([
       'tax_audit_preparation.noted',
       'tax_audit_preparation.noted',

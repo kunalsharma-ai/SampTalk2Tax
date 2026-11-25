@@ -1,4 +1,4 @@
-# Performance budgets (PERF-014, PERF-015, PERF-021)
+# Performance budgets (PERF-014, PERF-015, PERF-021, PERF-002)
 
 Talk2Tax's speed targets are written down as budgets in [`perf/budgets.json`](../perf/budgets.json).
 Each budget names:
@@ -19,6 +19,7 @@ A target counts as met only when its benchmark passes.
 | Opening the dashboard until balances and the monthly chart show | PERF-015 | 2,000 ms | `apps/web/e2e/dashboard-performance.test.mjs` (browser tests) |
 | Dashboard to the receivables ageing it links to, until its rows show | PERF-015 | 2,000 ms | same |
 | Back to the dashboard, until its balances show | PERF-015 | 2,000 ms | same |
+| Dashboard, trial balance, income statement, balance sheet, receivables ageing and invoice list for an organisation with a year of transactions | PERF-002 | 1,000 ms | `scripts/volume-test.mjs` (CI step "Volume test") |
 
 The test conditions for each budget are in `perf/budgets.json`. In short, the dashboard benchmark
 uses:
@@ -52,3 +53,54 @@ Each timing runs from the action until what it shows is on screen.
 These numbers come from a single machine with one user. They show the budget holds under the
 conditions above. They are not a measure of production with real network latency or many
 concurrent users; the load test covers concurrency for the API.
+
+## Large transaction volumes (PERF-002)
+
+`scripts/volume-test.mjs` fills one organisation with a year of posted invoices and bills, then
+times the reports people open most, one request at a time, after a warm-up. Eight members of the
+organisation post at once while it is seeded, each within the per-person rate limit. Afterwards it
+checks the books: the trial balance balances, and the receivables ageing equals what was invoiced.
+
+CI runs it with 2,000 invoices, 400 bills and 200 customers. Run by hand, it defaults to 5,000
+invoices and 1,000 bills:
+
+    node scripts/volume-test.mjs --check
+
+Making it pass needed three changes, each with a test in `apps/api/test/large-volumes.e2e.test.ts`:
+
+- **Many people posting into one organisation.** Postings into one organisation meet on its
+  counters and its audit chain. MongoDB answers a write conflict at once, so with eight people
+  posting, some transactions conflicted 40 times in a row and failed. Now the first run goes
+  ahead at once. After a conflict, the retries in one API process for the same organisation take
+  turns (`apps/api/src/db/data-client.ts`). In the same run, conflicts fell from up to 40 per
+  posting to at most 2, and no posting failed.
+- **Reads fetch only what they ask for.** A query that selects a few fields used to read whole
+  documents, with every line, and decode every amount. Now MongoDB returns only the selected
+  fields and the keys of the relations the query loads. The invoice list and the ageing became
+  about twice as fast.
+- **Indexes on the shared tables.** The audit trail, usage and error events and security alerts
+  hold rows for every organisation, and they had no index on the organisation. Each background
+  run that asked where an organisation's audit trail ended scanned the whole trail. These tables
+  now have an orgId index, and the audit trail also has indexes by date, by record and by action
+  (migration `20270315100000_shared_table_indexes`). The latest event of an organisation is now
+  read as one row through the index, not by reading all of its rows.
+
+### Measured (2026-11-25, development container)
+
+| Report | 2,000 invoices, p95 | 5,000 invoices, p95 |
+| --- | --- | --- |
+| Dashboard | 46 ms | 78 ms |
+| Trial balance | 27 ms | 54 ms |
+| Income statement | 30 ms | 53 ms |
+| Balance sheet | 26 ms | 57 ms |
+| Receivables ageing | 226 ms | 491 ms |
+| Invoice list | 105 ms | 233 ms |
+
+Before the changes above, the 2,000-invoice run measured 390 ms for the ageing and 225 ms for the
+invoice list. Seeding 2,000 invoices and 400 bills took 193 s, and 5,000 and 1,000 took 474 s. In
+both runs the trial balance balanced and the receivables equalled what was invoiced.
+
+The receivables ageing grows with the number of open invoices, because it lists every one. At
+around 10,000 open invoices it would reach the budget. These are single-machine numbers with one
+organisation; they do not measure production with network latency or many large organisations at
+once.

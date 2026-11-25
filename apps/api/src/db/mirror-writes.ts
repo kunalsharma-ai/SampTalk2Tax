@@ -62,6 +62,18 @@ function bsonTypeOf(f: Field): Document {
   return f.isList ? { bsonType: ['array', ...(nullable ? ['null'] : [])], items: t } : t;
 }
 
+/**
+ * The schema's other indexes (@@index) that reads depend on at volume, for the tables MongoDB
+ * holds through this layer. Prisma's model description does not carry @@index, so they are named here.
+ */
+const SHARED_INDEXES: Record<string, { key: Record<string, 1 | -1>; name: string }[]> = {
+  AuditEvent: [
+    { key: { orgId: 1, createdAt: 1 }, name: 'org_created' },
+    { key: { orgId: 1, entityType: 1, entityId: 1 }, name: 'org_entity' },
+    { key: { action: 1, createdAt: 1 }, name: 'action_created' },
+  ],
+};
+
 function collectionFor(m: Model): AnyCollectionDef {
   const scalars = m.fields.filter((f) => f.kind === 'scalar' || f.kind === 'enum');
   // A table whose orgId is optional (error events, support) is shared, with orgId as a plain field.
@@ -84,6 +96,10 @@ function collectionFor(m: Model): AnyCollectionDef {
     indexes.push({ key: { idNumber: 1 }, name: 'id_number' } as never);
   }
   if (tenant) indexes.push({ key: { orgId: 1 }, name: 'org' } as never);
+  // A shared table (orgId optional) is still read one organisation at a time; without these, each
+  // read scans every organisation's rows (PERF-002: the audit trail grows with every posting).
+  else if (byName.has('orgId')) indexes.push({ key: numericId(m) ? { orgId: 1, idNumber: 1 } : { orgId: 1 }, name: 'org' } as never);
+  indexes.push(...((SHARED_INDEXES[m.name] ?? []) as never[]));
   return defineCollection({
     name: tableOf(m),
     scope: tenant ? 'tenant' : 'global',
@@ -110,6 +126,7 @@ function pkOf(m: Model): string[] {
 }
 
 const INFOS = new Map<string, MirrorInfo>();
+let delegates: { mirror: Map<string, MirrorInfo>; readable: Map<string, MirrorInfo> } | undefined;
 /** Children by parent table, from the PostgreSQL catalog (loadForeignKeys). */
 const BY_TABLE = new Map<string, MirrorInfo['children']>();
 let catalog: Promise<void> | undefined;
@@ -133,6 +150,7 @@ function build(name: string): MirrorInfo {
 /** Registers the models whose writes are kept in step, and works out their cascades. */
 export function mirrorModels(names: readonly string[]): MirrorInfo[] {
   for (const n of names) if (!INFOS.has(n)) INFOS.set(n, build(n));
+  delegates = undefined;
   TABLES.clear();
   for (const info of INFOS.values()) info.children = [];
   // The catalog's keys are added again on the next delete.
@@ -160,6 +178,7 @@ const TABLES = new Map<string, TableInfo>();
  */
 export function readableModels(list: { model: string; def: AnyCollectionDef; embedded?: MirrorInfo['embedded'] }[]) {
   TABLES.clear();
+  delegates = undefined;
   for (const r of list) {
     const info = { ...build(r.model), def: r.def, embedded: r.embedded, readOnly: true };
     if (r.embedded) info.tenant = r.embedded.parent.scope === 'tenant';
@@ -228,9 +247,11 @@ export async function claimRecords(client: unknown, model: string, due: Record<s
 
 /** The model of this name as MongoDB holds it: mirrored, or moved by hand. */
 export const modelInfo = (name: string): MirrorInfo | undefined => INFOS.get(name) ?? READABLE.get(name);
-export const readableByDelegate = () => new Map([...READABLE.values()].map((i) => [i.delegate, i]));
+/** Maps by delegate name, built once after the models are registered (every query looks one up). */
+const byDelegate = () => (delegates ??= { mirror: new Map([...INFOS.values()].map((i) => [i.delegate, i])), readable: new Map([...READABLE.values()].map((i) => [i.delegate, i])) });
+export const readableByDelegate = () => byDelegate().readable;
 
-export const mirrorByDelegate = () => new Map([...INFOS.values()].map((i) => [i.delegate, i]));
+export const mirrorByDelegate = () => byDelegate().mirror;
 
 type Child = MirrorInfo['children'][number];
 

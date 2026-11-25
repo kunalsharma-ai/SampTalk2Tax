@@ -136,7 +136,7 @@ describe('tax document interpretation', () => {
     const r = (await ctx.http().post(`${R()}/${id}/review`).set(owner.auth).send({ note: 'Asked Synthetic Buyer to correct its TDS return' }).expect(200)).body;
     expect(r).toMatchObject({ status: 'REVIEWED', reviewNote: 'Asked Synthetic Buyer to correct its TDS return', reviewedBy: 'Tax Docs Owner' });
     await ctx.http().post(`${R()}/${id}/review`).set(owner.auth).send({}).expect(409);
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'tax_document_reading' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'tax_document_reading' }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => e.action).sort()).toEqual(['tax_document.read', 'tax_document.read', 'tax_document.read', 'tax_document.reviewed']);
     await ctx.http().get(`${R()}/00000000-0000-4000-8000-000000000000`).set(owner.auth).expect(404);
   });

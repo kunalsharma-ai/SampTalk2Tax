@@ -45,6 +45,15 @@
       "limitMs": 2000,
       "benchmark": "apps/web/e2e/dashboard-performance.test.mjs",
       "conditions": "As for opening the dashboard."
+    },
+    {
+      "key": "reports-at-volume-p95",
+      "feature": "PERF-002",
+      "title": "Dashboard, trial balance, income statement, balance sheet, receivables ageing and invoice list for an organisation with a year of transactions",
+      "percentile": 95,
+      "limitMs": 1000,
+      "benchmark": "scripts/volume-test.mjs",
+      "conditions": "API and MongoDB replica set on one machine (the CI runner); one organisation with 2,000 posted invoices to 200 customers and 400 posted bills dated over the current fiscal year, posted by 8 members at once; each report timed 5 times after a warm-up, one request at a time. Run by hand, scripts/volume-test.mjs defaults to 5,000 invoices and 1,000 bills, 10 runs."
     }
   ]
 }

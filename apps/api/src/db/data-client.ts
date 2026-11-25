@@ -66,6 +66,24 @@ function txClient(store: Store): object {
   );
 }
 
+const turns = new Map<string, Promise<unknown>>();
+
+/** Runs fn after every earlier fn queued under the same key in this process has finished. */
+export async function takeTurn<R>(key: string, fn: () => Promise<R>): Promise<R> {
+  const before = turns.get(key) ?? Promise.resolve();
+  const mine = before.then(fn, fn);
+  const settled = mine.then(
+    () => undefined,
+    () => undefined,
+  );
+  turns.set(key, settled);
+  try {
+    return await mine;
+  } finally {
+    if (turns.get(key) === settled) turns.delete(key);
+  }
+}
+
 /** Creates the client. Writes outside a transaction run in one of their own. */
 export function createDataClient(store: Store): object {
   if (!hasAutoincrement()) useAutoincrement((model, field) => nextSerial(store as never, model, field));
@@ -73,15 +91,25 @@ export function createDataClient(store: Store): object {
   const transaction = async (fn: unknown) => {
     if (typeof fn !== 'function') throw new Error('Batch transactions are not supported; use an interactive transaction');
     const ctx = currentTenantContext();
-    for (let attempt = 1; ; attempt++) {
+    const once = async () => {
       const held = store.hold();
-      let result: unknown;
       try {
-        result = await held.run(() => tenantStorage.run({ ...ctx, inTx: true }, async () => await (fn as (tx: object) => Promise<unknown>)(txClient(store))));
+        const result = await held.run(() => tenantStorage.run({ ...ctx, inTx: true }, async () => await (fn as (tx: object) => Promise<unknown>)(txClient(store))));
         await held.commit();
         return result;
       } catch (e) {
         await held.abort().catch(() => undefined);
+        throw e;
+      }
+    };
+    for (let attempt = 1; ; attempt++) {
+      try {
+        // The first run goes ahead at once. After a write conflict, this process's retries for
+        // the same organisation take turns (PERF-002): many people posting into one organisation
+        // otherwise keep conflicting on its counters and audit chain until the attempts run out.
+        // A transaction started inside another one never waits, so a nested call cannot deadlock.
+        return attempt === 1 || ctx.inTx ? await once() : await takeTurn(`org:${ctx.orgId ?? ''}`, once);
+      } catch (e) {
         // Concurrent postings meet on the same counter or lock document; each conflict waits a
         // little (growing, with jitter) and runs again, as MongoDB's own retry loop does.
         if (attempt < MAX_ATTEMPTS && isTransientTransactionError(e)) {
