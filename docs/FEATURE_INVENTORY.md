@@ -296,7 +296,7 @@ Part 9 · M3 · priority P1 · depends on: GL, AR, AP
 | TAX-051 | AI Tax Intelligence | capability | Audit preparation assistance | Tested |
 | TAX-052 | AI Tax Intelligence | capability | Source-backed tax explanations | Tested |
 | TAX-053 | AI Tax Intelligence | rule | Tax calculations must be performed by deterministic, tested rules | Tested |
-| TAX-054 | AI Tax Intelligence | rule | AI should explain and assist, not invent tax rates or legal requirements | Not started |
+| TAX-054 | AI Tax Intelligence | rule | AI should explain and assist, not invent tax rates or legal requirements | Tested |
 
 ## Payroll and workforce finance
 

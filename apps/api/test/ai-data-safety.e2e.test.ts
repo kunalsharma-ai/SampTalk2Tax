@@ -148,3 +148,38 @@ describe('prompt injection (SEC-029)', () => {
     expect(answer.safety!.injection).toEqual([]);
   });
 });
+
+describe('tax rates and legal references the AI states (TAX-054)', () => {
+  type Claims = { checked: number; unsupported: { kind: string; text: string; sentence: string }[]; notice: string | null };
+  it('flags a rate or section that nothing the model was given contains, and passes ones that are there', async () => {
+    await ctx.http().post(`${org.base}/tax-rates`).set(owner.auth).send({ name: 'Standard GST', rate: '18', salesAccountId: org.acc['2300'], purchaseAccountId: org.acc['1450'] }).expect(201);
+    model.steps.push(
+      () => reply([toolUse('tu_t1', 'get_ageing', { ledger: 'receivables', as_of: null })], 'tool_use'),
+      () => reply([text('GST on the invoice is charged at 18%. TDS at 0.15% under section 194Q applies to large purchases. 1,200.00 is due.')], 'end_turn'),
+    );
+    const conv = await ask('What tax applies to what customers owe us?');
+    await settle();
+    const answer = (await read(conv.id)).messages[1]! as Message & { safety: { taxClaims: Claims } };
+    expect(answer.status).toBe('COMPLETE');
+    // 18% is one of the organisation's own GST rates; 0.15% and section 194Q are not in the books or the tool results.
+    expect(answer.safety.taxClaims.checked).toBe(3);
+    expect(answer.safety.taxClaims.unsupported.map((c) => [c.kind, c.text])).toEqual([
+      ['RATE', '0.15%'],
+      ['CITATION', 'section 194Q'],
+    ]);
+    expect(answer.safety.taxClaims.unsupported[0]!.sentence).toBe('TDS at 0.15% under section 194Q applies to large purchases.');
+    expect(answer.safety.taxClaims.notice).toContain('0.15%, section 194Q');
+    // The instructions tell the model not to state rates or sections from memory.
+    expect(JSON.stringify(model.requests.at(-1)!.system)).toContain('Never state a tax rate, threshold, section, rule or legal requirement from memory');
+    const audit = await ctx.prisma.auditEvent.findFirst({ where: { orgId: org.orgId, action: 'copilot.answered' }, orderBy: { createdAt: 'desc' } });
+    expect(audit?.data).toMatchObject({ unsupportedTaxClaims: 2 });
+  });
+
+  it('flags nothing when the answer states no rate or reference', async () => {
+    model.steps.push(() => reply([text('Your customers owe 1,200.00 in total.')], 'end_turn'));
+    const conv = await ask('How much is owed to us?');
+    await settle();
+    const answer = (await read(conv.id)).messages[1]! as Message & { safety: { taxClaims: Claims } };
+    expect(answer.safety.taxClaims).toEqual({ checked: 0, unsupported: [], notice: null });
+  });
+});

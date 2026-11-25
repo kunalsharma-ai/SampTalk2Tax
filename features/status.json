@@ -10262,6 +10262,19 @@
         "docs/REGULATORY_CHANGES.md"
       ],
       "notes": "Known law changes per country with effective dates, impact, what Talk2Tax does and the source; open until recorded as dealt with (audited, final). Built-in rule sets with last-checked dates, stale after 180 days. Scheduled tax rate changes. No live monitoring of government sites; list hand-written and needs adviser review."
+    },
+    "TAX-054": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/ai-tax-claims.ts",
+        "packages/tax-engine/test/ai-tax-claims.test.ts",
+        "apps/api/src/copilot/copilot.service.ts",
+        "apps/api/test/ai-data-safety.e2e.test.ts",
+        "apps/web/src/app/orgs/[orgId]/copilot/page.tsx",
+        "apps/web/e2e/ai-tax-claims-flow.test.mjs",
+        "docs/AI_TAX_CLAIMS.md"
+      ],
+      "notes": "Copilot instructions forbid rates, thresholds, sections and legal requirements from memory. Every answer is checked: percentages in tax sentences and section/rule/article references must appear in the tool results or question sent to the model, or the organisation's own tax rates; others are stored on the answer, counted in the audit event, and listed under the answer with their sentence. Deterministic text check that errs towards flagging; it cannot judge whether a rate applies."
     }
   }
 }

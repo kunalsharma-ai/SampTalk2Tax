@@ -15,7 +15,7 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   copilot: {
     what: 'An assistant that answers questions about your books in plain words and can prepare actions for you to confirm.',
-    how: 'Type or speak a question such as "Who owes us the most?" or "Prepare payment of the Paper Mart bills". Check its answer: every figure links to the report it came from. Nothing is posted until you confirm it, and a payment batch it prepares is only a draft that someone else approves: it never pays.',
+    how: 'Type or speak a question such as "Who owes us the most?" or "Prepare payment of the Paper Mart bills". Check its answer: every figure links to the report it came from. Nothing is posted until you confirm it, and a payment batch it prepares is only a draft that someone else approves: it never pays. It may only state tax rates and legal sections that Talk2Tax gave it; any other rate or section in an answer is listed under Check these tax details, with the sentence it came from, for you to confirm with your tax adviser.',
     where: 'Overview. It reads the same books as the reports and only does what your role allows. An administrator turns it on under Integrations and the AI control center.',
   },
   alerts: {
