@@ -1432,14 +1432,14 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-011 |  | capability | Read replicas | Not started |
 | PERF-012 |  | capability | Efficient search | Not started |
 | PERF-013 |  | capability | Asynchronous document processing | Not started |
-| PERF-014 |  | rule | Establish measurable performance budgets | Not started |
-| PERF-015 |  | capability | Typical dashboard interaction under two seconds under defined test conditions | Not started |
+| PERF-014 |  | rule | Establish measurable performance budgets | Tested |
+| PERF-015 |  | capability | Typical dashboard interaction under two seconds under defined test conditions | Tested |
 | PERF-016 |  | capability | Common API reads under 300 milliseconds at the 95th percentile under defined load | Tested |
 | PERF-017 |  | capability | Financial posting with transactional consistency | Tested |
 | PERF-018 |  | capability | No cross-tenant data exposure | Tested |
 | PERF-019 |  | capability | Recoverable background jobs | Not started |
 | PERF-020 |  | capability | Observable AI execution | Not started |
-| PERF-021 |  | rule | Benchmark before claiming these targets are achieved | Not started |
+| PERF-021 |  | rule | Benchmark before claiming these targets are achieved | Tested |
 
 ## Testing and quality assurance
 

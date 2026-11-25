@@ -22,7 +22,7 @@
  * on, the data the script seeds, and the load above. The report prints them with the results.
  */
 import { randomUUID } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 
 const args = Object.fromEntries(
@@ -37,7 +37,10 @@ const USERS = Number(args.users ?? 2);
 const SECONDS = Number(args.seconds ?? 30);
 const RATE = Number(args.rate ?? 4);
 const SEED = Number(args.seed ?? 20);
-const BUDGET = { readP95: 300, writeP95: 1000 };
+// The limits come from the performance budgets (PERF-014), so the numbers live in one place.
+const BUDGETS = JSON.parse(readFileSync(new URL('../perf/budgets.json', import.meta.url), 'utf8')).budgets;
+const limit = (key) => BUDGETS.find((b) => b.key === key).limitMs;
+const BUDGET = { readP95: limit('api-read-p95'), writeP95: limit('api-post-invoice-p95') };
 const today = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const yearStart = `${Number(today.slice(5, 7)) >= 4 ? today.slice(0, 4) : Number(today.slice(0, 4)) - 1}-04-01`;
 

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 517 |
+| Not started | 514 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 750 |
+| Tested | 753 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 17 | 4 |
+| Performance and scalability | M9 | 21 | 14 | 7 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10195,6 +10195,27 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/e2e/regional-deployment-flow.test.mjs
   - docs/REGIONAL_DEPLOYMENT.md
 
+### PERF-014 — Establish measurable performance budgets
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Budgets for API reads, posting and dashboard interactions, each with a percentile, a limit, the benchmark that measures it in CI and the test conditions. The load test and the dashboard benchmark read their limits from the file.
+- Evidence:
+  - perf/budgets.json
+  - scripts/check-performance-claims.mjs
+  - scripts/check-performance-claims.test.mjs
+  - docs/PERFORMANCE_BUDGETS.md
+
+### PERF-015 — Typical dashboard interaction under two seconds under defined test conditions
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: p95 of 5 timed runs after a warm-up, production build, Chromium 1440x900, 120 invoices/40 bills/20 customers: open dashboard, drill down to receivables ageing, back. Measured on the CI runner and one dev machine only (about 0.5-0.6 s against 2 s).
+- Evidence:
+  - apps/web/e2e/dashboard-performance.test.mjs
+  - perf/budgets.json
+  - docs/PERFORMANCE_BUDGETS.md
+
 ### PERF-016 — Common API reads under 300 milliseconds at the 95th percentile under defined load
 
 - Module: Performance and scalability
@@ -10218,6 +10239,15 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
+
+### PERF-021 — Benchmark before claiming these targets are achieved
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: CI fails when a PERF feature with a time target is claimed without a budget, or a budgeted feature is claimed without its benchmark as evidence, or a benchmark does not run in CI or hard-codes its limit.
+- Evidence:
+  - scripts/check-performance-claims.mjs
+  - scripts/check-performance-claims.test.mjs
 
 ### QA-001 — Build automated testing from the beginning
 

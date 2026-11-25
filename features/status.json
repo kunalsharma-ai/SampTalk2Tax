@@ -10288,6 +10288,33 @@
         "docs/RECEIPT_READING.md"
       ],
       "notes": "OCR with Tesseract (English model shipped with the API, no outside service) on JPEG/PNG/WebP photos, PDF text layer otherwise. Reads merchant, date, total, subtotal, GST/VAT/cess lines, GSTIN (checked) and currency, each with a confidence and warnings; fills the receipt-matching form (and attaches the photo) and expense claim lines. Only a file scan and an audit event are stored. English only; no line-item split."
+    },
+    "PERF-014": {
+      "status": "Tested",
+      "evidence": [
+        "perf/budgets.json",
+        "scripts/check-performance-claims.mjs",
+        "scripts/check-performance-claims.test.mjs",
+        "docs/PERFORMANCE_BUDGETS.md"
+      ],
+      "notes": "Budgets for API reads, posting and dashboard interactions, each with a percentile, a limit, the benchmark that measures it in CI and the test conditions. The load test and the dashboard benchmark read their limits from the file."
+    },
+    "PERF-015": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/dashboard-performance.test.mjs",
+        "perf/budgets.json",
+        "docs/PERFORMANCE_BUDGETS.md"
+      ],
+      "notes": "p95 of 5 timed runs after a warm-up, production build, Chromium 1440x900, 120 invoices/40 bills/20 customers: open dashboard, drill down to receivables ageing, back. Measured on the CI runner and one dev machine only (about 0.5-0.6 s against 2 s)."
+    },
+    "PERF-021": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/check-performance-claims.mjs",
+        "scripts/check-performance-claims.test.mjs"
+      ],
+      "notes": "CI fails when a PERF feature with a time target is claimed without a budget, or a budgeted feature is claimed without its benchmark as evidence, or a benchmark does not run in CI or hard-codes its limit."
     }
   }
 }

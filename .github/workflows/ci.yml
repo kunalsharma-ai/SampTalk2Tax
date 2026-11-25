@@ -65,6 +65,9 @@ jobs:
       # QA-031: tests use seeded data, never Math.random, so a run gives the same result every time.
       - name: Deterministic test data
         run: node --test scripts/check-test-determinism.test.mjs && node scripts/check-test-determinism.mjs
+      # PERF-014/021: speed targets are budgets in perf/budgets.json, claimed only with a benchmark in CI.
+      - name: Performance claims
+        run: node --test scripts/check-performance-claims.test.mjs && node scripts/check-performance-claims.mjs
       - name: Install Chromium for browser tests
         working-directory: apps/web
         run: npx playwright install --with-deps chromium
