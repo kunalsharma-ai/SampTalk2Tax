@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 514 |
+| Not started | 512 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 753 |
+| Tested | 755 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 14 | 7 |
+| Performance and scalability | M9 | 21 | 12 | 9 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10179,6 +10179,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - apps/web/src/components/expenses/claims-list.tsx
 
+### PERF-006 — Background processing
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Eleven background runners in each API process, each with an interval setting (0 = off), reporting every pass to system health (failing, late), paused during maintenance.
+- Evidence:
+  - apps/api/test/background-jobs.e2e.test.ts
+  - apps/api/src/operations/heartbeats.service.ts
+  - docs/BACKGROUND_JOBS.md
+
 ### PERF-007 — Regional deployments
 
 - Module: Performance and scalability
@@ -10239,6 +10249,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Status: **Tested**
 - Evidence:
   - apps/api/test/auth-tenancy.e2e.test.ts › tenant isolation
+
+### PERF-019 — Recoverable background jobs
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Two API processes on one database run the same passes at once: recurring journals, recurring bills, renewals and reminders, security alerts and workflows each act once; transactions leave nothing half done. Fixed: duplicate subscription renewal and reminder, and a failing security scan, when two servers ran together. Emails sent just before a crash may repeat.
+- Evidence:
+  - apps/api/test/background-jobs.e2e.test.ts
+  - apps/api/test/workflow-recovery.e2e.test.ts
+  - apps/api/src/billing/payments/renewals-runner.service.ts
+  - apps/api/src/security-monitor/security-monitor.service.ts
+  - docs/BACKGROUND_JOBS.md
 
 ### PERF-021 — Benchmark before claiming these targets are achieved
 

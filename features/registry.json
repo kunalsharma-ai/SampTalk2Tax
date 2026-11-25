@@ -34213,9 +34213,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/background-jobs.e2e.test.ts",
+        "apps/api/src/operations/heartbeats.service.ts",
+        "docs/BACKGROUND_JOBS.md"
+      ],
+      "notes": "Eleven background runners in each API process, each with an interval setting (0 = off), reporting every pass to system health (failing, late), paused during maintenance."
     },
     {
       "id": "PERF-007",
@@ -34525,9 +34529,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/background-jobs.e2e.test.ts",
+        "apps/api/test/workflow-recovery.e2e.test.ts",
+        "apps/api/src/billing/payments/renewals-runner.service.ts",
+        "apps/api/src/security-monitor/security-monitor.service.ts",
+        "docs/BACKGROUND_JOBS.md"
+      ],
+      "notes": "Two API processes on one database run the same passes at once: recurring journals, recurring bills, renewals and reminders, security alerts and workflows each act once; transactions leave nothing half done. Fixed: duplicate subscription renewal and reminder, and a failing security scan, when two servers ran together. Emails sent just before a crash may repeat."
     },
     {
       "id": "PERF-020",
