@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 512 |
+| Not started | 511 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 755 |
+| Tested | 756 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 12 | 9 |
+| Performance and scalability | M9 | 21 | 11 | 10 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10178,6 +10178,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Approvals work in the responsive web app at phone width; no mobile app.
 - Evidence:
   - apps/web/src/components/expenses/claims-list.tsx
+
+### PERF-002 — Large transaction volumes
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Ageing p95 226 ms at 2,000 invoices, 491 ms at 5,000 (one dev machine); grows with open invoices. One organisation; no payments seeded.
+- Evidence:
+  - scripts/volume-test.mjs › reports at volume p95 under 1,000 ms and the books agree (CI step Volume test)
+  - apps/api/test/large-volumes.e2e.test.ts
+  - docs/PERFORMANCE_BUDGETS.md › Large transaction volumes
 
 ### PERF-006 — Background processing
 

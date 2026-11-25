@@ -87,7 +87,7 @@ describe('income tax computation', () => {
     expect(after).toMatchObject({ status: 'FINAL', payable: '149550.00', changedSince: { then: '1280000.00', now: '1330000.00' } });
     expect((await ctx.http().put(`${R()}/${LAST.label}`).set(owner.auth).send(INPUT).expect(409)).body.error).toBe('COMPUTATION_FINAL');
     expect((await ctx.http().post(`${R()}/${LAST.label}/finalise`).set(owner.auth).expect(409)).body.error).toBe('COMPUTATION_FINAL');
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'income_tax_computation' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'income_tax_computation' }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => e.action)).toEqual(['income_tax_computation.saved', 'income_tax_computation.finalised']);
     expect(events[1]!.data).toMatchObject({ taxYear: LAST.label, totalIncome: '1071000.00', payable: '149550.00' });
   });

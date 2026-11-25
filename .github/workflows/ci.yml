@@ -115,6 +115,10 @@ jobs:
       # or the books disagree afterwards. Sized for a shared CI runner.
       - name: Load test
         run: node scripts/load-test.mjs --orgs 10 --users 2 --rate 3 --seconds 20 --seed 10 --check --out /tmp/load-test.json
+      # PERF-002: one organisation with a year of invoices and bills; the reports people open most
+      # must answer within the "reports at volume" budget, and the books must still agree.
+      - name: Volume test
+        run: node scripts/volume-test.mjs --invoices 2000 --bills 400 --customers 200 --runs 5 --check --out /tmp/volume-test.json
       - name: Server logs on failure
         if: failure()
         run: tail -n 100 /tmp/api.log /tmp/web.log || true

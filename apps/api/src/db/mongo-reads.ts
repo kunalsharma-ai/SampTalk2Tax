@@ -406,7 +406,7 @@ async function findRows(store: Store, info: MirrorInfo, args: ReadArgs = {}): Pr
     if (order.some(([k]) => k.includes('.'))) {
       rows = (await read(store, info, filter)).map((d) => toRow(info, d));
       rows = (await sortByRelations(store, info, rows, order)).slice(args.skip ?? 0, args.take === undefined ? undefined : (args.skip ?? 0) + args.take);
-    } else rows = (await read(store, info, filter, { order, skip: args.skip, take: args.take })).map((d) => toRow(info, d));
+    } else rows = (await read(store, info, filter, { order, skip: args.skip, take: args.take, projection: args.select ? selected(info, args.select) : undefined })).map((d) => toRow(info, d));
   }
   await loadRelations(store, info, rows, args.select ?? args.include ?? {}, !!args.select);
   return args.select ? rows.map((r) => pick(info, r, args.select!)) : rows;
@@ -513,6 +513,24 @@ async function loadCounts(store: Store, info: MirrorInfo, rows: Doc[], want: unk
   }
 }
 
+/**
+ * The stored fields a select needs (its own fields, and the keys of the relations it loads), so
+ * MongoDB returns only those: a list of documents that names five fields no longer reads and
+ * decodes every line of every document (PERF-002).
+ */
+function selected(info: MirrorInfo, select: Doc): Doc {
+  const m = MODELS.get(info.model)!;
+  const out: Doc = { id: 1 };
+  for (const [k, v] of Object.entries(select)) {
+    if (!v || k === '_count') continue;
+    const f = m.fields.find((x) => x.name === k);
+    if (!f) continue;
+    if (f.kind === 'object') for (const x of linkOf(info, f).local) out[x] = 1;
+    else out[k] = 1;
+  }
+  return out;
+}
+
 function pick(info: MirrorInfo, row: Doc, select: Doc): Doc {
   const out: Doc = {};
   for (const [k, v] of Object.entries(select)) if (v) out[k] = row[k];
@@ -522,6 +540,17 @@ function pick(info: MirrorInfo, row: Doc, select: Doc): Doc {
 // ------------------------------------------------------------------ groupBy and aggregate
 
 const AGGS = ['_count', '_sum', '_avg', '_min', '_max'] as const;
+
+/** When an aggregate asks only for the _max or _min of one required number or date field, which one. */
+function extremeOfOne(info: MirrorInfo, spec: Doc): { agg: '_max' | '_min'; field: string } | null {
+  const asked = Object.keys(spec).filter((k) => k !== 'where' && spec[k]);
+  if (asked.length !== 1 || (asked[0] !== '_max' && asked[0] !== '_min')) return null;
+  const fields = Object.entries(spec[asked[0]] as Doc).filter(([, v]) => v);
+  if (fields.length !== 1) return null;
+  const f = MODELS.get(info.model)?.fields.find((x) => x.name === fields[0][0]);
+  if (!f || !f.isRequired || f.kind === 'enum' || !['Int', 'BigInt', 'Float', 'DateTime'].includes(f.type)) return null;
+  return { agg: asked[0], field: f.name };
+}
 
 /** Sums, averages, minimums and maximums of `rows` as Prisma returns them for each field type. */
 function aggregateRows(info: MirrorInfo, rows: Doc[], spec: Doc): Doc {
@@ -658,6 +687,14 @@ export function mongoReadOps(info: MirrorInfo, store: Store): Record<string, (ar
       attempt('aggregate', args, async () => {
         if (args?.orderBy || args?.cursor || args?.skip || args?.take) no('aggregate with options');
         const filter = await toFilter(store, info, args?.where);
+        // The largest (or smallest) of one required number or date, the most common aggregate
+        // (where a reader of the audit trail is up to), reads one row through an index instead
+        // of every matching row (PERF-002).
+        const only = extremeOfOne(info, args ?? {});
+        if (only) {
+          const rows = (await read(store, info, filter, { order: [[only.field, only.agg === '_max' ? -1 : 1]], take: 1 })).map((d) => toRow(info, d));
+          return { [only.agg]: { [only.field]: rows.length ? rows[0][only.field] : null } };
+        }
         const rows = (await read(store, info, filter)).map((d) => toRow(info, d));
         return aggregateRows(info, rows, args ?? {});
       }),

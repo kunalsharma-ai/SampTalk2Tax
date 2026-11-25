@@ -79,7 +79,7 @@ describe('tax notice analysis', () => {
   });
 
   it('is audited and kept to its organisation', async () => {
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'tax_notice.analysis_saved' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'tax_notice.analysis_saved' }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => [e.data.reference, e.data.type, e.data.done])).toEqual([['ZD-SYN-0001', 'GST_61', 2], ['ZD-SYN-0002', 'GST_74A', 1], ['ZD-SYN-0002', null, 0]]);
     await ctx.http().get(A('00000000-0000-4000-8000-000000000000')).set(viewer.auth).expect(404);
     const other = await createOrg(ctx, owner, { name: 'Other Noticed Ltd' });

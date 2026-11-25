@@ -100,7 +100,7 @@ describe('tax report', () => {
     expect(rows[0]).toBe(`Tax report,${LAST}-01 to ${T},INR`);
     expect(rows).toContain('18,90000.00,16200.00,40000.00,7200.00,9000.00');
     expect(rows).toContain(`TDS,${section.code},40000.00,${tds},1`);
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'tax_report.exported' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'tax_report.exported' }).sort({ idNumber: 1 }).toArray();
     expect(events).toHaveLength(1);
     expect(events[0]!.data).toMatchObject({ from: `${LAST}-01`, to: T, documents: 4, net: '11500.00' });
   });

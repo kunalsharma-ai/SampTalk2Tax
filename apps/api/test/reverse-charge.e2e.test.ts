@@ -97,7 +97,7 @@ describe('reverse charge', () => {
   });
 
   it('is audited, needs a GST registration and is kept to its organisation', async () => {
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'gst.rcm_self_invoice_issued' }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, action: 'gst.rcm_self_invoice_issued' }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => [e.data.supplier, e.data.tax, e.data.late])).toEqual([['Adv. Synthetic Rao', '9000.00', false], ['Synthetic Cloud Inc.', '1800.00', false], ['Adv. Synthetic Rao', '1440.00', true]]);
     await ctx.http().get(url()).query({ period: '2026-13' }).set(owner.auth).expect(400);
     await ctx.http().get(url('/00000000-0000-4000-8000-000000000000/self-invoice')).set(owner.auth).expect(404);

@@ -10335,6 +10335,15 @@
         "docs/BACKGROUND_JOBS.md"
       ],
       "notes": "Two API processes on one database run the same passes at once: recurring journals, recurring bills, renewals and reminders, security alerts and workflows each act once; transactions leave nothing half done. Fixed: duplicate subscription renewal and reminder, and a failing security scan, when two servers ran together. Emails sent just before a crash may repeat."
+    },
+    "PERF-002": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/volume-test.mjs › reports at volume p95 under 1,000 ms and the books agree (CI step Volume test)",
+        "apps/api/test/large-volumes.e2e.test.ts",
+        "docs/PERFORMANCE_BUDGETS.md › Large transaction volumes"
+      ],
+      "notes": "Ageing p95 226 ms at 2,000 invoices, 491 ms at 5,000 (one dev machine); grows with open invoices. One organisation; no payments seeded."
     }
   }
 }

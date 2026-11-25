@@ -34125,9 +34125,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/volume-test.mjs › reports at volume p95 under 1,000 ms and the books agree (CI step Volume test)",
+        "apps/api/test/large-volumes.e2e.test.ts",
+        "docs/PERFORMANCE_BUDGETS.md › Large transaction volumes"
+      ],
+      "notes": "Ageing p95 226 ms at 2,000 invoices, 491 ms at 5,000 (one dev machine); grows with open invoices. One organisation; no payments seeded."
     },
     {
       "id": "PERF-003",

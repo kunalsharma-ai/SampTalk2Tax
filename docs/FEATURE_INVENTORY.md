@@ -1420,7 +1420,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
 | PERF-001 |  | capability | Thousands of organizations | Not started |
-| PERF-002 |  | capability | Large transaction volumes | Not started |
+| PERF-002 |  | capability | Large transaction volumes | Tested |
 | PERF-003 |  | capability | Concurrent users | Not started |
 | PERF-004 |  | capability | Complex reporting | Not started |
 | PERF-005 |  | capability | AI workload isolation | Not started |

@@ -109,7 +109,7 @@ describe('business trips', () => {
     expect(t.claims).toHaveLength(1);
     expect((await ctx.http().post(`${T(tripId)}/cancel`).set(employee.auth).expect(409)).body.error).toBe('HAS_CLAIMS');
     await ctx.http().post(`${T(tripId)}/cancel`).set(approver.auth).expect(403);
-    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'expense_trip', entityId: tripId }).toArray();
+    const events = await ctx.db.collection('audit_events').find({ orgId: org.orgId, entityType: 'expense_trip', entityId: tripId }).sort({ idNumber: 1 }).toArray();
     expect(events.map((e) => e.action)).toEqual(['expense_trip.requested', 'expense_trip.approved', 'expense_trip.claim_linked', 'expense_trip.claim_linked', 'expense_trip.claim_unlinked']);
   });
 
