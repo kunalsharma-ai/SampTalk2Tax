@@ -163,11 +163,16 @@ for (const [name, path] of REPORTS) {
 const tb = await must('GET', `${base}/reports/trial-balance?asOf=${today}`, owner.token);
 const ageing = await must('GET', `${base}/sales/ageing?asOf=${today}`, owner.token);
 const invoicedText = `${invoiced / 100n}.${String(invoiced % 100n).padStart(2, '0')}`;
-const books = { trialBalanceBalances: tb.totalDebit === tb.totalCredit, receivables: ageing.totals.balance, invoiced: invoicedText, receivablesMatch: ageing.totals.balance === invoicedText };
+// The report holds only what this script worked out (yes or no, and its own total), never text
+// the API sent back, since it is written to a file; a difference is printed instead.
+const books = { trialBalanceBalances: tb.totalDebit === tb.totalCredit, invoiced: invoicedText, receivablesMatch: ageing.totals.balance === invoicedText };
 
 const missed = results.filter((r) => r.p95 > LIMIT).map((r) => `${r.name} p95 ${r.p95} ms > ${LIMIT} ms`);
 if (!books.trialBalanceBalances) missed.push('the trial balance does not balance');
-if (!books.receivablesMatch) missed.push(`receivables ${books.receivables} differ from invoiced ${books.invoiced}`);
+if (!books.receivablesMatch) {
+  missed.push(`receivables differ from invoiced ${books.invoiced}`);
+  console.error(`Receivables in the ageing: ${ageing.totals.balance}`);
+}
 const report = {
   conditions: { api: API, invoices: INVOICES, bills: BILLS, customers: CUSTOMERS, runs: RUNS, seededInSeconds: seededIn },
   budgetMs: LIMIT,
