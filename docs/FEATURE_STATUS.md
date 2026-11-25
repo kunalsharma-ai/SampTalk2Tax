@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 518 |
+| Not started | 517 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 749 |
+| Tested | 750 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -31,7 +31,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Global taxation engine | M3 | 54 | 0 | 54 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
-| Expense management | M2 | 27 | 2 | 25 |
+| Expense management | M2 | 27 | 1 | 26 |
 | Treasury management | M6 | 28 | 21 | 7 |
 | Financial planning and analysis | M4 | 35 | 22 | 13 |
 | Financial digital twin | M7 | 28 | 1 | 27 |
@@ -3330,6 +3330,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/test/photo.test.ts
   - apps/web/e2e/receipt-camera-flow.test.mjs
   - docs/EXPENSE_REPORTS.md
+
+### EXP-004 — OCR
+
+- Module: Expense management
+- Status: **Tested**
+- Notes: OCR with Tesseract (English model shipped with the API, no outside service) on JPEG/PNG/WebP photos, PDF text layer otherwise. Reads merchant, date, total, subtotal, GST/VAT/cess lines, GSTIN (checked) and currency, each with a confidence and warnings; fills the receipt-matching form (and attaches the photo) and expense claim lines. Only a file scan and an audit event are stored. English only; no line-item split.
+- Evidence:
+  - packages/tax-engine/src/receipt-reading.ts
+  - packages/tax-engine/test/receipt-reading.test.ts
+  - apps/api/src/receipt-reading/receipt-reading.service.ts
+  - apps/api/test/receipt-reading.e2e.test.ts
+  - apps/web/src/components/expenses/receipt-reader.tsx
+  - apps/web/e2e/receipt-reading-flow.test.mjs
+  - docs/RECEIPT_READING.md
 
 ### EXP-005 — Expense categories
 

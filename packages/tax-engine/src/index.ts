@@ -35,3 +35,4 @@ export * from './us/information-returns';
 export * from './tax-document-reading';
 export * from './regulatory-changes';
 export * from './ai-tax-claims';
+export * from './receipt-reading';

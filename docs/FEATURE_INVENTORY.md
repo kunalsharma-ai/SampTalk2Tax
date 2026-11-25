@@ -385,7 +385,7 @@ Part 12 · M2 · priority P1 · depends on: GL, WFLOW, DOC
 | EXP-001 |  | rule | Build a Ramp-style modern expense experience while maintaining original design and implementation | Not started |
 | EXP-002 |  | capability | Employee expense submissions | Tested |
 | EXP-003 |  | capability | Mobile receipt capture | Tested |
-| EXP-004 |  | capability | OCR | Not started |
+| EXP-004 |  | capability | OCR | Tested |
 | EXP-005 |  | capability | Expense categories | Tested |
 | EXP-006 |  | capability | Mileage claims | Tested |
 | EXP-007 |  | capability | Travel expenses | Tested |

@@ -9,7 +9,8 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { CONFIDENCE_TONE, RECEIPT_STATUS, type ExpenseReceipt, type ReceiptBankLine, type ReceiptList } from '@/components/expenses/receipts';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
-import { api } from '@/lib/api';
+import { ReceiptReader } from '@/components/expenses/receipt-reader';
+import { api, uploadFile } from '@/lib/api';
 import { date } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
@@ -35,12 +36,20 @@ export default function ReceiptsPage() {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [days, setDays] = useState('90');
+  /** The file just read, attached to the receipt once it is added. */
+  const [file, setFile] = useState<File | null>(null);
   const base = `/v1/orgs/${orgId}/expense-receipts`;
   const q = useQuery({ queryKey: ['expense-receipts', orgId], queryFn: () => api<ReceiptList>(base) });
   const seeBank = !!org && can(org.role, 'banking.read');
   const missing = useQuery({ queryKey: ['expense-receipts-missing', orgId, days], queryFn: () => api<Missing>(`${base}/missing?days=${days}`), enabled: seeBank });
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['expense-receipts', orgId] }), qc.invalidateQueries({ queryKey: ['expense-receipts-missing', orgId] })]);
-  const add = useMutation({ mutationFn: () => api<ExpenseReceipt>(base, { method: 'POST', body: { merchant, date: day, amount, note: note || null } }), onSuccess: (r) => { void refresh(); router.push(`/orgs/${orgId}/expenses/receipts/${r.id}`); } });
+  const add = useMutation({
+    mutationFn: async () => {
+      const r = await api<ExpenseReceipt>(base, { method: 'POST', body: { merchant, date: day, amount, note: note || null } });
+      if (file) await uploadFile(`/v1/orgs/${orgId}/attachments?entityType=EXPENSE_RECEIPT&entityId=${r.id}&fileName=${encodeURIComponent(file.name)}`, file);
+      return r;
+    },
+    onSuccess: (r) => { void refresh(); router.push(`/orgs/${orgId}/expenses/receipts/${r.id}`); } });
   const match = useMutation({ mutationFn: (v: { id: string; lineId: string }) => api<ExpenseReceipt>(`${base}/${v.id}/match`, { method: 'POST', body: { statementLineId: v.lineId } }), onSuccess: () => refresh() });
   const sure = useMutation({ mutationFn: () => api<{ matched: number }>(`${base}/match-sure`, { method: 'POST' }), onSuccess: () => refresh() });
   if (!org) return null;
@@ -56,7 +65,18 @@ export default function ReceiptsPage() {
       <ErrorAlert title="The receipts were not matched" error={sure.error} />
       {sure.data ? <div className="mb-4"><Alert tone="positive" title={`${sure.data.matched} receipt${sure.data.matched === 1 ? '' : 's'} matched`}>Each is now linked to its bank line. Undo one from the receipt if it is wrong.</Alert></div> : null}
       <Card role="region" aria-label="Add a receipt">
-        <CardHeader title="Add a receipt" description="Type what the receipt says, then attach the photo or PDF on the next screen." />
+        <CardHeader title="Add a receipt" description="Read the photo or PDF to fill in what it says, or type it. A receipt that was read is attached for you; otherwise attach it on the next screen." />
+        <div className="px-4 pt-4">
+          <ReceiptReader
+            onRead={(r, f) => {
+              const g = r.reading;
+              if (g.merchant) setMerchant(g.merchant.value);
+              if (g.date) setDay(g.date.value);
+              if (g.total) setAmount(g.total.value);
+              setFile(f);
+            }}
+          />
+        </div>
         <form className="grid gap-3 p-4 sm:grid-cols-4" onSubmit={(e) => { e.preventDefault(); add.mutate(); }}>
           <Field label="Merchant">{(p) => <Input {...p} required maxLength={200} value={merchant} onChange={(e) => setMerchant(e.target.value)} />}</Field>
           <Field label="Date on the receipt">{(p) => <Input {...p} type="date" required max={todayIst()} value={day} onChange={(e) => setDay(e.target.value)} />}</Field>

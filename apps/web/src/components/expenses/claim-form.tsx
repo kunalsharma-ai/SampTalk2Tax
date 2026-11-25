@@ -9,6 +9,7 @@ import { money, today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import type { AllowanceKind, ExpenseClaim, ExpenseOptions } from '@/lib/types';
 import { CategorySuggestionHint } from './category-suggestion';
+import { ReceiptReader } from './receipt-reader';
 
 interface LineState {
   key: number;
@@ -144,6 +145,19 @@ export function ClaimForm({ existing, onCancel }: { existing?: ExpenseClaim; onC
       </Card>
       <Card>
         <CardHeader title="What you spent" description={`One line per receipt, in ${c}, as the receipt shows it (tax included). If a tax rate applies, the recoverable tax is worked out of that amount. Mileage and per diem lines are worked out from your organisation's rates. You can attach receipts after saving.`} />
+        <div className="px-4 pt-3">
+          <ReceiptReader
+            title="Read a receipt into a line"
+            onRead={(r) => {
+              const g = r.reading;
+              const patch: Partial<LineState> = { ...(g.merchant ? { merchant: g.merchant.value } : {}), ...(g.date ? { date: g.date.value } : {}), ...(g.total ? { amount: g.total.value } : {}) };
+              setLines((ls) => {
+                const empty = ls.find((x) => x.kind === 'RECEIPT' && !x.amount && !x.merchant);
+                return empty ? ls.map((x) => (x.key === empty.key ? { ...x, ...patch } : x)) : [...ls, { ...blank(nextKey.current++), ...patch }];
+              });
+            }}
+          />
+        </div>
         <Table>
           <thead>
             <tr>

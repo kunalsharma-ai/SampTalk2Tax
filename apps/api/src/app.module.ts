@@ -107,6 +107,8 @@ import { GstReconciliationService } from './gst/gst-reconciliation.service';
 import { TaxForecastController } from './tax-forecast/tax-forecast.controller';
 import { RegulatoryChangesController } from './regulatory-changes/regulatory-changes.controller';
 import { RegulatoryChangesService } from './regulatory-changes/regulatory-changes.service';
+import { ReceiptReadingController } from './receipt-reading/receipt-reading.controller';
+import { ReceiptReadingService } from './receipt-reading/receipt-reading.service';
 import { TaxDocumentsController } from './tax-documents/tax-documents.controller';
 import { TaxDocumentsService } from './tax-documents/tax-documents.service';
 import { UsReportingController } from './us-sales-tax/us-reporting.controller';
@@ -517,6 +519,7 @@ export class AppModule {
         UsSalesTaxController,
         UsReportingController,
         TaxDocumentsController,
+        ReceiptReadingController,
         RegulatoryChangesController,
         CompliancePredictionsController,
         ExpenseReceiptsController,
@@ -742,6 +745,7 @@ export class AppModule {
         UsSalesTaxService,
         UsReportingService,
         TaxDocumentsService,
+        ReceiptReadingService,
         RegulatoryChangesService,
         CompliancePredictionsService,
         ExpenseReceiptsService,

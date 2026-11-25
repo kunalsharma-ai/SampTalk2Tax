@@ -10275,6 +10275,19 @@
         "docs/AI_TAX_CLAIMS.md"
       ],
       "notes": "Copilot instructions forbid rates, thresholds, sections and legal requirements from memory. Every answer is checked: percentages in tax sentences and section/rule/article references must appear in the tool results or question sent to the model, or the organisation's own tax rates; others are stored on the answer, counted in the audit event, and listed under the answer with their sentence. Deterministic text check that errs towards flagging; it cannot judge whether a rate applies."
+    },
+    "EXP-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/tax-engine/src/receipt-reading.ts",
+        "packages/tax-engine/test/receipt-reading.test.ts",
+        "apps/api/src/receipt-reading/receipt-reading.service.ts",
+        "apps/api/test/receipt-reading.e2e.test.ts",
+        "apps/web/src/components/expenses/receipt-reader.tsx",
+        "apps/web/e2e/receipt-reading-flow.test.mjs",
+        "docs/RECEIPT_READING.md"
+      ],
+      "notes": "OCR with Tesseract (English model shipped with the API, no outside service) on JPEG/PNG/WebP photos, PDF text layer otherwise. Reads merchant, date, total, subtotal, GST/VAT/cess lines, GSTIN (checked) and currency, each with a confidence and warnings; fills the receipt-matching form (and attaches the photo) and expense claim lines. Only a file scan and an audit event are stored. English only; no line-item split."
     }
   }
 }
