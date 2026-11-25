@@ -8,7 +8,7 @@
       "percentile": 95,
       "limitMs": 300,
       "benchmark": "scripts/load-test.mjs",
-      "conditions": "CI runner: API and MongoDB replica set on one machine; 10 organisations x 2 people, 3 requests a second each for 20 seconds, one request in six posting an invoice."
+      "conditions": "CI runner: API and MongoDB replica set on one machine; 10 organisations x 2 people, plus one organisation with 8 people working in it at once (28 people), 3 requests a second each for 20 seconds, one request in six posting an invoice. The busy organisation's own reads and postings are held to the same limits."
     },
     {
       "key": "api-post-invoice-p95",

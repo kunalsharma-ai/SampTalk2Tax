@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 511 |
+| Not started | 510 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 756 |
+| Tested | 757 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 11 | 10 |
+| Performance and scalability | M9 | 21 | 10 | 11 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10188,6 +10188,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - scripts/volume-test.mjs › reports at volume p95 under 1,000 ms and the books agree (CI step Volume test)
   - apps/api/test/large-volumes.e2e.test.ts
   - docs/PERFORMANCE_BUDGETS.md › Large transaction volumes
+
+### PERF-003 — Concurrent users
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: 28 people at 3 requests a second on one machine. On the slower dev container, posting with 6 to 8 people in one organisation came near the 1,000 ms budget.
+- Evidence:
+  - scripts/load-test.mjs › --busy: 8 people in one organisation plus 20 in others, reads and posting held to the budgets (CI step Load test)
+  - apps/api/test/large-volumes.e2e.test.ts › many postings into one organisation at once
+  - docs/LOAD_TESTING.md › Many people in one organisation
 
 ### PERF-006 — Background processing
 

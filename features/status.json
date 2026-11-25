@@ -10344,6 +10344,15 @@
         "docs/PERFORMANCE_BUDGETS.md › Large transaction volumes"
       ],
       "notes": "Ageing p95 226 ms at 2,000 invoices, 491 ms at 5,000 (one dev machine); grows with open invoices. One organisation; no payments seeded."
+    },
+    "PERF-003": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/load-test.mjs › --busy: 8 people in one organisation plus 20 in others, reads and posting held to the budgets (CI step Load test)",
+        "apps/api/test/large-volumes.e2e.test.ts › many postings into one organisation at once",
+        "docs/LOAD_TESTING.md › Many people in one organisation"
+      ],
+      "notes": "28 people at 3 requests a second on one machine. On the slower dev container, posting with 6 to 8 people in one organisation came near the 1,000 ms budget."
     }
   }
 }
