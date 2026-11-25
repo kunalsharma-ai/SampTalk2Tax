@@ -12,7 +12,7 @@
     "test": "echo 'database invariants are exercised by apps/api integration tests'"
   },
   "dependencies": {
-    "@prisma/client": "6.19.3"
+    "@prisma/client": "7.10.1"
   },
   "devDependencies": {
     "prisma": "6.19.3",
