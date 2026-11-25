@@ -354,6 +354,21 @@ function Answer({ m, orgId, onRetry, canRetry }: { m: CopilotMessage; orgId: str
           </Alert>
         </div>
       ) : null}
+      {m.safety?.taxClaims?.unsupported.length ? (
+        <div className="mt-3">
+          <Alert tone="warning" title="Check these tax details">
+            <p>{m.safety.taxClaims.notice}</p>
+            <ul className="mt-2 list-disc pl-5" aria-label="Not found in Talk2Tax">
+              {m.safety.taxClaims.unsupported.map((c, i) => (
+                <li key={i}>
+                  <span className="font-medium">{c.text}</span>
+                  <span>{` (${c.kind === 'RATE' ? 'tax rate' : 'legal reference'}) in: "${c.sentence}"`}</span>
+                </li>
+              ))}
+            </ul>
+          </Alert>
+        </div>
+      ) : null}
       {m.safety && redactedSummary(m.safety.redacted) ? <p className="mt-2 text-xs text-fg-muted">Hidden from the AI model: {redactedSummary(m.safety.redacted)}.</p> : null}
       {m.sources.length ? (
         <div className="mt-3" role="region" aria-label="Looked at">

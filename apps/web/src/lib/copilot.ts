@@ -22,6 +22,8 @@ export type RedactionKind = 'card' | 'aadhaar' | 'secret' | 'pan' | 'bankAccount
 export interface CopilotAnswerSafety {
   redacted: Partial<Record<RedactionKind, number>>;
   injection: { tool: string; reasons: string[] }[];
+  /** Tax rates and legal references in the answer that Talk2Tax could not find in what the model was given (TAX-054). */
+  taxClaims?: { checked: number; unsupported: { kind: 'RATE' | 'CITATION'; text: string; sentence: string }[]; notice: string | null };
 }
 const REDACTION_NAMES: Record<RedactionKind, [string, string]> = {
   card: ['card number', 'card numbers'],

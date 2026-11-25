@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 519 |
+| Not started | 518 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 748 |
+| Tested | 749 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -28,7 +28,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Accounts receivable | M2 | 43 | 0 | 43 |
 | Accounts payable | M2 | 36 | 0 | 36 |
 | Banking and reconciliation | M2 | 24 | 0 | 24 |
-| Global taxation engine | M3 | 54 | 1 | 53 |
+| Global taxation engine | M3 | 54 | 0 | 54 |
 | Payroll and workforce finance | M3 | 34 | 20 | 14 |
 | Procurement and spend management | M2 | 30 | 30 | 0 |
 | Expense management | M2 | 27 | 2 | 25 |
@@ -3155,6 +3155,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/tax-engine/test
   - packages/accounting-engine/test
+
+### TAX-054 — AI should explain and assist, not invent tax rates or legal requirements
+
+- Module: Global taxation engine
+- Status: **Tested**
+- Notes: Copilot instructions forbid rates, thresholds, sections and legal requirements from memory. Every answer is checked: percentages in tax sentences and section/rule/article references must appear in the tool results or question sent to the model, or the organisation's own tax rates; others are stored on the answer, counted in the audit event, and listed under the answer with their sentence. Deterministic text check that errs towards flagging; it cannot judge whether a rate applies.
+- Evidence:
+  - packages/tax-engine/src/ai-tax-claims.ts
+  - packages/tax-engine/test/ai-tax-claims.test.ts
+  - apps/api/src/copilot/copilot.service.ts
+  - apps/api/test/ai-data-safety.e2e.test.ts
+  - apps/web/src/app/orgs/[orgId]/copilot/page.tsx
+  - apps/web/e2e/ai-tax-claims-flow.test.mjs
+  - docs/AI_TAX_CLAIMS.md
 
 ### PAY-001 — Build a complete payroll financial management domain
 
