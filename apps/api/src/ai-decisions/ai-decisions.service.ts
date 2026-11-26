@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AI_AGENTS, type AiAgentId } from '@talk2tax/accounting-engine';
+import { AI_AGENTS, aiCallDay, aiPerformance, type AiAgentId, type AiCallFact } from '@talk2tax/accounting-engine';
 import { DocumentStoreService } from '../common/document-store.service';
 import { aiDecisionRecords, type AiDecisionRecordDoc } from '../db/collections/ai-decision-records';
 import { users } from '../db/collections/identity';
@@ -28,6 +28,31 @@ export class AiDecisionsService {
       next: rows.length > q.limit ? page[page.length - 1]!.startedAt.toISOString() : null,
       agents: Object.entries(AI_AGENTS).map(([id, a]) => ({ id, name: a.name, does: a.does })),
     };
+  }
+
+  /**
+   * How the AI performed over the last `days` India days, today included (PERF-020): calls,
+   * failures and why, time taken, tokens and answers cut short, per agent and per day. Read from
+   * the decision records' figures only, never their explanations or data.
+   */
+  async performance(days: number) {
+    const to = aiCallDay(new Date());
+    const from = new Date(Date.parse(`${to}T00:00:00Z`) - (days - 1) * 86_400_000).toISOString().slice(0, 10);
+    const since = new Date(Date.parse(`${from}T00:00:00+05:30`));
+    const rows = await this.store
+      .collection(aiDecisionRecords)
+      .find({ startedAt: { $gte: since } }, { projection: { agent: 1, outcome: 1, errorName: 1, stopReason: 1, durationMs: 1, inputTokens: 1, outputTokens: 1, startedAt: 1 } });
+    const calls: AiCallFact[] = rows.map((r) => ({
+      agent: (r.agent in AI_AGENTS ? r.agent : 'OTHER') as AiAgentId,
+      outcome: r.outcome,
+      errorName: r.errorName ?? null,
+      stopReason: r.stopReason ?? null,
+      durationMs: r.durationMs,
+      inputTokens: r.inputTokens ?? 0,
+      outputTokens: r.outputTokens ?? 0,
+      startedAt: r.startedAt,
+    }));
+    return { window: days, ...aiPerformance(calls, { from, to }) };
   }
 
   private view(r: AiDecisionRecordDoc, names: Map<string, string>) {

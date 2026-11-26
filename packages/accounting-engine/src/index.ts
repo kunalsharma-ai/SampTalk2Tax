@@ -119,6 +119,7 @@ export * from './internal-controls';
 export * from './audit-findings';
 export * from './audit-sampling';
 export * from './ai-decision-records';
+export * from './ai-performance';
 export * from './ledger-replay';
 export * from './audit-engagements';
 export * from './audit-evidence';

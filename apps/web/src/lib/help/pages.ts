@@ -1211,6 +1211,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Filter the calls by feature and the decision records by agent, and open an entry to see what it worked on. The model\'s hidden reasoning is never kept, and copilot answers stay private to the member who asked.',
     where: 'Governance. Reading needs the audit trail permission. Decision records cannot be changed or deleted.',
   },
+  'ai-performance': {
+    what: 'How the AI calls made for this organisation went over the last 7, 30 or 90 days: how many each assistant made, how many failed and why, how long they took, the tokens they used and how many answers were cut short at the length limit.',
+    how: 'Choose the period. A rise in failed calls or in the time 95 in 100 calls take shows a problem with the AI service or a limit being reached; the slowest calls and the reasons for failures show where. Open AI activity for the calls themselves.',
+    where: 'Governance. Worked out from the AI decision records, which cannot be changed; only figures are shown, never what the AI was given or said. Reading needs the audit trail permission.',
+  },
   members: {
     what: 'The people in the organisation and their roles.',
     how: 'Invite someone by email with a role. Change a role or remove someone when needed.',

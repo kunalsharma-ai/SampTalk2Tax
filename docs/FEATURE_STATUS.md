@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 507 |
+| Not started | 506 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 760 |
+| Tested | 761 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 7 | 14 |
+| Performance and scalability | M9 | 21 | 6 | 15 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10313,6 +10313,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/src/billing/payments/renewals-runner.service.ts
   - apps/api/src/security-monitor/security-monitor.service.ts
   - docs/BACKGROUND_JOBS.md
+
+### PERF-020 — Observable AI execution
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Governance → AI performance: calls, failures and why, median/p95/slowest time, tokens and answers cut short, per assistant and per day over 7/30/90 days, from the AI decision records (figures only, audit.read).
+- Evidence:
+  - packages/accounting-engine/src/ai-performance.ts
+  - apps/api/test/ai-performance.e2e.test.ts
+  - apps/web/e2e/ai-performance-flow.test.mjs
+  - docs/AI_PERFORMANCE.md
 
 ### PERF-021 — Benchmark before claiming these targets are achieved
 

@@ -1438,7 +1438,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-017 |  | capability | Financial posting with transactional consistency | Tested |
 | PERF-018 |  | capability | No cross-tenant data exposure | Tested |
 | PERF-019 |  | capability | Recoverable background jobs | Tested |
-| PERF-020 |  | capability | Observable AI execution | Not started |
+| PERF-020 |  | capability | Observable AI execution | Tested |
 | PERF-021 |  | rule | Benchmark before claiming these targets are achieved | Tested |
 
 ## Testing and quality assurance
