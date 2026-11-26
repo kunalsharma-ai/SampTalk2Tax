@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, ParseUUID
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { hasPermission } from '@talk2tax/security';
+import { SURFACE_AXES, SURFACE_MEASURES, type SurfaceAxis } from '@talk2tax/accounting-engine';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { openApi, ZodPipe } from '../common/zod';
 import { TwinService } from './twin.service';
@@ -37,6 +38,8 @@ const ScenarioBody = SimulateBody.extend({
 }).strict();
 const DecisionBody = z.object({ note: z.string().trim().max(1000).nullish() }).strict();
 const NoteBody = z.object({ body: z.string().trim().min(1, 'Write the note').max(2000, 'Keep notes under 2000 characters'), month: z.number().int().min(1).max(60).nullish(), changeNumber: z.number().int().min(1).max(50).nullish() }).strict();
+const Axis = z.object({ axis: z.enum(SURFACE_AXES), min: z.number().finite(), max: z.number().finite(), steps: z.number().int() }).strict();
+const SurfaceBody = z.object({ baselineMonths, horizonMonths: z.number().int(), x: Axis, y: Axis, measure: z.enum(SURFACE_MEASURES), drivers: z.array(Driver).max(20, 'At most 20 changes under a surface').optional() }).strict();
 const ResolveBody = z.object({ resolved: z.boolean() }).strict();
 const CompareQuery = z.object({ ids: z.string().min(1) }).strict();
 const BaselineQuery = z.object({ baselineMonths: z.coerce.number().pipe(baselineMonths).default(6), horizonMonths: z.coerce.number().pipe(horizonMonths).default(12) }).strict();
@@ -72,6 +75,15 @@ export class TwinController {
   @ApiBody({ schema: openApi(SimulateBody) })
   simulate(@CurrentOrg() org: OrgContext, @Body(new ZodPipe(SimulateBody)) body: z.infer<typeof SimulateBody>) {
     return this.svc.simulate(org.id, body, { insights: true });
+  }
+
+  /** Scenario surface (DASH-027): two changes across a grid, one outcome measured at every point and month. Nothing is saved. */
+  @Post('surface')
+  @HttpCode(200)
+  @RequirePermission('reports.read')
+  @ApiBody({ schema: openApi(SurfaceBody) })
+  surface(@CurrentOrg() org: OrgContext, @Body(new ZodPipe(SurfaceBody)) body: z.infer<typeof SurfaceBody>) {
+    return this.svc.surface(org.id, { ...body, baselineMonths: body.baselineMonths as 3 | 6 | 12, x: body.x as SurfaceAxis, y: body.y as SurfaceAxis });
   }
 
   @Get('compare')

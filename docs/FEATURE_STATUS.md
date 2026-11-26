@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 498 |
+| Not started | 496 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 769 |
+| Tested | 771 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 0 | 41 |
-| Dashboard design | M1 | 68 | 19 | 49 |
+| Dashboard design | M1 | 68 | 17 | 51 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6821,6 +6821,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/graph.e2e.test.ts
   - docs/KNOWLEDGE_GRAPH.md
 
+### DASH-027 — Interactive financial scenario surfaces
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Planning → Digital twin → Scenario surface: two changes (price, sales growth, churn, cost of sales, payroll, operating costs, days to collect or pay) across a grid of up to 11 × 11, each point a full twin re-run, measuring net profit, EBITDA, cash at month end or the lowest cash per projected month; rotatable 3D surface (drag or arrow keys), month play/slider, best/worst/no-change/cash-out points, every value in a table.
+- Evidence:
+  - packages/accounting-engine/src/scenario-surface.ts
+  - packages/accounting-engine/test/scenario-surface.test.ts
+  - apps/api/src/twin/twin.service.ts
+  - apps/api/test/scenario-surface.e2e.test.ts
+  - apps/web/src/lib/surface-3d.ts
+  - apps/web/test/surface-3d.test.ts
+  - apps/web/src/components/twin/scenario-surface.tsx
+  - apps/web/src/app/orgs/[orgId]/planning/twin/surface/page.tsx
+  - apps/web/e2e/scenario-surface-flow.test.mjs
+  - docs/SCENARIO_SURFACE.md
+
 ### DASH-028 — Animated waterfall charts
 
 - Module: Dashboard design
@@ -6961,6 +6978,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/dependency-graph.tsx
   - apps/web/src/app/orgs/[orgId]/reports/dependencies/page.tsx
   - apps/web/e2e/financial-dependencies-flow.test.mjs
+
+### DASH-039 — Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: A "4D" request is met as a 3D surface (two changes and one outcome) that changes over time (projected months, played or chosen with a slider), described that way on the page and in docs/SCENARIO_SURFACE.md; no claim of literal four-dimensional rendering.
+- Evidence:
+  - docs/SCENARIO_SURFACE.md
+  - apps/web/src/components/twin/scenario-surface.tsx
+  - apps/web/e2e/scenario-surface-flow.test.mjs
 
 ### DASH-040 — All critical figures must also be available in accurate 2D charts and accessible tables
 

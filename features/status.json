@@ -10483,6 +10483,31 @@
         "docs/CASH_FLOW_NETWORK.md"
       ],
       "notes": "Reports → Cash-flow network: per cash and bank account, money in from groups (customers and income, owners, lenders, assets, tax, other) and out to groups (vendors and spending, payroll, tax, lenders, assets, other), and transfers between own accounts, from posted entries split over the other side in proportion (to the cent); animated dashes the way money goes (still under reduced motion), play month by month, slider, pick out a node; same flows in tables."
+    },
+    "DASH-027": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/scenario-surface.ts",
+        "packages/accounting-engine/test/scenario-surface.test.ts",
+        "apps/api/src/twin/twin.service.ts",
+        "apps/api/test/scenario-surface.e2e.test.ts",
+        "apps/web/src/lib/surface-3d.ts",
+        "apps/web/test/surface-3d.test.ts",
+        "apps/web/src/components/twin/scenario-surface.tsx",
+        "apps/web/src/app/orgs/[orgId]/planning/twin/surface/page.tsx",
+        "apps/web/e2e/scenario-surface-flow.test.mjs",
+        "docs/SCENARIO_SURFACE.md"
+      ],
+      "notes": "Planning → Digital twin → Scenario surface: two changes (price, sales growth, churn, cost of sales, payroll, operating costs, days to collect or pay) across a grid of up to 11 × 11, each point a full twin re-run, measuring net profit, EBITDA, cash at month end or the lowest cash per projected month; rotatable 3D surface (drag or arrow keys), month play/slider, best/worst/no-change/cash-out points, every value in a table."
+    },
+    "DASH-039": {
+      "status": "Tested",
+      "evidence": [
+        "docs/SCENARIO_SURFACE.md",
+        "apps/web/src/components/twin/scenario-surface.tsx",
+        "apps/web/e2e/scenario-surface-flow.test.mjs"
+      ],
+      "notes": "A \"4D\" request is met as a 3D surface (two changes and one outcome) that changes over time (projected months, played or chosen with a slider), described that way on the page and in docs/SCENARIO_SURFACE.md; no claim of literal four-dimensional rendering."
     }
   }
 }

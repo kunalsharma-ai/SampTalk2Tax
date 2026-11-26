@@ -1095,6 +1095,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Create a scenario, change drivers such as prices or headcount, and compare scenarios side by side.',
     where: 'Planning. Starts from your actual figures; nothing is posted.',
   },
+  'planning/twin/surface': {
+    what: 'Two changes tried together across a range, such as price against payroll, with one outcome (net profit, EBITDA, cash at month end or the lowest cash) at every combination, drawn as a 3D surface that builds up month by month.',
+    how: 'Choose the measure, the months ahead and the two changes with their ranges and points (3 to 11 each), then draw it. Drag the surface or use the arrow keys to turn it, play the months, and choose any value in the table to mark it on the surface.',
+    where: 'Planning, from the digital twin. Needs reports.read. Every point re-runs the twin from your actual months; nothing is saved or posted, and all of it is hypothetical.',
+  },
   'planning/recovery': {
     what: 'A plan to recover when cash or profit is under pressure.',
     how: 'Pick options from your books, see their effect on cash, and track the actions.',

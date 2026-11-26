@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { isDeepStrictEqual } from 'node:util';
-import { minorUnits, runTwin, twinInsights, TWIN_TEMPLATES, TwinError, type TwinActualMonth, type TwinDriverWithMeta, type TwinResult } from '@talk2tax/accounting-engine';
+import { minorUnits, runTwin, scenarioSurface, type SurfaceAxis, type SurfaceMeasure, twinInsights, TWIN_TEMPLATES, TwinError, type TwinActualMonth, type TwinDriverWithMeta, type TwinResult } from '@talk2tax/accounting-engine';
 import { Prisma, type TwinScenario } from '@talk2tax/database';
 import { AuditService } from '../audit/audit.service';
 import { todayIst } from '../cash-flow/cash-flow.service';
@@ -83,6 +83,21 @@ export class TwinService {
       const result: TwinResult = runTwin({ baseline: a, drivers: input.drivers, horizonMonths: input.horizonMonths, cashBuffer });
       const insights = opts.insights ? twinInsights({ baseline: a, drivers: input.drivers, horizonMonths: input.horizonMonths, cashBuffer }, result) : undefined;
       return { currency: a.currency, actualMonths: a.months, ...result, ...(insights ? { insights } : {}) };
+    } catch (e) {
+      if (e instanceof TwinError) throw new DomainError('SCENARIO_INVALID', e.message, HttpStatus.UNPROCESSABLE_ENTITY, { issues: e.issues });
+      throw e;
+    }
+  }
+
+  /**
+   * Scenario surface (DASH-027): the twin re-run over a grid of two changes, measuring one outcome
+   * at every point for every projected month. Nothing is saved.
+   */
+  async surface(orgId: string, input: { baselineMonths: 3 | 6 | 12; horizonMonths: number; x: SurfaceAxis; y: SurfaceAxis; measure: SurfaceMeasure; drivers?: TwinDriverWithMeta[] }) {
+    const a = await this.actuals(orgId, input.baselineMonths);
+    try {
+      const s = scenarioSurface({ baseline: a, horizonMonths: input.horizonMonths, x: input.x, y: input.y, measure: input.measure, drivers: input.drivers ?? [] });
+      return { baselineMonths: input.baselineMonths, actualFrom: a.months[0]?.month ?? null, actualTo: a.months[a.months.length - 1]?.month ?? null, ...s };
     } catch (e) {
       if (e instanceof TwinError) throw new DomainError('SCENARIO_INVALID', e.message, HttpStatus.UNPROCESSABLE_ENTITY, { issues: e.issues });
       throw e;

@@ -961,7 +961,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-024 | Advanced Visualization | capability | Animated cash-flow networks | Tested |
 | DASH-025 | Advanced Visualization | capability | Revenue distribution globes | Not started |
 | DASH-026 | Advanced Visualization | capability | Financial relationship graphs | Tested |
-| DASH-027 | Advanced Visualization | capability | Interactive financial scenario surfaces | Not started |
+| DASH-027 | Advanced Visualization | capability | Interactive financial scenario surfaces | Tested |
 | DASH-028 | Advanced Visualization | capability | Animated waterfall charts | Tested |
 | DASH-029 | Advanced Visualization | capability | Sankey diagrams | Tested |
 | DASH-030 | Advanced Visualization | capability | Financial heatmaps | Tested |
@@ -973,7 +973,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-036 | Advanced Visualization | capability | Risk monitoring displays | Tested |
 | DASH-037 | Advanced Visualization | capability | Financial dependency graphs | Tested |
 | DASH-038 | Advanced Visualization | rule | Support animated transitions and motion-responsive interactions | Not started |
-| DASH-039 | Advanced Visualization | rule | Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering | Not started |
+| DASH-039 | Advanced Visualization | rule | Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering | Tested |
 | DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Tested |
 | DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Implemented |
 | DASH-042 | Required Dashboards | capability | Global Super Admin | Tested |
