@@ -56,6 +56,15 @@
       "conditions": "API and MongoDB replica set on one machine (the CI runner); one organisation with 2,000 posted invoices to 200 customers and 400 posted bills dated over the current fiscal year, posted by 8 members at once; each report timed 5 times after a warm-up, one request at a time. Run by hand, scripts/volume-test.mjs defaults to 5,000 invoices and 1,000 bills, 10 runs."
     },
     {
+      "key": "complex-reports-at-volume-p95",
+      "feature": "PERF-004",
+      "title": "Complex reports at volume (cash flow statement, statutory statements with comparatives, cash-basis income statement, vendor spend, general ledger of receivables, KPIs, management report, tax report)",
+      "percentile": 95,
+      "limitMs": 1000,
+      "benchmark": "scripts/volume-test.mjs",
+      "conditions": "API and MongoDB replica set on one machine (the CI runner); one organisation with 2,000 posted invoices to 200 customers and 400 posted bills dated over the current fiscal year, posted by 8 members at once; each report timed 5 times after a warm-up, one request at a time. Run by hand, scripts/volume-test.mjs defaults to 5,000 invoices and 1,000 bills, 10 runs."
+    },
+    {
       "key": "search-at-volume-p95",
       "feature": "PERF-012",
       "title": "The header search (Ctrl+K) for part of a name, number or reference, from a term matching every invoice to one matching nothing",

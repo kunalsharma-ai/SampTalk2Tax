@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 502 |
+| Not started | 501 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 765 |
+| Tested | 766 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 2 | 19 |
+| Performance and scalability | M9 | 21 | 1 | 20 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10209,6 +10209,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - scripts/load-test.mjs › --busy: 8 people in one organisation plus 20 in others, reads and posting held to the budgets (CI step Load test)
   - apps/api/test/large-volumes.e2e.test.ts › many postings into one organisation at once
   - docs/LOAD_TESTING.md › Many people in one organisation
+
+### PERF-004 — Complex reporting
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Complex reports (cash flow, statutory with comparatives, cash basis, vendor spend, receivables ledger, KPIs, management and tax reports) timed at volume in CI against complex-reports-at-volume-p95 (1,000 ms); all under 600 ms p95 on 2,000 invoices + 400 bills.
+- Evidence:
+  - scripts/volume-test.mjs › complex reports p95 under 1,000 ms (CI step Volume test)
+  - perf/budgets.json
+  - docs/PERFORMANCE_BUDGETS.md › Complex reports at volume
 
 ### PERF-005 — AI workload isolation
 

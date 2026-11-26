@@ -4,7 +4,8 @@
  * year of posted invoices and bills, then the reports people open most (and the header search,
  * PERF-012) are timed
  * one after another, several times each, and checked against the "reports at volume" budget in
- * perf/budgets.json. The books are checked afterwards: the trial balance balances and receivables
+ * perf/budgets.json; complex reports (PERF-004: cash flow, statutory statements with comparatives,
+ * cash basis, ledgers, KPIs, the management and tax reports) against their own budget. The books are checked afterwards: the trial balance balances and receivables
  * equal what was invoiced.
  *
  *   node scripts/volume-test.mjs [--api http://localhost:4000] [--invoices 5000] [--bills 1000]
@@ -33,6 +34,7 @@ const PER_SEEDER_PER_SECOND = 8; // under the default 600 a minute per person
 const BUDGETS = JSON.parse(readFileSync(new URL('../perf/budgets.json', import.meta.url), 'utf8')).budgets;
 const LIMIT = BUDGETS.find((b) => b.key === 'reports-at-volume-p95').limitMs;
 const SEARCH_LIMIT = BUDGETS.find((b) => b.key === 'search-at-volume-p95').limitMs;
+const COMPLEX_LIMIT = BUDGETS.find((b) => b.key === 'complex-reports-at-volume-p95').limitMs;
 const today = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const yearStart = `${Number(today.slice(5, 7)) >= 4 ? today.slice(0, 4) : Number(today.slice(0, 4)) - 1}-04-01`;
 const DAYS = Math.max(1, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${yearStart}T00:00:00Z`)) / 86_400_000)); // not money
@@ -149,6 +151,19 @@ const REPORTS = [
   ['Receivables ageing', `${base}/sales/ageing?asOf=${today}`],
   ['Invoice list', `${base}/sales/documents?kind=INVOICE`],
 ];
+// Complex reports (PERF-004): ones that combine many records or several periods, timed against
+// their own budget.
+const month = today.slice(0, 7);
+const COMPLEX = [
+  ['Cash flow statement', `${base}/reports/cash-flow-statement?from=${yearStart}&to=${today}`],
+  ['Statutory statements with comparatives', `${base}/reports/statutory?from=${yearStart}&to=${today}&comparative=true`],
+  ['Income statement, cash basis', `${base}/reports/income-statement?from=${yearStart}&to=${today}&basis=CASH`],
+  ['Vendor spend', `${base}/reports/vendor-spend?from=${yearStart}&to=${today}`],
+  ['General ledger of receivables', `${base}/reports/general-ledger?accountId=${acc['1200']}&from=${yearStart}&to=${today}`],
+  ['KPIs for the month', `${base}/kpis?month=${month}`],
+  ['Management report for the month', `${base}/management-reports/${month}`],
+  ['Tax report', `${base}/reports/tax?from=${yearStart}&to=${today}`],
+];
 const results = [];
 for (const [name, path] of REPORTS) {
   await must('GET', path, owner.token); // warm-up
@@ -159,6 +174,18 @@ for (const [name, path] of REPORTS) {
     ms.push(Math.round(r.ms));
   }
   results.push({ name, p95: pct(ms, 95), median: pct(ms, 50), samples: ms });
+}
+
+const complex = [];
+for (const [name, path] of COMPLEX) {
+  await must('GET', path, owner.token); // warm-up
+  const ms = [];
+  for (let i = 0; i < RUNS; i++) {
+    const r = await call('GET', path, owner.token);
+    if (r.status !== 200) throw new Error(`${name} answered ${r.status}`);
+    ms.push(Math.round(r.ms));
+  }
+  complex.push({ name, p95: pct(ms, 95), median: pct(ms, 50), samples: ms });
 }
 
 // ------------------------------------------------------------ time the header search (PERF-012)
@@ -192,6 +219,7 @@ const invoicedText = `${invoiced / 100n}.${String(invoiced % 100n).padStart(2, '
 const books = { trialBalanceBalances: tb.totalDebit === tb.totalCredit, invoiced: invoicedText, receivablesMatch: ageing.totals.balance === invoicedText };
 
 const missed = results.filter((r) => r.p95 > LIMIT).map((r) => `${r.name} p95 ${r.p95} ms > ${LIMIT} ms`);
+missed.push(...complex.filter((r) => r.p95 > COMPLEX_LIMIT).map((r) => `${r.name} p95 ${r.p95} ms > ${COMPLEX_LIMIT} ms`));
 missed.push(...searches.filter((r) => r.p95 > SEARCH_LIMIT).map((r) => `${r.name} p95 ${r.p95} ms > ${SEARCH_LIMIT} ms`));
 if (searches[0].found === 0 || searches[2].found === 0 || searches[4].found !== 0) missed.push('the search did not find what it should');
 if (!books.trialBalanceBalances) missed.push('the trial balance does not balance');
@@ -203,6 +231,8 @@ const report = {
   conditions: { api: API, invoices: INVOICES, bills: BILLS, customers: CUSTOMERS, runs: RUNS, seededInSeconds: seededIn },
   budgetMs: LIMIT,
   results,
+  complexBudgetMs: COMPLEX_LIMIT,
+  complex,
   searchBudgetMs: SEARCH_LIMIT,
   searches,
   books,

@@ -148,3 +148,9 @@ search was already fast. The change matters as an organisation grows: the old se
 matching record, so its cost grew with the number of matches. The new one fetches at most one
 page per field, however many records match. In a separate test on 20,000 records of 2 KB each,
 the old query read all 20,000 records in 113 ms. Walking the index read 8 records in 1 ms.
+
+## Complex reports at volume (PERF-004)
+
+`scripts/volume-test.mjs` also times the reports that combine many records or several periods, against their own budget, `complex-reports-at-volume-p95` (1,000 ms at the 95th percentile, same conditions as the reports at volume): the cash flow statement, the statutory statements with comparatives, the cash-basis income statement, vendor spend, the general ledger of receivables (every invoice and receipt line of the year), the month's KPIs, the management report and the tax report. CI fails when any of them misses it.
+
+Measured on the CI-sized data (2,000 invoices, 400 bills, 200 customers; 5 runs) on a development container, 2026-11-26, p95: cash flow statement 26 ms, statutory statements 53 ms, cash-basis income statement 84 ms, vendor spend 56 ms, general ledger of receivables 547 ms, KPIs 208 ms, management report 78 ms, tax report 542 ms.
