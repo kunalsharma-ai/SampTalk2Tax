@@ -10193,7 +10193,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Performance and scalability
 - Status: **Tested**
-- Notes: 28 people at 3 requests a second on one machine. On the slower dev container, posting with 6 to 8 people in one organisation came near the 1,000 ms budget.
+- Notes: 28 people at 3 requests a second on one machine. With 8 people in one organisation, its posting p95 was 706 to 725 ms on the dev container, after postings of one organisation were made to take turns.
 - Evidence:
   - scripts/load-test.mjs › --busy: 8 people in one organisation plus 20 in others, reads and posting held to the budgets (CI step Load test)
   - apps/api/test/large-volumes.e2e.test.ts › many postings into one organisation at once

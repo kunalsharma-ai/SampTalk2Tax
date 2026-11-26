@@ -3,9 +3,9 @@ import { Reflector } from '@nestjs/core';
 import { hasPermission, Permission, RoleName } from '@talk2tax/security';
 import { FlagKey, isWriteMethod } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
-import { PrismaService, withSystemAccess } from '../common/prisma.service';
+import { PrismaService } from '../common/prisma.service';
 import { DocumentStoreService } from '../common/document-store.service';
-import { enterOrg, enterUser, runInOrg } from '../common/tenant-context';
+import { enterOrg, enterUser, runAsSystem, runInOrg } from '../common/tenant-context';
 import { memberships, organizations } from '../db/collections/tenancy';
 import { RegionsService } from '../regions/regions.service';
 import { accessOf } from '../billing/limits';
@@ -107,11 +107,16 @@ export class AuthGuard implements CanActivate {
       if (!hasPermission(role, permission)) {
         throw new ForbiddenException({ error: 'FORBIDDEN', message: `Your role (${role}) does not have ${permission}` });
       }
-      // The organisation may require two-step sign-in of everyone who opens its books.
-      await this.orgSecurity.assertAllowed(orgId, user.id);
-      // Where and when, on top of the role (SEC-004): the organisation's access rules.
-      await this.accessRules.assertAllowed(orgId, { userId: user.id, role, ip: req.ip ?? null, at: new Date(), timeZone: membership.org.timeZone ?? 'Asia/Kolkata', writes });
-      await this.assertFlag(targets, orgId);
+      // The organisation may require two-step sign-in of everyone who opens its books; where and
+      // when, on top of the role (SEC-004), its access rules; and the module's feature flag. The
+      // three checks are read together and their refusals still reported in this order.
+      const checks = [
+        this.orgSecurity.assertAllowed(orgId, user.id),
+        this.accessRules.assertAllowed(orgId, { userId: user.id, role, ip: req.ip ?? null, at: new Date(), timeZone: membership.org.timeZone ?? 'Asia/Kolkata', writes }),
+        this.assertFlag(targets, orgId),
+      ];
+      for (const c of checks) c.catch(() => undefined); // each is awaited below; this only stops an early refusal leaving the others unhandled
+      for (const c of checks) await c;
       enterOrg(orgId, membership.org.timeZone);
       req.org = {
         id: orgId,
@@ -127,21 +132,21 @@ export class AuthGuard implements CanActivate {
 
   /** The person's membership in the organisation, with what the checks below need of the organisation. */
   private async membershipOf(orgId: string, userId: string) {
-    const m = await runInOrg(orgId, () => this.store.collection(memberships).findOne({ userId }));
-    if (!m) return null;
-    const [org, subscription] = await Promise.all([
+    // The three reads go out together (PERF-010); for someone who is not a member, the
+    // organisation's are discarded unseen.
+    const [m, org, subscription] = await Promise.all([
+      runInOrg(orgId, () => this.store.collection(memberships).findOne({ userId })),
       this.store.collection(organizations).findById(orgId),
-      // The request is not inside the organisation yet, so this read is the system's.
-      this.prisma.$transaction((tx) =>
-        withSystemAccess(tx, () =>
-          tx.subscription.findUnique({
-            where: { orgId },
-            select: { status: true, trialEndsAt: true, currentPeriodEnd: true, addOns: true, plan: { select: { name: true, features: true } } },
-          }),
-        ),
+      // The request is not inside the organisation yet, so this read is the system's. A plain read,
+      // not a transaction: every request makes it, and a transaction costs extra round trips (PERF-010).
+      runAsSystem(() =>
+        this.prisma.subscription.findUnique({
+          where: { orgId },
+          select: { status: true, trialEndsAt: true, currentPeriodEnd: true, addOns: true, plan: { select: { name: true, features: true } } },
+        }),
       ),
     ]);
-    if (!org) return null;
+    if (!m || !org) return null;
     return { role: m.role, org: { timeZone: org.timeZone, functionalCurrency: org.functionalCurrency, fiscalYearStartMonth: org.fiscalYearStartMonth, dataRegion: org.dataRegion, suspendedAt: org.suspendedAt, suspendedReason: org.suspendedReason, subscription } };
   }
 
