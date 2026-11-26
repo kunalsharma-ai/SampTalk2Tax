@@ -143,6 +143,7 @@ export const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/reports/dependencies', label: 'Financial dependencies' },
       { href: '/reports/cash-flow-network', label: 'Cash-flow network' },
       { href: '/reports/landscape', label: 'Financial landscape' },
+      { href: '/reports/revenue-globe', label: 'Revenue globe' },
       { href: '/reports/balance-sheet', label: 'Balance sheet' },
       { href: '/reports/cash-flow-statement', label: 'Cash flow statement' },
       { href: '/reports/statutory', label: 'Statutory statements' },

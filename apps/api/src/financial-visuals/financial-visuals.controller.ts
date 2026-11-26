@@ -7,6 +7,7 @@ import { ZodPipe } from '../common/zod';
 import { CashFlowNetworkService } from './cash-flow-network.service';
 import { DepartmentPerformanceService } from './department-performance.service';
 import { FinancialLandscapeService } from './financial-landscape.service';
+import { RevenueGlobeService } from './revenue-globe.service';
 import { FinancialDependenciesService } from './financial-dependencies.service';
 import { FinancialTimelineService } from './financial-timeline.service';
 import { FinancialVisualsService } from './financial-visuals.service';
@@ -116,6 +117,20 @@ export class FinancialLandscapeController {
   @RequirePermission('reports.read')
   landscape(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(LandscapeQuery)) q: z.infer<typeof LandscapeQuery>) {
     return this.s.landscape(org, q);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/revenue-globe')
+export class RevenueGlobeController {
+  constructor(private readonly s: RevenueGlobeService) {}
+
+  /** Sales revenue by where customers are (country abroad, state at home), month by month (the last 12 by default), for the revenue globe. */
+  @Get()
+  @RequirePermission('reports.read')
+  globe(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
+    return this.s.globe(org, q);
   }
 }
 

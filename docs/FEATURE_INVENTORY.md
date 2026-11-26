@@ -959,7 +959,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-022 | Design Direction | rule | Avoid excessive visual noise | Not started |
 | DASH-023 | Advanced Visualization | capability | Interactive 3D financial landscapes | Tested |
 | DASH-024 | Advanced Visualization | capability | Animated cash-flow networks | Tested |
-| DASH-025 | Advanced Visualization | capability | Revenue distribution globes | Not started |
+| DASH-025 | Advanced Visualization | capability | Revenue distribution globes | Tested |
 | DASH-026 | Advanced Visualization | capability | Financial relationship graphs | Tested |
 | DASH-027 | Advanced Visualization | capability | Interactive financial scenario surfaces | Tested |
 | DASH-028 | Advanced Visualization | capability | Animated waterfall charts | Tested |
