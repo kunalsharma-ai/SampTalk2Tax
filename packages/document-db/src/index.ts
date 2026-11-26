@@ -7,3 +7,4 @@ export * from './store';
 export * from './read-cache';
 export * from './migrations';
 export * from './backup';
+export * from './sharding';

@@ -1427,7 +1427,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-006 |  | capability | Background processing | Tested |
 | PERF-007 |  | capability | Regional deployments | Implemented |
 | PERF-008 |  | capability | Horizontal scaling | Tested |
-| PERF-009 |  | capability | Database partitioning where justified | Not started |
+| PERF-009 |  | capability | Database partitioning where justified | Tested |
 | PERF-010 |  | capability | Caching | Tested |
 | PERF-011 |  | capability | Read replicas | Tested |
 | PERF-012 |  | capability | Efficient search | Tested |

@@ -90,6 +90,18 @@ export interface Transport {
 }
 export interface ErrorGroupRow { id: string; name: string; message: string; method: string; route: string; frame: string | null; occurrences: number; last24h: number; firstSeenAt: string; lastSeenAt: string; resolvedAt: string | null }
 export interface ErrorGroupDetail extends Omit<ErrorGroupRow, 'last24h'> { resolvedBy: string | null; events: { id: string; requestId: string; status: number; method: string; path: string; orgId: string | null; userId: string | null; message: string; stack: string | null; at: string }[] }
+/** Database partitioning (PERF-009): sizes, review thresholds and readiness to shard by organisation. */
+export type ShardState = 'READY' | 'NEEDS_ORG_PREFIX' | 'GLOBAL_LOOKUP' | 'GLOBAL';
+export interface Partitioning {
+  checkedAt: string;
+  shardKey: Record<string, number>;
+  databaseBytes: number;
+  documents: number;
+  thresholds: { databaseBytes: number; collectionBytes: number };
+  advice: { justified: boolean; reasons: string[]; databaseShare: number; largestShare: number };
+  largest: { name: string; documents: number; bytes: number; state: ShardState }[];
+  readiness: { counts: Record<ShardState, number>; notReady: { name: string; state: ShardState; blockers: { index: string; key: string[]; partial: boolean; kind: 'NEEDS_ORG_PREFIX' | 'GLOBAL_LOOKUP' }[] }[] };
+}
 export interface FlagRow {
   key: string;
   name: string;

@@ -45,6 +45,12 @@ const schema = z.object({
    */
   MONGODB_REPLICA_READS: z.enum(['off', 'reports']).default('off'),
   MONGODB_REPLICA_MAX_STALENESS_SECONDS: z.coerce.number().int().min(90).max(3600).default(120),
+  /**
+   * Partitioning (PERF-009): System health says splitting the database across shards is worth
+   * reviewing once the database, or one collection, reaches these sizes (data plus indexes).
+   */
+  PARTITIONING_REVIEW_DATABASE_GB: z.coerce.number().positive().max(1_000_000).default(2048),
+  PARTITIONING_REVIEW_COLLECTION_GB: z.coerce.number().positive().max(1_000_000).default(512),
   /** Requests per minute per signed-in user (or per IP when signed out) on everything else. */
   RATE_LIMIT_API_PER_MINUTE: z.coerce.number().int().positive().default(600),
   /**

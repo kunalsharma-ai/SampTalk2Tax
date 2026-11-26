@@ -1,0 +1,235 @@
+{
+  "note": "PERF-009: unique indexes that block sharding by organisation today. This list may only shrink: a new collection must lead its unique indexes with orgId. See docs/PARTITIONING.md.",
+  "shardKey": {
+    "orgId": 1
+  },
+  "blocking": {
+    "ai_credit_grants": [
+      "uniq_invoiceId"
+    ],
+    "allocations": [
+      "fx_journal",
+      "fx_reversal_journal"
+    ],
+    "api_keys": [
+      "uniq_prefix",
+      "uniq_keyHash"
+    ],
+    "auditor_portal_links": [
+      "one_token"
+    ],
+    "bad_debt_provisions": [
+      "uniq_journalEntryId"
+    ],
+    "bad_debt_write_offs": [
+      "uniq_journalEntryId",
+      "uniq_reversalJournalEntryId"
+    ],
+    "bank_feed_connections": [
+      "one_token"
+    ],
+    "bank_matches": [
+      "active_journal_line"
+    ],
+    "benchmark_participations": [
+      "uniq_participantKey"
+    ],
+    "bill_payment_plans": [
+      "uniq_documentId"
+    ],
+    "budget_lines": [
+      "uniq_budgetId_accountId_periodNo"
+    ],
+    "card_programs": [
+      "card_programs_token"
+    ],
+    "consolidation_adjustments": [
+      "uniq_groupId_number"
+    ],
+    "consolidation_members": [
+      "uniq_groupId_memberOrgId"
+    ],
+    "consolidation_rates": [
+      "uniq_groupId_memberOrgId_periodEnd"
+    ],
+    "contract_meters": [
+      "uniq_contractId_code"
+    ],
+    "copilot_messages": [
+      "uniq_conversationId_seq"
+    ],
+    "coupon_redemptions": [
+      "uniq_couponId_orgId"
+    ],
+    "crm_webhook_deliveries": [
+      "uniq_webhookId_eventId"
+    ],
+    "customer_onboarding_checks": [
+      "uniq_onboardingId_requirementId"
+    ],
+    "customer_portal_links": [
+      "uniq_tokenHash"
+    ],
+    "deferral_lines": [
+      "uniq_runId_scheduleId_month"
+    ],
+    "depreciation_lines": [
+      "uniq_runId_assetId_month"
+    ],
+    "documents": [
+      "journal",
+      "void_journal",
+      "line_id"
+    ],
+    "doubtful_invoices": [
+      "uniq_documentId"
+    ],
+    "enterprise_contracts": [
+      "uniq_reference"
+    ],
+    "expense_claims": [
+      "journal",
+      "reimbursement_journal",
+      "void_journal",
+      "line_id"
+    ],
+    "fx_revaluations": [
+      "uniq_journalEntryId",
+      "uniq_reversalEntryId"
+    ],
+    "goods_receipt_lines": [
+      "uniq_receiptId_orderLineId"
+    ],
+    "intercompany_transactions": [
+      "uniq_groupId_number"
+    ],
+    "international_payment_items": [
+      "uniq_remittanceId_documentId"
+    ],
+    "invitations": [
+      "token"
+    ],
+    "invoice_line_recognition": [
+      "uniq_documentId_lineNo",
+      "uniq_scheduleId"
+    ],
+    "journal_entries": [
+      "reverses",
+      "line_id"
+    ],
+    "journal_template_lines": [
+      "uniq_templateId_lineNo"
+    ],
+    "journal_template_runs": [
+      "uniq_templateId_runNo"
+    ],
+    "loan_events": [
+      "uniq_loanId_seq"
+    ],
+    "pay_runs": [
+      "uniq_journalEntryId",
+      "uniq_voidJournalEntryId"
+    ],
+    "payment_batch_items": [
+      "uniq_batchId_documentId"
+    ],
+    "payment_links": [
+      "uniq_provider_gatewayRef",
+      "uniq_paymentId"
+    ],
+    "payments": [
+      "journal",
+      "void_journal"
+    ],
+    "payroll_remittances": [
+      "uniq_journalEntryId",
+      "uniq_voidJournalEntryId"
+    ],
+    "payslips": [
+      "uniq_payRunId_employeeId"
+    ],
+    "period_closes": [
+      "uniq_periodId_orgId",
+      "uniq_periodId"
+    ],
+    "policy_versions": [
+      "uniq_policyId_version_event"
+    ],
+    "pro_forma_invoice_lines": [
+      "uniq_proFormaId_lineNo"
+    ],
+    "pro_forma_invoices": [
+      "uniq_invoiceId"
+    ],
+    "purchase_order_lines": [
+      "uniq_orderId_lineNo"
+    ],
+    "recovery_actions": [
+      "uniq_planId_optionKey"
+    ],
+    "recurring_bill_lines": [
+      "uniq_recurringBillId_lineNo"
+    ],
+    "recurring_bill_runs": [
+      "uniq_recurringBillId_runNo"
+    ],
+    "retainer_receipts": [
+      "uniq_paymentId"
+    ],
+    "salary_components": [
+      "uniq_structureId_code"
+    ],
+    "salary_structures": [
+      "uniq_employeeId_effectiveFrom"
+    ],
+    "sales_contract_lines": [
+      "uniq_contractId_lineNo"
+    ],
+    "sales_contract_periods": [
+      "uniq_contractId_periodNo"
+    ],
+    "sales_order_lines": [
+      "uniq_orderId_lineNo"
+    ],
+    "sales_order_milestones": [
+      "uniq_orderId_seq"
+    ],
+    "sales_order_progress_claims": [
+      "uniq_documentId"
+    ],
+    "sales_orders": [
+      "uniq_quoteId"
+    ],
+    "sales_quote_lines": [
+      "uniq_quoteId_lineNo"
+    ],
+    "subscription_invoices": [
+      "uniq_gateway_checkoutRef",
+      "uniq_reference",
+      "uniq_number"
+    ],
+    "support_tickets": [
+      "uniq_number"
+    ],
+    "twin_scenario_versions": [
+      "uniq_scenarioId_version"
+    ],
+    "vendor_portal_links": [
+      "uniq_tokenHash"
+    ],
+    "withholding_deposits": [
+      "uniq_journalEntryId",
+      "uniq_voidJournalEntryId"
+    ],
+    "workflow_action_runs": [
+      "uniq_runId_position"
+    ],
+    "workflow_versions": [
+      "uniq_workflowId_version"
+    ],
+    "year_end_closes": [
+      "uniq_journalEntryId",
+      "uniq_reversalJournalEntryId"
+    ]
+  }
+}

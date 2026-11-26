@@ -8,6 +8,7 @@ import { ErrorsService } from './errors.service';
 import { FlagsService } from './flags.service';
 import { MaintenanceService } from './maintenance.service';
 import { SystemService } from './system.service';
+import { PartitioningService } from './partitioning.service';
 
 const FlagSetting = z.object({ enabled: z.boolean(), rolloutPercent: z.number().int().min(0).max(100).default(100), note: z.string().max(500).nullable().optional() }).strict();
 const Override = z.object({ enabled: z.boolean(), reason: z.string().trim().min(1).max(500) }).strict();
@@ -53,6 +54,7 @@ export class OrgFlagsController {
 export class OperationsController {
   constructor(
     private readonly system: SystemService,
+    private readonly partitioning: PartitioningService,
     private readonly errors: ErrorsService,
     private readonly flags: FlagsService,
     private readonly maintenance: MaintenanceService,
@@ -62,6 +64,13 @@ export class OperationsController {
   @RequirePlatform('platform.read')
   health(@Req() req: Request) {
     return this.system.health(req.secure);
+  }
+
+  /** Database partitioning (PERF-009): sizes, review thresholds and which collections could be sharded by organisation. */
+  @Get('system/partitioning')
+  @RequirePlatform('platform.read')
+  partitioningStatus() {
+    return this.partitioning.status();
   }
 
   @Get('errors')

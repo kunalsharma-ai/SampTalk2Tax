@@ -87,6 +87,7 @@ import { MaintenanceService } from './operations/maintenance.service';
 import { MetricsService } from './operations/metrics.service';
 import { OperationsController, OrgFlagsController, StatusController } from './operations/operations.controller';
 import { SystemService } from './operations/system.service';
+import { PartitioningService } from './operations/partitioning.service';
 import { ContactsController } from './contacts/contacts.controller';
 import { ContactsService } from './contacts/contacts.service';
 import { DocumentsService } from './ledgers/documents.service';
@@ -872,6 +873,7 @@ export class AppModule {
         FlagsService,
         ErrorsService,
         SystemService,
+        PartitioningService,
         // Order matters: rate limiting runs before authentication.
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },

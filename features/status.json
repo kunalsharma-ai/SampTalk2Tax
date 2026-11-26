@@ -10444,6 +10444,19 @@
         "docs/PERFORMANCE_BUDGETS.md › Complex reports at volume"
       ],
       "notes": "Complex reports (cash flow, statutory with comparatives, cash basis, vendor spend, receivables ledger, KPIs, management and tax reports) timed at volume in CI against complex-reports-at-volume-p95 (1,000 ms); all under 600 ms p95 on 2,000 invoices + 400 bills."
+    },
+    "PERF-009": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/test/partitioning.e2e.test.ts",
+        "packages/document-db/test/sharding.test.ts",
+        "packages/document-db/src/sharding.ts",
+        "apps/api/src/operations/partitioning.service.ts",
+        "perf/partitioning-baseline.json",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/PARTITIONING.md"
+      ],
+      "notes": "Decision: not sharded yet (one replica set holds ~63,000 busy organisation-years at the 2 TB review size). System health card shows sizes vs PARTITIONING_REVIEW_DATABASE_GB/COLLECTION_GB and readiness to shard by orgId; CI baseline stops new unique indexes that block sharding (193 ready, 57 need orgId prefix, 12 global lookups)."
     }
   }
 }
