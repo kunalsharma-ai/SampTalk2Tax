@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 496 |
+| Not started | 495 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 771 |
+| Tested | 772 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 0 | 41 |
-| Dashboard design | M1 | 68 | 17 | 51 |
+| Dashboard design | M1 | 68 | 16 | 52 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6792,6 +6792,22 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/design-system/src/tokens.ts
   - packages/design-system/test/contrast.test.mjs
+
+### DASH-023 — Interactive 3D financial landscapes
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Financial landscape: spending or income by account and month as 3D towers (top 8 accounts, the rest joined), turn by drag or arrow keys, play months, slider, pick out a tower from the figures table with a ledger link; from posted journals without closing entries.
+- Evidence:
+  - packages/accounting-engine/src/financial-landscape.ts
+  - packages/accounting-engine/test/financial-landscape.test.ts
+  - apps/api/src/financial-visuals/financial-landscape.service.ts
+  - apps/api/test/financial-landscape.e2e.test.ts
+  - apps/web/src/lib/surface-3d.ts
+  - apps/web/src/components/reports/financial-landscape.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/landscape/page.tsx
+  - apps/web/e2e/financial-landscape-flow.test.mjs
+  - docs/FINANCIAL_LANDSCAPE.md
 
 ### DASH-024 — Animated cash-flow networks
 

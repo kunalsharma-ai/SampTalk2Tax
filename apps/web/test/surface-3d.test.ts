@@ -48,3 +48,35 @@ describe('3D scenario surface drawing (DASH-027)', () => {
     expect(surfaceColour(0, -10, 10)).toMatch(/^hsl\(215 /);
   });
 });
+
+describe('3D financial landscape towers (DASH-023)', () => {
+  it('builds one tower per cell, as tall as its value, nearest last', async () => {
+    const { towers } = await import('../src/lib/surface-3d');
+    const t = towers(
+      [
+        [10, 0],
+        [5, -5],
+      ],
+      { yaw: -35, pitch: 30 },
+      400,
+      500,
+      300,
+    );
+    expect(t).toHaveLength(4);
+    for (let i = 1; i < t.length; i++) expect(t[i - 1].depth).toBeLessThanOrEqual(t[i].depth);
+    const tall = t.find((x) => x.xi === 0 && x.yi === 0)!;
+    const half = t.find((x) => x.xi === 0 && x.yi === 1)!;
+    const height = (tw: typeof tall) => {
+      const top = tw.faces.find((f) => f.face === 'top')!.points[0];
+      const side = tw.faces.find((f) => f.face !== 'top')!.points[0];
+      return side.y - top.y;
+    };
+    // From above-ish, the taller tower's top rises twice as far above its base.
+    expect(height(tall)).toBeCloseTo(2 * height(half), 6);
+    // A tower for a negative value goes below the floor, and its top is drawn first.
+    const neg = t.find((x) => x.xi === 1 && x.yi === 1)!;
+    expect(neg.faces[0].face).toBe('top');
+    expect(tall.faces[tall.faces.length - 1].face).toBe('top');
+    expect(towers([], { yaw: 0, pitch: 30 }, 1, 0, 0)).toEqual([]);
+  });
+});
