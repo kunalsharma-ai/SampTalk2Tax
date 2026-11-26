@@ -34182,9 +34182,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "scripts/volume-test.mjs › complex reports p95 under 1,000 ms (CI step Volume test)",
+        "perf/budgets.json",
+        "docs/PERFORMANCE_BUDGETS.md › Complex reports at volume"
+      ],
+      "notes": "Complex reports (cash flow, statutory with comparatives, cash basis, vendor spend, receivables ledger, KPIs, management and tax reports) timed at volume in CI against complex-reports-at-volume-p95 (1,000 ms); all under 600 ms p95 on 2,000 invoices + 400 bills."
     },
     {
       "id": "PERF-005",

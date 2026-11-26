@@ -10435,6 +10435,15 @@
         "docs/MANY_ORGANISATIONS.md"
       ],
       "notes": "Background work stays bounded with thousands of organisations: alert checks rotate through org_rotations (due by index, claimed, at most 200 looked at per pass); scheduled reports read only due schedules in pages (no 5,000 cap); close auto-start pages; every tenant collection has an orgId-first index (checked)."
+    },
+    "PERF-004": {
+      "status": "Tested",
+      "evidence": [
+        "scripts/volume-test.mjs › complex reports p95 under 1,000 ms (CI step Volume test)",
+        "perf/budgets.json",
+        "docs/PERFORMANCE_BUDGETS.md › Complex reports at volume"
+      ],
+      "notes": "Complex reports (cash flow, statutory with comparatives, cash basis, vendor spend, receivables ledger, KPIs, management and tax reports) timed at volume in CI against complex-reports-at-volume-p95 (1,000 ms); all under 600 ms p95 on 2,000 invoices + 400 bills."
     }
   }
 }
