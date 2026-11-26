@@ -19,7 +19,7 @@ export async function databaseSizes(store: DocumentStoreService): Promise<{ data
         .next()
         .catch(() => null);
       const s = row?.storageStats;
-      if (s) sizes.push({ name: def.name, documents: Number(s.count ?? 0), bytes: Number(s.size ?? 0) + Number(s.totalIndexSize ?? 0) });
+      if (s) sizes.push({ name: def.name, documents: Number(s.count ?? 0), bytes: Number(s.size ?? 0) + Number(s.totalIndexSize ?? 0) }); // not money: bytes
     }
   };
   await Promise.all(Array.from({ length: 8 }, worker));
