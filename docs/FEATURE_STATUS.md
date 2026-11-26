@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 499 |
+| Not started | 498 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 768 |
+| Tested | 769 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 0 | 41 |
-| Dashboard design | M1 | 68 | 20 | 48 |
+| Dashboard design | M1 | 68 | 19 | 49 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6792,6 +6792,21 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/design-system/src/tokens.ts
   - packages/design-system/test/contrast.test.mjs
+
+### DASH-024 — Animated cash-flow networks
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Cash-flow network: per cash and bank account, money in from groups (customers and income, owners, lenders, assets, tax, other) and out to groups (vendors and spending, payroll, tax, lenders, assets, other), and transfers between own accounts, from posted entries split over the other side in proportion (to the cent); animated dashes the way money goes (still under reduced motion), play month by month, slider, pick out a node; same flows in tables.
+- Evidence:
+  - packages/accounting-engine/src/cash-flow-network.ts
+  - packages/accounting-engine/test/cash-flow-network.test.ts
+  - apps/api/src/financial-visuals/cash-flow-network.service.ts
+  - apps/api/test/cash-flow-network.e2e.test.ts
+  - apps/web/src/components/reports/cash-flow-network.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/cash-flow-network/page.tsx
+  - apps/web/e2e/cash-flow-network-flow.test.mjs
+  - docs/CASH_FLOW_NETWORK.md
 
 ### DASH-026 — Financial relationship graphs
 
