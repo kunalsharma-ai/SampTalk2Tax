@@ -34371,9 +34371,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/graph/record-search.ts",
+        "apps/api/test/search.e2e.test.ts",
+        "scripts/volume-test.mjs",
+        "docs/PERFORMANCE_BUDGETS.md"
+      ],
+      "notes": "Header search walks one index per field (orgId + field), tests the text on index entries and fetches only matching records, at most a page per field; budget search-at-volume-p95 300 ms in the CI volume test."
     },
     {
       "id": "PERF-013",

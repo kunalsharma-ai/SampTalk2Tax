@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 509 |
+| Not started | 508 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 758 |
+| Tested | 759 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 9 | 12 |
+| Performance and scalability | M9 | 21 | 8 | 13 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10234,6 +10234,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/document-db/src/read-cache.ts
   - apps/api/test/read-cache.e2e.test.ts
   - docs/READ_CACHE.md
+
+### PERF-012 — Efficient search
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Header search walks one index per field (orgId + field), tests the text on index entries and fetches only matching records, at most a page per field; budget search-at-volume-p95 300 ms in the CI volume test.
+- Evidence:
+  - apps/api/src/graph/record-search.ts
+  - apps/api/test/search.e2e.test.ts
+  - scripts/volume-test.mjs
+  - docs/PERFORMANCE_BUDGETS.md
 
 ### PERF-014 — Establish measurable performance budgets
 

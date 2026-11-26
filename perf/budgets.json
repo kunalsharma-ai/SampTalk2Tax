@@ -54,6 +54,15 @@
       "limitMs": 1000,
       "benchmark": "scripts/volume-test.mjs",
       "conditions": "API and MongoDB replica set on one machine (the CI runner); one organisation with 2,000 posted invoices to 200 customers and 400 posted bills dated over the current fiscal year, posted by 8 members at once; each report timed 5 times after a warm-up, one request at a time. Run by hand, scripts/volume-test.mjs defaults to 5,000 invoices and 1,000 bills, 10 runs."
+    },
+    {
+      "key": "search-at-volume-p95",
+      "feature": "PERF-012",
+      "title": "The header search (Ctrl+K) for part of a name, number or reference, from a term matching every invoice to one matching nothing",
+      "percentile": 95,
+      "limitMs": 300,
+      "benchmark": "scripts/volume-test.mjs",
+      "conditions": "As for reports at volume: the same organisation with 2,000 posted invoices to 200 customers and 400 posted bills; five search terms, each timed 5 times after a warm-up, one request at a time."
     }
   ]
 }

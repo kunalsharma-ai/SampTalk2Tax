@@ -104,3 +104,47 @@ The receivables ageing grows with the number of open invoices, because it lists 
 around 10,000 open invoices it would reach the budget. These are single-machine numbers with one
 organisation; they do not measure production with network latency or many large organisations at
 once.
+
+## Efficient search (PERF-012)
+
+The header search (Ctrl+K) looks for part of a name, number or reference in customers and
+vendors, documents, payments, journal entries and accounts. Such a search cannot narrow an index
+to a range, so it used to read every record of the organisation that might match and sort them
+all, only to show eight.
+
+Now each searched field has an index that starts with the organisation (migration
+`20270316100000_search_indexes`): document and payment numbers and references, journal
+references and memos, account names, and the existing contact name and account code indexes.
+`apps/api/src/graph/record-search.ts` walks each of those indexes in its own order, newest
+numbers first and names A to Z. MongoDB tests the text on the index entries alone and fetches
+only the records that match. Each walk stops after one page of matches. For each field there is
+one walk for values that start with the text and one for values that contain it, so an exact or
+starting match is never crowded out. Results are ranked: the whole value, then values that start
+with the text, then values that contain it. The text is always escaped, so `(`, `.` or `*` are
+only characters.
+
+`apps/api/test/search.e2e.test.ts` records the database's own profile of a search that matches
+all 40 of an organisation's invoices. Every read uses an index, none scans the collection, and
+each fetches at most a page of eight records. The same test covers ranking, case, pattern
+characters, references, journal memos and numbers, account codes, and other organisations.
+
+The CI volume test times five searches (a term matching every invoice, part of a number, a
+customer, a bill reference, and nothing) against the 2,000-invoice organisation. The budget is
+`search-at-volume-p95`, 300 ms.
+
+### Measured (2026-11-26, development container)
+
+| Search | 2,000 invoices, p95 | 10,000 invoices, before | 10,000 invoices, after |
+| --- | --- | --- | --- |
+| Every invoice (`INV`) | 31 ms | 56 ms | 22 ms |
+| Part of a number (`012`) | 32 ms | 47 ms | 39 ms |
+| A customer | 53 ms | 37 ms | 39 ms |
+| A bill reference | 29 ms | 41 ms | 41 ms |
+| Nothing matches | 30 ms | 55 ms | 36 ms |
+
+"Before" and "after" are the slowest of five runs. Both ran against the same organisation, and
+"before" already had the new indexes, which also help the old queries. At these volumes the
+search was already fast. The change matters as an organisation grows: the old search read every
+matching record, so its cost grew with the number of matches. The new one fetches at most one
+page per field, however many records match. In a separate test on 20,000 records of 2 KB each,
+the old query read all 20,000 records in 113 ms. Walking the index read 8 records in 1 ms.

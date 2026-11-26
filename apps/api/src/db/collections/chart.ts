@@ -60,6 +60,8 @@ export const accounts = defineCollection<AccountDoc>({
     { key: { orgId: 1, code: 1 }, name: 'org_code', unique: true },
     { key: { orgId: 1, type: 1 }, name: 'org_type' },
     { key: { orgId: 1, parentId: 1 }, name: 'org_parent' },
+    // The header search walks it (PERF-012, graph/record-search.ts).
+    { key: { orgId: 1, name: 1 }, name: 'org_name' },
   ],
   guards: {
     async beforeInsert(a, ctx) {
