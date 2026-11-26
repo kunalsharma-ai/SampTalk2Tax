@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 501 |
+| Not started | 500 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 766 |
+| Tested | 767 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 1 | 20 |
+| Performance and scalability | M9 | 21 | 0 | 21 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10269,6 +10269,20 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/horizontal-scaling.e2e.test.ts
   - apps/api/test/workflow-recovery.e2e.test.ts
   - docs/HORIZONTAL_SCALING.md
+
+### PERF-009 — Database partitioning where justified
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Decision: not sharded yet (one replica set holds ~63,000 busy organisation-years at the 2 TB review size). System health card shows sizes vs PARTITIONING_REVIEW_DATABASE_GB/COLLECTION_GB and readiness to shard by orgId; CI baseline stops new unique indexes that block sharding (193 ready, 57 need orgId prefix, 12 global lookups).
+- Evidence:
+  - apps/api/test/partitioning.e2e.test.ts
+  - packages/document-db/test/sharding.test.ts
+  - packages/document-db/src/sharding.ts
+  - apps/api/src/operations/partitioning.service.ts
+  - perf/partitioning-baseline.json
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/PARTITIONING.md
 
 ### PERF-010 — Caching
 

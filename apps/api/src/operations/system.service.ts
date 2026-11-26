@@ -112,6 +112,7 @@ export class SystemService {
       database.status === 'DOWN' ? 'The database is not answering' : null,
       database.status === 'SLOW' ? 'The database is slow to answer' : null,
       database.replicaReads.mode === 'reports' && database.replicaReads.secondaries === 0 ? 'Report reads are set to use replicas, but the database has no secondary member: they go to the primary' : null,
+      database.sizeBytes !== null && database.sizeBytes >= this.config.PARTITIONING_REVIEW_DATABASE_GB * 1024 ** 3 ? `The database has reached ${this.config.PARTITIONING_REVIEW_DATABASE_GB.toLocaleString('en-IN')} GB: review partitioning (see Database partitioning below)` : null,
       database.unfinishedMigrations ? `${database.unfinishedMigrations} database migration${database.unfinishedMigrations === 1 ? ' has' : 's have'} not finished` : null,
       ...runners.filter((r) => r.state === 'FAILING' || r.state === 'LATE').map((r) => `${r.name} is ${r.state === 'FAILING' ? 'failing' : 'late'}`),
       this.config.NODE_ENV === 'production' && !this.config.HTTPS_ONLY ? 'Requests are accepted without HTTPS (set HTTPS_ONLY=true)' : null,

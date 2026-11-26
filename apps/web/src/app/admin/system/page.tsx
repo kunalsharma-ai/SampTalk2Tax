@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shell';
 import { bytes } from '@/components/usage-meter';
 import { api } from '@/lib/api';
 import { dateTime } from '@/lib/format';
-import { AiWork, ApiServer, duration, Runner, Secrets, SystemHealth, Transport } from '@/lib/operations';
+import { AiWork, ApiServer, duration, Partitioning, Runner, Secrets, ShardState, SystemHealth, Transport } from '@/lib/operations';
 
 const STATUS = { OK: { label: 'Healthy', tone: 'positive' }, DEGRADED: { label: 'Needs attention', tone: 'warning' }, DOWN: { label: 'Down', tone: 'negative' } } as const;
 const RUNNER: Record<Runner['state'], { label: string; tone: 'positive' | 'neutral' | 'warning' | 'negative' }> = {
@@ -88,6 +88,7 @@ export default function SystemHealthPage() {
 
           <ApiServers servers={d.servers} />
           <AiWorkLanes a={d.ai} />
+          <DatabasePartitioning />
 
           <Card className="mb-6" aria-label="Background runners">
             <CardHeader title="Background runners" description="Passes are skipped while maintenance is in progress." />
@@ -277,6 +278,70 @@ function ApiServers({ servers }: { servers: ApiServer[] }) {
           ))}
         </tbody>
       </Table>
+    </Card>
+  );
+}
+
+const SHARD: Record<ShardState, { label: string; tone: 'positive' | 'neutral' | 'warning' }> = {
+  READY: { label: 'Can be split as it is', tone: 'positive' },
+  NEEDS_ORG_PREFIX: { label: 'Needs organisation first in a unique index', tone: 'warning' },
+  GLOBAL_LOOKUP: { label: 'Looked up without the organisation: stays whole', tone: 'neutral' },
+  GLOBAL: { label: 'Shared: not split', tone: 'neutral' },
+};
+const pct = (share: number) => `${(share * 100).toLocaleString('en-IN', { maximumFractionDigits: share < 0.01 ? 3 : 1 })}%`;
+
+/** Database partitioning (PERF-009): whether splitting the database by organisation is justified yet, and what stands in the way. */
+function DatabasePartitioning() {
+  const q = useQuery({ queryKey: ['admin-partitioning'], queryFn: () => api<Partitioning>('/v1/admin/system/partitioning'), refetchInterval: 300_000 });
+  const p = q.data;
+  return (
+    <Card className="mb-6" role="region" aria-label="Database partitioning">
+      <CardHeader
+        title="Database partitioning"
+        description="Splitting the database across shards by organisation is worth it only once one replica set is near its size limits. Sizes are data plus indexes, checked every 5 minutes."
+        actions={p ? <Badge tone={p.advice.justified ? 'warning' : 'positive'}>{p.advice.justified ? 'Review partitioning' : 'Not needed yet'}</Badge> : null}
+      />
+      {q.isError ? <p className="px-5 pb-4 text-sm text-negative">Could not measure the database.</p> : null}
+      {p ? (
+        <>
+          <dl className="grid grid-cols-[14rem_1fr] gap-y-2 px-5 pb-4 pt-3 text-sm">
+            <dt className="text-fg-muted">Database size</dt>
+            <dd>{`${bytes(p.databaseBytes)} of ${bytes(p.thresholds.databaseBytes)} (${pct(p.advice.databaseShare)}) · ${p.documents.toLocaleString('en-IN')} documents`}</dd>
+            <dt className="text-fg-muted">Largest collection</dt>
+            <dd>{p.largest[0] ? `${p.largest[0].name}: ${bytes(p.largest[0].bytes)} of ${bytes(p.thresholds.collectionBytes)} (${pct(p.advice.largestShare)})` : '—'}</dd>
+            <dt className="text-fg-muted">Ready to split by organisation</dt>
+            <dd>{`${p.readiness.counts.READY} collections · ${p.readiness.counts.NEEDS_ORG_PREFIX} need the organisation first in a unique index · ${p.readiness.counts.GLOBAL_LOOKUP} looked up by token or reference · ${p.readiness.counts.GLOBAL} shared`}</dd>
+          </dl>
+          {p.advice.reasons.length ? (
+            <div className="px-5 pb-4">
+              <Alert tone="warning" title="Partitioning is worth reviewing">
+                <ul className="list-disc pl-5">{p.advice.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+              </Alert>
+            </div>
+          ) : null}
+          <Table aria-label="Largest collections">
+            <thead>
+              <tr>
+                <Th>Collection</Th>
+                <Th numeric>Documents</Th>
+                <Th numeric>Size</Th>
+                <Th>Split by organisation</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {p.largest.map((c) => (
+                <Tr key={c.name}>
+                  <Td className="font-mono text-xs">{c.name}</Td>
+                  <Td numeric>{c.documents.toLocaleString('en-IN')}</Td>
+                  <Td numeric>{bytes(c.bytes)}</Td>
+                  <Td><Badge tone={SHARD[c.state].tone}>{SHARD[c.state].label}</Badge></Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+          <p className="px-5 py-3 text-xs text-fg-muted">The decision and how to split, when it is needed, are in docs/PARTITIONING.md. CI stops new unique indexes that would block splitting by organisation.</p>
+        </>
+      ) : null}
     </Card>
   );
 }

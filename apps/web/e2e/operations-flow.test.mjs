@@ -126,6 +126,12 @@ test('flags hide and refuse a module, maintenance pauses changes for everyone, h
   assert.match(await lanes.getByRole('row').nth(2).innerText(), /Background work.*up to 8 at once/s);
   await admin.getByRole('region', { name: 'AI work' }).getByText(/one organisation runs at most 4 at once/).waitFor();
   if (process.env.E2E_SCREENSHOTS) await admin.getByRole('region', { name: 'AI work' }).screenshot({ path: `${process.env.E2E_SCREENSHOTS}/ai-work-lanes.png` });
+  // Database partitioning (PERF-009): sizes against the review thresholds, and readiness to split by organisation.
+  const partitioning = admin.getByRole('region', { name: 'Database partitioning' });
+  await partitioning.getByText('Not needed yet', { exact: true }).waitFor();
+  await partitioning.getByText(/^\d+ collections · \d+ need the organisation first in a unique index/).waitFor();
+  assert.equal(await partitioning.getByRole('table', { name: 'Largest collections' }).locator('tbody tr').count(), 10);
+  if (process.env.E2E_SCREENSHOTS) await partitioning.screenshot({ path: `${process.env.E2E_SCREENSHOTS}/database-partitioning.png` });
   await admin.locator('[aria-label="Routes"]').getByText(/GET \/v1\/orgs\/:orgId/).first().waitFor();
   await admin.goto(`${WEB}/admin/errors`);
   await admin.locator('[aria-label="Error groups"]').waitFor();
