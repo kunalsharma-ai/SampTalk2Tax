@@ -62,3 +62,14 @@ Reading the graph shows customers, vendors and both ledgers together, so it need
 * Bank statement lines, budgets, scenarios, tax returns and e-invoices are not nodes yet.
 * The explorer shows one record's neighbours at a time, as lists rather than a drawn network.
 * An account shows only its latest 25 journal entries; the general ledger has the rest.
+
+## Connection map (DASH-026)
+
+Above the lists, the **Connection map** draws the chosen record in the centre and the records connected to it around it. Each kind of connection (invoices, payments received, booked to accounts, journal entries and so on) gets its own sector of the circle, sized by how many records it shows, and each record is coloured by its kind (contact, document, payment, journal, account, project, department, loan, asset, alert).
+
+- Pointing at a record, or focusing it with the keyboard, highlights its line and says why it is connected (the same plain-language reason as in the lists).
+- Choosing it (click, or Enter / Space) walks to that record and draws its own connections, so you can follow money through the books one step at a time.
+- At most 36 records are drawn, shared out in turn so every kind of connection appears; the rest are counted on the sector (+N) and listed below.
+- The drawing is a labelled image with keyboard-operable records; every connection is also in the lists below with its reason. Line highlighting does not animate under reduced motion.
+
+Layout: `apps/web/src/lib/graph-layout.ts` (`radialLayout`, unit-tested in `apps/web/test/graph-layout.test.ts`). Drawing: `apps/web/src/components/graph/relationship-graph.tsx`. Browser test: `apps/web/e2e/knowledge-graph-flow.test.mjs` focuses an invoice on a customer's map, reads its reason, walks to it with Enter and back to the customer by clicking.

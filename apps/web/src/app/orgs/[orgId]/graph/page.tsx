@@ -4,6 +4,7 @@ import { Alert, Badge, Card, CardHeader, EmptyState, Input } from '@talk2tax/ui'
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { RelationshipGraph } from '@/components/graph/relationship-graph';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { graphHref, type GraphNeighbourhood, type GraphNode, NODE_TYPE_LABEL, relationLabel } from '@/lib/graph';
@@ -100,6 +101,11 @@ function Explorer() {
           {groups.size === 0 ? (
             <Card><EmptyState title="No connections yet">Nothing else in the books points at this record.</EmptyState></Card>
           ) : (
+            <>
+            <Card className="mb-4" role="region" aria-label="Connection map">
+              <CardHeader title="Connection map" description="The record in the centre and what it is connected to, grouped by how. Choose a record to walk to it." />
+              <RelationshipGraph hood={hood.data} onWalk={(e) => router.push(graphHref(orgId, e.node))} />
+            </Card>
             <div className="grid gap-4 lg:grid-cols-2">
               {[...groups].map(([relation, edges]) => (
                 <Card key={relation}>
@@ -121,6 +127,7 @@ function Explorer() {
                 </Card>
               ))}
             </div>
+            </>
           )}
         </>
       ) : (

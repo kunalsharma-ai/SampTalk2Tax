@@ -960,7 +960,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-023 | Advanced Visualization | capability | Interactive 3D financial landscapes | Not started |
 | DASH-024 | Advanced Visualization | capability | Animated cash-flow networks | Not started |
 | DASH-025 | Advanced Visualization | capability | Revenue distribution globes | Not started |
-| DASH-026 | Advanced Visualization | capability | Financial relationship graphs | Not started |
+| DASH-026 | Advanced Visualization | capability | Financial relationship graphs | Tested |
 | DASH-027 | Advanced Visualization | capability | Interactive financial scenario surfaces | Not started |
 | DASH-028 | Advanced Visualization | capability | Animated waterfall charts | Tested |
 | DASH-029 | Advanced Visualization | capability | Sankey diagrams | Tested |
