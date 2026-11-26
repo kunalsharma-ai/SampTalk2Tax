@@ -34103,9 +34103,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/operations/org-rotation.service.ts",
+        "apps/api/src/alerts/alerts-runner.service.ts",
+        "apps/api/test/many-organisations.e2e.test.ts",
+        "docs/MANY_ORGANISATIONS.md"
+      ],
+      "notes": "Background work stays bounded with thousands of organisations: alert checks rotate through org_rotations (due by index, claimed, at most 200 looked at per pass); scheduled reports read only due schedules in pages (no 5,000 cap); close auto-start pages; every tenant collection has an orgId-first index (checked)."
     },
     {
       "id": "PERF-002",

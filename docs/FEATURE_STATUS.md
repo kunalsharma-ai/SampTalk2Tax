@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 503 |
+| Not started | 502 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 764 |
+| Tested | 765 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 3 | 18 |
+| Performance and scalability | M9 | 21 | 2 | 19 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10178,6 +10178,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Notes: Approvals work in the responsive web app at phone width; no mobile app.
 - Evidence:
   - apps/web/src/components/expenses/claims-list.tsx
+
+### PERF-001 — Thousands of organizations
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Background work stays bounded with thousands of organisations: alert checks rotate through org_rotations (due by index, claimed, at most 200 looked at per pass); scheduled reports read only due schedules in pages (no 5,000 cap); close auto-start pages; every tenant collection has an orgId-first index (checked).
+- Evidence:
+  - apps/api/src/operations/org-rotation.service.ts
+  - apps/api/src/alerts/alerts-runner.service.ts
+  - apps/api/test/many-organisations.e2e.test.ts
+  - docs/MANY_ORGANISATIONS.md
 
 ### PERF-002 — Large transaction volumes
 

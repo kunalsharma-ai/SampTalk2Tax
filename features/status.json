@@ -10425,6 +10425,16 @@
         "docs/HORIZONTAL_SCALING.md"
       ],
       "notes": "Several API servers on one database: RATE_LIMIT_STORE=database shares rate-limit windows (atomic upsert, TTL); api_instances lists running servers in System health with problems for per-server rate limits and mixed versions; DB closes last on shutdown."
+    },
+    "PERF-001": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/operations/org-rotation.service.ts",
+        "apps/api/src/alerts/alerts-runner.service.ts",
+        "apps/api/test/many-organisations.e2e.test.ts",
+        "docs/MANY_ORGANISATIONS.md"
+      ],
+      "notes": "Background work stays bounded with thousands of organisations: alert checks rotate through org_rotations (due by index, claimed, at most 200 looked at per pass); scheduled reports read only due schedules in pages (no 5,000 cap); close auto-start pages; every tenant collection has an orgId-first index (checked)."
     }
   }
 }

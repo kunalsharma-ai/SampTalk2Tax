@@ -435,7 +435,16 @@ export class CloseService {
 
   /** Runs automatic starting for every organisation that turned it on (the close runner). */
   async autoStartAll(today = todayIso()) {
-    const orgs = await tenantStorage.run({ bypass: true }, async () => await this.prisma.closeSettings.findMany({ where: { autoStart: true }, select: { orgId: true }, take: 10_000 }));
+    // Every organisation that asked, a page at a time, with no limit on how many there are (PERF-001).
+    const orgs: { orgId: string }[] = [];
+    for (let after = ''; ; ) {
+      const page = await tenantStorage.run({ bypass: true }, async () =>
+        await this.prisma.closeSettings.findMany({ where: { autoStart: true, ...(after ? { orgId: { gt: after } } : {}) }, select: { orgId: true }, orderBy: { orgId: 'asc' }, take: 500 }),
+      );
+      orgs.push(...page);
+      if (page.length < 500) break;
+      after = page[page.length - 1].orgId;
+    }
     let started = 0;
     let failed = 0;
     for (const { orgId } of orgs) {
