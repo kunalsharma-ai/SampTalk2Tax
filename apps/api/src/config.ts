@@ -31,6 +31,13 @@ const schema = z.object({
   RATE_LIMIT_AUTH_PER_MINUTE: z.coerce.number().int().positive().default(20),
   /** The read cache for what every request looks up (PERF-010): on unless set to off. */
   READ_CACHE: z.enum(['on', 'off']).default('on'),
+  /**
+   * Read replicas (PERF-011). 'reports': report pages (GET /v1/orgs/:orgId/reports/...) read from
+   * a secondary member at most MONGODB_REPLICA_MAX_STALENESS_SECONDS behind (90 or more, MongoDB's
+   * minimum), or the primary when none is. Sign-in checks and every write stay on the primary.
+   */
+  MONGODB_REPLICA_READS: z.enum(['off', 'reports']).default('off'),
+  MONGODB_REPLICA_MAX_STALENESS_SECONDS: z.coerce.number().int().min(90).max(3600).default(120),
   /** Requests per minute per signed-in user (or per IP when signed out) on everything else. */
   RATE_LIMIT_API_PER_MINUTE: z.coerce.number().int().positive().default(600),
   /**

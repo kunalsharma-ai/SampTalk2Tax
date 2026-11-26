@@ -10403,6 +10403,17 @@
         "docs/AI_WORK_ISOLATION.md"
       ],
       "notes": "Every AI call goes through per-server lanes: people's calls before background work, background capped below the total, a per-organisation share, waits then 503 AI_BUSY (decision record AiBusyError); System health shows the AI work lanes."
+    },
+    "PERF-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/document-db/src/store.ts",
+        "apps/api/src/common/replica-reads.interceptor.ts",
+        "apps/api/test/read-replicas.e2e.test.ts",
+        "packages/document-db/test/store.test.ts",
+        "docs/READ_REPLICAS.md"
+      ],
+      "notes": "MONGODB_REPLICA_READS=reports sends report pages' reads to a secondary (secondaryPreferred, maxStalenessSeconds 120 by default); guards, transactions, writes and read-cache loads stay on the primary; System health shows members and setting."
     }
   }
 }

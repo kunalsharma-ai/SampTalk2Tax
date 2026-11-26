@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { MongoClient, type ClientSession, type Collection, type Db, type Document, type TransactionOptions } from 'mongodb';
+import { MongoClient, ReadPreference, type ClientSession, type Collection, type CommandStartedEvent, type Db, type Document, type TransactionOptions } from 'mongodb';
 import type { AnyCollectionDef, CollectionDef } from './collection';
 import { nextSequenceValue } from './migrations';
 import { ReadCache, type ReadCacheOptions } from './read-cache';
@@ -16,6 +16,12 @@ export interface DocumentStoreOptions {
   context: () => AccessContext;
   /** Cache the small reads named through `cached()`, kept correct by MongoDB (PERF-010). */
   cache?: ReadCacheOptions;
+  /**
+   * Read replicas (PERF-011): reads made inside `fromReplica` go to a secondary member no more
+   * than this many seconds behind (at least 90, MongoDB's minimum), or the primary when none is.
+   * Left out, every read goes to the primary.
+   */
+  replicaReads?: { maxStalenessSeconds: number };
 }
 
 /**
@@ -50,6 +56,8 @@ export class DocumentStore {
   private readonly client: MongoClient;
   private readonly sessions = new AsyncLocalStorage<ClientSession>();
   private readonly defs = new Map<string, AnyCollectionDef>();
+  private readonly replica = new AsyncLocalStorage<boolean>();
+  private readonly replicaPreference?: ReadPreference;
   private dbHandle?: Db;
 
   constructor(private readonly options: DocumentStoreOptions) {
@@ -57,7 +65,11 @@ export class DocumentStore {
       if (this.defs.has(def.name)) throw new Error(`Collection ${def.name} is defined twice`);
       this.defs.set(def.name, def);
     }
-    this.client = new MongoClient(options.url, { ignoreUndefined: true, monitorCommands: !!options.cache });
+    if (options.replicaReads) {
+      if (!(options.replicaReads.maxStalenessSeconds >= 90)) throw new Error('replicaReads.maxStalenessSeconds must be at least 90');
+      this.replicaPreference = new ReadPreference('secondaryPreferred', undefined, { maxStalenessSeconds: options.replicaReads.maxStalenessSeconds });
+    }
+    this.client = new MongoClient(options.url, { ignoreUndefined: true, monitorCommands: !!options.cache || !!options.replicaReads });
     if (options.cache) this.readCache = new ReadCache(this.client, () => this.db(), options.cache);
   }
 
@@ -69,7 +81,30 @@ export class DocumentStore {
    * `deps` names every collection `load` reads; inside a transaction the cache is not used.
    */
   cached<T>(key: string, deps: readonly string[], load: () => Promise<T>): Promise<T> {
-    return this.readCache ? this.readCache.get(key, deps, load, this.inTransaction()) : load();
+    // A cached value is always read from the primary: one read from a replica that is behind
+    // could be kept after the change that made it out of date has already gone by.
+    const fromPrimary = () => this.replica.run(false, load);
+    return this.readCache ? this.readCache.get(key, deps, fromPrimary, this.inTransaction()) : load();
+  }
+
+  /**
+   * Runs fn with its reads sent to a replica (PERF-011), for reports and other heavy reads that
+   * may be a little behind. Reads inside a transaction, and every write, still go to the primary.
+   * Without replicaReads configured, fn runs as it is.
+   */
+  fromReplica<R>(fn: () => R): R {
+    return this.replicaPreference ? this.replica.run(true, fn) : fn();
+  }
+
+  /** Whether reads made here would go to a replica. */
+  readsFromReplica(): boolean {
+    return !!this.replicaPreference && this.replica.getStore() === true && !this.inTransaction();
+  }
+
+  /** Commands sent to MongoDB, for tests and diagnostics; only while the client monitors commands (cache or replica reads on). */
+  onCommandStarted(listener: (e: CommandStartedEvent) => void): () => void {
+    this.client.on('commandStarted', listener);
+    return () => this.client.off('commandStarted', listener);
   }
 
   /** Connects and refuses to run on a server that cannot do multi-document transactions. */
@@ -238,6 +273,7 @@ export class DocumentStore {
     definition: (name: string) => this.defs.get(name),
     context: () => this.options.context(),
     session: () => this.sessions.getStore(),
+    readPreference: () => (this.readsFromReplica() ? this.replicaPreference : undefined),
     transaction: (fn) => this.transaction(fn),
     scoped: (def) => this.collection(def),
   };

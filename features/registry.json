@@ -34355,9 +34355,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/document-db/src/store.ts",
+        "apps/api/src/common/replica-reads.interceptor.ts",
+        "apps/api/test/read-replicas.e2e.test.ts",
+        "packages/document-db/test/store.test.ts",
+        "docs/READ_REPLICAS.md"
+      ],
+      "notes": "MONGODB_REPLICA_READS=reports sends report pages' reads to a secondary (secondaryPreferred, maxStalenessSeconds 120 by default); guards, transactions, writes and read-cache loads stay on the primary; System health shows members and setting."
     },
     {
       "id": "PERF-012",

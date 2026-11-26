@@ -2,20 +2,23 @@ import type { DocumentStoreService } from '../common/document-store.service';
 import { MIGRATIONS } from './migrations';
 
 /** The database for System health (ADMIN-010): how fast it answers, its size, connections, version and migrations. */
-export async function databaseStatus(store: DocumentStoreService) {
+export async function databaseStatus(store: DocumentStoreService, replicaReads: { mode: 'off' | 'reports'; maxStalenessSeconds: number } = { mode: 'off', maxStalenessSeconds: 120 }) {
   const db = store.systemDb();
   const t0 = process.hrtime.bigint();
   try {
     await db.command({ ping: 1 });
     const latencyMs = Number(process.hrtime.bigint() - t0) / 1e6;
-    const [stats, status, build, last, applied] = await Promise.all([
+    const [stats, status, build, last, applied, hello] = await Promise.all([
       db.command({ dbStats: 1 }) as Promise<{ dataSize?: number; indexSize?: number }>,
       // serverStatus needs the clusterMonitor role; without it the connection counts are left out.
       (db.admin().command({ serverStatus: 1, repl: 0, metrics: 0, locks: 0 }) as Promise<{ connections?: { current: number; available: number } }>).catch(() => null),
       db.admin().command({ buildInfo: 1 }) as Promise<{ version?: string }>,
       db.collection<{ _id: string; appliedAt: Date }>('_migrations').find().sort({ _id: -1 }).limit(1).toArray(),
       db.collection('_migrations').countDocuments(),
+      db.admin().command({ hello: 1 }) as Promise<{ hosts?: string[]; passives?: string[] }>,
     ]);
+    // Members that can answer reads besides the primary (PERF-011).
+    const secondaries = Math.max(0, (hello.hosts?.length ?? 1) + (hello.passives?.length ?? 0) - 1);
     const conn = status?.connections;
     return {
       status: latencyMs > 500 ? 'SLOW' : 'OK',
@@ -26,8 +29,9 @@ export async function databaseStatus(store: DocumentStoreService) {
       mongodb: build.version ?? null,
       lastMigration: last[0] ? { name: last[0]._id, at: last[0].appliedAt } : null,
       unfinishedMigrations: Math.max(0, MIGRATIONS.length - applied),
+      replicaReads: { ...replicaReads, secondaries },
     };
   } catch (e) {
-    return { status: 'DOWN', error: (e as Error).message.slice(0, 300), latencyMs: null, sizeBytes: null, connections: null, maxConnections: null, mongodb: null, lastMigration: null, unfinishedMigrations: null };
+    return { status: 'DOWN', error: (e as Error).message.slice(0, 300), latencyMs: null, sizeBytes: null, connections: null, maxConnections: null, mongodb: null, lastMigration: null, unfinishedMigrations: null, replicaReads: { ...replicaReads, secondaries: null } };
   }
 }

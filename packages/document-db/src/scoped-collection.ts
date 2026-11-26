@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { AggregateOptions, ClientSession, Collection, Document, Filter } from 'mongodb';
+import type { AggregateOptions, ClientSession, Collection, Document, Filter, ReadPreference } from 'mongodb';
 import { encodeDocument, encodeFilter, encodeKeyed, TENANT_FIELD, type AnyCollectionDef, type CollectionDef, type GuardContext } from './collection';
 import { decodeDecimals } from './decimal';
 
@@ -48,6 +48,8 @@ export interface StoreRuntime {
   definition(name: string): AnyCollectionDef | undefined;
   context(): AccessContext;
   session(): ClientSession | undefined;
+  /** Where reads go: a replica while the store reads from replicas (PERF-011), the primary otherwise. */
+  readPreference?(): ReadPreference | undefined;
   transaction<R>(fn: () => Promise<R>): Promise<R>;
   scoped<U extends Document>(def: CollectionDef<U>): ScopedCollection<U>;
 }
@@ -97,6 +99,7 @@ export class ScopedCollection<T extends Document> {
   async find(filter: Filter<Document> = {}, options: FindOptions = {}): Promise<WithId<T>[]> {
     const cursor = this.coll().find(this.filter(filter), {
       session: this.rt.session(),
+      readPreference: this.rt.readPreference?.(),
       sort: options.sort ? mapIdKeys(options.sort) : undefined,
       limit: options.limit,
       skip: options.skip,
@@ -116,15 +119,15 @@ export class ScopedCollection<T extends Document> {
   }
 
   async count(filter: Filter<Document> = {}): Promise<number> {
-    return this.coll().countDocuments(this.filter(filter), { session: this.rt.session() });
+    return this.coll().countDocuments(this.filter(filter), { session: this.rt.session(), readPreference: this.rt.readPreference?.() });
   }
 
   async exists(filter: Filter<Document>): Promise<boolean> {
-    return (await this.coll().findOne(this.filter(filter), { session: this.rt.session(), projection: { _id: 1 } })) !== null;
+    return (await this.coll().findOne(this.filter(filter), { session: this.rt.session(), readPreference: this.rt.readPreference?.(), projection: { _id: 1 } })) !== null;
   }
 
   async distinct<V = unknown>(field: string, filter: Filter<Document> = {}): Promise<V[]> {
-    const values = await this.coll().distinct(field === 'id' ? '_id' : field, this.filter(filter), { session: this.rt.session() });
+    const values = await this.coll().distinct(field === 'id' ? '_id' : field, this.filter(filter), { session: this.rt.session(), readPreference: this.rt.readPreference?.() });
     return decodeDecimals(values) as V[];
   }
 
@@ -137,7 +140,7 @@ export class ScopedCollection<T extends Document> {
     const scoped = this.scopePipeline(pipeline);
     const first = this.def.scope === 'tenant' ? this.tenantMatch() : undefined;
     const full = first ? [{ $match: first }, ...scoped] : scoped;
-    const rows = await this.coll().aggregate(full, { ...options, session: this.rt.session() }).toArray();
+    const rows = await this.coll().aggregate(full, { ...options, session: this.rt.session(), readPreference: this.rt.readPreference?.() }).toArray();
     return decodeDecimals(rows) as R[];
   }
 

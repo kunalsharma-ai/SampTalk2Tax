@@ -1,5 +1,6 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ReplicaReadsInterceptor } from './common/replica-reads.interceptor';
 import { AccountsController } from './accounts/accounts.controller';
 import { AccountsService } from './accounts/accounts.service';
 import { ChartService } from './accounts/chart.service';
@@ -871,6 +872,7 @@ export class AppModule {
         { provide: APP_GUARD, useClass: RateLimitGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: ErrorFilter },
+        { provide: APP_INTERCEPTOR, useClass: ReplicaReadsInterceptor },
       ],
     };
   }
