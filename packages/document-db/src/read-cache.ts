@@ -198,7 +198,13 @@ export class ReadCache {
           this.clear();
           this.live = true;
         }
-        if (!c) continue;
+        if (!c) {
+          // A closed stream answers at once with nothing: open a new one rather than spin.
+          if (stream.closed) throw new Error('The change stream closed');
+          continue;
+        }
+        // After a drop or rename of the database the stream ends with "invalidate": start again.
+        if (c.operationType === 'invalidate') throw new Error('The change stream was invalidated');
         const coll = (c.ns as { coll?: string } | undefined)?.coll;
         if (coll) this.invalidate(coll);
         else this.clear(); // a drop or rename of the database: start again

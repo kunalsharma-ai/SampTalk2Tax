@@ -408,3 +408,31 @@ describe('shared rate windows (PERF-008)', () => {
     }
   });
 });
+
+describe('read cache when the database is dropped', () => {
+  it('opens a new change stream instead of spinning on the closed one', async () => {
+    const name = `${DB}_rc`;
+    const cached = new DocumentStore({ url: URL, dbName: name, collections: ALL, context: () => ({}), cache: { collections: ['plans'] } });
+    await cached.connect();
+    try {
+      await raw.db(name).collection('plans').insertOne({ _id: 'p1' as never, code: 'P1', price: toDecimal128('1.00') });
+      const until = async (check: () => boolean) => {
+        for (let i = 0; i < 100 && !check(); i++) await new Promise((r) => setTimeout(r, 50));
+        expect(check()).toBe(true);
+      };
+      await until(() => cached.readCache!.isLive);
+      await raw.db(name).dropDatabase();
+      // The stream ends with "invalidate"; the cache stops keeping entries and starts a new stream.
+      await until(() => cached.readCache!.stats.restarts >= 1);
+      await until(() => cached.readCache!.isLive);
+      const usage = process.cpuUsage();
+      await new Promise((r) => setTimeout(r, 1_000));
+      const { user } = process.cpuUsage(usage);
+      // Following an idle stream takes almost no processor time (a tight loop would take the whole second).
+      expect(user).toBeLessThan(300_000);
+    } finally {
+      await cached.close();
+      await raw.db(name).dropDatabase();
+    }
+  }, 20_000);
+});

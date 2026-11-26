@@ -24,6 +24,9 @@ import { memberships, organizations } from '../db/collections/tenancy';
 import { ReportExportService } from '../report-exports/report-exports.service';
 import { MailerService } from '../workflows/email';
 
+/** Due schedules are read this many at a time. */
+const DUE_PAGE = 500;
+
 export type ScheduleBody = ScheduleInput & { isActive?: boolean };
 
 /**
@@ -174,9 +177,23 @@ export class ReportSchedulesService {
     return this.run(run);
   }
 
-  /** Every organisation's schedules that are due today or earlier (the background runner). */
-  async runDueAll(): Promise<{ sent: number; failed: number }> {
-    const due = await tenantStorage.run({ bypass: true }, async () => await this.store.collection(reportSchedules).find({ isActive: true, nextRunOn: { $lte: '9999-12-31' } }, { limit: 5000 }));
+  /**
+   * Every organisation's schedules that are due today or earlier (the background runner). Only
+   * schedules whose date has come somewhere in the world are read (today where it is latest, 14
+   * hours ahead of UTC), by index, a page at a time, so the pass costs what is due and not every
+   * schedule of every organisation (PERF-001); each organisation's own today decides.
+   */
+  async runDueAll(now = new Date()): Promise<{ sent: number; failed: number }> {
+    const latestToday = new Date(now.getTime() + 14 * 3_600_000).toISOString().slice(0, 10);
+    const due: ReportScheduleDoc[] = [];
+    for (let after = ''; ; ) {
+      const page = await tenantStorage.run({ bypass: true }, async () =>
+        await this.store.collection(reportSchedules).find({ isActive: true, nextRunOn: { $lte: latestToday }, ...(after ? { id: { $gt: after } } : {}) }, { sort: { id: 1 }, limit: DUE_PAGE }),
+      );
+      due.push(...page);
+      if (page.length < DUE_PAGE) break;
+      after = page[page.length - 1].id;
+    }
     let sent = 0;
     let failed = 0;
     for (const s of due) {

@@ -56,7 +56,11 @@ export const reportSchedules = defineCollection<ReportScheduleDoc>({
       nextRunOn: { bsonType: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
     },
   },
-  indexes: [{ key: { isActive: 1, nextRunOn: 1 }, name: 'due' }],
+  indexes: [
+    { key: { isActive: 1, nextRunOn: 1 }, name: 'due' },
+    // An organisation's own schedules, by name, without reading other organisations' (PERF-001).
+    { key: { orgId: 1, name: 1 }, name: 'by_org' },
+  ],
 });
 
 export const reportScheduleRuns = defineCollection<ReportScheduleRunDoc>({
