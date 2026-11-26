@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 500 |
+| Not started | 499 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 767 |
+| Tested | 768 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 0 | 41 |
-| Dashboard design | M1 | 68 | 21 | 47 |
+| Dashboard design | M1 | 68 | 20 | 48 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6792,6 +6792,19 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 - Evidence:
   - packages/design-system/src/tokens.ts
   - packages/design-system/test/contrast.test.mjs
+
+### DASH-026 — Financial relationship graphs
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Relationship explorer → Connection map: the chosen record in the centre and its connections around it, one sector per kind of connection, coloured by kind of record; focus or point to read why it is connected, choose to walk to it (keyboard operable); up to 36 drawn, shared out so every kind appears, the rest counted and listed. Complements DASH-037 (financial dependencies network).
+- Evidence:
+  - apps/web/src/components/graph/relationship-graph.tsx
+  - apps/web/src/lib/graph-layout.ts
+  - apps/web/test/graph-layout.test.ts
+  - apps/web/e2e/knowledge-graph-flow.test.mjs
+  - apps/api/test/graph.e2e.test.ts
+  - docs/KNOWLEDGE_GRAPH.md
 
 ### DASH-028 — Animated waterfall charts
 

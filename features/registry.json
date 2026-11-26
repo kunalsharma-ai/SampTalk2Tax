@@ -23343,9 +23343,16 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/web/src/components/graph/relationship-graph.tsx",
+        "apps/web/src/lib/graph-layout.ts",
+        "apps/web/test/graph-layout.test.ts",
+        "apps/web/e2e/knowledge-graph-flow.test.mjs",
+        "apps/api/test/graph.e2e.test.ts",
+        "docs/KNOWLEDGE_GRAPH.md"
+      ],
+      "notes": "Relationship explorer → Connection map: the chosen record in the centre and its connections around it, one sector per kind of connection, coloured by kind of record; focus or point to read why it is connected, choose to walk to it (keyboard operable); up to 36 drawn, shared out so every kind appears, the rest counted and listed. Complements DASH-037 (financial dependencies network)."
     },
     {
       "id": "DASH-027",

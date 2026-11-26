@@ -64,6 +64,22 @@ test('an owner explores how a customer, its invoice and receipt connect, and tra
   await invoices.getByText(`Invoice ${inv.body.number} for ₹75,000.00 was issued to Acme Graph Retail.`).waitFor();
   await page.getByRole('list', { name: 'Payments received' }).getByText(new RegExp(`Acme Graph Retail paid ₹30,000.00 \\(${rec.body.number}\\)`)).waitFor();
 
+  // Connection map (DASH-026): the customer in the centre, its records around it; focusing one says why, Enter walks to it.
+  const map = page.getByRole('region', { name: 'Connection map' });
+  await map.getByRole('img', { name: /^A network of Acme Graph Retail and the \d+ records drawn around it/ }).waitFor();
+  await map.getByText('Issued to / invoices', { exact: true }).waitFor();
+  const invoiceNode = map.getByRole('button', { name: `Document ${inv.body.number}: Invoice ${inv.body.number} for ₹75,000.00 was issued to Acme Graph Retail. Explore its connections.` });
+  await invoiceNode.focus();
+  await page.getByTestId('graph-reason').getByText(`${inv.body.number} · Issued to / invoices`, { exact: true }).waitFor();
+  if (process.env.E2E_SCREENSHOTS) await map.screenshot({ path: `${process.env.E2E_SCREENSHOTS}/connection-map.png` });
+  await page.keyboard.press('Enter');
+  await page.waitForURL(/\/graph\?type=DOCUMENT&id=/);
+  assert.equal(await page.getByTestId('graph-centre').textContent(), inv.body.number);
+  if (process.env.E2E_SCREENSHOTS) await page.getByRole('region', { name: 'Connection map' }).screenshot({ path: `${process.env.E2E_SCREENSHOTS}/connection-map-invoice.png` });
+  await page.getByRole('region', { name: 'Connection map' }).getByRole('button', { name: /^Contact Acme Graph Retail: / }).click();
+  await page.waitForURL(/\/graph\?type=CONTACT&id=/);
+  assert.equal(await page.getByTestId('graph-centre').textContent(), 'Acme Graph Retail');
+
   // Walk to the invoice.
   await invoices.getByRole('link', { name: `Explore connections of ${inv.body.number}` }).click();
   await page.waitForURL(/\/graph\?type=DOCUMENT&id=/);
