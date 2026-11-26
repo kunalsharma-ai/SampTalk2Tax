@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
+import { CashFlowNetworkService } from './cash-flow-network.service';
 import { DepartmentPerformanceService } from './department-performance.service';
 import { FinancialDependenciesService } from './financial-dependencies.service';
 import { FinancialTimelineService } from './financial-timeline.service';
@@ -84,6 +85,20 @@ export class FinancialDependenciesController {
   @RequirePermission('reports.read')
   dependencies(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
     return this.s.dependencies(org, q);
+  }
+}
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/cash-flow-network')
+export class CashFlowNetworkController {
+  constructor(private readonly s: CashFlowNetworkService) {}
+
+  /** Where cash came from and went to, month by month and per cash or bank account, over a range of months (the last 12 by default). */
+  @Get()
+  @RequirePermission('reports.read')
+  network(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
+    return this.s.network(org, q);
   }
 }
 

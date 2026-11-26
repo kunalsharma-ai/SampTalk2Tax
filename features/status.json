@@ -10469,6 +10469,20 @@
         "docs/KNOWLEDGE_GRAPH.md"
       ],
       "notes": "Relationship explorer → Connection map: the chosen record in the centre and its connections around it, one sector per kind of connection, coloured by kind of record; focus or point to read why it is connected, choose to walk to it (keyboard operable); up to 36 drawn, shared out so every kind appears, the rest counted and listed. Complements DASH-037 (financial dependencies network)."
+    },
+    "DASH-024": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/cash-flow-network.ts",
+        "packages/accounting-engine/test/cash-flow-network.test.ts",
+        "apps/api/src/financial-visuals/cash-flow-network.service.ts",
+        "apps/api/test/cash-flow-network.e2e.test.ts",
+        "apps/web/src/components/reports/cash-flow-network.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/cash-flow-network/page.tsx",
+        "apps/web/e2e/cash-flow-network-flow.test.mjs",
+        "docs/CASH_FLOW_NETWORK.md"
+      ],
+      "notes": "Reports → Cash-flow network: per cash and bank account, money in from groups (customers and income, owners, lenders, assets, tax, other) and out to groups (vendors and spending, payroll, tax, lenders, assets, other), and transfers between own accounts, from posted entries split over the other side in proportion (to the cent); animated dashes the way money goes (still under reduced motion), play month by month, slider, pick out a node; same flows in tables."
     }
   }
 }

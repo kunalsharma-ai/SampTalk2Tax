@@ -934,6 +934,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Each high finding adds 25 points to its area, each medium 10 and each low 3, up to 100. The overall score is 60% the worst area and 40% the average of the areas that have something to check. Look first at the areas named at the top, and open an area to act on its findings.',
     where: 'Reports. Needs reports.read; an area your role cannot read is left out. It reads the same checks as Alerts, Payment fraud checks, Expense risk, Unusual bank activity, Deadline risk and Vendor risk. One reading a day is kept when the monitor is opened, for the trend. No AI model is used.',
   },
+  'reports/cash-flow-network': {
+    what: 'Where your cash came from and where it went, for each cash and bank account, as an animated network: customers, owners, lenders and others paying in on the left, vendors, payroll, tax and others paid on the right, and money moved between your own accounts.',
+    how: 'Choose the months (up to 24), then play them one by one or pick a month with the slider or the Cash by month table. Choose an account or group to pick out its flows. Wider lines moved more money; the moving dashes show which way it went and stop when your device asks for reduced motion.',
+    where: 'Reports. Needs reports.read. Read from posted journal entries that move a cash or bank account; each is split over the other side of the entry in proportion. The cash flow statement gives the statutory view.',
+  },
   'reports/dependencies': {
     what: 'Who the business depends on for its money, as a network: customers for revenue and vendors for spending over the months you choose, and the cash and bank accounts and lenders at their end, with how concentrated each group is and the single dependencies worth watching.',
     how: 'Choose the months (up to 24) and the groups to show. Wider lines are larger shares; red and orange lines are critical and high dependencies. Choose a party in the network, the list or a table to see its share and open the customer, vendor or ledger, or explore its connections.',

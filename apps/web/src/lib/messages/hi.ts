@@ -146,6 +146,7 @@ export const hi: Record<string, string> = {
   'Financial timeline': 'वित्तीय समयरेखा',
   'Risk monitor': 'जोखिम निगरानी',
   'Financial dependencies': 'वित्तीय निर्भरताएँ',
+  'Cash-flow network': 'नकदी प्रवाह नेटवर्क',
   'Role dashboards': 'भूमिका डैशबोर्ड',
   'Income tax computation': 'आयकर गणना',
   'Tax audit preparation': 'टैक्स ऑडिट की तैयारी',
