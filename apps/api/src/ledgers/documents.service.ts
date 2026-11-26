@@ -48,6 +48,7 @@ import { WithholdingFacts, WithholdingService } from '../withholding/withholding
 import { assertBillMatches, checkBillOrder } from '../purchase-orders/matching';
 import { ledgerKinds, SubledgerService } from './subledger.service';
 import { lockRow } from '../db/locks';
+import { takeTurn } from '../db/data-client';
 
 export interface LedgerOrg {
   id: string;
@@ -259,7 +260,7 @@ export class DocumentsService {
   async create(org: LedgerOrg, actor: Actor, ledger: Ledger, input: DocumentInput, opts: { post: boolean; overrideCreditLimit?: boolean }) {
     this.assertKinds(ledger, [input.kind]);
     if (opts.post) this.requirePermission(org, 'journals.post', 'post documents');
-    return this.retryOnNumberRace(() =>
+    return this.inTurn(org.id, () =>
       this.prisma.$transaction(async (tx) => {
         const doc = await this.createDraftInTx(tx, org, actor, ledger, input);
         if (opts.post) await this.postInTx(tx, org, actor, doc.id, opts.overrideCreditLimit ?? false);
@@ -362,7 +363,7 @@ export class DocumentsService {
 
   async post(org: LedgerOrg, actor: Actor, ledger: Ledger, id: string, overrideCreditLimit: boolean) {
     this.requirePermission(org, 'journals.post', 'post documents');
-    return this.retryOnNumberRace(() =>
+    return this.inTurn(org.id, () =>
       this.prisma.$transaction(async (tx) => {
         await this.lockDocument(tx, org.id, ledger, id);
         await this.postInTx(tx, org, actor, id, overrideCreditLimit);
@@ -911,6 +912,15 @@ export class DocumentsService {
   }
 
   /** Document numbers come from a counter row lock, so a P2002 here means a concurrent insert raced the unique index; retry once. */
+  /**
+   * Saving and posting documents of one organisation take turns in this process (PERF-003): they
+   * all meet on its numbering and audit chain, so running them side by side only makes them
+   * conflict and start over. Other processes still meet them in MongoDB and retry.
+   */
+  private inTurn<T>(orgId: string, fn: () => Promise<T>): Promise<T> {
+    return takeTurn(`documents:${orgId}`, () => this.retryOnNumberRace(fn));
+  }
+
   private async retryOnNumberRace<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();

@@ -72,11 +72,20 @@ second and no failures.
 | 6 | 116 to 119 ms | 867 to 1,167 ms | 671 to 932 ms |
 | 8 | 111 to 152 ms | 933 to 982 ms | 613 to 707 ms |
 
-The development container is slower than the CI runner: the same load test without the busy
-organisation posts at 364 ms p95 in CI and at 571 to 589 ms here. On this machine, posting with 6
-or more people in one organisation comes close to the 1,000 ms budget, and one run missed it. A
-posting takes about 80 ms on its own, and most of the rest is waiting for the database. Each
-request also makes about ten lookups for the signed-in member, the organisation and its plan.
-Caching those (PERF-010) is the next way to speed this up.
+The first CI run with 8 people measured 85 ms reads and 848 ms posting at p95 for the busy
+organisation: close to the budget. Two changes since then:
+
+- **Postings in one organisation take turns.** Saving and posting documents of one organisation
+  now run one after another in each API process (`DocumentsService.inTurn`). They all meet on
+  the organisation's numbering and audit chain, so running them side by side only made them
+  conflict and start over. Other API processes still meet them in MongoDB and retry.
+- **Fewer round trips per request.** The auth guard reads the membership, the organisation and
+  its plan at once, and no longer wraps the plan read in a transaction. It also runs the
+  two-step, access-rule and feature-flag checks together, and still reports any refusal in the
+  same order.
+
+After both changes, on the development container with 8 people: the busy organisation's reads
+88 to 100 ms, its posting 706 to 725 ms, and all postings 442 to 472 ms at p95 (before: 933 to
+982 ms and 613 to 707 ms).
 
 Not covered yet: soak runs over hours and the web app's own rendering time (PERF-015).
