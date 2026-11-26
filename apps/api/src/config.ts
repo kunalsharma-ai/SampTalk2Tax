@@ -68,6 +68,16 @@ const schema = z.object({
     .pipe(z.string().url('ANTHROPIC_BASE_URL must be a URL').optional()),
   /** The Claude model the copilot uses. */
   COPILOT_MODEL: z.string().trim().min(1).default('claude-opus-5-5'),
+  /**
+   * AI workload isolation (PERF-005), per server: AI calls running at once, how many of those may
+   * be background work (bank line runs, reminders, reviews), how many one organisation may run,
+   * and how long a call waits for room before it is turned away (people's calls, background calls).
+   */
+  AI_MAX_CONCURRENT: z.coerce.number().int().min(2).max(500).default(16),
+  AI_MAX_BACKGROUND: z.coerce.number().int().min(1).max(499).default(8),
+  AI_MAX_PER_ORG: z.coerce.number().int().min(1).max(500).default(4),
+  AI_WAIT_SECONDS: z.coerce.number().int().min(1).max(600).default(30),
+  AI_BACKGROUND_WAIT_SECONDS: z.coerce.number().int().min(1).max(3600).default(600),
   /** Most tool calls (rounds of looking at the books) the copilot may make for one question. */
   /** Agent execution limits (SEC-037): AI tasks each agent may start per hour in one organisation, unless the organisation sets its own (0 = no default limit). */
   AI_AGENT_TASKS_PER_HOUR: z.coerce.number().int().min(0).max(100_000).default(500),
@@ -263,6 +273,7 @@ const schema = z.object({
   if (c.MONGODB_REQUIRE_TLS && !mongoUsesTls(c.MONGODB_URL)) ctx.addIssue({ code: 'custom', path: ['MONGODB_URL'], message: 'The database connection must be encrypted: use mongodb+srv:// or add tls=true to MONGODB_URL (or set MONGODB_REQUIRE_TLS=false for a private network you trust)' });
   if (c.SMTP_URL && !c.EMAIL_FROM) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM is required when SMTP_URL is set' });
   if (!c.SMTP_URL && c.SMTP_HOST && !c.EMAIL_FROM && !c.SMTP_USER) ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'EMAIL_FROM (or SMTP_USER) is required when SMTP_HOST is set' });
+  if (c.AI_MAX_BACKGROUND >= c.AI_MAX_CONCURRENT) ctx.addIssue({ code: 'custom', path: ['AI_MAX_BACKGROUND'], message: 'AI_MAX_BACKGROUND must be below AI_MAX_CONCURRENT, so background AI work always leaves room for people' });
   if (c.SMTP_USER && !c.SMTP_PASS) ctx.addIssue({ code: 'custom', path: ['SMTP_PASS'], message: 'SMTP_PASS is required with SMTP_USER' });
 });
 

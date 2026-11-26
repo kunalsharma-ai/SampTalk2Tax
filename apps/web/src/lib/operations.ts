@@ -32,11 +32,30 @@ export interface SystemHealth {
   server: { version: string; commit: string | null; environment: string; node: string; region: string; startedAt: string; uptimeSeconds: number; memory: { rssBytes: number; heapUsedBytes: number; heapTotalBytes: number }; loadAverage: number[] };
   database: { status: 'OK' | 'SLOW' | 'DOWN'; latencyMs: number | null; sizeBytes: number | null; connections: number | null; maxConnections: number | null; mongodb: string | null; lastMigration: { name: string; at: string | null } | null; unfinishedMigrations: number | null; error?: string };
   runners: Runner[];
+  ai: AiWork;
   requests: { windowMinutes: number; since: string; totals: RouteStat; minutes: { at: string; requests: number; serverErrors: number; p95Ms: number | null }[]; routes: (RouteStat & { route: string })[] };
   errors: { open: number | null; lastHour: number | null };
   maintenance: (MaintenanceStatus & { id: string }) | null;
   transport: Transport;
   secrets?: Secrets;
+}
+/** AI workload isolation (PERF-005): this server's AI lanes, now and since it started. */
+export interface AiLaneStatus {
+  running: number;
+  waiting: number;
+  oldestWaitMs: number;
+  started: number;
+  waited: number;
+  turnedAway: number;
+  longestWaitMs: number;
+}
+export interface AiWork {
+  limits: { total: number; background: number; perOrg: number };
+  waitSeconds: { interactive: number; background: number };
+  interactive: AiLaneStatus;
+  background: AiLaneStatus;
+  organisationsRunning: number;
+  turnedAwayLast15Minutes: number;
 }
 /** Secrets management (SEC-012): which secrets are set and where each came from, never a value. */
 export interface Secrets {

@@ -12,6 +12,7 @@ import { planLimits } from '../billing/limits';
 import { lockName } from '../db/locks';
 import { AiCreditsService } from '../billing/ai-credits.service';
 import { contractLimits, type BillingCurrency } from '@talk2tax/accounting-engine';
+import { AiWorkPoolService } from '../ai-work/ai-work-pool.service';
 
 export const UPLOAD_LIMIT_REACHED = 'UPLOAD_LIMIT_REACHED';
 export const AI_CREDITS_USED_UP = 'AI_CREDITS_USED_UP';
@@ -30,6 +31,7 @@ export class UsageService {
     private readonly prisma: PrismaService,
     private readonly credits: AiCreditsService,
     private readonly store: DocumentStoreService,
+    private readonly pool: AiWorkPoolService,
   ) {}
 
   /**
@@ -40,10 +42,15 @@ export class UsageService {
     return {
       provider: model.provider,
       send: async (request: CopilotRequest, options: AiCallOptions): Promise<CopilotResponse> => {
-        const startedAt = new Date();
+        let startedAt = new Date();
         let res: CopilotResponse;
         try {
-          res = await model.send(request, options);
+          // Each call waits its turn in its lane (PERF-005); the time taken counts from when it starts.
+          const agent = agentForRequest(request as unknown as AiRequestShape, options.record?.agent);
+          res = await this.pool.run(orgId, agent, options.signal, () => {
+            startedAt = new Date();
+            return model.send(request, options);
+          });
         } catch (e) {
           await this.decisionRecord(orgId, source, request, options, startedAt, null, e);
           throw e;

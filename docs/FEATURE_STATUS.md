@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 506 |
+| Not started | 505 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 761 |
+| Tested | 762 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 6 | 15 |
+| Performance and scalability | M9 | 21 | 5 | 16 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10198,6 +10198,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - scripts/load-test.mjs › --busy: 8 people in one organisation plus 20 in others, reads and posting held to the budgets (CI step Load test)
   - apps/api/test/large-volumes.e2e.test.ts › many postings into one organisation at once
   - docs/LOAD_TESTING.md › Many people in one organisation
+
+### PERF-005 — AI workload isolation
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Every AI call goes through per-server lanes: people's calls before background work, background capped below the total, a per-organisation share, waits then 503 AI_BUSY (decision record AiBusyError); System health shows the AI work lanes.
+- Evidence:
+  - packages/accounting-engine/src/ai-work-lanes.ts
+  - apps/api/src/ai-work/ai-work-pool.service.ts
+  - apps/api/test/ai-work-isolation.e2e.test.ts
+  - apps/web/e2e/operations-flow.test.mjs
+  - docs/AI_WORK_ISOLATION.md
 
 ### PERF-006 — Background processing
 

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { AI_BUSY, AiBusyError } from '../ai-work/ai-work-pool.service';
 import { checkTaxClaims, taxClaimsNotice, type TaxClaimKind } from '@talk2tax/tax-engine';
 import { INJECTION_NOTICE, injectionSignals, redactionPolicy, redactText, redactToolContent, type RedactionCounts, type RedactionPolicy } from './safety';
 import { zoneLabel } from '../common/dates';
@@ -458,6 +459,7 @@ export class CopilotService {
     if (signal.aborted || e instanceof Anthropic.APIUserAbortError || e instanceof Anthropic.APIConnectionTimeoutError) {
       return { errorCode: 'AI_TIMEOUT', errorMessage: `The AI provider took longer than ${this.config.COPILOT_TURN_TIMEOUT_SECONDS} seconds. Ask again, or try a narrower question.` };
     }
+    if (e instanceof AiBusyError) return { errorCode: AI_BUSY, errorMessage: e.message };
     if (e instanceof Anthropic.AuthenticationError) return { errorCode: 'AI_KEY_REJECTED', errorMessage: 'The AI provider rejected the API key. An owner or admin needs to check the key in Settings → Integrations.' };
     if (e instanceof Anthropic.PermissionDeniedError) return { errorCode: 'AI_ACCESS_DENIED', errorMessage: 'The API key does not have access to the chosen Claude model. An owner or admin can change the model in Settings → Integrations.' };
     if (e instanceof Anthropic.RateLimitError) return { errorCode: 'AI_RATE_LIMITED', errorMessage: 'The AI provider is limiting requests right now. Try again in a minute.' };

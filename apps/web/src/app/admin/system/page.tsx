@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shell';
 import { bytes } from '@/components/usage-meter';
 import { api } from '@/lib/api';
 import { dateTime } from '@/lib/format';
-import { duration, Runner, Secrets, SystemHealth, Transport } from '@/lib/operations';
+import { AiWork, duration, Runner, Secrets, SystemHealth, Transport } from '@/lib/operations';
 
 const STATUS = { OK: { label: 'Healthy', tone: 'positive' }, DEGRADED: { label: 'Needs attention', tone: 'warning' }, DOWN: { label: 'Down', tone: 'negative' } } as const;
 const RUNNER: Record<Runner['state'], { label: string; tone: 'positive' | 'neutral' | 'warning' | 'negative' }> = {
@@ -82,6 +82,8 @@ export default function SystemHealthPage() {
 
           <EncryptionInTransit t={d.transport} />
           {d.secrets ? <ServerSecrets s={d.secrets} /> : null}
+
+          <AiWorkLanes a={d.ai} />
 
           <Card className="mb-6" aria-label="Background runners">
             <CardHeader title="Background runners" description="Passes are skipped while maintenance is in progress." />
@@ -182,6 +184,52 @@ function ServerSecrets({ s }: { s: Secrets }) {
           })}
         </tbody>
       </Table>
+    </Card>
+  );
+}
+
+/** AI workload isolation (PERF-005): people's AI calls and background AI work, each in its own lane. */
+function AiWorkLanes({ a }: { a: AiWork }) {
+  const lanes = [
+    { name: 'People waiting on an answer', note: `Copilot, drafting, setup; up to ${a.limits.total} at once, wait up to ${a.waitSeconds.interactive} s`, l: a.interactive },
+    { name: 'Background work', note: `Bank line runs, reminders, reviews; up to ${a.limits.background} at once, wait up to ${a.waitSeconds.background} s`, l: a.background },
+  ];
+  return (
+    <Card className="mb-6" role="region" aria-label="AI work">
+      <CardHeader
+        title="AI work"
+        description={`AI calls on this server. Background work never takes the last places, so people always get room, and one organisation runs at most ${a.limits.perOrg} at once. A call that waits too long is turned away and can be tried again.`}
+      />
+      <Table aria-label="AI work lanes">
+        <thead>
+          <tr>
+            <Th>Lane</Th>
+            <Th numeric>Running</Th>
+            <Th numeric>Waiting</Th>
+            <Th numeric>Started</Th>
+            <Th numeric>Had to wait</Th>
+            <Th numeric>Longest wait</Th>
+            <Th numeric>Turned away</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {lanes.map(({ name, note, l }) => (
+            <Tr key={name}>
+              <Td>
+                {name}
+                <span className="block text-xs text-fg-muted">{note}</span>
+              </Td>
+              <Td numeric>{l.running}</Td>
+              <Td numeric>{l.waiting}</Td>
+              <Td numeric>{l.started.toLocaleString('en-IN')}</Td>
+              <Td numeric>{l.waited.toLocaleString('en-IN')}</Td>
+              <Td numeric>{ms(l.longestWaitMs)}</Td>
+              <Td numeric>{l.turnedAway ? <span className="text-negative">{l.turnedAway.toLocaleString('en-IN')}</span> : '0'}</Td>
+            </Tr>
+          ))}
+        </tbody>
+      </Table>
+      <p className="px-5 py-3 text-xs text-fg-muted">{`${a.organisationsRunning} organisation${a.organisationsRunning === 1 ? '' : 's'} running AI calls now.`}</p>
     </Card>
   );
 }

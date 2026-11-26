@@ -115,6 +115,12 @@ test('flags hide and refuse a module, maintenance pauses changes for everyone, h
   await admin.goto(`${WEB}/admin/system`);
   await admin.locator('[aria-label="Background runners"]').getByText('Workflow runner').waitFor();
   await admin.locator('[aria-label="Database"]').getByText('MongoDB').waitFor();
+  // AI work lanes (PERF-005): people's calls and background work, with this server's limits.
+  const lanes = admin.getByRole('table', { name: 'AI work lanes' });
+  await lanes.getByRole('cell', { name: /^People waiting on an answer/ }).waitFor();
+  assert.match(await lanes.getByRole('row').nth(2).innerText(), /Background work.*up to 8 at once/s);
+  await admin.getByRole('region', { name: 'AI work' }).getByText(/one organisation runs at most 4 at once/).waitFor();
+  if (process.env.E2E_SCREENSHOTS) await admin.getByRole('region', { name: 'AI work' }).screenshot({ path: `${process.env.E2E_SCREENSHOTS}/ai-work-lanes.png` });
   await admin.locator('[aria-label="Routes"]').getByText(/GET \/v1\/orgs\/:orgId/).first().waitFor();
   await admin.goto(`${WEB}/admin/errors`);
   await admin.locator('[aria-label="Error groups"]').waitFor();
