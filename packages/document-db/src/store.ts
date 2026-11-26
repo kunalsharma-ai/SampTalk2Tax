@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { MongoClient, type ClientSession, type Collection, type Db, type Document, type TransactionOptions } from 'mongodb';
 import type { AnyCollectionDef, CollectionDef } from './collection';
 import { nextSequenceValue } from './migrations';
+import { ReadCache, type ReadCacheOptions } from './read-cache';
 import { ScopedCollection, type AccessContext, type StoreRuntime } from './scoped-collection';
 
 export interface DocumentStoreOptions {
@@ -13,6 +14,8 @@ export interface DocumentStoreOptions {
   collections: readonly AnyCollectionDef[];
   /** Who is asking: the API passes its request tenant context. */
   context: () => AccessContext;
+  /** Cache the small reads named through `cached()`, kept correct by MongoDB (PERF-010). */
+  cache?: ReadCacheOptions;
 }
 
 /**
@@ -54,7 +57,19 @@ export class DocumentStore {
       if (this.defs.has(def.name)) throw new Error(`Collection ${def.name} is defined twice`);
       this.defs.set(def.name, def);
     }
-    this.client = new MongoClient(options.url, { ignoreUndefined: true });
+    this.client = new MongoClient(options.url, { ignoreUndefined: true, monitorCommands: !!options.cache });
+    if (options.cache) this.readCache = new ReadCache(this.client, () => this.db(), options.cache);
+  }
+
+  /** The read cache, when the store was given one (PERF-010). */
+  readonly readCache?: ReadCache;
+
+  /**
+   * A small read every request makes, through the read cache when there is one (see ReadCache).
+   * `deps` names every collection `load` reads; inside a transaction the cache is not used.
+   */
+  cached<T>(key: string, deps: readonly string[], load: () => Promise<T>): Promise<T> {
+    return this.readCache ? this.readCache.get(key, deps, load, this.inTransaction()) : load();
   }
 
   /** Connects and refuses to run on a server that cannot do multi-document transactions. */
@@ -68,6 +83,7 @@ export class DocumentStore {
         'MongoDB is running as a standalone server. Talk2Tax needs a replica set (one node is enough) for transactions: start mongod with --replSet and run rs.initiate().',
       );
     }
+    this.readCache?.start();
   }
 
   /** Round trip to the server (health checks). */
@@ -76,6 +92,7 @@ export class DocumentStore {
   }
 
   async close(): Promise<void> {
+    await this.readCache?.stop();
     await this.client.close();
   }
 

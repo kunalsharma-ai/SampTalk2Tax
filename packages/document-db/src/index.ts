@@ -4,5 +4,6 @@ export * from './decimal';
 export * from './collection';
 export * from './scoped-collection';
 export * from './store';
+export * from './read-cache';
 export * from './migrations';
 export * from './backup';

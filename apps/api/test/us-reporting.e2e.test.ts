@@ -101,7 +101,8 @@ describe('US 1099 reporting', () => {
       .find({ orgId: us.orgId, action: { $regex: '^us_vendor_tax_profile' } })
       .toArray();
     expect(audit).toHaveLength(4);
-    expect(JSON.stringify(audit)).not.toContain('4321');
+    // What the events record (not their ids and hashes, whose hex can contain any four digits).
+    expect(JSON.stringify(audit.map((e) => e.data))).not.toContain('4321');
   });
 
   it('works out the 1099s due for the year', async () => {

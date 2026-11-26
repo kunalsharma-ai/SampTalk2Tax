@@ -19,6 +19,12 @@ export class DocumentStoreService extends DocumentStore implements OnModuleInit,
   }
 }
 
+/**
+ * What the read cache may hold (PERF-010): the membership, organisation, plan and sign-in rules
+ * the auth guard reads on every request. See docs/READ_CACHE.md.
+ */
+export const READ_CACHE_COLLECTIONS = ['memberships', 'organizations', 'subscriptions', 'plans', 'org_security_settings', 'user_mfa', 'access_rules'] as const;
+
 export const documentStoreProvider: Provider = {
   provide: DocumentStoreService,
   inject: [CONFIG],
@@ -26,6 +32,7 @@ export const documentStoreProvider: Provider = {
     new DocumentStoreService({
       url: config.MONGODB_URL,
       collections: COLLECTIONS,
+      cache: config.READ_CACHE === 'on' ? { collections: READ_CACHE_COLLECTIONS } : undefined,
       context: () => {
         const ctx = currentTenantContext();
         return { orgId: ctx.orgId, bypass: ctx.bypass };

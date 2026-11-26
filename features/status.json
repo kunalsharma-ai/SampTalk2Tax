@@ -10353,6 +10353,15 @@
         "docs/LOAD_TESTING.md › Many people in one organisation"
       ],
       "notes": "28 people at 3 requests a second on one machine. With 8 people in one organisation, its posting p95 was 706 to 725 ms on the dev container, after postings of one organisation were made to take turns."
+    },
+    "PERF-010": {
+      "status": "Tested",
+      "evidence": [
+        "packages/document-db/src/read-cache.ts",
+        "apps/api/test/read-cache.e2e.test.ts",
+        "docs/READ_CACHE.md"
+      ],
+      "notes": "Caches the auth guard's per-request lookups only; emptied by this process's writes and a change stream. Reads p95 about a third faster on the dev container; posting unchanged."
     }
   }
 }

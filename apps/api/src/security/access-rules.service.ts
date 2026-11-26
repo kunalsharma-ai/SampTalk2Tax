@@ -111,7 +111,8 @@ export class AccessRulesService {
   /** Refuses the request (403 ACCESS_RULE) when an active rule that binds the person is not met. */
   async assertAllowed(orgId: string, a: AccessAttempt): Promise<void> {
     if (a.role === 'OWNER') return;
-    const rules = await runInOrg(orgId, () => this.store.collection(accessRules).find({ active: true }));
+    // Every request of the organisation reads its rules, so they come from the read cache (PERF-010).
+    const rules = await this.store.cached(`access-rules:${orgId}`, ['access_rules'], () => runInOrg(orgId, () => this.store.collection(accessRules).find({ active: true })));
     for (const r of rules) {
       const why = refusal(r, a);
       if (why) throw new ForbiddenException({ error: 'ACCESS_RULE', message: `This organisation's access rule ${why}. Ask an owner or admin if you need access.`, rule: r.name });
