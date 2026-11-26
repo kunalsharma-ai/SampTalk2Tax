@@ -10392,6 +10392,17 @@
         "docs/AI_PERFORMANCE.md"
       ],
       "notes": "Governance → AI performance: calls, failures and why, median/p95/slowest time, tokens and answers cut short, per assistant and per day over 7/30/90 days, from the AI decision records (figures only, audit.read)."
+    },
+    "PERF-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-work-lanes.ts",
+        "apps/api/src/ai-work/ai-work-pool.service.ts",
+        "apps/api/test/ai-work-isolation.e2e.test.ts",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/AI_WORK_ISOLATION.md"
+      ],
+      "notes": "Every AI call goes through per-server lanes: people's calls before background work, background capped below the total, a per-organisation share, waits then 503 AI_BUSY (decision record AiBusyError); System health shows the AI work lanes."
     }
   }
 }

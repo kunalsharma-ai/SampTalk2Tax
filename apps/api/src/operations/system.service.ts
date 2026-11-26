@@ -11,6 +11,7 @@ import { ErrorsService } from './errors.service';
 import { HeartbeatsService } from './heartbeats.service';
 import { MaintenanceService } from './maintenance.service';
 import { MetricsService } from './metrics.service';
+import { AiWorkPoolService } from '../ai-work/ai-work-pool.service';
 
 const VERSION = (() => {
   try {
@@ -37,6 +38,7 @@ export class SystemService {
     private readonly errors: ErrorsService,
     private readonly backups: BackupsService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly aiWork: AiWorkPoolService,
   ) {}
 
   private database() {
@@ -107,6 +109,7 @@ export class SystemService {
     ]);
     const runners = this.heartbeats.list();
     const requests = this.metrics.summary();
+    const ai = this.aiWork.status();
     const problems = [
       database.status === 'DOWN' ? 'The database is not answering' : null,
       database.status === 'SLOW' ? 'The database is slow to answer' : null,
@@ -116,6 +119,7 @@ export class SystemService {
       this.config.NODE_ENV === 'production' && !mongoUsesTls(this.config.MONGODB_URL) ? 'The database connection is not encrypted' : null,
       this.config.NODE_ENV === 'production' && !this.config.INTEGRATIONS_ENCRYPTION_KEY ? 'Stored secrets and files are encrypted with a key derived from JWT_SECRET (set INTEGRATIONS_ENCRYPTION_KEY)' : null,
       ...(backups?.problems ?? []),
+      ai.turnedAwayLast15Minutes > 0 ? `${ai.turnedAwayLast15Minutes} AI call${ai.turnedAwayLast15Minutes === 1 ? ' was' : 's were'} turned away in the last 15 minutes because the AI was busy (raise AI_MAX_CONCURRENT or add servers)` : null,
       requests.totals.serverErrors > 0 ? `${requests.totals.serverErrors} server error${requests.totals.serverErrors === 1 ? '' : 's'} in the last ${requests.windowMinutes} minutes` : null,
     ].filter((p): p is string => p !== null);
     return {
@@ -136,6 +140,7 @@ export class SystemService {
       database,
       runners,
       requests,
+      ai,
       errors,
       maintenance,
       transport: this.transport(requestSecure),

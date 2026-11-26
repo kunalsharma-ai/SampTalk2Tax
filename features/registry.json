@@ -34199,9 +34199,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-work-lanes.ts",
+        "apps/api/src/ai-work/ai-work-pool.service.ts",
+        "apps/api/test/ai-work-isolation.e2e.test.ts",
+        "apps/web/e2e/operations-flow.test.mjs",
+        "docs/AI_WORK_ISOLATION.md"
+      ],
+      "notes": "Every AI call goes through per-server lanes: people's calls before background work, background capped below the total, a per-organisation share, waits then 503 AI_BUSY (decision record AiBusyError); System health shows the AI work lanes."
     },
     {
       "id": "PERF-006",
