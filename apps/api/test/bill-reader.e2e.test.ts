@@ -50,6 +50,17 @@ const ROWS: [string, string, string, string, string][] = [
   ['Fitting service', '9987', '2', '1,250.00', '2,500.00'],
 ];
 const sendFile = (user: TestUser, body: Buffer, fileName = 'granite-118.pdf', type = 'application/pdf') => ctx.http().post(`${R()}/file?fileName=${encodeURIComponent(fileName)}`).set(user.auth).set('Content-Type', type).send(body);
+/** Uploads a PDF, which is read in the background (PERF-013), and waits until it is read or failed. */
+async function readPdf(body: Buffer, fileName?: string) {
+  const queued = (await sendFile(owner, body, fileName).expect(202)).body;
+  expect(queued).toMatchObject({ status: 'QUEUED', reading: null, failure: null });
+  for (let i = 0; i < 200; i++) {
+    const r = (await ctx.http().get(`${R()}/${queued.id}`).set(owner.auth).expect(200)).body;
+    if (r.status !== 'QUEUED' && r.status !== 'READING') return r;
+    await new Promise((res) => setTimeout(res, 25));
+  }
+  throw new Error('The bill was not read in time');
+}
 
 beforeAll(async () => {
   ctx = await bootApp();
@@ -69,7 +80,7 @@ describe('the bill reader (AP-025)', () => {
   let readingId: string;
 
   it('reads a PDF bill into its fields, with suggestions, checks and an audit event', async () => {
-    const r = (await sendFile(owner, await billPdf(ROWS)).expect(201)).body;
+    const r = await readPdf(await billPdf(ROWS));
     readingId = r.id;
     expect(r).toMatchObject({ number: 'BR-0001', source: 'PDF', fileName: 'granite-118.pdf', pages: 1, status: 'READ', bill: null });
     expect(r.text).toContain('Steel brackets   7326   10   450.00   4,500.00');
@@ -88,8 +99,8 @@ describe('the bill reader (AP-025)', () => {
     expect(b.suggestions.map((x: { taxRateId: string | null }) => x.taxRateId)).toEqual([null, null]);
     expect(b.suggestions).toHaveLength(2);
     const audit = await ctx.prisma.auditEvent.findMany({ where: { orgId: org.orgId, entityType: 'bill_reading' }, select: { action: true, data: true } });
-    expect(audit).toHaveLength(1);
-    expect(audit[0]).toMatchObject({ action: 'bill_reading.read', data: { number: 'BR-0001', source: 'PDF', invoiceNumber: 'GP/2026/118', total: '8260.00', lines: 2 } });
+    expect(audit.map((a) => a.action)).toEqual(['bill_reading.queued', 'bill_reading.read']);
+    expect(audit[1]).toMatchObject({ action: 'bill_reading.read', data: { number: 'BR-0001', source: 'PDF', invoiceNumber: 'GP/2026/118', total: '8260.00', lines: 2 } });
     // the PDF is kept encrypted, not as plain bytes
     const raw = await ctx.db.collection('bill_readings').findOne({ _id: readingId as never });
     expect(raw!.contentKeyId).toBeTruthy();
@@ -119,7 +130,7 @@ describe('the bill reader (AP-025)', () => {
   it('flags a second copy of a bill already in the books, and reads pasted text', async () => {
     await ctx.http().post(`${org.base}/purchases/documents`).set(owner.auth).send({ kind: 'BILL', contactId: vendorId, issueDate: '2026-10-05', reference: 'GP/2026/118', lines: [{ accountId: org.acc['5000'], quantity: '1', unitPrice: '7000.00' }] }).expect(201);
     const rate = (await ctx.http().post(`${org.base}/tax-rates`).set(owner.auth).send({ name: 'Purchase tax 18%', rate: '18', salesAccountId: org.acc['2300'], purchaseAccountId: org.acc['1450'] }).expect(201)).body.id;
-    const again = (await sendFile(owner, await billPdf(ROWS)).expect(201)).body;
+    const again = await readPdf(await billPdf(ROWS));
     expect(again.number).toBe('BR-0002');
     expect(again.reading.duplicateOf).toMatchObject({ number: null });
     // the organisation's 18% rate is suggested for every line
@@ -144,15 +155,20 @@ describe('the bill reader (AP-025)', () => {
     const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from('synthetic')]);
     expect((await sendFile(owner, png, 'photo.png', 'image/png').expect(422)).body.error).toBe('PHOTO_NOT_READABLE');
     expect((await sendFile(owner, Buffer.from('just some bytes'), 'x.bin', 'application/octet-stream').expect(415)).body.error).toBe('UNSUPPORTED_FILE');
-    const scan = (await sendFile(owner, await billPdf([], { text: false })).expect(422)).body;
-    expect(scan).toMatchObject({ error: 'NO_TEXT', message: 'This PDF has no text to read; it is probably a scan or a photo. Paste the text of the bill, or enter the bill by hand' });
     expect((await ctx.http().post(`${R()}/text`).set(owner.auth).send({ text: '   ' }).expect(422)).body.error).toBe('EMPTY_TEXT');
     // nothing is recorded for a refused file
     expect(await ctx.db.collection('bill_readings').countDocuments({ orgId: org.orgId })).toBe(3);
+    // A PDF is read after the upload answers, so a scan with no text is a reading that failed, with the reason.
+    const scan = await readPdf(await billPdf([], { text: false }), 'scan.pdf');
+    expect(scan).toMatchObject({ number: 'BR-0004', status: 'FAILED', reading: null, failure: 'This PDF has no text to read; it is probably a scan or a photo. Paste the text of the bill, or enter the bill by hand' });
+    expect((await ctx.http().post(`${R()}/${scan.id}/discard`).set(owner.auth).send({}).expect(409)).body.error).toBe('READING_FAILED');
+    const listed = (await ctx.http().get(R()).set(viewer.auth).expect(200)).body[0];
+    expect(listed).toMatchObject({ number: 'BR-0004', status: 'FAILED', supplier: null, total: null, checks: 0, failure: scan.failure });
   });
 
   it('needs purchases.manage to read bills and keeps organisations apart', async () => {
     await sendFile(viewer, await billPdf(ROWS)).expect(403);
+    expect(await ctx.db.collection('bill_readings').countDocuments({ orgId: org.orgId })).toBe(4);
     await ctx.http().post(`${R()}/text`).set(viewer.auth).send({ text: 'x' }).expect(403);
     await ctx.http().get(`${R()}/${readingId}`).set(outsider.auth).expect(404);
     await ctx.http().get(`${other.base}/purchases/bill-reader/${readingId}`).set(outsider.auth).expect(404);

@@ -8,7 +8,7 @@ import { DocumentForm } from '@/components/ledger/document-form';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
-import { type BillReading, type FieldSource, SOURCE_LABEL } from '@/lib/bill-reader';
+import { type BillReading, type FieldSource, isBeingRead, SOURCE_LABEL } from '@/lib/bill-reader';
 import { date } from '@/lib/format';
 import { PURCHASES } from '@/lib/ledgers';
 import { useOrg } from '@/lib/org';
@@ -24,7 +24,13 @@ export default function BillReadingPage() {
   const { readingId } = useParams<{ readingId: string }>();
   const qc = useQueryClient();
   const base = `/v1/orgs/${orgId}/purchases/bill-reader/${readingId}`;
-  const q = useQuery({ queryKey: ['bill-reading', orgId, readingId], queryFn: () => api<BillReading>(base), enabled: !!org });
+  const q = useQuery({
+    queryKey: ['bill-reading', orgId, readingId],
+    queryFn: () => api<BillReading>(base),
+    enabled: !!org,
+    // A PDF is read in the background (PERF-013): look again until it is read or failed.
+    refetchInterval: (query) => (query.state.data && isBeingRead(query.state.data.status) ? 1000 : false),
+  });
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['bill-reading', orgId, readingId] });
     void qc.invalidateQueries({ queryKey: ['bill-readings', orgId] });
@@ -58,6 +64,19 @@ export default function BillReadingPage() {
         }
       />
       <ErrorAlert title="Could not load the reading" error={q.error ?? discard.error} />
+      {d && isBeingRead(d.status) ? (
+        <Alert tone="neutral" title="Reading the bill">
+          The PDF is being read. This page updates by itself when it is done, usually within seconds; you can leave it and come back.
+        </Alert>
+      ) : null}
+      {d && d.status === 'FAILED' ? (
+        <Alert tone="negative" title="The bill could not be read">
+          {d.failure} Nothing was saved.{' '}
+          <Link className="underline" href={`/orgs/${orgId}/purchases/bill-reader`}>
+            Read another bill
+          </Link>
+        </Alert>
+      ) : null}
       {d && r ? (
         <>
           {r.checks.length ? (

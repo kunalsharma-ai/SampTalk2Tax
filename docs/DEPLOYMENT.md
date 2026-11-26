@@ -78,6 +78,7 @@ Three images: `talk2tax-migrate` (the release step, the MongoDB migrations), `ta
 | `CLOSE_RUNNER_INTERVAL_SECONDS` | no | How often months that have ended are checked for a close to start automatically (where an organisation turned that on). Default 3600; 0 turns it off |
 | `REPORT_SCHEDULE_RUNNER_INTERVAL_SECONDS` | no | How often scheduled reports are checked for runs that are due, and sent. Default 900; 0 turns it off |
 | `RECURRING_BILL_RUNNER_INTERVAL_SECONDS` | no | How often recurring vendor bills are made as their runs fall due. Default 3600; 0 turns it off |
+| `BILL_READER_RUNNER_INTERVAL_SECONDS` | no | How often PDF bills left waiting by a stopped server are looked for (each upload also starts the reading at once). Default 30; 0 turns it off, and uploads then wait |
 | `RETENTION_RUNNER_INTERVAL_SECONDS` | no | How often each organisation's data retention periods are applied (SEC-020). Default 86400; 0 turns it off |
 | `SSO_ALLOW_PRIVATE_NETWORKS` | no | `true` lets organisations' single sign-on providers be http:// or on private networks. Local development and tests only |
 | `SSO_DNS_SERVERS` | no | DNS servers for checking sign-in domains' TXT records, comma-separated host[:port]. Default: the system's |

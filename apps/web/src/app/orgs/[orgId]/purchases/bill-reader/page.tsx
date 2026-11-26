@@ -8,12 +8,19 @@ import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { PageHeader } from '@/components/shell';
 import { api, uploadFile } from '@/lib/api';
-import type { BillReading, BillReadingRow } from '@/lib/bill-reader';
+import { type BillReading, type BillReadingRow, isBeingRead } from '@/lib/bill-reader';
 import { date } from '@/lib/format';
 import { useOrg } from '@/lib/org';
 import { can } from '@/lib/types';
 
-const STATUS = { READ: <Badge tone="warning">To review</Badge>, SAVED: <Badge tone="positive">Saved as a bill</Badge>, DISCARDED: <Badge>Discarded</Badge> } as const;
+const STATUS = {
+  QUEUED: <Badge>Reading…</Badge>,
+  READING: <Badge>Reading…</Badge>,
+  READ: <Badge tone="warning">To review</Badge>,
+  FAILED: <Badge tone="negative">Could not be read</Badge>,
+  SAVED: <Badge tone="positive">Saved as a bill</Badge>,
+  DISCARDED: <Badge>Discarded</Badge>,
+} as const;
 
 /** Purchases → Bill reader (AP-025): read a supplier's bill from its PDF or text, then review it before it becomes a bill. */
 export default function BillReaderPage() {
@@ -22,7 +29,13 @@ export default function BillReaderPage() {
   const qc = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState('');
-  const q = useQuery({ queryKey: ['bill-readings', orgId], queryFn: () => api<BillReadingRow[]>(`/v1/orgs/${orgId}/purchases/bill-reader`), enabled: !!org });
+  const q = useQuery({
+    queryKey: ['bill-readings', orgId],
+    queryFn: () => api<BillReadingRow[]>(`/v1/orgs/${orgId}/purchases/bill-reader`),
+    enabled: !!org,
+    // PDFs are read in the background: look again while any is still being read.
+    refetchInterval: (query) => (query.state.data?.some((r) => isBeingRead(r.status)) ? 1500 : false),
+  });
   const done = (r: BillReading) => {
     void qc.invalidateQueries({ queryKey: ['bill-readings', orgId] });
     router.push(`/orgs/${orgId}/purchases/bill-reader/${r.id}`);
@@ -40,7 +53,7 @@ export default function BillReaderPage() {
       <ErrorAlert title="Could not read the bill" error={readFile.error ?? readText.error} />
       {manage ? (
         <Card role="region" aria-label="Read a bill" className="mb-6">
-          <CardHeader title="Read a bill" description="A PDF made by the supplier's billing software reads best. Scans and photos have no text to read: paste the text instead, or enter the bill by hand." />
+          <CardHeader title="Read a bill" description="A PDF made by the supplier's billing software reads best. A PDF is read in the background, usually within seconds, and you can keep working meanwhile. Scans and photos have no text to read: paste the text instead, or enter the bill by hand." />
           <div className="grid gap-6 px-5 pb-5 md:grid-cols-2">
             <form
               className="flex flex-col gap-3"
@@ -105,6 +118,7 @@ export default function BillReaderPage() {
                   <Td>
                     {STATUS[r.status]}
                     {r.status === 'READ' && r.checks ? <span className="block text-xs text-warning">{r.checks} to check</span> : null}
+                    {r.status === 'FAILED' && r.failure ? <span className="block max-w-xs text-xs text-fg-muted">{r.failure}</span> : null}
                   </Td>
                   <Td>
                     {r.bill ? (

@@ -10372,6 +10372,16 @@
         "docs/PERFORMANCE_BUDGETS.md"
       ],
       "notes": "Header search walks one index per field (orgId + field), tests the text on index entries and fetches only matching records, at most a page per field; budget search-at-volume-p95 300 ms in the CI volume test."
+    },
+    "PERF-013": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/bill-reader/bill-reader-runner.service.ts",
+        "apps/api/test/bill-reading-background.e2e.test.ts",
+        "apps/web/e2e/bill-reader-flow.test.mjs",
+        "docs/BACKGROUND_JOBS.md"
+      ],
+      "notes": "PDF bills are read in the background: upload answers 202 QUEUED, a worker takes each reading with a lease (once across servers), retries up to 3 times, FAILED with a reason; pages poll until read. Pasted text stays synchronous."
     }
   }
 }

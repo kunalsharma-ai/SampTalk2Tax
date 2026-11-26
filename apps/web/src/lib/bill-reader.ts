@@ -23,6 +23,10 @@ export interface BillReadingResult {
   suggestions: { accountId: string | null; accountName: string | null; taxRateId: string | null }[];
   duplicateOf: { id: string; number: string | null } | null;
 }
+/** QUEUED and READING: a PDF waiting for or being read in the background (PERF-013). */
+export type BillReadingStatus = 'QUEUED' | 'READING' | 'READ' | 'FAILED' | 'SAVED' | 'DISCARDED';
+export const isBeingRead = (s: BillReadingStatus) => s === 'QUEUED' || s === 'READING';
+
 export interface BillReading {
   id: string;
   number: string;
@@ -31,8 +35,12 @@ export interface BillReading {
   sizeBytes: number;
   pages: number;
   text: string;
-  reading: BillReadingResult;
-  status: 'READ' | 'SAVED' | 'DISCARDED';
+  /** Null while the PDF is being read in the background, and when it could not be read. */
+  reading: BillReadingResult | null;
+  status: BillReadingStatus;
+  /** Why it could not be read (FAILED). */
+  failure: string | null;
+  readAt: string | null;
   bill: { id: string; number: string | null; status: string } | null;
   attachmentId: string | null;
   createdBy: string;
@@ -50,7 +58,8 @@ export interface BillReadingRow {
   total: string | null;
   currency: string | null;
   checks: number;
-  status: BillReading['status'];
+  status: BillReadingStatus;
+  failure: string | null;
   bill: { id: string; number: string | null } | null;
   createdBy: string;
   createdAt: string;
