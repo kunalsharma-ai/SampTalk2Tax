@@ -2,7 +2,9 @@
  * Browser end-to-end test for the bill reader (AP-025): an owner uploads a supplier's PDF bill,
  * sees what was found (supplier, number, dates, items, taxes, total) and the checks, reviews the
  * bill form filled in from it, saves it as a draft bill with the PDF attached, and finds the
- * reading marked as saved. Pasted text is read and discarded. Real Next.js app → real API →
+ * reading marked as saved. Pasted text is read and discarded. A PDF is read in the background
+ * (PERF-013): the reading page says it is being read and updates by itself, and a scan with no
+ * text ends as a reading that could not be read, saying why. Real Next.js app → real API →
  * real MongoDB.
  */
 import assert from 'node:assert/strict';
@@ -31,8 +33,8 @@ const ok = (r, what) => {
   return r.body;
 };
 
-/** A one-page PDF bill, laid out in columns as billing software prints it, with a compressed content stream. */
-function billPdf() {
+/** A one-page PDF bill, laid out in columns as billing software prints it, with a compressed content stream; or, with text false, a page with only a grey box, as a scan has. */
+function billPdf({ text = true } = {}) {
   const esc = (s) => s.replace(/[()\\]/g, (c) => `\\${c}`);
   const at = (x, y, size, s) => `BT /F1 ${size} Tf 1 0 0 1 ${x} ${y} Tm (${esc(s)}) Tj ET`;
   const rows = [
@@ -50,7 +52,7 @@ function billPdf() {
     y -= 16;
     ops.push(at(380, y, 10, k), at(470, y, 10, v));
   }
-  const content = deflateSync(Buffer.from(ops.join('\n'), 'latin1'));
+  const content = deflateSync(Buffer.from(text ? ops.join('\n') : '0.5 g 40 40 300 400 re f', 'latin1'));
   const objs = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
@@ -64,7 +66,7 @@ function billPdf() {
     else parts.push(Buffer.from(`${i + 1} 0 obj\n<< /Length ${content.length} /Filter /FlateDecode >>\nstream\n`, 'latin1'), content, Buffer.from('\nendstream\nendobj\n', 'latin1'));
   });
   parts.push(Buffer.from('trailer\n<< /Root 1 0 R >>\n%%EOF\n', 'latin1'));
-  const file = join(mkdtempSync(join(tmpdir(), 'bill-')), 'granite-gp-118.pdf');
+  const file = join(mkdtempSync(join(tmpdir(), 'bill-')), text ? 'granite-gp-118.pdf' : 'scanned-bill.pdf');
   writeFileSync(file, Buffer.concat(parts));
   return file;
 }
@@ -135,5 +137,17 @@ test('an owner reads a PDF bill, reviews it in the bill form and saves it with t
   await page.getByRole('list', { name: 'Checks' }).getByText('Acme Software Inc is not one of your vendors yet; choose the vendor or add them first').waitFor();
   await page.getByRole('button', { name: 'Discard this reading' }).click();
   await page.getByText('Nothing was saved to the books.').waitFor();
+
+  // A scan has no text: the upload is accepted, and the reading then says it could not be read.
+  await page.goto(`${WEB}/orgs/${orgId}/purchases/bill-reader`);
+  await page.getByLabel('The bill as a PDF (up to 5 MB)').setInputFiles(billPdf({ text: false }));
+  await page.getByRole('button', { name: 'Read the PDF' }).click();
+  await page.waitForURL(/\/purchases\/bill-reader\/[0-9a-f-]{36}$/);
+  const failed = page.getByRole('alert').filter({ hasText: 'The bill could not be read' });
+  await failed.getByText('This PDF has no text to read; it is probably a scan or a photo.', { exact: false }).waitFor();
+  assert.equal(await page.getByRole('region', { name: 'Review and save' }).count(), 0);
+  await page.getByRole('link', { name: 'Read another bill' }).click();
+  await page.getByRole('table', { name: 'Bills read' }).getByText('Could not be read', { exact: true }).waitFor();
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/bill-reader-failed.png`, fullPage: true });
   assert.deepEqual(consoleErrors, []);
 });

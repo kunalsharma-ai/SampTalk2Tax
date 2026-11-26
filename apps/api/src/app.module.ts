@@ -37,6 +37,7 @@ import { BankFeedsService } from './bank-feeds/bank-feeds.service';
 import { SupplierStatementsController } from './supplier-statements/supplier-statements.controller';
 import { SupplierStatementsService } from './supplier-statements/supplier-statements.service';
 import { BillReaderController } from './bill-reader/bill-reader.controller';
+import { BillReaderRunnerService } from './bill-reader/bill-reader-runner.service';
 import { BillReaderService } from './bill-reader/bill-reader.service';
 import { CardFeedController, CompanyCardsController } from './company-cards/company-cards.controller';
 import { CompanyCardsService } from './company-cards/company-cards.service';
@@ -702,6 +703,7 @@ export class AppModule {
         FxService,
         CountryModulesService,
         BillReaderService,
+        BillReaderRunnerService,
         CompanyCardsService,
         FinancialVisualsService,
         DepartmentPerformanceService,

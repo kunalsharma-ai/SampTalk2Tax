@@ -23,8 +23,13 @@ export class BillReaderController {
     return this.s.list();
   }
 
-  /** Send the PDF's bytes as the body (Content-Type: application/pdf or application/octet-stream). */
+  /**
+   * Send the PDF's bytes as the body (Content-Type: application/pdf or application/octet-stream).
+   * Answers 202 with the reading QUEUED: the PDF is read in the background (PERF-013); poll the
+   * reading until it is READ or FAILED.
+   */
   @Post('file')
+  @HttpCode(202)
   @RequirePermission('purchases.manage')
   @ApiConsumes('application/octet-stream')
   readFile(@CurrentOrg() org: OrgContext, @CurrentUser() user: AuthUser, @Query(new ZodPipe(FileQuery)) q: z.infer<typeof FileQuery>, @Body() body: unknown) {

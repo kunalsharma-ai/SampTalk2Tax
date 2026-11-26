@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 508 |
+| Not started | 507 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 759 |
+| Tested | 760 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 8 | 13 |
+| Performance and scalability | M9 | 21 | 7 | 14 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10245,6 +10245,17 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/search.e2e.test.ts
   - scripts/volume-test.mjs
   - docs/PERFORMANCE_BUDGETS.md
+
+### PERF-013 — Asynchronous document processing
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: PDF bills are read in the background: upload answers 202 QUEUED, a worker takes each reading with a lease (once across servers), retries up to 3 times, FAILED with a reason; pages poll until read. Pasted text stays synchronous.
+- Evidence:
+  - apps/api/src/bill-reader/bill-reader-runner.service.ts
+  - apps/api/test/bill-reading-background.e2e.test.ts
+  - apps/web/e2e/bill-reader-flow.test.mjs
+  - docs/BACKGROUND_JOBS.md
 
 ### PERF-014 — Establish measurable performance budgets
 

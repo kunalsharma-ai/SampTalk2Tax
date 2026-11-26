@@ -34398,9 +34398,14 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/bill-reader/bill-reader-runner.service.ts",
+        "apps/api/test/bill-reading-background.e2e.test.ts",
+        "apps/web/e2e/bill-reader-flow.test.mjs",
+        "docs/BACKGROUND_JOBS.md"
+      ],
+      "notes": "PDF bills are read in the background: upload answers 202 QUEUED, a worker takes each reading with a lease (once across servers), retries up to 3 times, FAILED with a reason; pages poll until read. Pasted text stays synchronous."
     },
     {
       "id": "PERF-014",

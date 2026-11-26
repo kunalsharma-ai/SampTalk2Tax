@@ -191,6 +191,8 @@ const schema = z.object({
   RETENTION_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(604800).default(86400),
   /** How often recurring bills are checked for runs that have fallen due (0 turns the runner off). */
   RECURRING_BILL_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(86400).default(3600),
+  /** How often PDF bills left waiting are looked for (PERF-013); each upload also wakes the reader at once. 0 turns it off. */
+  BILL_READER_RUNNER_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
   /**
    * Single sign-on (SEC-006/007). Lets an organisation's OpenID Connect provider be an http://
    * address or on a private, loopback or link-local network. Only for local development and
