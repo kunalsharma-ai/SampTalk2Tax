@@ -10362,6 +10362,16 @@
         "docs/READ_CACHE.md"
       ],
       "notes": "Caches the auth guard's per-request lookups only; emptied by this process's writes and a change stream. Reads p95 about a third faster on the dev container; posting unchanged."
+    },
+    "PERF-012": {
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/graph/record-search.ts",
+        "apps/api/test/search.e2e.test.ts",
+        "scripts/volume-test.mjs",
+        "docs/PERFORMANCE_BUDGETS.md"
+      ],
+      "notes": "Header search walks one index per field (orgId + field), tests the text on index entries and fetches only matching records, at most a page per field; budget search-at-volume-p95 300 ms in the CI volume test."
     }
   }
 }

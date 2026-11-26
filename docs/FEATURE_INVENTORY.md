@@ -1430,7 +1430,7 @@ Part 41 · M9 · priority P1 · depends on: none
 | PERF-009 |  | capability | Database partitioning where justified | Not started |
 | PERF-010 |  | capability | Caching | Tested |
 | PERF-011 |  | capability | Read replicas | Not started |
-| PERF-012 |  | capability | Efficient search | Not started |
+| PERF-012 |  | capability | Efficient search | Tested |
 | PERF-013 |  | capability | Asynchronous document processing | Not started |
 | PERF-014 |  | rule | Establish measurable performance budgets | Tested |
 | PERF-015 |  | capability | Typical dashboard interaction under two seconds under defined test conditions | Tested |

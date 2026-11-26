@@ -4,7 +4,11 @@ import { Prisma } from '@talk2tax/database';
 import { fromDbDate } from '../common/dates';
 import { DocumentStoreService } from '../common/document-store.service';
 import { PrismaService } from '../common/prisma.service';
+import { accounts as accountsCollection } from '../db/collections/chart';
+import { journalEntries as journalEntriesCollection } from '../db/collections/ledger';
+import { contacts as contactsCollection, documents as documentsCollection, payments as paymentsCollection } from '../db/collections/sales';
 import { lineSums } from '../db/ledger-queries';
+import { inOrder, searchIds, type SearchCollection, type SearchField } from './record-search';
 
 export const GRAPH_NODE_TYPES = ['CONTACT', 'DOCUMENT', 'PAYMENT', 'JOURNAL', 'ACCOUNT', 'PROJECT', 'DEPARTMENT', 'LOAN', 'ASSET', 'ALERT'] as const;
 export type GraphNodeType = (typeof GRAPH_NODE_TYPES)[number];
@@ -184,28 +188,44 @@ export class GraphService {
 
   // ------------------------------------------------------------------ search
 
-  /** Records whose name or number matches, to start exploring from. */
+  /**
+   * Records whose name or number matches, to start exploring from (PERF-012: each field is read
+   * through its own index, so only matching records are fetched; see record-search.ts).
+   */
   async search(orgId: string, q: string): Promise<GraphNode[]> {
     const term = q.trim();
     if (term.length < 2) return [];
     const like = { contains: term, mode: 'insensitive' as const };
     const num = /^je-?0*(\d+)$/i.exec(term)?.[1] ?? (/^\d+$/.test(term) ? term : null);
+    const ids = (coll: unknown, fields: SearchField[], limit = 8) => searchIds(coll as SearchCollection, fields, term, limit);
+    const [contactIds, docIds, payIds, journalIds, accountIds] = await Promise.all([
+      ids(this.store.collection(contactsCollection), [{ field: 'name', dir: 1 }]),
+      ids(this.store.collection(documentsCollection), [{ field: 'number', dir: -1 }, { field: 'reference', dir: -1 }]),
+      ids(this.store.collection(paymentsCollection), [{ field: 'number', dir: -1 }, { field: 'reference', dir: -1 }]),
+      (async () => {
+        const byNumber = num && Number(num) <= Number.MAX_SAFE_INTEGER ? await this.store.collection(journalEntriesCollection).findOne({ entryNumber: Number(num) }, { projection: { id: 1 } }) : null;
+        const rest = await ids(this.store.collection(journalEntriesCollection), [{ field: 'reference', dir: -1 }, { field: 'memo', dir: 1 }]);
+        return [...new Set([...(byNumber ? [byNumber.id] : []), ...rest])].slice(0, 8);
+      })(),
+      ids(this.store.collection(accountsCollection), [{ field: 'code', dir: 1, prefixOnly: true }, { field: 'name', dir: 1 }]),
+    ]);
     const [contacts, docs, pays, journals, accounts, dims, loans, assets] = await Promise.all([
-      this.prisma.contact.findMany({ where: { orgId, name: like }, take: 8, orderBy: { name: 'asc' } }),
-      this.prisma.document.findMany({ where: { orgId, OR: [{ number: like }, { reference: like }] }, take: 8, orderBy: { issueDate: 'desc' } }),
-      this.prisma.payment.findMany({ where: { orgId, OR: [{ number: like }, { reference: like }] }, orderBy: { date: 'desc' }, take: 8, select: { id: true, kind: true, number: true, status: true, date: true, amount: true, currency: true } }),
-      this.prisma.journalEntry.findMany({ where: { orgId, OR: [...(num ? [{ entryNumber: Number(num) }] : []), { memo: like }, { reference: like }] }, take: 8, orderBy: { date: 'desc' } }),
-      this.prisma.account.findMany({ where: { orgId, OR: [{ code: { startsWith: term } }, { name: like }] }, take: 8, orderBy: { code: 'asc' } }),
+      contactIds.length ? this.prisma.contact.findMany({ where: { orgId, id: { in: contactIds } } }) : [],
+      docIds.length ? this.prisma.document.findMany({ where: { orgId, id: { in: docIds } } }) : [],
+      payIds.length ? this.prisma.payment.findMany({ where: { orgId, id: { in: payIds } }, select: { id: true, kind: true, number: true, status: true, date: true, amount: true, currency: true } }) : [],
+      journalIds.length ? this.prisma.journalEntry.findMany({ where: { orgId, id: { in: journalIds } } }) : [],
+      accountIds.length ? this.prisma.account.findMany({ where: { orgId, id: { in: accountIds } } }) : [],
+      // Projects, departments, loans and assets are a handful per organisation: read as before.
       this.prisma.dimensionValue.findMany({ where: { orgId, OR: [{ code: like }, { name: like }] }, take: 8, orderBy: { code: 'asc' } }),
       this.prisma.loan.findMany({ where: { orgId, OR: [{ name: like }, { lender: like }] }, take: 5 }),
       this.prisma.fixedAsset.findMany({ where: { orgId, name: like }, take: 5 }),
     ]);
     return [
-      ...contacts.map((c) => this.contactNode(c)),
-      ...docs.map((d) => this.docNode(d, () => '', d.total, d.currency)),
-      ...pays.map((p) => this.payNode(p)),
-      ...journals.map((e) => this.jeNode(e)),
-      ...accounts.map((a) => this.accountNode(a)),
+      ...inOrder(contacts, contactIds).map((c) => this.contactNode(c)),
+      ...inOrder(docs, docIds).map((d) => this.docNode(d, () => '', d.total, d.currency)),
+      ...inOrder(pays, payIds).map((p) => this.payNode(p)),
+      ...inOrder(journals, journalIds).map((e) => this.jeNode(e)),
+      ...inOrder(accounts, accountIds).map((a) => this.accountNode(a)),
       ...dims.map((v) => this.dimNode(v)),
       ...loans.map((l) => this.loanNode(l)),
       ...assets.map((a) => this.assetNode(a)),

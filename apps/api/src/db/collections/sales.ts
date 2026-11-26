@@ -301,6 +301,9 @@ export const documents = defineCollection<DocumentDoc>({
     { key: { orgId: 1, kind: 1, status: 1 }, name: 'org_kind_status' },
     { key: { orgId: 1, contactId: 1 }, name: 'org_contact' },
     { key: { orgId: 1, debitNoteForId: 1 }, name: 'org_debit_note_for' },
+    // The header search walks these (PERF-012, graph/record-search.ts).
+    { key: { orgId: 1, number: 1 }, name: 'org_number' },
+    { key: { orgId: 1, reference: 1 }, name: 'org_reference' },
     { key: { 'lines.id': 1 }, name: 'line_id', unique: true },
   ],
   guards: {
@@ -432,6 +435,9 @@ export const payments = defineCollection<PaymentDoc>({
     { key: { journalEntryId: 1 }, name: 'journal', unique: true },
     { key: { voidJournalEntryId: 1 }, name: 'void_journal', unique: true, partialFilterExpression: { voidJournalEntryId: { $type: 'string' } } },
     { key: { orgId: 1, contactId: 1 }, name: 'org_contact' },
+    // The header search walks these (PERF-012, graph/record-search.ts).
+    { key: { orgId: 1, number: 1 }, name: 'org_number' },
+    { key: { orgId: 1, reference: 1 }, name: 'org_reference' },
   ],
   guards: {
     async beforeInsert(p, ctx) {

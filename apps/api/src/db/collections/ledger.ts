@@ -148,6 +148,9 @@ export const journalEntries = defineCollection<JournalEntryDoc>({
     { key: { orgId: 1, date: -1 }, name: 'org_date' },
     { key: { orgId: 1, status: 1 }, name: 'org_status' },
     { key: { orgId: 1, 'lines.accountId': 1 }, name: 'org_line_account' },
+    // The header search walks these (PERF-012, graph/record-search.ts).
+    { key: { orgId: 1, reference: 1 }, name: 'org_reference' },
+    { key: { orgId: 1, memo: 1 }, name: 'org_memo' },
     { key: { 'lines.id': 1 }, name: 'line_id', unique: true },
   ],
   guards: {

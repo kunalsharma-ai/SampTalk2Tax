@@ -63,6 +63,8 @@ export interface FindOptions {
   limit?: number;
   skip?: number;
   projection?: Record<string, 0 | 1>;
+  /** The index to use, by its key, when the planner's choice would read more (PERF-012 search). */
+  hint?: Record<string, 1 | -1>;
 }
 
 export interface UpdateResult {
@@ -99,6 +101,7 @@ export class ScopedCollection<T extends Document> {
       limit: options.limit,
       skip: options.skip,
       projection: options.projection ? mapIdKeys(options.projection) : undefined,
+      hint: options.hint ? mapIdKeys(options.hint) : undefined,
     });
     return (await cursor.toArray()).map((d) => fromStored<T>(d));
   }

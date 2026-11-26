@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Large transaction volumes (PERF-002) against a running API: one organisation is filled with a
- * year of posted invoices and bills, then the reports people open most are timed
+ * year of posted invoices and bills, then the reports people open most (and the header search,
+ * PERF-012) are timed
  * one after another, several times each, and checked against the "reports at volume" budget in
  * perf/budgets.json. The books are checked afterwards: the trial balance balances and receivables
  * equal what was invoiced.
@@ -31,6 +32,7 @@ const SEEDERS = 8;
 const PER_SEEDER_PER_SECOND = 8; // under the default 600 a minute per person
 const BUDGETS = JSON.parse(readFileSync(new URL('../perf/budgets.json', import.meta.url), 'utf8')).budgets;
 const LIMIT = BUDGETS.find((b) => b.key === 'reports-at-volume-p95').limitMs;
+const SEARCH_LIMIT = BUDGETS.find((b) => b.key === 'search-at-volume-p95').limitMs;
 const today = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
 const yearStart = `${Number(today.slice(5, 7)) >= 4 ? today.slice(0, 4) : Number(today.slice(0, 4)) - 1}-04-01`;
 const DAYS = Math.max(1, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${yearStart}T00:00:00Z`)) / 86_400_000)); // not money
@@ -159,6 +161,28 @@ for (const [name, path] of REPORTS) {
   results.push({ name, p95: pct(ms, 95), median: pct(ms, 50), samples: ms });
 }
 
+// ------------------------------------------------------------ time the header search (PERF-012)
+// Terms that match every invoice, a few numbers, one customer, one bill reference, and nothing.
+const SEARCHES = [
+  ['Search: every invoice', 'INV'],
+  ['Search: part of a number', '012'],
+  ['Search: a customer', 'customer 0042'],
+  ['Search: a bill reference', 'vb-17'],
+  ['Search: nothing matches', 'no such record'],
+];
+const searches = [];
+for (const [name, term] of SEARCHES) {
+  const path = `${base}/graph/search?q=${encodeURIComponent(term)}`;
+  const found = await must('GET', path, owner.token); // warm-up
+  const ms = [];
+  for (let i = 0; i < RUNS; i++) {
+    const r = await call('GET', path, owner.token);
+    if (r.status !== 200) throw new Error(`${name} answered ${r.status}`);
+    ms.push(Math.round(r.ms));
+  }
+  searches.push({ name, found: Array.isArray(found) ? found.length : 0, p95: pct(ms, 95), median: pct(ms, 50), samples: ms });
+}
+
 // ------------------------------------------------------------ check the books
 const tb = await must('GET', `${base}/reports/trial-balance?asOf=${today}`, owner.token);
 const ageing = await must('GET', `${base}/sales/ageing?asOf=${today}`, owner.token);
@@ -168,6 +192,8 @@ const invoicedText = `${invoiced / 100n}.${String(invoiced % 100n).padStart(2, '
 const books = { trialBalanceBalances: tb.totalDebit === tb.totalCredit, invoiced: invoicedText, receivablesMatch: ageing.totals.balance === invoicedText };
 
 const missed = results.filter((r) => r.p95 > LIMIT).map((r) => `${r.name} p95 ${r.p95} ms > ${LIMIT} ms`);
+missed.push(...searches.filter((r) => r.p95 > SEARCH_LIMIT).map((r) => `${r.name} p95 ${r.p95} ms > ${SEARCH_LIMIT} ms`));
+if (searches[0].found === 0 || searches[2].found === 0 || searches[4].found !== 0) missed.push('the search did not find what it should');
 if (!books.trialBalanceBalances) missed.push('the trial balance does not balance');
 if (!books.receivablesMatch) {
   missed.push(`receivables differ from invoiced ${books.invoiced}`);
@@ -177,6 +203,8 @@ const report = {
   conditions: { api: API, invoices: INVOICES, bills: BILLS, customers: CUSTOMERS, runs: RUNS, seededInSeconds: seededIn },
   budgetMs: LIMIT,
   results,
+  searchBudgetMs: SEARCH_LIMIT,
+  searches,
   books,
   passed: missed.length === 0,
   missed,
