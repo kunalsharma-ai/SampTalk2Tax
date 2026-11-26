@@ -115,6 +115,8 @@ test('flags hide and refuse a module, maintenance pauses changes for everyone, h
   await admin.goto(`${WEB}/admin/system`);
   await admin.locator('[aria-label="Background runners"]').getByText('Workflow runner').waitFor();
   await admin.locator('[aria-label="Database"]').getByText('MongoDB').waitFor();
+  // Read replicas (PERF-011): this server reads reports from the primary unless MONGODB_REPLICA_READS=reports.
+  await admin.locator('[aria-label="Database"]').getByText('From the primary', { exact: true }).waitFor();
   // AI work lanes (PERF-005): people's calls and background work, with this server's limits.
   const lanes = admin.getByRole('table', { name: 'AI work lanes' });
   await lanes.getByRole('cell', { name: /^People waiting on an answer/ }).waitFor();

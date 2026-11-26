@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 505 |
+| Not started | 504 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 762 |
+| Tested | 763 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 5 | 16 |
+| Performance and scalability | M9 | 21 | 4 | 17 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10246,6 +10246,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - packages/document-db/src/read-cache.ts
   - apps/api/test/read-cache.e2e.test.ts
   - docs/READ_CACHE.md
+
+### PERF-011 — Read replicas
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: MONGODB_REPLICA_READS=reports sends report pages' reads to a secondary (secondaryPreferred, maxStalenessSeconds 120 by default); guards, transactions, writes and read-cache loads stay on the primary; System health shows members and setting.
+- Evidence:
+  - packages/document-db/src/store.ts
+  - apps/api/src/common/replica-reads.interceptor.ts
+  - apps/api/test/read-replicas.e2e.test.ts
+  - packages/document-db/test/store.test.ts
+  - docs/READ_REPLICAS.md
 
 ### PERF-012 — Efficient search
 

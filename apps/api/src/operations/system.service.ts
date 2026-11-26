@@ -42,7 +42,7 @@ export class SystemService {
   ) {}
 
   private database() {
-    return databaseStatus(this.documents);
+    return databaseStatus(this.documents, { mode: this.config.MONGODB_REPLICA_READS, maxStalenessSeconds: this.config.MONGODB_REPLICA_MAX_STALENESS_SECONDS });
   }
 
   /**
@@ -113,6 +113,7 @@ export class SystemService {
     const problems = [
       database.status === 'DOWN' ? 'The database is not answering' : null,
       database.status === 'SLOW' ? 'The database is slow to answer' : null,
+      database.replicaReads.mode === 'reports' && database.replicaReads.secondaries === 0 ? 'Report reads are set to use replicas, but the database has no secondary member: they go to the primary' : null,
       database.unfinishedMigrations ? `${database.unfinishedMigrations} database migration${database.unfinishedMigrations === 1 ? ' has' : 's have'} not finished` : null,
       ...runners.filter((r) => r.state === 'FAILING' || r.state === 'LATE').map((r) => `${r.name} is ${r.state === 'FAILING' ? 'failing' : 'late'}`),
       this.config.NODE_ENV === 'production' && !this.config.HTTPS_ONLY ? 'Requests are accepted without HTTPS (set HTTPS_ONLY=true)' : null,

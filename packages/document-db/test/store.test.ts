@@ -346,3 +346,47 @@ describe('upserts', () => {
     expect(await as({ orgId: ORG_A }, () => store.collection(accounts).count({ code: '8000' }))).toBe(0);
   });
 });
+
+describe('reads from replicas (PERF-011)', () => {
+  it('sends reads inside fromReplica to a secondary when allowed, and everything else to the primary', async () => {
+    const replicas = new DocumentStore({ url: URL, dbName: DB, collections: ALL, context: () => ctxStore.getStore() ?? {}, replicaReads: { maxStalenessSeconds: 120 } });
+    await replicas.connect();
+    const seen: { name: string; pref: unknown }[] = [];
+    const stop = replicas.onCommandStarted((e) => {
+      if (['find', 'aggregate', 'count', 'distinct', 'insert'].includes(e.commandName)) seen.push({ name: e.commandName, pref: (e.command as { $readPreference?: unknown }).$readPreference });
+    });
+    try {
+      await as({ orgId: ORG_A }, async () => {
+        const c = replicas.collection(accounts);
+        await c.insertOne({ code: '9100', name: 'Replica test' });
+        // A one-member replica set has no secondary: the read falls back to the primary and still answers.
+        expect(await replicas.fromReplica(() => c.findOne({ code: '9100' }))).toMatchObject({ name: 'Replica test' });
+        await replicas.fromReplica(() => c.aggregate([{ $match: { code: '9100' } }]));
+        await replicas.fromReplica(() => c.count({ code: '9100' }));
+        await replicas.fromReplica(() => c.distinct('code'));
+        // Inside a transaction, and outside fromReplica, reads stay on the primary.
+        await replicas.fromReplica(() => replicas.transaction(() => c.findOne({ code: '9100' })));
+        await c.findOne({ code: '9100' });
+        expect(replicas.fromReplica(() => replicas.readsFromReplica())).toBe(true);
+        expect(replicas.readsFromReplica()).toBe(false);
+      });
+    } finally {
+      stop();
+      await replicas.close();
+    }
+    const secondary = { mode: 'secondaryPreferred', maxStalenessSeconds: 120 };
+    expect(seen.map((s) => [s.name, s.pref])).toEqual([
+      ['insert', undefined],
+      ['find', secondary],
+      ['aggregate', secondary],
+      ['aggregate', secondary], // countDocuments is an aggregation
+      ['distinct', secondary],
+      ['find', undefined],
+      ['find', undefined],
+    ]);
+  });
+
+  it('refuses a staleness MongoDB would not accept', () => {
+    expect(() => new DocumentStore({ url: URL, dbName: DB, collections: ALL, context: () => ({}), replicaReads: { maxStalenessSeconds: 30 } })).toThrow(/at least 90/);
+  });
+});

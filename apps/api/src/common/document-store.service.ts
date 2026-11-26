@@ -33,6 +33,7 @@ export const documentStoreProvider: Provider = {
       url: config.MONGODB_URL,
       collections: COLLECTIONS,
       cache: config.READ_CACHE === 'on' ? { collections: READ_CACHE_COLLECTIONS } : undefined,
+      replicaReads: config.MONGODB_REPLICA_READS === 'off' ? undefined : { maxStalenessSeconds: config.MONGODB_REPLICA_MAX_STALENESS_SECONDS },
       context: () => {
         const ctx = currentTenantContext();
         return { orgId: ctx.orgId, bypass: ctx.bypass };

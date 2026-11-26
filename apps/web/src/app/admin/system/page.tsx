@@ -75,6 +75,9 @@ export default function SystemHealthPage() {
                 <dt className="text-fg-muted">MongoDB</dt><dd className="font-mono">{d.database.mongodb ?? '—'}</dd>
                 <dt className="text-fg-muted">Size</dt><dd>{d.database.sizeBytes !== null ? bytes(d.database.sizeBytes) : '—'}</dd>
                 <dt className="text-fg-muted">Connections</dt><dd>{d.database.connections ?? '—'} of {d.database.maxConnections ?? '—'}</dd>
+                <dt className="text-fg-muted">Replica members</dt><dd>{d.database.replicaReads.secondaries ?? '—'}</dd>
+                <dt className="text-fg-muted">Report reads</dt>
+                <dd>{d.database.replicaReads.mode === 'reports' ? `From a replica, at most ${d.database.replicaReads.maxStalenessSeconds} s behind (primary when none is)` : 'From the primary'}</dd>
                 <dt className="text-fg-muted">Last migration</dt><dd className="break-all font-mono text-xs">{d.database.lastMigration ? `${d.database.lastMigration.name}${d.database.lastMigration.at ? ` · ${dateTime(d.database.lastMigration.at)}` : ''}` : '—'}</dd>
               </dl>
             </Card>
