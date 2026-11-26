@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit, Provider } from '@nestjs/common';
+import { Injectable, OnApplicationShutdown, OnModuleInit, Provider } from '@nestjs/common';
 import { DocumentStore } from '@talk2tax/document-db';
 import { AppConfig, CONFIG } from '../config';
 import { COLLECTIONS } from '../db/collections';
@@ -10,11 +10,12 @@ import { currentTenantContext } from './tenant-context';
  * query that escapes its request sees nothing and is refused. See docs/MONGODB.md.
  */
 @Injectable()
-export class DocumentStoreService extends DocumentStore implements OnModuleInit, OnModuleDestroy {
+export class DocumentStoreService extends DocumentStore implements OnModuleInit, OnApplicationShutdown {
   async onModuleInit(): Promise<void> {
     await this.connect();
   }
-  async onModuleDestroy(): Promise<void> {
+  /** Closed last, after every service has finished its own shutdown work (which may still write). */
+  async onApplicationShutdown(): Promise<void> {
     await this.close();
   }
 }

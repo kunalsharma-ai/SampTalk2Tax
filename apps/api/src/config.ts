@@ -32,6 +32,13 @@ const schema = z.object({
   /** The read cache for what every request looks up (PERF-010): on unless set to off. */
   READ_CACHE: z.enum(['on', 'off']).default('on'),
   /**
+   * Horizontal scaling (PERF-008). Where rate-limit counts are kept: 'memory' counts on each server
+   * (fine for one server), 'database' shares them through MongoDB so the limits hold across every
+   * server. How often each server says it is running, for System health's list of servers.
+   */
+  RATE_LIMIT_STORE: z.enum(['memory', 'database']).default('memory'),
+  API_INSTANCE_HEARTBEAT_SECONDS: z.coerce.number().int().min(5).max(300).default(30),
+  /**
    * Read replicas (PERF-011). 'reports': report pages (GET /v1/orgs/:orgId/reports/...) read from
    * a secondary member at most MONGODB_REPLICA_MAX_STALENESS_SECONDS behind (90 or more, MongoDB's
    * minimum), or the primary when none is. Sign-in checks and every write stay on the primary.

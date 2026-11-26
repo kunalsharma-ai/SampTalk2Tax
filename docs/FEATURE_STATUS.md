@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 504 |
+| Not started | 503 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 763 |
+| Tested | 764 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 4 | 17 |
+| Performance and scalability | M9 | 21 | 3 | 18 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10236,6 +10236,18 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/data-region.tsx
   - apps/web/e2e/regional-deployment-flow.test.mjs
   - docs/REGIONAL_DEPLOYMENT.md
+
+### PERF-008 — Horizontal scaling
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Several API servers on one database: RATE_LIMIT_STORE=database shares rate-limit windows (atomic upsert, TTL); api_instances lists running servers in System health with problems for per-server rate limits and mixed versions; DB closes last on shutdown.
+- Evidence:
+  - apps/api/src/operations/api-instances.service.ts
+  - apps/api/src/auth/rate-limit.ts
+  - apps/api/test/horizontal-scaling.e2e.test.ts
+  - apps/api/test/workflow-recovery.e2e.test.ts
+  - docs/HORIZONTAL_SCALING.md
 
 ### PERF-010 — Caching
 
