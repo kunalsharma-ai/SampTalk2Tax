@@ -29,6 +29,8 @@ const schema = z.object({
   LOGIN_LOCK_MINUTES: z.coerce.number().int().positive().default(15),
   /** Requests per minute per client IP on sign-in, register and refresh. */
   RATE_LIMIT_AUTH_PER_MINUTE: z.coerce.number().int().positive().default(20),
+  /** The read cache for what every request looks up (PERF-010): on unless set to off. */
+  READ_CACHE: z.enum(['on', 'off']).default('on'),
   /** Requests per minute per signed-in user (or per IP when signed out) on everything else. */
   RATE_LIMIT_API_PER_MINUTE: z.coerce.number().int().positive().default(600),
   /**

@@ -34323,9 +34323,13 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/document-db/src/read-cache.ts",
+        "apps/api/test/read-cache.e2e.test.ts",
+        "docs/READ_CACHE.md"
+      ],
+      "notes": "Caches the auth guard's per-request lookups only; emptied by this process's writes and a change stream. Reads p95 about a third faster on the dev container; posting unchanged."
     },
     {
       "id": "PERF-011",

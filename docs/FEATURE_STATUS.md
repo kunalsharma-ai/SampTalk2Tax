@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 510 |
+| Not started | 509 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 757 |
+| Tested | 758 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -60,7 +60,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Subscription and monetization engine | M9 | 32 | 2 | 30 |
 | Platform super admin | M9 | 22 | 5 | 17 |
 | Mobile experience | M8 | 16 | 14 | 2 |
-| Performance and scalability | M9 | 21 | 10 | 11 |
+| Performance and scalability | M9 | 21 | 9 | 12 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
 | Demonstration data | M1 | 21 | 19 | 2 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
@@ -10224,6 +10224,16 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/data-region.tsx
   - apps/web/e2e/regional-deployment-flow.test.mjs
   - docs/REGIONAL_DEPLOYMENT.md
+
+### PERF-010 — Caching
+
+- Module: Performance and scalability
+- Status: **Tested**
+- Notes: Caches the auth guard's per-request lookups only; emptied by this process's writes and a change stream. Reads p95 about a third faster on the dev container; posting unchanged.
+- Evidence:
+  - packages/document-db/src/read-cache.ts
+  - apps/api/test/read-cache.e2e.test.ts
+  - docs/READ_CACHE.md
 
 ### PERF-014 — Establish measurable performance budgets
 

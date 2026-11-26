@@ -134,16 +134,19 @@ export class AuthGuard implements CanActivate {
   private async membershipOf(orgId: string, userId: string) {
     // The three reads go out together (PERF-010); for someone who is not a member, the
     // organisation's are discarded unseen.
+    // All three come from the read cache when it holds them (PERF-010, docs/READ_CACHE.md).
     const [m, org, subscription] = await Promise.all([
-      runInOrg(orgId, () => this.store.collection(memberships).findOne({ userId })),
-      this.store.collection(organizations).findById(orgId),
+      this.store.cached(`membership:${orgId}:${userId}`, ['memberships'], () => runInOrg(orgId, () => this.store.collection(memberships).findOne({ userId }))),
+      this.store.cached(`organization:${orgId}`, ['organizations'], () => this.store.collection(organizations).findById(orgId)),
       // The request is not inside the organisation yet, so this read is the system's. A plain read,
-      // not a transaction: every request makes it, and a transaction costs extra round trips (PERF-010).
-      runAsSystem(() =>
-        this.prisma.subscription.findUnique({
-          where: { orgId },
-          select: { status: true, trialEndsAt: true, currentPeriodEnd: true, addOns: true, plan: { select: { name: true, features: true } } },
-        }),
+      // not a transaction: every request makes it, and a transaction costs extra round trips.
+      this.store.cached(`subscription:${orgId}`, ['subscriptions', 'plans'], () =>
+        runAsSystem(() =>
+          this.prisma.subscription.findUnique({
+            where: { orgId },
+            select: { status: true, trialEndsAt: true, currentPeriodEnd: true, addOns: true, plan: { select: { name: true, features: true } } },
+          }),
+        ),
       ),
     ]);
     if (!m || !org) return null;

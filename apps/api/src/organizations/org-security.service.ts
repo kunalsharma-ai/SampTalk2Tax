@@ -34,8 +34,9 @@ export class OrgSecurityService {
 
   /** Refuses a member who lacks two-step sign-in in an organisation that requires it. */
   async assertAllowed(orgId: string, userId: string): Promise<void> {
-    if (!(await this.requiring([orgId])).has(orgId)) return;
-    if (await this.userHasTwoStep(userId)) return;
+    // Every request of the organisation asks, so both answers come from the read cache (PERF-010).
+    if (!(await this.store.cached(`requires-two-step:${orgId}`, ['org_security_settings'], async () => (await this.requiring([orgId])).has(orgId)))) return;
+    if (await this.store.cached(`has-two-step:${userId}`, ['user_mfa'], () => this.userHasTwoStep(userId))) return;
     throw new ForbiddenException({ error: 'MFA_REQUIRED', message: 'This organisation requires two-step sign-in. Turn it on under Account, then open the organisation again.' });
   }
 
