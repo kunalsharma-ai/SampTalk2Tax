@@ -28,7 +28,12 @@ export default function TwinPage() {
       <PageHeader
         title="Digital twin"
         description="What-if scenarios played forward from your actual books. Hypothetical only: nothing is posted to the ledger."
-        actions={<Link href={`${base}/new`}><Button>{manage ? 'New scenario' : 'Try a scenario'}</Button></Link>}
+        actions={
+          <div className="flex gap-2">
+            <Link href={`${base}/surface`}><Button variant="secondary">Scenario surface</Button></Link>
+            <Link href={`${base}/new`}><Button>{manage ? 'New scenario' : 'Try a scenario'}</Button></Link>
+          </div>
+        }
       />
       <ErrorAlert title="Could not load scenarios" error={list.error} />
       <Card className="mb-4">

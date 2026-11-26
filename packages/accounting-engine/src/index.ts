@@ -169,3 +169,4 @@ export * from './portal-dashboard';
 export * from './report-studio';
 export * from './ai-work-lanes';
 export * from './cash-flow-network';
+export * from './scenario-surface';
