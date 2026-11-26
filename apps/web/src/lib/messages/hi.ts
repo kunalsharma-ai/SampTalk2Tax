@@ -223,6 +223,7 @@ export const hi: Record<string, string> = {
   'Single sign-on': 'सिंगल साइन-ऑन',
   'Access rules': 'पहुँच नियम',
   'AI activity': 'AI गतिविधि',
+  'AI performance': 'AI प्रदर्शन',
   'Team and roles': 'टीम और भूमिकाएँ',
   Integrations: 'इंटीग्रेशन',
   'Payment gateways': 'भुगतान गेटवे',

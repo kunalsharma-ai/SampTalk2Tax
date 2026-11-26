@@ -15,6 +15,7 @@ const ListQuery = z
     before: z.iso.datetime().optional(),
   })
   .strict();
+const PerformanceQuery = z.object({ days: z.coerce.number().pipe(z.union([z.literal(7), z.literal(30), z.literal(90)])).default(30) }).strict();
 
 @ApiTags('ai')
 @ApiBearerAuth()
@@ -27,5 +28,12 @@ export class AiDecisionsController {
   @RequirePermission('audit.read')
   list(@Query(new ZodPipe(ListQuery)) q: z.infer<typeof ListQuery>) {
     return this.decisions.list(q);
+  }
+
+  /** How the AI performed over the last 7, 30 or 90 days (PERF-020): calls, failures, time taken and tokens, per agent and per day. */
+  @Get('performance')
+  @RequirePermission('audit.read')
+  performance(@Query(new ZodPipe(PerformanceQuery)) q: z.infer<typeof PerformanceQuery>) {
+    return this.decisions.performance(q.days);
   }
 }

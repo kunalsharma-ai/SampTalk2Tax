@@ -10382,6 +10382,16 @@
         "docs/BACKGROUND_JOBS.md"
       ],
       "notes": "PDF bills are read in the background: upload answers 202 QUEUED, a worker takes each reading with a lease (once across servers), retries up to 3 times, FAILED with a reason; pages poll until read. Pasted text stays synchronous."
+    },
+    "PERF-020": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/ai-performance.ts",
+        "apps/api/test/ai-performance.e2e.test.ts",
+        "apps/web/e2e/ai-performance-flow.test.mjs",
+        "docs/AI_PERFORMANCE.md"
+      ],
+      "notes": "Governance → AI performance: calls, failures and why, median/p95/slowest time, tokens and answers cut short, per assistant and per day over 7/30/90 days, from the AI decision records (figures only, audit.read)."
     }
   }
 }
