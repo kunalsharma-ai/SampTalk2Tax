@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shell';
 import { bytes } from '@/components/usage-meter';
 import { api } from '@/lib/api';
 import { dateTime } from '@/lib/format';
-import { AiWork, duration, Runner, Secrets, SystemHealth, Transport } from '@/lib/operations';
+import { AiWork, ApiServer, duration, Runner, Secrets, SystemHealth, Transport } from '@/lib/operations';
 
 const STATUS = { OK: { label: 'Healthy', tone: 'positive' }, DEGRADED: { label: 'Needs attention', tone: 'warning' }, DOWN: { label: 'Down', tone: 'negative' } } as const;
 const RUNNER: Record<Runner['state'], { label: string; tone: 'positive' | 'neutral' | 'warning' | 'negative' }> = {
@@ -86,6 +86,7 @@ export default function SystemHealthPage() {
           <EncryptionInTransit t={d.transport} />
           {d.secrets ? <ServerSecrets s={d.secrets} /> : null}
 
+          <ApiServers servers={d.servers} />
           <AiWorkLanes a={d.ai} />
 
           <Card className="mb-6" aria-label="Background runners">
@@ -233,6 +234,49 @@ function AiWorkLanes({ a }: { a: AiWork }) {
         </tbody>
       </Table>
       <p className="px-5 py-3 text-xs text-fg-muted">{`${a.organisationsRunning} organisation${a.organisationsRunning === 1 ? '' : 's'} running AI calls now.`}</p>
+    </Card>
+  );
+}
+
+/** Horizontal scaling (PERF-008): every API server seen running in the last few heartbeats. */
+function ApiServers({ servers }: { servers: ApiServer[] }) {
+  return (
+    <Card className="mb-6" role="region" aria-label="API servers">
+      <CardHeader
+        title="API servers"
+        description={`${servers.length} API server${servers.length === 1 ? '' : 's'} running on this database. Sign-ins, background work and leases are shared by all of them; with more than one, rate limits must be counted in the database (RATE_LIMIT_STORE=database).`}
+      />
+      <Table aria-label="Running API servers">
+        <thead>
+          <tr>
+            <Th>Server</Th>
+            <Th>Version</Th>
+            <Th>Region</Th>
+            <Th>Rate limits</Th>
+            <Th>Started</Th>
+            <Th>Last seen</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {servers.map((s) => (
+            <Tr key={`${s.host}-${s.pid}-${s.startedAt}`}>
+              <Td>
+                <span className="font-mono text-xs">{`${s.host} · ${s.pid}`}</span>
+                {s.current ? (
+                  <Badge tone="accent" className="ml-2">
+                    This server
+                  </Badge>
+                ) : null}
+              </Td>
+              <Td className="font-mono text-xs">{s.commit ? `${s.version} · ${s.commit.slice(0, 7)}` : s.version}</Td>
+              <Td>{s.region}</Td>
+              <Td>{s.rateLimitStore === 'database' ? 'Shared (database)' : 'This server only'}</Td>
+              <Td className="whitespace-nowrap text-sm">{dateTime(s.startedAt)}</Td>
+              <Td className="whitespace-nowrap text-sm">{dateTime(s.lastSeenAt)}</Td>
+            </Tr>
+          ))}
+        </tbody>
+      </Table>
     </Card>
   );
 }

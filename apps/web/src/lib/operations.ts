@@ -33,11 +33,24 @@ export interface SystemHealth {
   database: { status: 'OK' | 'SLOW' | 'DOWN'; latencyMs: number | null; sizeBytes: number | null; connections: number | null; maxConnections: number | null; mongodb: string | null; lastMigration: { name: string; at: string | null } | null; unfinishedMigrations: number | null; replicaReads: { mode: 'off' | 'reports'; maxStalenessSeconds: number; secondaries: number | null }; error?: string };
   runners: Runner[];
   ai: AiWork;
+  servers: ApiServer[];
   requests: { windowMinutes: number; since: string; totals: RouteStat; minutes: { at: string; requests: number; serverErrors: number; p95Ms: number | null }[]; routes: (RouteStat & { route: string })[] };
   errors: { open: number | null; lastHour: number | null };
   maintenance: (MaintenanceStatus & { id: string }) | null;
   transport: Transport;
   secrets?: Secrets;
+}
+/** Horizontal scaling (PERF-008): an API server seen running recently. */
+export interface ApiServer {
+  host: string;
+  pid: number;
+  version: string;
+  commit: string | null;
+  region: string;
+  rateLimitStore: 'memory' | 'database';
+  startedAt: string;
+  lastSeenAt: string;
+  current: boolean;
 }
 /** AI workload isolation (PERF-005): this server's AI lanes, now and since it started. */
 export interface AiLaneStatus {

@@ -34285,9 +34285,15 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "apps/api/src/operations/api-instances.service.ts",
+        "apps/api/src/auth/rate-limit.ts",
+        "apps/api/test/horizontal-scaling.e2e.test.ts",
+        "apps/api/test/workflow-recovery.e2e.test.ts",
+        "docs/HORIZONTAL_SCALING.md"
+      ],
+      "notes": "Several API servers on one database: RATE_LIMIT_STORE=database shares rate-limit windows (atomic upsert, TTL); api_instances lists running servers in System health with problems for per-server rate limits and mixed versions; DB closes last on shutdown."
     },
     {
       "id": "PERF-009",

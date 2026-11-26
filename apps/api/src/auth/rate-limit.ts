@@ -1,7 +1,8 @@
-import { CanActivate, ExecutionContext, HttpException, HttpStatus, Inject, Injectable, OnModuleDestroy, SetMetadata } from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpException, HttpStatus, Inject, Injectable, Logger, OnModuleDestroy, SetMetadata } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import { AppConfig, CONFIG } from '../config';
+import { DocumentStoreService } from '../common/document-store.service';
 import { TokensService } from './tokens.service';
 
 export const RATE_LIMIT_BUCKET = 'talk2tax:rateLimitBucket';
@@ -19,9 +20,9 @@ interface Window {
 
 /**
  * Fixed one-minute windows held in memory. Each API process counts on its own, so with
- * N instances the effective limit is N times the setting; a shared store (Redis) would
- * be needed to make it exact. Login lockout (LoginThrottleService) is in PostgreSQL and
- * does not have this gap.
+ * N servers the effective limit is N times the setting: RATE_LIMIT_STORE=database shares the
+ * counts through MongoDB instead (PERF-008). Login lockout (LoginThrottleService) is in the
+ * database either way.
  */
 export class FixedWindowCounter {
   private readonly windows = new Map<string, Window>();
@@ -49,13 +50,16 @@ export class FixedWindowCounter {
  */
 @Injectable()
 export class RateLimitGuard implements CanActivate, OnModuleDestroy {
+  private readonly log = new Logger('RateLimit');
   private readonly counter = new FixedWindowCounter();
   private readonly timer: NodeJS.Timeout;
+  private warnedAt = 0;
 
   constructor(
     private readonly reflector: Reflector,
     private readonly tokens: TokensService,
     @Inject(CONFIG) private readonly config: AppConfig,
+    private readonly store: DocumentStoreService,
   ) {
     this.timer = setInterval(() => this.counter.sweep(), WINDOW_MS);
     this.timer.unref();
@@ -82,7 +86,7 @@ export class RateLimitGuard implements CanActivate, OnModuleDestroy {
       key = claims ? `api:user:${claims.userId}` : `api:ip:${ip}`;
       limit = this.config.RATE_LIMIT_API_PER_MINUTE;
     }
-    const { count, resetMs } = this.counter.hit(key);
+    const { count, resetMs } = await this.hit(key);
     const resetSeconds = Math.max(1, Math.ceil(resetMs / 1000));
     res.setHeader('RateLimit-Limit', String(limit));
     res.setHeader('RateLimit-Remaining', String(Math.max(0, limit - count)));
@@ -92,5 +96,23 @@ export class RateLimitGuard implements CanActivate, OnModuleDestroy {
       throw new HttpException({ error: 'RATE_LIMITED', message: `Too many requests. Try again in ${resetSeconds} seconds.` }, HttpStatus.TOO_MANY_REQUESTS);
     }
     return true;
+  }
+
+  /**
+   * Counts the request: in the database when RATE_LIMIT_STORE=database, so every server shares
+   * the count (PERF-008). If the database cannot be reached the count falls back to this server's
+   * own, so a database outage never turns every request away.
+   */
+  private async hit(key: string): Promise<{ count: number; resetMs: number }> {
+    if (this.config.RATE_LIMIT_STORE !== 'database') return this.counter.hit(key);
+    try {
+      return await this.store.hitWindow(key, WINDOW_MS);
+    } catch (e) {
+      if (Date.now() - this.warnedAt > WINDOW_MS) {
+        this.warnedAt = Date.now();
+        this.log.warn(`Shared rate limits are unavailable, counting on this server: ${(e as Error).message}`);
+      }
+      return this.counter.hit(key);
+    }
   }
 }

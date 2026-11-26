@@ -390,3 +390,21 @@ describe('reads from replicas (PERF-011)', () => {
     expect(() => new DocumentStore({ url: URL, dbName: DB, collections: ALL, context: () => ({}), replicaReads: { maxStalenessSeconds: 30 } })).toThrow(/at least 90/);
   });
 });
+
+describe('shared rate windows (PERF-008)', () => {
+  it('counts hits from every process in one window, and starts again in the next', async () => {
+    const other = new DocumentStore({ url: URL, dbName: DB, collections: ALL, context: () => ({}) });
+    await other.connect();
+    try {
+      const t = 1_800_000_000_000; // a whole minute
+      expect(await store.hitWindow('ip:1', 60_000, t + 1000)).toEqual({ count: 1, resetMs: 59_000 });
+      expect((await other.hitWindow('ip:1', 60_000, t + 2000)).count).toBe(2);
+      expect((await store.hitWindow('ip:2', 60_000, t + 3000)).count).toBe(1);
+      expect((await other.hitWindow('ip:1', 60_000, t + 60_000)).count).toBe(1);
+      const doc = await raw.db(DB).collection('_rate_windows').findOne({ _id: `ip:1@${t}` as never });
+      expect(doc).toMatchObject({ n: 2, expiresAt: new Date(t + 120_000) });
+    } finally {
+      await other.close();
+    }
+  });
+});

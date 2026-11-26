@@ -211,6 +211,20 @@ export class DocumentStore {
   }
 
   /**
+   * Counts one hit on `key` in the current fixed window of `windowMs` (windows start on whole
+   * multiples of it), shared by every process on this database: the count after this hit, and the
+   * time left in the window. Outside any transaction; old windows are removed by a TTL index on
+   * `_rate_windows.expiresAt` (PERF-008).
+   */
+  async hitWindow(key: string, windowMs: number, now = Date.now()): Promise<{ count: number; resetMs: number }> {
+    const start = Math.floor(now / windowMs) * windowMs;
+    const doc = await this.db()
+      .collection<{ _id: string; n: number; expiresAt: Date }>('_rate_windows')
+      .findOneAndUpdate({ _id: `${key}@${start}` }, { $inc: { n: 1 }, $setOnInsert: { expiresAt: new Date(start + 2 * windowMs) } }, { upsert: true, returnDocument: 'after' });
+    return { count: doc?.n ?? 1, resetMs: start + windowMs - now };
+  }
+
+  /**
    * Takes a named lock for the rest of the current transaction by writing its document in
    * `_row_locks`. A second transaction that takes the same lock before the first ends fails
    * with a write conflict and runs again, so the two take turns.

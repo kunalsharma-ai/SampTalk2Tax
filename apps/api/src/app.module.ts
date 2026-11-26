@@ -142,6 +142,7 @@ import { SupportService } from './support/support.service';
 import { PlatformUsageController, UsageController } from './usage/usage.controller';
 import { UsageService } from './usage/usage.service';
 import { AiWorkPoolService } from './ai-work/ai-work-pool.service';
+import { ApiInstancesService } from './operations/api-instances.service';
 import { SupportAccessService } from './support/support-access.service';
 import { BillingController } from './billing/billing.controller';
 import { BillingService } from './billing/billing.service';
@@ -642,6 +643,7 @@ export class AppModule {
         SupportAccessService,
         UsageService,
         AiWorkPoolService,
+        ApiInstancesService,
         BillingService,
         PlatformBillingService,
         PaymentSettingsService,
