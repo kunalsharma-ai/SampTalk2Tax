@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { COMMON_TIME_ZONES, DISPLAY_DATE_FORMATS, displayDate, displayDateTime, displayMoney, LANGUAGES, NUMBER_FORMATS, timeZoneLabel, type DisplayDateFormat, type Language, type NumberFormat } from '@talk2tax/accounting-engine';
+import { COMMON_TIME_ZONES, DISPLAY_DATE_FORMATS, displayDate, displayDateTime, displayMoney, LANGUAGES, MOTION_PREFERENCES, NUMBER_FORMATS, timeZoneLabel, type DisplayDateFormat, type Language, type MotionPreference, type NumberFormat } from '@talk2tax/accounting-engine';
 import { Button, Card, CardHeader, Field, Select } from '@talk2tax/ui';
 import { useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
@@ -26,14 +26,15 @@ export function PreferencesCard() {
   const [numberFormat, setNumberFormat] = useState<NumberFormat>(preferences.numberFormat);
   const [dateFormat, setDateFormat] = useState<DisplayDateFormat>(preferences.dateFormat);
   const [timeZone, setTimeZone] = useState<string>(preferences.timeZone ?? '');
+  const [motion, setMotion] = useState<MotionPreference>(preferences.motion ?? 'SYSTEM');
   const save = useMutation({
-    mutationFn: () => api<Preferences>('/v1/auth/me/preferences', { method: 'PUT', body: { language, numberFormat, dateFormat, timeZone: timeZone || null } }),
+    mutationFn: () => api<Preferences>('/v1/auth/me/preferences', { method: 'PUT', body: { language, numberFormat, dateFormat, timeZone: timeZone || null, motion } }),
     // The whole app re-renders in the new language and formats.
     onSuccess: () => qc.invalidateQueries({ queryKey: ['me'] }),
   });
   const currency = org?.functionalCurrency ?? 'INR';
   const zone = timeZone || org?.timeZone || 'Asia/Kolkata';
-  const changed = language !== preferences.language || numberFormat !== preferences.numberFormat || dateFormat !== preferences.dateFormat || (timeZone || null) !== preferences.timeZone;
+  const changed = language !== preferences.language || numberFormat !== preferences.numberFormat || dateFormat !== preferences.dateFormat || (timeZone || null) !== preferences.timeZone || motion !== (preferences.motion ?? 'SYSTEM');
   let sample = '';
   try {
     sample = `${displayMoney(SAMPLE_AMOUNT, currency, numberFormat)} · ${displayDate(SAMPLE_DATE, dateFormat, language)} · ${displayDateTime(new Date(), { dateFormat, timeZone: zone, language })}`;
@@ -79,7 +80,14 @@ export function PreferencesCard() {
             </Select>
           )}
         </Field>
-        <p className="text-sm text-fg-muted sm:col-span-2 xl:col-span-3" data-testid="preferences-preview">
+        <Field label={t('Motion')} hint={t('Pages fading in, charts growing and 3D views gliding. Keep still to have every change happen at once.')}>
+          {(p) => (
+            <Select {...p} value={motion} onChange={(e) => setMotion(e.target.value as MotionPreference)}>
+              {MOTION_PREFERENCES.map((m) => <option key={m.code} value={m.code}>{t(m.label)}</option>)}
+            </Select>
+          )}
+        </Field>
+        <p className="text-sm text-fg-muted sm:col-span-2 xl:col-span-2" data-testid="preferences-preview">
           <span className="font-medium text-fg">{t('Preview')}:</span> <span className="num">{sample}</span>
         </p>
         <div className="flex items-center justify-end gap-3">

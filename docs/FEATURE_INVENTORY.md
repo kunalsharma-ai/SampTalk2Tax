@@ -972,7 +972,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-035 | Advanced Visualization | capability | Department performance visualizations | Tested |
 | DASH-036 | Advanced Visualization | capability | Risk monitoring displays | Tested |
 | DASH-037 | Advanced Visualization | capability | Financial dependency graphs | Tested |
-| DASH-038 | Advanced Visualization | rule | Support animated transitions and motion-responsive interactions | Not started |
+| DASH-038 | Advanced Visualization | rule | Support animated transitions and motion-responsive interactions | Tested |
 | DASH-039 | Advanced Visualization | rule | Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering | Tested |
 | DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Tested |
 | DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Implemented |

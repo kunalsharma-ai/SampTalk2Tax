@@ -76,7 +76,7 @@ test('a person reads Talk2Tax in Hindi with their own formats, and the organisat
   await page.getByRole('link', { name: 'खाता', exact: true }).waitFor();
   await page.getByRole('button', { name: 'साइन आउट' }).waitFor();
   const me = (await call('/v1/auth/me')).body.preferences;
-  assert.deepEqual(me, { language: 'hi', numberFormat: 'INTL', dateFormat: 'YMD', timeZone: 'Europe/London' });
+  assert.deepEqual(me, { language: 'hi', numberFormat: 'INTL', dateFormat: 'YMD', timeZone: 'Europe/London', motion: 'SYSTEM' });
 
   // Figures and dates follow the person's formats; the amount is the same.
   await nav.getByRole('link', { name: 'इनवॉइस', exact: true }).click();

@@ -140,7 +140,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </p>
         ) : null}
         {org?.isDemo ? <p className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-xs text-warning sm:hidden">{t('Synthetic demo data')}</p> : null}
-        <main id="main" key={org?.timeZone ?? ""} className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
+        <main id="main" key={`${org?.timeZone ?? ""}|${pathname}`} className="t2t-page-enter mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
           {isLoading ? <p className="text-sm text-fg-muted">{t('Loading…')}</p> : !org ? <p className="text-sm text-fg-muted">{t('Organisation not found or you do not have access.')}</p> : elsewhere ? <RegionElsewhere orgId={org.id} name={org.name} region={elsewhere} /> : org.twoStep?.required && !org.twoStep.satisfied ? <TwoStepRequired name={org.name} /> : org.accessRefused ? <AccessRefused name={org.name} reason={org.accessRefused} /> : children}
         </main>
       </div>

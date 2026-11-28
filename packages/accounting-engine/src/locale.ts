@@ -38,14 +38,35 @@ export const DISPLAY_DATE_FORMAT_CODES = DISPLAY_DATE_FORMATS.map((f) => f.code)
 
 export const DEFAULT_TIME_ZONE = 'Asia/Kolkata';
 
+/**
+ * How much the interface moves (DASH-038): SYSTEM follows the device's reduced-motion setting,
+ * FULL animates even when the device asks for less, REDUCED keeps everything still (changes
+ * happen at once, nothing loops or glides).
+ */
+export const MOTION_PREFERENCES = [
+  { code: 'SYSTEM', label: 'Follow this device' },
+  { code: 'FULL', label: 'Animate' },
+  { code: 'REDUCED', label: 'Keep still' },
+] as const;
+export type MotionPreference = (typeof MOTION_PREFERENCES)[number]['code'];
+export const MOTION_PREFERENCE_CODES = MOTION_PREFERENCES.map((m) => m.code) as unknown as readonly [MotionPreference, ...MotionPreference[]];
+
+/** Whether to keep the interface still, given the person's choice and whether the device asks for reduced motion. */
+export function motionReduced(preference: MotionPreference | null | undefined, deviceReduces: boolean): boolean {
+  if (preference === 'FULL') return false;
+  if (preference === 'REDUCED') return true;
+  return deviceReduces;
+}
+
 export interface DisplayPreferences {
   language: Language;
   numberFormat: NumberFormat;
   dateFormat: DisplayDateFormat;
   /** IANA time zone moments are shown in. */
   timeZone: string;
+  motion: MotionPreference;
 }
-export const DEFAULT_PREFERENCES: DisplayPreferences = Object.freeze({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: DEFAULT_TIME_ZONE });
+export const DEFAULT_PREFERENCES: DisplayPreferences = Object.freeze({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: DEFAULT_TIME_ZONE, motion: 'SYSTEM' });
 
 /** Whether this runtime knows the IANA time zone (rejects abbreviations such as "IST"). */
 export function isTimeZone(tz: string): boolean {

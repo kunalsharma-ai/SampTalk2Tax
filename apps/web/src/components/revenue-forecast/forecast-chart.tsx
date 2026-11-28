@@ -3,6 +3,7 @@ import { chartSeries } from '@talk2tax/design-system';
 import { Area, Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
 import type { ForecastBand, ForecastMonth } from '@/lib/revenue-forecast';
+import { isMotionReduced } from '@/lib/motion';
 
 const KEYS = [
   ['contracts', 'Contracts'],
@@ -28,7 +29,7 @@ export function ForecastChart({ months, currency, actualSoFar, bands, level }: {
     band: bands?.[i],
     raw: m,
   }));
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   return (
     <div className="h-72 w-full" role="img" aria-label={`Expected revenue by month and stream, with the best case${bands ? ` and the ${bandName} around each month` : ''}. The same figures are in the table below.`}>

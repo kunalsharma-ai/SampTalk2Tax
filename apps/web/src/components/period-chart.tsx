@@ -2,6 +2,7 @@
 import { chartSeries } from '@talk2tax/design-system';
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
+import { isMotionReduced } from '@/lib/motion';
 
 export interface PeriodPoint {
   name: string;
@@ -24,7 +25,7 @@ export function PeriodChart({ data, currency }: { data: PeriodPoint[]; currency:
     closingCash: Number(d.closingCash),
     raw: d,
   }));
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   return (
     <div className="h-72 w-full" role="img" aria-label="Revenue, expenses and closing cash by period. The same figures are in the table below.">

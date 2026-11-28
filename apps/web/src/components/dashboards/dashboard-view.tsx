@@ -6,6 +6,7 @@ import type { DashboardConfig, DashboardData, Metric, SeriesData, WidgetData } f
 import { date, money } from '@/lib/format';
 import { formatChange, formatKpi } from '@/lib/kpis';
 import { monthLabel } from '@/lib/twin';
+import { isMotionReduced } from '@/lib/motion';
 
 const SPAN = { SMALL: 'md:col-span-2', MEDIUM: 'md:col-span-3', LARGE: 'md:col-span-6' } as const;
 
@@ -100,7 +101,7 @@ function Chart({ d, currency, title }: { d: SeriesData; currency: string; title:
   const rows = d.rows.map((r) => ({ label: monthLabel(r.month), ...Object.fromEntries(d.metrics.flatMap((m) => [[m.key, r.values[m.key] === null ? null : Number(r.values[m.key])], [`${m.key}Raw`, r.values[m.key]]])) }));
   const unit = d.metrics[0]!.unit;
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   const common = (
     <>
       <CartesianGrid stroke="var(--t2t-border)" strokeDasharray="3 3" vertical={false} />

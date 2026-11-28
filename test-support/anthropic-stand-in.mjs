@@ -7,6 +7,10 @@
  *   const standIn = await startAnthropicStandIn(4555);
  *   standIn.script.push((body) => ({ content: [{ type: 'text', text: 'Hi' }], stop_reason: 'end_turn' }));
  *   standIn.script.push(() => ({ status: 429, type: 'rate_limit_error', message: 'Slow down' }));
+ *
+ * The API's background runners (the bill reader, for one) may call the model for another test's
+ * organisation at any moment. A test whose script must only answer its own requests sets
+ * `standIn.accept = (body) => ...`; other requests get an error and do not use up the script.
  */
 import { createServer } from 'node:http';
 
@@ -23,6 +27,11 @@ export async function startAnthropicStandIn(port = 0) {
         return;
       }
       const body = JSON.parse(raw || '{}');
+      if (api.accept && !api.accept(body, req.headers)) {
+        res.writeHead(500, { 'content-type': 'application/json', 'x-should-retry': 'false', 'request-id': `req_standin_${++n}` });
+        res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: 'Not a request this test scripted' } }));
+        return;
+      }
       requests.push({ headers: req.headers, body });
       const step = script.shift();
       const out = step ? await step(body, req.headers) : { status: 500, type: 'api_error', message: 'The test did not script this request' };
@@ -68,11 +77,15 @@ export async function startAnthropicStandIn(port = 0) {
       res.end();
     });
   });
-  await new Promise((r) => server.listen(port, '127.0.0.1', r));
-  return {
-    url: `http://127.0.0.1:${server.address().port}`,
+  const api = {
+    url: '',
     requests,
     script,
+    /** Optional filter: requests it rejects are answered with an error and leave the script alone. */
+    accept: null,
     close: () => new Promise((r) => server.close(r)),
   };
+  await new Promise((r) => server.listen(port, '127.0.0.1', r));
+  api.url = `http://127.0.0.1:${server.address().port}`;
+  return api;
 }

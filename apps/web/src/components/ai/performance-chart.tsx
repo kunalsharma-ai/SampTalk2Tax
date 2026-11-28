@@ -2,6 +2,7 @@
 import { chartSeries } from '@talk2tax/design-system';
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { type AiPerformance, duration } from '@/lib/ai-performance';
+import { isMotionReduced } from '@/lib/motion';
 
 /** AI calls per day (answered and failed, stacked) with the 95th percentile time as a line on its own axis. */
 export function AiPerformanceChart({ days }: { days: AiPerformance['days'] }) {
@@ -12,7 +13,7 @@ export function AiPerformanceChart({ days }: { days: AiPerformance['days'] }) {
     p95: d.p95Ms === null ? null : d.p95Ms / 1000,
     raw: d,
   }));
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   return (
     <div className="h-64 w-full" role="img" aria-label="AI calls each day, answered and failed, with the time 95 in 100 calls finished within. The same figures are in the table below.">
       <ResponsiveContainer>

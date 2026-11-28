@@ -21,13 +21,13 @@ afterAll(async () => {
 describe('my preferences', () => {
   it('start in English with formats that follow the currency, and the organisation time zone', async () => {
     const me = (await ctx.http().get('/v1/auth/me').set(owner.auth).expect(200)).body;
-    expect(me.preferences).toEqual({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: null });
+    expect(me.preferences).toEqual({ language: 'en', numberFormat: 'AUTO', dateFormat: 'D_MON_Y', timeZone: null, motion: 'SYSTEM' });
     expect(me.organizations[0]).toMatchObject({ id: org.orgId, timeZone: 'Asia/Kolkata' });
   });
 
   it('are saved for me only, and refuse unknown values', async () => {
     const saved = (await ctx.http().put('/v1/auth/me/preferences').set(owner.auth).send({ language: 'hi', numberFormat: 'INTL', dateFormat: 'YMD', timeZone: 'Europe/London' }).expect(200)).body;
-    expect(saved).toEqual({ language: 'hi', numberFormat: 'INTL', dateFormat: 'YMD', timeZone: 'Europe/London' });
+    expect(saved).toEqual({ language: 'hi', numberFormat: 'INTL', dateFormat: 'YMD', timeZone: 'Europe/London', motion: 'SYSTEM' });
     expect((await ctx.http().get('/v1/auth/me').set(owner.auth).expect(200)).body.preferences.language).toBe('hi');
     expect((await ctx.http().get('/v1/auth/me').set(accountant.auth).expect(200)).body.preferences.language).toBe('en');
 

@@ -2,6 +2,7 @@
 import { chartSeries } from '@talk2tax/design-system';
 import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
+import { isMotionReduced } from '@/lib/motion';
 
 export type TimelineSize = 'DAY' | 'WEEK' | 'MONTH';
 export interface TimelineBucket { start: string; end: string; future: boolean; cashIn: string; cashOut: string; net: string; closingCash: string | null; entries: number; bySource: { source: string; count: number }[]; deadlines: number }
@@ -46,7 +47,7 @@ const fmt = (d: string, opts: Intl.DateTimeFormatOptions) => new Date(`${d}T00:0
 /** A bucket's name: 23 Nov, Week of 17 Nov, or Nov 26. */
 export const bucketLabel = (b: { start: string }, size: TimelineSize) => (size === 'DAY' ? fmt(b.start, { day: 'numeric', month: 'short' }) : size === 'WEEK' ? `Week of ${fmt(b.start, { day: 'numeric', month: 'short' })}` : fmt(b.start, { month: 'short', year: '2-digit' }));
 
-const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = () => isMotionReduced();
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
 const TIP = { background: 'var(--t2t-surface-raised)', border: '1px solid var(--t2t-border)', borderRadius: 10, fontSize: 12 };
 

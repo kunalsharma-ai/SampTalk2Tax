@@ -39,8 +39,8 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     where: 'Overview. Tasks are created by Automations, Alerts and other modules, never by hand on this page.',
   },
   account: {
-    what: 'Your own profile: name, password, language, number and date formats, and your sign-in sessions.',
-    how: 'Change what you need and save. Signing out other sessions ends every sign-in except this one.',
+    what: 'Your own profile: name, password, language, number and date formats, how much the interface moves, and your sign-in sessions.',
+    how: 'Change what you need and save. Motion follows this device unless you choose Animate or Keep still: Keep still makes every change happen at once, with nothing gliding or looping. Signing out other sessions ends every sign-in except this one.',
     where: 'Opened from Account at the top right. These settings are yours alone and do not change the organisation.',
   },
   support: {

@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 494 |
+| Not started | 493 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 773 |
+| Tested | 774 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 0 | 41 |
-| Dashboard design | M1 | 68 | 15 | 53 |
+| Dashboard design | M1 | 68 | 14 | 54 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -7011,6 +7011,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/components/reports/dependency-graph.tsx
   - apps/web/src/app/orgs/[orgId]/reports/dependencies/page.tsx
   - apps/web/e2e/financial-dependencies-flow.test.mjs
+
+### DASH-038 — Support animated transitions and motion-responsive interactions
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Pages fade in, charts grow, 3D landscape and revenue globe glide to new views and the globe coasts after a fling; each person chooses Motion (follow device, animate, keep still), saved on their user record; <html data-motion> stills every animation and transition when reduced, and lets them run on a reduced-motion device when the person chose Animate.
+- Evidence:
+  - packages/accounting-engine/src/locale.ts
+  - packages/accounting-engine/test/motion.test.ts
+  - apps/api/src/auth/auth.controller.ts
+  - apps/api/src/db/migrations/20270320100000_motion_preference.ts
+  - apps/api/test/motion-preference.e2e.test.ts
+  - apps/web/src/lib/motion.ts
+  - apps/web/test/motion.test.ts
+  - apps/web/src/app/globals.css
+  - apps/web/e2e/motion-flow.test.mjs
+  - docs/MOTION.md
 
 ### DASH-039 — Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering
 

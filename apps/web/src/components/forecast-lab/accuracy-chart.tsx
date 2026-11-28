@@ -3,6 +3,7 @@ import { chartSeries } from '@talk2tax/design-system';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
 import { monthName, type SeriesBacktest } from '@/lib/forecast-lab';
+import { isMotionReduced } from '@/lib/motion';
 
 /**
  * Actual figures against what each chosen model forecast one month ahead. Numbers become floats
@@ -19,7 +20,7 @@ export function AccuracyChart({ bt, models, labels, currency }: { bt: SeriesBack
     }
     return row;
   });
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   return (
     <div className="h-72 w-full" role="img" aria-label="Actual figures and one-month-ahead forecasts by month. The same figures are in the table below.">

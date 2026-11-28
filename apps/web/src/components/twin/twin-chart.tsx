@@ -4,6 +4,7 @@ import { Table, Td, Th, Tr } from '@talk2tax/ui';
 import { CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
 import { monthLabel, type TwinMonth } from '@/lib/twin';
+import { isMotionReduced } from '@/lib/motion';
 
 type Series = { name: string; months: TwinMonth[] };
 
@@ -17,7 +18,7 @@ type Series = { name: string; months: TwinMonth[] };
  * already show them month by month.
  */
 export function TwinCashChart({ actual, series, currency, label, withTable }: { actual: { month: string; cash: string }[]; series: Series[]; currency: string; label: string; withTable?: boolean }) {
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   const rows: Record<string, number | string | undefined>[] = actual.map((a) => ({ month: a.month, actual: Number(a.cash), rawActual: a.cash }));
   const last = rows[rows.length - 1];

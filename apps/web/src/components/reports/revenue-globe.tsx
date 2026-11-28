@@ -1,7 +1,8 @@
 'use client';
-import { useRef, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import { money } from '@/lib/format';
 import { bubbleRadius, clampLat, graticule, orthographic, wrapLon, type GlobeView } from '@/lib/globe';
+import { coast } from '@/lib/motion';
 
 export interface GlobePlace {
   key: string;
@@ -63,7 +64,12 @@ export function RevenueGlobe({
   onView: (v: GlobeView) => void;
   selected: string | null;
 }) {
-  const drag = useRef<{ x: number; y: number; view: GlobeView } | null>(null);
+  const drag = useRef<{ x: number; y: number; view: GlobeView; last: { x: number; y: number; t: number }; speed: [number, number] } | null>(null);
+  // A flung globe keeps turning and slows to a stop (not when motion is reduced).
+  const coasting = useRef<() => void>(() => {});
+  const live = useRef(view);
+  live.current = view;
+  useEffect(() => () => coasting.current(), []);
   const placed = d.places.filter((p) => p.lat !== null && p.lon !== null);
   const largest = Math.max(0, ...placed.map((p) => Number(placeAmount(p, month)))); // not money: drawing only
   const step = 2 / view.zoom; // not money: degrees per pixel
@@ -81,16 +87,33 @@ export function RevenueGlobe({
               : null;
     if (next) {
       e.preventDefault();
+      coasting.current();
       onView(next);
     }
   };
   const down = (e: PointerEvent<SVGSVGElement>) => {
-    drag.current = { x: e.clientX, y: e.clientY, view };
+    coasting.current();
+    drag.current = { x: e.clientX, y: e.clientY, view, last: { x: e.clientX, y: e.clientY, t: e.timeStamp }, speed: [0, 0] };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const move = (e: PointerEvent<SVGSVGElement>) => {
     const s = drag.current;
-    if (s) onView({ ...s.view, lon: wrapLon(s.view.lon - (e.clientX - s.x) * step * 0.5), lat: clampLat(s.view.lat + (e.clientY - s.y) * step * 0.5) });
+    if (!s) return;
+    const dt = Math.max(1, e.timeStamp - s.last.t); // not money: milliseconds
+    // Degrees per frame (about 16 ms) at the speed the pointer is moving.
+    s.speed = [(-(e.clientX - s.last.x) * step * 0.5 * 16) / dt, ((e.clientY - s.last.y) * step * 0.5 * 16) / dt]; // not money
+    s.last = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+    onView({ ...s.view, lon: wrapLon(s.view.lon - (e.clientX - s.x) * step * 0.5), lat: clampLat(s.view.lat + (e.clientY - s.y) * step * 0.5) });
+  };
+  const up = (e: PointerEvent<SVGSVGElement>) => {
+    const s = drag.current;
+    drag.current = null;
+    // Only a pointer still moving when let go sets the globe coasting.
+    if (!s || e.timeStamp - s.last.t > 80) return;
+    coasting.current = coast(s.speed, ([dlon, dlat]) => {
+      const v = live.current;
+      onView({ ...v, lon: wrapLon(v.lon + dlon), lat: clampLat(v.lat + dlat) });
+    });
   };
   const bubbles = placed
     .map((p) => ({ p, at: orthographic(p.lat!, p.lon!, view, R, CX, CY), r: bubbleRadius(Number(placeAmount(p, month)), largest) })) // not money: drawing only
@@ -113,7 +136,7 @@ export function RevenueGlobe({
         aria-label={`Revenue by where customers are, ${periodLabel}, as bubbles on a globe, each as large as the revenue earned there. Every figure is in the Revenue by place table.`}
         onPointerDown={down}
         onPointerMove={move}
-        onPointerUp={() => (drag.current = null)}
+        onPointerUp={up}
         onPointerCancel={() => (drag.current = null)}
         style={{ cursor: 'grab' }}
       >

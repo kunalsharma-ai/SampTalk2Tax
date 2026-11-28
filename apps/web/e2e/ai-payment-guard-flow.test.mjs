@@ -72,6 +72,9 @@ test('the assistant prepares a draft batch that someone else must approve', asyn
   consoleErrors.length = 0;
 
   await owner.goto(`${WEB}/orgs/${orgId}/copilot`);
+  // Only the copilot's own requests (which offer it the payment tools) use up the script; a
+  // background runner calling the model for another organisation gets an error instead.
+  standIn.accept = (body) => Array.isArray(body.tools) && body.tools.some((t) => t.name === 'propose_payment_batch');
   standIn.script.push(
     () => ({ content: [{ type: 'tool_use', id: 'toolu_p1', name: 'list_payable_bills', input: {} }], stop_reason: 'tool_use' }),
     (body) => {

@@ -19,6 +19,8 @@ export interface UserDoc {
   dateFormat: 'D_MON_Y' | 'DMY' | 'MDY' | 'YMD';
   /** IANA time zone; null = the organisation's. */
   timeZone: string | null;
+  /** How much the interface moves (DASH-038); missing = SYSTEM (follow the device). */
+  motion?: 'SYSTEM' | 'FULL' | 'REDUCED';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +42,7 @@ export const users = defineCollection<UserDoc>({
       numberFormat: { enum: ['AUTO', 'IN', 'INTL', 'EU', 'SPACE'] },
       dateFormat: { enum: ['D_MON_Y', 'DMY', 'MDY', 'YMD'] },
       timeZone: { anyOf: [{ bsonType: 'null' }, { bsonType: 'string', pattern: '^[A-Za-z][A-Za-z0-9_+/-]{1,63}$' }] },
+      motion: { enum: ['SYSTEM', 'FULL', 'REDUCED'] },
       createdAt: { bsonType: 'date' },
       updatedAt: { bsonType: 'date' },
     },

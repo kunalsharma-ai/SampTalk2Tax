@@ -1,10 +1,11 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
-import { DEFAULT_PREFERENCES, LANGUAGES, type DisplayDateFormat, type Language, type NumberFormat } from '@talk2tax/accounting-engine';
+import { DEFAULT_PREFERENCES, LANGUAGES, type DisplayDateFormat, type Language, type MotionPreference, type NumberFormat } from '@talk2tax/accounting-engine';
 import { UiTextContext } from '@talk2tax/ui';
 import { createContext, useCallback, useContext, useEffect, type ReactNode } from 'react';
 import { api } from './api';
 import { setDisplayPreferences } from './format';
+import { useMotionSync } from './motion';
 import { hi } from './messages/hi';
 
 /**
@@ -19,6 +20,8 @@ export interface Preferences {
   numberFormat: NumberFormat;
   dateFormat: DisplayDateFormat;
   timeZone: string | null;
+  /** How much the interface moves; older servers leave it out (= follow the device). */
+  motion?: MotionPreference;
 }
 
 export type Translate = (text: string, vars?: Record<string, string | number>) => string;
@@ -46,6 +49,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // Set before the children render, so every formatter in this render uses these preferences.
   setDisplayPreferences(preferences);
   const language = preferences.language;
+  useMotionSync(preferences.motion);
   useEffect(() => {
     document.documentElement.lang = language === 'hi' ? 'hi' : 'en';
     document.documentElement.dir = LANGUAGES.find((l) => l.code === language)?.dir ?? 'ltr';

@@ -11,6 +11,7 @@ import { Money } from '@/components/money';
 import { api } from '@/lib/api';
 import { pctOf, type CustomerInsight } from '@/lib/customer-insights';
 import { date, dateTime, money } from '@/lib/format';
+import { isMotionReduced } from '@/lib/motion';
 
 const RISK_TONE: Record<RiskRating, 'positive' | 'warning' | 'negative' | 'neutral'> = { LOW: 'positive', MEDIUM: 'warning', HIGH: 'negative', VERY_HIGH: 'negative', NO_HISTORY: 'neutral' };
 
@@ -45,7 +46,7 @@ export function Customer360({ orgId, contactId, currency }: { orgId: string; con
   const c = currency;
   const rows = x.months.map((m) => ({ label: monthLabel(m.month), revenue: Number(m.revenue), cost: Number(m.cost), profit: Number(m.profit), raw: m }));
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   const b = x.behaviour;
   return (
     <section className="mt-6" aria-label="Customer 360">

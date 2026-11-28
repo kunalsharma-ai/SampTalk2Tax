@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, CardHeader, Field, Input, Select, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { type FinancialLandscapeData, Landscape3D, type LandscapeView, rowColour } from '@/components/reports/financial-landscape';
@@ -10,6 +10,7 @@ import { monthLabel } from '@/components/reports/financial-visuals';
 import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { today } from '@/lib/format';
+import { shortestTurn, tween } from '@/lib/motion';
 import { useOrg } from '@/lib/org';
 import type { View3D } from '@/lib/surface-3d';
 
@@ -33,6 +34,16 @@ export default function FinancialLandscapePage() {
   const [upTo, setUpTo] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [mark, setMark] = useState<{ row: number; col: number } | null>(null);
+  // Buttons glide the camera to the new view (at once when motion is reduced).
+  const glide = useRef<() => void>(() => {});
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const glideTo = (to: View3D) => {
+    glide.current();
+    const from = viewRef.current;
+    glide.current = tween([from.yaw, from.pitch], [from.yaw + shortestTurn(from.yaw, to.yaw), to.pitch], 600, ([yaw, pitch]) => setView({ yaw, pitch }));
+  };
+  useEffect(() => () => glide.current(), []);
   const q = useQuery({
     queryKey: ['landscape', orgId, from, to, kind],
     queryFn: () => api<FinancialLandscapeData>(`/v1/orgs/${orgId}/reports/landscape?from=${from}&to=${to}&view=${kind}`),
@@ -141,10 +152,10 @@ export default function FinancialLandscapePage() {
                 >
                   {playing ? 'Pause' : 'Play months'}
                 </Button>
-                <Button variant="ghost" onClick={() => setView({ yaw: -30, pitch: 32 })}>
+                <Button variant="ghost" onClick={() => glideTo({ yaw: -30, pitch: 32 })}>
                   Reset view
                 </Button>
-                <Button variant="ghost" onClick={() => setView({ yaw: 0, pitch: 8 })}>
+                <Button variant="ghost" onClick={() => glideTo({ yaw: 0, pitch: 8 })}>
                   View from the front
                 </Button>
                 <label className="flex min-w-[14rem] flex-1 items-center gap-3 text-sm">
@@ -168,7 +179,16 @@ export default function FinancialLandscapePage() {
                 </label>
               </div>
               <div className="px-4 pb-4">
-                <Landscape3D d={d} upTo={last} view={view} onView={setView} mark={mark} />
+                <Landscape3D
+                  d={d}
+                  upTo={last}
+                  view={view}
+                  onView={(v) => {
+                    glide.current();
+                    setView(v);
+                  }}
+                  mark={mark}
+                />
               </div>
             </Card>
             <Card role="region" aria-label="Landscape figures">
