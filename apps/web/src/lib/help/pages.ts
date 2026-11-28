@@ -934,6 +934,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Each high finding adds 25 points to its area, each medium 10 and each low 3, up to 100. The overall score is 60% the worst area and 40% the average of the areas that have something to check. Look first at the areas named at the top, and open an area to act on its findings.',
     where: 'Reports. Needs reports.read; an area your role cannot read is left out. It reads the same checks as Alerts, Payment fraud checks, Expense risk, Unusual bank activity, Deadline risk and Vendor risk. One reading a day is kept when the monitor is opened, for the trend. No AI model is used.',
   },
+  'reports/landscape': {
+    what: 'Your spending or income by account and month as a 3D landscape: one row of towers per account (the largest at the front, the rest joined), one column per month, each tower as tall as the amount.',
+    how: 'Choose spending or income and the months (up to 24). Drag the landscape or use the arrow keys to turn it, play the months to watch it grow, and choose any amount in the table to pick out its tower and open that account’s ledger for the month.',
+    where: 'Reports. Needs reports.read. Read from posted journals, closing entries left out; the same figures as the spending heatmap on Financial visuals.',
+  },
   'reports/cash-flow-network': {
     what: 'Where your cash came from and where it went, for each cash and bank account, as an animated network: customers, owners, lenders and others paying in on the left, vendors, payroll, tax and others paid on the right, and money moved between your own accounts.',
     how: 'Choose the months (up to 24), then play them one by one or pick a month with the slider or the Cash by month table. Choose an account or group to pick out its flows. Wider lines moved more money; the moving dashes show which way it went and stop when your device asks for reduced motion.',

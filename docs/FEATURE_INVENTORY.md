@@ -957,7 +957,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-020 | Design Direction | capability | Neutral white and graphite | Tested |
 | DASH-021 | Design Direction | rule | Use refined gradients, glass-like surfaces where appropriate, precise typography and subtle depth | Not started |
 | DASH-022 | Design Direction | rule | Avoid excessive visual noise | Not started |
-| DASH-023 | Advanced Visualization | capability | Interactive 3D financial landscapes | Not started |
+| DASH-023 | Advanced Visualization | capability | Interactive 3D financial landscapes | Tested |
 | DASH-024 | Advanced Visualization | capability | Animated cash-flow networks | Tested |
 | DASH-025 | Advanced Visualization | capability | Revenue distribution globes | Not started |
 | DASH-026 | Advanced Visualization | capability | Financial relationship graphs | Tested |

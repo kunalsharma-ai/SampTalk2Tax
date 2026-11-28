@@ -1,11 +1,12 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { DASHBOARD_ROLES, ROLE_DASHBOARDS, type DashboardRole } from '@talk2tax/accounting-engine';
+import { DASHBOARD_ROLES, LANDSCAPE_VIEWS, ROLE_DASHBOARDS, type DashboardRole } from '@talk2tax/accounting-engine';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import { AuthUser, CurrentOrg, CurrentUser, OrgContext, RequirePermission } from '../auth/decorators';
 import { ZodPipe } from '../common/zod';
 import { CashFlowNetworkService } from './cash-flow-network.service';
 import { DepartmentPerformanceService } from './department-performance.service';
+import { FinancialLandscapeService } from './financial-landscape.service';
 import { FinancialDependenciesService } from './financial-dependencies.service';
 import { FinancialTimelineService } from './financial-timeline.service';
 import { FinancialVisualsService } from './financial-visuals.service';
@@ -99,6 +100,22 @@ export class CashFlowNetworkController {
   @RequirePermission('reports.read')
   network(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(Period)) q: z.infer<typeof Period>) {
     return this.s.network(org, q);
+  }
+}
+
+const LandscapeQuery = z.object({ from: month.optional(), to: month.optional(), view: z.enum(LANDSCAPE_VIEWS).optional() }).strict();
+
+@ApiTags('reports')
+@ApiBearerAuth()
+@Controller('v1/orgs/:orgId/reports/landscape')
+export class FinancialLandscapeController {
+  constructor(private readonly s: FinancialLandscapeService) {}
+
+  /** Income or spending by account and month (the last 12 by default), for the 3D financial landscape. */
+  @Get()
+  @RequirePermission('reports.read')
+  landscape(@CurrentOrg() org: OrgContext, @Query(new ZodPipe(LandscapeQuery)) q: z.infer<typeof LandscapeQuery>) {
+    return this.s.landscape(org, q);
   }
 }
 

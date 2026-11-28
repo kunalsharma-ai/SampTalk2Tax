@@ -23268,9 +23268,19 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/financial-landscape.ts",
+        "packages/accounting-engine/test/financial-landscape.test.ts",
+        "apps/api/src/financial-visuals/financial-landscape.service.ts",
+        "apps/api/test/financial-landscape.e2e.test.ts",
+        "apps/web/src/lib/surface-3d.ts",
+        "apps/web/src/components/reports/financial-landscape.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/landscape/page.tsx",
+        "apps/web/e2e/financial-landscape-flow.test.mjs",
+        "docs/FINANCIAL_LANDSCAPE.md"
+      ],
+      "notes": "Reports → Financial landscape: spending or income by account and month as 3D towers (top 8 accounts, the rest joined), turn by drag or arrow keys, play months, slider, pick out a tower from the figures table with a ledger link; from posted journals without closing entries."
     },
     {
       "id": "DASH-024",

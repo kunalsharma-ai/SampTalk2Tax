@@ -45,9 +45,10 @@ import { CompanyCardsService } from './company-cards/company-cards.service';
 import { DepartmentPerformanceService } from './financial-visuals/department-performance.service';
 import { FinancialDependenciesService } from './financial-visuals/financial-dependencies.service';
 import { CashFlowNetworkService } from './financial-visuals/cash-flow-network.service';
+import { FinancialLandscapeService } from './financial-visuals/financial-landscape.service';
 import { FinancialTimelineService } from './financial-visuals/financial-timeline.service';
 import { RiskMonitorService } from './financial-visuals/risk-monitor.service';
-import { CashFlowNetworkController, DepartmentPerformanceController, FinancialDependenciesController, FinancialTimelineController, FinancialVisualsController, RiskMonitorController, RoleDashboardsController } from './financial-visuals/financial-visuals.controller';
+import { CashFlowNetworkController, FinancialLandscapeController, DepartmentPerformanceController, FinancialDependenciesController, FinancialTimelineController, FinancialVisualsController, RiskMonitorController, RoleDashboardsController } from './financial-visuals/financial-visuals.controller';
 import { RoleDashboardsService } from './financial-visuals/role-dashboards.service';
 import { FinancialVisualsService } from './financial-visuals/financial-visuals.service';
 import { AccountReconciliationsController } from './account-reconciliations/account-reconciliations.controller';
@@ -512,6 +513,7 @@ export class AppModule {
         FinancialTimelineController,
         FinancialDependenciesController,
         CashFlowNetworkController,
+        FinancialLandscapeController,
         RoleDashboardsController,
         RiskMonitorController,
         BankFeedsController,
@@ -720,6 +722,7 @@ export class AppModule {
         FinancialTimelineService,
         FinancialDependenciesService,
         CashFlowNetworkService,
+        FinancialLandscapeService,
         RoleDashboardsService,
         RiskMonitorService,
         DocumentsService,

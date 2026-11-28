@@ -77,3 +77,55 @@ export function surfaceColour(v: number, min: number, max: number): string {
   }
   return 'hsl(215 15% 55%)';
 }
+
+export interface TowerFace {
+  points: Projected[];
+  /** 'top' or a side, for shading. */
+  face: 'top' | 'side-x' | 'side-y';
+}
+export interface Tower {
+  xi: number;
+  yi: number;
+  depth: number;
+  faces: TowerFace[];
+}
+
+/**
+ * A landscape of towers (DASH-023): one per cell of `values[yi][xi]`, as tall as its value over
+ * the largest absolute value (negatives go below the floor). Towers come nearest last, and within
+ * a tower its sides come before its top, so nearer faces cover farther ones.
+ */
+export function towers(values: number[][], view: View3D, size: number, cx: number, cy: number, opts: { footprint?: number; peak?: number } = {}): Tower[] {
+  const rows = values.length;
+  const cols = rows ? values[0].length : 0;
+  if (!rows || !cols) return [];
+  const peak = opts.peak ?? Math.max(1e-9, ...values.flat().map(Math.abs));
+  const fp = opts.footprint ?? 0.7;
+  const base = -0.35;
+  const out: Tower[] = [];
+  for (let yi = 0; yi < rows; yi++) {
+    for (let xi = 0; xi < cols; xi++) {
+      const w = 1 / cols;
+      const d = 1 / rows;
+      const x0 = -0.5 + xi * w + (w * (1 - fp)) / 2;
+      const x1 = x0 + w * fp;
+      const y0 = -0.5 + yi * d + (d * (1 - fp)) / 2;
+      const y1 = y0 + d * fp;
+      const top = base + (values[yi][xi] / peak) * 0.7;
+      const p = (x: number, y: number, z: number) => project(x, y, z, view, size, cx, cy);
+      const sides: TowerFace[] = [
+        { face: 'side-y', points: [p(x0, y0, base), p(x1, y0, base), p(x1, y0, top), p(x0, y0, top)] },
+        { face: 'side-y', points: [p(x0, y1, base), p(x1, y1, base), p(x1, y1, top), p(x0, y1, top)] },
+        { face: 'side-x', points: [p(x0, y0, base), p(x0, y1, base), p(x0, y1, top), p(x0, y0, top)] },
+        { face: 'side-x', points: [p(x1, y0, base), p(x1, y1, base), p(x1, y1, top), p(x1, y0, top)] },
+      ];
+      const meanDepth = (f: TowerFace) => f.points.reduce((t, q) => t + q.depth, 0) / f.points.length;
+      sides.sort((a, b) => meanDepth(a) - meanDepth(b));
+      const topFace: TowerFace = { face: 'top', points: [p(x0, y0, top), p(x1, y0, top), p(x1, y1, top), p(x0, y1, top)] };
+      // Seen from below the top (a negative tower), the top is the far face and goes first.
+      const faces = top >= base ? [...sides, topFace] : [topFace, ...sides];
+      out.push({ xi, yi, depth: p((x0 + x1) / 2, (y0 + y1) / 2, base).depth, faces });
+    }
+  }
+  return out.sort((a, b) => a.depth - b.depth);
+}
