@@ -153,7 +153,7 @@ export const hi: Record<string, string> = {
   'Follow this device': 'इस डिवाइस के अनुसार',
   Animate: 'एनिमेशन चालू',
   'Keep still': 'स्थिर रखें',
-  'Pages rising in, charts growing and 3D views gliding. Keep still to have every change happen at once.': 'पेज का उभरना, चार्ट का बढ़ना और 3D दृश्यों का सरकना। स्थिर रखें चुनें तो हर बदलाव तुरंत होगा।',
+  'Pages fading in, charts growing and 3D views gliding. Keep still to have every change happen at once.': 'पेज का धीरे से दिखना, चार्ट का बढ़ना और 3D दृश्यों का सरकना। स्थिर रखें चुनें तो हर बदलाव तुरंत होगा।',
   'Role dashboards': 'भूमिका डैशबोर्ड',
   'Income tax computation': 'आयकर गणना',
   'Tax audit preparation': 'टैक्स ऑडिट की तैयारी',

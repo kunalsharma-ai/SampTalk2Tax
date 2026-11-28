@@ -3,7 +3,7 @@ import { motionReduced, type MotionPreference } from '@talk2tax/accounting-engin
 import { useEffect, useState } from 'react';
 
 /**
- * Motion (DASH-038). The interface animates its transitions (pages rising in, charts growing,
+ * Motion (DASH-038). The interface animates its transitions (pages fading in, charts growing,
  * 3D views gliding to where you send them, a flung globe coasting to a stop) unless the person
  * asks for stillness: their own choice (Language and formats → Motion) wins, otherwise the
  * device's reduced-motion setting. The answer is kept on <html data-motion="full|reduced">, which

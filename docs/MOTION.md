@@ -4,7 +4,7 @@ Talk2Tax animates its transitions and its interactive visuals, and each person c
 
 ## What moves
 
-- **Pages** rise in when you open them, over 0.32 seconds (`.t2t-page-enter` on the page area in `apps/web/src/app/globals.css`).
+- **Pages** fade in when you open them, over 0.24 seconds (`.t2t-page-enter` on the page area in `apps/web/src/app/globals.css`). Only opacity changes, so nothing shifts under the pointer.
 - **Charts** grow into place: bars, lines, the cash-flow network's moving dashes and widths, and the timeline and risk charts.
 - **3D views glide** to where you send them, instead of jumping:
   - Financial landscape: **Reset view** and **View from the front**.
@@ -43,6 +43,6 @@ The choice is the person's own. It is saved on their user record, kept across si
 - `apps/api/test/motion-preference.e2e.test.ts`: the default, saving it for one person only, clients that leave it out, bad values refused by the API and the database, and sign-in required.
 - `apps/web/e2e/motion-flow.test.mjs`, with a device that asks for reduced motion:
   - the app follows the device, so pages appear at once and the globe jumps;
-  - after choosing Animate, pages rise in and the globe glides through in-between views, and this survives a reload;
+  - after choosing Animate, pages fade in and the globe glides through in-between views, and this survives a reload;
   - with Keep still on a device that allows motion, it is still again;
   - with Follow this device on a device that allows motion, it animates.

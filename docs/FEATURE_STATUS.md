@@ -7016,7 +7016,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 - Module: Dashboard design
 - Status: **Tested**
-- Notes: Pages rise in, charts grow, 3D landscape and revenue globe glide to new views and the globe coasts after a fling; each person chooses Motion (follow device, animate, keep still), saved on their user record; <html data-motion> stills every animation and transition when reduced, and lets them run on a reduced-motion device when the person chose Animate.
+- Notes: Pages fade in, charts grow, 3D landscape and revenue globe glide to new views and the globe coasts after a fling; each person chooses Motion (follow device, animate, keep still), saved on their user record; <html data-motion> stills every animation and transition when reduced, and lets them run on a reduced-motion device when the person chose Animate.
 - Evidence:
   - packages/accounting-engine/src/locale.ts
   - packages/accounting-engine/test/motion.test.ts

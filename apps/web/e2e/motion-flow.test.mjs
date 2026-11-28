@@ -1,7 +1,7 @@
 /**
  * Browser end-to-end test for motion (DASH-038). On a device that asks for reduced motion the app
  * keeps still: pages appear at once and the globe jumps straight to a place. A person who chooses
- * Animate sees pages rise in and the globe glide there through in-between views; choosing Keep
+ * Animate sees pages fade in and the globe glide there through in-between views; choosing Keep
  * still on a device that allows motion stills everything again. Real Next.js app → real API →
  * real MongoDB.
  */
@@ -91,7 +91,7 @@ test('the app keeps still or animates as the person and the device ask', async (
   assert.ok(parseFloat(await enterDuration()) < 0.001, await enterDuration());
   assert.equal(await drawingsWhileChoosing('Tamil Nadu'), 1);
 
-  // Choose Animate: pages rise in and the globe glides, even on this device.
+  // Choose Animate: pages fade in and the globe glides, even on this device.
   await page.getByRole('link', { name: 'Account', exact: true }).click();
   await page.getByRole('heading', { name: 'Account and preferences' }).waitFor();
   const card = page.locator('[aria-label="Language and formats"]');
@@ -103,7 +103,7 @@ test('the app keeps still or animates as the person and the device ask', async (
   assert.equal(ok(await call('/v1/auth/me'), 'me').preferences.motion, 'FULL');
   await page.getByRole('link', { name: 'Revenue globe' }).click();
   await page.getByRole('heading', { name: 'Revenue globe', exact: true }).waitFor();
-  assert.equal(await enterDuration(), '0.32s');
+  assert.equal(await enterDuration(), '0.24s');
   assert.ok((await drawingsWhileChoosing('Tamil Nadu')) > 3);
   if (SHOTS) await page.getByRole('region', { name: 'Globe', exact: true }).screenshot({ path: `${SHOTS}/motion-globe.png` });
 

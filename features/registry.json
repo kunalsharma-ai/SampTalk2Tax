@@ -23785,7 +23785,7 @@
         "apps/web/e2e/motion-flow.test.mjs",
         "docs/MOTION.md"
       ],
-      "notes": "Pages rise in, charts grow, 3D landscape and revenue globe glide to new views and the globe coasts after a fling; each person chooses Motion (follow device, animate, keep still), saved on their user record; <html data-motion> stills every animation and transition when reduced, and lets them run on a reduced-motion device when the person chose Animate."
+      "notes": "Pages fade in, charts grow, 3D landscape and revenue globe glide to new views and the globe coasts after a fling; each person chooses Motion (follow device, animate, keep still), saved on their user record; <html data-motion> stills every animation and transition when reduced, and lets them run on a reduced-motion device when the person chose Animate."
     },
     {
       "id": "DASH-039",

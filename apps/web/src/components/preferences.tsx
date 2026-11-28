@@ -80,7 +80,7 @@ export function PreferencesCard() {
             </Select>
           )}
         </Field>
-        <Field label={t('Motion')} hint={t('Pages rising in, charts growing and 3D views gliding. Keep still to have every change happen at once.')}>
+        <Field label={t('Motion')} hint={t('Pages fading in, charts growing and 3D views gliding. Keep still to have every change happen at once.')}>
           {(p) => (
             <Select {...p} value={motion} onChange={(e) => setMotion(e.target.value as MotionPreference)}>
               {MOTION_PREFERENCES.map((m) => <option key={m.code} value={m.code}>{t(m.label)}</option>)}

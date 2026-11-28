@@ -56,15 +56,16 @@ body {
 @media (prefers-reduced-motion: reduce) { html:not([data-motion='full']) .t2t-aurora { animation: none; } }
 
 /*
- * Motion (DASH-038). Pages rise in when you open them. <html data-motion> holds the answer to
+ * Motion (DASH-038). Pages fade in when you open them. <html data-motion> holds the answer to
  * "animate or keep still" (the person's choice, else the device setting; lib/motion.ts): when it
  * says reduced, every animation and transition in the app ends at once.
  */
+/* Opacity only: nothing shifts position, so a page is usable (and clickable) from the first frame. */
 @keyframes t2t-enter {
-  from { opacity: 0; transform: translate3d(0, 8px, 0); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-.t2t-page-enter { animation: t2t-enter 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.t2t-page-enter { animation: t2t-enter 0.24s ease-out both; }
 html[data-motion='reduced'] *,
 html[data-motion='reduced'] *::before,
 html[data-motion='reduced'] *::after {
