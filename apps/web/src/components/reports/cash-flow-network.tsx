@@ -119,13 +119,16 @@ export function CashFlowNetwork({
     const tx = side === 'left' ? pos[0] - r - 8 : side === 'right' ? pos[0] + r + 8 : pos[0];
     const anchor = side === 'left' ? 'end' : side === 'right' ? 'start' : 'middle';
     const ty = side === 'mid' ? pos[1] + r + 16 : pos[1] - 2;
+    // The name starts with the words shown, so what a person sees is what a screen reader says.
+    const shown = label.length > 28 ? `${label.slice(0, 27)}…` : label;
     return (
       <g
         key={`${side}-${key}`}
         role="button"
         tabIndex={0}
         aria-pressed={on}
-        aria-label={`${label}: ${sub}`}
+        aria-label={`${shown} ${sub}`}
+        aria-description={shown === label ? undefined : label}
         className="cursor-pointer focus:outline-none"
         onClick={() => onPick(on ? null : key)}
         onKeyDown={press(key)}
@@ -133,7 +136,7 @@ export function CashFlowNetwork({
       >
         <circle cx={pos[0]} cy={pos[1]} r={r} fill={colour} fillOpacity={0.85} stroke={on ? 'var(--t2t-text)' : 'var(--t2t-surface)'} strokeWidth={on ? 3 : 2} />
         <text x={tx} y={ty} textAnchor={anchor} fontSize={12} fontWeight={600} fill="var(--t2t-text)">
-          {label.length > 28 ? `${label.slice(0, 27)}…` : label}
+          {shown}
         </text>
         <text x={tx} y={ty + 14} textAnchor={anchor} fontSize={11} fill="var(--t2t-text-muted)">
           {sub}
@@ -146,7 +149,8 @@ export function CashFlowNetwork({
     <svg
       viewBox={`0 0 ${W} ${H}`}
       className="h-auto w-full"
-      role="img"
+      role="group"
+      aria-roledescription="chart"
       aria-label="Cash coming in from the groups on the left to each cash and bank account in the middle, and going out to the groups on the right, with lines as wide as each flow. The same flows are in the Cash flows table below."
     >
       <style>

@@ -942,9 +942,9 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-005 |  | capability | Polished | Not started |
 | DASH-006 |  | capability | Professional | Not started |
 | DASH-007 |  | capability | Visually distinctive | Not started |
-| DASH-008 |  | capability | Fast | Not started |
-| DASH-009 |  | capability | Accessible | Not started |
-| DASH-010 |  | capability | Interactive | Not started |
+| DASH-008 |  | capability | Fast | Tested |
+| DASH-009 |  | capability | Accessible | Tested |
+| DASH-010 |  | capability | Interactive | Tested |
 | DASH-011 |  | capability | Highly intuitive | Not started |
 | DASH-012 |  | capability | Data-rich without becoming cluttered | Not started |
 | DASH-013 | Design Direction | rule | Create an original visual identity for Sampledge Talk2Tax | Tested |
@@ -975,7 +975,7 @@ Part 27 · M1 · priority P1 · depends on: RPT, DS
 | DASH-038 | Advanced Visualization | rule | Support animated transitions and motion-responsive interactions | Tested |
 | DASH-039 | Advanced Visualization | rule | Where stakeholders request "4D visualization," interpret this as interactive 3D information that changes over time, not a misleading claim of literal four-dimensional rendering | Tested |
 | DASH-040 | Advanced Visualization | rule | All critical figures must also be available in accurate 2D charts and accessible tables | Tested |
-| DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Implemented |
+| DASH-041 | Advanced Visualization | rule | Respect reduced-motion preferences | Tested |
 | DASH-042 | Required Dashboards | capability | Global Super Admin | Tested |
 | DASH-043 | Required Dashboards | capability | Tenant Organization Admin | Tested |
 | DASH-044 | Required Dashboards | capability | CEO | Tested |

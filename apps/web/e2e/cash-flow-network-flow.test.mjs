@@ -105,7 +105,7 @@ test('an owner watches where the cash came from and went', async () => {
   await page.getByRole('link', { name: 'Cash-flow network' }).click();
   await page.getByRole('heading', { name: 'Cash-flow network', exact: true }).waitFor();
   const moving = page.getByRole('region', { name: 'Cash moving' });
-  await moving.getByRole('img', { name: /^Cash coming in from the groups on the left/ }).waitFor();
+  await moving.getByRole('group', { name: /^Cash coming in from the groups on the left/ }).waitFor();
   assert.equal(await page.getByTestId('cash-period').textContent(), 'All months');
   await moving.getByText('₹2,80,000.00', { exact: true }).waitFor();
   const flows = page.getByRole('region', { name: 'Cash flows' }).getByRole('table');
@@ -121,7 +121,7 @@ test('an owner watches where the cash came from and went', async () => {
   if (SHOTS) await moving.screenshot({ path: `${SHOTS}/cash-flow-network.png` });
 
   // Pick out the customers with the keyboard: only their flow is listed.
-  const customers = moving.getByRole('button', { name: /^Customers and income: / });
+  const customers = moving.getByRole('button', { name: /^Customers and income / });
   await customers.focus();
   await page.keyboard.press('Enter');
   assert.equal(await customers.getAttribute('aria-pressed'), 'true');

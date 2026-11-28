@@ -107,7 +107,7 @@ test('an owner turns and plays the landscape of spending and income', async () =
   await land.getByRole('button', { name: 'Pause' }).click();
 
   // Pick out the rent tower for this month and open its ledger.
-  const rent = table.getByRole('button', { name: `6200 Rent, ${month}`, exact: true });
+  const rent = table.getByRole('button', { name: `6200 Rent, ${month}: ₹30,000.00`, exact: true });
   await rent.click();
   assert.equal(await rent.getAttribute('aria-pressed'), 'true');
   await table.getByRole('link', { name: 'Ledger', exact: true }).click();

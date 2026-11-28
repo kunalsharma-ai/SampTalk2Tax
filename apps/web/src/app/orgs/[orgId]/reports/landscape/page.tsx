@@ -222,9 +222,9 @@ export default function FinancialLandscapePage() {
                                 type="button"
                                 className="hover:underline"
                                 aria-pressed={on}
-                                aria-label={`${r.label}, ${monthLabel(d.months[ci])}`}
                                 onClick={() => setMark(on ? null : { row: ri, col: ci })}
                               >
+                                <span className="sr-only">{`${r.label}, ${monthLabel(d.months[ci])}: `}</span>
                                 <Money value={v} currency={d.currency} />
                               </button>
                               {on && href ? (

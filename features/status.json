@@ -99,11 +99,15 @@
       "notes": "Every chart is a labelled image that names the table holding its figures (or is decorative next to figures shown as text). The month-end cash chart carries its own table on pages without one. A unit test checks every chart in the app."
     },
     "DASH-041": {
-      "status": "Implemented",
+      "status": "Tested",
       "evidence": [
-        "apps/web/src"
+        "apps/web/src/lib/motion.ts",
+        "apps/web/e2e/motion-flow.test.mjs",
+        "apps/web/e2e/visual-accessibility.test.mjs",
+        "docs/MOTION.md",
+        "docs/VISUAL_ACCESSIBILITY.md"
       ],
-      "notes": "Chart animation and CSS transitions are disabled under prefers-reduced-motion."
+      "notes": "The device's reduced-motion setting is followed unless the person chose otherwise; nothing loops on the visual screens under reduced motion; glides become jumps and coasting stops."
     },
     "DEMO-013": {
       "status": "Implementing",
@@ -10555,6 +10559,38 @@
         "docs/MOTION.md"
       ],
       "notes": "Pages fade in, charts grow, 3D landscape and revenue globe glide to new views and the globe coasts after a fling; each person chooses Motion (follow device, animate, keep still), saved on their user record; <html data-motion> stills every animation and transition when reduced, and lets them run on a reduced-motion device when the person chose Animate."
+    },
+    "DASH-009": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/visual-accessibility.test.mjs",
+        "apps/web/e2e/accessibility.test.mjs",
+        "apps/web/src/components/reports/cash-flow-network.tsx",
+        "apps/web/src/components/reports/financial-timeline.tsx",
+        "docs/VISUAL_ACCESSIBILITY.md"
+      ],
+      "notes": "axe WCAG 2.1 A/AA on the visual screens in light and dark; every chart names where its figures are and the table is there; charts holding controls are groups, not images; visible text starts accessible names. Fixed landscape cell buttons, cash-flow network and timeline nesting, a shortened node name and the risk gauge label. Automated checks only."
+    },
+    "DASH-010": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/visual-accessibility.test.mjs",
+        "apps/web/e2e/financial-landscape-flow.test.mjs",
+        "apps/web/e2e/revenue-globe-flow.test.mjs",
+        "apps/web/e2e/cash-flow-network-flow.test.mjs",
+        "docs/VISUAL_ACCESSIBILITY.md"
+      ],
+      "notes": "Landscape and globe turn by drag and arrow keys (checked by keyboard), network nodes are buttons, table buttons pick out the same item in the picture; play months, choose a month or place, open the ledger."
+    },
+    "DASH-008": {
+      "status": "Tested",
+      "evidence": [
+        "apps/web/e2e/dashboard-performance.test.mjs",
+        "perf/budgets.json",
+        "docs/PERFORMANCE_BUDGETS.md",
+        "docs/VISUAL_ACCESSIBILITY.md"
+      ],
+      "notes": "Backed by PERF-015: opening the dashboard until balances and the monthly chart show, p95 under 2 s in CI; report reads behind the visuals by PERF-002/004. No further speed claim."
     }
   }
 }
