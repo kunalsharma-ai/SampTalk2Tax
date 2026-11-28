@@ -60,7 +60,7 @@ export function TimelineChart({ t, window: [lo, hi], onWindow, onPick, picked }:
   const rows = t.buckets.map((b) => ({ label: bucketLabel(b, t.size), cashIn: Number(b.cashIn), cashOut: -Number(b.cashOut), balance: b.closingCash === null ? null : Number(b.closingCash), b })); // not money: chart geometry
   const todayBucket = t.buckets.find((b) => b.start <= t.today && t.today <= b.end);
   return (
-    <div className="h-80 w-full px-2" role="img" aria-label="Cash in, cash out and the cash balance over time, with today and deadlines marked. The same figures are in the table below the chart.">
+    <div className="h-80 w-full px-2" role="group" aria-roledescription="chart" aria-label="Cash in, cash out and the cash balance over time, with today and deadlines marked. The same figures are in the table below the chart.">
       <ResponsiveContainer>
         <ComposedChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} stackOffset="sign" onClick={(s) => { const i = Number(s?.activeIndex ?? s?.activeTooltipIndex); const b = Number.isInteger(i) ? t.buckets[i] : undefined; if (b) onPick(b.start); }}>
           <CartesianGrid stroke="var(--t2t-border)" strokeDasharray="3 3" vertical={false} />

@@ -71,7 +71,7 @@ test('an owner reads the financial timeline, narrows it to a day and opens an en
   await cash.getByText('₹2,45,000.00').first().waitFor(); // cash in
   await cash.getByText('₹18,000.00').first().waitFor(); // cash out
   await cash.getByText('₹2,27,000.00').first().waitFor(); // cash now
-  await page.getByRole('img', { name: /Cash in, cash out and the cash balance over time/ }).locator('.recharts-bar-rectangle').first().waitFor();
+  await page.getByRole('group', { name: /Cash in, cash out and the cash balance over time/ }).locator('.recharts-bar-rectangle').first().waitFor();
   const happened = page.getByRole('region', { name: 'What happened' });
   await happened.getByRole('table', { name: 'Entries in view' }).getByText('SALE-77 · SALE-77').waitFor();
   await happened.getByRole('list', { name: 'Deadlines in view' }).getByText(/GSTR-3B/).first().waitFor();

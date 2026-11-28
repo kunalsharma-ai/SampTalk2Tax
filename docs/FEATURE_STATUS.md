@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 493 |
+| Not started | 490 |
 | Designed | 0 |
 | Implementing | 39 |
-| Implemented | 23 |
-| Tested | 774 |
+| Implemented | 22 |
+| Tested | 778 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 0 | 41 |
-| Dashboard design | M1 | 68 | 14 | 54 |
+| Dashboard design | M1 | 68 | 11 | 57 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6718,6 +6718,41 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/api/test/report-exports.e2e.test.ts › exports the trial balance as CSV with the same figures as the report
   - apps/api/test/cash-flow-statement.e2e.test.ts
 
+### DASH-008 — Fast
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Backed by PERF-015: opening the dashboard until balances and the monthly chart show, p95 under 2 s in CI; report reads behind the visuals by PERF-002/004. No further speed claim.
+- Evidence:
+  - apps/web/e2e/dashboard-performance.test.mjs
+  - perf/budgets.json
+  - docs/PERFORMANCE_BUDGETS.md
+  - docs/VISUAL_ACCESSIBILITY.md
+
+### DASH-009 — Accessible
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: axe WCAG 2.1 A/AA on the visual screens in light and dark; every chart names where its figures are and the table is there; charts holding controls are groups, not images; visible text starts accessible names. Fixed landscape cell buttons, cash-flow network and timeline nesting, a shortened node name and the risk gauge label. Automated checks only.
+- Evidence:
+  - apps/web/e2e/visual-accessibility.test.mjs
+  - apps/web/e2e/accessibility.test.mjs
+  - apps/web/src/components/reports/cash-flow-network.tsx
+  - apps/web/src/components/reports/financial-timeline.tsx
+  - docs/VISUAL_ACCESSIBILITY.md
+
+### DASH-010 — Interactive
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Landscape and globe turn by drag and arrow keys (checked by keyboard), network nodes are buttons, table buttons pick out the same item in the picture; play months, choose a month or place, open the ledger.
+- Evidence:
+  - apps/web/e2e/visual-accessibility.test.mjs
+  - apps/web/e2e/financial-landscape-flow.test.mjs
+  - apps/web/e2e/revenue-globe-flow.test.mjs
+  - apps/web/e2e/cash-flow-network-flow.test.mjs
+  - docs/VISUAL_ACCESSIBILITY.md
+
 ### DASH-013 — Create an original visual identity for Sampledge Talk2Tax
 
 - Module: Dashboard design
@@ -7052,10 +7087,14 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 ### DASH-041 — Respect reduced-motion preferences
 
 - Module: Dashboard design
-- Status: **Implemented**
-- Notes: Chart animation and CSS transitions are disabled under prefers-reduced-motion.
+- Status: **Tested**
+- Notes: The device's reduced-motion setting is followed unless the person chose otherwise; nothing loops on the visual screens under reduced motion; glides become jumps and coasting stops.
 - Evidence:
-  - apps/web/src
+  - apps/web/src/lib/motion.ts
+  - apps/web/e2e/motion-flow.test.mjs
+  - apps/web/e2e/visual-accessibility.test.mjs
+  - docs/MOTION.md
+  - docs/VISUAL_ACCESSIBILITY.md
 
 ### DASH-042 — Global Super Admin
 

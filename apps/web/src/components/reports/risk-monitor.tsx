@@ -47,7 +47,7 @@ export function RiskGauge({ score, level }: { score: number; level: RiskLevel })
   const x = 100 + 80 * Math.cos(angle); // not money
   const y = 100 - 80 * Math.sin(angle); // not money
   return (
-    <svg viewBox="0 0 200 116" className="h-36 w-56" role="img" aria-label={`Overall risk ${score} out of 100: ${LEVEL[level].label}`}>
+    <svg viewBox="0 0 200 116" className="h-36 w-56" role="img" aria-label={`Overall risk ${score} out of 100: ${LEVEL[level].label}. Each area’s score is listed below, and the readings by day are in the Risk readings by day table.`}>
       {BANDS.map(([a, b, l]) => {
         const p = (v: number) => [100 + 80 * Math.cos(Math.PI * (1 - v / 100)), 100 - 80 * Math.sin(Math.PI * (1 - v / 100))]; // not money
         const [x1, y1] = p(a);
