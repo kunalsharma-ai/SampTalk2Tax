@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 490 |
+| Not started | 471 |
 | Designed | 0 |
-| Implementing | 39 |
+| Implementing | 40 |
 | Implemented | 22 |
-| Tested | 778 |
+| Tested | 796 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -62,7 +62,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Mobile experience | M8 | 16 | 14 | 2 |
 | Performance and scalability | M9 | 21 | 0 | 21 |
 | Testing and quality assurance | M1 | 31 | 0 | 31 |
-| Demonstration data | M1 | 21 | 19 | 2 |
+| Demonstration data | M1 | 21 | 0 | 21 |
 | Additional differentiating innovations | M7 | 18 | 0 | 18 |
 | Navigation structure | M1 | 48 | 32 | 16 |
 | Design system | M1 | 36 | 33 | 3 |
@@ -10841,23 +10841,323 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - scripts/check-test-determinism.mjs
   - scripts/check-test-determinism.test.mjs
 
-### DEMO-013 — Journal entries
+### DEMO-001 — Create realistic synthetic demonstration organizations
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Six made-up companies built into an organisation the person owns, through the ordinary services; up to three per person; build status recorded in demo_organisations.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-002 — Indian consulting SME
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Kestrel Advisory Partners: GST invoices to three states, freelancers, payroll, GST returns marked filed.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-003 — US professional services company
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Juniper Ridge Consulting LLC: hourly fees in USD, subcontractors, no sales tax on professional services.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-004 — UK trading business
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Harbourside Trading Ltd: stock into inventory, 20% VAT, EU customer zero-rated, cost of sales, VAT return settings.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-005 — UAE multinational subsidiary
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Falconcrest Gulf FZ-LLC: 5% VAT, management fee from a made-up UK parent, VAT 201 settings (Dubai).
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-006 — Global manufacturing group
 
 - Module: Demonstration data
 - Status: **Implementing**
-- Notes: One synthetic Indian trading company with ~7 months of journals. The other demo companies and record types are not done.
+- Notes: Brennholz Precision Group GmbH: one German manufacturer with export customers; no group consolidation is built.
 - Evidence:
-  - apps/api/src/seed/seed-demo.ts
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-007 — Market research agency
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Lumen Insights Research: research studies per project, incentives and field partners as cost of sales, payroll.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-008 — Customers
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Customers with terms (made-up GSTINs in India), one slow payer, one occasional.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-009 — Vendors
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Vendors with terms, billed monthly.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-010 — Employees
+
+- Module: Demonstration data
+- Status: **Implementing**
+- Notes: Payroll employees, posted pay runs and dues in the Indian profiles; elsewhere staff are salary journals by department, since payroll is India-only.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-011 — Invoices
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Monthly invoices tagged with projects, paid on the due date when it has come.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-012 — Bills
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Monthly bills, paid on the due date when it has come.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-013 — Journal entries
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Share capital, overheads by department, cost of goods sold and salaries as posted journals.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-014 — Bank transactions
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Synthetic statement of the last 45 days from the books plus two extra lines, imported and auto-matched.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-015 — Projects
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Projects per main customer, on invoice lines; departments on journal lines.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-016 — Budgets
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: This fiscal year's budget from the run rate, 8% higher, submitted for approval.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-017 — Tax records
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: GST registration, rates and filed returns (India); starter VAT rates and VAT return settings with made-up numbers (UK, UAE, Germany).
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-018 — Financial reports
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Books feed every report; KPI targets and a draft management commentary; the demo page links the main statements.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-019 — AI recommendations
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Demo page shows the CFO assessment's top recommendations from the synthetic books (deterministic), and alerts from one run of the checks.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
+
+### DEMO-020 — Label all demonstration data as synthetic
+
+- Module: Demonstration data
+- Status: **Tested**
+- Notes: Every name says (synthetic), the organisation (SYNTHETIC DATA); demoLabelIssues refuses otherwise (unit tested), API checks before building.
+- Evidence:
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - docs/DEMO_ORGANISATIONS.md
 
 ### DEMO-021 — Do not imply the figures represent real organizations
 
 - Module: Demonstration data
 - Status: **Tested**
-- Notes: Demo org is named "(SYNTHETIC DATA)", flagged is_demo, and the seed refuses to run in production or outside the local region.
+- Notes: Demo org is named "(SYNTHETIC DATA)", flagged is_demo, and the seed refuses to run in production or outside the local region. In-app demonstrations carry the same labels, a synthetic notice on their page and the Synthetic demo data badge.
 - Evidence:
-  - apps/api/src/seed/seed-demo.ts
+  - apps/api/src/demo-organisations/demo-organisations.service.ts
   - apps/api/src/seed/guard.ts
+  - apps/api/src/seed/seed-demo.ts
+  - apps/api/test/demo-organisations.e2e.test.ts
   - apps/api/test/seed-guard.test.ts
+  - apps/web/e2e/demo-organisations-flow.test.mjs
+  - apps/web/src/app/onboarding/demo/page.tsx
+  - apps/web/src/app/orgs/[orgId]/demo/page.tsx
+  - docs/DEMO_ORGANISATIONS.md
+  - packages/accounting-engine/src/demo-profiles.ts
+  - packages/accounting-engine/test/demo-profiles.test.ts
 
 ### INNOV-001 — Connect customers, contracts, invoices, vendors, projects, payments, journal entries and risks in an explainable relationship graph
 

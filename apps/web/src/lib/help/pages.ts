@@ -939,6 +939,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose spending or income and the months (up to 24). Drag the landscape or use the arrow keys to turn it, play the months to watch it grow, and choose any amount in the table to pick out its tower and open that account’s ledger for the month.',
     where: 'Reports. Needs reports.read. Read from posted journals, closing entries left out; the same figures as the spending heatmap on Financial visuals.',
   },
+  demo: {
+    what: 'A demonstration organisation: which made-up company it is, everything that was posted to build it, the reports to start with and the CFO assessment\'s recommendations from its synthetic books.',
+    how: 'Follow a row to see those records, open a report, or act on a recommendation. Everything can be changed like ordinary books; approvals still need a second person.',
+    where: 'Opens from the Synthetic demo data badge at the top of every page of a demonstration organisation. Nothing in it describes a real business, person or tax registration.',
+  },
   'reports/revenue-globe': {
     what: 'Where your sales revenue comes from, as bubbles on a globe: one per country, and one per state in your own country, each as large as the revenue earned there.',
     how: 'Choose the months (up to 24). Drag the globe or use the arrow keys to turn it, zoom into your own country, play the months or pick one with the slider, and choose a place in the table to turn the globe to it.',
@@ -1304,6 +1309,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
   },
   register: { what: 'Create your Talk2Tax account.', how: 'Enter your name, email and a long password.', where: 'After this you create or join an organisation.' },
   onboarding: { what: 'Set up your organisation.', how: 'Enter its name, country and currency; the books are created for you.', where: 'Once, before you start.' },
+  'onboarding/demo': {
+    what: 'Six made-up companies you can turn into a demonstration organisation: an Indian consulting firm, a US professional services company, a UK trading business, a UAE subsidiary, a German manufacturing group and an Indian market research agency.',
+    how: 'Choose Create this demo on one of them. About half a minute later you own an organisation with six months of synthetic books posted through the ordinary services, and its demonstration page opens.',
+    where: 'Before or alongside your own books, from onboarding or the organisation switcher. Up to three per person. Every name says (synthetic) and every registration number is made up; never use one for real books.',
+  },
   'invite/[id]': { what: 'An invitation to join an organisation.', how: 'Sign in or create an account, then accept.', where: 'After accepting, the organisation appears in your list.' },
   'portal/[id]': { what: 'The customer portal: what a customer sees when they open the private link you sent them. Their balance, invoices, payments received and statement, with invoices to open or print and a Pay button where there is a payment link.', how: 'Make the link on the customer\'s page under Customer portal and send it to them. Revoke it there if it reaches the wrong person.', where: 'Open to anyone with the link, without signing in. Read-only: nothing here changes the books.' },
   'auditor-portal/[id]': { what: 'The external auditor portal: what an auditor sees when they open the private link you gave them for one internal audit. The scope, the work done and signed off, the conclusion, accepted evidence with each file\'s SHA-256, findings, samples and the trial balance at the end of the scope.', how: 'An owner or admin makes the link on the engagement under External auditor access, for 7, 30 or 90 days. Withdraw it there if it reaches the wrong person. Each file the auditor opens is recorded.', where: 'Open to anyone with the link, without signing in. Read-only: nothing here changes the books, and evidence not yet accepted is never shown.' },

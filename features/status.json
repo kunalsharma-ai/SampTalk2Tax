@@ -110,20 +110,35 @@
       "notes": "The device's reduced-motion setting is followed unless the person chose otherwise; nothing loops on the visual screens under reduced motion; glides become jumps and coasting stops."
     },
     "DEMO-013": {
-      "status": "Implementing",
+      "status": "Tested",
       "evidence": [
-        "apps/api/src/seed/seed-demo.ts"
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
       ],
-      "notes": "One synthetic Indian trading company with ~7 months of journals. The other demo companies and record types are not done."
+      "notes": "Share capital, overheads by department, cost of goods sold and salaries as posted journals."
     },
     "DEMO-021": {
       "status": "Tested",
       "evidence": [
-        "apps/api/src/seed/seed-demo.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
         "apps/api/src/seed/guard.ts",
-        "apps/api/test/seed-guard.test.ts"
+        "apps/api/src/seed/seed-demo.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/api/test/seed-guard.test.ts",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "docs/DEMO_ORGANISATIONS.md",
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts"
       ],
-      "notes": "Demo org is named \"(SYNTHETIC DATA)\", flagged is_demo, and the seed refuses to run in production or outside the local region."
+      "notes": "Demo org is named \"(SYNTHETIC DATA)\", flagged is_demo, and the seed refuses to run in production or outside the local region. In-app demonstrations carry the same labels, a synthetic notice on their page and the Synthetic demo data badge."
     },
     "GL-001": {
       "status": "Implementing",
@@ -10591,6 +10606,272 @@
         "docs/VISUAL_ACCESSIBILITY.md"
       ],
       "notes": "Backed by PERF-015: opening the dashboard until balances and the monthly chart show, p95 under 2 s in CI; report reads behind the visuals by PERF-002/004. No further speed claim."
+    },
+    "DEMO-001": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Six made-up companies built into an organisation the person owns, through the ordinary services; up to three per person; build status recorded in demo_organisations."
+    },
+    "DEMO-002": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Kestrel Advisory Partners: GST invoices to three states, freelancers, payroll, GST returns marked filed."
+    },
+    "DEMO-003": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Juniper Ridge Consulting LLC: hourly fees in USD, subcontractors, no sales tax on professional services."
+    },
+    "DEMO-004": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Harbourside Trading Ltd: stock into inventory, 20% VAT, EU customer zero-rated, cost of sales, VAT return settings."
+    },
+    "DEMO-005": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Falconcrest Gulf FZ-LLC: 5% VAT, management fee from a made-up UK parent, VAT 201 settings (Dubai)."
+    },
+    "DEMO-006": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Brennholz Precision Group GmbH: one German manufacturer with export customers; no group consolidation is built."
+    },
+    "DEMO-007": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Lumen Insights Research: research studies per project, incentives and field partners as cost of sales, payroll."
+    },
+    "DEMO-008": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Customers with terms (made-up GSTINs in India), one slow payer, one occasional."
+    },
+    "DEMO-009": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Vendors with terms, billed monthly."
+    },
+    "DEMO-010": {
+      "status": "Implementing",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Payroll employees, posted pay runs and dues in the Indian profiles; elsewhere staff are salary journals by department, since payroll is India-only."
+    },
+    "DEMO-011": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Monthly invoices tagged with projects, paid on the due date when it has come."
+    },
+    "DEMO-012": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Monthly bills, paid on the due date when it has come."
+    },
+    "DEMO-014": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Synthetic statement of the last 45 days from the books plus two extra lines, imported and auto-matched."
+    },
+    "DEMO-015": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Projects per main customer, on invoice lines; departments on journal lines."
+    },
+    "DEMO-016": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "This fiscal year's budget from the run rate, 8% higher, submitted for approval."
+    },
+    "DEMO-017": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "GST registration, rates and filed returns (India); starter VAT rates and VAT return settings with made-up numbers (UK, UAE, Germany)."
+    },
+    "DEMO-018": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Books feed every report; KPI targets and a draft management commentary; the demo page links the main statements."
+    },
+    "DEMO-019": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Demo page shows the CFO assessment's top recommendations from the synthetic books (deterministic), and alerts from one run of the checks."
+    },
+    "DEMO-020": {
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/demo-profiles.ts",
+        "packages/accounting-engine/test/demo-profiles.test.ts",
+        "apps/api/src/demo-organisations/demo-organisations.service.ts",
+        "apps/api/test/demo-organisations.e2e.test.ts",
+        "apps/web/src/app/onboarding/demo/page.tsx",
+        "apps/web/src/app/orgs/[orgId]/demo/page.tsx",
+        "apps/web/e2e/demo-organisations-flow.test.mjs",
+        "docs/DEMO_ORGANISATIONS.md"
+      ],
+      "notes": "Every name says (synthetic), the organisation (SYNTHETIC DATA); demoLabelIssues refuses otherwise (unit tested), API checks before building."
     }
   }
 }

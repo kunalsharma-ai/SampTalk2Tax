@@ -1485,26 +1485,26 @@ Part 43 · M1 · priority P1 · depends on: GL
 
 | ID | Section | Kind | Requirement | Status |
 |---|---|---|---|---|
-| DEMO-001 |  | rule | Create realistic synthetic demonstration organizations | Not started |
-| DEMO-002 |  | capability | Indian consulting SME | Not started |
-| DEMO-003 |  | capability | US professional services company | Not started |
-| DEMO-004 |  | capability | UK trading business | Not started |
-| DEMO-005 |  | capability | UAE multinational subsidiary | Not started |
-| DEMO-006 |  | capability | Global manufacturing group | Not started |
-| DEMO-007 |  | capability | Market research agency | Not started |
-| DEMO-008 |  | capability | Customers | Not started |
-| DEMO-009 |  | capability | Vendors | Not started |
-| DEMO-010 |  | capability | Employees | Not started |
-| DEMO-011 |  | capability | Invoices | Not started |
-| DEMO-012 |  | capability | Bills | Not started |
-| DEMO-013 |  | capability | Journal entries | Implementing |
-| DEMO-014 |  | capability | Bank transactions | Not started |
-| DEMO-015 |  | capability | Projects | Not started |
-| DEMO-016 |  | capability | Budgets | Not started |
-| DEMO-017 |  | capability | Tax records | Not started |
-| DEMO-018 |  | capability | Financial reports | Not started |
-| DEMO-019 |  | capability | AI recommendations | Not started |
-| DEMO-020 |  | rule | Label all demonstration data as synthetic | Not started |
+| DEMO-001 |  | rule | Create realistic synthetic demonstration organizations | Tested |
+| DEMO-002 |  | capability | Indian consulting SME | Tested |
+| DEMO-003 |  | capability | US professional services company | Tested |
+| DEMO-004 |  | capability | UK trading business | Tested |
+| DEMO-005 |  | capability | UAE multinational subsidiary | Tested |
+| DEMO-006 |  | capability | Global manufacturing group | Implementing |
+| DEMO-007 |  | capability | Market research agency | Tested |
+| DEMO-008 |  | capability | Customers | Tested |
+| DEMO-009 |  | capability | Vendors | Tested |
+| DEMO-010 |  | capability | Employees | Implementing |
+| DEMO-011 |  | capability | Invoices | Tested |
+| DEMO-012 |  | capability | Bills | Tested |
+| DEMO-013 |  | capability | Journal entries | Tested |
+| DEMO-014 |  | capability | Bank transactions | Tested |
+| DEMO-015 |  | capability | Projects | Tested |
+| DEMO-016 |  | capability | Budgets | Tested |
+| DEMO-017 |  | capability | Tax records | Tested |
+| DEMO-018 |  | capability | Financial reports | Tested |
+| DEMO-019 |  | capability | AI recommendations | Tested |
+| DEMO-020 |  | rule | Label all demonstration data as synthetic | Tested |
 | DEMO-021 |  | rule | Do not imply the figures represent real organizations | Tested |
 
 ## Additional differentiating innovations

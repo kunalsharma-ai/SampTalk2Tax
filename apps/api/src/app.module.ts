@@ -47,6 +47,8 @@ import { FinancialDependenciesService } from './financial-visuals/financial-depe
 import { CashFlowNetworkService } from './financial-visuals/cash-flow-network.service';
 import { FinancialLandscapeService } from './financial-visuals/financial-landscape.service';
 import { RevenueGlobeService } from './financial-visuals/revenue-globe.service';
+import { DemoOrganisationsService } from './demo-organisations/demo-organisations.service';
+import { DemoOrganisationsController, DemoOrganisationSummaryController } from './demo-organisations/demo-organisations.controller';
 import { FinancialTimelineService } from './financial-visuals/financial-timeline.service';
 import { RiskMonitorService } from './financial-visuals/risk-monitor.service';
 import { CashFlowNetworkController, FinancialLandscapeController, RevenueGlobeController, DepartmentPerformanceController, FinancialDependenciesController, FinancialTimelineController, FinancialVisualsController, RiskMonitorController, RoleDashboardsController } from './financial-visuals/financial-visuals.controller';
@@ -516,6 +518,8 @@ export class AppModule {
         CashFlowNetworkController,
         FinancialLandscapeController,
         RevenueGlobeController,
+        DemoOrganisationsController,
+        DemoOrganisationSummaryController,
         RoleDashboardsController,
         RiskMonitorController,
         BankFeedsController,
@@ -726,6 +730,7 @@ export class AppModule {
         CashFlowNetworkService,
         FinancialLandscapeService,
         RevenueGlobeService,
+        DemoOrganisationsService,
         RoleDashboardsService,
         RiskMonitorService,
         DocumentsService,

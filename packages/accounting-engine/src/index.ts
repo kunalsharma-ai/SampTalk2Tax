@@ -172,3 +172,4 @@ export * from './cash-flow-network';
 export * from './scenario-surface';
 export * from './financial-landscape';
 export * from './revenue-globe';
+export * from './demo-profiles';

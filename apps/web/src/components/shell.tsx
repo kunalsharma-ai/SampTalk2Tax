@@ -92,7 +92,7 @@ export function Shell({ children }: { children: ReactNode }) {
             id="org-switch"
             className="min-w-0 max-w-[55vw] truncate rounded-[var(--t2t-radius-md)] border border-line bg-surface px-3 py-1.5 text-sm text-fg"
             value={orgId}
-            onChange={(e) => (e.target.value === '__new' ? router.push('/onboarding') : router.push(`/orgs/${e.target.value}`))}
+            onChange={(e) => (e.target.value === '__new' ? router.push('/onboarding') : e.target.value === '__demo' ? router.push('/onboarding/demo') : router.push(`/orgs/${e.target.value}`))}
           >
             {(orgs.data ?? []).map((o) => (
               <option key={o.id} value={o.id}>
@@ -101,10 +101,15 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
             {org?.viaSupport ? <option value={org.id}>{org.name}</option> : null}
             <option value="__new">{t('+ New organisation…')}</option>
+            <option value="__demo">{t('+ Demonstration organisation…')}</option>
           </select>
           <span className="hidden items-center gap-2 sm:flex">
             {org ? <Badge tone="violet">{t(org.role)}</Badge> : null}
-            {org?.isDemo ? <Badge tone="warning">{t('Synthetic demo data')}</Badge> : null}
+            {org?.isDemo ? (
+              <Link href={`/orgs/${orgId}/demo`} className="rounded-full focus-visible:outline-2">
+                <Badge tone="warning">{t('Synthetic demo data')}</Badge>
+              </Link>
+            ) : null}
           </span>
           <div className="ml-auto flex shrink-0 items-center gap-1">
             {org && !elsewhere ? <CommandPalette orgId={orgId} groups={navGroups} searchRecords={can(org.role, 'reports.read')} allowed={paletteAllowed} /> : null}
@@ -139,7 +144,11 @@ export function Shell({ children }: { children: ReactNode }) {
             {t('This organisation is suspended: {reason}. You can read and export its records, but nothing can be changed.', { reason: org.suspended.reason })}
           </p>
         ) : null}
-        {org?.isDemo ? <p className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-xs text-warning sm:hidden">{t('Synthetic demo data')}</p> : null}
+        {org?.isDemo ? (
+          <p className="border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-center text-xs text-warning sm:hidden">
+            <Link href={`/orgs/${orgId}/demo`}>{t('Synthetic demo data')}</Link>
+          </p>
+        ) : null}
         <main id="main" key={`${org?.timeZone ?? ""}|${pathname}`} className="t2t-page-enter mx-auto w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
           {isLoading ? <p className="text-sm text-fg-muted">{t('Loading…')}</p> : !org ? <p className="text-sm text-fg-muted">{t('Organisation not found or you do not have access.')}</p> : elsewhere ? <RegionElsewhere orgId={org.id} name={org.name} region={elsewhere} /> : org.twoStep?.required && !org.twoStep.satisfied ? <TwoStepRequired name={org.name} /> : org.accessRefused ? <AccessRefused name={org.name} reason={org.accessRefused} /> : children}
         </main>
