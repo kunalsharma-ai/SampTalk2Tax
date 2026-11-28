@@ -8,11 +8,11 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 
 | Status | Count |
 |---|---|
-| Not started | 495 |
+| Not started | 494 |
 | Designed | 0 |
 | Implementing | 39 |
 | Implemented | 23 |
-| Tested | 772 |
+| Tested | 773 |
 | Integration pending | 14 |
 | External approval required | 0 |
 | Blocked | 0 |
@@ -46,7 +46,7 @@ A feature counts as **Implemented** only when its business logic, persistence, A
 | Continuous audit and governance | M6 | 30 | 0 | 30 |
 | Document intelligence | M2 | 27 | 22 | 5 |
 | Advanced financial reporting | M6 | 41 | 0 | 41 |
-| Dashboard design | M1 | 68 | 16 | 52 |
+| Dashboard design | M1 | 68 | 15 | 53 |
 | Executive financial command center | M4 | 38 | 38 | 0 |
 | AI financial war room | M7 | 17 | 1 | 16 |
 | Revenue leakage and profit optimization | M4 | 15 | 15 | 0 |
@@ -6823,6 +6823,23 @@ A feature counts as **Implemented** only when its business logic, persistence, A
   - apps/web/src/app/orgs/[orgId]/reports/cash-flow-network/page.tsx
   - apps/web/e2e/cash-flow-network-flow.test.mjs
   - docs/CASH_FLOW_NETWORK.md
+
+### DASH-025 — Revenue distribution globes
+
+- Module: Dashboard design
+- Status: **Tested**
+- Notes: Reports → Revenue globe: sales revenue (posted invoices and credit notes) by customer country abroad and by state at home (India: place of supply, else customer state) as bubbles on a turnable orthographic globe; zoom to home country, play months, slider, pick a place from the table; never names customers; approximate positions for drawing only.
+- Evidence:
+  - packages/accounting-engine/src/revenue-globe.ts
+  - packages/accounting-engine/test/revenue-globe.test.ts
+  - apps/api/src/financial-visuals/revenue-globe.service.ts
+  - apps/api/test/revenue-globe.e2e.test.ts
+  - apps/web/src/lib/globe.ts
+  - apps/web/test/globe.test.ts
+  - apps/web/src/components/reports/revenue-globe.tsx
+  - apps/web/src/app/orgs/[orgId]/reports/revenue-globe/page.tsx
+  - apps/web/e2e/revenue-globe-flow.test.mjs
+  - docs/REVENUE_GLOBE.md
 
 ### DASH-026 — Financial relationship graphs
 

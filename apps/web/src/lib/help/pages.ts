@@ -939,6 +939,11 @@ export const PAGE_HELP: Record<string, Help & { where: string }> = {
     how: 'Choose spending or income and the months (up to 24). Drag the landscape or use the arrow keys to turn it, play the months to watch it grow, and choose any amount in the table to pick out its tower and open that account’s ledger for the month.',
     where: 'Reports. Needs reports.read. Read from posted journals, closing entries left out; the same figures as the spending heatmap on Financial visuals.',
   },
+  'reports/revenue-globe': {
+    what: 'Where your sales revenue comes from, as bubbles on a globe: one per country, and one per state in your own country, each as large as the revenue earned there.',
+    how: 'Choose the months (up to 24). Drag the globe or use the arrow keys to turn it, zoom into your own country, play the months or pick one with the slider, and choose a place in the table to turn the globe to it.',
+    where: 'Reports. Needs reports.read. Read from the revenue lines of posted invoices and credit notes (other income and plain journals left out). At home the place is the invoice’s place of supply, else the customer’s state; abroad it is the customer’s country. Positions are approximate centres, for drawing only. Customers are never named.',
+  },
   'reports/cash-flow-network': {
     what: 'Where your cash came from and where it went, for each cash and bank account, as an animated network: customers, owners, lenders and others paying in on the left, vendors, payroll, tax and others paid on the right, and money moved between your own accounts.',
     how: 'Choose the months (up to 24), then play them one by one or pick a month with the slider or the Cash by month table. Choose an account or group to pick out its flows. Wider lines moved more money; the moving dashes show which way it went and stop when your device asks for reduced motion.',

@@ -148,6 +148,7 @@ export const hi: Record<string, string> = {
   'Financial dependencies': 'वित्तीय निर्भरताएँ',
   'Cash-flow network': 'नकदी प्रवाह नेटवर्क',
   'Financial landscape': 'वित्तीय परिदृश्य',
+  'Revenue globe': 'राजस्व ग्लोब',
   'Role dashboards': 'भूमिका डैशबोर्ड',
   'Income tax computation': 'आयकर गणना',
   'Tax audit preparation': 'टैक्स ऑडिट की तैयारी',

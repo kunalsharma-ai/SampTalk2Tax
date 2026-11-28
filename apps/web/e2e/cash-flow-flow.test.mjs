@@ -98,7 +98,7 @@ test('saves the forecast and a backtest, and the backtest shows its accuracy', a
   await page.getByText('Nothing to compare until tomorrow').waitFor();
 
   await page.goto(`${WEB}/orgs/${orgId}/planning/cash-flow?days=30&asOf=${addDays(today, -10)}`);
-  await page.getByText('The books as they stood on', { exact: false }).waitFor();
+  await page.getByText(/^The books as they stood on /).waitFor();
   await page.getByRole('button', { name: 'Save backtest' }).click();
   await page.waitForURL(/\/cash-flow\/forecasts\/[0-9a-f-]{36}$/);
   await page.getByRole('heading', { name: /^Backtest from/ }).waitFor();

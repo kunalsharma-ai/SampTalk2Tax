@@ -23337,9 +23337,20 @@
         "security": "Tenant isolation, RBAC permission per action, append-only audit trail, no secrets in code.",
         "tests": "Unit tests for calculations; API integration tests for persistence, permissions and tenant isolation."
       },
-      "status": "Not started",
-      "evidence": [],
-      "notes": null
+      "status": "Tested",
+      "evidence": [
+        "packages/accounting-engine/src/revenue-globe.ts",
+        "packages/accounting-engine/test/revenue-globe.test.ts",
+        "apps/api/src/financial-visuals/revenue-globe.service.ts",
+        "apps/api/test/revenue-globe.e2e.test.ts",
+        "apps/web/src/lib/globe.ts",
+        "apps/web/test/globe.test.ts",
+        "apps/web/src/components/reports/revenue-globe.tsx",
+        "apps/web/src/app/orgs/[orgId]/reports/revenue-globe/page.tsx",
+        "apps/web/e2e/revenue-globe-flow.test.mjs",
+        "docs/REVENUE_GLOBE.md"
+      ],
+      "notes": "Reports → Revenue globe: sales revenue (posted invoices and credit notes) by customer country abroad and by state at home (India: place of supply, else customer state) as bubbles on a turnable orthographic globe; zoom to home country, play months, slider, pick a place from the table; never names customers; approximate positions for drawing only."
     },
     {
       "id": "DASH-026",
