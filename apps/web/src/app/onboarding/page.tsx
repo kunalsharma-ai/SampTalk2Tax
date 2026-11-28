@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataRegionNote } from '@/components/data-region';
 import { COUNTRY_MODULES, countryModule, type ModuleLevel } from '@talk2tax/accounting-engine';
 import { Alert, Badge, Button, Card, Field, Input, Select } from '@talk2tax/ui';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -55,6 +56,11 @@ export default function OnboardingPage() {
         <PageHelp title="Set up your organisation" />
       </div>
       <p className="mt-2 text-sm text-fg-muted">This creates your books: a starter chart of accounts and the current fiscal year, split into monthly periods. You can change accounts later.</p>
+      <p className="mt-2 text-sm">
+        <Link className="text-accent hover:underline" href="/onboarding/demo">
+          Or explore a demonstration organisation with synthetic books first
+        </Link>
+      </p>
       <Card className="mt-8 p-6">
         <form className="grid gap-5 sm:grid-cols-2" onSubmit={form.handleSubmit((v) => create.mutate(v))} noValidate>
           {create.error ? (
