@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { today } from '@/lib/format';
 import { useOrg } from '@/lib/org';
+import { useReducedMotion } from '@/lib/motion';
 
 const shift = (month: string, by: number) => {
   const m = Number(month.slice(5, 7)) - 1 + by; // not money
@@ -31,8 +32,7 @@ export default function CashFlowNetworkPage() {
   const [index, setIndex] = useState(-1);
   const [playing, setPlaying] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
-  const [reducedMotion, setReducedMotion] = useState(false);
-  useEffect(() => setReducedMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches), []);
+  const reducedMotion = useReducedMotion();
   const q = useQuery({
     queryKey: ['cash-flow-network', orgId, from, to],
     queryFn: () => api<CashFlowNetworkData>(`/v1/orgs/${orgId}/reports/cash-flow-network?from=${from}&to=${to}`),

@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import { Money } from '@/components/money';
 import { money } from '@/lib/format';
 import { monthLabel } from './financial-visuals';
+import { isMotionReduced } from '@/lib/motion';
 
 export interface DepartmentRow {
   id: string | null;
@@ -33,7 +34,7 @@ export interface DepartmentPerformance {
   totals: { revenue: string; expenses: string; profit: string; margin: number | null; unassignedExpenseShare: number };
 }
 
-const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = () => isMotionReduced();
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
 const TIP = { background: 'var(--t2t-surface-raised)', border: '1px solid var(--t2t-border)', borderRadius: 10, fontSize: 12 };
 const LINE_COLOURS = [...chartSeries, '#f472b6', '#fb923c', '#a3e635'];

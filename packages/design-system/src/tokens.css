@@ -34,7 +34,10 @@
   --t2t-motion-base: 200ms;
 }
 
+/* The device asks for less motion: still, unless the person chose Animate (html[data-motion=full], DASH-038). */
 @media (prefers-reduced-motion: reduce) {
-  :root { --t2t-motion-base: 0ms; }
-  *, *::before, *::after { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+  :root:not([data-motion='full']) { --t2t-motion-base: 0ms; }
+  html:not([data-motion='full']) *, html:not([data-motion='full']) *::before, html:not([data-motion='full']) *::after { animation-duration: 0ms !important; transition-duration: 0ms !important; }
 }
+/* The person chose Keep still (DASH-038). */
+:root[data-motion='reduced'] { --t2t-motion-base: 0ms; }

@@ -14,7 +14,7 @@ let personalTimeZone: string | null = null;
 let orgTimeZone: string | null = null;
 const effective = () => ({ ...current, timeZone: personalTimeZone ?? orgTimeZone ?? DEFAULT_PREFERENCES.timeZone });
 
-export function setDisplayPreferences(p: Omit<DisplayPreferences, 'timeZone'> & { timeZone: string | null }) {
+export function setDisplayPreferences(p: Omit<DisplayPreferences, 'timeZone' | 'motion'> & { timeZone: string | null }) {
   current = { ...current, language: p.language, numberFormat: p.numberFormat, dateFormat: p.dateFormat };
   personalTimeZone = p.timeZone;
 }

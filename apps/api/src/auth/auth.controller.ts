@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { DISPLAY_DATE_FORMAT_CODES, isTimeZone, LANGUAGE_CODES, NUMBER_FORMAT_CODES } from '@talk2tax/accounting-engine';
+import { DISPLAY_DATE_FORMAT_CODES, isTimeZone, LANGUAGE_CODES, MOTION_PREFERENCE_CODES, NUMBER_FORMAT_CODES } from '@talk2tax/accounting-engine';
 import { z } from 'zod';
 import { DocumentStoreService } from '../common/document-store.service';
 import { users } from '../db/collections/identity';
@@ -32,6 +32,8 @@ const PreferencesBody = z
     numberFormat: z.enum(NUMBER_FORMAT_CODES),
     dateFormat: z.enum(DISPLAY_DATE_FORMAT_CODES),
     timeZone: z.string().trim().max(64).refine(isTimeZone, 'Choose a time zone such as Asia/Kolkata or Europe/London').nullable(),
+    /** Left out = unchanged (older clients do not send it). */
+    motion: z.enum(MOTION_PREFERENCE_CODES).optional(),
   })
   .strict();
 const PasswordBody = z.object({ currentPassword: z.string().min(1).max(256), newPassword: z.string().min(1).max(256) });
@@ -165,10 +167,10 @@ export class AuthController {
   private async preferences(userId: string) {
     const u = await this.store.collection(users).findById(userId);
     if (!u) throw new Error(`User ${userId} not found`);
-    return { language: u.language, numberFormat: u.numberFormat, dateFormat: u.dateFormat, timeZone: u.timeZone };
+    return { language: u.language, numberFormat: u.numberFormat, dateFormat: u.dateFormat, timeZone: u.timeZone, motion: u.motion ?? 'SYSTEM' };
   }
 
-  /** My interface language and how numbers, dates and times are shown to me. Time zone null = each organisation's own. */
+  /** My interface language, how numbers, dates and times are shown to me, and how much the interface moves. Time zone null = each organisation's own. */
   @Put('me/preferences')
   @ApiBearerAuth()
   @ApiBody({ schema: openApi(PreferencesBody) })

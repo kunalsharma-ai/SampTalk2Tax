@@ -3,6 +3,7 @@ import { chartSeries } from '@talk2tax/design-system';
 import { Area, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { ForecastDay } from '@/lib/cashflow';
 import { date, money } from '@/lib/format';
+import { isMotionReduced } from '@/lib/motion';
 
 /**
  * The daily balance in the base case, the range between the low and high cases, the minimum
@@ -11,7 +12,7 @@ import { date, money } from '@/lib/format';
  */
 export function ForecastChart({ days, actual, minimumBalance, currency }: { days: ForecastDay[]; actual?: Map<string, string>; minimumBalance?: string | null; currency: string }) {
   const rows = days.map((d) => ({ date: d.date, range: [Number(d.low), Number(d.high)] as [number, number], base: Number(d.base), actual: actual?.has(d.date) ? Number(actual.get(d.date)) : undefined, raw: d, rawActual: actual?.get(d.date) }));
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = isMotionReduced();
   const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
   const buffer = minimumBalance && Number(minimumBalance) > 0 ? Number(minimumBalance) : null;
   const short = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });

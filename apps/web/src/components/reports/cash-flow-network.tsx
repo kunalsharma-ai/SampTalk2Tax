@@ -151,7 +151,7 @@ export function CashFlowNetwork({
     >
       <style>
         {
-          '@keyframes t2t-cash-flow { to { stroke-dashoffset: -36; } } .t2t-cash-dash { animation: t2t-cash-flow 1.1s linear infinite; } @media (prefers-reduced-motion: reduce) { .t2t-cash-dash { animation: none; } } .t2t-cash-line { transition: stroke-width 0.5s ease, stroke-opacity 0.3s ease; } @media (prefers-reduced-motion: reduce) { .t2t-cash-line { transition: none; } }'
+          '@keyframes t2t-cash-flow { to { stroke-dashoffset: -36; } } .t2t-cash-dash { animation: t2t-cash-flow 1.1s linear infinite; } @media (prefers-reduced-motion: reduce) { html:not([data-motion=full]) .t2t-cash-dash { animation: none; } } .t2t-cash-line { transition: stroke-width 0.5s ease, stroke-opacity 0.3s ease; } @media (prefers-reduced-motion: reduce) { html:not([data-motion=full]) .t2t-cash-line { transition: none; } }'
         }
       </style>
       <text x={LEFT_X} y={18} textAnchor="middle" fontSize={12} fontWeight={600} fill="var(--t2t-text-muted)">

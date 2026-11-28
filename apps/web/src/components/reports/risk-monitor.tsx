@@ -1,6 +1,7 @@
 'use client';
 import { chartSeries } from '@talk2tax/design-system';
 import { CartesianGrid, Legend, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { isMotionReduced } from '@/lib/motion';
 
 export type RiskLevel = 'CLEAR' | 'LOW' | 'ELEVATED' | 'HIGH' | 'SEVERE';
 export interface RiskAreaView {
@@ -60,7 +61,7 @@ export function RiskGauge({ score, level }: { score: number; level: RiskLevel })
   );
 }
 
-const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = () => isMotionReduced();
 const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
 /** The overall score and each area's score by day, over the level bands. */

@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { COUNTRY_CENTRES } from '@talk2tax/accounting-engine';
 import { Button, Card, CardHeader, Field, Input, Stat, Table, Td, Th, Tr } from '@talk2tax/ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ErrorAlert } from '@/components/budgets/error-alert';
 import { Money } from '@/components/money';
 import { monthLabel } from '@/components/reports/financial-visuals';
@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/shell';
 import { api } from '@/lib/api';
 import { today } from '@/lib/format';
 import { DEFAULT_GLOBE, type GlobeView } from '@/lib/globe';
+import { shortestTurn, tween } from '@/lib/motion';
 import { useOrg } from '@/lib/org';
 
 const shift = (month: string, by: number) => {
@@ -33,6 +34,18 @@ export default function RevenueGlobePage() {
   const [month, setMonth] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  // Choosing a place or zooming glides the globe there (at once when motion is reduced).
+  const glide = useRef<() => void>(() => {});
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const glideTo = (to: GlobeView) => {
+    glide.current();
+    const from = viewRef.current;
+    glide.current = tween([from.lon, from.lat, from.zoom], [from.lon + shortestTurn(from.lon, to.lon), to.lat, to.zoom], 700, ([lon, lat, zoom]) =>
+      setView({ lon: ((((lon + 180) % 360) + 360) % 360) - 180, lat, zoom }),
+    );
+  };
+  useEffect(() => () => glide.current(), []);
   const q = useQuery({
     queryKey: ['revenue-globe', orgId, from, to],
     queryFn: () => api<RevenueGlobeData>(`/v1/orgs/${orgId}/reports/revenue-globe?from=${from}&to=${to}`),
@@ -133,7 +146,7 @@ export default function RevenueGlobePage() {
                   All months
                 </Button>
                 {homeAt ? (
-                  <Button variant="ghost" aria-pressed={view.zoom > 1} onClick={() => setView(view.zoom > 1 ? DEFAULT_GLOBE : { lat: homeAt[0], lon: homeAt[1], zoom: 4 })}>
+                  <Button variant="ghost" aria-pressed={view.zoom > 1} onClick={() => glideTo(view.zoom > 1 ? DEFAULT_GLOBE : { lat: homeAt[0], lon: homeAt[1], zoom: 4 })}>
                     {view.zoom > 1 ? 'Whole world' : 'Zoom to home country'}
                   </Button>
                 ) : null}
@@ -158,7 +171,17 @@ export default function RevenueGlobePage() {
                 </label>
               </div>
               <div className="px-4 pb-4">
-                <RevenueGlobe d={d} month={month} periodLabel={periodLabel} view={view} onView={setView} selected={selected} />
+                <RevenueGlobe
+                  d={d}
+                  month={month}
+                  periodLabel={periodLabel}
+                  view={view}
+                  onView={(v) => {
+                    glide.current();
+                    setView(v);
+                  }}
+                  selected={selected}
+                />
               </div>
             </Card>
             <Card role="region" aria-label="Revenue by place">
@@ -189,7 +212,7 @@ export default function RevenueGlobePage() {
                                 onClick={() => {
                                   if (on) return setSelected(null);
                                   setSelected(p.key);
-                                  setView({ lat: p.lat!, lon: p.lon!, zoom: p.kind === 'STATE' ? 4 : 1 });
+                                  glideTo({ lat: p.lat!, lon: p.lon!, zoom: p.kind === 'STATE' ? 4 : 1 });
                                 }}
                               >
                                 {p.name}

@@ -2,6 +2,7 @@
 import { chartSeries } from '@talk2tax/design-system';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Sankey, Tooltip, Treemap, XAxis, YAxis } from 'recharts';
 import { money } from '@/lib/format';
+import { isMotionReduced } from '@/lib/motion';
 
 export interface WaterfallStep { key: string; label: string; kind: 'START' | 'UP' | 'DOWN' | 'SUBTOTAL'; amount: string; from: string; to: string; accountIds: string[] }
 export interface SankeyNode { key: string; label: string; kind: 'REVENUE' | 'INCOME' | 'GROUP' | 'EXPENSE' | 'PROFIT' | 'LOSS'; accountId: string | null }
@@ -20,7 +21,7 @@ export interface Visuals {
   treemap: { total: string; groups: { key: string; label: string; amount: string; share: number; accounts: { accountId: string; code: string; name: string; amount: string; share: number }[] }[] };
 }
 
-const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = () => isMotionReduced();
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
 const TIP = { background: 'var(--t2t-surface-raised)', border: '1px solid var(--t2t-border)', borderRadius: 10, fontSize: 12 };
 const STEP_FILL: Record<WaterfallStep['kind'], string> = { START: chartSeries[0], SUBTOTAL: chartSeries[1], UP: chartSeries[2], DOWN: '#f87171' };
